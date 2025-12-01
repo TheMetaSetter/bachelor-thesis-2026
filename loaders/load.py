@@ -863,5 +863,92 @@ def load_anomaly_archive(
         return data
 
 
-def load_iops():
-    pass
+def load_iops(
+    group,
+    filename,
+    downsampling=None,
+    root_dir="./data",
+    normalize=True,
+    verbose=True,
+    validation=False,
+):
+    root_dir = f"{root_dir}/IOPS/{filename}"
+
+    # If the user want to load a dataset used for training
+    if group == "train":
+        df = pd.read_csv(f"{root_dir}.train.out", header=None, names=["Value", "Label"])
+        Y = np.array(df["Value"]).reshape(1, -1)
+
+        # Names of the returned Dataset instance
+        name = f"{filename}-train"
+        name_val = f"{filename}-val"
+
+        # If the user want to normalize data entities inside datasets
+        # We will normalize the entities by default
+        if normalize:
+            scaler = MinMaxScaler()
+            scaler.fit(Y.T)
+            Y = scaler.transform(Y.T).T
+
+        # Downsampling to make sure length of each entity is not too large
+        if downsampling is not None:
+            n_features, n_t = Y.shape
+            right_padding = downsampling - n_t % downsampling
+            Y = np.pad(Y, ((0, 0), (right_padding, 0)))
+            Y = Y.reshape(n_features, Y.shape[-1] // downsampling, downsampling).max(
+                axis=2
+            )
+
+        # If the user want to use some entities for validation
+        if validation:
+            train_length = int(Y.shape[1] * 0.9)
+            entity = DataEntity(Y=Y[:, :train_length], name=name, verbose=verbose)
+            entity_val = DataEntity(
+                Y=Y[:, train_length:], name=name_val, verbose=verbose
+            )
+            data = Dataset(entities=[entity], name=name, verbose=verbose)
+            data_val = Dataset(entities=[entity_val], name=name_val, verbose=verbose)
+            return data, data_val
+        else:
+            entity = DataEntity(Y=Y, name=name, verbose=verbose)
+            data = Dataset(entities=[entity], name=name, verbose=verbose)
+            return data
+
+    # If the user want to load the entities used for testing the trained model
+    elif group == "test":
+        df = pd.read_csv(f"{root_dir}.test.out", header=None, names=["Value", "Label"])
+        Y = np.array(df["Value"]).reshape(1, -1)
+        if normalize:
+            df_train = pd.read_csv(
+                f"{root_dir}.train.out", header=None, names=["Value", "Label"]
+            )
+            Y_train = np.array(df_train["Value"]).reshape(1, -1)
+            scaler = MinMaxScaler()
+            scaler.fit(Y_train.T)
+            Y = scaler.transform(Y.T).T
+
+        name = f"{filename}-test"
+
+        # Label the data
+        labels = np.array(df["Label"])
+
+        # Downsampling
+        if downsampling is not None:
+            n_features, n_t = Y.shape
+            right_padding = downsampling - n_t % downsampling
+
+            Y = np.pad(Y, ((0, 0), (right_padding, 0)))
+            labels = np.pad(labels, (right_padding, 0))
+
+            Y = Y.reshape(n_features, Y.shape[-1] // downsampling, downsampling).max(
+                axis=2
+            )
+            labels = labels.reshape(labels.shape[0] // downsampling, downsampling).max(
+                axis=1
+            )
+
+        labels = labels[None, :]
+        entity = DataEntity(Y=Y, name=name, labels=labels, verbose=verbose)
+        data = Dataset(entities=[entity], name=name, verbose=verbose)
+
+        return data
