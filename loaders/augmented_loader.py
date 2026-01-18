@@ -14,7 +14,7 @@ class AugmentedLoader(object):
         window_size: int,
         window_step: int,
         anomaly_types: list,  # Anomaly types will be injected into this dataset
-        anomaly_types_for_dict: list = None,  # All anomaly types
+        anomaly_types_for_dict: list = [None],  # All anomaly types
         min_range: int = 1,
         min_features: int = 1,
         max_features: int = 5,
@@ -67,7 +67,7 @@ class AugmentedLoader(object):
             ].num_timesteps  # TODO: will only work with 1 entity
             self.window_step = dataset.entities[0].num_timesteps
 
-        if anomaly_types_for_dict:
+        if anomaly_types_for_dict != [None]:
             self.anomaly_dict = self._get_anomaly_dict(anomaly_types_for_dict)
         else:
             self.anomaly_dict = self._get_anomaly_dict(self.anomaly_types)
@@ -262,7 +262,7 @@ class AugmentedLoader(object):
             Y_temp, Z_temp, mask_temp = self.select_anomalies(
                 selected_anomaly, Y, window_start, window_end
             )
-        return Y_temp, Z_temp, mask_temp
+        return Y_temp, Z_temp, mask_temp  # type: ignore
 
     def _inject_spike(
         self, Y, window_start, window_end, min_features=1, max_features=5, scale=1
@@ -952,7 +952,7 @@ class Loader_aug_batch(AugmentedLoader):
         data: torch.Tensor,
         batch_size: int,
         anomaly_types: list,
-        anomaly_types_for_dict: list = None,
+        anomaly_types_for_dict: list = [None],
         min_range: int = 1,
         min_features: int = 1,
         max_features: int = 5,
@@ -972,7 +972,7 @@ class Loader_aug_batch(AugmentedLoader):
         self.shuffle = shuffle
         self.verbose = verbose
 
-        if anomaly_types_for_dict:
+        if anomaly_types_for_dict != [None]:
             self.anomaly_dict = self._get_anomaly_dict(anomaly_types_for_dict)
         else:
             self.anomaly_dict = self._get_anomaly_dict(self.anomaly_types)

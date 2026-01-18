@@ -138,7 +138,6 @@ msl_data_set_number = [
 SMD_URL = "https://raw.githubusercontent.com/NetManAIOps/OmniAnomaly/master/ServerMachineDataset"
 ANOMALY_ARCHIVE_URI = r"https://www.cs.ucr.edu/~eamonn/time_series_data_2018/UCR_TimeSeriesAnomalyDatasets2021.zip"
 
-
 def download_file(
     filename: str, directory: Path, source_url: str, decompress: bool = False
 ) -> None:
