@@ -1,0 +1,1 @@
+Modify the research prompt inside prompts/1_research_prompt.md to match the context of this repository on **time-series anomaly detection with augmented multi-class anomalies**. You must use formal, academic language. You should not use abbreviations or non-official jargons.

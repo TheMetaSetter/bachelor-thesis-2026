@@ -88,7 +88,7 @@ class Dataset(object):
     """
 
     def __init__(self, entities: List[DataEntity], name: str, verbose: bool = False):
-        self.entities = entities  # The number of distinct entities in the dataset (e.g, machine-1-1, machine-2-1, ...)
+        self.entities = entities  # Distinct entities in the dataset (e.g, machine-1-1, machine-2-1, ...)
         self.name = name  # Name of the dataset
         self.verbose = verbose  # Print out info of the dataset or not
 

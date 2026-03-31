@@ -133,9 +133,11 @@ class AugmentedLoader(object):
 
             window_start += self.window_step
             window_end += self.window_step
+
         y_windows = torch.stack(y_windows, dim=0)
         z_windows = torch.stack(z_windows, dim=0)
         anomaly_mask = torch.stack(anomaly_mask, dim=0)
+
         return y_windows, z_windows, anomaly_mask
 
     def select_anomalies(self, anomaly_type, Y, window_start, window_end):
