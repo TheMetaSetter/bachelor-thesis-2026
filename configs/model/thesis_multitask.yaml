@@ -1,0 +1,11 @@
+model_name: thesis_multitask
+input_dim: 38
+encoder_dim: 64
+hidden_dim: 32
+num_classes: 2
+dropout: 0.1
+continuous_enabled: true
+continuous_num_prototypes: 8
+discrete_enabled: true
+discrete_codebook_size: 16
+fusion_mode: average

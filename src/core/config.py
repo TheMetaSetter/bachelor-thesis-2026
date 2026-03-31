@@ -42,12 +42,16 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     task_config = experiment_config["task"]
     optimizer_config = experiment_config["optimizer"]
 
-    if data_config.get("dataset_name") != "smd":
-        raise ValueError("Phase 1 only supports dataset_name='smd'")
-    if model_config.get("model_name") != "reconstruction_mlp_ae":
-        raise ValueError("Phase 1 only supports model_name='reconstruction_mlp_ae'")
-    if task_config.get("task_name") != "reconstruction":
-        raise ValueError("Phase 1 only supports task_name='reconstruction'")
+    supported_dataset_names = {"smd"}
+    supported_model_names = {"reconstruction_mlp_ae", "thesis_multitask"}
+    supported_task_names = {"reconstruction", "multitask_tsad"}
+
+    if data_config.get("dataset_name") not in supported_dataset_names:
+        raise ValueError(f"Unsupported dataset_name: {data_config.get('dataset_name')}")
+    if model_config.get("model_name") not in supported_model_names:
+        raise ValueError(f"Unsupported model_name: {model_config.get('model_name')}")
+    if task_config.get("task_name") not in supported_task_names:
+        raise ValueError(f"Unsupported task_name: {task_config.get('task_name')}")
 
     integer_fields = {
         "seed": experiment_config["seed"],
@@ -59,6 +63,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "hidden_dim": model_config.get("hidden_dim"),
         "input_dim": model_config.get("input_dim"),
     }
+    if model_config.get("model_name") == "thesis_multitask":
+        integer_fields["num_classes"] = model_config.get("num_classes")
+        integer_fields["continuous_num_prototypes"] = model_config.get("continuous_num_prototypes")
+        integer_fields["discrete_codebook_size"] = model_config.get("discrete_codebook_size")
     for field_name, field_value in integer_fields.items():
         if not isinstance(field_value, int) or field_value <= 0:
             raise ValueError(f"{field_name} must be a positive integer")
@@ -69,6 +77,13 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "weight_decay": optimizer_config.get("weight_decay"),
         "dropout": model_config.get("dropout"),
     }
+    if task_config.get("task_name") == "multitask_tsad":
+        float_fields["reconstruction_loss_weight"] = task_config.get("reconstruction_loss_weight")
+        float_fields["classification_loss_weight"] = task_config.get("classification_loss_weight")
+        float_fields["prototype_loss_weight"] = task_config.get("prototype_loss_weight")
+        float_fields["anomaly_probability"] = task_config.get("anomaly_probability")
+        float_fields["max_segment_fraction"] = task_config.get("max_segment_fraction")
+        float_fields["spike_scale"] = task_config.get("spike_scale")
     for field_name, field_value in float_fields.items():
         if not isinstance(field_value, (int, float)):
             raise ValueError(f"{field_name} must be numeric")
@@ -77,6 +92,11 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         raise ValueError("validation_split_ratio must be between 0 and 1")
     if data_config["stride"] > data_config["window_size"]:
         raise ValueError("stride must not exceed window_size")
+    if task_config.get("task_name") == "multitask_tsad":
+        if not 0.0 <= float(task_config["anomaly_probability"]) <= 1.0:
+            raise ValueError("anomaly_probability must be between 0 and 1")
+        if not 0.0 < float(task_config["max_segment_fraction"]) <= 1.0:
+            raise ValueError("max_segment_fraction must be between 0 and 1")
 
     optional_window_limit_fields = [
         "max_train_windows",

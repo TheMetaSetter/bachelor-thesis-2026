@@ -41,3 +41,13 @@ def test_registry_resolves_dataset_model_task_and_encoder_builders() -> None:
     assert build_model("reconstruction_mlp_ae") == "model"
     assert build_task("reconstruction") == "task"
     assert build_encoder("placeholder_encoder") == "encoder"
+
+
+def test_registry_can_register_phase_three_variants() -> None:
+    clear_registry()
+
+    register_model("thesis_multitask", _model_builder)
+    register_task("multitask_tsad", _task_builder)
+
+    assert build_model("thesis_multitask") == "model"
+    assert build_task("multitask_tsad") == "task"

@@ -17,13 +17,17 @@ from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
 from src.engine.trainer import Trainer
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
+from src.models.thesis_multitask import ThesisMultitaskModel
+from src.tasks.multitask_tsad_task import MultitaskTSADTask
 from src.tasks.reconstruction_task import ReconstructionTask
 
 
 def register_phase_one_components() -> None:
     register_dataset("smd", build_smd_dataloaders)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
+    register_model("thesis_multitask", ThesisMultitaskModel)
     register_task("reconstruction", ReconstructionTask)
+    register_task("multitask_tsad", MultitaskTSADTask)
 
 
 def main() -> None:
@@ -44,7 +48,11 @@ def main() -> None:
         for key, value in experiment_config["model"].items()
         if key != "model_name"
     })
-    task = build_task(experiment_config["task"]["task_name"])
+    task = build_task(experiment_config["task"]["task_name"], **{
+        key: value
+        for key, value in experiment_config["task"].items()
+        if key != "task_name"
+    })
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=float(experiment_config["optimizer"]["learning_rate"]),
@@ -71,4 +79,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

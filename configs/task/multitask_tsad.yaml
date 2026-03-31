@@ -1,0 +1,8 @@
+task_name: multitask_tsad
+reconstruction_loss_weight: 1.0
+classification_loss_weight: 1.0
+prototype_loss_weight: 0.01
+use_synthetic_augmentation: true
+anomaly_probability: 0.5
+max_segment_fraction: 0.2
+spike_scale: 3.0
