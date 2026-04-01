@@ -258,30 +258,131 @@ The main streaming simulation solution for this thesis is:
 
 This design is the best fit because it is modular, Python-first, compatible with real anomaly-detection benchmarks, and flexible enough for online adaptation research.
 
+This document should now be read as a **Phase 4 and later** design document. It does not override the pre-Phase-4 gate established in the offline design documents. Before this streaming layer is implemented, the repository should first close the offline gate around:
+
+* one-model-one-file multitask logic,
+* registry-only active construction paths,
+* synthetic anomaly visualization,
+* objective modularity,
+* ablation readiness for the offline prototype-fusion model.
+
+## NGD-readiness contract for future online adaptation
+
+Because Natural Gradient Descent may be introduced later for online adaptation, the streaming and online-adaptation design should be prepared around a narrow and explicit optimization boundary. The goal is not to commit to NGD immediately. The goal is to ensure that, when NGD is added later, it can be introduced without rewriting the rest of the online loop.
+
+### Adaptation scope
+
+The future online adaptation design should separate parameters into explicit roles:
+
+* `reference_params`
+  * frozen reference encoder parameters
+* `online_encoder_params`
+  * partially trainable or fully frozen online encoder parameters
+* `projector_params`
+  * the lightweight near-identity residual projector
+* `optional_adapter_params`
+  * any additional small adaptation modules added later
+
+The default NGD-ready assumption should be:
+
+* `reference_params` are never updated
+* `projector_params` are the first and safest NGD-eligible parameter group
+* `online_encoder_params` remain a separate decision and must not silently share the same optimizer policy as the projector
+
+This boundary matters because `codebase_preferences.md` favors readability and the least amount of codepaths. So the codebase should not blur together “which parameters are adapted” and “which optimizer is used for them.”
+
+### Optimizer boundary
+
+The future online loop should choose its optimizer through explicit configuration, for example:
+
+```yaml
+online_optimization:
+  optimizer_name: adamw   # or ngd
+  target_param_group: projector_params
+```
+
+The higher-level online loop should not need to branch across many codepaths based on optimizer internals. The loop should ask only:
+
+* which parameter group is trainable
+* which optimizer family is active
+* what scheduler state must advance
+
+This keeps NGD an interchangeable online-optimization choice rather than a second online-adaptation architecture.
+
+### Checkpoint and state contract
+
+If NGD is added later, the online adaptation state should remain serializable through one stable checkpoint contract. That contract should include:
+
+* model parameters
+* optimizer state
+* scheduler state
+* projector anchor copy or initialization reference, if used
+* stream cursor or stream-loop progress state
+* any reset-policy state used by the online loop
+
+This should be documented before implementation so that future NGD experiments do not create a separate incompatible checkpoint path.
+
+### Monitoring contract
+
+Before NGD is introduced, the online-adaptation design should already require the metrics that would make NGD interpretable later. At minimum, the online loop should be ready to log:
+
+* alignment loss
+* anomaly score stability
+* update norm
+* projector drift from initialization or anchor state
+* reset-trigger signals
+
+These metrics are needed whether the optimizer is AdamW or NGD. So they should be treated as part of the online design contract, not as NGD-specific afterthoughts.
+
+### Baseline and comparison rule
+
+Any future NGD experiment should be paired with a baseline on the exact same adaptation boundary. In practice, that means:
+
+* same parameter group
+* same online data stream
+* same reset policy
+* same evaluation protocol
+* different optimizer only
+
+This rule should be fixed at the documentation level now, because it prevents future NGD experiments from silently changing two or three factors at once.
+
+### Summary design rule
+
+The future online-adaptation stack should therefore be **NGD-ready but optimizer-agnostic**:
+
+* optimizer choice is explicit
+* adaptation scope is explicit
+* state serialization is explicit
+* monitoring is explicit
+* the rest of the online loop remains unchanged when NGD is swapped in
+
+That is the cleanest way to prepare for later Natural Gradient Descent while preserving readability and modularity.
+
 ## Updated current recommended plan
 
 The cleanest current plan is:
 
 1. Use **TSLib-style structure** and build the codebase around a stable encoder contract.
 2. Start with **SMD** and a minimal vertical slice.
-3. Implement the streaming layer as:
+3. Close the offline pre-Phase-4 gate first, including the ablation-ready objective surface for the prototype-fusion model.
+4. Only then implement the streaming layer as:
 
    * `DatasetStream`
    * `Windowizer`
    * `DriftInjector`
    * `OnlineEvaluator`
-4. Use **River** as the stream backbone.
-5. Use **custom drift injectors** as the primary way to simulate non-stationarity on real benchmark streams.
-6. Use **tsaug** only as a helper library inside the drift injector.
-7. Use **TSGM** only when fully synthetic multivariate sequences are needed.
-8. Keep **MOA** as an optional external benchmark tool, not as the main codebase dependency.
-9. Then add, in order:
+5. Use **River** as the stream backbone.
+6. Use **custom drift injectors** as the primary way to simulate non-stationarity on real benchmark streams.
+7. Use **tsaug** only as a helper library inside the drift injector.
+8. Use **TSGM** only when fully synthetic multivariate sequences are needed.
+9. Keep **MOA** as an optional external benchmark tool, not as the main codebase dependency.
+10. Then add, in order:
 
    * continuous prototypes,
    * discrete prototypes,
    * task-specific fusion,
    * online adaptation.
-10. Evaluate under:
+11. Evaluate under:
 
 * clean streaming,
 * real streaming with injected drift,

@@ -399,6 +399,8 @@ $$
 \lambda_{\text{gate}} \mathcal{L}_{\text{gate}}.
 $$
 
+Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
+
 - The file should implement each active loss term with the same symbol names in code comments or helper names where reasonable, for example:
   - `_compute_reconstruction_loss`
   - `_compute_classification_loss`
@@ -406,7 +408,7 @@ $$
   - `_compute_variance_floor_loss`
   - `_compute_covariance_reduction_loss`
   - `_compute_prototype_usage_loss`
-  - `_compute_gate_regularization_loss`
+  - `_compute_gate_regularization_loss` as the current barrier-style helper, or a future helper aligned with gate entropy regularization once the implementation is updated
 
 - If a loss term is intentionally staged in later activation, the helper should still exist in the file and return zero when disabled by config. This preserves the exact objective surface without inventing hidden codepaths.
 
@@ -424,7 +426,7 @@ $$
   - `lambda_var`
   - `lambda_cov`
   - `lambda_use`
-  - `lambda_gate`
+  - `lambda_gate` for gate entropy regularization in the design surface
 - Use clear names that map directly onto the thesis notation.
 
 `src/tasks/multitask_tsad_task.py`

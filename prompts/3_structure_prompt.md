@@ -1,4 +1,4 @@
-Using the vision document at `documents/logs/MM-DD-YYYY/plans/vision_<topic>.md` and the implementation plan at `documents/logs/MM-DD-YYYY/plans/plan_<topic>.md`, create an initial plan outline for the multivariate time-series anomaly detection thesis codebase.
+Using the vision document at `documents/logs/MM-DD-YYYY/plan/vision_<topic>.md` and the implementation plan at `documents/logs/MM-DD-YYYY/plan/plan-<topic>.md`, create an initial plan outline for the multivariate time-series anomaly detection thesis codebase.
 
 The outline must reflect the fixed encoder contract, the continuous and discrete prototype branches, task-specific fusion, synthetic anomaly injection for classification, and the online adaptation stage with a residual projector. The outline must explicitly preserve the minimal vertical slice principle before adding advanced modules. Use formal, academic language and complete sentences.
 Each phase should indicate how software engineering principles and design pattern principles are preserved in the design.
@@ -23,10 +23,10 @@ Does this phasing make sense? Should the order or granularity be adjusted?
 
 Write the outline inside a file named `structure-<kebab-case-topic>.md` under:
 
-`documents/logs/MM-DD-YYYY/plans/`
+`documents/logs/MM-DD-YYYY/structure/`
 
 Example filename:
 
-`documents/logs/MM-DD-YYYY/plans/structure-<kebab-case-topic>.md`
+`documents/logs/MM-DD-YYYY/structure/structure-<kebab-case-topic>.md`
 
 Get feedback on the structure before writing the detailed content.

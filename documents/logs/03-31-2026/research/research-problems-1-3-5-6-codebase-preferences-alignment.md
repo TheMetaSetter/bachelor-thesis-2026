@@ -38,9 +38,11 @@ The repository currently implements a working vertical slice for SMD using stand
 
 ### Modeling and Training
 
+Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
+
 - Problem 1 concerns model-file organization. `codebase_preferences.md` requires all logic related to one model, including inference and training logic, to live in one single file for that model.
 - The reconstruction baseline is currently split between `src/models/reconstruction_mlp_ae.py`, which defines the architecture and `forward`, and `src/tasks/reconstruction_task.py`, which computes reconstruction loss and training, validation, and test metrics.
-- The multitask pipeline is also split. `src/models/thesis_multitask.py` defines the encoder, prototype branches, fusion module invocation, and heads. `src/tasks/multitask_tsad_task.py` performs batch preparation, synthetic anomaly injection, reconstruction loss, classification loss, prototype regularization, and accuracy computation.
+- The multitask pipeline is also split. `src/models/thesis_multitask.py` defines the encoder, prototype branches, fusion module invocation, and heads. `src/tasks/multitask_tsad_task.py` performs batch preparation, synthetic anomaly injection, reconstruction loss, cross-entropy classification loss, prototype regularization, and accuracy computation.
 - The multitask model further depends on separate module files under `src/models/modules/` for continuous prototypes, discrete prototypes, and fusion. This means the implementation is modular and readable as a framework, but it is not self-contained in the single-file sense stated in the preferences document.
 
 ### Evaluation

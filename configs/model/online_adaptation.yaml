@@ -1,0 +1,11 @@
+model_name: online_adaptation
+input_dim: 38
+encoder_dim: 64
+hidden_dim: 32
+projector_hidden_dim: 64
+projector_dropout: 0.0
+enable_prototype_alignment: false
+lambda_align: 1.0
+lambda_proto: 0.1
+lambda_anchor: 0.001
+score_source: projected_hidden

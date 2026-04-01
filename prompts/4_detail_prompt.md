@@ -1,4 +1,4 @@
-Based on the plan outline in `documents/logs/MM-DD-YYYY/plans/structure-<kebab-case-topic>.md`, write the full detailed plan content in Markdown. The plan must include phases, edits within each phase, explicit edit content, and acceptance criteria.
+Based on the plan outline in `documents/logs/MM-DD-YYYY/structure/structure-<kebab-case-topic>.md`, write the full detailed plan content in Markdown. The plan must include phases, edits within each phase, explicit edit content, and acceptance criteria.
 
 Your detailed plan must include specific and detailed instructions for programming and building in this research codebase. Use formal, academic language and complete sentences.
 
@@ -12,4 +12,4 @@ Required content for each phase:
 - Acceptance criteria that are measurable and aligned with the repository constraints.
 
 Write the detailed plan inside:
-`documents/logs/MM-DD-YYYY/plans/detail-<kebab-case-filename>.md`
+`documents/logs/MM-DD-YYYY/detail/detail-<kebab-case-filename>.md`

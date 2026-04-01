@@ -11,7 +11,13 @@ discrete_codebook_size: 16
 gumbel_temperature: 1.5
 alpha_logit_init: 0.0
 beta_logit_init: 0.0
+# Default thesis baseline objective: L_recon + lambda_cls * L_cls.
 lambda_cls: 1.0
+enable_diversity_loss: false
+enable_variance_loss: false
+enable_covariance_loss: false
+enable_usage_loss: false
+enable_gate_loss: false
 lambda_div: 0.01
 lambda_var: 0.01
 lambda_cov: 0.01

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, Callable
 
 import torch
 import torch.nn as nn
@@ -54,6 +54,11 @@ class ThesisMultitaskModel(BaseModel):
         alpha_logit_init: float = 0.0,
         beta_logit_init: float = 0.0,
         lambda_cls: float = 1.0,
+        enable_diversity_loss: bool = False,
+        enable_variance_loss: bool = False,
+        enable_covariance_loss: bool = False,
+        enable_usage_loss: bool = False,
+        enable_gate_loss: bool = False,
         lambda_div: float = 0.0,
         lambda_var: float = 0.0,
         lambda_cov: float = 0.0,
@@ -79,6 +84,11 @@ class ThesisMultitaskModel(BaseModel):
         self.lambda_cov = lambda_cov
         self.lambda_use = lambda_use
         self.lambda_gate = lambda_gate
+        self.enable_diversity_loss = enable_diversity_loss
+        self.enable_variance_loss = enable_variance_loss
+        self.enable_covariance_loss = enable_covariance_loss
+        self.enable_usage_loss = enable_usage_loss
+        self.enable_gate_loss = enable_gate_loss
         self.variance_floor_gamma = variance_floor_gamma
         self.gate_barrier_margin = gate_barrier_margin
         self.use_synthetic_augmentation = use_synthetic_augmentation
@@ -136,6 +146,33 @@ class ThesisMultitaskModel(BaseModel):
             max_segment_fraction=max_segment_fraction,
             spike_scale=spike_scale,
         )
+        self.optional_loss_configs: dict[str, dict[str, Any]] = {
+            "diversity_loss": {
+                "enabled": self.enable_diversity_loss,
+                "weight": self.lambda_div,
+                "compute_fn": self._compute_cross_branch_diversity_loss,
+            },
+            "variance_loss": {
+                "enabled": self.enable_variance_loss,
+                "weight": self.lambda_var,
+                "compute_fn": self._compute_variance_floor_loss,
+            },
+            "covariance_loss": {
+                "enabled": self.enable_covariance_loss,
+                "weight": self.lambda_cov,
+                "compute_fn": self._compute_covariance_reduction_loss,
+            },
+            "usage_loss": {
+                "enabled": self.enable_usage_loss,
+                "weight": self.lambda_use,
+                "compute_fn": self._compute_prototype_usage_loss,
+            },
+            "gate_loss": {
+                "enabled": self.enable_gate_loss,
+                "weight": self.lambda_gate,
+                "compute_fn": self._compute_gate_regularization_loss,
+            },
+        }
 
     def _zero_loss(self, reference_tensor: torch.Tensor) -> torch.Tensor:
         return reference_tensor.new_zeros(())
@@ -397,6 +434,27 @@ class ThesisMultitaskModel(BaseModel):
         beta_barrier = F.relu(torch.abs(beta - 0.5) - self.gate_barrier_margin).pow(2)
         return alpha_barrier + beta_barrier
 
+    def _compute_optional_loss_terms(self, outputs: dict[str, Any]) -> dict[str, torch.Tensor]:
+        optional_loss_values: dict[str, torch.Tensor] = {}
+        for loss_name, loss_config in self.optional_loss_configs.items():
+            compute_fn: Callable[[dict[str, Any]], torch.Tensor] = loss_config["compute_fn"]
+            if loss_config["enabled"]:
+                optional_loss_values[loss_name] = compute_fn(outputs)
+            else:
+                optional_loss_values[loss_name] = self._zero_loss(outputs["hidden"])
+        return optional_loss_values
+
+    def _compute_total_loss(
+        self,
+        reconstruction_loss: torch.Tensor,
+        classification_loss: torch.Tensor,
+        optional_loss_values: dict[str, torch.Tensor],
+    ) -> torch.Tensor:
+        total_loss = reconstruction_loss + self.lambda_cls * classification_loss
+        for loss_name, loss_value in optional_loss_values.items():
+            total_loss = total_loss + self.optional_loss_configs[loss_name]["weight"] * loss_value
+        return total_loss
+
     def _build_stage_log(
         self,
         stage_name: str,
@@ -434,31 +492,18 @@ class ThesisMultitaskModel(BaseModel):
 
         reconstruction_loss = self._compute_reconstruction_loss(outputs, prepared_batch)
         classification_loss = self._compute_classification_loss(outputs, prepared_batch)
-        diversity_loss = self._compute_cross_branch_diversity_loss(outputs)
-        variance_loss = self._compute_variance_floor_loss(outputs)
-        covariance_loss = self._compute_covariance_reduction_loss(outputs)
-        usage_loss = self._compute_prototype_usage_loss(outputs)
-        gate_loss = self._compute_gate_regularization_loss(outputs)
-
-        total_loss = (
-            reconstruction_loss
-            + self.lambda_cls * classification_loss
-            + self.lambda_div * diversity_loss
-            + self.lambda_var * variance_loss
-            + self.lambda_cov * covariance_loss
-            + self.lambda_use * usage_loss
-            + self.lambda_gate * gate_loss
+        optional_loss_values = self._compute_optional_loss_terms(outputs)
+        total_loss = self._compute_total_loss(
+            reconstruction_loss=reconstruction_loss,
+            classification_loss=classification_loss,
+            optional_loss_values=optional_loss_values,
         )
 
         loss_terms = {
             "total_loss": total_loss,
             "reconstruction_loss": reconstruction_loss,
             "classification_loss": classification_loss,
-            "diversity_loss": diversity_loss,
-            "variance_loss": variance_loss,
-            "covariance_loss": covariance_loss,
-            "usage_loss": usage_loss,
-            "gate_loss": gate_loss,
+            **optional_loss_values,
         }
         return {
             "loss": total_loss,

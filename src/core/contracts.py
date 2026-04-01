@@ -18,6 +18,19 @@ def _require_tensor_rank(tensor: torch.Tensor, rank: int, tensor_name: str) -> N
         raise ValueError(f"{tensor_name} must have rank {rank}, got {tensor.ndim}")
 
 
+def _require_same_shape(
+    first_tensor: torch.Tensor,
+    second_tensor: torch.Tensor,
+    first_name: str,
+    second_name: str,
+) -> None:
+    if first_tensor.shape != second_tensor.shape:
+        raise ValueError(
+            f"{first_name} shape {tuple(first_tensor.shape)} must match "
+            f"{second_name} shape {tuple(second_tensor.shape)}"
+        )
+
+
 def validate_raw_sequence(raw_sequence: dict[str, Any]) -> None:
     _require_keys(raw_sequence, ["x", "point_labels", "mask", "timestamps", "meta"], "raw_sequence")
     _require_tensor_rank(raw_sequence["x"], 2, "raw_sequence['x']")
@@ -61,6 +74,15 @@ def validate_batch(batch: dict[str, Any]) -> None:
         raise TypeError("batch['meta'] must be a list of dictionaries")
 
 
+def validate_online_batch(batch: dict[str, Any]) -> None:
+    validate_batch(batch)
+    _require_keys(batch, ["view_a", "view_b"], "online_batch")
+    _require_tensor_rank(batch["view_a"], 3, "online_batch['view_a']")
+    _require_tensor_rank(batch["view_b"], 3, "online_batch['view_b']")
+    _require_same_shape(batch["view_a"], batch["x"], "online_batch['view_a']", "online_batch['x']")
+    _require_same_shape(batch["view_b"], batch["x"], "online_batch['view_b']", "online_batch['x']")
+
+
 def validate_model_outputs(outputs: dict[str, Any]) -> None:
     _require_keys(
         outputs,
@@ -88,4 +110,3 @@ def validate_evaluation_record(evaluation_record: dict[str, Any]) -> None:
     _require_tensor_rank(evaluation_record["point_labels"], 1, "evaluation_record['point_labels']")
     if evaluation_record["point_scores"].shape[0] != evaluation_record["num_points"]:
         raise ValueError("point_scores length must equal num_points")
-

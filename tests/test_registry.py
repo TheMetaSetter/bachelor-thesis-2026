@@ -33,3 +33,11 @@ def test_registry_can_register_multiple_model_variants() -> None:
     register_model("thesis_multitask", _model_builder)
 
     assert build_model("thesis_multitask") == "model"
+
+
+def test_registry_can_register_online_adaptation_model_variant() -> None:
+    clear_registry()
+
+    register_model("online_adaptation", _model_builder)
+
+    assert build_model("online_adaptation") == "model"

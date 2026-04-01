@@ -5,7 +5,7 @@ $$
 H \in \mathbb{R}^{B \times L \times d_h},
 $$
 
-so datasets, models, and the trainer stay decoupled while each model file stays self-contained.
+so datasets, models, and the trainer stay decoupled while each model file stays self-contained. The current offline objective should also follow the same philosophy: keep the default objective small, keep optional loss terms modular, and only enable extra regularizers when diagnostics justify them.
 
 **Reasoning:**
 Let us start from the real design question. What usually makes a research codebase impossible to reuse?
@@ -318,6 +318,18 @@ H_{\text{cls}} = \alpha \hat H^{(d)} + (1-\alpha)\hat H^{(c)}.
 $$
 
 The reconstruction head consumes only $H_{\text{rec}}$, and the anomaly-type classification head consumes only $H_{\text{cls}}$. By default, the architecture does not add a branch-local decoder on $\hat H^{(c)}$ or a branch-local classifier on $\hat H^{(d)}$. Pre-fusion regularizers still belong to the same model file, but they should operate on $\hat H^{(c)}$, $\hat H^{(d)}$, and the discrete assignments before fusion rather than creating separate prediction paths.
+
+The loss design should follow **objective modularity** or, equivalently, an **ablation-friendly objective surface**. That means:
+
+* the default starting objective is only reconstruction plus classification
+* variance and covariance regularization are the first anti-collapse additions if collapse appears
+* cross-branch decorrelation, code-usage balancing, and gate entropy regularization are activated only for observed failure modes
+* every loss term remains in the same model file as the model that owns it
+* every optional term is controlled explicitly through YAML rather than through ad hoc code edits
+
+So the current design intent is not “turn on every regularizer by default.” The design intent is “start small, observe failure modes, then add the smallest justified regularizer.”
+
+In this design surface, the `gate` weight denotes gate entropy regularization. Current design target: gate entropy regularization. Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
 
 That is enough for reuse. A new dataset should mean a new `data` config. A new model or training stage should mean a new `model` config or `experiment` config, not a second file that steals its loss logic away from the model.
 

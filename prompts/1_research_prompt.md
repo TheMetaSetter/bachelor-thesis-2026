@@ -68,7 +68,7 @@ Then wait for the user's research query.
    - Researcher: use your current identity or "Artificial Intelligence Agent".
    - Git information: run `git rev-parse HEAD`, `git branch --show-current`, and `git config user.name`.
    - Create or reuse a date folder: `documents/logs/MM-DD-YYYY/`.
-   - Put research notes under: `documents/logs/MM-DD-YYYY/researches/`.
+   - Put research notes under: `documents/logs/MM-DD-YYYY/research/`.
    - Use a descriptive filename such as `research-<lowercase-words-separated-by-hyphens>.md`.
 9. Generate the research document using this format.
    ---
@@ -132,7 +132,7 @@ Then wait for the user's research query.
     - If on the main branch or if the commit is pushed, generate repository permalinks.
     - Replace local file references with permalinks in the document.
 11. Sync and present findings.
-    - Ensure the research note is saved under `documents/logs/MM-DD-YYYY/researches/`.
+    - Ensure the research note is saved under `documents/logs/MM-DD-YYYY/research/`.
     - Present a concise summary of findings to the user.
     - Ask if clarification is needed on datasets, anomaly classes, or evaluation procedures.
 12. Handle follow-up questions.

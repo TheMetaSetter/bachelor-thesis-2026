@@ -20,19 +20,20 @@ class CheckpointManager:
         config: dict[str, Any],
         epoch: int,
         metric_history: list[dict[str, Any]],
+        extra_state: dict[str, Any] | None = None,
     ) -> Path:
         checkpoint_path = self.checkpoint_dir / checkpoint_name
-        torch.save(
-            {
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "scaler_state_dict": scaler_state,
-                "config": config,
-                "epoch": epoch,
-                "metric_history": metric_history,
-            },
-            checkpoint_path,
-        )
+        checkpoint_payload = {
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scaler_state_dict": scaler_state,
+            "config": config,
+            "epoch": epoch,
+            "metric_history": metric_history,
+        }
+        if extra_state is not None:
+            checkpoint_payload["extra_state"] = extra_state
+        torch.save(checkpoint_payload, checkpoint_path)
         return checkpoint_path
 
     def load_checkpoint(
@@ -46,4 +47,3 @@ class CheckpointManager:
         if optimizer is not None:
             optimizer.load_state_dict(loaded_checkpoint["optimizer_state_dict"])
         return loaded_checkpoint
-

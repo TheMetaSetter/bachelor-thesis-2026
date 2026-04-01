@@ -1,5 +1,5 @@
 **Summary:**
-Your thesis idea is coherent and modular enough to start implementation now. The main design choices are now fixed more tightly: keep the thesis-facing hidden-state contract $H \in \mathbb{R}^{B \times L \times d_h}$, keep the real prediction heads only on the two fused task-specialized representations, use one exact offline objective with lightweight pre-fusion regularizers, and treat NGD-style adaptation as an optional geometry-aware method mainly for the small online projector or adapter rather than for the whole model.
+Your thesis idea is coherent and modular enough to start implementation now. The main design choices are now fixed more tightly: keep the thesis-facing hidden-state contract $H \in \mathbb{R}^{B \times L \times d_h}$, keep the real prediction heads only on the two fused task-specialized representations, use an objective-modular offline design with a small default objective and optional failure-mode-triggered regularizers, and treat NGD-style adaptation as an optional geometry-aware method mainly for the small online projector or adapter rather than for the whole model.
 
 ## Detailed description of the thesis idea
 
@@ -110,7 +110,7 @@ There should also be an explicit pre-Phase-4 gate in the implementation plan. Be
 
 ## Current consensus objective and training recipe
 
-The current offline thesis core should be documented with one exact objective, not only a high-level architecture sketch.
+The current offline thesis core should be documented with an explicit objective surface, not only a high-level architecture sketch.
 
 Let the encoder expose
 
@@ -134,9 +134,28 @@ $$
 \hat y = C_\psi(\mathrm{MeanPool}(H_{\text{cls}})).
 $$
 
-So the default thesis model keeps all task supervision on the fused paths. The branch outputs are still regularized before fusion, but they are not separate default decoder or classifier inputs.
+So the default thesis model keeps all task supervision on the fused paths. The branch outputs are still observable before fusion, but they are not separate default decoder or classifier inputs.
 
-The exact offline objective should be recorded as
+The formal design rule for the offline loss should now be:
+
+- keep the objective **modular**
+- keep the default objective **small**
+- add extra regularizers only when a concrete failure mode is observed
+- activate or deactivate every loss term through explicit configuration
+- keep every active loss helper inside the same model file as the owning model
+
+This is the most readable and ablation-friendly interpretation of `codebase_preferences.md`. It keeps the number of codepaths low while still allowing the repository to grow into a richer objective later.
+
+The default offline baseline objective should therefore be
+
+$$
+\mathcal{L}_{\text{base}}
+=
+\mathcal{L}_{\text{recon}} +
+\lambda_{\text{cls}} \mathcal{L}_{\text{cls}}.
+$$
+
+The broader weighted-sum objective remains part of the design surface, but it is not the default starting point. It is the superset from which extra terms are enabled only when diagnostics justify them:
 
 $$
 \mathcal{L}_{\text{total}} =
@@ -149,7 +168,7 @@ $$
 \lambda_{\text{gate}} \mathcal{L}_{\text{gate}}.
 $$
 
-To make implementation later as direct as possible, the full form of every component should be stated with explicit tensor shapes.
+To make later implementation direct and readable, the full form of every optional component can still be stated with explicit tensor shapes below. The important design change is that these terms are now treated as a modular objective surface rather than as a mandatory default stack.
 
 Let
 
@@ -267,7 +286,7 @@ $$
 \frac{1}{B L D} \left\| X - \hat X \right\|_F^2.
 $$
 
-The classification loss is
+The cross-entropy classification loss is
 
 $$
 \mathcal{L}_{\text{cls}}
@@ -381,31 +400,70 @@ $$
 \right)^2.
 $$
 
-To prevent early saturation of the fusion scalars, use the mild gate barrier
+To prevent early saturation of the fusion scalars, use gate entropy regularization
 
 $$
 \mathcal{L}_{\text{gate}}
 =
-\left[
-\max\left(0, \left| \alpha - \frac{1}{2} \right| - \delta\right)
-\right]^2
+\alpha \log \alpha + (1-\alpha) \log (1-\alpha)
 +
-\left[
-\max\left(0, \left| \beta - \frac{1}{2} \right| - \delta\right)
-\right]^2,
+\beta \log \beta + (1-\beta) \log (1-\beta),
 $$
 
-where $0 < \delta < \tfrac{1}{2}$.
+so that the weighted objective contributes
 
-So the implementation-facing version of the objective is: task supervision is applied only through $H_{\text{rec}}$ and $H_{\text{cls}}$, while $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ act on the pre-fusion branch outputs, discrete assignments, and fusion coefficients.
+$$
+\lambda_{\text{gate}} \mathcal{L}_{\text{gate}}
+=
+\lambda_{\text{gate}}
+\Big[
+\alpha \log \alpha + (1-\alpha) \log (1-\alpha)
++
+\beta \log \beta + (1-\beta) \log (1-\beta)
+\Big].
+$$
 
-The minimal training recipe should also be fixed clearly.
+Current design target: gate entropy regularization.
+Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
 
-Phase 1 is a short stabilization warm-up. Train for 5 epochs with $\alpha=\beta=0.5$ frozen, $\lambda_{\text{gate}}=0$, and a soft discrete temperature such as $\tau=2.0$. The goal is to let both branches become usable before the fusion coefficients are allowed to move.
+So the design-facing implementation target is: task supervision is applied only through $H_{\text{rec}}$ and $H_{\text{cls}}$, while $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ remain optional pre-fusion regularizers acting on branch outputs, discrete assignments, and fusion coefficients.
 
-Phase 2 is the main training stage. Unfreeze the fusion scalars, turn on $\mathcal{L}_{\text{gate}}$, and anneal the Gumbel temperature from $2.0$ toward $0.5$ over roughly the first 40 percent of the remaining training. A reasonable starting point is AdamW, gradient clipping at 1.0, $10^{-4}$ on a pretrained encoder, and $10^{-3}$ on newly introduced prototype, fusion, and head parameters.
+The activation policy for those optional terms should be fixed clearly.
 
-The central ablations should be exact limiting cases of the same model:
+Stage A is the default baseline. Train first with only
+
+$$
+\mathcal{L}_{\text{recon}} +
+\lambda_{\text{cls}} \mathcal{L}_{\text{cls}}.
+$$
+
+This first stage answers the simplest scientific question: can the fused dual-branch model learn useful structure at all without auxiliary regularization?
+
+Stage B adds the first anti-collapse extensions only if collapse is actually observed. The first-choice additions are
+
+$$
+\lambda_{\text{var}} \mathcal{L}_{\text{var}}
+\qquad \text{and} \qquad
+\lambda_{\text{cov}} \mathcal{L}_{\text{cov}},
+$$
+
+because they are the most standard anti-collapse ingredients in the current design.
+
+Stage C adds failure-mode-specific regularizers only when the corresponding failure mode is observed:
+
+- add $\lambda_{\text{div}} \mathcal{L}_{\text{div}}$ only if the continuous and discrete branches become too similar
+- add $\lambda_{\text{use}} \mathcal{L}_{\text{use}}$ only if the discrete branch under-uses its codebook
+- add $\lambda_{\text{gate}} \mathcal{L}_{\text{gate}}$ only if $\alpha$ and $\beta$ saturate too early, and treat it as an early-training stabilizer rather than a default permanent term
+
+This means the repository should be designed for **objective modularity** or, equivalently, an **ablation-friendly objective surface**. Every loss term should have:
+
+1. a dedicated helper in the model file
+2. a clear diagnostic
+3. a clear activation condition
+4. a clear YAML-level configuration switch
+5. a matching ablation when it is introduced
+
+The central ablations should still be exact limiting cases of the same model:
 
 $$
 \text{continuous only: } \alpha=\beta=0,
@@ -415,7 +473,7 @@ $$
 \text{fused: learn } \alpha,\beta.
 $$
 
-That is the cleanest way to test whether the fused dual-branch thesis story actually adds value.
+That is still the cleanest way to test whether the fused dual-branch thesis story actually adds value.
 
 ## Risks and problems discussed so far
 
@@ -662,6 +720,16 @@ To reduce the chance that anomalous mini-batches corrupt the online adapter, you
 
 We did not force a single method yet, but the principle is: **not every mini-batch deserves the same update strength**.
 
+### J1. Keep the future online optimizer boundary explicit
+
+If you later introduce Natural Gradient Descent, the clean design is not to let it touch the whole online stack by default. The preferred boundary is:
+
+* frozen reference encoder parameters are never updated
+* the projector or another very small adapter is the first NGD-eligible parameter group
+* any partially trainable online-encoder subset remains a separate explicit decision
+
+So the future online design should stay optimizer-agnostic at the loop level and optimizer-specific only at the parameter-group level. In other words, the repository should be prepared to swap `adamw` and `ngd` on the same adaptation boundary rather than treating NGD as a second adaptation architecture.
+
 ### K. Keep the evaluation protocol honest
 
 Use ordinary point-wise and event-wise metrics clearly, and do not rely only on adjusted metrics that can exaggerate performance.
@@ -720,7 +788,7 @@ $$
 H \in \mathbb{R}^{B \times L \times d_h}.
 $$
 
-5. Keep the real offline prediction heads only on the fused task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and use the full offline objective $\mathcal{L}_{\text{total}}$ above as the default thesis objective.
+5. Keep the real offline prediction heads only on the fused task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and use the modular objective surface above with $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}}$ as the default thesis starting point.
 6. Then add, in order: continuous prototypes, discrete prototypes, task-specific fusion, and only then online adaptation.
 7. Start online adaptation conservatively by updating only the projector or another very small adapter, with near-identity initialization, offline warm-start, and optional NGD-style preconditioning only on that small subset.
 8. In parallel, consider training **TFMAE**, **CATCH**, **TimesNet**, **TimeMixer**, or **FITS** yourself and extracting only the encoder if you decide that frequency-aware latent structure matters more than immediate open-weight reuse. ([GitHub][2])
@@ -731,7 +799,7 @@ $$
 
 You can paste this into a new chat:
 
-I am building a bachelor-thesis codebase for multivariate time-series anomaly detection on SMD with window length 100. The stable contract is $X \in \mathbb{R}^{B \times L \times D}$ and every encoder must expose $H \in \mathbb{R}^{B \times L \times d_h}$. The intended offline model has a continuous prototype branch with soft retrieval and a discrete prototype branch with Gumbel-Softmax-style assignment. Their outputs are fused into two task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and the real prediction heads stay only on those fused states. The default offline objective is $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}} + \lambda_{\text{div}}\mathcal{L}_{\text{div}} + \lambda_{\text{var}}\mathcal{L}_{\text{var}} + \lambda_{\text{cov}}\mathcal{L}_{\text{cov}} + \lambda_{\text{use}}\mathcal{L}_{\text{use}} + \lambda_{\text{gate}}\mathcal{L}_{\text{gate}}$. The main ablations are continuous-only, discrete-only, and fused. Later, an online adaptation stage uses two augmentations per incoming sample, a frozen reference encoder, a partially trainable online encoder, and a lightweight near-identity projector that is warm-started offline and aligned to the frozen reference and prototype geometry. NGD-style preconditioning is attractive mainly for that small adapted subset, not for the whole model. Current codebase decisions: freeze the encoder output contract first, build a minimal vertical slice first, keep one model per file, and keep the streaming stack modular with River plus custom wrappers and drift injectors.
+I am building a bachelor-thesis codebase for multivariate time-series anomaly detection on SMD with window length 100. The stable contract is $X \in \mathbb{R}^{B \times L \times D}$ and every encoder must expose $H \in \mathbb{R}^{B \times L \times d_h}$. The intended offline model has a continuous prototype branch with soft retrieval and a discrete prototype branch with Gumbel-Softmax-style assignment. Their outputs are fused into two task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and the real prediction heads stay only on those fused states. The offline objective is designed as a modular weighted-sum surface, but the default starting point is only $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}}$. Additional terms such as $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ are added only when diagnostics reveal concrete failure modes, and each extra term must be justified by ablation. The main ablations are continuous-only, discrete-only, and fused. Later, an online adaptation stage uses two augmentations per incoming sample, a frozen reference encoder, a partially trainable online encoder, and a lightweight near-identity projector that is warm-started offline and aligned to the frozen reference and prototype geometry. NGD-style preconditioning is attractive mainly for that small adapted subset, not for the whole model. Current codebase decisions: freeze the encoder output contract first, build a minimal vertical slice first, keep one model per file, and keep the loss design ablation-friendly with explicit YAML-controlled objective modularity.
 
 ## Check
 

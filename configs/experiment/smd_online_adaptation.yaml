@@ -1,0 +1,12 @@
+experiment_name: smd_online_adaptation
+seed: 7
+device: cpu
+output_dir: outputs/smd_online_adaptation
+checkpoint_dir: outputs/smd_online_adaptation/checkpoints
+data_config_path: configs/data/smd_smoke.yaml
+model_config_path: configs/model/online_adaptation.yaml
+task_config_path: configs/task/online_adaptation.yaml
+optimizer:
+  learning_rate: 0.0005
+  weight_decay: 0.0
+epochs: 1
