@@ -16,7 +16,9 @@ def test_multitask_model_returns_documented_shapes() -> None:
         continuous_num_prototypes=4,
         discrete_enabled=True,
         discrete_codebook_size=8,
-        fusion_mode="average",
+        gumbel_temperature=1.5,
+        alpha_logit_init=0.0,
+        beta_logit_init=0.0,
     )
     batch = {
         "x": torch.randn(4, 100, 38),
@@ -35,3 +37,8 @@ def test_multitask_model_returns_documented_shapes() -> None:
     assert outputs["window_scores"].shape == (4,)
     assert "continuous_branch" in outputs["aux"]
     assert "discrete_branch" in outputs["aux"]
+    assert "fusion" in outputs["aux"]
+    assert "alpha" in outputs["aux"]
+    assert "beta" in outputs["aux"]
+    assert outputs["aux"]["fusion"]["fusion_mode"] == "learnable_sigmoid_scalars"
+    assert outputs["aux"]["fusion"]["fusion_mode"] not in {"identity", "average"}

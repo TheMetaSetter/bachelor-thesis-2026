@@ -1,108 +1,421 @@
 **Summary:**
-Your thesis idea is coherent and modular enough to start implementation now. The main bottlenecks we identified are not “the idea makes no sense,” but rather engineering and statistical risks around online adaptation, projector stability, branch specialization, and the scarcity of reusable spectral-temporal pretrained encoders.
+Your thesis idea is coherent and modular enough to start implementation now. The main design choices are now fixed more tightly: keep the thesis-facing hidden-state contract $H \in \mathbb{R}^{B \times L \times d_h}$, keep the real prediction heads only on the two fused task-specialized representations, use one exact offline objective with lightweight pre-fusion regularizers, and treat NGD-style adaptation as an optional geometry-aware method mainly for the small online projector or adapter rather than for the whole model.
 
 ## Detailed description of the thesis idea
 
 You want to build a **multi-task time series anomaly detection** system for multivariate windows of length
 
-[
+$$
 L = 100
-]
+$$
 
 using a **TSLib-style** input and data-loading pipeline, starting with **SMD** as the first benchmark. TSLib is a reasonable base because it already provides a unified time-series code structure and includes anomaly-detection workflows. ([GitHub][1])
 
 The core offline input-output contract we settled on is:
 
-[
+$$
 X \in \mathbb{R}^{B \times L \times D}
-]
+$$
 
 where (B) is batch size, (L=100), and (D) is the number of variates.
 Your encoder should expose a thesis-facing hidden representation
 
-[
+$$
 H = f_\theta(X) \in \mathbb{R}^{B \times L \times d_h},
-]
+$$
 
 and optionally a pooled representation
 
-[
+$$
 z = \mathrm{Pool}(H) \in \mathbb{R}^{B \times d_h}.
-]
+$$
 
 That representation will be used in two prototype modules.
 
 First, the **continuous prototype module**. The hidden representation queries a bank of continuous prototypes in an attention-like way. Conceptually,
 
-[
+$$
 a_{\ell} = \mathrm{softmax}(q_\ell K^\top), \qquad
 \hat h_\ell^{(c)} = \sum_{m=1}^{M_c} a_{\ell,m} p_m^{(c)},
-]
+$$
 
-where (p_m^{(c)}) are continuous prototypes. This branch is meant to preserve smooth semantic structure and support reconstruction.
+where $(p_m^{(c)})$ are continuous prototypes. This branch is meant to preserve smooth semantic structure and support reconstruction.
 
 Second, the **discrete prototype module**. The hidden representation also queries a discrete codebook using something like a Gumbel-Softmax relaxation:
 
-[
-\pi_\ell = \mathrm{softmax}!\left(\frac{s_\ell + g}{\tau}\right), \qquad
+$$
+\pi_\ell = \mathrm{softmax}\left(\frac{s_\ell + g}{\tau}\right), \qquad
 \hat h_\ell^{(d)} = \sum_{k=1}^{M_d} \pi_{\ell,k} p_k^{(d)}.
-]
+$$
 
 This branch is meant to encourage quantized, more categorical structure.
 
 You then want to fuse these two prototype-derived representations into **task-specific task representations**, so that reconstruction and classification do not have to use the exact same representation:
 
-[
+$$
 H_{\text{rec}} = \beta \hat H^{(d)} + (1-\beta)\hat H^{(c)},
-]
+$$
 
-[
+$$
 H_{\text{cls}} = \alpha \hat H^{(d)} + (1-\alpha)\hat H^{(c)}.
-]
+$$
 
-The reconstruction branch tries to reconstruct the input window, while the classification branch is trained using **synthetic anomaly injection**. You plan to inject artificial anomalies during training and perform anomaly-type classification, initially inspired by the anomaly taxonomy used in CARLA-style TSAD work, while keeping SMD as the first experimental dataset. This overall architecture and motivation are consistent with your proposal draft, including the emphasis on continuous and discrete prototypes, task-specialized fusion, uncertainty, and online adaptation. 
+The reconstruction branch should make predictions only from $H_{\text{rec}}$, while the classification branch should make predictions only from $H_{\text{cls}}$. In the default thesis design, you do not move the real prediction paths onto branch-local heads attached directly to $\hat H^{(c)}$ or $\hat H^{(d)}$. You plan to inject artificial anomalies during training and perform anomaly-type classification, initially inspired by the anomaly taxonomy used in CARLA-style TSAD work, while keeping SMD as the first experimental dataset. This overall architecture and motivation are consistent with your proposal draft, including the emphasis on continuous and discrete prototypes, task-specialized fusion, uncertainty, and online adaptation.
 
 Then comes the **online adaptation phase**. For each online mini-batch of (k) windows,
 
-[
+$$
 {x_1, \dots, x_k},
-]
+$$
 
 you create two semantic augmentations for each sample:
 
-[
+$$
 x_i^{A}, \quad x_i^{B}.
-]
+$$
 
 View A is passed through a **frozen reference encoder**:
 
-[
+$$
 r_i = f_{\text{ref}}(x_i^{A}),
-]
+$$
 
 and view B is passed through a **partially trainable online encoder**:
 
-[
+$$
 u_i = f_{\text{online}}(x_i^{B}).
-]
+$$
 
 Then a lightweight projector maps the online representation into the reference space:
 
-[
+$$
 \tilde u_i = g(u_i).
-]
+$$
 
-You want a contrastive alignment loss that pulls (\tilde u_i) toward (r_i) for the same sample and pushes it away from other samples’ reference or mapped representations. In addition, you want a prototype-alignment objective so that the mapped online representations remain close to the frozen prototype spaces learned offline. This is also aligned with the proposal text and adaptation figure you uploaded. 
+You want a contrastive alignment loss that pulls $\tilde u_i$ toward $r_i$ for the same sample and pushes it away from other samples’ reference or mapped representations. In addition, you want a prototype-alignment objective so that the mapped online representations remain close to the frozen prototype spaces learned offline. The projector should be treated as a near-identity residual adapter, ideally $g(u)=u+F(u)$ with the last layer initialized near zero and warm-started offline before real streaming updates begin. If you later use NGD-style preconditioning, the intended scope is this small adapted subset such as the projector or a very light adapter, not the whole online model. This is also aligned with the proposal text and adaptation figure you uploaded.
 
 On the codebase side, we agreed the safest engineering principle is: **freeze the encoder interface first, then build a minimal vertical slice before implementing the full model**. So the first practical milestone is not “full thesis architecture,” but:
 
-[
+$$
 \text{SMD loader} \rightarrow \text{encoder adapter} \rightarrow \text{simple head} \rightarrow \text{train/eval loop}.
-]
+$$
 
 That gives you a stable base for later prototype modules and online adaptation.
 
+For this repository specifically, that vertical slice should also obey the strict rule in `codebase_preferences.md` that one model stays in one file. So the reconstruction baseline, the offline multitask thesis model, and the online adaptation model should each keep their forward path, scoring path, and stage-specific losses in the same model file rather than splitting them across separate task or loss files.
+
+There should also be an explicit pre-Phase-4 gate in the implementation plan. Before attempting the online adaptation stage, phases 1 to 3 need to close the earlier debt around registry-only script construction, CARLA-aligned synthetic anomaly injection, and user-visible inspection of injected anomalies.
+
 ---
+
+## Current consensus objective and training recipe
+
+The current offline thesis core should be documented with one exact objective, not only a high-level architecture sketch.
+
+Let the encoder expose
+
+$$
+H = f_\theta(X) \in \mathbb{R}^{B \times L \times d_h}.
+$$
+
+The continuous prototype branch produces $\hat H^{(c)}$, and the discrete prototype branch produces $\hat H^{(d)}$ through a Gumbel-Softmax-style relaxed assignment with temperature $\tau$. The two fused task representations remain
+
+$$
+H_{\text{rec}} = \beta \hat H^{(d)} + (1-\beta)\hat H^{(c)},
+\qquad
+H_{\text{cls}} = \alpha \hat H^{(d)} + (1-\alpha)\hat H^{(c)}.
+$$
+
+The default prediction paths are:
+
+$$
+\hat X = D_\phi(H_{\text{rec}}),
+\qquad
+\hat y = C_\psi(\mathrm{MeanPool}(H_{\text{cls}})).
+$$
+
+So the default thesis model keeps all task supervision on the fused paths. The branch outputs are still regularized before fusion, but they are not separate default decoder or classifier inputs.
+
+The exact offline objective should be recorded as
+
+$$
+\mathcal{L}_{\text{total}} =
+\mathcal{L}_{\text{recon}} +
+\lambda_{\text{cls}} \mathcal{L}_{\text{cls}} +
+\lambda_{\text{div}} \mathcal{L}_{\text{div}} +
+\lambda_{\text{var}} \mathcal{L}_{\text{var}} +
+\lambda_{\text{cov}} \mathcal{L}_{\text{cov}} +
+\lambda_{\text{use}} \mathcal{L}_{\text{use}} +
+\lambda_{\text{gate}} \mathcal{L}_{\text{gate}}.
+$$
+
+To make implementation later as direct as possible, the full form of every component should be stated with explicit tensor shapes.
+
+Let
+
+$$
+X \in \mathbb{R}^{B \times L \times D},
+\qquad
+H = f_\theta(X) \in \mathbb{R}^{B \times L \times d_h}.
+$$
+
+For the continuous prototype branch, let the learnable prototype bank be
+
+$$
+P^{(c)} = \left\{ p_k^{(c)} \right\}_{k=1}^{K_c},
+\qquad
+p_k^{(c)} \in \mathbb{R}^{d_h}.
+$$
+
+For each token index $(b,\ell)$, define
+
+$$
+s^{(c)}_{b\ell k}
+=
+\frac{\langle h_{b,\ell}, p_k^{(c)} \rangle}{\sqrt{d_h}}
+\in \mathbb{R},
+\qquad
+a^{(c)}_{b\ell k}
+=
+\frac{\exp(s^{(c)}_{b\ell k})}{\sum_{j=1}^{K_c} \exp(s^{(c)}_{b\ell j})}.
+$$
+
+Then the continuous branch output is
+
+$$
+\hat h^{(c)}_{b,\ell}
+=
+\sum_{k=1}^{K_c} a^{(c)}_{b\ell k} p_k^{(c)}
+\in \mathbb{R}^{d_h},
+\qquad
+\hat H^{(c)} \in \mathbb{R}^{B \times L \times d_h}.
+$$
+
+For the discrete branch, let the learnable codebook be
+
+$$
+E^{(d)} = \left\{ e_k^{(d)} \right\}_{k=1}^{K_d},
+\qquad
+e_k^{(d)} \in \mathbb{R}^{d_h},
+$$
+
+and let the branch assignment logits be
+
+$$
+q_{b,\ell} = W_d h_{b,\ell} + b_d \in \mathbb{R}^{K_d}.
+$$
+
+Using Gumbel-Softmax with temperature $\tau > 0$,
+
+$$
+\pi_{b\ell k}
+=
+\frac{\exp\left((q_{b\ell k} + g_{b\ell k}) / \tau\right)}
+{\sum_{j=1}^{K_d} \exp\left((q_{b\ell j} + g_{b\ell j}) / \tau\right)},
+\qquad
+\pi_{b,\ell} \in \mathbb{R}^{K_d},
+$$
+
+where $g_{b\ell k}$ is i.i.d. Gumbel noise. Then
+
+$$
+\hat h^{(d)}_{b,\ell}
+=
+\sum_{k=1}^{K_d} \pi_{b\ell k} e_k^{(d)}
+\in \mathbb{R}^{d_h},
+\qquad
+\hat H^{(d)} \in \mathbb{R}^{B \times L \times d_h}.
+$$
+
+The fused task-specific representations are
+
+$$
+H_{\text{rec}} = \beta \hat H^{(d)} + (1-\beta)\hat H^{(c)} \in \mathbb{R}^{B \times L \times d_h},
+\qquad
+H_{\text{cls}} = \alpha \hat H^{(d)} + (1-\alpha)\hat H^{(c)} \in \mathbb{R}^{B \times L \times d_h},
+$$
+
+with
+
+$$
+\alpha = \sigma(a) \in (0,1),
+\qquad
+\beta = \sigma(b) \in (0,1),
+\qquad
+a,b \in \mathbb{R}.
+$$
+
+The decoder and classifier heads are
+
+$$
+\hat X = D_\phi(H_{\text{rec}}) \in \mathbb{R}^{B \times L \times D},
+$$
+
+$$
+c_b = \frac{1}{L} \sum_{\ell=1}^{L} H_{\text{cls},\,b,\ell} \in \mathbb{R}^{d_h},
+\qquad
+\hat y_b = C_\psi(c_b) \in \Delta^{C-1},
+$$
+
+where $y_b \in \{0,1\}^{C}$ is the one-hot anomaly-type pseudo-label for window $b$.
+
+The reconstruction loss is
+
+$$
+\mathcal{L}_{\text{recon}}
+=
+\frac{1}{B L D} \left\| X - \hat X \right\|_F^2.
+$$
+
+The classification loss is
+
+$$
+\mathcal{L}_{\text{cls}}
+=
+-\frac{1}{B} \sum_{b=1}^{B} \sum_{c=1}^{C} y_{b,c} \log \hat y_{b,c}.
+$$
+
+For the pre-fusion regularizers, define
+
+$$
+N = B L,
+$$
+
+and flatten token axes after LayerNorm:
+
+$$
+Z^{(c)} = \operatorname{reshape}\!\left(\operatorname{LN}\!\left(\hat H^{(c)}\right)\right) \in \mathbb{R}^{N \times d_h},
+\qquad
+Z^{(d)} = \operatorname{reshape}\!\left(\operatorname{LN}\!\left(\hat H^{(d)}\right)\right) \in \mathbb{R}^{N \times d_h}.
+$$
+
+For each branch $m \in \{c,d\}$ and each feature dimension $j \in \{1,\dots,d_h\}$, define
+
+$$
+\mu_j^{(m)} = \frac{1}{N} \sum_{n=1}^{N} Z_{n,j}^{(m)},
+\qquad
+\sigma_j^{(m)} = \sqrt{\frac{1}{N} \sum_{n=1}^{N} \left(Z_{n,j}^{(m)} - \mu_j^{(m)}\right)^2},
+$$
+
+$$
+\tilde Z_{:,j}^{(m)}
+=
+\frac{Z_{:,j}^{(m)} - \mu_j^{(m)}}{\sigma_j^{(m)} + \varepsilon}
+\in \mathbb{R}^{N}.
+$$
+
+The cross-branch decorrelation loss is
+
+$$
+C^{(cd)} = \frac{1}{N} \left(\tilde Z^{(c)}\right)^\top \tilde Z^{(d)} \in \mathbb{R}^{d_h \times d_h},
+$$
+
+$$
+\mathcal{L}_{\text{div}}
+=
+\frac{1}{d_h^2} \left\| C^{(cd)} \right\|_F^2.
+$$
+
+For each branch $m \in \{c,d\}$, the variance-floor regularizer is
+
+$$
+\mathcal{L}_{\text{var}}^{(m)}
+=
+\frac{1}{d_h}
+\sum_{j=1}^{d_h}
+\left[
+\max\left(0, \gamma - \operatorname{Std}\!\left(Z_{:,j}^{(m)}\right)\right)
+\right]^2,
+$$
+
+and the total variance loss is
+
+$$
+\mathcal{L}_{\text{var}}
+=
+\mathcal{L}_{\text{var}}^{(c)} + \mathcal{L}_{\text{var}}^{(d)}.
+$$
+
+For each branch, define the within-branch correlation matrix
+
+$$
+C^{(m)} = \frac{1}{N} \left(\tilde Z^{(m)}\right)^\top \tilde Z^{(m)} \in \mathbb{R}^{d_h \times d_h}.
+$$
+
+Then the covariance reduction term is
+
+$$
+\mathcal{L}_{\text{cov}}^{(m)}
+=
+\frac{1}{d_h(d_h - 1)}
+\sum_{i \neq j} \left(C^{(m)}_{ij}\right)^2,
+$$
+
+and the total covariance loss is
+
+$$
+\mathcal{L}_{\text{cov}}
+=
+\mathcal{L}_{\text{cov}}^{(c)} + \mathcal{L}_{\text{cov}}^{(d)}.
+$$
+
+For discrete code usage balancing, average the relaxed assignments across all tokens:
+
+$$
+\bar{\pi}_k
+=
+\frac{1}{B L}
+\sum_{b=1}^{B} \sum_{\ell=1}^{L} \pi_{b\ell k},
+\qquad
+\bar{\pi} \in \mathbb{R}^{K_d}.
+$$
+
+Then
+
+$$
+\mathcal{L}_{\text{use}}
+=
+\sum_{k=1}^{K_d}
+\left(
+\bar{\pi}_k - \frac{1}{K_d}
+\right)^2.
+$$
+
+To prevent early saturation of the fusion scalars, use the mild gate barrier
+
+$$
+\mathcal{L}_{\text{gate}}
+=
+\left[
+\max\left(0, \left| \alpha - \frac{1}{2} \right| - \delta\right)
+\right]^2
++
+\left[
+\max\left(0, \left| \beta - \frac{1}{2} \right| - \delta\right)
+\right]^2,
+$$
+
+where $0 < \delta < \tfrac{1}{2}$.
+
+So the implementation-facing version of the objective is: task supervision is applied only through $H_{\text{rec}}$ and $H_{\text{cls}}$, while $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ act on the pre-fusion branch outputs, discrete assignments, and fusion coefficients.
+
+The minimal training recipe should also be fixed clearly.
+
+Phase 1 is a short stabilization warm-up. Train for 5 epochs with $\alpha=\beta=0.5$ frozen, $\lambda_{\text{gate}}=0$, and a soft discrete temperature such as $\tau=2.0$. The goal is to let both branches become usable before the fusion coefficients are allowed to move.
+
+Phase 2 is the main training stage. Unfreeze the fusion scalars, turn on $\mathcal{L}_{\text{gate}}$, and anneal the Gumbel temperature from $2.0$ toward $0.5$ over roughly the first 40 percent of the remaining training. A reasonable starting point is AdamW, gradient clipping at 1.0, $10^{-4}$ on a pretrained encoder, and $10^{-3}$ on newly introduced prototype, fusion, and head parameters.
+
+The central ablations should be exact limiting cases of the same model:
+
+$$
+\text{continuous only: } \alpha=\beta=0,
+\qquad
+\text{discrete only: } \alpha=\beta=1,
+\qquad
+\text{fused: learn } \alpha,\beta.
+$$
+
+That is the cleanest way to test whether the fused dual-branch thesis story actually adds value.
 
 ## Risks and problems discussed so far
 
@@ -116,9 +429,9 @@ If that happens, the dual-prototype idea adds complexity without real benefit. T
 
 Even if you define
 
-[
+$$
 H_{\text{rec}} \quad \text{and} \quad H_{\text{cls}}
-]
+$$
 
 separately, a bad choice of fusion weights or losses may cause both tasks to rely mostly on one prototype branch. Then the second branch becomes decorative.
 
@@ -146,9 +459,9 @@ A single online mini-batch is a small and noisy estimate of the current stream d
 
 At the beginning of online adaptation, the projector
 
-[
+$$
 g(\cdot)
-]
+$$
 
 has not yet learned how to map online representations into reference space.
 
@@ -212,17 +525,17 @@ This was the most important engineering decision.
 
 Every backbone, pretrained or self-trained, should be wrapped so that it always outputs
 
-[
+$$
 H \in \mathbb{R}^{B \times L \times d_h}.
-]
+$$
 
 That way, your prototype modules, task heads, and online adaptation logic do not depend on the internal quirks of the encoder.
 
 For patch-based or spectral encoders, you can define an adapter
 
-[
+$$
 H = U(\tilde H),
-]
+$$
 
 where (\tilde H) is the native hidden representation and (U) maps it to your thesis notation.
 
@@ -230,9 +543,9 @@ where (\tilde H) is the native hidden representation and (U) maps it to your the
 
 The first code milestone should be:
 
-[
+$$
 \text{SMD loader} \rightarrow \text{encoder adapter} \rightarrow \text{simple head} \rightarrow \text{train/eval loop}.
-]
+$$
 
 Not full prototypes, not full online adaptation, not full uncertainty logic.
 
@@ -242,21 +555,25 @@ This keeps the codebase testable and reduces debugging chaos.
 
 To deal with possible redundancy between continuous and discrete prototype branches, the model should be tested in at least these variants:
 
-[
+$$
 \text{continuous only},
 \quad
 \text{discrete only},
 \quad
 \text{fusion}.
-]
+$$
 
 If fusion does not beat the single-branch variants, then the thesis claim about complementarity is weak and needs redesign.
+
+### C1. Keep the default supervision only on the fused representations
+
+The current consensus is that the real reconstruction and anomaly-type classification heads should stay on $H_{\text{rec}}$ and $H_{\text{cls}}$. The continuous and discrete branch outputs may still be exposed for regularization, monitoring, and ablations, but branch-local decoder or classifier heads should not be the default architecture.
 
 ### D. Use conservative online adaptation at first
 
 Instead of updating many online parameters immediately, start conservatively.
 
-A good first version is to update only the projector or only a very small subset of parameters. Then later you can test unfreezing higher layers.
+A good first version is to update only the projector or only a very small subset of parameters. Then later you can test unfreezing higher layers. If you experiment with natural-gradient-style methods, treat them as geometry-aware tools mainly for that small adapted subset rather than as a default optimizer for the whole model.
 
 This directly addresses the risk of one-batch high-variance updates.
 
@@ -264,15 +581,15 @@ This directly addresses the risk of one-batch high-variance updates.
 
 The best conceptual solution to the projector-initialization problem was:
 
-[
+$$
 g(u) = u + F(u),
-]
+$$
 
 where (F) is a small bottleneck MLP and its final layer is initialized to zero, so initially
 
-[
+$$
 g(u) \approx u.
-]
+$$
 
 That way, the projector starts as an identity map and learns only small corrections.
 
@@ -282,10 +599,10 @@ This fits your setup because the frozen reference encoder and the online encoder
 
 We also discussed an offline calibration stage:
 
-[
+$$
 \mathcal L_{\text{warm}} =
-1 - \cos!\big(g(f_{\text{online}}(x^B)), f_{\text{ref}}(x^A)\big).
-]
+1 - \cos\big(g(f_{\text{online}}(x^B)), f_{\text{ref}}(x^A)\big).
+$$
 
 This teaches the projector the reference space before it sees true stream drift.
 
@@ -297,15 +614,15 @@ For the projector-drift problem, the better first strategy was not hard reset ev
 
 A safer plan is to keep an anchor copy of the original projector parameters
 
-[
+$$
 \theta_g^{(0)}
-]
+$$
 
 and use either soft restoration or anchor regularization:
 
-[
+$$
 \mathcal L_{\text{anchor}} = \gamma |\theta_g - \theta_g^{(0)}|_2^2.
-]
+$$
 
 Then use a **trigger-based** hard reset only if monitoring signals collapse, such as sharply worsening alignment loss or unstable anomaly scores.
 
@@ -313,7 +630,7 @@ Then use a **trigger-based** hard reset only if monitoring signals collapse, suc
 
 Since reset may help in some regimes and hurt in others, the clean thesis move is to compare:
 
-[
+$$
 \text{no reset},
 \quad
 \text{soft restoration},
@@ -321,7 +638,7 @@ Since reset may help in some regimes and hurt in others, the clean thesis move i
 \text{trigger-based hard reset},
 \quad
 \text{periodic hard reset}.
-]
+$$
 
 That turns your concern into an experiment rather than a guess.
 
@@ -329,13 +646,13 @@ That turns your concern into an experiment rather than a guess.
 
 For the two-encoder online cost, we discussed three possible regimes:
 
-[
+$$
 \text{full dual-encoder baseline},
 \quad
 \text{shared encoder with stop-gradient reference branch},
 \quad
 \text{EMA teacher + one trainable student}.
-]
+$$
 
 The full dual-encoder version is the clean conceptual baseline. The others are compute-relief variants you can compare later.
 
@@ -369,9 +686,9 @@ For spectral-temporal models that better match your taste but are less clearly p
 
 For public MOMENT checkpoints, patch-based handling is part of the pretrained interface, so changing to one time point per patch is not a clean reuse of the published weights. The safer solution is:
 
-[
+$$
 X \xrightarrow{\text{MOMENT}} \tilde H \xrightarrow{U} H
-]
+$$
 
 where (U) is your own adapter that converts patch-level output to your thesis-facing sequence representation.
 
@@ -399,12 +716,14 @@ The cleanest current plan is:
 3. Use **MOMENT** first if you want a practical open-weight starting point. ([GitHub][3])
 4. Wrap MOMENT so the output still matches your thesis notation:
 
-[
+$$
 H \in \mathbb{R}^{B \times L \times d_h}.
-]
+$$
 
-5. Then add, in order: continuous prototypes, discrete prototypes, task-specific fusion, and only then online adaptation.
-6. In parallel, consider training **TFMAE**, **CATCH**, **TimesNet**, **TimeMixer**, or **FITS** yourself and extracting only the encoder if you decide that frequency-aware latent structure matters more than immediate open-weight reuse. ([GitHub][2])
+5. Keep the real offline prediction heads only on the fused task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and use the full offline objective $\mathcal{L}_{\text{total}}$ above as the default thesis objective.
+6. Then add, in order: continuous prototypes, discrete prototypes, task-specific fusion, and only then online adaptation.
+7. Start online adaptation conservatively by updating only the projector or another very small adapter, with near-identity initialization, offline warm-start, and optional NGD-style preconditioning only on that small subset.
+8. In parallel, consider training **TFMAE**, **CATCH**, **TimesNet**, **TimeMixer**, or **FITS** yourself and extracting only the encoder if you decide that frequency-aware latent structure matters more than immediate open-weight reuse. ([GitHub][2])
 
 ---
 
@@ -412,15 +731,15 @@ H \in \mathbb{R}^{B \times L \times d_h}.
 
 You can paste this into a new chat:
 
-I am building a bachelor-thesis codebase for multivariate time-series anomaly detection on SMD with window length 100. The intended model has an encoder producing (H \in \mathbb{R}^{B \times L \times d_h}), then two prototype modules: a continuous prototype branch with attention-like soft retrieval, and a discrete prototype branch with Gumbel-Softmax-style codebook assignment. Their outputs are fused into task-specific latent spaces for reconstruction and anomaly-type classification using synthetic anomaly injection. Later, an online adaptation stage uses two augmentations per incoming sample, a frozen reference encoder, a partially trainable online encoder, and a lightweight projector that maps online representations into the reference space with contrastive and prototype-alignment losses. Main risks already identified: branch redundancy, one-branch-dominant fusion, anomaly contamination during online adaptation, dual-encoder online cost, noisy one-mini-batch gradients, projector initialization and drift, and lack of clearly reusable spectral-temporal pretrained encoders. Current design decisions: freeze the encoder output contract first, build a minimal vertical slice first, use a near-identity residual projector with offline warm-start, prefer soft restoration or trigger-based reset over blind periodic reset, and compare open-weight practical backbones like MOMENT/TTM/Timer against self-trained spectral-temporal encoders like TFMAE/CATCH/TimesNet/TimeMixer/FITS.
+I am building a bachelor-thesis codebase for multivariate time-series anomaly detection on SMD with window length 100. The stable contract is $X \in \mathbb{R}^{B \times L \times D}$ and every encoder must expose $H \in \mathbb{R}^{B \times L \times d_h}$. The intended offline model has a continuous prototype branch with soft retrieval and a discrete prototype branch with Gumbel-Softmax-style assignment. Their outputs are fused into two task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and the real prediction heads stay only on those fused states. The default offline objective is $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}} + \lambda_{\text{div}}\mathcal{L}_{\text{div}} + \lambda_{\text{var}}\mathcal{L}_{\text{var}} + \lambda_{\text{cov}}\mathcal{L}_{\text{cov}} + \lambda_{\text{use}}\mathcal{L}_{\text{use}} + \lambda_{\text{gate}}\mathcal{L}_{\text{gate}}$. The main ablations are continuous-only, discrete-only, and fused. Later, an online adaptation stage uses two augmentations per incoming sample, a frozen reference encoder, a partially trainable online encoder, and a lightweight near-identity projector that is warm-started offline and aligned to the frozen reference and prototype geometry. NGD-style preconditioning is attractive mainly for that small adapted subset, not for the whole model. Current codebase decisions: freeze the encoder output contract first, build a minimal vertical slice first, keep one model per file, and keep the streaming stack modular with River plus custom wrappers and drift injectors.
 
 ## Check
 
 A good consistency check is this: if you remove the online adaptation block entirely, the remaining offline model is still a valid thesis core. If you remove one prototype branch, the model is still trainable. If you swap the encoder, the rest of the architecture should still work as long as the encoder wrapper preserves
 
-[
+$$
 H \in \mathbb{R}^{B \times L \times d_h}.
-]
+$$
 
 That modularity is a strong sign that the codebase plan is sound.
 

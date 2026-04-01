@@ -8,4 +8,14 @@ continuous_enabled: true
 continuous_num_prototypes: 8
 discrete_enabled: true
 discrete_codebook_size: 16
-fusion_mode: average
+gumbel_temperature: 1.5
+alpha_logit_init: 0.0
+beta_logit_init: 0.0
+lambda_cls: 1.0
+lambda_div: 0.01
+lambda_var: 0.01
+lambda_cov: 0.01
+lambda_use: 0.01
+lambda_gate: 0.01
+variance_floor_gamma: 1.0
+gate_barrier_margin: 0.25

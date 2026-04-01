@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import Any
 
 import numpy as np
@@ -8,14 +7,15 @@ import torch
 
 from src.core.contracts import validate_evaluation_record
 from src.metrics.pointwise import compute_pointwise_metrics
+from src.models.base_model import BaseModel
 
 
 class Evaluator:
-    def __init__(self, task: Any, device: str = "cpu") -> None:
-        self.task = task
+    def __init__(self, device: str = "cpu") -> None:
         self.device = device
 
-    def evaluate(self, model: torch.nn.Module, data_loader: Any) -> dict[str, Any]:
+    def evaluate(self, model: BaseModel, data_loader: Any) -> dict[str, Any]:
+        model.to(self.device)
         model.eval()
         entity_score_sums: dict[str, torch.Tensor] = {}
         entity_score_counts: dict[str, torch.Tensor] = {}
@@ -27,7 +27,7 @@ class Evaluator:
                     key: value.to(self.device) if isinstance(value, torch.Tensor) else value
                     for key, value in batch.items()
                 }
-                step_output = self.task.test_step(model, batch_on_device)
+                step_output = model.test_step(batch_on_device)
                 point_scores = step_output["outputs"]["point_scores"].detach().cpu()
 
                 for batch_index, meta in enumerate(batch["meta"]):
@@ -89,4 +89,3 @@ class Evaluator:
             "metrics": metrics,
             "records": evaluation_records,
         }
-

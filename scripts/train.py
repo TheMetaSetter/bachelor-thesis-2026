@@ -10,24 +10,37 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.config import load_experiment_config
-from src.core.registry import build_model, build_task, register_dataset, register_model, register_task
+from src.core.registry import build_dataset, build_model, register_dataset, register_model
 from src.core.seed import seed_everything
-from src.data.loaders import build_smd_dataloaders
+from src.data.loaders import build_smd_dataset_bundle
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
 from src.engine.trainer import Trainer
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 from src.models.thesis_multitask import ThesisMultitaskModel
-from src.tasks.multitask_tsad_task import MultitaskTSADTask
-from src.tasks.reconstruction_task import ReconstructionTask
 
 
-def register_phase_one_components() -> None:
-    register_dataset("smd", build_smd_dataloaders)
+def register_runtime_components() -> None:
+    register_dataset("smd", build_smd_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
-    register_task("reconstruction", ReconstructionTask)
-    register_task("multitask_tsad", MultitaskTSADTask)
+
+
+def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Module:
+    model_name = experiment_config["model"]["model_name"]
+    model_kwargs = {
+        key: value
+        for key, value in experiment_config["model"].items()
+        if key != "model_name"
+    }
+    model_kwargs.update(
+        {
+            key: value
+            for key, value in experiment_config["task"].items()
+            if key != "task_name"
+        }
+    )
+    return build_model(model_name, **model_kwargs)
 
 
 def main() -> None:
@@ -40,19 +53,10 @@ def main() -> None:
 
     experiment_config = load_experiment_config(args.experiment_config)
     seed_everything(int(experiment_config["seed"]))
-    register_phase_one_components()
+    register_runtime_components()
 
-    data_bundle = build_smd_dataloaders(experiment_config["data"])
-    model = build_model(experiment_config["model"]["model_name"], **{
-        key: value
-        for key, value in experiment_config["model"].items()
-        if key != "model_name"
-    })
-    task = build_task(experiment_config["task"]["task_name"], **{
-        key: value
-        for key, value in experiment_config["task"].items()
-        if key != "task_name"
-    })
+    data_bundle = build_dataset(experiment_config["data"]["dataset_name"], experiment_config["data"])
+    model = build_model_from_experiment_config(experiment_config)
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=float(experiment_config["optimizer"]["learning_rate"]),
@@ -62,7 +66,6 @@ def main() -> None:
     experiment_logger = ExperimentLogger(experiment_config["output_dir"])
     trainer = Trainer(
         model=model,
-        task=task,
         optimizer=optimizer,
         checkpoint_manager=checkpoint_manager,
         experiment_logger=experiment_logger,

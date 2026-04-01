@@ -11,19 +11,36 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.config import load_experiment_config
-from src.core.registry import build_model, build_task, register_dataset, register_model, register_task
-from src.data.loaders import build_smd_dataloaders
+from src.core.registry import build_dataset, build_model, register_dataset, register_model
+from src.data.loaders import build_smd_dataset_bundle
 from src.data.scalers import SequenceStandardScaler
 from src.engine.checkpoint import CheckpointManager
 from src.engine.evaluator import Evaluator
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
-from src.tasks.reconstruction_task import ReconstructionTask
+from src.models.thesis_multitask import ThesisMultitaskModel
 
 
-def register_phase_one_components() -> None:
-    register_dataset("smd", build_smd_dataloaders)
+def register_runtime_components() -> None:
+    register_dataset("smd", build_smd_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
-    register_task("reconstruction", ReconstructionTask)
+    register_model("thesis_multitask", ThesisMultitaskModel)
+
+
+def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Module:
+    model_name = experiment_config["model"]["model_name"]
+    model_kwargs = {
+        key: value
+        for key, value in experiment_config["model"].items()
+        if key != "model_name"
+    }
+    model_kwargs.update(
+        {
+            key: value
+            for key, value in experiment_config["task"].items()
+            if key != "task_name"
+        }
+    )
+    return build_model(model_name, **model_kwargs)
 
 
 def main() -> None:
@@ -39,21 +56,16 @@ def main() -> None:
     args = parser.parse_args()
 
     experiment_config = load_experiment_config(args.experiment_config)
-    register_phase_one_components()
+    register_runtime_components()
 
-    data_bundle = build_smd_dataloaders(experiment_config["data"])
+    data_bundle = build_dataset(experiment_config["data"]["dataset_name"], experiment_config["data"])
     scaler = SequenceStandardScaler()
-    model = build_model(experiment_config["model"]["model_name"], **{
-        key: value
-        for key, value in experiment_config["model"].items()
-        if key != "model_name"
-    })
+    model = build_model_from_experiment_config(experiment_config)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
     loaded_checkpoint = checkpoint_manager.load_checkpoint(args.checkpoint_path, model, optimizer)
     scaler.load_state_dict(loaded_checkpoint["scaler_state_dict"])
-    task = build_task(experiment_config["task"]["task_name"])
-    evaluator = Evaluator(task=task, device=experiment_config["device"])
+    evaluator = Evaluator(device=experiment_config["device"])
     evaluation_outputs = evaluator.evaluate(model, data_bundle["loaders"]["test"])
 
     output_dir = Path(experiment_config["output_dir"])
@@ -76,4 +88,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

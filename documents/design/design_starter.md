@@ -1,26 +1,25 @@
 **Summary:**
-The simplest reusable framework is built around a **small number of fixed contracts** and **composition instead of deep inheritance**. For your thesis, the most important contract is still: every encoder must expose a thesis-facing hidden representation
+The simplest reusable framework is built around a **small number of fixed contracts** and **composition instead of deep inheritance**. For your thesis, the most important contract is still: every model must expose a thesis-facing hidden representation
 
-[
+$$
 H \in \mathbb{R}^{B \times L \times d_h},
-]
+$$
 
-so datasets, models, heads, and training logic stay decoupled 
+so datasets, models, and the trainer stay decoupled while each model file stays self-contained.
 
 **Reasoning:**
 Let us start from the real design question. What usually makes a research codebase impossible to reuse?
 
 It is usually not “lack of abstraction.” It is the wrong abstraction. A codebase becomes fragile when dataset-specific logic leaks into models, model-specific assumptions leak into the trainer, and every experiment invents a new batch format. So the goal is not “many abstractions.” The goal is a **thin waist**: a very small number of interfaces that everything agrees on.
 
-For your case, I would design the framework around five stable layers:
+For your case, I would design the framework around four stable runtime layers:
 
 1. **Configuration layer**
 2. **Data layer**
 3. **Model layer**
-4. **Task layer**
-5. **Engine layer**
+4. **Engine layer**
 
-The key idea is this: datasets should only care about producing standardized batches, models should only care about consuming those batches and producing standardized outputs, and tasks should decide how losses and metrics are computed.
+The key idea is this: datasets should only care about producing standardized batches, models should consume those batches and return standardized outputs, and the engine should only decide how to loop, checkpoint, and log. Model-specific losses, scoring, and stage behavior should remain inside the corresponding model file. That is required by `codebase_preferences.md` and it removes the phase-1 to phase-3 split debt identified in the research log.
 
 So the framework’s central question becomes:
 
@@ -32,11 +31,11 @@ A batch should always look like this conceptually:
 
 ```python
 batch = {
-    "x": Tensor[B, L, D],          # input window
-    "y": Optional[Tensor],         # labels if available
-    "mask": Optional[Tensor],      # missing-value mask if needed
-    "timestamps": Optional[Tensor],
-    "meta": dict,                  # dataset-specific metadata
+    "x": Tensor[B, L, D],                  # input window
+    "point_labels": Optional[Tensor[B, L]],
+    "mask": Optional[Tensor[B, L, D]],
+    "timestamps": Optional[Tensor[B, L]],
+    "meta": list[dict],                    # dataset-specific metadata
 }
 ```
 
@@ -48,7 +47,8 @@ outputs = {
     "pooled": Optional[Tensor[B, H]],
     "recon": Optional[Tensor[B, L, D]],
     "logits": Optional[Tensor],
-    "scores": Optional[Tensor],
+    "point_scores": Optional[Tensor[B, L]],
+    "window_scores": Optional[Tensor[B]],
     "aux": dict,                   # prototype assignments, uncertainty, etc.
 }
 ```
@@ -72,22 +72,19 @@ bachelor-thesis-2026/
 │   │   ├── msl.yaml
 │   │   └── custom.yaml
 │   ├── model/
-│   │   ├── lstm_ae.yaml
-│   │   ├── moment_adapter.yaml
-│   │   └── thesis_model.yaml
-│   ├── task/
-│   │   ├── reconstruction.yaml
-│   │   ├── multitask_tsad.yaml
+│   │   ├── reconstruction_mlp_ae.yaml
+│   │   ├── thesis_multitask.yaml
 │   │   └── online_adaptation.yaml
 │   └── experiment/
-│       ├── smd_baseline.yaml
-│       └── smd_thesis_v1.yaml
+│       ├── smd_reconstruction.yaml
+│       ├── smd_multitask.yaml
+│       └── smd_online_adaptation.yaml
 │
 ├── src/
 │   ├── core/
 │   │   ├── registry.py
 │   │   ├── config.py
-│   │   ├── typing.py
+│   │   ├── contracts.py
 │   │   ├── seed.py
 │   │   └── paths.py
 │   │
@@ -103,36 +100,10 @@ bachelor-thesis-2026/
 │   │       └── custom_csv.py
 │   │
 │   ├── models/
-│   │   ├── base_encoder.py
 │   │   ├── base_model.py
-│   │   ├── encoders/
-│   │   │   ├── lstm.py
-│   │   │   ├── moment_adapter.py
-│   │   │   └── timesnet_adapter.py
-│   │   ├── modules/
-│   │   │   ├── continuous_prototypes.py
-│   │   │   ├── discrete_prototypes.py
-│   │   │   ├── fusion.py
-│   │   │   └── projector.py
-│   │   ├── heads/
-│   │   │   ├── reconstruction_head.py
-│   │   │   ├── classification_head.py
-│   │   │   └── score_head.py
-│   │   └── architectures/
-│   │       ├── recon_baseline.py
-│   │       └── thesis_multitask.py
-│   │
-│   ├── tasks/
-│   │   ├── base_task.py
-│   │   ├── reconstruction_task.py
-│   │   ├── multitask_tsad_task.py
-│   │   └── online_adaptation_task.py
-│   │
-│   ├── losses/
-│   │   ├── reconstruction.py
-│   │   ├── contrastive.py
-│   │   ├── classification.py
-│   │   └── prototype.py
+│   │   ├── reconstruction_mlp_ae.py
+│   │   ├── thesis_multitask.py
+│   │   └── online_adaptation.py
 │   │
 │   ├── metrics/
 │   │   ├── pointwise.py
@@ -153,16 +124,26 @@ bachelor-thesis-2026/
 ├── scripts/
 │   ├── train.py
 │   ├── evaluate.py
-│   └── predict.py
+│   ├── visualize_synthetic_anomalies.py
+│   ├── run_ablation.py
+│   └── export_results.py
 │
 └── tests/
-    ├── test_dataset_shapes.py
+    ├── test_smd_dataset_shapes.py
+    ├── test_windowizer.py
     ├── test_model_shapes.py
     ├── test_one_train_step.py
+    ├── test_checkpoint_roundtrip.py
+    ├── test_synthetic_anomaly_injection.py
+    ├── test_multitask_shapes.py
+    ├── test_one_multitask_train_step.py
+    ├── test_synthetic_anomaly_visualization.py
+    ├── test_online_adaptation_step.py
+    ├── test_online_state_roundtrip.py
     └── test_registry.py
 ```
 
-This structure is simple because each folder has one job. It is reusable because new datasets and new models only require adding files inside `datasets/` or `encoders/` or `architectures/`, without changing the trainer.
+This structure is simple because each folder has one job. It is reusable because a new dataset still means one parser file and one config, while a new model normally means one new file under `src/models/` and one config, without changing the trainer.
 
 Now let us make the contracts more precise.
 
@@ -171,74 +152,54 @@ Your **data layer** should be split into two different concerns:
 * **dataset parsing**
 * **window construction**
 
-This separation matters a lot. SMD, MSL, SWaT, and other datasets differ in raw storage format, split conventions, and label formats. But the operation “turn a long multivariate series into windows of length 100” is common. So do not embed windowing inside each dataset parser.
+This separation matters a lot. SMD, MSL, SWaT, and other datasets differ in raw storage format, split conventions, and label formats. But the operation “turn a long multivariate series into windows of length $100$” is common. So do not embed windowing inside each dataset parser.
 
 A good design is:
 
 * `datasets/smd.py` reads raw SMD files and returns full sequences
-* `window.py` converts full sequences into windows with size `L=100`, stride `s`
+* `window.py` converts full sequences into windows with size $L=100$, stride $s$
 * `scalers.py` normalizes data
 * `loaders.py` builds PyTorch `Dataset` and `DataLoader`
 
 That way, when you add a new dataset, you only rewrite the raw parser, not the whole pipeline.
 
-Your **model layer** should also be split into three concerns:
+Your **model layer** should stay self-contained at the file level.
 
-* **encoder**
-* **intermediate modules**
-* **task heads**
+Inside one model file, it is still fine to organize the code into three conceptual sections:
+
+* **encoder block**
+* **prototype and fusion block**
+* **output heads and stage methods**
 
 This is exactly what your thesis needs. For example:
 
-[
+$$
 X \xrightarrow{\text{encoder}} H
-]
+$$
 
 then
 
-[
+$$
 H \xrightarrow{\text{prototype modules}} H^{(c)}, H^{(d)}
-]
+$$
 
 then
 
-[
+$$
 (H^{(c)}, H^{(d)}) \xrightarrow{\text{fusion}} H_{\text{rec}}, H_{\text{cls}}
-]
+$$
 
 then
 
-[
+$$
 H_{\text{rec}} \xrightarrow{\text{reconstruction head}} \hat X,
 \qquad
 H_{\text{cls}} \xrightarrow{\text{classification head}} \hat y.
-]
+$$
 
-This decomposition is important because it lets you replace the encoder without rewriting the prototype logic, and lets you replace the prototype logic without rewriting the trainer. It is also consistent with the earlier decision that the encoder output interface must stay fixed across backbones 
+This decomposition is important because it lets you replace the encoder logic without rewriting the trainer, but it does not force you to fragment one thesis model across `modules/`, `heads/`, `losses/`, and `tasks/` files. In this repository, readability comes first, so the continuous prototypes, discrete prototypes, fusion, scoring, and loss computation that belong to one model should be read top-to-bottom in that same model file.
 
 Now let us write the minimal base classes. Keep them small.
-
-```python
-# src/models/base_encoder.py
-from abc import ABC, abstractmethod
-import torch
-import torch.nn as nn
-
-class BaseEncoder(nn.Module, ABC):
-    @abstractmethod
-    def forward(self, x: torch.Tensor) -> dict:
-        """
-        Args:
-            x: Tensor[B, L, D]
-        Returns:
-            {
-                "hidden": Tensor[B, L, H],
-                "pooled": Optional[Tensor[B, H]],
-                "aux": dict,
-            }
-        """
-        raise NotImplementedError
-```
 
 ```python
 # src/models/base_model.py
@@ -255,27 +216,17 @@ class BaseModel(nn.Module, ABC):
             standardized model output dict
         """
         raise NotImplementedError
-```
 
-```python
-# src/tasks/base_task.py
-from abc import ABC, abstractmethod
-
-class BaseTask(ABC):
     @abstractmethod
-    def training_step(self, model, batch: dict) -> dict:
-        """
-        Returns:
-            {
-                "loss": tensor,
-                "log": dict,
-                "outputs": dict,
-            }
-        """
+    def training_step(self, batch: dict) -> dict:
         raise NotImplementedError
 
     @abstractmethod
-    def validation_step(self, model, batch: dict) -> dict:
+    def validation_step(self, batch: dict) -> dict:
+        raise NotImplementedError
+
+    @abstractmethod
+    def test_step(self, batch: dict) -> dict:
         raise NotImplementedError
 ```
 
@@ -287,7 +238,6 @@ Now the **registry**. Since you want many datasets and many models, you do need 
 # src/core/registry.py
 DATASETS = {}
 MODELS = {}
-TASKS = {}
 
 def register_dataset(name):
     def wrapper(cls):
@@ -300,15 +250,9 @@ def register_model(name):
         MODELS[name] = cls
         return cls
     return wrapper
-
-def register_task(name):
-    def wrapper(cls):
-        TASKS[name] = cls
-        return cls
-    return wrapper
 ```
 
-Then each dataset or model can register itself. This gives you flexibility without adding a heavy plugin system.
+Then each dataset or model can register itself. This gives you flexibility without adding a heavy plugin system. It also keeps `scripts/train.py` and `scripts/evaluate.py` on one registry-based construction path instead of mixing registered and direct builder calls.
 
 For **configuration**, I would not start with Hydra unless you already know you need it. It is powerful, but it can also add conceptual overhead. For a bachelor thesis framework, I would start with plain YAML + a small config loader.
 
@@ -328,48 +272,69 @@ data:
 
 model:
   name: thesis_multitask
-  encoder:
-    name: moment_adapter
-    hidden_dim: 256
+  hidden_dim: 256
   continuous_prototypes:
     num_prototypes: 32
   discrete_prototypes:
     codebook_size: 64
-    temperature: 0.5
-
-task:
-  name: multitask_tsad
+    init_temperature: 2.0
+    final_temperature: 0.5
+    anneal_fraction: 0.4
+  fusion:
+    alpha_init: 0.5
+    beta_init: 0.5
+    learnable: true
   loss_weights:
     recon: 1.0
     cls: 1.0
-    proto: 0.1
+    div: 0.05
+    var: 1.0
+    cov: 0.1
+    use: 0.01
+    gate: 0.001
+  synthetic_anomaly:
+    enabled: true
+    family: carla_subsequence
 
 train:
   epochs: 50
+  warmup_epochs: 5
   optimizer: adamw
-  lr: 0.001
+  lr_encoder: 0.0001
+  lr_new_modules: 0.001
   weight_decay: 0.0001
+  grad_clip_norm: 1.0
 
 eval:
   metrics: [f1, auc, pr_auc]
 ```
 
-That is enough for reuse. A new dataset should mean a new `data` config. A new model should mean a new `model` config. A new objective should mean a new `task` config.
+For the current offline thesis model, the default prediction rule should also be fixed in the design docs. The real task heads stay on the two fused representations only:
 
-Now, because your thesis has both **offline training** and **online adaptation**, I strongly recommend that you represent these as different **tasks**, not as one huge model. That is cleaner.
+$$
+H_{\text{rec}} = \beta \hat H^{(d)} + (1-\beta)\hat H^{(c)},
+\qquad
+H_{\text{cls}} = \alpha \hat H^{(d)} + (1-\alpha)\hat H^{(c)}.
+$$
+
+The reconstruction head consumes only $H_{\text{rec}}$, and the anomaly-type classification head consumes only $H_{\text{cls}}$. By default, the architecture does not add a branch-local decoder on $\hat H^{(c)}$ or a branch-local classifier on $\hat H^{(d)}$. Pre-fusion regularizers still belong to the same model file, but they should operate on $\hat H^{(c)}$, $\hat H^{(d)}$, and the discrete assignments before fusion rather than creating separate prediction paths.
+
+That is enough for reuse. A new dataset should mean a new `data` config. A new model or training stage should mean a new `model` config or `experiment` config, not a second file that steals its loss logic away from the model.
+
+Now, because your thesis has both **offline training** and **online adaptation**, I strongly recommend that you represent these as different **self-contained model files**, not as one fragmented model plus several task files. That is cleaner for this repository.
 
 So for example:
 
-* `reconstruction_task.py`
-  only reconstruction loss
+* `reconstruction_mlp_ae.py`
+  reconstruction architecture, scoring, and reconstruction-stage step methods
 
-* `multitask_tsad_task.py`
-  reconstruction + anomaly-type classification + prototype regularization
+* `thesis_multitask.py`
+  encoder, continuous and discrete prototype logic, fused reconstruction and classification heads, CARLA-aligned synthetic anomaly training path, and the full offline multitask objective
 
-* `online_adaptation_task.py`
-  frozen reference encoder + online encoder + projector + contrastive alignment
+* `online_adaptation.py`
+  frozen reference encoder, online encoder, near-identity residual projector, optional Fisher- or NGD-style preconditioning for the small adapted subset, and online alignment losses
 
-This is a very important design choice. Why? Because a task defines how the same model is trained, not what the model is. If you encode all training logic inside the model class, reuse becomes difficult. The same thesis architecture might be trained in different stages with different losses. That belongs in `tasks/`, not in the architecture file.
+This is a very important design choice. Why? Because `codebase_preferences.md` is explicit: all logic related to one model, including inference and training logic, should live in one readable file. In this repository, pushing losses and stage behavior into separate `tasks/` or `losses/` files recreates the exact debt called out in problem 1.
 
 Now the **engine**. Keep the trainer extremely plain. Do not hide too much magic.
 
@@ -379,7 +344,7 @@ Conceptually:
 for epoch in range(num_epochs):
     model.train()
     for batch in train_loader:
-        step_out = task.training_step(model, batch)
+        step_out = model.training_step(batch)
         loss = step_out["loss"]
         loss.backward()
         optimizer.step()
@@ -387,7 +352,7 @@ for epoch in range(num_epochs):
 
     model.eval()
     for batch in val_loader:
-        task.validation_step(model, batch)
+        model.validation_step(batch)
 ```
 
 That is enough. You do not need a deep framework inside your framework.
@@ -458,12 +423,14 @@ class ThesisMultiTaskModel(BaseModel):
         fused = self.fusion(h_cont, h_disc)
         h_rec = fused["h_rec"]
         h_cls = fused["h_cls"]
+        pooled_cls = h_cls.mean(dim=1)
 
         recon = self.recon_head(h_rec)
-        logits = self.cls_head(h_cls)
+        logits = self.cls_head(pooled_cls)
 
         return {
             "hidden": h,
+            "pooled": pooled_cls,
             "recon": recon,
             "logits": logits,
             "aux": {
@@ -475,6 +442,8 @@ class ThesisMultiTaskModel(BaseModel):
 ```
 
 This design is simple, but it already supports your whole thesis.
+
+The important rule in that sketch is where supervision lives. The default thesis model should predict only from the fused task-specialized states `h_rec` and `h_cls`. The branch outputs `h_cont` and `h_disc` remain observable in `aux` for regularization, monitoring, and ablations, but they are not separate default prediction pathways.
 
 Now, since your professor specifically wants reusability across datasets, you should also standardize **dataset metadata**. Not every dataset has the same properties. Some are fully labeled, some are weakly labeled, some are univariate, some are multivariate, some have train/test-only splits, some have validation splits.
 
@@ -490,7 +459,7 @@ dataset_info = {
 }
 ```
 
-This helps the task and evaluator decide what is legal.
+This helps the model and evaluator decide what is legal.
 
 Now the practical question: what should you code first?
 
@@ -500,9 +469,8 @@ First, implement the framework skeleton:
 
 * `registry.py`
 * `config.py`
-* `base_encoder.py`
+* `contracts.py`
 * `base_model.py`
-* `base_task.py`
 * `trainer.py`
 
 Second, implement one dataset only:
@@ -513,20 +481,16 @@ Second, implement one dataset only:
 
 Third, implement one trivial baseline:
 
-* `LSTMEncoder`
-* `ReconBaselineModel`
-* `ReconstructionTask`
+* `reconstruction_mlp_ae.py`
 
 Fourth, make sure one experiment runs end-to-end.
 
 Fifth, add your thesis model gradually:
 
-* continuous prototypes
-* discrete prototypes
-* fusion
-* classification head
-* multitask task
-* online adaptation task
+* `thesis_multitask.py` with internal continuous prototypes, discrete prototypes, fusion, and classification
+* CARLA-aligned synthetic anomaly injection
+* anomaly-visualization export
+* `online_adaptation.py` only after the earlier debt is closed
 
 That order is important. It is the same “minimal vertical slice first” principle from the earlier conversation, and it is exactly the right way to avoid chaos 
 
@@ -534,7 +498,7 @@ There are also a few things I would explicitly avoid.
 
 Do not create abstract base classes for everything.
 Do not let datasets return different batch formats.
-Do not put loss computation inside every model class.
+Do not split one model's losses across separate `tasks/`, `losses/`, and helper files.
 Do not make the trainer aware of anomaly-specific logic.
 Do not mix raw-data parsing with window generation.
 Do not make your framework dependent on one encoder family.
@@ -545,17 +509,17 @@ Finally, for your thesis, I would define three non-negotiable contracts:
 
 First, the **batch contract**:
 
-[
+$$
 x \in \mathbb{R}^{B \times L \times D}
-]
+$$
 
 Second, the **encoder contract**:
 
-[
+$$
 H \in \mathbb{R}^{B \times L \times d_h}
-]
+$$
 
-Third, the **task output contract**:
+Third, the **step output contract**:
 
 every training step returns at least a total loss and a log dictionary.
 
@@ -566,21 +530,21 @@ A good consistency test is this:
 
 * Can I add a new dataset without touching the trainer?
 * Can I add a new encoder without touching the dataset code?
-* Can I change from reconstruction-only training to multitask training without rewriting the model?
+* Can I switch from `reconstruction_mlp_ae.py` to `thesis_multitask.py` without rewriting the trainer?
 * Can I keep the same downstream prototype modules even if I swap MOMENT for another encoder?
 
 If the answer is yes, then the framework is genuinely reusable. If the answer is no, then some boundary is in the wrong place.
 
 ## Frozen interface contracts
 
-Before implementing many modules, freeze the native interfaces that every dataset, stream wrapper, windowizer, model, task, and evaluator must obey.
+Before implementing many modules, freeze the native interfaces that every dataset, stream wrapper, windowizer, model, and evaluator must obey.
 
 The purpose of this section is to remove ambiguity early. The question is not "what can this one module accept?" The question is "what must remain unchanged if I swap the dataset or the model?"
 
 ### Global invariants
 
-- All native thesis tensors are **time-major**. A full sequence is `[T, D]`, a window is `[L, D]`, and a batch of windows is `[B, L, D]`.
-- No native module in `src/` should use `[D, T]` as its public format. If a reference codebase uses `[D, T]`, the conversion must happen inside an adapter at the boundary.
+- All native thesis tensors are **time-major**. A full sequence is $[T, D]$, a window is $[L, D]$, and a batch of windows is $[B, L, D]$.
+- No native module in `src/` should use $[D, T]$ as its public format. If a reference codebase uses $[D, T]$, the conversion must happen inside an adapter at the boundary.
 - Machine or entity boundaries must always be preserved in metadata, even if some storage format is concatenated on disk.
 - Point labels must always align one-to-one with timesteps. If labels are missing for a split, the label field is `None`, not a shape-changing substitute.
 - Optional fields may be `None`, but their key names must not change across datasets.
@@ -607,7 +571,7 @@ raw_sequence = {
 
 Rules:
 
-- `x` is the canonical raw multivariate sequence and is always `[time, channel]`.
+- `x` is the canonical raw multivariate sequence and is always `$[time, channel]$`.
 - `point_labels` stores timestep-level ground truth when available.
 - `mask` indicates missing or invalid observations at the same resolution as `x`.
 - `timestamps` is optional because some benchmark datasets are indexed by order only.
@@ -668,7 +632,7 @@ Rules:
 
 - One native window is always `X in R^{L x D}`.
 - Windowing is responsible only for slicing the sequence and copying aligned labels, masks, timestamps, and metadata.
-- Task-specific targets such as anomaly-type classes may be added later by task builders, but the base window contract does not change.
+- Stage-specific targets such as anomaly-type classes may be added later by model preparation code, but the base window contract does not change.
 
 ### 4. Model input and output format
 
@@ -700,10 +664,10 @@ outputs = {
 
 Rules:
 
-- `hidden` is non-negotiable. Every encoder or model adapter must expose a thesis-facing representation of shape `[B, L, H]`.
+- `hidden` is non-negotiable. Every encoder or model adapter must expose a thesis-facing representation of shape $[B, L, H]$.
 - `pooled` is optional because some backbones naturally expose a sequence summary and some do not.
 - `recon` is optional because not every model is reconstruction-based.
-- `logits` is optional because some tasks are classification-style and some are score-only.
+- `logits` is optional because some models are classification-style and some are score-only.
 - `window_scores` and `point_scores` are separated explicitly so the codebase never relies on an ambiguous generic `scores` tensor.
 - `aux` is where prototype assignments, uncertainty statistics, attention maps, and other model-specific artifacts belong.
 
@@ -740,8 +704,8 @@ Rules:
 
 - Dataset modules may change how raw files are read, but they must still emit `raw_sequence` with the same keys and tensor orientation.
 - Stream wrappers may change how they iterate, but they must still emit `stream_point` and `window`.
-- Windowizers may change stride, padding policy, or overlap, but they must still emit `window` with `[L, D]`.
-- Encoders may change internally, but they must still emit `hidden` with `[B, L, H]`.
+- Windowizers may change stride, padding policy, or overlap, but they must still emit `window` with `$[L, D]$`.
+- Encoders may change internally, but they must still emit `hidden` with `$[B, L, H]$`.
 - Models may add auxiliary outputs, but they must not remove or rename the fixed keys in `outputs`.
 - Evaluators may compute different metrics, but they must still reduce predictions into the same `evaluation_record` schema.
 

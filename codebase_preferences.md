@@ -81,3 +81,15 @@ This is important so I will repeat 3 times.
     - Allow user to test injecting synthetic anomalies by injecting anomalies in one batch of sample in one specific dataset. Then, visualize the injected samples clearly to allow user easily examine the quality of injection.
     - Test the functions or methods within classes that are used to initialize configurations from definition files, such as `.yaml` files. Refer to format under `bsc-thesis-ref-codebases/CARLA-main/configs`. These are just examples; you do not need to do the exact same thing.
     - Design and implement simple test cases using Pytest
+
+---
+
+## 8. Ablation study friendliness
+
+- Design the codebase such that components (e.g., modules, loss terms, preprocessing steps, augmentations) can be easily turned on or turned off without modifying core logic.
+
+- Each component should be controllable via clear and explicit configuration (e.g., `.yaml`), avoiding hidden dependencies or implicit coupling.
+
+- Avoid hard-coded interactions between components; instead, use modular design so that removing or disabling one component does not break the pipeline.
+
+- Ensure that enabling or disabling components results in minimal changes in codepaths, so that ablation experiments are easy to run, compare, and reproduce.

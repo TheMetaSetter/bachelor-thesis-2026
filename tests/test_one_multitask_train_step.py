@@ -3,7 +3,6 @@ from __future__ import annotations
 import torch
 
 from src.models.thesis_multitask import ThesisMultitaskModel
-from src.tasks.multitask_tsad_task import MultitaskTSADTask
 
 
 def test_one_multitask_forward_and_backward_step_runs() -> None:
@@ -17,14 +16,18 @@ def test_one_multitask_forward_and_backward_step_runs() -> None:
         continuous_num_prototypes=4,
         discrete_enabled=True,
         discrete_codebook_size=8,
-        fusion_mode="average",
-    )
-    task = MultitaskTSADTask(
-        reconstruction_loss_weight=1.0,
-        classification_loss_weight=1.0,
-        prototype_loss_weight=0.01,
+        gumbel_temperature=1.5,
+        alpha_logit_init=0.0,
+        beta_logit_init=0.0,
+        lambda_cls=1.0,
+        lambda_div=0.01,
+        lambda_var=0.01,
+        lambda_cov=0.01,
+        lambda_use=0.01,
+        lambda_gate=0.01,
         use_synthetic_augmentation=True,
         anomaly_probability=1.0,
+        min_segment_fraction=0.1,
         max_segment_fraction=0.2,
         spike_scale=3.0,
     )
@@ -37,7 +40,7 @@ def test_one_multitask_forward_and_backward_step_runs() -> None:
         "meta": [{"entity_id": "machine-a"}, {"entity_id": "machine-b"}],
     }
 
-    step_output = task.training_step(model, batch)
+    step_output = model.training_step(batch)
     optimizer.zero_grad()
     step_output["loss"].backward()
     optimizer.step()
@@ -45,3 +48,5 @@ def test_one_multitask_forward_and_backward_step_runs() -> None:
     assert step_output["loss"].item() >= 0.0
     assert step_output["loss_terms"]["classification_loss"].item() >= 0.0
     assert step_output["batch"]["classification_labels"].sum().item() == 2
+    assert model.alpha_logit.grad is not None
+    assert model.beta_logit.grad is not None

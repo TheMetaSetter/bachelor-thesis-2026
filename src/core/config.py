@@ -78,10 +78,19 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "dropout": model_config.get("dropout"),
     }
     if task_config.get("task_name") == "multitask_tsad":
-        float_fields["reconstruction_loss_weight"] = task_config.get("reconstruction_loss_weight")
-        float_fields["classification_loss_weight"] = task_config.get("classification_loss_weight")
-        float_fields["prototype_loss_weight"] = task_config.get("prototype_loss_weight")
+        float_fields["gumbel_temperature"] = model_config.get("gumbel_temperature")
+        float_fields["alpha_logit_init"] = model_config.get("alpha_logit_init")
+        float_fields["beta_logit_init"] = model_config.get("beta_logit_init")
+        float_fields["lambda_cls"] = model_config.get("lambda_cls")
+        float_fields["lambda_div"] = model_config.get("lambda_div")
+        float_fields["lambda_var"] = model_config.get("lambda_var")
+        float_fields["lambda_cov"] = model_config.get("lambda_cov")
+        float_fields["lambda_use"] = model_config.get("lambda_use")
+        float_fields["lambda_gate"] = model_config.get("lambda_gate")
+        float_fields["variance_floor_gamma"] = model_config.get("variance_floor_gamma")
+        float_fields["gate_barrier_margin"] = model_config.get("gate_barrier_margin")
         float_fields["anomaly_probability"] = task_config.get("anomaly_probability")
+        float_fields["min_segment_fraction"] = task_config.get("min_segment_fraction")
         float_fields["max_segment_fraction"] = task_config.get("max_segment_fraction")
         float_fields["spike_scale"] = task_config.get("spike_scale")
     for field_name, field_value in float_fields.items():
@@ -93,10 +102,18 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     if data_config["stride"] > data_config["window_size"]:
         raise ValueError("stride must not exceed window_size")
     if task_config.get("task_name") == "multitask_tsad":
+        if float(model_config["gumbel_temperature"]) <= 0.0:
+            raise ValueError("gumbel_temperature must be positive")
+        if not 0.0 <= float(model_config["gate_barrier_margin"]) < 0.5:
+            raise ValueError("gate_barrier_margin must be in [0, 0.5)")
         if not 0.0 <= float(task_config["anomaly_probability"]) <= 1.0:
             raise ValueError("anomaly_probability must be between 0 and 1")
+        if not 0.0 < float(task_config["min_segment_fraction"]) <= 1.0:
+            raise ValueError("min_segment_fraction must be between 0 and 1")
         if not 0.0 < float(task_config["max_segment_fraction"]) <= 1.0:
             raise ValueError("max_segment_fraction must be between 0 and 1")
+        if float(task_config["min_segment_fraction"]) > float(task_config["max_segment_fraction"]):
+            raise ValueError("min_segment_fraction must not exceed max_segment_fraction")
 
     optional_window_limit_fields = [
         "max_train_windows",
