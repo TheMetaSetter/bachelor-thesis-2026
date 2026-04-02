@@ -1,4 +1,10 @@
 from __future__ import annotations
+"""Epoch-based training loop shared by the offline models.
+
+The engine stays intentionally small. A new reader should notice that this file
+does not know model-specific losses; it only moves batches, calls stage methods,
+logs metrics, and saves checkpoints.
+"""
 
 from typing import Any
 
@@ -26,6 +32,8 @@ class Trainer:
         self.metric_history: list[dict[str, Any]] = []
 
     def _move_batch_to_device(self, batch: dict[str, Any]) -> dict[str, Any]:
+        # Keeping device transfer in one helper avoids repeating the same logic
+        # in every script and keeps the model files focused on model behavior.
         return {
             key: value.to(self.device) if isinstance(value, torch.Tensor) else value
             for key, value in batch.items()
@@ -48,6 +56,8 @@ class Trainer:
         config: dict[str, Any],
         epochs: int,
     ) -> dict[str, Any]:
+        # The trainer owns loop mechanics only. The model owns the meaning of a
+        # training step, including optional schedules such as fusion warm-up.
         best_val_loss = float("inf")
         best_checkpoint_path = None
 
@@ -55,6 +65,10 @@ class Trainer:
         for epoch_index in range(epochs):
             # Call model-owned training step
             self.model.train()
+            if hasattr(self.model, "set_epoch_context"):
+                # Some models need epoch context to update schedules without
+                # creating a second training codepath in the engine.
+                self.model.set_epoch_context(epoch_index=epoch_index, total_epochs=epochs)
             
             train_logs: list[dict[str, float]] = []
             for train_batch in train_loader:

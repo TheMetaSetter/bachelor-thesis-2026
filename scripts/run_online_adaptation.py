@@ -1,4 +1,10 @@
 from __future__ import annotations
+"""Entrypoint for the first online adaptation slice.
+
+Read this script after the offline train and evaluate scripts. It follows the
+same config-driven graph, then swaps the offline dataloader and trainer for the
+online stream, batcher, and online loop.
+"""
 
 import argparse
 import json
@@ -31,6 +37,8 @@ def register_runtime_components() -> None:
 
 
 def build_model_from_experiment_config(experiment_config: dict[str, Any]) -> torch.nn.Module:
+    # Only the online-specific task keys are passed into the online model here,
+    # because the online file owns the adaptation boundary directly.
     model_name = experiment_config["model"]["model_name"]
     model_kwargs = {
         key: value
@@ -55,15 +63,9 @@ def build_model_from_experiment_config(experiment_config: dict[str, Any]) -> tor
     return build_model(model_name, **model_kwargs)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--experiment-config",
-        default="configs/experiment/smd_online_adaptation.yaml",
-    )
-    args = parser.parse_args()
-
-    experiment_config = load_experiment_config(args.experiment_config)
+def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[str, Any]:
+    # The first accepted online runtime is intentionally conservative:
+    # build a clean stream, adapt a small parameter group, and checkpoint often.
     seed_everything(int(experiment_config["seed"]))
     register_runtime_components()
 
@@ -75,7 +77,11 @@ def main() -> None:
         weight_decay=float(experiment_config["optimizer"]["weight_decay"]),
     )
     checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
-    experiment_logger = ExperimentLogger(experiment_config["output_dir"])
+    experiment_logger = ExperimentLogger(
+        experiment_config["output_dir"],
+        experiment_config=experiment_config,
+        logging_config=experiment_config.get("logging"),
+    )
 
     online_stream = SMDOnlineStream(
         sequences=data_bundle["scaled_sequences"]["test"],
@@ -98,14 +104,17 @@ def main() -> None:
         experiment_logger=experiment_logger,
         device=experiment_config["device"],
     )
-    online_outputs = online_loop.run(
-        online_batcher=online_batcher,
-        scaler_state=data_bundle["scaler"].state_dict(),
-        config=experiment_config,
-        max_online_steps=int(experiment_config["task"]["max_online_steps"]),
-        log_every_n_steps=int(experiment_config["task"]["log_every_n_steps"]),
-        checkpoint_every_n_steps=int(experiment_config["task"]["checkpoint_every_n_steps"]),
-    )
+    try:
+        online_outputs = online_loop.run(
+            online_batcher=online_batcher,
+            scaler_state=data_bundle["scaler"].state_dict(),
+            config=experiment_config,
+            max_online_steps=int(experiment_config["task"]["max_online_steps"]),
+            log_every_n_steps=int(experiment_config["task"]["log_every_n_steps"]),
+            checkpoint_every_n_steps=int(experiment_config["task"]["checkpoint_every_n_steps"]),
+        )
+    finally:
+        experiment_logger.close()
 
     output_dir = Path(experiment_config["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -114,6 +123,19 @@ def main() -> None:
 
     metrics_path.write_text(json.dumps(online_outputs["metric_history"], indent=2), encoding="utf-8")
     records_path.write_text(json.dumps(online_outputs["records"], indent=2), encoding="utf-8")
+    return online_outputs
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--experiment-config",
+        default="configs/experiment/smd_online_adaptation.yaml",
+    )
+    args = parser.parse_args()
+
+    experiment_config = load_experiment_config(args.experiment_config)
+    run_online_adaptation_experiment(experiment_config)
 
 
 if __name__ == "__main__":

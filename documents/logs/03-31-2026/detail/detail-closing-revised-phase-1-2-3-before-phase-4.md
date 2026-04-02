@@ -399,7 +399,7 @@ $$
 \lambda_{\text{gate}} \mathcal{L}_{\text{gate}}.
 $$
 
-Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
+Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: `src/models/thesis_multitask.py` now uses gate-entropy regularization directly while retaining the legacy margin field only for backward checkpoint compatibility.
 
 - The file should implement each active loss term with the same symbol names in code comments or helper names where reasonable, for example:
   - `_compute_reconstruction_loss`

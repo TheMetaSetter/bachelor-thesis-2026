@@ -10,3 +10,7 @@ optimizer:
   learning_rate: 0.0005
   weight_decay: 0.0
 epochs: 1
+logging:
+  use_wandb: false
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: offline

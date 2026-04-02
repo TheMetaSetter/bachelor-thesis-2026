@@ -17,6 +17,15 @@ def test_load_online_experiment_config_reads_valid_yaml() -> None:
     loaded_config = load_experiment_config("configs/experiment/smd_online_adaptation.yaml")
     assert loaded_config["model"]["model_name"] == "online_adaptation"
     assert loaded_config["task"]["target_param_group"] == "projector_params"
+    assert loaded_config["task"]["reference_checkpoint_path"] == "outputs/smd_multitask/checkpoints/best.pt"
+
+
+def test_load_multitask_ablation_config_applies_overrides() -> None:
+    loaded_config = load_experiment_config("configs/experiment/smd_multitask_continuous_only.yaml")
+    assert loaded_config["model"]["lambda_gate"] == 0.01
+    assert loaded_config["task"]["freeze_fusion_for_epochs"] == 3
+    assert loaded_config["task"]["warmup_alpha_value"] == 0.0
+    assert loaded_config["task"]["warmup_beta_value"] == 0.0
 
 
 def test_load_experiment_config_rejects_missing_required_keys(tmp_path: Path) -> None:
@@ -69,7 +78,7 @@ def test_load_online_experiment_config_rejects_invalid_target_param_group(tmp_pa
         "\n".join(
             [
                 "task_name: online_adaptation",
-                "reference_checkpoint_path: outputs/smd_vertical_slice/checkpoints/best.pt",
+                "reference_checkpoint_path: outputs/smd_multitask/checkpoints/best.pt",
                 "warm_start_projector: false",
                 "target_param_group: invalid_group",
                 "clean_stream_only: true",

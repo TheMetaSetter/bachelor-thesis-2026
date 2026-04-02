@@ -1,5 +1,5 @@
 task_name: online_adaptation
-reference_checkpoint_path: outputs/smd_vertical_slice/checkpoints/best.pt
+reference_checkpoint_path: outputs/smd_multitask/checkpoints/best.pt
 warm_start_projector: false
 target_param_group: projector_params
 clean_stream_only: true

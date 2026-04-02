@@ -1,4 +1,11 @@
 from __future__ import annotations
+"""Runtime contracts shared by the active thesis pipelines.
+
+A new reader should start here when they want to understand what every model,
+loader, and engine loop agrees on. These validators keep the offline baseline,
+the multitask model, and the online adaptation path readable because they all
+reuse the same batch and output vocabulary.
+"""
 
 from typing import Any
 
@@ -32,6 +39,8 @@ def _require_same_shape(
 
 
 def validate_raw_sequence(raw_sequence: dict[str, Any]) -> None:
+    # Raw sequence validation happens before windowing so every later stage can
+    # assume each entity already has the same basic fields and metadata keys.
     _require_keys(raw_sequence, ["x", "point_labels", "mask", "timestamps", "meta"], "raw_sequence")
     _require_tensor_rank(raw_sequence["x"], 2, "raw_sequence['x']")
     if raw_sequence["point_labels"] is not None:
@@ -51,6 +60,8 @@ def validate_raw_sequence(raw_sequence: dict[str, Any]) -> None:
 
 
 def validate_window(window: dict[str, Any]) -> None:
+    # A window is the bridge between full-length entity sequences and the fixed
+    # `[B, L, D]` batch contract used everywhere else in the repository.
     _require_keys(window, ["x", "point_labels", "mask", "timestamps", "meta"], "window")
     _require_tensor_rank(window["x"], 2, "window['x']")
     meta = window["meta"]
@@ -62,6 +73,8 @@ def validate_window(window: dict[str, Any]) -> None:
 
 
 def validate_batch(batch: dict[str, Any]) -> None:
+    # The offline batch contract is intentionally stable so the baseline model,
+    # the multitask model, and the engine code can all share one reading path.
     _require_keys(batch, ["x", "point_labels", "mask", "timestamps", "meta"], "batch")
     _require_tensor_rank(batch["x"], 3, "batch['x']")
     if batch["point_labels"] is not None:
@@ -75,6 +88,8 @@ def validate_batch(batch: dict[str, Any]) -> None:
 
 
 def validate_online_batch(batch: dict[str, Any]) -> None:
+    # The online path extends the offline batch instead of inventing a second
+    # unrelated structure. The only extra fields are the two semantic views.
     validate_batch(batch)
     _require_keys(batch, ["view_a", "view_b"], "online_batch")
     _require_tensor_rank(batch["view_a"], 3, "online_batch['view_a']")
@@ -84,6 +99,8 @@ def validate_online_batch(batch: dict[str, Any]) -> None:
 
 
 def validate_model_outputs(outputs: dict[str, Any]) -> None:
+    # The output contract is kept fixed at the top level so evaluators,
+    # checkpoint consumers, and future readers do not need model-specific branches.
     _require_keys(
         outputs,
         ["hidden", "pooled", "recon", "logits", "point_scores", "window_scores", "aux"],
@@ -101,6 +118,8 @@ def validate_model_outputs(outputs: dict[str, Any]) -> None:
 
 
 def validate_evaluation_record(evaluation_record: dict[str, Any]) -> None:
+    # Evaluation records are stored per entity after overlapping window scores
+    # have been merged back onto the original time axis.
     _require_keys(
         evaluation_record,
         ["entity_id", "point_scores", "point_labels", "num_points"],

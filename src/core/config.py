@@ -1,4 +1,11 @@
 from __future__ import annotations
+"""Config loading and validation for the active experiment families.
+
+This file owns two readability-critical jobs: loading the three referenced YAML
+files that define an experiment, and validating the merged result before the
+runtime is built. A new reader should look here to understand how the baseline,
+multitask, ablation, and online experiments stay configuration-driven.
+"""
 
 from pathlib import Path
 from typing import Any
@@ -20,7 +27,24 @@ def load_yaml_config(config_path: str | Path) -> dict[str, Any]:
     return loaded_config
 
 
+def _merge_config_section(
+    base_config: dict[str, Any],
+    overrides: dict[str, Any] | None,
+) -> dict[str, Any]:
+    # Ablation experiments stay readable by layering a small override mapping on
+    # top of a shared base config instead of duplicating entire YAML files.
+    if overrides is None:
+        return dict(base_config)
+    if not isinstance(overrides, dict):
+        raise ValueError("Config overrides must be mappings")
+    merged_config = dict(base_config)
+    merged_config.update(overrides)
+    return merged_config
+
+
 def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
+    # Validation is intentionally centralized here so the rest of the runtime
+    # can assume a decision-complete experiment config.
     required_sections = [
         "experiment_name",
         "seed",
@@ -83,6 +107,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["dropout"] = model_config.get("dropout")
     if task_config.get("task_name") == "multitask_tsad":
         float_fields["gumbel_temperature"] = model_config.get("gumbel_temperature")
+        float_fields["temperature_start"] = model_config.get("temperature_start")
+        float_fields["temperature_end"] = model_config.get("temperature_end")
+        float_fields["temperature_anneal_fraction"] = model_config.get("temperature_anneal_fraction")
         float_fields["alpha_logit_init"] = model_config.get("alpha_logit_init")
         float_fields["beta_logit_init"] = model_config.get("beta_logit_init")
         float_fields["lambda_cls"] = model_config.get("lambda_cls")
@@ -93,6 +120,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["lambda_gate"] = model_config.get("lambda_gate")
         float_fields["variance_floor_gamma"] = model_config.get("variance_floor_gamma")
         float_fields["gate_barrier_margin"] = model_config.get("gate_barrier_margin")
+        float_fields["warmup_alpha_value"] = task_config.get("warmup_alpha_value")
+        float_fields["warmup_beta_value"] = task_config.get("warmup_beta_value")
         float_fields["anomaly_probability"] = task_config.get("anomaly_probability")
         float_fields["min_segment_fraction"] = task_config.get("min_segment_fraction")
         float_fields["max_segment_fraction"] = task_config.get("max_segment_fraction")
@@ -111,11 +140,12 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
 
     if task_config.get("task_name") == "multitask_tsad":
         boolean_fields = {
-            "enable_diversity_loss": model_config.get("enable_diversity_loss"),
-            "enable_variance_loss": model_config.get("enable_variance_loss"),
-            "enable_covariance_loss": model_config.get("enable_covariance_loss"),
-            "enable_usage_loss": model_config.get("enable_usage_loss"),
-            "enable_gate_loss": model_config.get("enable_gate_loss"),
+            "enable_diversity_loss": model_config.get("enable_diversity_loss", False),
+            "enable_variance_loss": model_config.get("enable_variance_loss", False),
+            "enable_covariance_loss": model_config.get("enable_covariance_loss", False),
+            "enable_usage_loss": model_config.get("enable_usage_loss", False),
+            "enable_gate_loss": model_config.get("enable_gate_loss", False),
+            "use_synthetic_augmentation": task_config.get("use_synthetic_augmentation"),
         }
         for field_name, field_value in boolean_fields.items():
             if not isinstance(field_value, bool):
@@ -137,8 +167,21 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     if task_config.get("task_name") == "multitask_tsad":
         if float(model_config["gumbel_temperature"]) <= 0.0:
             raise ValueError("gumbel_temperature must be positive")
+        if float(model_config["temperature_start"]) <= 0.0:
+            raise ValueError("temperature_start must be positive")
+        if float(model_config["temperature_end"]) <= 0.0:
+            raise ValueError("temperature_end must be positive")
+        if not 0.0 < float(model_config["temperature_anneal_fraction"]) <= 1.0:
+            raise ValueError("temperature_anneal_fraction must be in (0, 1]")
         if not 0.0 <= float(model_config["gate_barrier_margin"]) < 0.5:
             raise ValueError("gate_barrier_margin must be in [0, 0.5)")
+        freeze_fusion_for_epochs = task_config.get("freeze_fusion_for_epochs")
+        if not isinstance(freeze_fusion_for_epochs, int) or freeze_fusion_for_epochs < 0:
+            raise ValueError("freeze_fusion_for_epochs must be a non-negative integer")
+        if not 0.0 <= float(task_config["warmup_alpha_value"]) <= 1.0:
+            raise ValueError("warmup_alpha_value must be between 0 and 1")
+        if not 0.0 <= float(task_config["warmup_beta_value"]) <= 1.0:
+            raise ValueError("warmup_beta_value must be between 0 and 1")
         if not 0.0 <= float(task_config["anomaly_probability"]) <= 1.0:
             raise ValueError("anomaly_probability must be between 0 and 1")
         if not 0.0 < float(task_config["min_segment_fraction"]) <= 1.0:
@@ -190,6 +233,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
 
 
 def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]:
+    # The experiment file names the three source YAMLs, then optional override
+    # sections can narrow that base into a specific ablation or online run.
     experiment_path = Path(experiment_config_path)
     root_config = load_yaml_config(experiment_path)
 
@@ -212,6 +257,19 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
         if not config_reference.is_absolute():
             config_reference = experiment_path.parent.parent / config_reference.relative_to("configs")
         resolved_experiment_config[section_name] = load_yaml_config(config_reference)
+
+    resolved_experiment_config["data"] = _merge_config_section(
+        resolved_experiment_config["data"],
+        root_config.get("data_overrides"),
+    )
+    resolved_experiment_config["model"] = _merge_config_section(
+        resolved_experiment_config["model"],
+        root_config.get("model_overrides"),
+    )
+    resolved_experiment_config["task"] = _merge_config_section(
+        resolved_experiment_config["task"],
+        root_config.get("task_overrides"),
+    )
 
     validate_experiment_config(resolved_experiment_config)
     return resolved_experiment_config

@@ -16,11 +16,11 @@ source_research: documents/logs/04-01-2026/research/research-pre-phase-4-ablatio
 
 ## Objective
 
-Before Phase 4 online adaptation begins, the offline codebase should support extensive ablations without introducing new model splits or hidden training paths. The current repository already contains the key model-level ingredients for such ablations. This checklist defines the remaining engineering work needed to make those ingredients easy to sweep, compare, and reproduce.
+Before Phase 4 online adaptation begins, the offline codebase should support extensive ablations without introducing new model splits or hidden training paths. The current repository already contains the key model-level ingredients for such ablations. This checklist defined the remaining engineering work needed to make those ingredients easy to sweep, compare, and reproduce. Repository update on 2026-04-02: the listed checklist items are now implemented through the multitask experiment family, trainer-driven schedule controls, the compact ablation runner, richer JSONL metrics, and the canonical offline-to-online checkpoint handoff.
 
 ## Current baseline that should remain fixed
 
-Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
+Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: `src/models/thesis_multitask.py` now uses gate-entropy regularization directly while retaining the legacy margin field only for backward checkpoint compatibility.
 
 - Keep one model per file.
 - Keep all active multitask logic inside `src/models/thesis_multitask.py`.
@@ -136,7 +136,7 @@ tests/test_temperature_schedule.py
 
 ## Pre-Phase-4 Gate
 
-Phase 4 should remain blocked until the following are true:
+The original gate condition was that Phase 4 should remain blocked until the following are true. Repository update on 2026-04-02: the first conservative Phase 4 slice now exists because these conditions have been implemented for the accepted projector-first path.
 
 - The offline multitask path can run continuous-only, discrete-only, and fused modes from config alone.
 - Fusion warm-up and temperature annealing are first-class configuration options.

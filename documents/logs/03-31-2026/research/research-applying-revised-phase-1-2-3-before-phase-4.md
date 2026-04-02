@@ -24,7 +24,7 @@ According to the revised design and planning documents, research how the current
 
 ## Summary
 
-The repository already contains a runnable offline vertical slice for SMD together with a reconstruction baseline, a multitask model, synthetic anomaly injection, and associated tests. However, the current implementation still reflects the older staged plan rather than the revised plan. The present codebase separates model architecture and training logic across `src/models/`, `src/tasks/`, and `src/losses/`; the training and evaluation scripts register the SMD dataset builder but instantiate data through the concrete loader directly; the synthetic anomaly injector uses three local perturbation types rather than the CARLA-style subsequence anomaly families described in the revised documents; and the repository does not contain a maintained user-facing anomaly-visualization script. The files that would absorb the revised Phase 1 to Phase 3 changes are therefore already identifiable in the current codebase. Phase 1 would center on the existing data, registry, script, baseline model, trainer, evaluator, and checkpoint files. Phase 2 would center on `src/models/thesis_multitask.py` and related registry and contract tests. Phase 3 would center on the current augmentation, multitask task, and prototype-related files, plus a new visualization surface. No active Phase 4 implementation was found in `src`, `scripts`, `tests`, or `configs`.
+The repository already contains the closure work this older research note was asking about. The active codebase now uses registry-driven scripts, one-model-one-file ownership for the active models, a maintained anomaly-visualization script, an ablation-ready multitask configuration family, and a conservative Phase 4 scaffold at `src/data/stream.py`, `src/models/online_adaptation.py`, `src/engine/online_loop.py`, and `scripts/run_online_adaptation.py`. This document should therefore be read as a historical gap analysis that has since been resolved in code, not as the current repository state.
 
 ## Detailed Findings
 
@@ -39,7 +39,7 @@ The repository already contains a runnable offline vertical slice for SMD togeth
 
 ### Modeling and Training
 
-Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
+Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: `src/models/thesis_multitask.py` now uses gate-entropy regularization directly while retaining the legacy margin field only for backward checkpoint compatibility.
 
 - The reconstruction baseline is currently split across `src/models/reconstruction_mlp_ae.py` and `src/tasks/reconstruction_task.py`. The model file defines the architecture and forward pass, while the task file computes the reconstruction loss and stage outputs.
 - `src/models/reconstruction_mlp_ae.py` already exposes outputs with `hidden`, `pooled`, `recon`, `point_scores`, and `window_scores`, and it validates the batch and output contracts. However, it does not implement `training_step`, `validation_step`, or `test_step` itself.
@@ -119,7 +119,7 @@ Within that pipeline, the current repository already exposes three distinct surf
 3. Revised Phase 3 maps onto the current multitask augmentation and supervision surface:
    `src/data/augment.py`, `src/tasks/multitask_tsad_task.py`, `src/losses/classification.py`, `src/losses/prototype.py`, `tests/test_synthetic_anomaly_injection.py`, `tests/test_multitask_shapes.py`, and `tests/test_one_multitask_train_step.py`.
 
-The revised documents move the closure criteria earlier, but the code paths that would absorb those changes are already visible in the present repository. By contrast, the repository does not expose an active Phase 4 code path. Searches across `src`, `scripts`, `tests`, and `configs` did not find `src/models/online_adaptation.py`, `src/engine/online_loop.py`, projector code, or online adaptation tests.
+The revised documents moved the closure criteria earlier, and the repository has since absorbed those changes. The active repository now exposes an active Phase 4 code path, including `src/models/online_adaptation.py`, `src/engine/online_loop.py`, projector code, and focused online adaptation tests.
 
 ## Historical Context (from documents/)
 
@@ -131,5 +131,5 @@ The current repository state still mirrors the older planning documents more clo
 
 - The revised documents now call for one-model-one-file as the implementation rule, but the current repository still has active `src/tasks/` and `src/losses/` code. This research pass documents that mismatch, but it does not determine the exact migration sequence within those files.
 - The revised Phase 3 language requires CARLA-aligned subsequence anomaly families. The present repository exposes only `spike`, `dropout`, and `level_shift`, so the exact intended naming correspondence between the current anomaly taxonomy and the CARLA taxonomy is not yet encoded in code.
-- The revised documents call for user-visible anomaly inspection. The present repository does not contain a maintained visualization script, so the exact expected artifact format is not yet reflected in implementation.
-- The revised Phase 4 documents describe an online adaptation path with a residual projector and a stream-oriented loop. No active Phase 4 implementation was found in the repository, so this research note can only document its absence rather than its operational details.
+- The revised documents call for user-visible anomaly inspection. The repository now provides that surface through `scripts/visualize_synthetic_anomalies.py`, but later reporting conventions can still be broadened if thesis artifacts need a stricter format.
+- The revised Phase 4 documents describe an online adaptation path with a residual projector and a stream-oriented loop. The repository now implements the conservative first slice of that path, while broader later-slice features remain deferred.

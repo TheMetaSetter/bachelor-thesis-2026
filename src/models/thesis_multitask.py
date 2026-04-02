@@ -1,4 +1,11 @@
 from __future__ import annotations
+"""Self-contained multitask prototype-fusion model.
+
+This is the main offline thesis model, so the file is intentionally long and
+intentionally self-contained. A fresher should read it in this order: encoder,
+continuous branch, discrete branch, fusion, optional losses, then the shared
+stage step that assembles the training objective.
+"""
 
 import math
 from typing import Any, Callable
@@ -51,6 +58,9 @@ class ThesisMultitaskModel(BaseModel):
         discrete_enabled: bool = True,
         discrete_codebook_size: int = 16,
         gumbel_temperature: float = 1.0,
+        temperature_start: float = 1.0,
+        temperature_end: float = 1.0,
+        temperature_anneal_fraction: float = 1.0,
         alpha_logit_init: float = 0.0,
         beta_logit_init: float = 0.0,
         lambda_cls: float = 1.0,
@@ -67,17 +77,26 @@ class ThesisMultitaskModel(BaseModel):
         variance_floor_gamma: float = 1.0,
         gate_barrier_margin: float = 0.25,
         use_synthetic_augmentation: bool = True,
+        freeze_fusion_for_epochs: int = 0,
+        warmup_alpha_value: float = 0.5,
+        warmup_beta_value: float = 0.5,
         anomaly_probability: float = 0.5,
         min_segment_fraction: float = 0.1,
         max_segment_fraction: float = 0.2,
         spike_scale: float = 3.0,
     ) -> None:
         super().__init__()
+        # This constructor stores both the architecture and the experiment
+        # switches because the repository follows the one-model-one-file rule.
         self.hidden_dim = hidden_dim
         self.num_classes = num_classes
         self.continuous_num_prototypes = continuous_num_prototypes
         self.discrete_codebook_size = discrete_codebook_size
+        self.default_gumbel_temperature = gumbel_temperature
         self.gumbel_temperature = gumbel_temperature
+        self.temperature_start = temperature_start
+        self.temperature_end = temperature_end
+        self.temperature_anneal_fraction = temperature_anneal_fraction
         self.lambda_cls = lambda_cls
         self.lambda_div = lambda_div
         self.lambda_var = lambda_var
@@ -92,9 +111,23 @@ class ThesisMultitaskModel(BaseModel):
         self.variance_floor_gamma = variance_floor_gamma
         self.gate_barrier_margin = gate_barrier_margin
         self.use_synthetic_augmentation = use_synthetic_augmentation
+        self.freeze_fusion_for_epochs = freeze_fusion_for_epochs
+        self.warmup_alpha_value = warmup_alpha_value
+        self.warmup_beta_value = warmup_beta_value
         self.epsilon = 1e-6
+        self.current_epoch_index = 0
+        self.current_total_epochs = 1
+        self.active_alpha_override: float | None = None
+        self.active_beta_override: float | None = None
+        self.schedule_state = {
+            "epoch": 1,
+            "warmup_active": False,
+            "freeze_fusion_for_epochs": self.freeze_fusion_for_epochs,
+            "temperature": self.gumbel_temperature,
+        }
 
-        # Encoder block
+        # Encoder block.
+        # This produces the common hidden state that both prototype branches see.
         self.encoder = MultitaskWindowEncoder(
             input_dim=input_dim,
             encoder_dim=encoder_dim,
@@ -102,7 +135,8 @@ class ThesisMultitaskModel(BaseModel):
             dropout=dropout,
         )
 
-        # Continuous prototype block
+        # Continuous branch.
+        # This branch retrieves a soft prototype context from a learned bank.
         if continuous_enabled and continuous_num_prototypes > 0:
             self.continuous_prototype_bank = nn.Parameter(
                 torch.randn(continuous_num_prototypes, hidden_dim)
@@ -110,7 +144,8 @@ class ThesisMultitaskModel(BaseModel):
         else:
             self.register_parameter("continuous_prototype_bank", None)
 
-        # Discrete prototype block
+        # Discrete branch.
+        # This branch assigns tokens to a codebook through Gumbel-Softmax.
         if discrete_enabled and discrete_codebook_size > 0:
             self.discrete_assignment = nn.Linear(hidden_dim, discrete_codebook_size)
             self.discrete_codebook = nn.Parameter(torch.randn(discrete_codebook_size, hidden_dim))
@@ -118,11 +153,15 @@ class ThesisMultitaskModel(BaseModel):
             self.discrete_assignment = None
             self.register_parameter("discrete_codebook", None)
 
-        # Fusion scalars and fusion equations
+        # Fusion scalars.
+        # `alpha` controls the classification mix and `beta` controls the
+        # reconstruction mix so the two tasks can prefer different geometry.
         self.alpha_logit = nn.Parameter(torch.tensor(float(alpha_logit_init)))
         self.beta_logit = nn.Parameter(torch.tensor(float(beta_logit_init)))
 
-        # Reconstruction head
+        # Task heads.
+        # Supervision lives on the fused task-specific hidden states, not on the
+        # branch-local states. That keeps the branches observable but not separate predictors.
         self.reconstruction_head = nn.Sequential(
             nn.Linear(hidden_dim, encoder_dim),
             nn.ReLU(),
@@ -130,7 +169,6 @@ class ThesisMultitaskModel(BaseModel):
             nn.Linear(encoder_dim, input_dim),
         )
 
-        # Classification head
         self.classification_head = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
@@ -138,7 +176,9 @@ class ThesisMultitaskModel(BaseModel):
             nn.Linear(hidden_dim, num_classes),
         )
 
-        # Offline objective helpers
+        # Offline objective helpers.
+        # Optional losses are activated by `lambda_*` so ablations can stay on
+        # one codepath instead of branching into separate model variants.
         self.branch_layer_norm = nn.LayerNorm(hidden_dim)
         self.synthetic_anomaly_injector = SyntheticAnomalyInjector(
             anomaly_probability=anomaly_probability,
@@ -148,36 +188,69 @@ class ThesisMultitaskModel(BaseModel):
         )
         self.optional_loss_configs: dict[str, dict[str, Any]] = {
             "diversity_loss": {
-                "enabled": self.enable_diversity_loss,
+                "enabled": self.lambda_div > 0.0,
                 "weight": self.lambda_div,
                 "compute_fn": self._compute_cross_branch_diversity_loss,
             },
             "variance_loss": {
-                "enabled": self.enable_variance_loss,
+                "enabled": self.lambda_var > 0.0,
                 "weight": self.lambda_var,
                 "compute_fn": self._compute_variance_floor_loss,
             },
             "covariance_loss": {
-                "enabled": self.enable_covariance_loss,
+                "enabled": self.lambda_cov > 0.0,
                 "weight": self.lambda_cov,
                 "compute_fn": self._compute_covariance_reduction_loss,
             },
             "usage_loss": {
-                "enabled": self.enable_usage_loss,
+                "enabled": self.lambda_use > 0.0,
                 "weight": self.lambda_use,
                 "compute_fn": self._compute_prototype_usage_loss,
             },
             "gate_loss": {
-                "enabled": self.enable_gate_loss,
+                "enabled": self.lambda_gate > 0.0,
                 "weight": self.lambda_gate,
                 "compute_fn": self._compute_gate_regularization_loss,
             },
         }
+        self.set_epoch_context(epoch_index=0, total_epochs=1)
 
     def _zero_loss(self, reference_tensor: torch.Tensor) -> torch.Tensor:
         return reference_tensor.new_zeros(())
 
+    def _compute_temperature_for_epoch(self, epoch_index: int, total_epochs: int) -> float:
+        # The temperature schedule is kept inside the model because it changes
+        # the discrete branch behavior, not the generic trainer behavior.
+        anneal_epochs = max(1, math.ceil(total_epochs * self.temperature_anneal_fraction))
+        if anneal_epochs == 1:
+            progress = 0.0
+        else:
+            progress = min(epoch_index / float(anneal_epochs - 1), 1.0)
+        return float(
+            self.temperature_start + progress * (self.temperature_end - self.temperature_start)
+        )
+
+    def set_epoch_context(self, epoch_index: int, total_epochs: int) -> None:
+        # Warm-up can temporarily pin fusion to a known regime so ablations can
+        # compare continuous-only, discrete-only, and fused behavior cleanly.
+        self.current_epoch_index = epoch_index
+        self.current_total_epochs = total_epochs
+        self.gumbel_temperature = self._compute_temperature_for_epoch(epoch_index, total_epochs)
+        warmup_active = epoch_index < self.freeze_fusion_for_epochs
+        self.active_alpha_override = self.warmup_alpha_value if warmup_active else None
+        self.active_beta_override = self.warmup_beta_value if warmup_active else None
+        self.schedule_state = {
+            "epoch": epoch_index + 1,
+            "warmup_active": warmup_active,
+            "freeze_fusion_for_epochs": self.freeze_fusion_for_epochs,
+            "temperature": self.gumbel_temperature,
+        }
+
+    def get_schedule_state(self) -> dict[str, Any]:
+        return dict(self.schedule_state)
+
     def _continuous_prototype_lookup(self, hidden: torch.Tensor) -> dict[str, Any]:
+        # The continuous branch keeps a soft weighted prototype mixture.
         continuous_hidden = hidden
         attention_logits = None
         attention_weights = None
@@ -208,6 +281,7 @@ class ThesisMultitaskModel(BaseModel):
         }
 
     def _discrete_prototype_lookup(self, hidden: torch.Tensor) -> dict[str, Any]:
+        # The discrete branch keeps a quantized codebook view of the same tokens.
         discrete_hidden = hidden
         assignment_logits = None
         assignment_probabilities = None
@@ -247,11 +321,17 @@ class ThesisMultitaskModel(BaseModel):
         continuous_hidden: torch.Tensor,
         discrete_hidden: torch.Tensor,
     ) -> dict[str, Any]:
-        alpha = torch.sigmoid(self.alpha_logit)
-        beta = torch.sigmoid(self.beta_logit)
+        # Fusion is expressed as exact limiting cases of the same equations.
+        # That is why continuous-only and discrete-only ablations need no second model.
+        if self.active_alpha_override is None:
+            alpha = torch.sigmoid(self.alpha_logit)
+        else:
+            alpha = continuous_hidden.new_tensor(float(self.active_alpha_override))
+        if self.active_beta_override is None:
+            beta = torch.sigmoid(self.beta_logit)
+        else:
+            beta = continuous_hidden.new_tensor(float(self.active_beta_override))
 
-        # TODO: Think of strategy to adjust alpha and beta
-        # such that it tackles branch collapsing.
         hidden_reconstruction = beta * discrete_hidden + (1.0 - beta) * continuous_hidden
         hidden_classification = alpha * discrete_hidden + (1.0 - alpha) * continuous_hidden
 
@@ -266,6 +346,8 @@ class ThesisMultitaskModel(BaseModel):
                 "beta": float(beta.detach().cpu()),
                 "alpha_logit": float(self.alpha_logit.detach().cpu()),
                 "beta_logit": float(self.beta_logit.detach().cpu()),
+                "warmup_active": self.schedule_state["warmup_active"],
+                "temperature": self.gumbel_temperature,
             },
         }
 
@@ -281,6 +363,8 @@ class ThesisMultitaskModel(BaseModel):
         return cloned_batch
 
     def _prepare_batch(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
+        # The model owns augmentation timing because synthetic supervision is
+        # part of the multitask objective, not a separate preprocessing pipeline.
         if (
             "classification_labels" in batch
             and "synthetic_anomaly_mask" in batch
@@ -320,6 +404,8 @@ class ThesisMultitaskModel(BaseModel):
         return prepared_batch
 
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
+        # The forward pass is the main representation story of the thesis model:
+        # encode once, build two branch views, fuse per task, then score.
         validate_batch(batch)
         encoder_outputs = self.encoder(batch)
         hidden = encoder_outputs["hidden"]
@@ -333,6 +419,10 @@ class ThesisMultitaskModel(BaseModel):
 
         hidden_reconstruction = fusion_outputs["hidden_reconstruction"]
         hidden_classification = fusion_outputs["hidden_classification"]
+
+        # TODO: Experiment using RNN as classification and reconstruction head.
+        # For classification, use the last hidden state as the input into the head.
+        # For reconstruction, use all hidden states as input into the RNN head.
         recon = self.reconstruction_head(hidden_reconstruction)
         pooled_classification_hidden = hidden_classification.mean(dim=1)
         logits = self.classification_head(pooled_classification_hidden)
@@ -381,6 +471,7 @@ class ThesisMultitaskModel(BaseModel):
         return F.cross_entropy(outputs["logits"], batch["classification_labels"].long())
 
     def _compute_cross_branch_diversity_loss(self, outputs: dict[str, Any]) -> torch.Tensor:
+        # This discourages the two branches from collapsing onto the same signal.
         continuous_hidden = outputs["aux"]["continuous_branch"]["prototype_context"]
         discrete_hidden = outputs["aux"]["discrete_branch"]["quantized_hidden"]
         _, standardized_continuous = self._normalize_branch_tokens(continuous_hidden)
@@ -420,6 +511,7 @@ class ThesisMultitaskModel(BaseModel):
         return torch.stack(covariance_losses).sum()
 
     def _compute_prototype_usage_loss(self, outputs: dict[str, Any]) -> torch.Tensor:
+        # Usage balancing is the main protection against dead or ignored codes.
         assignment_probabilities = outputs["aux"]["discrete_branch"]["assignment_probabilities"]
         if assignment_probabilities is None or self.discrete_codebook_size <= 0:
             return self._zero_loss(outputs["hidden"])
@@ -428,11 +520,24 @@ class ThesisMultitaskModel(BaseModel):
         return torch.sum((average_usage - target_usage) ** 2)
 
     def _compute_gate_regularization_loss(self, outputs: dict[str, Any]) -> torch.Tensor:
+        # Gate entropy regularization keeps the fusion scalars from collapsing
+        # too confidently unless the data actually supports that decision.
         alpha = outputs["aux"]["alpha"]
         beta = outputs["aux"]["beta"]
-        alpha_barrier = F.relu(torch.abs(alpha - 0.5) - self.gate_barrier_margin).pow(2)
-        beta_barrier = F.relu(torch.abs(beta - 0.5) - self.gate_barrier_margin).pow(2)
-        return alpha_barrier + beta_barrier
+        max_entropy = math.log(2.0)
+        alpha_clamped = torch.clamp(alpha, self.epsilon, 1.0 - self.epsilon)
+        beta_clamped = torch.clamp(beta, self.epsilon, 1.0 - self.epsilon)
+        alpha_entropy = -(
+            alpha_clamped * torch.log(alpha_clamped)
+            + (1.0 - alpha_clamped) * torch.log(1.0 - alpha_clamped)
+        )
+        beta_entropy = -(
+            beta_clamped * torch.log(beta_clamped)
+            + (1.0 - beta_clamped) * torch.log(1.0 - beta_clamped)
+        )
+        alpha_penalty = 1.0 - alpha_entropy / max_entropy
+        beta_penalty = 1.0 - beta_entropy / max_entropy
+        return 0.5 * (alpha_penalty + beta_penalty)
 
     def _compute_optional_loss_terms(self, outputs: dict[str, Any]) -> dict[str, torch.Tensor]:
         optional_loss_values: dict[str, torch.Tensor] = {}
@@ -450,6 +555,8 @@ class ThesisMultitaskModel(BaseModel):
         classification_loss: torch.Tensor,
         optional_loss_values: dict[str, torch.Tensor],
     ) -> torch.Tensor:
+        # The weighted sum is intentionally explicit so readers can map each
+        # `lambda_*` config field directly to one line of the objective.
         total_loss = reconstruction_loss + self.lambda_cls * classification_loss
         for loss_name, loss_value in optional_loss_values.items():
             total_loss = total_loss + self.optional_loss_configs[loss_name]["weight"] * loss_value
@@ -462,6 +569,27 @@ class ThesisMultitaskModel(BaseModel):
         loss_terms: dict[str, torch.Tensor],
         batch: dict[str, Any],
     ) -> dict[str, float]:
+        # These logs are part of the branch-collapse observability surface, not
+        # just convenience metrics. They are meant to support ablation reading.
+        assignment_probabilities = outputs["aux"]["discrete_branch"]["assignment_probabilities"]
+        if assignment_probabilities is None or self.discrete_codebook_size <= 0:
+            discrete_usage_top1 = 0.0
+            discrete_usage_entropy = 0.0
+            discrete_usage_concentration = 0.0
+            discrete_usage_active_codes = 0.0
+        else:
+            average_usage = assignment_probabilities.mean(dim=(0, 1))
+            average_usage = average_usage / average_usage.sum().clamp_min(self.epsilon)
+            discrete_usage_top1 = float(average_usage.max().detach().cpu())
+            discrete_usage_entropy = float(
+                (-(average_usage * torch.log(average_usage.clamp_min(self.epsilon))).sum()).detach().cpu()
+            )
+            discrete_usage_concentration = float(torch.sum(average_usage.pow(2)).detach().cpu())
+            discrete_usage_active_codes = float(
+                torch.sum((average_usage > (1.0 / max(self.discrete_codebook_size * 2, 1))).float())
+                .detach()
+                .cpu()
+            )
         predicted_labels = torch.argmax(outputs["logits"], dim=-1)
         classification_accuracy = float(
             (predicted_labels == batch["classification_labels"]).float().mean().detach().cpu()
@@ -484,9 +612,16 @@ class ThesisMultitaskModel(BaseModel):
             f"{stage_name}_discrete_norm": float(
                 outputs["aux"]["discrete_branch"]["quantized_hidden"].norm(dim=-1).mean().detach().cpu()
             ),
+            f"{stage_name}_discrete_usage_top1": discrete_usage_top1,
+            f"{stage_name}_discrete_usage_entropy": discrete_usage_entropy,
+            f"{stage_name}_discrete_usage_concentration": discrete_usage_concentration,
+            f"{stage_name}_discrete_usage_active_codes": discrete_usage_active_codes,
+            f"{stage_name}_temperature": float(self.gumbel_temperature),
+            f"{stage_name}_warmup_active": float(self.schedule_state["warmup_active"]),
         }
 
     def _shared_step(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
+        # This is the one place where the actual multitask training objective is assembled.
         prepared_batch = self._prepare_batch(batch, stage_name)
         outputs = self.forward(prepared_batch)
 

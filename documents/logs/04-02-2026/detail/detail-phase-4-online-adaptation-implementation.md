@@ -17,10 +17,10 @@ source_research: documents/logs/04-02-2026/research/research-phase-4-online-adap
 
 ## Overview
 
-This document translates the new Phase 4 research note and the corresponding implementation plan into a programming-level execution sequence for the current repository. The repository still exposes only the offline SMD runtime path, so this detail pass must preserve two constraints simultaneously:
+This document translates the Phase 4 research note and the corresponding implementation plan into a programming-level execution sequence for the current repository. The repository now contains a conservative Phase 4 scaffold, so this detail pass must preserve two constraints simultaneously:
 
-- it must respect the pre-Phase-4 gate described in the research and earlier detail documents;
-- it must still give a complete programming plan for the first online adaptation slice once that gate is satisfied.
+- it must describe the now-implemented projector-first online slice faithfully;
+- it must keep the broader pre-Phase-4 gate semantics for any later widening beyond that slice.
 
 The governing implementation principles remain:
 
@@ -119,7 +119,7 @@ Online-only tensors must live in `outputs["aux"]`. The top-level field names mus
 
 ### Phase summary
 
-This phase exists because the current repository documentation still states that Phase 4 is blocked until the offline gate is passed. The thesis objective of this phase is not to add online code. It is to prevent online adaptation from being layered on top of an unstable or noncompliant offline base.
+This phase exists because the older repository documentation stated that Phase 4 should not begin until the offline gate was passed. The current repository now includes the conservative online scaffold, so the thesis objective of this phase is to verify that the scaffold sits on top of a sufficiently closed offline base rather than to pretend the online files do not exist.
 
 ### File-level edits
 
@@ -164,7 +164,7 @@ This phase preserves the registry/factory path and the model-owned step-method p
 
 ### Test plan and validation steps
 
-Run the documented pre-Phase-4 regression suite before Phase 4 files are added:
+Run the documented pre-Phase-4 regression suite and the newer ablation-readiness checks before the online slice is treated as an accepted active path:
 
 ```bash
 pytest -q tests/test_config_loading.py tests/test_smd_dataset_shapes.py tests/test_windowizer.py tests/test_model_shapes.py tests/test_one_train_step.py tests/test_checkpoint_roundtrip.py tests/test_registry.py tests/test_multitask_shapes.py tests/test_one_multitask_train_step.py tests/test_synthetic_anomaly_injection.py tests/test_synthetic_anomaly_visualization.py
@@ -178,7 +178,7 @@ Phase 0 is complete only if all of the following are true:
 - the active path is registry-driven;
 - the active path is one-model-one-file for the offline models;
 - maintained anomaly visualization exists;
-- no online adaptation file has been added before the gate is recorded as passed.
+- the existing online adaptation files are justified by the now-implemented offline ablation gate rather than by a bypass around it.
 
 ## Phase 1 - Add the online configuration family and stream data surface
 

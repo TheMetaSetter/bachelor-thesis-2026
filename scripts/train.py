@@ -1,4 +1,10 @@
 from __future__ import annotations
+"""Entrypoint for offline training experiments.
+
+A fresher can read this script as the shortest explanation of the runtime graph:
+load config, register components, build data, build model, create the engine
+objects, then hand everything to the trainer.
+"""
 
 import argparse
 
@@ -21,12 +27,16 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 
 
 def register_runtime_components() -> None:
+    # Registration keeps script wiring explicit while still letting experiments
+    # build datasets and models from names instead of hard-coded constructors.
     register_dataset("smd", build_smd_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
 
 
 def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Module:
+    # Model and task settings are merged here because each active model file
+    # owns both architecture and stage-step behavior.
     model_name = experiment_config["model"]["model_name"]
     model_kwargs = {
         key: value
@@ -43,15 +53,8 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
     return build_model(model_name, **model_kwargs)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--experiment-config",
-        default="configs/experiment/smd_vertical_slice.yaml",
-    )
-    args = parser.parse_args()
-
-    experiment_config = load_experiment_config(args.experiment_config)
+def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, object]:
+    # This helper is shared by the CLI and by tests or orchestration scripts.
     seed_everything(int(experiment_config["seed"]))
     register_runtime_components()
 
@@ -63,7 +66,11 @@ def main() -> None:
         weight_decay=float(experiment_config["optimizer"]["weight_decay"]),
     )
     checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
-    experiment_logger = ExperimentLogger(experiment_config["output_dir"])
+    experiment_logger = ExperimentLogger(
+        experiment_config["output_dir"],
+        experiment_config=experiment_config,
+        logging_config=experiment_config.get("logging"),
+    )
     trainer = Trainer(
         model=model,
         optimizer=optimizer,
@@ -71,13 +78,28 @@ def main() -> None:
         experiment_logger=experiment_logger,
         device=experiment_config["device"],
     )
-    trainer.train(
-        train_loader=data_bundle["loaders"]["train"],
-        val_loader=data_bundle["loaders"]["val"],
-        scaler_state=data_bundle["scaler"].state_dict(),
-        config=experiment_config,
-        epochs=int(experiment_config["epochs"]),
+    try:
+        return trainer.train(
+            train_loader=data_bundle["loaders"]["train"],
+            val_loader=data_bundle["loaders"]["val"],
+            scaler_state=data_bundle["scaler"].state_dict(),
+            config=experiment_config,
+            epochs=int(experiment_config["epochs"]),
+        )
+    finally:
+        experiment_logger.close()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--experiment-config",
+        default="configs/experiment/smd_vertical_slice.yaml",
     )
+    args = parser.parse_args()
+
+    experiment_config = load_experiment_config(args.experiment_config)
+    run_training_experiment(experiment_config)
 
 
 if __name__ == "__main__":

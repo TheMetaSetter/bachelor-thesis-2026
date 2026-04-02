@@ -24,7 +24,7 @@ Before entering Phase 4, what relevant implementation surfaces already exist for
 
 ## Summary
 
-Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
+Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: `src/models/thesis_multitask.py` now uses gate-entropy regularization directly while retaining the legacy margin field only for backward checkpoint compatibility.
 
 The current repository already exposes the main offline multitask objective in a form that is structurally compatible with future ablations. The active multitask model keeps the continuous branch, discrete branch, fusion equations, reconstruction head, classification head, and stage-specific objective helpers in one file. The configuration surface already exposes prototype toggles, prototype counts, Gumbel-Softmax temperature, fusion-logit initialization, and per-term loss weights. The model also records branch-specific diagnostics, scalar fusion values, and per-term losses in the stage logs.
 
@@ -171,7 +171,7 @@ The older detail document is now only partially aligned with the repository. Its
 
 ## Pipeline Documentation
 
-The active offline multitask path takes a batch with `x` shaped `[B, L, D]`, prepares synthetic anomaly labels and masks when training without pre-supplied multitask labels, computes hidden states with the encoder, forms continuous and discrete branch states, fuses them into reconstruction and classification task states, computes decoder reconstruction and pooled classification logits, and then evaluates the weighted objective over reconstruction, classification, branch decorrelation, branch variance, branch covariance, discrete usage, and gate entropy regularization in the design surface, with the current code still using a barrier-style gate term.
+The active offline multitask path takes a batch with `x` shaped `[B, L, D]`, prepares synthetic anomaly labels and masks when training without pre-supplied multitask labels, computes hidden states with the encoder, forms continuous and discrete branch states, fuses them into reconstruction and classification task states, computes decoder reconstruction and pooled classification logits, and then evaluates the weighted objective over reconstruction, classification, branch decorrelation, branch variance, branch covariance, discrete usage, and gate entropy regularization directly in code.
 
 The active implementation therefore already preserves the same conceptual separation needed for future ablations: branch construction, branch fusion, prediction heads, and loss terms are distinct surfaces inside one model file. The missing layer is an experiment-management surface that systematically sweeps those surfaces.
 

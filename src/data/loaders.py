@@ -1,4 +1,10 @@
 from __future__ import annotations
+"""Offline SMD data path from full entity sequences to fixed-size windows.
+
+A fresher should read this file before reading the models. It shows how raw SMD
+sequences are parsed, scaled, windowed, and finally exposed as the batch
+contract consumed by the baseline and multitask models.
+"""
 
 from typing import Any
 
@@ -18,6 +24,8 @@ class WindowDataset(Dataset):
         stride: int,
         max_windows: int | None = None,
     ) -> None:
+        # The dataset stores only index triples so windows are materialized on
+        # demand without copying every possible slice up front.
         self.sequences = sequences
         self.window_size = window_size
         self.stride = stride
@@ -36,6 +44,8 @@ class WindowDataset(Dataset):
         return len(self.index_records)
 
     def __getitem__(self, index: int) -> dict[str, Any]:
+        # Each item already matches the window contract expected by the collate
+        # function, so the engine never has to know where the window came from.
         sequence_index, start_index, end_index = self.index_records[index]
         sequence = self.sequences[sequence_index]
         return {
@@ -60,6 +70,8 @@ class WindowDataset(Dataset):
 
 class SMDDatasetBuilder(BaseDatasetBuilder):
     def build(self, data_config: dict[str, Any]) -> dict[str, Any]:
+        # The builder returns more than dataloaders on purpose: research code
+        # often needs access to the parser, scaler, and scaled sequences later.
         parser = SMDDatasetParser(
             root_dir=data_config["root_dir"],
             validation_split_ratio=float(data_config["validation_split_ratio"]),
@@ -119,6 +131,7 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
 
 
 def build_smd_dataset_bundle(data_config: dict[str, Any]) -> dict[str, Any]:
+    # This is the registry-facing entrypoint used by the active scripts.
     return SMDDatasetBuilder().build(data_config)
 
 

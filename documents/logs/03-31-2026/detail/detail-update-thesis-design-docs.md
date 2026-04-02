@@ -15,7 +15,7 @@ last_updated_by: Artificial Intelligence Agent
 
 ## Overview
 
-Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
+Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: `src/models/thesis_multitask.py` now uses gate-entropy regularization directly while retaining the legacy margin field only for backward checkpoint compatibility.
 
 This documentation update aligns the thesis design notes with the current consensus architecture and training strategy. The main goal was to make the design documents say one consistent thing about the fixed hidden-state contract, the offline multitask objective, the placement of the real prediction heads, and the scope of online adaptation.
 

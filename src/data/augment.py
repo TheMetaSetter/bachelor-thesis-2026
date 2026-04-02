@@ -1,4 +1,11 @@
 from __future__ import annotations
+"""Synthetic anomaly injection for the offline multitask path.
+
+This file exists to create self-supervised anomaly-type supervision without
+changing the batch contract used by the rest of the repository. A new reader
+should notice that augmentation is still treated as data preparation, even
+though the multitask model decides when to call it during training.
+"""
 
 from typing import Any
 
@@ -20,6 +27,8 @@ class SyntheticAnomalyInjector:
             "shapelet",
         ),
     ) -> None:
+        # These checks keep augmentation behavior explicit. Research code becomes
+        # very hard to trust when synthetic data is allowed to silently drift.
         if not 0.0 <= anomaly_probability <= 1.0:
             raise ValueError("anomaly_probability must be between 0 and 1")
         if not 0.0 < min_segment_fraction <= 1.0:
@@ -51,6 +60,8 @@ class SyntheticAnomalyInjector:
         return cloned_batch
 
     def _sample_segment_bounds(self, window_size: int, device: torch.device) -> tuple[int, int]:
+        # Every anomaly family starts from one contiguous subsequence so the
+        # resulting mask can still be reasoned about on the original timeline.
         min_segment_length = max(1, int(window_size * self.min_segment_fraction))
         max_segment_length = max(min_segment_length, int(window_size * self.max_segment_fraction))
         max_segment_length = min(max_segment_length, window_size)
@@ -85,6 +96,8 @@ class SyntheticAnomalyInjector:
         start_index: int,
         end_index: int,
     ) -> tuple[torch.Tensor, int, dict[str, Any]]:
+        # The family-specific branch is the main "why" block in this file. Each
+        # branch rewrites the sampled subsequence in a different, inspectable way.
         anomalous_channel_window = clean_channel_window.clone()
         anomalous_subsequence = anomalous_channel_window[start_index:end_index].clone()
         family_parameters: dict[str, Any] = {
@@ -187,6 +200,8 @@ class SyntheticAnomalyInjector:
         return augmented_window, anomaly_mask, augmentation_metadata
 
     def augment_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
+        # The output batch keeps the original keys and only adds multitask
+        # supervision fields, which is why the rest of the codepath stays small.
         if "x" not in batch:
             raise ValueError("batch must contain 'x'")
         if batch["x"].ndim != 3:

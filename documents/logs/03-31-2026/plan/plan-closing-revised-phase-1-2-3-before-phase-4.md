@@ -21,7 +21,7 @@ source_research: documents/logs/03-31-2026/research/research-applying-revised-ph
 - The present implementation still reflects the older layered split rather than the revised one-model-one-file plan. Model-specific behavior is distributed across `src/models/`, `src/tasks/`, `src/losses/`, and `src/models/modules/`.
 - `scripts/train.py` and `scripts/evaluate.py` register the SMD dataset builder in `src/core/registry.py` but then instantiate the data path through `build_smd_dataloaders(...)` directly. The registry and direct builder path therefore coexist.
 - The synthetic anomaly path exists, but it remains simpler than the revised Phase 3 requirement. `src/data/augment.py` injects `spike`, `dropout`, and `level_shift` anomalies into one contiguous segment of one channel, rather than a CARLA-style subsequence family.
-- The repository does not currently contain a maintained visualization script for injected anomalies, and it does not contain an active Phase 4 implementation such as `src/models/online_adaptation.py`, projector code, or `src/engine/online_loop.py`.
+- Repository update on 2026-04-02: the visualization script now exists at `scripts/visualize_synthetic_anomalies.py`, and the repository now contains a conservative Phase 4 implementation at `src/data/stream.py`, `src/models/online_adaptation.py`, `src/engine/online_loop.py`, and `scripts/run_online_adaptation.py`. This older plan should therefore be read as the gate-closing work that has since been realized, not as the current absence state.
 
 ## Design Options
 

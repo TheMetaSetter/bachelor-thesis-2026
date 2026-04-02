@@ -1,4 +1,10 @@
 from __future__ import annotations
+"""Entrypoint for offline checkpoint evaluation.
+
+This script mirrors the training script closely on purpose. A new reader should
+be able to compare the two files and immediately see that evaluation reuses the
+same config-driven experiment graph, then swaps the trainer for the evaluator.
+"""
 
 import argparse
 import json
@@ -27,6 +33,8 @@ def register_runtime_components() -> None:
 
 
 def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Module:
+    # Evaluation rebuilds the model from config first, then checkpoint loading
+    # restores the learned weights on top of that exact architecture.
     model_name = experiment_config["model"]["model_name"]
     model_kwargs = {
         key: value
@@ -43,6 +51,48 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
     return build_model(model_name, **model_kwargs)
 
 
+def run_evaluation_experiment(
+    experiment_config: dict[str, object],
+    checkpoint_path: str,
+) -> dict[str, object]:
+    # Persisting both metrics and the resolved config makes later thesis figures
+    # easier to reproduce without hidden notebook state.
+    register_runtime_components()
+
+    data_bundle = build_dataset(experiment_config["data"]["dataset_name"], experiment_config["data"])
+    scaler = SequenceStandardScaler()
+    model = build_model_from_experiment_config(experiment_config)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
+    loaded_checkpoint = checkpoint_manager.load_checkpoint(checkpoint_path, model, optimizer)
+    scaler.load_state_dict(loaded_checkpoint["scaler_state_dict"])
+    evaluator = Evaluator(device=experiment_config["device"])
+    evaluation_outputs = evaluator.evaluate(model, data_bundle["loaders"]["test"])
+
+    output_dir = Path(experiment_config["output_dir"])
+    output_dir.mkdir(parents=True, exist_ok=True)
+    records_path = output_dir / "evaluation_records.json"
+    metrics_path = output_dir / "evaluation_metrics.json"
+    resolved_config_path = output_dir / "resolved_experiment_config.json"
+
+    serializable_records = [
+        {
+            "entity_id": record["entity_id"],
+            "point_scores": record["point_scores"].tolist(),
+            "point_labels": record["point_labels"].tolist(),
+            "num_points": record["num_points"],
+        }
+        for record in evaluation_outputs["records"]
+    ]
+    records_path.write_text(json.dumps(serializable_records), encoding="utf-8")
+    metrics_path.write_text(json.dumps(evaluation_outputs["metrics"]), encoding="utf-8")
+    resolved_config_path.write_text(
+        json.dumps(experiment_config, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return evaluation_outputs
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -56,34 +106,7 @@ def main() -> None:
     args = parser.parse_args()
 
     experiment_config = load_experiment_config(args.experiment_config)
-    register_runtime_components()
-
-    data_bundle = build_dataset(experiment_config["data"]["dataset_name"], experiment_config["data"])
-    scaler = SequenceStandardScaler()
-    model = build_model_from_experiment_config(experiment_config)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
-    loaded_checkpoint = checkpoint_manager.load_checkpoint(args.checkpoint_path, model, optimizer)
-    scaler.load_state_dict(loaded_checkpoint["scaler_state_dict"])
-    evaluator = Evaluator(device=experiment_config["device"])
-    evaluation_outputs = evaluator.evaluate(model, data_bundle["loaders"]["test"])
-
-    output_dir = Path(experiment_config["output_dir"])
-    output_dir.mkdir(parents=True, exist_ok=True)
-    records_path = output_dir / "evaluation_records.json"
-    metrics_path = output_dir / "evaluation_metrics.json"
-
-    serializable_records = [
-        {
-            "entity_id": record["entity_id"],
-            "point_scores": record["point_scores"].tolist(),
-            "point_labels": record["point_labels"].tolist(),
-            "num_points": record["num_points"],
-        }
-        for record in evaluation_outputs["records"]
-    ]
-    records_path.write_text(json.dumps(serializable_records), encoding="utf-8")
-    metrics_path.write_text(json.dumps(evaluation_outputs["metrics"]), encoding="utf-8")
+    run_evaluation_experiment(experiment_config, args.checkpoint_path)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,17 @@
+experiment_name: smd_multitask_no_diversity
+seed: 7
+device: cpu
+output_dir: outputs/smd_multitask_no_diversity
+checkpoint_dir: outputs/smd_multitask_no_diversity/checkpoints
+data_config_path: configs/data/smd.yaml
+model_config_path: configs/model/thesis_multitask.yaml
+task_config_path: configs/task/multitask_tsad.yaml
+model_overrides:
+  lambda_var: 0.01
+  lambda_cov: 0.01
+  lambda_use: 0.01
+  lambda_gate: 0.01
+optimizer:
+  learning_rate: 0.001
+  weight_decay: 0.0
+epochs: 3

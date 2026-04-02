@@ -16,12 +16,12 @@ source_research: documents/logs/04-02-2026/research/research-phase-4-online-adap
 
 ## Current State
 
-- The active repository path is still an offline SMD path. `src/models/thesis_multitask.py` owns the current multitask encoder, continuous and discrete prototype branches, fusion logic, reconstruction head, classification head, synthetic anomaly injector, and offline regularizers. `src/engine/trainer.py` and `src/engine/evaluator.py` remain offline loop surfaces.
+- The active repository path now includes both the ablation-ready offline multitask path and the first conservative Phase 4 slice. `src/models/thesis_multitask.py` owns the multitask encoder, prototype branches, fusion logic, schedule-aware objective surface, and offline stage logic. `src/models/online_adaptation.py` and `src/engine/online_loop.py` now own the first projector-first online runtime.
 - The stable runtime contracts already exist in `src/core/contracts.py`. The active batch contract is centered on `x`, `point_labels`, `mask`, `timestamps`, and `meta`. The active model-output contract is centered on `hidden`, `pooled`, `recon`, `logits`, `point_scores`, `window_scores`, and `aux`.
 - `scripts/train.py` and `scripts/evaluate.py` now use registry-driven dataset construction through `build_dataset(...)`, which satisfies one of the major pre-Phase-4 gate conditions.
-- The repository does not currently contain `src/models/online_adaptation.py`, `src/engine/online_loop.py`, online-specific configs, online tests, online checkpoint state, or online monitoring code.
-- `src/core/config.py` currently validates only the offline experiment family. It supports dataset name `smd`, model names `reconstruction_mlp_ae` and `thesis_multitask`, and task names `reconstruction` and `multitask_tsad`.
-- The latest detail and research documents still treat Phase 4 as blocked until the pre-Phase-4 offline gate is explicitly satisfied. That gate now centers on ablation readiness, branch-collapse observability, stable registry-only construction paths, and maintained synthetic anomaly inspection.
+- The repository now contains `src/models/online_adaptation.py`, `src/engine/online_loop.py`, online-specific configs, online tests, online checkpoint state, and online monitoring code. The remaining issue is no longer code absence. It is keeping the accepted online scope conservative and tied to the correct offline multitask checkpoint flow.
+- `src/core/config.py` now validates both the offline multitask ablation family and the online adaptation family, including config overrides, schedule controls, and online target-parameter-group checks.
+- The latest detail and research documents should no longer treat Phase 4 as absent. The correct current framing is that the pre-Phase-4 offline gate has been implemented for the first accepted slice, while broader online expansion beyond projector-first clean-stream adaptation remains deferred.
 
 ## Design Options
 
@@ -56,8 +56,8 @@ The first Phase 4 implementation should therefore be a clean-stream, projector-f
 
 ## Risk And Mitigation
 
-- Risk: the implementation may bypass the documented pre-Phase-4 gate and add online code on top of an unstable offline path.
-  Mitigation: make gate verification the first step of the Phase 4 branch. If any gate item fails, stop and close that item before adding online files.
+- Risk: the implementation may bypass the documented pre-Phase-4 gate and add broader online code on top of an unstable offline path.
+  Mitigation: keep the accepted online runtime limited to the now-implemented projector-first slice, and treat drift injection, encoder unfreezing, and NGD-style optimization as later follow-on work.
 - Risk: the online path may violate the existing batch and output contracts.
   Mitigation: preserve the current top-level batch keys and output keys. Add online-specific tensors such as `view_a` and `view_b` only as validated extensions, and place online-specific artifacts in `outputs["aux"]`.
 - Risk: online updates may adapt to anomalous windows rather than genuine shift.

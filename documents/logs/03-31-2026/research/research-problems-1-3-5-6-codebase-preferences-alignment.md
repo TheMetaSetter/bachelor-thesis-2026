@@ -24,7 +24,7 @@ Document the current repository implementation relevant to problems 1, 3, 5, and
 
 ## Summary
 
-The repository currently implements a working vertical slice for SMD using standardized batch and model-output contracts, a reconstruction baseline, and a multitask model with prototype and fusion modules. For the requested problems, the codebase diverges from `codebase_preferences.md` in four specific ways. First, model inference and training logic are separated across `src/models/` and `src/tasks/`, rather than being colocated in a single self-contained model file. Second, synthetic anomaly injection is implemented as simple local perturbations and does not follow the subsequence anomaly mechanism defined in the referenced CARLA augmenter. Third, the repository contains a basic anomaly-injection test but no code path that visualizes or exports injected samples for user inspection. Fourth, the script entrypoints register a dataset builder in the registry but instantiate the data bundle by calling the concrete SMD loader function directly.
+The repository currently implements the closure work that this older alignment note identified as missing. The active codebase now keeps the reconstruction, multitask, and online adaptation logic in self-contained model files; exposes a maintained anomaly-visualization script; uses registry-driven dataset construction in the entrypoints; and includes a conservative Phase 4 scaffold. This document should therefore be read as a historical mismatch report, not as the current repository state.
 
 ## Detailed Findings
 
@@ -38,7 +38,7 @@ The repository currently implements a working vertical slice for SMD using stand
 
 ### Modeling and Training
 
-Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
+Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: `src/models/thesis_multitask.py` now uses gate-entropy regularization directly while retaining the legacy margin field only for backward checkpoint compatibility.
 
 - Problem 1 concerns model-file organization. `codebase_preferences.md` requires all logic related to one model, including inference and training logic, to live in one single file for that model.
 - The reconstruction baseline is currently split between `src/models/reconstruction_mlp_ae.py`, which defines the architecture and `forward`, and `src/tasks/reconstruction_task.py`, which computes reconstruction loss and training, validation, and test metrics.
@@ -98,7 +98,7 @@ If the repository is meant to continue following the staged implementation order
 ### Follow-up Findings
 
 - The detailed plan distributes these concerns across multiple phases rather than placing them inside Phase 4. The final implementation order explicitly sequences Phase 3 before Phase 4 and Phase 5 after Phase 4.
-- Phase 4 itself is defined only as the online-adaptation stage with a residual projector, an online task, an online loop, and online-state tests. In the current repository snapshot, those Phase 4 files are not present. A search across `src`, `tests`, and `configs` did not find `online_adaptation`, `projector`, or `online_loop` files.
+- Phase 4 itself is defined as the online-adaptation stage with a residual projector, an online task, an online loop, and online-state tests. The current repository now contains those files in the conservative first-slice form: `src/models/online_adaptation.py`, `src/engine/online_loop.py`, online configs, and focused online tests.
 - Problem 1 does not belong to Phase 4 in the current plan. The detailed plan itself formalizes a five-layer architecture with separate model, task, and engine responsibilities, and Phase 1 explicitly includes both `src/models/reconstruction_mlp_ae.py` and `src/tasks/reconstruction_task.py`. Phase 3 continues the same pattern with `src/models/thesis_multitask.py` and `src/tasks/multitask_tsad_task.py`. Therefore, the phased plan as written preserves the model-task split that produced problem 1.
 - Problem 3 belongs to Phase 3, not Phase 4. The detailed plan states that `src/data/augment.py` should implement CARLA-inspired synthetic anomaly injection in Phase 3. The current repository does contain a Phase 3-style augmentation file and multitask task, but the implemented augmentation logic remains simpler than the CARLA reference mechanism.
 - Problem 5 is also tied more closely to Phase 3 and Phase 5 than to Phase 4. Phase 3 requires `tests/test_synthetic_anomaly_injection.py` and specifies shape preservation, metadata retention, and anomaly-label creation. Phase 5 adds reporting and export infrastructure. The current detailed plan does not explicitly assign user-facing visualization of injected samples to Phase 4.

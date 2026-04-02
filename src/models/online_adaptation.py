@@ -1,4 +1,10 @@
 from __future__ import annotations
+"""Projector-first online adaptation model for the first accepted Phase 4 slice.
+
+This file should be read after the offline multitask model. The online path is
+deliberately conservative: it reuses the offline encoder geometry, keeps the
+reference encoder frozen, and adapts only a small residual projector by default.
+"""
 
 import copy
 from pathlib import Path
@@ -14,6 +20,8 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 
 
 class ThesisMultitaskEncoderAdapter(nn.Module):
+    # The adapter keeps the online file readable by reusing the offline encoder
+    # without forcing the rest of the online logic back into the multitask file.
     def __init__(self, thesis_model: ThesisMultitaskModel, freeze_parameters: bool = True) -> None:
         super().__init__()
         self.model = copy.deepcopy(thesis_model)
@@ -67,6 +75,8 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
 
 
 class ResidualProjector(nn.Module):
+    # The projector is residual and near-identity on purpose. That makes it the
+    # safest first parameter group to adapt online.
     def __init__(self, hidden_dim: int, projector_hidden_dim: int, dropout: float = 0.0) -> None:
         super().__init__()
         self.network = nn.Sequential(
@@ -105,6 +115,8 @@ class OnlineAdaptationModel(BaseModel):
         reset_alignment_threshold: float = 0.0,
     ) -> None:
         super().__init__()
+        # The first online slice is intentionally narrow so that a new reader
+        # can reason about one adaptation mechanism at a time.
         if not clean_stream_only:
             raise ValueError("The first online adaptation slice supports only clean_stream_only=True")
         if score_source != "projected_hidden":
@@ -126,6 +138,8 @@ class OnlineAdaptationModel(BaseModel):
         self.reset_alignment_threshold = reset_alignment_threshold
         self.alignment_temperature = 0.1
 
+        # The offline multitask checkpoint is the source of truth for the
+        # representation geometry used by both the reference and online encoders.
         frozen_multitask_model = self._load_reference_model(reference_checkpoint_path)
         self.reference_encoder = ThesisMultitaskEncoderAdapter(frozen_multitask_model, freeze_parameters=True)
         self.online_encoder = ThesisMultitaskEncoderAdapter(frozen_multitask_model, freeze_parameters=True)
@@ -138,8 +152,16 @@ class OnlineAdaptationModel(BaseModel):
         self._set_trainable_parameter_group(target_param_group)
 
     def _load_reference_model(self, checkpoint_path: str | Path) -> ThesisMultitaskModel:
+        # The online runtime is defined only for multitask checkpoints. Failing
+        # early here prevents confusing baseline-versus-online mismatches later.
         loaded_checkpoint = torch.load(checkpoint_path, map_location="cpu")
         config = loaded_checkpoint["config"]
+        model_name = config.get("model", {}).get("model_name")
+        if model_name != "thesis_multitask":
+            raise ValueError(
+                "reference_checkpoint_path must point to a thesis_multitask checkpoint, "
+                f"but found model_name={model_name!r}"
+            )
         model_kwargs = {
             key: value
             for key, value in config["model"].items()
@@ -176,6 +198,8 @@ class OnlineAdaptationModel(BaseModel):
         }
 
     def _set_trainable_parameter_group(self, target_param_group: str) -> None:
+        # Parameter groups are explicit because the design docs treat the online
+        # optimization boundary as part of the architecture, not a small detail.
         for parameter in self.reference_encoder.parameters():
             parameter.requires_grad = False
         for parameter in self.online_encoder.parameters():
@@ -210,6 +234,8 @@ class OnlineAdaptationModel(BaseModel):
         reference_hidden: torch.Tensor,
         projected_hidden: torch.Tensor,
     ) -> torch.Tensor:
+        # Alignment compares pooled representations so the online path first
+        # learns to match reference geometry before widening adaptation scope.
         pooled_reference = F.normalize(reference_hidden.mean(dim=1), dim=-1)
         pooled_projected = F.normalize(projected_hidden.mean(dim=1), dim=-1)
         similarity_logits = pooled_projected @ pooled_reference.T / self.alignment_temperature
@@ -224,12 +250,15 @@ class OnlineAdaptationModel(BaseModel):
         reference_hidden: torch.Tensor,
         projected_hidden: torch.Tensor,
     ) -> torch.Tensor:
+        # Prototype alignment is optional because the first accepted slice keeps
+        # the online objective small unless this extra term is explicitly enabled.
         if not self.enable_prototype_alignment:
             return projected_hidden.new_zeros(())
         prototype_target = self.reference_encoder.compute_prototype_target(reference_hidden)
         return torch.mean((projected_hidden - prototype_target) ** 2)
 
     def _compute_anchor_loss(self) -> torch.Tensor:
+        # The anchor term measures drift away from the projector's initial state.
         anchor_loss = None
         for parameter_name, parameter in self.projector.named_parameters():
             anchor_parameter = self.projector_anchor_state_dict[parameter_name].to(parameter.device)
@@ -250,6 +279,8 @@ class OnlineAdaptationModel(BaseModel):
         return torch.sqrt(drift_value)
 
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
+        # The forward path follows the design narrative literally:
+        # build two views, encode them separately, project the online one, then score in reference space.
         validate_online_batch(batch)
         reference_outputs = self.reference_encoder(self._replace_batch_x(batch, batch["view_a"]))
         online_outputs = self.online_encoder(self._replace_batch_x(batch, batch["view_b"]))
@@ -303,6 +334,8 @@ class OnlineAdaptationModel(BaseModel):
         }
 
     def _shared_step(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
+        # The online objective is intentionally smaller than the offline one:
+        # align first, optionally use prototypes, and regularize projector drift.
         outputs = self.forward(batch)
         total_loss = (
             self.lambda_align * outputs["aux"]["alignment_loss"]

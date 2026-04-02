@@ -1,4 +1,9 @@
 from __future__ import annotations
+"""Evaluation loop that merges overlapping window scores back to entity timelines.
+
+A new reader should pair this file with the batch and output contracts. The
+evaluator relies on the fixed `point_scores` field so it can stay model-agnostic.
+"""
 
 from typing import Any
 
@@ -15,6 +20,8 @@ class Evaluator:
         self.device = device
 
     def evaluate(self, model: BaseModel, data_loader: Any) -> dict[str, Any]:
+        # Window-level scores are accumulated back onto each entity because the
+        # downstream metrics should be interpreted on the original timeline.
         model.to(self.device)
         model.eval()
         entity_score_sums: dict[str, torch.Tensor] = {}
@@ -62,6 +69,8 @@ class Evaluator:
         all_point_labels: list[np.ndarray] = []
 
         for entity_id, score_sum in entity_score_sums.items():
+            # Overlap-aware averaging is the bridge from sliding-window outputs
+            # back to a per-entity anomaly score sequence.
             counts = torch.clamp(entity_score_counts[entity_id], min=1.0)
             averaged_scores = score_sum / counts
             evaluation_record = {

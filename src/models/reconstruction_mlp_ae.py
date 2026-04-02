@@ -1,4 +1,11 @@
 from __future__ import annotations
+"""Self-contained reconstruction baseline for the thesis codebase.
+
+A new reader should start here if they want the smallest full model in the
+repository. The same file owns architecture, forward logic, loss computation,
+and stage methods so the baseline can be read top-to-bottom without jumping to
+task-specific helper files.
+"""
 
 from typing import Any
 
@@ -23,6 +30,8 @@ class ReconstructionMLPAutoencoder(BaseModel):
         self.encoder_dim = encoder_dim
         self.hidden_dim = hidden_dim
 
+        # Encoder and decoder stay deliberately plain here because this file is
+        # the minimal vertical slice that all later models are compared against.
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, encoder_dim),
             nn.ReLU(),
@@ -41,6 +50,8 @@ class ReconstructionMLPAutoencoder(BaseModel):
         self.loss_name = loss_name
 
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
+        # The baseline flattens the window temporarily so the MLP can work on
+        # per-timestep vectors, then restores the `[B, L, *]` thesis contract.
         validate_batch(batch)
         x_tensor = batch["x"]
         batch_size, window_size, num_channels = x_tensor.shape
@@ -70,7 +81,7 @@ class ReconstructionMLPAutoencoder(BaseModel):
         outputs: dict[str, Any],
         batch: dict[str, Any],
     ) -> torch.Tensor:
-        """MSE loss"""
+        # The baseline objective stays intentionally narrow: reconstruction only.
         return torch.mean((outputs["recon"] - batch["x"]) ** 2)
 
     def _build_stage_log(
@@ -85,6 +96,8 @@ class ReconstructionMLPAutoencoder(BaseModel):
         }
 
     def _shared_step(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
+        # Training, validation, and test all share the same mechanics here so
+        # the only changing part is the stage prefix used in the logs.
         outputs = self.forward(batch)
         loss = self._compute_reconstruction_loss(outputs, batch)
         return {

@@ -17,7 +17,7 @@ source_research: documents/logs/04-01-2026/research/research-pre-phase-4-ablatio
 
 ## Overview
 
-Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
+Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: `src/models/thesis_multitask.py` now uses gate-entropy regularization directly while retaining the legacy margin field only for backward checkpoint compatibility.
 
 This document rewrites the earlier detail note so that it matches the repository as it exists after the revised Phase 1 to Phase 3 closure work. The current offline path is no longer a placeholder-era vertical slice with split task files and external model-specific helper modules. It is now a registry-driven, one-model-one-file offline codebase with a reconstruction baseline, a multitask prototype-fusion model, CARLA-style synthetic anomaly injection, a maintained anomaly-visualization surface, and a design-level commitment to objective modularity.
 
@@ -127,9 +127,33 @@ tests/test_multitask_shapes.py
 tests/test_one_multitask_train_step.py
 tests/test_synthetic_anomaly_injection.py
 tests/test_synthetic_anomaly_visualization.py
+configs/experiment/smd_multitask.yaml
+configs/experiment/smd_multitask_smoke.yaml
+configs/experiment/smd_multitask_continuous_only.yaml
+configs/experiment/smd_multitask_discrete_only.yaml
+configs/experiment/smd_multitask_fused.yaml
+configs/experiment/smd_multitask_no_diversity.yaml
+configs/experiment/smd_multitask_no_variance.yaml
+configs/experiment/smd_multitask_no_covariance.yaml
+configs/experiment/smd_multitask_no_usage.yaml
+configs/experiment/smd_multitask_no_gate.yaml
+configs/experiment/smd_multitask_no_augmentation.yaml
+scripts/run_ablation.py
+src/data/stream.py
+src/models/online_adaptation.py
+src/engine/online_loop.py
+scripts/run_online_adaptation.py
+tests/test_fusion_ablation_modes.py
+tests/test_temperature_schedule.py
+tests/test_ablation_runner.py
+tests/test_online_stream.py
+tests/test_online_adaptation_step.py
+tests/test_online_state_roundtrip.py
+tests/test_online_reference_checkpoint.py
+tests/test_online_entrypoint.py
 ```
 
-The previous expectation that `src/data/stream.py`, `tests/test_model_contracts.py`, and `configs/experiment/smd_multitask.yaml` were part of the active pre-Phase-4 path is no longer accurate for the current repository.
+The previous expectation that `src/data/stream.py` and `configs/experiment/smd_multitask.yaml` were absent from the active path is no longer accurate for the current repository. Those files now exist together with the first conservative Phase 4 runtime scaffold, while the offline ablation-ready multitask family remains the gate that justifies that scaffold.
 
 ## Phase 1 - Current Closure State
 
@@ -167,6 +191,8 @@ The current repository already contains:
 
 The main detail concern before Phase 4 is not whether augmentation exists. It is whether the augmentation and fusion controls are exposed clearly enough for large ablation studies and later thesis reporting.
 
+That remaining concern is now addressed in code through explicit multitask ablation YAMLs, trainer-driven fusion warm-up, temperature annealing, a compact ablation runner, and JSONL metrics that include discrete-usage concentration and schedule state.
+
 ## Updated Pre-Phase-4 Priorities
 
 Before online adaptation begins, the repository should close the following offline engineering priorities:
@@ -187,14 +213,10 @@ The current code already implements the following branch-collapse controls insid
 - branch-wise variance floor loss
 - branch-wise covariance reduction loss
 - discrete usage balancing loss
-- gate entropy regularization in the design surface, with a mild barrier-style gate term still used by the current code on `alpha` and `beta`
+- gate entropy regularization on `alpha` and `beta`
 - logging of `alpha`, `beta`, continuous norm, and discrete norm
 
-This means the current repository already contains the main mathematical ingredients described in `documents/design/idea.md`. The remaining pre-Phase-4 gap is not the existence of these terms. The remaining gaps are:
-
-- no explicit default commitment yet at the detail level to start from the minimal objective only
-- no first-class scheduling and ablation surface around optional terms
-- no diagnostics-to-regularizer activation rule encoded in configs and tests
+This means the current repository already contains the main mathematical ingredients described in `documents/design/idea.md`. The earlier pre-Phase-4 gaps around schedule control, ablation YAMLs, and diagnostics have now been implemented in the multitask path. The remaining deferred work is no longer basic gate closure. It is later-slice scope such as drift injection, broader online adaptation strategies, and NGD-style optimization.
 
 ## Pre-Phase-4 Ablation Readiness
 
@@ -202,19 +224,19 @@ The repository should next support extensive ablations without introducing new c
 
 `documents/logs/04-01-2026/detail/detail-pre-phase-4-ablation-readiness-checklist.md`
 
-The most important implementation targets from that checklist are:
+The most important implementation targets from that checklist are now present in code:
 
 - explicit experiment YAMLs for continuous-only, discrete-only, fused, and loss-drop variants
 - trainer-level support for fusion warm-up and temperature annealing
 - exact limiting-case tests for `alpha = beta = 0` and `alpha = beta = 1`
 - script-level support for repeatable ablation runs and compact result summaries
-- reproducibility improvements around logging and versioned experiment artifacts
+- reproducibility improvements around resolved-config persistence and optional Weights & Biases logging
 
 ## What This Document Intentionally Removes from the Older Version
 
 This rewrite intentionally removes or demotes several assumptions from the earlier version of this file:
 
-- `src/data/stream.py` is no longer treated as part of the active pre-Phase-4 offline path.
+- `src/data/stream.py` is now treated as part of the active conservative Phase 4 scaffold rather than as a hypothetical future placeholder.
 - The repository is no longer described as if `ThesisMultiTaskModel` were still partly placeholder-based.
 - The repository is no longer described as if `src/tasks/`, model-specific `src/losses/`, or model-specific `src/models/modules/` were acceptable active dependencies.
 - The repository is no longer described as if the main remaining need before Phase 4 were basic vertical-slice construction.
@@ -225,7 +247,8 @@ This updated detail document is complete when it accurately describes the reposi
 
 - an active offline SMD codebase with one-model-one-file multitask logic
 - explicit synthetic anomaly generation and visualization
-- a Phase 1 to Phase 3 path that is already runnable
-- a remaining pre-Phase-4 focus on ablation readiness, branch-collapse control scheduling, and documentation alignment
+- a Phase 1 to Phase 3 path that is already runnable and ablation-ready from YAML alone
+- a conservative Phase 4 scaffold built around `src/data/stream.py`, `src/models/online_adaptation.py`, `src/engine/online_loop.py`, and `scripts/run_online_adaptation.py`
+- explicit acknowledgment that drift injection, encoder unfreezing, and NGD-style optimization remain deferred beyond the first online slice
 
-Phase 4 should remain blocked until those pre-Phase-4 ablation-readiness items are addressed without breaking the current active offline path.
+Phase 4 is no longer absent from the repository. The current state is instead a gate-respecting first Phase 4 slice: projector-first, clean-stream-only, checkpointable, and dependent on the canonical offline multitask checkpoint from `configs/experiment/smd_multitask.yaml`.

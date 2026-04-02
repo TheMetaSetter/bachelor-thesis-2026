@@ -1,4 +1,11 @@
 from __future__ import annotations
+"""Sequential window streaming for the first online adaptation slice.
+
+The offline data path exposes shuffled batches. This file instead preserves time
+order so the online loop can process windows as a stream. A new reader should
+notice that the online path extends the offline window contract rather than
+replacing it.
+"""
 
 from dataclasses import dataclass
 from typing import Any
@@ -11,6 +18,8 @@ from src.data.collate import collate_windows
 
 @dataclass
 class SequenceCursor:
+    # The cursor is small but important: it is the piece of state that lets the
+    # online stream resume from checkpoints without inventing a second protocol.
     position: int = 0
 
     def state_dict(self) -> dict[str, int]:
@@ -32,6 +41,8 @@ class SMDOnlineStream:
         clean_stream_only: bool = True,
         max_windows: int | None = None,
     ) -> None:
+        # The first accepted online slice is intentionally conservative. The
+        # stream therefore supports only clean sequential windows right now.
         if not clean_stream_only:
             raise ValueError("The first online adaptation slice supports only clean_stream_only=True")
         self.sequences = sequences
@@ -57,6 +68,8 @@ class SMDOnlineStream:
         return self.cursor.position < len(self.index_records)
 
     def next_window(self) -> dict[str, Any]:
+        # Each yielded window still looks like an offline window, plus stream
+        # metadata that the online loop can serialize and resume later.
         if not self.has_next():
             raise StopIteration("No more windows remain in the online stream")
 
@@ -110,12 +123,16 @@ class OnlineWindowBatcher:
         view_noise_std: float = 0.0,
         view_dropout_probability: float = 0.0,
     ) -> None:
+        # The batcher adds only the two online views. Everything else is reused
+        # from the same collated window structure as the offline pipeline.
         self.stream = stream
         self.batch_size = batch_size
         self.view_noise_std = view_noise_std
         self.view_dropout_probability = view_dropout_probability
 
     def _build_view(self, batch_tensor: torch.Tensor) -> torch.Tensor:
+        # View construction stays lightweight in the first online slice because
+        # the main experiment question is adaptation, not aggressive augmentation.
         view_tensor = batch_tensor.clone()
         if self.view_noise_std > 0.0:
             view_tensor = view_tensor + torch.randn_like(view_tensor) * self.view_noise_std
@@ -125,6 +142,8 @@ class OnlineWindowBatcher:
         return view_tensor
 
     def next_batch(self) -> dict[str, Any]:
+        # The final batch is validated against the extended online contract
+        # before the model ever sees it.
         windows: list[dict[str, Any]] = []
         while len(windows) < self.batch_size and self.stream.has_next():
             windows.append(self.stream.next_window())
