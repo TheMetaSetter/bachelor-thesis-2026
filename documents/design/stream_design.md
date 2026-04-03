@@ -388,6 +388,30 @@ The cleanest current plan is:
 * real streaming with injected drift,
 * fully synthetic streaming.
 
+## Current repository translation of that plan
+
+The earlier generic streaming roadmap should now be read against the repository
+as it exists today.
+
+- The current implemented Phase 4 slice is narrower than the full future stream
+  stack described above. It is clean-stream-only, uses a frozen reference
+  encoder, keeps the online encoder frozen by default, and updates only the
+  lightweight residual projector in the accepted first slice.
+- The current repository therefore does not yet implement the full
+  `DatasetStream -> Windowizer -> DriftInjector -> OnlineEvaluator` research
+  surface as an accepted runtime. It implements the first conservative online
+  path that proves checkpointed sequential adaptation without widening scope too
+  early.
+- The next deferred streaming milestones are:
+  - deterministic drift injection operators on real benchmark streams;
+  - a non-adaptive online baseline under injected drift;
+  - broader adaptation policies beyond `projector_params`;
+  - later NGD-style experiments once the simpler online path is stable.
+- This separation is deliberate. It keeps the current documentation aligned with
+  `codebase_preferences.md`: readability first, least number of codepaths, and
+  explicit configuration boundaries instead of silently mixing multiple online
+  research programs into one accepted path.
+
 ## Necessary URLs
 
 ### Main choices

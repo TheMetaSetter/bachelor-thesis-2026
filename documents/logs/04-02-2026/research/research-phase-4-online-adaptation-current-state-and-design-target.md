@@ -108,6 +108,12 @@ The target detail note reframes the repository after the Phase 1 to Phase 3 clos
 
 The design documents then describe what Phase 4 is supposed to be once that gate is passed. `documents/design/idea.md` defines the semantic structure of online adaptation, `documents/design/design_starter.md` defines the self-contained model-file boundary, and `documents/design/stream_design.md` defines the future stream stack, optimizer boundary, checkpoint contract, and monitoring contract. Taken together, the repository documentation is now consistent with the implementation direction: the first conservative Phase 4 slice exists in code, and broader online expansion remains intentionally deferred.
 
+The earlier generic vertical-slice roadmap should therefore now be read as
+translated into current repository terms. Basic online scaffolding is no longer
+the open question. The remaining later-slice questions are drift injection,
+non-adaptive online baselines under drift, broader parameter-group adaptation,
+and eventual NGD-style experimentation after the accepted first slice is stable.
+
 ## Open Questions
 
 - The current online path implements only the clean-stream projector-first slice. The design documents still describe deferred expansions such as drift injection, broader parameter-group adaptation, and NGD-style optimization.

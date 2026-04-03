@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Visualization helper for inspecting one synthetic anomaly family at a time."""
 
 import argparse
 from pathlib import Path
@@ -12,7 +13,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.config import load_experiment_config
 from src.core.registry import build_dataset, register_dataset
-from src.data.augment import SyntheticAnomalyInjector
+from src.data.augment import REDLAMP_ANOMALY_FAMILIES, SyntheticAnomalyInjector
 from src.data.loaders import build_smd_dataset_bundle
 
 
@@ -39,7 +40,11 @@ def save_synthetic_anomaly_visualization(
 
     axes[0].set_title("Clean window")
     axes[1].set_title(
-        f"Augmented window: {metadata['anomaly_family']} channels={metadata['affected_channels']}"
+        (
+            f"Augmented window: {metadata['anomaly_family']} "
+            f"(index={metadata.get('anomaly_family_index')}) "
+            f"channels={metadata['affected_channels']}"
+        )
     )
     axes[2].imshow(anomaly_mask.unsqueeze(0).numpy(), aspect="auto", cmap="Reds")
     axes[2].set_title("Synthetic anomaly mask")
@@ -79,10 +84,22 @@ def main() -> None:
         default="outputs/synthetic_anomaly_visualization/sample.png",
     )
     parser.add_argument("--sample-index", type=int, default=0)
+    parser.add_argument(
+        "--anomaly-family",
+        choices=list(REDLAMP_ANOMALY_FAMILIES),
+        default=None,
+        help="Force one anomaly family for deterministic inspection.",
+    )
     args = parser.parse_args()
 
     clean_batch = build_demo_batch(args.experiment_config)
-    injector = SyntheticAnomalyInjector(anomaly_probability=1.0)
+    if args.anomaly_family is None:
+        injector = SyntheticAnomalyInjector(anomaly_probability=1.0)
+    else:
+        injector = SyntheticAnomalyInjector(
+            anomaly_probability=1.0,
+            anomaly_families=(args.anomaly_family,),
+        )
     augmented_batch = injector.augment_batch(clean_batch)
     saved_path = save_synthetic_anomaly_visualization(
         clean_batch=clean_batch,

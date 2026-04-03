@@ -549,6 +549,12 @@ Phase 3 is complete only if:
 
 This phase validates the completed first slice and explicitly prevents scope drift. The thesis objective is to demonstrate that the repository can now execute a conservative Phase 4 path without silently expanding into drift injection, encoder unfreezing, or NGD experimentation.
 
+This phase should also be read as the current repository translation of the
+earlier generic roadmap. The foundational online scaffolding is no longer the
+missing work. The remaining later-slice streaming scope is drift injection,
+non-adaptive online baselines under drift, broader adaptation policies, and
+eventual NGD-style expansion once the accepted first slice is stable.
+
 ### File-level edits
 
 This phase is mostly validation-oriented and may touch:

@@ -4,7 +4,7 @@
 
 ### For data loaders
 1. Data loaders need to follow mechanisms under TSLib codebase. Refer to code under `bsc-thesis-ref-codebases/Time-Series-Library`.
-2. Synthetic anomaly injection needs to follow mechanisms under CARLA codebase. Refer to code under `bsc-thesis-ref-codebases/CARLA-main/data/augment.py`.
+2. Synthetic anomaly injection needs to follow mechanisms under CARLA codebase and RedLamp codebase. Refer to code under `bsc-thesis-ref-codebases/CARLA-main/data/augment.py` and `bsc-thesis-ref-codebases/RedLamp/loaders/loader_aug.py`.
 
 ### For discrete prototypes or codebook
 - Discrete prototypes or codebook follow mechanisms under DALL-E codebase. Refer to code under `bsc-thesis-ref-codebases/DALL-E-master/dall_e`.

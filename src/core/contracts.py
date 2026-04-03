@@ -75,6 +75,8 @@ def validate_window(window: dict[str, Any]) -> None:
 def validate_batch(batch: dict[str, Any]) -> None:
     # The offline batch contract is intentionally stable so the baseline model,
     # the multitask model, and the engine code can all share one reading path.
+    # Synthetic augmentation may append metadata and binary supervision, but it
+    # must not replace these base fields.
     _require_keys(batch, ["x", "point_labels", "mask", "timestamps", "meta"], "batch")
     _require_tensor_rank(batch["x"], 3, "batch['x']")
     if batch["point_labels"] is not None:

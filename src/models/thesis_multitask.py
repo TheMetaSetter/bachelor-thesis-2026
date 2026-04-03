@@ -15,7 +15,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from src.core.contracts import validate_batch, validate_model_outputs
-from src.data.augment import SyntheticAnomalyInjector
+from src.data.augment import REDLAMP_ANOMALY_FAMILIES, SyntheticAnomalyInjector
 from src.models.base_model import BaseModel
 
 
@@ -84,6 +84,7 @@ class ThesisMultitaskModel(BaseModel):
         min_segment_fraction: float = 0.1,
         max_segment_fraction: float = 0.2,
         spike_scale: float = 3.0,
+        anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
     ) -> None:
         super().__init__()
         # This constructor stores both the architecture and the experiment
@@ -178,13 +179,16 @@ class ThesisMultitaskModel(BaseModel):
 
         # Offline objective helpers.
         # Optional losses are activated by `lambda_*` so ablations can stay on
-        # one codepath instead of branching into separate model variants.
+        # one codepath instead of branching into separate model variants. The
+        # intended starting point is still only reconstruction plus
+        # classification loss until observed failure modes justify more terms.
         self.branch_layer_norm = nn.LayerNorm(hidden_dim)
         self.synthetic_anomaly_injector = SyntheticAnomalyInjector(
             anomaly_probability=anomaly_probability,
             min_segment_fraction=min_segment_fraction,
             max_segment_fraction=max_segment_fraction,
             spike_scale=spike_scale,
+            anomaly_families=anomaly_families,
         )
         self.optional_loss_configs: dict[str, dict[str, Any]] = {
             "diversity_loss": {
@@ -392,6 +396,7 @@ class ThesisMultitaskModel(BaseModel):
             {
                 "is_synthetic_anomaly": False,
                 "anomaly_family": "clean",
+                "anomaly_family_index": None,
                 "start_index": None,
                 "end_index": None,
                 "affected_channels": [],
@@ -420,9 +425,6 @@ class ThesisMultitaskModel(BaseModel):
         hidden_reconstruction = fusion_outputs["hidden_reconstruction"]
         hidden_classification = fusion_outputs["hidden_classification"]
 
-        # TODO: Experiment using RNN as classification and reconstruction head.
-        # For classification, use the last hidden state as the input into the head.
-        # For reconstruction, use all hidden states as input into the RNN head.
         recon = self.reconstruction_head(hidden_reconstruction)
         pooled_classification_hidden = hidden_classification.mean(dim=1)
         logits = self.classification_head(pooled_classification_hidden)
@@ -556,7 +558,9 @@ class ThesisMultitaskModel(BaseModel):
         optional_loss_values: dict[str, torch.Tensor],
     ) -> torch.Tensor:
         # The weighted sum is intentionally explicit so readers can map each
-        # `lambda_*` config field directly to one line of the objective.
+        # `lambda_*` config field directly to one line of the objective. The
+        # default beginning of training is still the small objective
+        # `L_recon + lambda_cls * L_cls`.
         total_loss = reconstruction_loss + self.lambda_cls * classification_loss
         for loss_name, loss_value in optional_loss_values.items():
             total_loss = total_loss + self.optional_loss_configs[loss_name]["weight"] * loss_value

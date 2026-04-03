@@ -190,6 +190,11 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("max_segment_fraction must be between 0 and 1")
         if float(task_config["min_segment_fraction"]) > float(task_config["max_segment_fraction"]):
             raise ValueError("min_segment_fraction must not exceed max_segment_fraction")
+        anomaly_families = task_config.get("anomaly_families")
+        if not isinstance(anomaly_families, list) or not anomaly_families:
+            raise ValueError("anomaly_families must be a non-empty list")
+        if not all(isinstance(family_name, str) and family_name for family_name in anomaly_families):
+            raise ValueError("anomaly_families must contain non-empty strings")
     if task_config.get("task_name") == "online_adaptation":
         if float(model_config["projector_dropout"]) < 0.0:
             raise ValueError("projector_dropout must be non-negative")

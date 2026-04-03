@@ -322,6 +322,8 @@ The reconstruction head consumes only $H_{\text{rec}}$, and the anomaly-type cla
 The loss design should follow **objective modularity** or, equivalently, an **ablation-friendly objective surface**. That means:
 
 * the default starting objective is only reconstruction plus classification
+* this simple objective remains the beginning-of-training default until
+  concrete observed failure modes justify extra regularizers
 * variance and covariance regularization are the first anti-collapse additions if collapse appears
 * cross-branch decorrelation, code-usage balancing, and gate entropy regularization are activated only for observed failure modes
 * every loss term remains in the same model file as the model that owns it
@@ -546,6 +548,40 @@ A good consistency test is this:
 * Can I keep the same downstream prototype modules even if I swap MOMENT for another encoder?
 
 If the answer is yes, then the framework is genuinely reusable. If the answer is no, then some boundary is in the wrong place.
+
+## Implementation sequencing in the current repository
+
+The earlier generic `Phase 0-10` roadmap should now be translated into the
+repository's present phase language rather than treated as a literal active
+sequence.
+
+- The older contract-freezing and minimum-vertical-slice phases are already
+  closed through the current SMD-first offline path, the stable batch contract,
+  and the stable model-output contract.
+- The earlier modularization phases are partly closed through the current
+  `configuration -> data -> model -> engine` layering, the registry-driven
+  scripts, and the one-model-one-file rule from `codebase_preferences.md`.
+  Broad multi-dataset generalization is still deferred.
+- The earlier experiment-logging phase is partly closed through YAML-controlled
+  experiments, resolved-config persistence, JSONL metrics, and optional Weights
+  & Biases logging. The remaining reproducibility debt is DVC-backed synthetic
+  or derived-data versioning when those artifacts are materialized.
+- The earlier thesis-model phase is already realized in the current offline
+  multitask implementation. The repository now exposes the continuous branch,
+  discrete branch, task-specific fusion, RedLamp-default synthetic anomaly
+  injection with CARLA as a mechanism reference, and the ablation-ready
+  objective surface.
+- The earlier online-adaptation phase is also partly realized: the accepted
+  first online slice is projector-first, clean-stream-only, and deliberately
+  narrow. Drift injection, non-adaptive online baselines under drift, broader
+  adaptation policies, and NGD-style optimization remain later-slice scope.
+- The older final “generalize only after one successful result” phase remains an
+  active policy for this repository. The codebase should expand to broader
+  datasets, drift families, and adaptation strategies only after the current
+  accepted offline and conservative online paths are stable.
+
+This repository should therefore be read as a translated realization of the old
+roadmap, not as a codebase still waiting to begin that roadmap.
 
 ## Frozen interface contracts
 

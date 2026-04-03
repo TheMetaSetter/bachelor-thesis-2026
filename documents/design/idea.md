@@ -60,7 +60,7 @@ $$
 H_{\text{cls}} = \alpha \hat H^{(d)} + (1-\alpha)\hat H^{(c)}.
 $$
 
-The reconstruction branch should make predictions only from $H_{\text{rec}}$, while the classification branch should make predictions only from $H_{\text{cls}}$. In the default thesis design, you do not move the real prediction paths onto branch-local heads attached directly to $\hat H^{(c)}$ or $\hat H^{(d)}$. You plan to inject artificial anomalies during training and perform anomaly-type classification, initially inspired by the anomaly taxonomy used in CARLA-style TSAD work, while keeping SMD as the first experimental dataset. This overall architecture and motivation are consistent with your proposal draft, including the emphasis on continuous and discrete prototypes, task-specialized fusion, uncertainty, and online adaptation.
+The reconstruction branch should make predictions only from $H_{\text{rec}}$, while the classification branch should make predictions only from $H_{\text{cls}}$. In the default thesis design, you do not move the real prediction paths onto branch-local heads attached directly to $\hat H^{(c)}$ or $\hat H^{(d)}$. You plan to inject artificial anomalies during training and perform anomaly-type classification, with the active repository default now using the 11 anomaly types from RedLamp while retaining CARLA as a mechanism reference for subsequence-oriented corruption. SMD remains the first experimental dataset. This overall architecture and motivation are consistent with your proposal draft, including the emphasis on continuous and discrete prototypes, task-specialized fusion, uncertainty, and online adaptation.
 
 Then comes the **online adaptation phase**. For each online mini-batch of (k) windows,
 
@@ -104,7 +104,7 @@ That gives you a stable base for later prototype modules and online adaptation.
 
 For this repository specifically, that vertical slice should also obey the strict rule in `codebase_preferences.md` that one model stays in one file. So the reconstruction baseline, the offline multitask thesis model, and the online adaptation model should each keep their forward path, scoring path, and stage-specific losses in the same model file rather than splitting them across separate task or loss files.
 
-There should also be an explicit pre-Phase-4 gate in the implementation plan. Before attempting the online adaptation stage, phases 1 to 3 need to close the earlier debt around registry-only script construction, CARLA-aligned synthetic anomaly injection, and user-visible inspection of injected anomalies.
+There should also be an explicit pre-Phase-4 gate in the implementation plan. Before attempting the online adaptation stage, phases 1 to 3 need to close the earlier debt around registry-only script construction, explicit RedLamp-default synthetic anomaly injection with CARLA-informed subsequence mechanics, and user-visible inspection of injected anomalies.
 
 ---
 
@@ -154,6 +154,10 @@ $$
 \mathcal{L}_{\text{recon}} +
 \lambda_{\text{cls}} \mathcal{L}_{\text{cls}}.
 $$
+
+At the beginning of experimentation, this simple objective should be the active
+default. Additional regularizers should remain disabled until concrete observed
+failure modes justify turning them on.
 
 The broader weighted-sum objective remains part of the design surface, but it is not the default starting point. It is the superset from which extra terms are enabled only when diagnostics justify them:
 
@@ -608,6 +612,43 @@ $$
 Not full prototypes, not full online adaptation, not full uncertainty logic.
 
 This keeps the codebase testable and reduces debugging chaos.
+
+### B1. Translate the earlier generic roadmap into the current repository phases
+
+The older generic `Phase 0-10` discussion is still useful, but it should now be
+read through the repository's actual current state rather than copied as a
+literal implementation sequence.
+
+- Old Phase 0 and Phase 1 are already closed in the current repository through
+  the frozen batch and encoder contracts, the SMD-first runnable vertical slice,
+  and the registry-driven offline path.
+- Old Phase 2 and Phase 3 are partly closed. The current repository already has
+  a stable `configuration -> data -> model -> engine` structure and a readable
+  one-model-one-file offline path, but broad multi-dataset generalization
+  remains deferred.
+- Old Phase 4 and Phase 6 now map to later streaming expansion rather than to
+  missing foundations. The main deferred items are deterministic drift
+  injection, a non-adaptive online baseline under drift, and broader streaming
+  evaluation policies.
+- Old Phase 5 is partly closed through explicit YAML experiments, resolved-config
+  persistence, JSONL logging, and optional Weights & Biases support. The
+  remaining reproducibility debt is DVC-backed versioning when synthetic or
+  derived dataset artifacts become materialized outputs.
+- Old Phase 7 is already realized in the current offline thesis model boundary:
+  encoder, continuous branch, discrete branch, task-specific fusion, and
+  reconstruction/classification heads live inside the active multitask model.
+- Old Phase 8 is already realized as the accepted first online slice:
+  projector-first, clean-stream-only, frozen-reference online adaptation.
+- Old Phase 9 is mostly closed for the currently accepted offline and online
+  slices through shape tests, one-step train tests, checkpoint round-trips, and
+  stream-state tests. Future drift-specific leakage checks remain later-slice
+  work.
+- Old Phase 10 remains a documentation policy: generalize only after one stable
+  paper-style result is secured on the current accepted path.
+
+This translation is intentionally semantic rather than structural. The current
+repository already has its fixed runtime layering and should not be rewritten to
+imitate the older generic folder sketch.
 
 ### C. Use strong ablations to test branch specialization
 

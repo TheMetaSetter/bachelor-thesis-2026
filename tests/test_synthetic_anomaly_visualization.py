@@ -19,6 +19,7 @@ def test_synthetic_anomaly_visualization_writes_artifact(tmp_path) -> None:
         min_segment_fraction=0.1,
         max_segment_fraction=0.2,
         spike_scale=3.0,
+        anomaly_families=("flip",),
     )
     augmented_batch = injector.augment_batch(clean_batch)
 
@@ -30,3 +31,4 @@ def test_synthetic_anomaly_visualization_writes_artifact(tmp_path) -> None:
 
     assert output_path.exists()
     assert output_path.stat().st_size > 0
+    assert augmented_batch["augmentation_metadata"][0]["anomaly_family"] == "flip"

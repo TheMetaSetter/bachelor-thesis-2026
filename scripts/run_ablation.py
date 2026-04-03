@@ -56,6 +56,7 @@ def _build_summary_row(
         "warmup_alpha_value": task_config["warmup_alpha_value"],
         "warmup_beta_value": task_config["warmup_beta_value"],
         "use_synthetic_augmentation": task_config["use_synthetic_augmentation"],
+        "anomaly_families": ",".join(task_config.get("anomaly_families", [])),
     }
 
 

@@ -41,3 +41,4 @@ def test_run_ablation_suite_writes_compact_summary_artifacts(monkeypatch, tmp_pa
     assert outputs["summary_json_path"].exists()
     assert outputs["summary_csv_path"].exists()
     assert outputs["summary_rows"][0]["experiment_name"] == "smd_multitask_smoke"
+    assert outputs["summary_rows"][0]["anomaly_families"]

@@ -1,15 +1,31 @@
 from __future__ import annotations
+
 """Synthetic anomaly injection for the offline multitask path.
 
-This file exists to create self-supervised anomaly-type supervision without
-changing the batch contract used by the rest of the repository. A new reader
-should notice that augmentation is still treated as data preparation, even
-though the multitask model decides when to call it during training.
+This file is the single owning surface for thesis-facing synthetic anomaly
+injection. The active default taxonomy follows the 11 anomaly types from the
+RedLamp reference, while CARLA remains a mechanism reference for keeping the
+implementation subsequence-oriented and easy to inspect on fixed windows.
 """
 
-from typing import Any
+from typing import Any, Callable
 
 import torch
+
+
+REDLAMP_ANOMALY_FAMILIES: tuple[str, ...] = (
+    "spike",
+    "flip",
+    "speedup",
+    "noise",
+    "cutoff",
+    "average",
+    "scale",
+    "wander",
+    "contextual",
+    "upsidedown",
+    "mixture",
+)
 
 
 class SyntheticAnomalyInjector:
@@ -19,13 +35,7 @@ class SyntheticAnomalyInjector:
         min_segment_fraction: float = 0.1,
         max_segment_fraction: float = 0.2,
         spike_scale: float = 3.0,
-        anomaly_families: tuple[str, ...] = (
-            "seasonal",
-            "trend",
-            "global",
-            "contextual",
-            "shapelet",
-        ),
+        anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
     ) -> None:
         # These checks keep augmentation behavior explicit. Research code becomes
         # very hard to trust when synthetic data is allowed to silently drift.
@@ -46,7 +56,30 @@ class SyntheticAnomalyInjector:
         self.min_segment_fraction = min_segment_fraction
         self.max_segment_fraction = max_segment_fraction
         self.spike_scale = spike_scale
-        self.anomaly_families = anomaly_families
+        self.epsilon = 1e-6
+
+        # A new reader should notice that the taxonomy is visible in one place.
+        # The rest of the file only dispatches through this registry.
+        self.family_registry: dict[
+            str,
+            Callable[[torch.Tensor, int, int], tuple[torch.Tensor, torch.Tensor, dict[str, Any]]],
+        ] = {
+            "spike": self._inject_spike_family,
+            "flip": self._inject_flip_family,
+            "speedup": self._inject_speedup_family,
+            "noise": self._inject_noise_family,
+            "cutoff": self._inject_cutoff_family,
+            "average": self._inject_average_family,
+            "scale": self._inject_scale_family,
+            "wander": self._inject_wander_family,
+            "contextual": self._inject_contextual_family,
+            "upsidedown": self._inject_upsidedown_family,
+            "mixture": self._inject_mixture_family,
+        }
+        self.anomaly_families = tuple(anomaly_families)
+        unknown_families = sorted(set(self.anomaly_families) - set(self.family_registry))
+        if unknown_families:
+            raise ValueError(f"Unsupported anomaly_families: {unknown_families}")
 
     def _clone_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         cloned_batch: dict[str, Any] = {}
@@ -80,88 +113,323 @@ class SyntheticAnomalyInjector:
         selected_indices = torch.randperm(num_channels, device=device)[:num_selected_channels]
         return [int(index.item()) for index in selected_indices.sort().values]
 
-    def _carla_repeat_and_subsample(
-        self,
-        subsequence: torch.Tensor,
-        compression_factor: int,
-    ) -> torch.Tensor:
-        repeated_subsequence = subsequence.repeat(compression_factor, 1)
-        compressed_subsequence = repeated_subsequence[::compression_factor]
-        return compressed_subsequence[: subsequence.shape[0]]
-
-    def _inject_family_on_subsequence(
+    def _extract_channel_segment(
         self,
         clean_channel_window: torch.Tensor,
-        anomaly_family: str,
         start_index: int,
         end_index: int,
-    ) -> tuple[torch.Tensor, int, dict[str, Any]]:
-        # The family-specific branch is the main "why" block in this file. Each
-        # branch rewrites the sampled subsequence in a different, inspectable way.
+    ) -> torch.Tensor:
+        return clean_channel_window[start_index:end_index, 0].clone()
+
+    def _segment_scale(self, segment: torch.Tensor) -> torch.Tensor:
+        # Several families need a magnitude reference. We use a robust fallback
+        # so even low-variance windows can still receive visible corruption.
+        centered_segment = segment - segment.mean()
+        scale = centered_segment.abs().max()
+        fallback_scale = segment.abs().mean()
+        return torch.maximum(scale, fallback_scale).clamp_min(0.1)
+
+    def _interpolate_1d(self, values: torch.Tensor, positions: torch.Tensor) -> torch.Tensor:
+        if values.numel() == 1:
+            return values.repeat(positions.shape[0])
+        lower_indices = torch.floor(positions).long().clamp(min=0, max=values.shape[0] - 1)
+        upper_indices = torch.ceil(positions).long().clamp(min=0, max=values.shape[0] - 1)
+        interpolation_weight = positions - lower_indices.to(dtype=values.dtype)
+        return values[lower_indices] * (1.0 - interpolation_weight) + values[upper_indices] * interpolation_weight
+
+    def _apply_segment_update(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+        updated_segment: torch.Tensor,
+        local_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         anomalous_channel_window = clean_channel_window.clone()
-        anomalous_subsequence = anomalous_channel_window[start_index:end_index].clone()
-        family_parameters: dict[str, Any] = {
-            "compression_factor": 1,
-            "scale_factor": 1.0,
-            "trend_factor": 0.0,
-            "trend_end": False,
-            "shapelet_factor": False,
+        anomalous_channel_window[start_index:end_index, 0] = updated_segment
+        channel_mask = torch.zeros(
+            clean_channel_window.shape[0],
+            dtype=torch.long,
+            device=clean_channel_window.device,
+        )
+        channel_mask[start_index:end_index] = local_mask.long()
+        return anomalous_channel_window, channel_mask
+
+    def _inject_spike_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
+        segment_length = segment.shape[0]
+        num_spikes = int(torch.randint(1, min(segment_length, 3) + 1, (1,), device=segment.device).item())
+        spike_positions = torch.randperm(segment_length, device=segment.device)[:num_spikes].sort().values
+        spike_strength = self._segment_scale(segment) * self.spike_scale
+        spike_noise = torch.randn(num_spikes, device=segment.device, dtype=segment.dtype) * spike_strength
+        updated_segment = segment.clone()
+        updated_segment[spike_positions] = updated_segment[spike_positions] + spike_noise
+        local_mask = torch.zeros(segment_length, dtype=torch.long, device=segment.device)
+        local_mask[spike_positions] = 1
+        anomalous_channel_window, channel_mask = self._apply_segment_update(
+            clean_channel_window=clean_channel_window,
+            start_index=start_index,
+            end_index=end_index,
+            updated_segment=updated_segment,
+            local_mask=local_mask,
+        )
+        family_parameters = {
+            "spike_positions": [int(position.item()) for position in spike_positions],
+            "spike_strength": float(spike_strength.detach().cpu()),
         }
+        return anomalous_channel_window, channel_mask, family_parameters
 
-        if anomaly_family == "seasonal":
-            family_parameters["compression_factor"] = int(
-                torch.randint(2, 5, (1,), device=clean_channel_window.device).item()
-            )
-        elif anomaly_family == "trend":
-            family_parameters["trend_end"] = True
-            family_parameters["trend_factor"] = float(torch.normal(1.0, 0.5, size=(1,)).item())
-        elif anomaly_family == "global":
-            family_parameters["scale_factor"] = float(self.spike_scale * 2.0)
-        elif anomaly_family == "contextual":
-            family_parameters["scale_factor"] = float(self.spike_scale)
-        elif anomaly_family == "shapelet":
-            family_parameters["shapelet_factor"] = True
+    def _inject_flip_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
+        updated_segment = torch.flip(segment, dims=(0,))
+        local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
+        anomalous_channel_window, channel_mask = self._apply_segment_update(
+            clean_channel_window,
+            start_index,
+            end_index,
+            updated_segment,
+            local_mask,
+        )
+        family_parameters = {"operation": "reverse_subsequence"}
+        return anomalous_channel_window, channel_mask, family_parameters
+
+    def _inject_speedup_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
+        speed_factor = float(torch.tensor([1.5, 2.0, 3.0], device=segment.device)[torch.randint(0, 3, (1,), device=segment.device)].item())
+        source_positions = torch.linspace(
+            0.0,
+            segment.shape[0] - 1,
+            segment.shape[0],
+            device=segment.device,
+            dtype=segment.dtype,
+        ) * speed_factor
+        source_positions = source_positions.clamp(max=segment.shape[0] - 1)
+        updated_segment = self._interpolate_1d(segment, source_positions)
+        local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
+        anomalous_channel_window, channel_mask = self._apply_segment_update(
+            clean_channel_window,
+            start_index,
+            end_index,
+            updated_segment,
+            local_mask,
+        )
+        family_parameters = {"speed_factor": speed_factor}
+        return anomalous_channel_window, channel_mask, family_parameters
+
+    def _inject_noise_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
+        noise_std = float((self._segment_scale(segment) * 0.35).detach().cpu())
+        updated_segment = segment + torch.randn_like(segment) * noise_std
+        local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
+        anomalous_channel_window, channel_mask = self._apply_segment_update(
+            clean_channel_window,
+            start_index,
+            end_index,
+            updated_segment,
+            local_mask,
+        )
+        family_parameters = {"noise_std": noise_std}
+        return anomalous_channel_window, channel_mask, family_parameters
+
+    def _inject_cutoff_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
+        cutoff_mode = "zero" if bool(torch.rand(1, device=segment.device).item() < 0.5) else "hold"
+        if cutoff_mode == "zero":
+            updated_segment = torch.zeros_like(segment)
         else:
-            raise ValueError(f"Unsupported anomaly family: {anomaly_family}")
+            updated_segment = torch.full_like(segment, float(segment[0].detach().cpu()))
+        local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
+        anomalous_channel_window, channel_mask = self._apply_segment_update(
+            clean_channel_window,
+            start_index,
+            end_index,
+            updated_segment,
+            local_mask,
+        )
+        family_parameters = {"cutoff_mode": cutoff_mode}
+        return anomalous_channel_window, channel_mask, family_parameters
 
-        if family_parameters["trend_end"]:
-            end_index = clean_channel_window.shape[0]
-            anomalous_subsequence = anomalous_channel_window[start_index:end_index].clone()
+    def _inject_average_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
+        segment_mean = float(segment.mean().detach().cpu())
+        updated_segment = torch.full_like(segment, segment_mean)
+        local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
+        anomalous_channel_window, channel_mask = self._apply_segment_update(
+            clean_channel_window,
+            start_index,
+            end_index,
+            updated_segment,
+            local_mask,
+        )
+        family_parameters = {"segment_mean": segment_mean}
+        return anomalous_channel_window, channel_mask, family_parameters
 
-        compression_factor = int(family_parameters["compression_factor"])
-        if compression_factor > 1:
-            anomalous_subsequence = self._carla_repeat_and_subsample(
-                anomalous_subsequence,
-                compression_factor=compression_factor,
+    def _inject_scale_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
+        center = segment.mean()
+        scale_factor_candidates = torch.tensor([0.25, 0.5, 1.5, 2.0], device=segment.device, dtype=segment.dtype)
+        scale_factor = float(scale_factor_candidates[torch.randint(0, scale_factor_candidates.shape[0], (1,), device=segment.device)].item())
+        updated_segment = center + (segment - center) * scale_factor
+        local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
+        anomalous_channel_window, channel_mask = self._apply_segment_update(
+            clean_channel_window,
+            start_index,
+            end_index,
+            updated_segment,
+            local_mask,
+        )
+        family_parameters = {"scale_factor": scale_factor}
+        return anomalous_channel_window, channel_mask, family_parameters
+
+    def _inject_wander_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
+        drift_scale = self._segment_scale(segment) * 0.15
+        drift_noise = torch.randn(segment.shape[0], device=segment.device, dtype=segment.dtype) * drift_scale
+        drift_curve = torch.cumsum(drift_noise, dim=0)
+        drift_curve = drift_curve - drift_curve[0]
+        updated_segment = segment + drift_curve
+        local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
+        anomalous_channel_window, channel_mask = self._apply_segment_update(
+            clean_channel_window,
+            start_index,
+            end_index,
+            updated_segment,
+            local_mask,
+        )
+        family_parameters = {"drift_scale": float(drift_scale.detach().cpu())}
+        return anomalous_channel_window, channel_mask, family_parameters
+
+    def _inject_contextual_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
+        full_channel = clean_channel_window[:, 0]
+        outside_context_mask = torch.ones(full_channel.shape[0], dtype=torch.bool, device=full_channel.device)
+        outside_context_mask[start_index:end_index] = False
+        if outside_context_mask.any():
+            outside_context_mean = full_channel[outside_context_mask].mean()
+        else:
+            outside_context_mean = full_channel.mean()
+        contextual_offset = outside_context_mean - segment.mean()
+        contextual_offset = contextual_offset + self._segment_scale(segment) * 0.5
+        updated_segment = segment + contextual_offset
+        local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
+        anomalous_channel_window, channel_mask = self._apply_segment_update(
+            clean_channel_window,
+            start_index,
+            end_index,
+            updated_segment,
+            local_mask,
+        )
+        family_parameters = {"contextual_offset": float(contextual_offset.detach().cpu())}
+        return anomalous_channel_window, channel_mask, family_parameters
+
+    def _inject_upsidedown_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
+        inversion_center = segment.mean()
+        updated_segment = 2.0 * inversion_center - segment
+        local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
+        anomalous_channel_window, channel_mask = self._apply_segment_update(
+            clean_channel_window,
+            start_index,
+            end_index,
+            updated_segment,
+            local_mask,
+        )
+        family_parameters = {"inversion_center": float(inversion_center.detach().cpu())}
+        return anomalous_channel_window, channel_mask, family_parameters
+
+    def _inject_mixture_family(
+        self,
+        clean_channel_window: torch.Tensor,
+        start_index: int,
+        end_index: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        component_count = int(torch.randint(2, 4, (1,), device=clean_channel_window.device).item())
+        component_names = [
+            family_name
+            for family_name in self.anomaly_families
+            if family_name != "mixture"
+        ]
+        component_indices = torch.randperm(len(component_names), device=clean_channel_window.device)[:component_count]
+        selected_components = [component_names[int(index.item())] for index in component_indices]
+
+        working_channel_window = clean_channel_window.clone()
+        combined_mask = torch.zeros(clean_channel_window.shape[0], dtype=torch.long, device=clean_channel_window.device)
+        mixture_components: list[dict[str, Any]] = []
+
+        for component_name in selected_components:
+            component_window, component_mask, component_parameters = self.family_registry[component_name](
+                working_channel_window,
+                start_index,
+                end_index,
+            )
+            working_channel_window = component_window
+            combined_mask = torch.maximum(combined_mask, component_mask)
+            mixture_components.append(
+                {
+                    "component_family": component_name,
+                    "component_parameters": component_parameters,
+                }
             )
 
-        anomalous_subsequence = anomalous_subsequence * float(family_parameters["scale_factor"])
-
-        if float(family_parameters["trend_factor"]) != 0.0:
-            trend_sign = -1.0 if bool(torch.rand(1).item() < 0.5) else 1.0
-            trend_ramp = torch.linspace(
-                0.0,
-                trend_sign * float(family_parameters["trend_factor"]),
-                anomalous_subsequence.shape[0],
-                device=clean_channel_window.device,
-            ).unsqueeze(-1)
-            anomalous_subsequence = anomalous_subsequence + trend_ramp
-
-        if bool(family_parameters["shapelet_factor"]):
-            anchor_value = anomalous_channel_window[start_index].unsqueeze(0)
-            noise = torch.rand_like(anomalous_subsequence) * 0.1
-            anomalous_subsequence = anchor_value + noise
-
-        anomalous_channel_window[start_index:end_index] = anomalous_subsequence
-        family_parameters["effective_end_index"] = end_index
-        return anomalous_channel_window, end_index, family_parameters
+        family_parameters = {"mixture_components": mixture_components}
+        return working_channel_window, combined_mask, family_parameters
 
     def _inject_single_window(
         self,
         clean_window: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
         window_size, num_channels = clean_window.shape
-        start_index, sampled_end_index = self._sample_segment_bounds(window_size, clean_window.device)
+        start_index, end_index = self._sample_segment_bounds(window_size, clean_window.device)
         anomaly_family_index = int(
             torch.randint(0, len(self.anomaly_families), (1,), device=clean_window.device).item()
         )
@@ -170,34 +438,40 @@ class SyntheticAnomalyInjector:
 
         augmented_window = clean_window.clone()
         family_parameters_by_channel: dict[str, dict[str, Any]] = {}
-        effective_end_index = sampled_end_index
+        anomaly_mask = torch.zeros(window_size, dtype=torch.long, device=clean_window.device)
 
         for channel_index in affected_channels:
             channel_window = augmented_window[:, channel_index : channel_index + 1]
-            anomalous_channel_window, effective_channel_end_index, family_parameters = (
-                self._inject_family_on_subsequence(
-                    clean_channel_window=channel_window,
-                    anomaly_family=anomaly_family,
-                    start_index=start_index,
-                    end_index=sampled_end_index,
-                )
+            anomalous_channel_window, channel_mask, family_parameters = self.family_registry[anomaly_family](
+                channel_window,
+                start_index,
+                end_index,
             )
             augmented_window[:, channel_index] = anomalous_channel_window.squeeze(-1)
+            anomaly_mask = torch.maximum(anomaly_mask, channel_mask)
             family_parameters_by_channel[str(channel_index)] = family_parameters
-            effective_end_index = max(effective_end_index, effective_channel_end_index)
-
-        anomaly_mask = torch.zeros(window_size, dtype=torch.long, device=clean_window.device)
-        anomaly_mask[start_index:effective_end_index] = 1
 
         augmentation_metadata = {
             "is_synthetic_anomaly": True,
             "anomaly_family": anomaly_family,
+            "anomaly_family_index": anomaly_family_index,
             "start_index": start_index,
-            "end_index": effective_end_index,
+            "end_index": end_index,
             "affected_channels": affected_channels,
             "family_parameters_by_channel": family_parameters_by_channel,
         }
         return augmented_window, anomaly_mask, augmentation_metadata
+
+    def _build_clean_metadata(self) -> dict[str, Any]:
+        return {
+            "is_synthetic_anomaly": False,
+            "anomaly_family": "clean",
+            "anomaly_family_index": None,
+            "start_index": None,
+            "end_index": None,
+            "affected_channels": [],
+            "family_parameters_by_channel": {},
+        }
 
     def augment_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         # The output batch keeps the original keys and only adds multitask
@@ -218,16 +492,7 @@ class SyntheticAnomalyInjector:
         for batch_index in range(batch_size):
             should_inject = bool(torch.rand(1, device=clean_windows.device).item() < self.anomaly_probability)
             if not should_inject:
-                augmentation_metadata.append(
-                    {
-                        "is_synthetic_anomaly": False,
-                        "anomaly_family": "clean",
-                        "start_index": None,
-                        "end_index": None,
-                        "affected_channels": [],
-                        "family_parameters_by_channel": {},
-                    }
-                )
+                augmentation_metadata.append(self._build_clean_metadata())
                 continue
 
             augmented_window, anomaly_mask, window_metadata = self._inject_single_window(clean_windows[batch_index])

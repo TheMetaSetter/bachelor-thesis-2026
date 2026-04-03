@@ -31,6 +31,14 @@ class ExperimentLogger:
                 json.dumps(experiment_config, indent=2, sort_keys=True),
                 encoding="utf-8",
             )
+            run_start_record = {
+                "event": "run_start",
+                "experiment_name": experiment_config.get("experiment_name"),
+                "task_name": experiment_config.get("task", {}).get("task_name"),
+                "anomaly_families": experiment_config.get("task", {}).get("anomaly_families"),
+            }
+            with self.metrics_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(run_start_record, sort_keys=True) + "\n")
 
         if logging_config and logging_config.get("use_wandb", False):
             # W&B remains opt-in so local experimentation keeps the same codepath

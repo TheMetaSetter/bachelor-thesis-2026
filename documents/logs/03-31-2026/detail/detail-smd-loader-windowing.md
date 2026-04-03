@@ -19,7 +19,7 @@ source_research: documents/logs/04-01-2026/research/research-pre-phase-4-ablatio
 
 Terminology normalized on 2026-04-02. Current design target: gate entropy regularization. Current implementation status: `src/models/thesis_multitask.py` now uses gate-entropy regularization directly while retaining the legacy margin field only for backward checkpoint compatibility.
 
-This document rewrites the earlier detail note so that it matches the repository as it exists after the revised Phase 1 to Phase 3 closure work. The current offline path is no longer a placeholder-era vertical slice with split task files and external model-specific helper modules. It is now a registry-driven, one-model-one-file offline codebase with a reconstruction baseline, a multitask prototype-fusion model, CARLA-style synthetic anomaly injection, a maintained anomaly-visualization surface, and a design-level commitment to objective modularity.
+This document rewrites the earlier detail note so that it matches the repository as it exists after the revised Phase 1 to Phase 3 closure work. The current offline path is no longer a placeholder-era vertical slice with split task files and external model-specific helper modules. It is now a registry-driven, one-model-one-file offline codebase with a reconstruction baseline, a multitask prototype-fusion model, RedLamp-default synthetic anomaly injection with CARLA retained as a mechanism reference, a maintained anomaly-visualization surface, and a design-level commitment to objective modularity.
 
 The purpose of this document is therefore no longer to describe a hypothetical first slice. Its purpose is to document the current active offline structure, the design rules that now matter before Phase 4, and the remaining pre-Phase-4 work needed for ablation readiness.
 
@@ -78,7 +78,7 @@ step_output = {
 - The active code path must not depend on model-specific files under `src/tasks/`, `src/losses/`, or `src/models/modules/`.
 - `scripts/train.py` and `scripts/evaluate.py` must use the registry-driven dataset path.
 - Synthetic anomaly generation and anomaly inspection belong to the offline multitask path and therefore remain pre-Phase-4 responsibilities.
-- The multitask loss should remain objective-modular: a small default objective first, with extra regularizers added only when diagnostics justify them.
+- The multitask loss should remain objective-modular: begin with only reconstruction plus classification loss, and add extra regularizers only when diagnostics justify them.
 - Readability remains the primary constraint, in direct agreement with `codebase_preferences.md`.
 
 ## Current Active File Inventory
@@ -184,7 +184,7 @@ This means the earlier Phase 2 direction toward one-model-one-file is already re
 
 The current repository already contains:
 
-- CARLA-style subsequence anomaly families in `src/data/augment.py`
+- RedLamp-default subsequence anomaly families in `src/data/augment.py`, with CARLA retained as a mechanism reference
 - active model-owned consumption of augmented batches in `src/models/thesis_multitask.py`
 - user-visible anomaly inspection in `scripts/visualize_synthetic_anomalies.py`
 - tests for injection, visualization, shapes, and one multitask train step
@@ -202,8 +202,35 @@ Before online adaptation begins, the repository should close the following offli
 3. Keep synthetic anomaly generation explicit and inspectable.
 4. Add an extensive ablation surface around the existing multitask model rather than adding new model variants.
 5. Make branch-collapse controls observable and schedule-aware.
-6. Keep the default loss minimal and add regularizers only against observed failure modes.
+6. Keep the beginning-of-training loss minimal as `L_recon + lambda_cls L_cls`, and add regularizers only against observed failure modes.
 7. Bring the detail documents into direct agreement with `codebase_preferences.md` and the actual repository tree.
+
+## Roadmap Translation from Earlier Vertical-Slice Discussion
+
+The older generic discussion about building the codebase in vertical slices is
+still directionally correct, but it should now be translated into current
+repository terms instead of being read as the active literal sequence.
+
+- Phase 1 to Phase 3 are closed enough to support the current offline thesis
+  path. The repository already contains the accepted SMD-first vertical slice,
+  the self-contained reconstruction baseline, the self-contained multitask
+  model, RedLamp-default synthetic anomaly injection with CARLA retained as a
+  mechanism reference, and the ablation-ready offline experiment surface.
+- The first online slice is present now and corresponds to the conservative form
+  of the earlier online-adaptation recommendation: sequential clean streaming,
+  frozen reference encoder, frozen online encoder, and projector-first
+  adaptation with serializable state.
+- The older discussion's remaining open work is now best understood as
+  later-slice scope rather than as missing repository foundations:
+  - deterministic drift injection;
+  - non-adaptive streaming baselines under drift;
+  - broader dataset generalization beyond the current accepted path;
+  - DVC-backed reproducibility for synthetic or derived dataset artifacts once
+    they are materialized;
+  - stronger leakage and future-information checks for later stream research.
+
+This translation preserves the useful sequencing logic from the earlier
+discussion while avoiding outdated claims such as “Phase 4 is absent.”
 
 ## Branch-Collapse Controls that Already Exist
 

@@ -7,3 +7,15 @@ anomaly_probability: 0.5
 min_segment_fraction: 0.1
 max_segment_fraction: 0.2
 spike_scale: 3.0
+anomaly_families:
+  - spike
+  - flip
+  - speedup
+  - noise
+  - cutoff
+  - average
+  - scale
+  - wander
+  - contextual
+  - upsidedown
+  - mixture
