@@ -1,15 +1,15 @@
-experiment_name: smd_multitask
+experiment_name: smd_multitask_100ep
 seed: 7
-device: gpu
-output_dir: outputs/smd_multitask
-checkpoint_dir: outputs/smd_multitask/checkpoints
+device: cuda
+output_dir: outputs/smd_multitask_100ep
+checkpoint_dir: outputs/smd_multitask_100ep/checkpoints
 data_config_path: configs/data/smd.yaml
 model_config_path: configs/model/thesis_multitask.yaml
 task_config_path: configs/task/multitask_tsad.yaml
 optimizer:
   learning_rate: 0.001
   weight_decay: 0.0
-epochs: 3
+epochs: 100
 logging:
   use_wandb: true
   wandb_project: bachelor-thesis-2026
@@ -19,4 +19,5 @@ logging:
     - smd
     - multitask
     - offline
+    - 100ep
   wandb_run_name: smd_multitask_100ep

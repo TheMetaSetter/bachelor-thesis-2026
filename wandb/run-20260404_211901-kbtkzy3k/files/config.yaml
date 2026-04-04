@@ -1,0 +1,44 @@
+_wandb:
+    value:
+        cli_version: 0.25.1
+        e:
+            q3o77qdpb8l8mx36x5e1iwjvst0qegz2:
+                cpu_count: 64
+                cpu_count_logical: 32
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "107374182400"
+                        used: "18915364864"
+                email: nguyenanhkhoi0608@gmail.com
+                executable: /root/bachelor-thesis-2026/.venv/bin/python3
+                git:
+                    commit: fd7d035558b6186d7f9a538acea1313646beaec7
+                    remote: https://github.com/TheMetaSetter/bachelor-thesis-2026.git
+                gpu: NVIDIA GeForce RTX 3090
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ampere
+                      cudaCores: 10496
+                      memoryTotal: "25769803776"
+                      name: NVIDIA GeForce RTX 3090
+                      uuid: GPU-905ec637-f0c5-e012-612f-51db2a0b918e
+                host: bubbly-anaconda
+                memory:
+                    total: "64424509440"
+                os: Linux-6.14.7-sm1-x86_64-with-glibc2.35
+                program: <stdin>
+                python: CPython 3.12.13
+                root: /root/bachelor-thesis-2026
+                startedAt: "2026-04-04T14:19:01.622893Z"
+                writerId: q3o77qdpb8l8mx36x5e1iwjvst0qegz2
+        m: []
+        python_version: 3.12.13
+        t:
+            "3":
+                - 2
+                - 13
+            "4": 3.12.13
+            "5": 0.25.1
+            "12": 0.25.1
+            "13": linux-x86_64
