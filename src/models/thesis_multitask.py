@@ -230,6 +230,10 @@ class ThesisMultitaskModel(BaseModel):
             progress = 0.0
         else:
             progress = min(epoch_index / float(anneal_epochs - 1), 1.0)
+        if progress <= 0.0:
+            return float(self.temperature_start)
+        if progress >= 1.0:
+            return float(self.temperature_end)
         return float(
             self.temperature_start + progress * (self.temperature_end - self.temperature_start)
         )

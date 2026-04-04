@@ -4,6 +4,11 @@ from __future__ import annotations
 This file exists so ablation comparison does not depend on ad hoc notebook code.
 It repeatedly calls the same train and evaluate helpers, then writes a compact
 summary artifact that is easy to compare across runs.
+
+A new reader should notice that the default thesis starting point is still the
+simple reconstruction-plus-classification objective. The configs typically fed
+into this script are later comparison runs that intentionally enable extra loss
+terms or branch constraints.
 """
 
 import argparse

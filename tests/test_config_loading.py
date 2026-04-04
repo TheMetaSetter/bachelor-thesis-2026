@@ -146,6 +146,7 @@ def test_load_multitask_experiment_config_rejects_invalid_anomaly_families(tmp_p
                 "input_dim: 38",
                 "encoder_dim: 64",
                 "hidden_dim: 32",
+                "num_classes: 2",
                 "dropout: 0.0",
                 "continuous_enabled: true",
                 "continuous_num_prototypes: 8",

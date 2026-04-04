@@ -15,6 +15,19 @@ from src.metrics.pointwise import compute_pointwise_metrics
 from src.models.base_model import BaseModel
 
 
+def select_point_score_threshold(point_scores: np.ndarray, quantile: float = 0.95) -> float:
+    # The smoke runs can produce many exact zeros, so selecting a threshold from
+    # only the positive support avoids the "everything is anomalous" failure
+    # mode in plots and thresholded metrics.
+    positive_scores = point_scores[point_scores > 0.0]
+    reference_scores = positive_scores if positive_scores.size > 0 else point_scores
+    threshold = float(np.quantile(reference_scores, quantile))
+
+    if threshold <= 0.0 and positive_scores.size > 0:
+        threshold = float(np.min(positive_scores))
+    return threshold
+
+
 class Evaluator:
     def __init__(self, device: str = "cpu") -> None:
         self.device = device
@@ -86,7 +99,7 @@ class Evaluator:
 
         concatenated_scores = np.concatenate(all_point_scores, axis=0)
         concatenated_labels = np.concatenate(all_point_labels, axis=0)
-        threshold = float(np.quantile(concatenated_scores, 0.95))
+        threshold = select_point_score_threshold(concatenated_scores, quantile=0.95)
         metrics = compute_pointwise_metrics(
             point_labels=concatenated_labels,
             point_scores=concatenated_scores,

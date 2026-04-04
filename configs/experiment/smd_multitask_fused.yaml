@@ -1,3 +1,6 @@
+# Advanced-loss ablation config, not the default thesis starting point.
+# Use this only after the simple reconstruction-plus-classification objective
+# has been validated and you want to compare the fused branch against limits.
 experiment_name: smd_multitask_fused
 seed: 7
 device: cpu
@@ -6,6 +9,7 @@ checkpoint_dir: outputs/smd_multitask_fused/checkpoints
 data_config_path: configs/data/smd.yaml
 model_config_path: configs/model/thesis_multitask.yaml
 task_config_path: configs/task/multitask_tsad.yaml
+# These regularizers are intentionally enabled for the ablation suite.
 model_overrides:
   lambda_div: 0.01
   lambda_var: 0.01

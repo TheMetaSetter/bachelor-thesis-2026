@@ -393,14 +393,33 @@ class SyntheticAnomalyInjector:
         start_index: int,
         end_index: int,
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
-        component_count = int(torch.randint(2, 4, (1,), device=clean_channel_window.device).item())
-        component_names = [
+        primitive_component_names = [
             family_name
             for family_name in self.anomaly_families
             if family_name != "mixture"
         ]
-        component_indices = torch.randperm(len(component_names), device=clean_channel_window.device)[:component_count]
-        selected_components = [component_names[int(index.item())] for index in component_indices]
+        if not primitive_component_names:
+            # A mixture-only debug config should still produce a real anomaly.
+            # Fall back to the full primitive RedLamp family set instead of
+            # returning empty metadata with an all-zero mask.
+            primitive_component_names = [
+                family_name
+                for family_name in REDLAMP_ANOMALY_FAMILIES
+                if family_name != "mixture"
+            ]
+
+        max_component_count = min(3, len(primitive_component_names))
+        component_count = int(
+            torch.randint(2, max_component_count + 1, (1,), device=clean_channel_window.device).item()
+        )
+        component_indices = torch.randperm(
+            len(primitive_component_names),
+            device=clean_channel_window.device,
+        )[:component_count]
+        selected_components = [
+            primitive_component_names[int(index.item())]
+            for index in component_indices
+        ]
 
         working_channel_window = clean_channel_window.clone()
         combined_mask = torch.zeros(clean_channel_window.shape[0], dtype=torch.long, device=clean_channel_window.device)

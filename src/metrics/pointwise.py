@@ -24,7 +24,9 @@ def compute_pointwise_metrics(
     point_scores: np.ndarray,
     threshold: float,
 ) -> dict[str, float]:
-    binary_predictions = (point_scores >= threshold).astype(np.int64)
+    # Use a strict comparison so a collapsed zero threshold does not mark every
+    # zero-valued point as anomalous.
+    binary_predictions = (point_scores > threshold).astype(np.int64)
     return {
         "roc_auc": _safe_metric(roc_auc_score, point_labels, point_scores),
         "pr_auc": _safe_metric(average_precision_score, point_labels, point_scores),
@@ -32,4 +34,3 @@ def compute_pointwise_metrics(
         "recall": _safe_metric(recall_score, point_labels, binary_predictions, zero_division=0),
         "f1": _safe_metric(f1_score, point_labels, binary_predictions, zero_division=0),
     }
-
