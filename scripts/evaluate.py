@@ -22,6 +22,7 @@ from src.data.loaders import build_smd_dataset_bundle
 from src.data.scalers import SequenceStandardScaler
 from src.engine.checkpoint import CheckpointManager
 from src.engine.evaluator import Evaluator
+from src.engine.logger import ExperimentLogger
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 from src.models.thesis_multitask import ThesisMultitaskModel
 
@@ -68,6 +69,16 @@ def run_evaluation_experiment(
     scaler.load_state_dict(loaded_checkpoint["scaler_state_dict"])
     evaluator = Evaluator(device=experiment_config["device"])
     evaluation_outputs = evaluator.evaluate(model, data_bundle["loaders"]["test"])
+    logging_config = dict(experiment_config.get("logging", {}))
+    logging_config.setdefault("wandb_job_type", "evaluate")
+    logging_config.setdefault("wandb_run_name", f"{experiment_config['experiment_name']}-evaluate")
+    experiment_logger = ExperimentLogger(
+        experiment_config["output_dir"],
+        experiment_config=experiment_config,
+        logging_config=logging_config,
+        write_run_start_record=False,
+        write_resolved_config=False,
+    )
 
     output_dir = Path(experiment_config["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -90,6 +101,33 @@ def run_evaluation_experiment(
         json.dumps(experiment_config, indent=2, sort_keys=True),
         encoding="utf-8",
     )
+    prefixed_metrics = {
+        f"evaluation/{metric_name}": metric_value
+        for metric_name, metric_value in evaluation_outputs["metrics"].items()
+    }
+    experiment_logger.log_summary(prefixed_metrics | {"evaluation/checkpoint_path": checkpoint_path})
+    experiment_logger.log_artifact_file(
+        file_path=resolved_config_path,
+        artifact_name=f"{experiment_config['experiment_name']}-resolved-config",
+        artifact_type="config",
+        aliases=["latest"],
+        metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "evaluate"},
+    )
+    experiment_logger.log_artifact_file(
+        file_path=metrics_path,
+        artifact_name=f"{experiment_config['experiment_name']}-evaluation-metrics",
+        artifact_type="evaluation",
+        aliases=["latest"],
+        metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "evaluate"},
+    )
+    experiment_logger.log_artifact_file(
+        file_path=records_path,
+        artifact_name=f"{experiment_config['experiment_name']}-evaluation-records",
+        artifact_type="evaluation",
+        aliases=["latest"],
+        metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "evaluate"},
+    )
+    experiment_logger.close()
     return evaluation_outputs
 
 

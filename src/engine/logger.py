@@ -17,6 +17,9 @@ class ExperimentLogger:
         output_dir: str | Path,
         experiment_config: dict[str, Any] | None = None,
         logging_config: dict[str, Any] | None = None,
+        *,
+        write_run_start_record: bool = True,
+        write_resolved_config: bool = True,
     ) -> None:
         # Persisting the fully resolved config next to the metrics makes each run
         # easier to reproduce without re-deriving override composition by hand.
@@ -26,11 +29,12 @@ class ExperimentLogger:
         self.resolved_config_path = self.output_dir / "resolved_experiment_config.json"
         self._wandb_run = None
 
-        if experiment_config is not None:
+        if experiment_config is not None and write_resolved_config:
             self.resolved_config_path.write_text(
                 json.dumps(experiment_config, indent=2, sort_keys=True),
                 encoding="utf-8",
             )
+        if experiment_config is not None and write_run_start_record:
             run_start_record = {
                 "event": "run_start",
                 "experiment_name": experiment_config.get("experiment_name"),
@@ -55,8 +59,17 @@ class ExperimentLogger:
                 dir=str(self.output_dir),
                 config=experiment_config,
                 tags=logging_config.get("wandb_tags"),
-                name=logging_config.get("wandb_run_name"),
+                name=logging_config.get("wandb_run_name", experiment_config.get("experiment_name") if experiment_config else None),
+                job_type=logging_config.get("wandb_job_type"),
             )
+            if experiment_config is not None and write_run_start_record:
+                self._wandb_run.log(
+                    {
+                        "event/run_start": 1,
+                        "event/experiment_name": experiment_config.get("experiment_name"),
+                        "event/task_name": experiment_config.get("task", {}).get("task_name"),
+                    }
+                )
 
     def log_metrics(self, metrics: dict[str, Any]) -> None:
         serializable_metrics = json.dumps(metrics, sort_keys=True)
@@ -64,6 +77,64 @@ class ExperimentLogger:
             handle.write(serializable_metrics + "\n")
         if self._wandb_run is not None:
             self._wandb_run.log(metrics)
+
+    def log_summary(self, summary: dict[str, Any]) -> None:
+        if self._wandb_run is None:
+            return
+        for key, value in summary.items():
+            self._wandb_run.summary[key] = value
+
+    def log_artifact_file(
+        self,
+        *,
+        file_path: str | Path,
+        artifact_name: str,
+        artifact_type: str,
+        aliases: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        if self._wandb_run is None:
+            return
+
+        path = Path(file_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Artifact file does not exist: {path}")
+
+        import wandb
+
+        artifact = wandb.Artifact(
+            name=artifact_name,
+            type=artifact_type,
+            metadata=metadata,
+        )
+        artifact.add_file(str(path), name=path.name)
+        self._wandb_run.log_artifact(artifact, aliases=aliases)
+
+    def log_artifact_directory(
+        self,
+        *,
+        directory_path: str | Path,
+        artifact_name: str,
+        artifact_type: str,
+        aliases: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        if self._wandb_run is None:
+            return
+
+        path = Path(directory_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Artifact directory does not exist: {path}")
+
+        import wandb
+
+        artifact = wandb.Artifact(
+            name=artifact_name,
+            type=artifact_type,
+            metadata=metadata,
+        )
+        artifact.add_dir(str(path), name=path.name)
+        self._wandb_run.log_artifact(artifact, aliases=aliases)
 
     def close(self) -> None:
         if self._wandb_run is not None:

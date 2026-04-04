@@ -236,6 +236,30 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             if not isinstance(field_value, int) or field_value <= 0:
                 raise ValueError(f"{field_name} must be a positive integer")
 
+    logging_config = experiment_config.get("logging")
+    if logging_config is not None:
+        if not isinstance(logging_config, dict):
+            raise ValueError("logging must be a mapping when provided")
+        use_wandb = logging_config.get("use_wandb")
+        if use_wandb is not None and not isinstance(use_wandb, bool):
+            raise ValueError("logging.use_wandb must be a boolean when provided")
+        if "wandb_project" in logging_config and not isinstance(logging_config["wandb_project"], str):
+            raise ValueError("logging.wandb_project must be a string when provided")
+        if "wandb_entity" in logging_config and logging_config["wandb_entity"] is not None and not isinstance(logging_config["wandb_entity"], str):
+            raise ValueError("logging.wandb_entity must be a string or null")
+        if "wandb_mode" in logging_config:
+            if logging_config["wandb_mode"] not in {"online", "offline", "disabled"}:
+                raise ValueError("logging.wandb_mode must be one of: online, offline, disabled")
+        if "wandb_run_name" in logging_config and logging_config["wandb_run_name"] is not None and not isinstance(logging_config["wandb_run_name"], str):
+            raise ValueError("logging.wandb_run_name must be a string or null")
+        if "wandb_job_type" in logging_config and logging_config["wandb_job_type"] is not None and not isinstance(logging_config["wandb_job_type"], str):
+            raise ValueError("logging.wandb_job_type must be a string or null")
+        if "wandb_tags" in logging_config:
+            wandb_tags = logging_config["wandb_tags"]
+            if wandb_tags is not None:
+                if not isinstance(wandb_tags, list) or not all(isinstance(tag, str) and tag for tag in wandb_tags):
+                    raise ValueError("logging.wandb_tags must be a list of non-empty strings or null")
+
 
 def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]:
     # The experiment file names the three source YAMLs, then optional override

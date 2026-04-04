@@ -77,10 +77,13 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
         weight_decay=float(experiment_config["optimizer"]["weight_decay"]),
     )
     checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
+    logging_config = dict(experiment_config.get("logging", {}))
+    logging_config.setdefault("wandb_job_type", "online_adaptation")
+    logging_config.setdefault("wandb_run_name", experiment_config["experiment_name"])
     experiment_logger = ExperimentLogger(
         experiment_config["output_dir"],
         experiment_config=experiment_config,
-        logging_config=experiment_config.get("logging"),
+        logging_config=logging_config,
     )
 
     online_stream = SMDOnlineStream(
@@ -113,17 +116,57 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
             log_every_n_steps=int(experiment_config["task"]["log_every_n_steps"]),
             checkpoint_every_n_steps=int(experiment_config["task"]["checkpoint_every_n_steps"]),
         )
+        output_dir = Path(experiment_config["output_dir"])
+        output_dir.mkdir(parents=True, exist_ok=True)
+        metrics_path = output_dir / "online_metrics.json"
+        records_path = output_dir / "online_records.json"
+
+        metrics_path.write_text(json.dumps(online_outputs["metric_history"], indent=2), encoding="utf-8")
+        records_path.write_text(json.dumps(online_outputs["records"], indent=2), encoding="utf-8")
+        experiment_logger.log_summary(
+            {
+                "online/final_checkpoint_path": str(online_outputs["final_checkpoint_path"]),
+                "online/num_logged_steps": len(online_outputs["metric_history"]),
+            }
+        )
+        experiment_logger.log_artifact_file(
+            file_path=experiment_logger.resolved_config_path,
+            artifact_name=f"{experiment_config['experiment_name']}-resolved-config",
+            artifact_type="config",
+            aliases=["latest"],
+            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+        )
+        experiment_logger.log_artifact_file(
+            file_path=experiment_logger.metrics_path,
+            artifact_name=f"{experiment_config['experiment_name']}-metrics",
+            artifact_type="metrics",
+            aliases=["latest"],
+            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+        )
+        experiment_logger.log_artifact_file(
+            file_path=metrics_path,
+            artifact_name=f"{experiment_config['experiment_name']}-online-metrics",
+            artifact_type="online-evaluation",
+            aliases=["latest"],
+            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+        )
+        experiment_logger.log_artifact_file(
+            file_path=records_path,
+            artifact_name=f"{experiment_config['experiment_name']}-online-records",
+            artifact_type="online-evaluation",
+            aliases=["latest"],
+            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+        )
+        experiment_logger.log_artifact_file(
+            file_path=online_outputs["final_checkpoint_path"],
+            artifact_name=f"{experiment_config['experiment_name']}-checkpoint",
+            artifact_type="checkpoint",
+            aliases=["final", "latest"],
+            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+        )
+        return online_outputs
     finally:
         experiment_logger.close()
-
-    output_dir = Path(experiment_config["output_dir"])
-    output_dir.mkdir(parents=True, exist_ok=True)
-    metrics_path = output_dir / "online_metrics.json"
-    records_path = output_dir / "online_records.json"
-
-    metrics_path.write_text(json.dumps(online_outputs["metric_history"], indent=2), encoding="utf-8")
-    records_path.write_text(json.dumps(online_outputs["records"], indent=2), encoding="utf-8")
-    return online_outputs
 
 
 def main() -> None:

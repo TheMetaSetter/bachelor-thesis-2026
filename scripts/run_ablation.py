@@ -21,6 +21,7 @@ from typing import Any
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.config import load_experiment_config
+from src.engine.logger import ExperimentLogger
 from scripts.evaluate import run_evaluation_experiment
 from scripts.train import run_training_experiment
 
@@ -48,8 +49,8 @@ def _build_summary_row(
         "final_train_discrete_usage_concentration": final_epoch_metrics.get(
             "train_discrete_usage_concentration"
         ),
-        "auroc": evaluation_outputs["metrics"]["auroc"],
-        "f1_at_threshold": evaluation_outputs["metrics"]["f1_at_threshold"],
+        "roc_auc": evaluation_outputs["metrics"].get("roc_auc", evaluation_outputs["metrics"].get("auroc")),
+        "f1": evaluation_outputs["metrics"].get("f1", evaluation_outputs["metrics"].get("f1_at_threshold")),
         "threshold": evaluation_outputs["metrics"]["threshold"],
         "lambda_cls": model_config["lambda_cls"],
         "lambda_div": model_config["lambda_div"],
@@ -74,39 +75,92 @@ def run_ablation_suite(
     summary_dir = Path(summary_output_dir)
     summary_dir.mkdir(parents=True, exist_ok=True)
     summary_rows: list[dict[str, Any]] = []
-
-    for experiment_config_path in experiment_config_paths:
-        experiment_config = load_experiment_config(experiment_config_path)
-        training_outputs = run_training_experiment(experiment_config)
-        evaluation_outputs = run_evaluation_experiment(
-            experiment_config=experiment_config,
-            checkpoint_path=str(training_outputs["best_checkpoint_path"]),
-        )
-        summary_rows.append(
-            _build_summary_row(
-                experiment_config_path=experiment_config_path,
-                experiment_config=experiment_config,
-                training_outputs=training_outputs,
-                evaluation_outputs=evaluation_outputs,
-            )
-        )
-
-    summary_json_path = summary_dir / "ablation_summary.json"
-    summary_csv_path = summary_dir / "ablation_summary.csv"
-    summary_json_path.write_text(json.dumps(summary_rows, indent=2), encoding="utf-8")
-
-    if summary_rows:
-        fieldnames = list(summary_rows[0].keys())
-        with summary_csv_path.open("w", encoding="utf-8", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(summary_rows)
-
-    return {
-        "summary_rows": summary_rows,
-        "summary_json_path": summary_json_path,
-        "summary_csv_path": summary_csv_path,
+    first_experiment_config = load_experiment_config(experiment_config_paths[0])
+    suite_logging_config = dict(first_experiment_config.get("logging", {}))
+    suite_logging_config.setdefault("wandb_job_type", "ablation_summary")
+    suite_logging_config.setdefault("wandb_run_name", f"{first_experiment_config['experiment_name']}-ablation-summary")
+    suite_experiment_config = {
+        "experiment_name": f"{first_experiment_config['experiment_name']}_ablation_suite",
+        "task": {"task_name": "ablation_suite"},
+        "ablation_experiment_configs": experiment_config_paths,
     }
+    suite_logger = ExperimentLogger(
+        summary_dir,
+        experiment_config=suite_experiment_config,
+        logging_config=suite_logging_config,
+    )
+
+    try:
+        for experiment_config_path in experiment_config_paths:
+            experiment_config = load_experiment_config(experiment_config_path)
+            training_outputs = run_training_experiment(experiment_config)
+            evaluation_outputs = run_evaluation_experiment(
+                experiment_config=experiment_config,
+                checkpoint_path=str(training_outputs["best_checkpoint_path"]),
+            )
+            summary_rows.append(
+                _build_summary_row(
+                    experiment_config_path=experiment_config_path,
+                    experiment_config=experiment_config,
+                    training_outputs=training_outputs,
+                    evaluation_outputs=evaluation_outputs,
+                )
+            )
+
+        summary_json_path = summary_dir / "ablation_summary.json"
+        summary_csv_path = summary_dir / "ablation_summary.csv"
+        summary_json_path.write_text(json.dumps(summary_rows, indent=2), encoding="utf-8")
+
+        if summary_rows:
+            fieldnames = list(summary_rows[0].keys())
+            with summary_csv_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(summary_rows)
+
+        suite_logger.log_summary(
+            {
+                "ablation/num_runs": len(summary_rows),
+                "ablation/summary_json_path": str(summary_json_path),
+                "ablation/summary_csv_path": str(summary_csv_path),
+            }
+        )
+        suite_logger.log_artifact_file(
+            file_path=suite_logger.resolved_config_path,
+            artifact_name=f"{suite_experiment_config['experiment_name']}-resolved-config",
+            artifact_type="config",
+            aliases=["latest"],
+            metadata={"job_type": "ablation_summary"},
+        )
+        suite_logger.log_artifact_file(
+            file_path=suite_logger.metrics_path,
+            artifact_name=f"{suite_experiment_config['experiment_name']}-metrics",
+            artifact_type="metrics",
+            aliases=["latest"],
+            metadata={"job_type": "ablation_summary"},
+        )
+        suite_logger.log_artifact_file(
+            file_path=summary_json_path,
+            artifact_name=f"{suite_experiment_config['experiment_name']}-summary-json",
+            artifact_type="ablation-summary",
+            aliases=["latest"],
+            metadata={"job_type": "ablation_summary"},
+        )
+        suite_logger.log_artifact_file(
+            file_path=summary_csv_path,
+            artifact_name=f"{suite_experiment_config['experiment_name']}-summary-csv",
+            artifact_type="ablation-summary",
+            aliases=["latest"],
+            metadata={"job_type": "ablation_summary"},
+        )
+
+        return {
+            "summary_rows": summary_rows,
+            "summary_json_path": summary_json_path,
+            "summary_csv_path": summary_csv_path,
+        }
+    finally:
+        suite_logger.close()
 
 
 def main() -> None:

@@ -11,6 +11,12 @@ optimizer:
   weight_decay: 0.0
 epochs: 3
 logging:
-  use_wandb: false
+  use_wandb: true
   wandb_project: bachelor-thesis-2026
-  wandb_mode: offline
+  wandb_entity: null
+  wandb_mode: online
+  wandb_tags:
+    - smd
+    - multitask
+    - offline
+  wandb_run_name: smd_multitask

@@ -100,10 +100,13 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
     
     # Initialize experiment logger for tracking metrics, hyperparameters, and
     # artifacts. Logs are written to output_dir; config validates logging format.
+    logging_config = dict(experiment_config.get("logging", {}))
+    logging_config.setdefault("wandb_job_type", "train")
+    logging_config.setdefault("wandb_run_name", experiment_config["experiment_name"])
     experiment_logger = ExperimentLogger(
         experiment_config["output_dir"],
         experiment_config=experiment_config,
-        logging_config=experiment_config.get("logging"),
+        logging_config=logging_config,
     )
     
     # Assemble the trainer with all engine components (model, optimizer, logging,
@@ -120,13 +123,44 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
     # Execute training with try-finally to ensure graceful logger shutdown even
     # if training fails or is interrupted. This flushes buffered metrics to disk.
     try:
-        return trainer.train(
+        training_outputs = trainer.train(
             train_loader=data_bundle["loaders"]["train"],
             val_loader=data_bundle["loaders"]["val"],
             scaler_state=data_bundle["scaler"].state_dict(),
             config=experiment_config,
             epochs=int(experiment_config["epochs"]),
         )
+        best_checkpoint_path = training_outputs["best_checkpoint_path"]
+        experiment_logger.log_summary(
+            {
+                "run/output_dir": str(experiment_config["output_dir"]),
+                "run/checkpoint_dir": str(experiment_config["checkpoint_dir"]),
+                "run/best_checkpoint_path": str(best_checkpoint_path) if best_checkpoint_path is not None else None,
+            }
+        )
+        experiment_logger.log_artifact_file(
+            file_path=experiment_logger.resolved_config_path,
+            artifact_name=f"{experiment_config['experiment_name']}-resolved-config",
+            artifact_type="config",
+            aliases=["latest"],
+            metadata={"experiment_name": experiment_config["experiment_name"]},
+        )
+        experiment_logger.log_artifact_file(
+            file_path=experiment_logger.metrics_path,
+            artifact_name=f"{experiment_config['experiment_name']}-metrics",
+            artifact_type="metrics",
+            aliases=["latest"],
+            metadata={"experiment_name": experiment_config["experiment_name"]},
+        )
+        if best_checkpoint_path is not None:
+            experiment_logger.log_artifact_file(
+                file_path=best_checkpoint_path,
+                artifact_name=f"{experiment_config['experiment_name']}-checkpoint",
+                artifact_type="checkpoint",
+                aliases=["best", "latest"],
+                metadata={"experiment_name": experiment_config["experiment_name"]},
+            )
+        return training_outputs
     finally:
         # Guarantee logger cleanup (flush buffers, close file handles) regardless
         # of training success or failure.
