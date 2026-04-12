@@ -416,24 +416,49 @@ class ThesisMultitaskModel(BaseModel):
         # The forward pass is the main representation story of the thesis model:
         # encode once, build two branch views, fuse per task, then score.
         validate_batch(batch)
+
+        # Truyền lô dữ liệu qua encoder để mã hoá
+        # Thu được các vec-tơ ẩn (hidden vector)
+        # Một vec-tơ ẩn cho mỗi bước thời gian (timestep)
         encoder_outputs = self.encoder(batch)
         hidden = encoder_outputs["hidden"]
 
+        # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu liên tục
         continuous_outputs = self._continuous_prototype_lookup(hidden)
+
+        # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu rời rạc
         discrete_outputs = self._discrete_prototype_lookup(hidden)
+
+        # Kết hợp vec-tơ ẩn từ hai nhánh lại với nhau
         fusion_outputs = self._compute_fusion_outputs(
             continuous_hidden=continuous_outputs["prototype_context"],
             discrete_hidden=discrete_outputs["quantized_hidden"],
         )
 
+        # Lấy ra vec-tơ kết hợp dùng cho từng tác vụ
         hidden_reconstruction = fusion_outputs["hidden_reconstruction"]
         hidden_classification = fusion_outputs["hidden_classification"]
 
+        # Truyền vec-tơ kết hợp dùng cho
+        # tác vụ tái tạo qua mạng tái tạo (reconstruction head)
         recon = self.reconstruction_head(hidden_reconstruction)
+
+        # Xét vec-tơ kết hợp dùng cho tác vụ phân loại,
+        # cộng tất cả các vec-tơ ở từng bước thời gian lại với nhau.
+        # Xong, chia cho số bước thời gian để lấy vec-tơ trung bình.
+        # dim=1 nghĩa là xem mỗi bước thời gian là một hạng tử.
+        # Rồi, lấy trung bình.
         pooled_classification_hidden = hidden_classification.mean(dim=1)
         logits = self.classification_head(pooled_classification_hidden)
+
+        # Độ bất thường được tính bằng cách
+        # Tính toán độ lỗi (error) giữa bản gốc và bản tái tạo
+        # ở từng bước thời gian.
+        # Xong, bình phương tất cả độ lỗi lên rồi cộng lại chia lấy trung bình.
         point_scores = torch.mean((recon - batch["x"]) ** 2, dim=-1)
 
+        # Chuẩn bị đầu ra theo thoả thuận (contract) đã được thiết lập.
+        # Xem: src/core/contracts.py
         outputs = {
             "hidden": hidden,
             "pooled": pooled_classification_hidden,
@@ -516,6 +541,10 @@ class ThesisMultitaskModel(BaseModel):
                 )
         return torch.stack(covariance_losses).sum()
 
+    # Version 1 with pure simple loss (only classification and reconstruction) was trained.
+    # Based on real diagnostic, this usage loss will be added to prevent over-centralizing in few discrete prototypes.
+    # So in version 2, the final loss function has 3 terms: one for classification, one for reconstruction
+    # and one for usage of discrete prototypes.
     def _compute_prototype_usage_loss(self, outputs: dict[str, Any]) -> torch.Tensor:
         # Usage balancing is the main protection against dead or ignored codes.
         assignment_probabilities = outputs["aux"]["discrete_branch"]["assignment_probabilities"]

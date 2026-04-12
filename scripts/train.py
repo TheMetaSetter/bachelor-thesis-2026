@@ -94,10 +94,6 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         weight_decay=float(experiment_config["optimizer"]["weight_decay"]),
     )
     
-    # Initialize checkpoint manager for saving/loading model states, enabling
-    # experiment resumption and best-model tracking across epochs.
-    checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
-    
     # Initialize experiment logger for tracking metrics, hyperparameters, and
     # artifacts. Logs are written to output_dir; config validates logging format.
     logging_config = dict(experiment_config.get("logging", {}))
@@ -107,6 +103,13 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         experiment_config["output_dir"],
         experiment_config=experiment_config,
         logging_config=logging_config,
+    )
+    
+    # Initialize checkpoint manager for saving/loading model states, enabling
+    # experiment resumption and best-model tracking across epochs.
+    checkpoint_manager = CheckpointManager(
+        experiment_config["checkpoint_dir"],
+        artifact_sinks=experiment_logger.build_artifact_sinks(logging_config),
     )
     
     # Assemble the trainer with all engine components (model, optimizer, logging,
@@ -160,6 +163,10 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
                 aliases=["best", "latest"],
                 metadata={"experiment_name": experiment_config["experiment_name"]},
             )
+        experiment_logger.mirror_output_directory(
+            logging_config,
+            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "train"},
+        )
         return training_outputs
     finally:
         # Guarantee logger cleanup (flush buffers, close file handles) regardless

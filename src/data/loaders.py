@@ -10,9 +10,11 @@ from typing import Any
 
 from torch.utils.data import DataLoader, Dataset
 
+from src.data.cleaning import SequenceCleaningPipeline
 from src.data.collate import collate_windows
 from src.data.base import BaseDatasetBuilder
 from src.data.datasets.smd import SMDDatasetParser
+from src.data.download import download_smd_dataset
 from src.data.scalers import SequenceStandardScaler
 
 
@@ -72,17 +74,26 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
     def build(self, data_config: dict[str, Any]) -> dict[str, Any]:
         # The builder returns more than dataloaders on purpose: research code
         # often needs access to the parser, scaler, and scaled sequences later.
+        if bool(data_config.get("download", False)):
+            download_smd_dataset(
+                root_dir=data_config["root_dir"],
+                skip_existing_download=bool(data_config.get("skip_existing_download", True)),
+            )
         parser = SMDDatasetParser(
             root_dir=data_config["root_dir"],
             validation_split_ratio=float(data_config["validation_split_ratio"]),
         )
         parsed_sequences = parser.parse()
+        cleaning_pipeline = SequenceCleaningPipeline(
+            annotate_metadata=bool(data_config.get("annotate_cleaning_metadata", False))
+        )
+        cleaned_sequences = cleaning_pipeline.transform_splits(parsed_sequences)
 
         scaler = SequenceStandardScaler()
-        scaler.fit(parsed_sequences["train"])
+        scaler.fit(cleaned_sequences["train"])
         scaled_sequences = {
             split_name: scaler.transform_sequences(split_sequences)
-            for split_name, split_sequences in parsed_sequences.items()
+            for split_name, split_sequences in cleaned_sequences.items()
         }
 
         datasets = {
@@ -123,7 +134,7 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
             "dataset_name": "smd",
             "parser": parser,
             "scaler": scaler,
-            "raw_sequences": parsed_sequences,
+            "raw_sequences": cleaned_sequences,
             "scaled_sequences": scaled_sequences,
             "datasets": datasets,
             "loaders": loaders,

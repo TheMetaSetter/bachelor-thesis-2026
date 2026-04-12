@@ -5,11 +5,18 @@ from typing import Any
 
 import torch
 
+from src.engine.artifact_sinks import ArtifactSink
+
 
 class CheckpointManager:
-    def __init__(self, checkpoint_dir: str | Path) -> None:
+    def __init__(
+        self,
+        checkpoint_dir: str | Path,
+        artifact_sinks: list[ArtifactSink] | None = None,
+    ) -> None:
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        self.artifact_sinks = artifact_sinks or []
 
     def save_checkpoint(
         self,
@@ -34,6 +41,15 @@ class CheckpointManager:
         if extra_state is not None:
             checkpoint_payload["extra_state"] = extra_state
         torch.save(checkpoint_payload, checkpoint_path)
+        for artifact_sink in self.artifact_sinks:
+            artifact_sink.save_file(
+                checkpoint_path,
+                metadata={
+                    "epoch": epoch,
+                    "checkpoint_name": checkpoint_name,
+                    "experiment_name": config.get("experiment_name"),
+                },
+            )
         return checkpoint_path
 
     def load_checkpoint(

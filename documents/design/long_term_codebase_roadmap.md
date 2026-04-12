@@ -90,6 +90,13 @@ SMD files
 
 That means the codebase has passed the point where speculative abstractions should dominate. Future design should remain anchored to working experiment paths.
 
+The next stable layer on top of that path is now explicit and should remain backward-compatible:
+
+- `src/data/api.py` exposes notebook-facing dataset loading without bypassing the canonical builder
+- `src/data/download.py` and `src/data/cleaning.py` make the download and validation path explicit
+- `src/adapters/moment.py` exposes a reusable MOMENT handoff layer
+- `src/engine/artifact_sinks.py` keeps remote persistence additive and post-save
+
 ### The thesis model and first online slice already exist
 
 The offline thesis path is already more advanced than the older roadmap assumed:

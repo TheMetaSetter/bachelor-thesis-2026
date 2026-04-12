@@ -76,7 +76,6 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
         lr=float(experiment_config["optimizer"]["learning_rate"]),
         weight_decay=float(experiment_config["optimizer"]["weight_decay"]),
     )
-    checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
     logging_config = dict(experiment_config.get("logging", {}))
     logging_config.setdefault("wandb_job_type", "online_adaptation")
     logging_config.setdefault("wandb_run_name", experiment_config["experiment_name"])
@@ -84,6 +83,10 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
         experiment_config["output_dir"],
         experiment_config=experiment_config,
         logging_config=logging_config,
+    )
+    checkpoint_manager = CheckpointManager(
+        experiment_config["checkpoint_dir"],
+        artifact_sinks=experiment_logger.build_artifact_sinks(logging_config),
     )
 
     online_stream = SMDOnlineStream(
@@ -163,6 +166,13 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
             artifact_type="checkpoint",
             aliases=["final", "latest"],
             metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+        )
+        experiment_logger.mirror_output_directory(
+            logging_config,
+            metadata={
+                "experiment_name": experiment_config["experiment_name"],
+                "job_type": "online_adaptation",
+            },
         )
         return online_outputs
     finally:

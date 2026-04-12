@@ -90,6 +90,10 @@ bachelor-thesis-2026/
 │   │
 │   ├── data/
 │   │   ├── base.py
+│   │   ├── api.py
+│   │   ├── cleaning.py
+│   │   ├── download.py
+│   │   ├── public_types.py
 │   │   ├── window.py
 │   │   ├── scalers.py
 │   │   ├── collate.py
@@ -105,6 +109,10 @@ bachelor-thesis-2026/
 │   │   ├── thesis_multitask.py
 │   │   └── online_adaptation.py
 │   │
+│   ├── adapters/
+│   │   ├── base.py
+│   │   └── moment.py
+│   │
 │   ├── metrics/
 │   │   ├── pointwise.py
 │   │   ├── eventwise.py
@@ -114,7 +122,8 @@ bachelor-thesis-2026/
 │   │   ├── trainer.py
 │   │   ├── evaluator.py
 │   │   ├── checkpoint.py
-│   │   └── logger.py
+│   │   ├── logger.py
+│   │   └── artifact_sinks.py
 │   │
 │   └── utils/
 │       ├── io.py
@@ -142,6 +151,14 @@ bachelor-thesis-2026/
     ├── test_online_state_roundtrip.py
     └── test_registry.py
 ```
+
+The notebook-facing public path should stay thin and additive:
+
+- `from src.data import load_smd_data`
+- `from src.data import flatten_windows_for_baseline, point_labels_to_window_labels`
+- `from src.adapters import MomentWindowAdapter`
+
+Those imports should wrap the existing config-driven internals rather than replace them. The active script-facing path remains the registry plus YAML configuration.
 
 This structure is simple because each folder has one job. It is reusable because a new dataset still means one parser file and one config, while a new model normally means one new file under `src/models/` and one config, without changing the trainer.
 

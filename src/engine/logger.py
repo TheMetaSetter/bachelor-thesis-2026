@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from src.engine.artifact_sinks import build_artifact_sinks, build_output_artifact_sinks
+
 
 class ExperimentLogger:
     def __init__(
@@ -139,3 +141,23 @@ class ExperimentLogger:
     def close(self) -> None:
         if self._wandb_run is not None:
             self._wandb_run.finish()
+
+    def build_artifact_sinks(self, logging_config: dict[str, Any] | None) -> list[Any]:
+        return build_artifact_sinks(
+            logging_config,
+            experiment_logger=self,
+            include_wandb_sink=False,
+        )
+
+    def mirror_output_directory(
+        self,
+        logging_config: dict[str, Any] | None,
+        *,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        for artifact_sink in build_output_artifact_sinks(
+            logging_config,
+            experiment_logger=self,
+            include_wandb_sink=False,
+        ):
+            artifact_sink.save_directory(self.output_dir, metadata=metadata)

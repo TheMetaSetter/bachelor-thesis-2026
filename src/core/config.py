@@ -164,6 +164,14 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         raise ValueError("validation_split_ratio must be between 0 and 1")
     if data_config["stride"] > data_config["window_size"]:
         raise ValueError("stride must not exceed window_size")
+    optional_data_boolean_fields = {
+        "download": data_config.get("download", False),
+        "skip_existing_download": data_config.get("skip_existing_download", True),
+        "annotate_cleaning_metadata": data_config.get("annotate_cleaning_metadata", False),
+    }
+    for field_name, field_value in optional_data_boolean_fields.items():
+        if not isinstance(field_value, bool):
+            raise ValueError(f"data.{field_name} must be a boolean when provided")
     if task_config.get("task_name") == "multitask_tsad":
         if float(model_config["gumbel_temperature"]) <= 0.0:
             raise ValueError("gumbel_temperature must be positive")
@@ -259,6 +267,26 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             if wandb_tags is not None:
                 if not isinstance(wandb_tags, list) or not all(isinstance(tag, str) and tag for tag in wandb_tags):
                     raise ValueError("logging.wandb_tags must be a list of non-empty strings or null")
+        kaggle_boolean_fields = {
+            "mirror_best_checkpoint_to_kaggle": logging_config.get("mirror_best_checkpoint_to_kaggle", False),
+            "mirror_output_dir_to_kaggle": logging_config.get("mirror_output_dir_to_kaggle", False),
+        }
+        for field_name, field_value in kaggle_boolean_fields.items():
+            if not isinstance(field_value, bool):
+                raise ValueError(f"logging.{field_name} must be a boolean when provided")
+        kaggle_dataset_handle = logging_config.get("kaggle_dataset_handle")
+        if kaggle_dataset_handle is not None and not isinstance(kaggle_dataset_handle, str):
+            raise ValueError("logging.kaggle_dataset_handle must be a string or null")
+        kaggle_version_notes = logging_config.get("kaggle_version_notes")
+        if kaggle_version_notes is not None and not isinstance(kaggle_version_notes, str):
+            raise ValueError("logging.kaggle_version_notes must be a string or null")
+        if (
+            logging_config.get("mirror_best_checkpoint_to_kaggle", False)
+            or logging_config.get("mirror_output_dir_to_kaggle", False)
+        ) and not kaggle_dataset_handle:
+            raise ValueError(
+                "logging.kaggle_dataset_handle must be provided when Kaggle mirroring is enabled"
+            )
 
 
 def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]:

@@ -1,6 +1,3 @@
-This block is written for direct paste into your idea file. It reflects the tool choice that best fits your datasets and architecture, and it aligns with the current idea text you shared earlier.  The selected tools and URLs below come from the official project pages and documentation for River, TSGM, tsaug, MOA, TimeSynth, DeepEcho, and agots. ([riverml.xyz][1])
-
-````markdown
 ## Streaming simulation and drift generation design
 
 To support the online adaptation part of the thesis, I will not rely on a single all-in-one simulator. Instead, I will use a **hybrid streaming framework** composed of a real-dataset stream wrapper, a drift injection layer, and an optional synthetic multivariate time-series generator.
@@ -452,12 +449,3 @@ as it exists today.
 
 * scikit-multiflow GitHub: [https://github.com/scikit-multiflow/scikit-multiflow](https://github.com/scikit-multiflow/scikit-multiflow)
 * scikit-multiflow docs: [https://scikit-multiflow.github.io/](https://scikit-multiflow.github.io/)
-
-```
-
-**Confidence:** High.  
-**Key assumptions:** you want a Python-first reusable framework, the stream is built from real TSAD benchmarks rather than only synthetic data, and you want drift injection to be signal-level and multivariate rather than only generic tabular concept drift. :contentReference[oaicite:2]{index=2}
-::contentReference[oaicite:3]{index=3}
-```
-
-[1]: https://riverml.xyz/dev/api/datasets/synth/ConceptDriftStream/?utm_source=chatgpt.com "ConceptDriftStream"

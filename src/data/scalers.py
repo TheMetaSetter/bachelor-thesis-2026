@@ -37,6 +37,10 @@ class SequenceStandardScaler:
     def transform_sequences(self, sequences: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [self.transform_sequence(sequence) for sequence in sequences]
 
+    def fit_transform_sequences(self, sequences: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        self.fit(sequences)
+        return self.transform_sequences(sequences)
+
     def state_dict(self) -> dict[str, Any]:
         return {
             "epsilon": self.epsilon,
@@ -48,4 +52,3 @@ class SequenceStandardScaler:
         self.epsilon = float(state_dict["epsilon"])
         self.feature_mean = state_dict["feature_mean"]
         self.feature_std = state_dict["feature_std"]
-
