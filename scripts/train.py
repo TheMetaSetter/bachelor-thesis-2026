@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
+from src.core.console import console_print
 from src.core.config import load_experiment_config
 from src.core.registry import build_dataset, build_model, register_dataset, register_model
 from src.core.seed import seed_everything
@@ -32,6 +33,7 @@ def register_runtime_components() -> None:
     register_dataset("smd", build_smd_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
+    console_print("REGISTRY", "Registered offline training runtime components")
 
 
 def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Module:
@@ -49,6 +51,12 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
             for key, value in experiment_config["task"].items()
             if key != "task_name"
         }
+    )
+    console_print(
+        "MODEL",
+        "Building model from resolved experiment config",
+        model_name=model_name,
+        model_kwargs_keys=sorted(model_kwargs.keys()),
     )
     return build_model(model_name, **model_kwargs)
 
@@ -71,6 +79,16 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
     # Ensure reproducibility by seeding all RNG sources (Python, NumPy, PyTorch).
     # This must happen before any non-deterministic operations.
     seed_everything(int(experiment_config["seed"]))
+    console_print(
+        "TRAIN",
+        "Starting training experiment",
+        experiment_name=experiment_config["experiment_name"],
+        device=experiment_config["device"],
+        seed=experiment_config["seed"],
+        output_dir=experiment_config["output_dir"],
+        checkpoint_dir=experiment_config["checkpoint_dir"],
+        epochs=experiment_config["epochs"],
+    )
     
     # Register dataset and model builders into the global registry. This decouples
     # experiment configuration (which uses string names) from actual constructors,
@@ -80,6 +98,14 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
     # Load and preprocess the dataset specified in config. Returns a bundle containing
     # train/val data loaders and a fitted scaler (for input normalization).
     data_bundle = build_dataset(experiment_config["data"]["dataset_name"], experiment_config["data"])
+    console_print(
+        "DATA",
+        "Built dataset bundle for training",
+        dataset_name=experiment_config["data"]["dataset_name"],
+        train_windows=len(data_bundle["datasets"]["train"]),
+        val_windows=len(data_bundle["datasets"]["val"]),
+        test_windows=len(data_bundle["datasets"]["test"]),
+    )
     
     # Construct the model architecture and task logic from config. This combines
     # model-specific parameters (layer sizes, etc.) with task-specific logic
@@ -93,6 +119,13 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         lr=float(experiment_config["optimizer"]["learning_rate"]),
         weight_decay=float(experiment_config["optimizer"]["weight_decay"]),
     )
+    console_print(
+        "TRAIN",
+        "Initialized optimizer",
+        optimizer_type="Adam",
+        learning_rate=experiment_config["optimizer"]["learning_rate"],
+        weight_decay=experiment_config["optimizer"]["weight_decay"],
+    )
     
     # Initialize experiment logger for tracking metrics, hyperparameters, and
     # artifacts. Logs are written to output_dir; config validates logging format.
@@ -103,6 +136,15 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         experiment_config["output_dir"],
         experiment_config=experiment_config,
         logging_config=logging_config,
+    )
+    console_print(
+        "WANDB",
+        "Prepared training logging config",
+        use_wandb=logging_config.get("use_wandb", False),
+        wandb_run_name=logging_config.get("wandb_run_name"),
+        wandb_job_type=logging_config.get("wandb_job_type"),
+        mirror_best_checkpoint_to_kaggle=logging_config.get("mirror_best_checkpoint_to_kaggle", False),
+        mirror_output_dir_to_kaggle=logging_config.get("mirror_output_dir_to_kaggle", False),
     )
     
     # Initialize checkpoint manager for saving/loading model states, enabling
@@ -134,6 +176,12 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
             epochs=int(experiment_config["epochs"]),
         )
         best_checkpoint_path = training_outputs["best_checkpoint_path"]
+        console_print(
+            "TRAIN",
+            "Finished training experiment",
+            best_checkpoint_path=best_checkpoint_path,
+            num_logged_epochs=len(training_outputs["metric_history"]),
+        )
         experiment_logger.log_summary(
             {
                 "run/output_dir": str(experiment_config["output_dir"]),
@@ -183,6 +231,7 @@ def main() -> None:
     args = parser.parse_args()
 
     experiment_config = load_experiment_config(args.experiment_config)
+    console_print("CONFIG", "Loaded CLI training experiment config", experiment_config_path=args.experiment_config)
     run_training_experiment(experiment_config)
 
 

@@ -12,6 +12,7 @@ from typing import Any, Callable
 
 import torch
 
+from src.core.console import console_print, summarize_label_distribution, summarize_tensor
 
 REDLAMP_ANOMALY_FAMILIES: tuple[str, ...] = (
     "spike",
@@ -529,4 +530,22 @@ class SyntheticAnomalyInjector:
         augmented_batch["classification_labels"] = classification_labels
         augmented_batch["synthetic_anomaly_mask"] = anomaly_masks
         augmented_batch["augmentation_metadata"] = augmentation_metadata
+        anomalous_windows = int(classification_labels.sum().detach().cpu())
+        anomaly_families_present = sorted(
+            {
+                metadata["anomaly_family"]
+                for metadata in augmentation_metadata
+                if metadata["is_synthetic_anomaly"]
+            }
+        )
+        console_print(
+            "DATA",
+            "Augmented multitask batch",
+            input_x=summarize_tensor(batch["x"]),
+            output_x=summarize_tensor(augmented_batch["x"]),
+            anomaly_mask=summarize_tensor(anomaly_masks),
+            anomalous_windows=anomalous_windows,
+            classification_label_distribution=summarize_label_distribution(classification_labels),
+            anomaly_families_present=anomaly_families_present,
+        )
         return augmented_batch

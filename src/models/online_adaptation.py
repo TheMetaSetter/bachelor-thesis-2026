@@ -14,6 +14,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from src.core.console import (
+    console_print,
+    print_parameter_summary,
+    summarize_batch,
+    summarize_tensor,
+)
 from src.core.contracts import validate_model_outputs, validate_online_batch
 from src.models.base_model import BaseModel
 from src.models.thesis_multitask import ThesisMultitaskModel
@@ -150,6 +156,28 @@ class OnlineAdaptationModel(BaseModel):
         )
         self.projector_anchor_state_dict = self._clone_projector_state_dict()
         self._set_trainable_parameter_group(target_param_group)
+        print_parameter_summary(
+            "MODEL",
+            "OnlineAdaptationModel",
+            self,
+            {
+                "reference_encoder": self.reference_encoder,
+                "online_encoder": self.online_encoder,
+                "projector": self.projector,
+            },
+            input_dim=input_dim,
+            encoder_dim=encoder_dim,
+            hidden_dim=hidden_dim,
+            projector_hidden_dim=projector_hidden_dim,
+            enable_prototype_alignment=enable_prototype_alignment,
+            lambda_align=lambda_align,
+            lambda_proto=lambda_proto,
+            lambda_anchor=lambda_anchor,
+            target_param_group=target_param_group,
+            trainable_group_parameters=sum(
+                parameter.numel() for parameter in self.get_parameter_group(target_param_group)
+            ),
+        )
 
     def _load_reference_model(self, checkpoint_path: str | Path) -> ThesisMultitaskModel:
         # The online runtime is defined only for multitask checkpoints. Failing
@@ -210,10 +238,12 @@ class OnlineAdaptationModel(BaseModel):
         if target_param_group == "projector_params":
             for parameter in self.projector.parameters():
                 parameter.requires_grad = True
+            console_print("MODEL", "Set trainable parameter group", target_param_group=target_param_group)
             return
         if target_param_group == "online_encoder_params":
             for parameter in self.online_encoder.encoder_parameters():
                 parameter.requires_grad = True
+            console_print("MODEL", "Set trainable parameter group", target_param_group=target_param_group)
             return
         raise ValueError("target_param_group must be either 'projector_params' or 'online_encoder_params'")
 
@@ -282,6 +312,7 @@ class OnlineAdaptationModel(BaseModel):
         # The forward path follows the design narrative literally:
         # build two views, encode them separately, project the online one, then score in reference space.
         validate_online_batch(batch)
+        console_print("MODEL", "Online adaptation forward input batch", **summarize_batch(batch))
         reference_outputs = self.reference_encoder(self._replace_batch_x(batch, batch["view_a"]))
         online_outputs = self.online_encoder(self._replace_batch_x(batch, batch["view_b"]))
         reference_hidden = reference_outputs["hidden"]
@@ -314,6 +345,21 @@ class OnlineAdaptationModel(BaseModel):
             },
         }
         validate_model_outputs(outputs)
+        console_print(
+            "MODEL",
+            "Online adaptation forward outputs",
+            reference_hidden=summarize_tensor(reference_hidden),
+            online_hidden=summarize_tensor(online_hidden),
+            projected_hidden=summarize_tensor(projected_hidden),
+            recon=summarize_tensor(outputs["recon"]),
+            logits=summarize_tensor(outputs["logits"]),
+            point_scores=summarize_tensor(outputs["point_scores"]),
+            window_scores=summarize_tensor(outputs["window_scores"]),
+            alignment_loss=float(alignment_loss.detach().cpu()),
+            prototype_alignment_loss=float(prototype_alignment_loss.detach().cpu()),
+            anchor_loss=float(anchor_loss.detach().cpu()),
+            projector_drift=float(projector_drift.detach().cpu()),
+        )
         return outputs
 
     def _build_stage_log(
@@ -348,6 +394,16 @@ class OnlineAdaptationModel(BaseModel):
             "prototype_alignment_loss": outputs["aux"]["prototype_alignment_loss"],
             "anchor_loss": outputs["aux"]["anchor_loss"],
         }
+        console_print(
+            stage_name.upper(),
+            "Completed online adaptation stage step",
+            batch_size=batch["x"].shape[0],
+            total_loss=float(total_loss.detach().cpu()),
+            alignment_loss=float(outputs["aux"]["alignment_loss"].detach().cpu()),
+            prototype_alignment_loss=float(outputs["aux"]["prototype_alignment_loss"].detach().cpu()),
+            anchor_loss=float(outputs["aux"]["anchor_loss"].detach().cpu()),
+            projector_drift=float(outputs["aux"]["projector_drift"].detach().cpu()),
+        )
         return {
             "loss": total_loss,
             "log": self._build_stage_log(stage_name, outputs, total_loss),

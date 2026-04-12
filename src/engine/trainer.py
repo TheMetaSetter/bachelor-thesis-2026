@@ -10,6 +10,7 @@ from typing import Any
 
 import torch
 
+from src.core.console import console_print, summarize_batch
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
 from src.models.base_model import BaseModel
@@ -34,10 +35,12 @@ class Trainer:
     def _move_batch_to_device(self, batch: dict[str, Any]) -> dict[str, Any]:
         # Keeping device transfer in one helper avoids repeating the same logic
         # in every script and keeps the model files focused on model behavior.
-        return {
+        batch_on_device = {
             key: value.to(self.device) if isinstance(value, torch.Tensor) else value
             for key, value in batch.items()
         }
+        console_print("TRAIN", "Moved batch to device", device=self.device, **summarize_batch(batch_on_device))
+        return batch_on_device
 
     def _aggregate_logs(self, batch_logs: list[dict[str, float]]) -> dict[str, float]:
         if not batch_logs:
@@ -62,6 +65,14 @@ class Trainer:
         best_checkpoint_path = None
 
         self.model.to(self.device)
+        console_print(
+            "TRAIN",
+            "Starting offline training loop",
+            device=self.device,
+            epochs=epochs,
+            train_batches=len(train_loader),
+            val_batches=len(val_loader),
+        )
         for epoch_index in range(epochs):
             # Call model-owned training step
             self.model.train()
@@ -71,21 +82,39 @@ class Trainer:
                 self.model.set_epoch_context(epoch_index=epoch_index, total_epochs=epochs)
             
             train_logs: list[dict[str, float]] = []
-            for train_batch in train_loader:
+            console_print("TRAIN", "Starting epoch", epoch=epoch_index + 1)
+            for train_batch_index, train_batch in enumerate(train_loader, start=1):
                 batch_on_device = self._move_batch_to_device(train_batch)
+                console_print("TRAIN", "Processing training batch", epoch=epoch_index + 1, batch_index=train_batch_index)
                 step_output = self.model.training_step(batch_on_device)
                 loss = step_output["loss"]
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+                console_print(
+                    "TRAIN",
+                    "Completed optimizer step",
+                    epoch=epoch_index + 1,
+                    batch_index=train_batch_index,
+                    loss=float(loss.detach().cpu()),
+                    step_log=step_output["log"],
+                )
                 train_logs.append(step_output["log"])
 
             self.model.eval()
             val_logs: list[dict[str, float]] = []
             with torch.no_grad():
-                for val_batch in val_loader:
+                for val_batch_index, val_batch in enumerate(val_loader, start=1):
                     batch_on_device = self._move_batch_to_device(val_batch)
+                    console_print("VAL", "Processing validation batch", epoch=epoch_index + 1, batch_index=val_batch_index)
                     step_output = self.model.validation_step(batch_on_device)
+                    console_print(
+                        "VAL",
+                        "Completed validation batch",
+                        epoch=epoch_index + 1,
+                        batch_index=val_batch_index,
+                        step_log=step_output["log"],
+                    )
                     val_logs.append(step_output["log"])
 
             epoch_metrics = {"epoch": epoch_index + 1}
@@ -93,10 +122,12 @@ class Trainer:
             epoch_metrics.update(self._aggregate_logs(val_logs))
             self.metric_history.append(epoch_metrics)
             self.experiment_logger.log_metrics(epoch_metrics)
+            console_print("TRAIN", "Completed epoch", epoch=epoch_index + 1, epoch_metrics=epoch_metrics)
 
             current_val_loss = float(epoch_metrics.get("val_loss", float("inf")))
             if current_val_loss <= best_val_loss:
                 best_val_loss = current_val_loss
+                console_print("CHECKPOINT", "Validation loss improved; saving best checkpoint", epoch=epoch_index + 1, best_val_loss=best_val_loss)
                 best_checkpoint_path = self.checkpoint_manager.save_checkpoint(
                     checkpoint_name="best.pt",
                     model=self.model,

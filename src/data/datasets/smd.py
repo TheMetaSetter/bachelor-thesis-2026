@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 import torch
 
+from src.core.console import console_print, summarize_tensor
 from src.core.contracts import validate_raw_sequence
 from src.data.base import BaseSequenceParser
 
@@ -53,6 +54,14 @@ class SMDDatasetParser(BaseSequenceParser):
         train_files = sorted(self.train_dir.glob("*.txt"))
         test_files = sorted(self.test_dir.glob("*.txt"))
         label_files = sorted(self.test_label_dir.glob("*.txt"))
+        console_print(
+            "DATA",
+            "Parsing SMD split files",
+            root_dir=self.root_dir,
+            train_count=len(train_files),
+            test_count=len(test_files),
+            label_count=len(label_files),
+        )
 
         if len(train_files) != 28 or len(test_files) != 28 or len(label_files) != 28:
             raise ValueError("SMD parser expected 28 machine files per split")
@@ -69,6 +78,14 @@ class SMDDatasetParser(BaseSequenceParser):
             train_tensor = self._load_feature_matrix(train_file)
             test_tensor = self._load_feature_matrix(test_file)
             test_labels = self._load_label_vector(label_file)
+            console_print(
+                "DATA",
+                "Loaded SMD entity files",
+                entity_id=entity_id,
+                train_tensor=summarize_tensor(train_tensor),
+                test_tensor=summarize_tensor(test_tensor),
+                test_labels=summarize_tensor(test_labels),
+            )
             if test_tensor.shape[0] != test_labels.shape[0]:
                 raise ValueError(f"Test labels do not match test sequence length for {entity_id}")
 
@@ -102,9 +119,16 @@ class SMDDatasetParser(BaseSequenceParser):
                 )
             )
 
-        return {
+        parsed_splits = {
             "train": train_sequences,
             "val": val_sequences,
             "test": test_sequences,
         }
-
+        console_print(
+            "DATA",
+            "Completed SMD parsing",
+            train_sequences=len(train_sequences),
+            val_sequences=len(val_sequences),
+            test_sequences=len(test_sequences),
+        )
+        return parsed_splits

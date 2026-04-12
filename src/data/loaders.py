@@ -11,6 +11,7 @@ from typing import Any
 
 from torch.utils.data import DataLoader, Dataset
 
+from src.core.console import console_print
 from src.data.cleaning import SequenceCleaningPipeline
 from src.data.collate import collate_windows
 from src.data.base import BaseDatasetBuilder
@@ -29,14 +30,26 @@ def _resolve_data_loader_num_workers(data_config: dict[str, Any]) -> int:
             raise ValueError("data.num_workers must be an integer or the string 'auto'")
         visible_cpu_count = os.cpu_count() or 0
         minimum_num_workers = int(data_config.get("min_num_workers", 4))
-        return max(visible_cpu_count, minimum_num_workers)
-    return int(configured_num_workers)
+        resolved_num_workers = max(visible_cpu_count, minimum_num_workers)
+        console_print(
+            "DATA",
+            "Resolved auto data loader workers",
+            visible_cpu_count=visible_cpu_count,
+            minimum_num_workers=minimum_num_workers,
+            resolved_num_workers=resolved_num_workers,
+        )
+        return resolved_num_workers
+    resolved_num_workers = int(configured_num_workers)
+    console_print("DATA", "Resolved explicit data loader workers", resolved_num_workers=resolved_num_workers)
+    return resolved_num_workers
 
 
 def _resolve_smd_root_dir(data_config: dict[str, Any]) -> str:
     # Keep the loader on the same root-resolution codepath as the public data
     # API so environment overrides such as SMD_ROOT_DIR apply everywhere.
-    return str(get_smd_dataset_root(data_config["root_dir"]))
+    resolved_root_dir = str(get_smd_dataset_root(data_config["root_dir"]))
+    console_print("DATA", "Resolved SMD root directory for loader builder", resolved_root_dir=resolved_root_dir)
+    return resolved_root_dir
 
 
 class WindowDataset(Dataset):
@@ -96,6 +109,14 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
         # The builder returns more than dataloaders on purpose: research code
         # often needs access to the parser, scaler, and scaled sequences later.
         resolved_root_dir = _resolve_smd_root_dir(data_config)
+        console_print(
+            "DATA",
+            "Building SMD dataset bundle",
+            resolved_root_dir=resolved_root_dir,
+            window_size=data_config["window_size"],
+            stride=data_config["stride"],
+            batch_size=data_config["batch_size"],
+        )
         if bool(data_config.get("download", False)):
             download_smd_dataset(
                 root_dir=resolved_root_dir,
@@ -110,6 +131,13 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
             annotate_metadata=bool(data_config.get("annotate_cleaning_metadata", False))
         )
         cleaned_sequences = cleaning_pipeline.transform_splits(parsed_sequences)
+        console_print(
+            "DATA",
+            "Cleaned SMD split sequences",
+            train_sequences=len(cleaned_sequences["train"]),
+            val_sequences=len(cleaned_sequences["val"]),
+            test_sequences=len(cleaned_sequences["test"]),
+        )
 
         scaler = SequenceStandardScaler()
         scaler.fit(cleaned_sequences["train"])
@@ -129,6 +157,13 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
             )
             for split_name, split_sequences in scaled_sequences.items()
         }
+        console_print(
+            "DATA",
+            "Built window datasets",
+            train_windows=len(datasets["train"]),
+            val_windows=len(datasets["val"]),
+            test_windows=len(datasets["test"]),
+        )
 
         loaders = {
             "train": DataLoader(
@@ -156,6 +191,15 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
                 collate_fn=collate_windows,
             ),
         }
+        console_print(
+            "DATA",
+            "Built data loaders",
+            train_batch_size=data_config["batch_size"],
+            val_batch_size=data_config["batch_size"],
+            test_batch_size=data_config["batch_size"],
+            resolved_num_workers=resolved_num_workers,
+            persistent_workers=resolved_num_workers > 0,
+        )
 
         return {
             "dataset_name": "smd",

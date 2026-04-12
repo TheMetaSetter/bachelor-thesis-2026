@@ -12,6 +12,7 @@ from typing import Any
 
 import torch
 
+from src.core.console import console_print, summarize_batch, summarize_tensor
 from src.core.contracts import validate_online_batch, validate_window
 from src.data.collate import collate_windows
 
@@ -59,7 +60,24 @@ class SMDOnlineStream:
                 end_index = start_index + window_size
                 self.index_records.append((sequence_index, start_index, end_index))
                 if max_windows is not None and len(self.index_records) >= max_windows:
+                    console_print(
+                        "DATA",
+                        "Initialized online SMD stream with capped window count",
+                        num_sequences=len(sequences),
+                        window_size=window_size,
+                        stride=stride,
+                        max_windows=max_windows,
+                        total_windows=len(self.index_records),
+                    )
                     return
+        console_print(
+            "DATA",
+            "Initialized online SMD stream",
+            num_sequences=len(sequences),
+            window_size=window_size,
+            stride=stride,
+            total_windows=len(self.index_records),
+        )
 
     def __len__(self) -> int:
         return len(self.index_records)
@@ -98,6 +116,14 @@ class SMDOnlineStream:
             },
         }
         validate_window(window)
+        console_print(
+            "DATA",
+            "Yielded online stream window",
+            entity_id=window["meta"]["entity_id"],
+            stream_step=window["meta"]["stream_step"],
+            x=summarize_tensor(window["x"]),
+            point_labels=summarize_tensor(window["point_labels"]),
+        )
         return window
 
     def state_dict(self) -> dict[str, Any]:
@@ -129,6 +155,13 @@ class OnlineWindowBatcher:
         self.batch_size = batch_size
         self.view_noise_std = view_noise_std
         self.view_dropout_probability = view_dropout_probability
+        console_print(
+            "DATA",
+            "Initialized online window batcher",
+            batch_size=batch_size,
+            view_noise_std=view_noise_std,
+            view_dropout_probability=view_dropout_probability,
+        )
 
     def _build_view(self, batch_tensor: torch.Tensor) -> torch.Tensor:
         # View construction stays lightweight in the first online slice because
@@ -155,6 +188,13 @@ class OnlineWindowBatcher:
         batch["view_a"] = self._build_view(batch["x"])
         batch["view_b"] = self._build_view(batch["x"])
         validate_online_batch(batch)
+        console_print("DATA", "Built online batch", **summarize_batch(batch))
+        console_print(
+            "DATA",
+            "Built online contrastive views",
+            view_a=summarize_tensor(batch["view_a"]),
+            view_b=summarize_tensor(batch["view_b"]),
+        )
         return batch
 
     def __iter__(self) -> Any:

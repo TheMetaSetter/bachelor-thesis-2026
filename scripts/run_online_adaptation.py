@@ -16,6 +16,7 @@ import torch
 
 sys.path.append(str(Path(__file__).parent.parent))
 
+from src.core.console import console_print
 from src.core.config import load_experiment_config
 from src.core.registry import build_dataset, build_model, register_dataset, register_model
 from src.core.seed import seed_everything
@@ -34,6 +35,7 @@ def register_runtime_components() -> None:
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
     register_model("online_adaptation", OnlineAdaptationModel)
+    console_print("REGISTRY", "Registered online adaptation runtime components")
 
 
 def build_model_from_experiment_config(experiment_config: dict[str, Any]) -> torch.nn.Module:
@@ -60,6 +62,12 @@ def build_model_from_experiment_config(experiment_config: dict[str, Any]) -> tor
             if key in task_keys_for_model
         }
     )
+    console_print(
+        "MODEL",
+        "Building online adaptation model from experiment config",
+        model_name=model_name,
+        model_kwargs_keys=sorted(model_kwargs.keys()),
+    )
     return build_model(model_name, **model_kwargs)
 
 
@@ -68,13 +76,36 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
     # build a clean stream, adapt a small parameter group, and checkpoint often.
     seed_everything(int(experiment_config["seed"]))
     register_runtime_components()
+    console_print(
+        "ONLINE",
+        "Starting online adaptation experiment",
+        experiment_name=experiment_config["experiment_name"],
+        device=experiment_config["device"],
+        seed=experiment_config["seed"],
+        output_dir=experiment_config["output_dir"],
+        checkpoint_dir=experiment_config["checkpoint_dir"],
+    )
 
     data_bundle = build_dataset(experiment_config["data"]["dataset_name"], experiment_config["data"])
+    console_print(
+        "DATA",
+        "Built dataset bundle for online adaptation",
+        dataset_name=experiment_config["data"]["dataset_name"],
+        test_sequences=len(data_bundle["scaled_sequences"]["test"]),
+    )
     model = build_model_from_experiment_config(experiment_config)
     optimizer = torch.optim.Adam(
         model.get_parameter_group(experiment_config["task"]["target_param_group"]),
         lr=float(experiment_config["optimizer"]["learning_rate"]),
         weight_decay=float(experiment_config["optimizer"]["weight_decay"]),
+    )
+    console_print(
+        "ONLINE",
+        "Initialized online optimizer",
+        optimizer_type="Adam",
+        target_param_group=experiment_config["task"]["target_param_group"],
+        learning_rate=experiment_config["optimizer"]["learning_rate"],
+        weight_decay=experiment_config["optimizer"]["weight_decay"],
     )
     logging_config = dict(experiment_config.get("logging", {}))
     logging_config.setdefault("wandb_job_type", "online_adaptation")
@@ -83,6 +114,13 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
         experiment_config["output_dir"],
         experiment_config=experiment_config,
         logging_config=logging_config,
+    )
+    console_print(
+        "WANDB",
+        "Prepared online adaptation logging config",
+        use_wandb=logging_config.get("use_wandb", False),
+        wandb_run_name=logging_config.get("wandb_run_name"),
+        wandb_job_type=logging_config.get("wandb_job_type"),
     )
     checkpoint_manager = CheckpointManager(
         experiment_config["checkpoint_dir"],
@@ -102,6 +140,14 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
         view_noise_std=float(experiment_config["task"]["view_noise_std"]),
         view_dropout_probability=float(experiment_config["task"]["view_dropout_probability"]),
     )
+    console_print(
+        "ONLINE",
+        "Prepared online stream and batcher",
+        online_windows=len(online_stream),
+        batch_size=experiment_config["data"]["batch_size"],
+        view_noise_std=experiment_config["task"]["view_noise_std"],
+        view_dropout_probability=experiment_config["task"]["view_dropout_probability"],
+    )
 
     online_loop = OnlineLoop(
         model=model,
@@ -118,6 +164,12 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
             max_online_steps=int(experiment_config["task"]["max_online_steps"]),
             log_every_n_steps=int(experiment_config["task"]["log_every_n_steps"]),
             checkpoint_every_n_steps=int(experiment_config["task"]["checkpoint_every_n_steps"]),
+        )
+        console_print(
+            "ONLINE",
+            "Finished online adaptation experiment",
+            final_checkpoint_path=online_outputs["final_checkpoint_path"],
+            num_logged_steps=len(online_outputs["metric_history"]),
         )
         output_dir = Path(experiment_config["output_dir"])
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -188,6 +240,7 @@ def main() -> None:
     args = parser.parse_args()
 
     experiment_config = load_experiment_config(args.experiment_config)
+    console_print("CONFIG", "Loaded CLI online adaptation config", experiment_config_path=args.experiment_config)
     run_online_adaptation_experiment(experiment_config)
 
 

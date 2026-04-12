@@ -4,6 +4,7 @@ from typing import Any
 
 import torch
 
+from src.core.console import console_print, summarize_batch
 from src.data.stream import OnlineWindowBatcher
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
@@ -27,10 +28,12 @@ class OnlineLoop:
         self.metric_history: list[dict[str, Any]] = []
 
     def _move_batch_to_device(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return {
+        batch_on_device = {
             key: value.to(self.device) if isinstance(value, torch.Tensor) else value
             for key, value in batch.items()
         }
+        console_print("ONLINE", "Moved online batch to device", device=self.device, **summarize_batch(batch_on_device))
+        return batch_on_device
 
     def _measure_update_norm(self, before_parameters: list[torch.Tensor], after_parameters: list[torch.Tensor]) -> float:
         update_norm = 0.0
@@ -50,12 +53,21 @@ class OnlineLoop:
         self.model.to(self.device)
         records: list[dict[str, Any]] = []
         final_checkpoint_path = None
+        console_print(
+            "ONLINE",
+            "Starting online adaptation loop",
+            device=self.device,
+            max_online_steps=max_online_steps,
+            log_every_n_steps=log_every_n_steps,
+            checkpoint_every_n_steps=checkpoint_every_n_steps,
+        )
 
         for step_index, batch in enumerate(online_batcher, start=1):
             if step_index > max_online_steps:
                 break
 
             batch_on_device = self._move_batch_to_device(batch)
+            console_print("ONLINE", "Processing online step", step_index=step_index)
 
             self.model.eval()
             with torch.no_grad():
@@ -99,6 +111,7 @@ class OnlineLoop:
             self.metric_history.append(step_metrics)
             if step_index % log_every_n_steps == 0:
                 self.experiment_logger.log_metrics(step_metrics)
+            console_print("ONLINE", "Completed online step", step_index=step_index, step_metrics=step_metrics)
 
             records.append(
                 {
@@ -115,6 +128,7 @@ class OnlineLoop:
             )
 
             if step_index % checkpoint_every_n_steps == 0:
+                console_print("CHECKPOINT", "Saving periodic online checkpoint", step_index=step_index)
                 final_checkpoint_path = self.checkpoint_manager.save_checkpoint(
                     checkpoint_name=f"online_step_{step_index}.pt",
                     model=self.model,
@@ -135,6 +149,7 @@ class OnlineLoop:
                     },
                 )
 
+        console_print("CHECKPOINT", "Saving final online checkpoint", total_steps=len(self.metric_history))
         final_checkpoint_path = self.checkpoint_manager.save_checkpoint(
             checkpoint_name="online_final.pt",
             model=self.model,

@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 import torch
 
+from src.core.console import console_print, summarize_batch, summarize_tensor
 from src.core.contracts import validate_evaluation_record
 from src.metrics.pointwise import compute_pointwise_metrics
 from src.models.base_model import BaseModel
@@ -37,18 +38,27 @@ class Evaluator:
         # downstream metrics should be interpreted on the original timeline.
         model.to(self.device)
         model.eval()
+        console_print("EVAL", "Starting evaluation", device=self.device, num_batches=len(data_loader))
         entity_score_sums: dict[str, torch.Tensor] = {}
         entity_score_counts: dict[str, torch.Tensor] = {}
         entity_labels: dict[str, torch.Tensor] = {}
 
         with torch.no_grad():
-            for batch in data_loader:
+            for batch_index, batch in enumerate(data_loader, start=1):
                 batch_on_device = {
                     key: value.to(self.device) if isinstance(value, torch.Tensor) else value
                     for key, value in batch.items()
                 }
+                console_print("EVAL", "Evaluating batch", batch_index=batch_index, **summarize_batch(batch_on_device))
                 step_output = model.test_step(batch_on_device)
                 point_scores = step_output["outputs"]["point_scores"].detach().cpu()
+                console_print(
+                    "EVAL",
+                    "Produced evaluation batch outputs",
+                    batch_index=batch_index,
+                    point_scores=summarize_tensor(point_scores),
+                    window_scores=summarize_tensor(step_output["outputs"]["window_scores"]),
+                )
 
                 for batch_index, meta in enumerate(batch["meta"]):
                     entity_id = meta["entity_id"]
@@ -106,6 +116,15 @@ class Evaluator:
             threshold=threshold,
         )
         metrics["threshold"] = threshold
+        console_print(
+            "EVAL",
+            "Completed evaluation",
+            num_records=len(evaluation_records),
+            concatenated_scores_length=len(concatenated_scores),
+            concatenated_labels_length=len(concatenated_labels),
+            threshold=threshold,
+            metrics=metrics,
+        )
 
         return {
             "metrics": metrics,

@@ -5,6 +5,7 @@ from typing import Any
 
 import torch
 
+from src.core.console import console_print
 from src.engine.artifact_sinks import ArtifactSink
 
 
@@ -17,6 +18,12 @@ class CheckpointManager:
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.artifact_sinks = artifact_sinks or []
+        console_print(
+            "CHECKPOINT",
+            "Initialized checkpoint manager",
+            checkpoint_dir=self.checkpoint_dir,
+            num_artifact_sinks=len(self.artifact_sinks),
+        )
 
     def save_checkpoint(
         self,
@@ -40,8 +47,23 @@ class CheckpointManager:
         }
         if extra_state is not None:
             checkpoint_payload["extra_state"] = extra_state
+        console_print(
+            "CHECKPOINT",
+            "Saving checkpoint",
+            checkpoint_path=checkpoint_path,
+            checkpoint_name=checkpoint_name,
+            epoch=epoch,
+            metric_history_length=len(metric_history),
+            has_extra_state=extra_state is not None,
+        )
         torch.save(checkpoint_payload, checkpoint_path)
         for artifact_sink in self.artifact_sinks:
+            console_print(
+                "CHECKPOINT",
+                "Sending checkpoint to artifact sink",
+                checkpoint_path=checkpoint_path,
+                artifact_sink_type=type(artifact_sink).__name__,
+            )
             artifact_sink.save_file(
                 checkpoint_path,
                 metadata={
@@ -58,8 +80,16 @@ class CheckpointManager:
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer | None = None,
     ) -> dict[str, Any]:
+        console_print("CHECKPOINT", "Loading checkpoint", checkpoint_path=checkpoint_path)
         loaded_checkpoint = torch.load(checkpoint_path, map_location="cpu")
         model.load_state_dict(loaded_checkpoint["model_state_dict"])
         if optimizer is not None:
             optimizer.load_state_dict(loaded_checkpoint["optimizer_state_dict"])
+        console_print(
+            "CHECKPOINT",
+            "Loaded checkpoint",
+            checkpoint_path=checkpoint_path,
+            epoch=loaded_checkpoint.get("epoch"),
+            metric_history_length=len(loaded_checkpoint.get("metric_history", [])),
+        )
         return loaded_checkpoint

@@ -14,6 +14,7 @@ from typing import Any
 
 import requests
 
+from src.core.console import console_print
 
 DATASET_REPOSITORY_OWNER = "NetManAIOps"
 DATASET_REPOSITORY_NAME = "OmniAnomaly"
@@ -54,14 +55,34 @@ def _build_http_session() -> requests.Session:
 def get_smd_dataset_root(root_dir: str | Path) -> Path:
     configured_root_dir = os.environ.get("SMD_ROOT_DIR", root_dir)
     root_path = Path(os.path.expanduser(os.path.expandvars(str(configured_root_dir))))
+    resolved_from_env = "SMD_ROOT_DIR" in os.environ
     if root_path.name == DATASET_DIRECTORY_IN_REPOSITORY:
+        console_print(
+            "DATA",
+            "Resolved SMD dataset root",
+            input_root=root_dir,
+            configured_root_dir=configured_root_dir,
+            resolved_root=root_path,
+            used_environment_override=resolved_from_env,
+        )
         return root_path
-    return root_path / DATASET_DIRECTORY_IN_REPOSITORY
+    resolved_root = root_path / DATASET_DIRECTORY_IN_REPOSITORY
+    console_print(
+        "DATA",
+        "Resolved SMD dataset root",
+        input_root=root_dir,
+        configured_root_dir=configured_root_dir,
+        resolved_root=resolved_root,
+        used_environment_override=resolved_from_env,
+    )
+    return resolved_root
 
 
 def is_smd_dataset_present(root_dir: str | Path) -> bool:
     dataset_root = get_smd_dataset_root(root_dir)
-    return all((dataset_root / directory_name).exists() for directory_name in REQUIRED_DATASET_DIRECTORIES)
+    is_present = all((dataset_root / directory_name).exists() for directory_name in REQUIRED_DATASET_DIRECTORIES)
+    console_print("DATA", "Checked SMD dataset presence", dataset_root=dataset_root, is_present=is_present)
+    return is_present
 
 
 def ensure_smd_dataset_layout(root_dir: str | Path) -> Path:
@@ -75,6 +96,7 @@ def ensure_smd_dataset_layout(root_dir: str | Path) -> Path:
         raise FileNotFoundError(
             f"SMD dataset root is missing required directories under {dataset_root}: {missing_directories}"
         )
+    console_print("DATA", "Verified SMD dataset layout", dataset_root=dataset_root)
     return dataset_root
 
 
@@ -114,6 +136,7 @@ def download_smd_dataset(
     skip_existing_download: bool = True,
 ) -> Path:
     dataset_root = get_smd_dataset_root(root_dir)
+    console_print("DATA", "Preparing SMD dataset download", dataset_root=dataset_root)
     if skip_existing_download and is_smd_dataset_present(dataset_root):
         return ensure_smd_dataset_layout(dataset_root)
 
@@ -146,4 +169,5 @@ def download_smd_dataset(
                 raise ValueError(f"Unsupported GitHub item type: {github_item_type}")
 
     recursively_download_directory(DATASET_DIRECTORY_IN_REPOSITORY, dataset_root)
+    console_print("DATA", "Completed SMD dataset download", dataset_root=dataset_root)
     return ensure_smd_dataset_layout(dataset_root)

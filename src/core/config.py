@@ -12,9 +12,12 @@ from typing import Any
 
 import yaml
 
+from src.core.console import console_print
+
 
 def load_yaml_config(config_path: str | Path) -> dict[str, Any]:
     path = Path(config_path)
+    console_print("CONFIG", "Loading YAML config", path=path)
     if not path.exists():
         raise FileNotFoundError(f"Config file does not exist: {path}")
 
@@ -34,11 +37,13 @@ def _merge_config_section(
     # Ablation experiments stay readable by layering a small override mapping on
     # top of a shared base config instead of duplicating entire YAML files.
     if overrides is None:
+        console_print("CONFIG", "No overrides supplied for config section")
         return dict(base_config)
     if not isinstance(overrides, dict):
         raise ValueError("Config overrides must be mappings")
     merged_config = dict(base_config)
     merged_config.update(overrides)
+    console_print("CONFIG", "Merged config section overrides", override_keys=sorted(overrides.keys()))
     return merged_config
 
 
@@ -60,6 +65,12 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     for section_name in required_sections:
         if section_name not in experiment_config:
             raise ValueError(f"Experiment config is missing required section: {section_name}")
+    console_print(
+        "CONFIG",
+        "Validated experiment config sections",
+        experiment_name=experiment_config["experiment_name"],
+        required_sections=required_sections,
+    )
 
     data_config = experiment_config["data"]
     model_config = experiment_config["model"]
@@ -303,6 +314,7 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
     # The experiment file names the three source YAMLs, then optional override
     # sections can narrow that base into a specific ablation or online run.
     experiment_path = Path(experiment_config_path)
+    console_print("CONFIG", "Loading experiment config", experiment_config_path=experiment_path)
     root_config = load_yaml_config(experiment_path)
 
     required_reference_fields = [
@@ -323,6 +335,13 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
         config_reference = Path(root_config[reference_field])
         if not config_reference.is_absolute():
             config_reference = experiment_path.parent.parent / config_reference.relative_to("configs")
+        console_print(
+            "CONFIG",
+            "Resolving referenced config",
+            section=section_name,
+            reference_field=reference_field,
+            resolved_path=config_reference,
+        )
         resolved_experiment_config[section_name] = load_yaml_config(config_reference)
 
     resolved_experiment_config["data"] = _merge_config_section(
@@ -339,4 +358,14 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
     )
 
     validate_experiment_config(resolved_experiment_config)
+    console_print(
+        "CONFIG",
+        "Resolved experiment config",
+        experiment_name=resolved_experiment_config["experiment_name"],
+        dataset_name=resolved_experiment_config["data"]["dataset_name"],
+        model_name=resolved_experiment_config["model"]["model_name"],
+        task_name=resolved_experiment_config["task"]["task_name"],
+        output_dir=resolved_experiment_config["output_dir"],
+        checkpoint_dir=resolved_experiment_config["checkpoint_dir"],
+    )
     return resolved_experiment_config

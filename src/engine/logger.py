@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from src.core.console import console_print
 from src.engine.artifact_sinks import build_artifact_sinks, build_output_artifact_sinks
 
 
@@ -30,11 +31,24 @@ class ExperimentLogger:
         self.metrics_path = self.output_dir / "metrics.jsonl"
         self.resolved_config_path = self.output_dir / "resolved_experiment_config.json"
         self._wandb_run = None
+        console_print(
+            "WANDB",
+            "Initializing experiment logger",
+            output_dir=self.output_dir,
+            metrics_path=self.metrics_path,
+            resolved_config_path=self.resolved_config_path,
+        )
 
         if experiment_config is not None and write_resolved_config:
             self.resolved_config_path.write_text(
                 json.dumps(experiment_config, indent=2, sort_keys=True),
                 encoding="utf-8",
+            )
+            console_print(
+                "WANDB",
+                "Wrote resolved experiment config",
+                path=self.resolved_config_path,
+                experiment_name=experiment_config.get("experiment_name"),
             )
         if experiment_config is not None and write_run_start_record:
             run_start_record = {
@@ -45,6 +59,12 @@ class ExperimentLogger:
             }
             with self.metrics_path.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(run_start_record, sort_keys=True) + "\n")
+            console_print(
+                "WANDB",
+                "Wrote run start record",
+                metrics_path=self.metrics_path,
+                run_start_record=run_start_record,
+            )
 
         if logging_config and logging_config.get("use_wandb", False):
             # W&B remains opt-in so local experimentation keeps the same codepath
@@ -64,6 +84,15 @@ class ExperimentLogger:
                 name=logging_config.get("wandb_run_name", experiment_config.get("experiment_name") if experiment_config else None),
                 job_type=logging_config.get("wandb_job_type"),
             )
+            console_print(
+                "WANDB",
+                "Initialized W&B run",
+                project=logging_config["wandb_project"],
+                entity=logging_config.get("wandb_entity"),
+                mode=logging_config.get("wandb_mode", "offline"),
+                run_name=logging_config.get("wandb_run_name"),
+                job_type=logging_config.get("wandb_job_type"),
+            )
             if experiment_config is not None and write_run_start_record:
                 self._wandb_run.log(
                     {
@@ -77,14 +106,18 @@ class ExperimentLogger:
         serializable_metrics = json.dumps(metrics, sort_keys=True)
         with self.metrics_path.open("a", encoding="utf-8") as handle:
             handle.write(serializable_metrics + "\n")
+        console_print("WANDB", "Logged metrics to JSONL", metrics_path=self.metrics_path, metrics=metrics)
         if self._wandb_run is not None:
             self._wandb_run.log(metrics)
+            console_print("WANDB", "Logged metrics to W&B", metrics=metrics)
 
     def log_summary(self, summary: dict[str, Any]) -> None:
         if self._wandb_run is None:
+            console_print("WANDB", "Skipping W&B summary logging because no run is active", summary=summary)
             return
         for key, value in summary.items():
             self._wandb_run.summary[key] = value
+        console_print("WANDB", "Updated W&B summary", summary=summary)
 
     def log_artifact_file(
         self,
@@ -96,6 +129,7 @@ class ExperimentLogger:
         metadata: dict[str, Any] | None = None,
     ) -> None:
         if self._wandb_run is None:
+            console_print("WANDB", "Skipping file artifact logging because no W&B run is active", file_path=file_path)
             return
 
         path = Path(file_path)
@@ -111,6 +145,14 @@ class ExperimentLogger:
         )
         artifact.add_file(str(path), name=path.name)
         self._wandb_run.log_artifact(artifact, aliases=aliases)
+        console_print(
+            "WANDB",
+            "Logged file artifact to W&B",
+            file_path=path,
+            artifact_name=artifact_name,
+            artifact_type=artifact_type,
+            aliases=aliases,
+        )
 
     def log_artifact_directory(
         self,
@@ -122,6 +164,11 @@ class ExperimentLogger:
         metadata: dict[str, Any] | None = None,
     ) -> None:
         if self._wandb_run is None:
+            console_print(
+                "WANDB",
+                "Skipping directory artifact logging because no W&B run is active",
+                directory_path=directory_path,
+            )
             return
 
         path = Path(directory_path)
@@ -137,12 +184,22 @@ class ExperimentLogger:
         )
         artifact.add_dir(str(path), name=path.name)
         self._wandb_run.log_artifact(artifact, aliases=aliases)
+        console_print(
+            "WANDB",
+            "Logged directory artifact to W&B",
+            directory_path=path,
+            artifact_name=artifact_name,
+            artifact_type=artifact_type,
+            aliases=aliases,
+        )
 
     def close(self) -> None:
         if self._wandb_run is not None:
             self._wandb_run.finish()
+            console_print("WANDB", "Closed W&B run")
 
     def build_artifact_sinks(self, logging_config: dict[str, Any] | None) -> list[Any]:
+        console_print("WANDB", "Building artifact sinks for checkpoint logging")
         return build_artifact_sinks(
             logging_config,
             experiment_logger=self,
@@ -155,6 +212,12 @@ class ExperimentLogger:
         *,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        console_print(
+            "WANDB",
+            "Mirroring output directory through artifact sinks",
+            output_dir=self.output_dir,
+            metadata=metadata,
+        )
         for artifact_sink in build_output_artifact_sinks(
             logging_config,
             experiment_logger=self,

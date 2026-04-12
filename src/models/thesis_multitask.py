@@ -14,6 +14,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from src.core.console import (
+    console_print,
+    print_parameter_summary,
+    summarize_batch,
+    summarize_label_distribution,
+    summarize_tensor,
+)
 from src.core.contracts import validate_batch, validate_model_outputs
 from src.data.augment import REDLAMP_ANOMALY_FAMILIES, SyntheticAnomalyInjector
 from src.models.base_model import BaseModel
@@ -218,6 +225,33 @@ class ThesisMultitaskModel(BaseModel):
             },
         }
         self.set_epoch_context(epoch_index=0, total_epochs=1)
+        print_parameter_summary(
+            "MODEL",
+            "ThesisMultitaskModel",
+            self,
+            {
+                "encoder": self.encoder,
+                "continuous_prototype_bank": self.continuous_prototype_bank,
+                "discrete_assignment": self.discrete_assignment,
+                "discrete_codebook": self.discrete_codebook,
+                "reconstruction_head": self.reconstruction_head,
+                "classification_head": self.classification_head,
+                "alpha_logit": self.alpha_logit,
+                "beta_logit": self.beta_logit,
+            },
+            input_dim=input_dim,
+            encoder_dim=encoder_dim,
+            hidden_dim=hidden_dim,
+            num_classes=num_classes,
+            lambda_cls=lambda_cls,
+            lambda_div=lambda_div,
+            lambda_var=lambda_var,
+            lambda_cov=lambda_cov,
+            lambda_use=lambda_use,
+            lambda_gate=lambda_gate,
+            temperature_start=temperature_start,
+            temperature_end=temperature_end,
+        )
 
     def _zero_loss(self, reference_tensor: torch.Tensor) -> torch.Tensor:
         return reference_tensor.new_zeros(())
@@ -253,6 +287,16 @@ class ThesisMultitaskModel(BaseModel):
             "freeze_fusion_for_epochs": self.freeze_fusion_for_epochs,
             "temperature": self.gumbel_temperature,
         }
+        console_print(
+            "MODEL",
+            "Updated multitask epoch context",
+            epoch=epoch_index + 1,
+            total_epochs=total_epochs,
+            warmup_active=warmup_active,
+            temperature=self.gumbel_temperature,
+            alpha_override=self.active_alpha_override,
+            beta_override=self.active_beta_override,
+        )
 
     def get_schedule_state(self) -> dict[str, Any]:
         return dict(self.schedule_state)
@@ -378,6 +422,12 @@ class ThesisMultitaskModel(BaseModel):
             and "synthetic_anomaly_mask" in batch
             and "augmentation_metadata" in batch
         ):
+            console_print(
+                stage_name.upper(),
+                "Received pre-augmented multitask batch",
+                **summarize_batch(batch),
+                classification_label_distribution=summarize_label_distribution(batch["classification_labels"]),
+            )
             return self._clone_batch(batch)
 
         if stage_name == "train" and self.use_synthetic_augmentation:
@@ -410,12 +460,19 @@ class ThesisMultitaskModel(BaseModel):
         ]
         if prepared_batch["point_labels"] is None:
             prepared_batch["point_labels"] = prepared_batch["synthetic_anomaly_mask"].clone()
+        console_print(
+            stage_name.upper(),
+            "Prepared clean multitask batch",
+            **summarize_batch(prepared_batch),
+            classification_label_distribution=summarize_label_distribution(prepared_batch["classification_labels"]),
+        )
         return prepared_batch
 
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
         # The forward pass is the main representation story of the thesis model:
         # encode once, build two branch views, fuse per task, then score.
         validate_batch(batch)
+        console_print("MODEL", "Multitask forward input batch", **summarize_batch(batch))
 
         # Truyền lô dữ liệu qua encoder để mã hoá
         # Thu được các vec-tơ ẩn (hidden vector)
@@ -478,6 +535,23 @@ class ThesisMultitaskModel(BaseModel):
             },
         }
         validate_model_outputs(outputs)
+        console_print(
+            "MODEL",
+            "Multitask forward outputs",
+            hidden=summarize_tensor(outputs["hidden"]),
+            pooled=summarize_tensor(outputs["pooled"]),
+            recon=summarize_tensor(outputs["recon"]),
+            logits=summarize_tensor(outputs["logits"]),
+            point_scores=summarize_tensor(outputs["point_scores"]),
+            window_scores=summarize_tensor(outputs["window_scores"]),
+            continuous_hidden=summarize_tensor(outputs["aux"]["continuous_branch"]["prototype_context"]),
+            discrete_hidden=summarize_tensor(outputs["aux"]["discrete_branch"]["quantized_hidden"]),
+            assignment_probabilities=summarize_tensor(
+                outputs["aux"]["discrete_branch"]["assignment_probabilities"]
+            ),
+            hidden_reconstruction=summarize_tensor(outputs["aux"]["hidden_reconstruction"]),
+            hidden_classification=summarize_tensor(outputs["aux"]["hidden_classification"]),
+        )
         return outputs
 
     def _normalize_branch_tokens(self, branch_hidden: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -677,6 +751,24 @@ class ThesisMultitaskModel(BaseModel):
             "classification_loss": classification_loss,
             **optional_loss_values,
         }
+        console_print(
+            stage_name.upper(),
+            "Completed multitask stage step",
+            batch_size=prepared_batch["x"].shape[0],
+            total_loss=float(total_loss.detach().cpu()),
+            reconstruction_loss=float(reconstruction_loss.detach().cpu()),
+            classification_loss=float(classification_loss.detach().cpu()),
+            diversity_loss=float(optional_loss_values["diversity_loss"].detach().cpu()),
+            variance_loss=float(optional_loss_values["variance_loss"].detach().cpu()),
+            covariance_loss=float(optional_loss_values["covariance_loss"].detach().cpu()),
+            usage_loss=float(optional_loss_values["usage_loss"].detach().cpu()),
+            gate_loss=float(optional_loss_values["gate_loss"].detach().cpu()),
+            classification_label_distribution=summarize_label_distribution(
+                prepared_batch["classification_labels"]
+            ),
+            alpha=float(outputs["aux"]["alpha"].detach().cpu()),
+            beta=float(outputs["aux"]["beta"].detach().cpu()),
+        )
         return {
             "loss": total_loss,
             "log": self._build_stage_log(stage_name, outputs, loss_terms, prepared_batch),
