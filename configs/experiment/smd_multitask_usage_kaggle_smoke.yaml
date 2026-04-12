@@ -1,0 +1,41 @@
+experiment_name: smd_multitask_usage_kaggle_smoke
+seed: 7
+device: cuda
+output_dir: /kaggle/working/outputs/smd_multitask_usage_kaggle_smoke
+checkpoint_dir: /kaggle/working/outputs/smd_multitask_usage_kaggle_smoke/checkpoints
+data_config_path: configs/data/smd.yaml
+model_config_path: configs/model/thesis_multitask.yaml
+task_config_path: configs/task/multitask_tsad.yaml
+
+data_overrides:
+  # If your Kaggle dataset mount differs, set SMD_ROOT_DIR before launch.
+  root_dir: /kaggle/input/server-machine-dataset/ServerMachineDataset
+  batch_size: 512
+  num_workers: auto
+  min_num_workers: 4
+  max_train_windows: 1024
+  max_val_windows: 512
+  max_test_windows: 512
+
+model_overrides:
+  enable_usage_loss: true
+  lambda_use: 0.01
+
+optimizer:
+  learning_rate: 0.001
+  weight_decay: 0.0
+
+epochs: 1
+
+logging:
+  use_wandb: false
+  wandb_project: bachelor-thesis-2026
+  wandb_entity: null
+  wandb_mode: offline
+  wandb_tags:
+    - smd
+    - multitask
+    - smoke
+    - usage
+    - kaggle
+  wandb_run_name: smd_multitask_usage_kaggle_smoke
