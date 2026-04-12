@@ -172,6 +172,16 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     for field_name, field_value in optional_data_boolean_fields.items():
         if not isinstance(field_value, bool):
             raise ValueError(f"data.{field_name} must be a boolean when provided")
+    num_workers_value = data_config.get("num_workers", 0)
+    if isinstance(num_workers_value, str):
+        if num_workers_value != "auto":
+            raise ValueError("data.num_workers must be a non-negative integer or 'auto'")
+    elif not isinstance(num_workers_value, int) or num_workers_value < 0:
+        raise ValueError("data.num_workers must be a non-negative integer or 'auto'")
+    min_num_workers_value = data_config.get("min_num_workers")
+    if min_num_workers_value is not None:
+        if not isinstance(min_num_workers_value, int) or min_num_workers_value <= 0:
+            raise ValueError("data.min_num_workers must be a positive integer when provided")
     if task_config.get("task_name") == "multitask_tsad":
         if float(model_config["gumbel_temperature"]) <= 0.0:
             raise ValueError("gumbel_temperature must be positive")

@@ -8,6 +8,7 @@ second storage convention.
 """
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any
 
@@ -51,7 +52,8 @@ def _build_http_session() -> requests.Session:
 
 
 def get_smd_dataset_root(root_dir: str | Path) -> Path:
-    root_path = Path(root_dir)
+    configured_root_dir = os.environ.get("SMD_ROOT_DIR", root_dir)
+    root_path = Path(os.path.expanduser(os.path.expandvars(str(configured_root_dir))))
     if root_path.name == DATASET_DIRECTORY_IN_REPOSITORY:
         return root_path
     return root_path / DATASET_DIRECTORY_IN_REPOSITORY

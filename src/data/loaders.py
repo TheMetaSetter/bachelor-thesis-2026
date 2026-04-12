@@ -6,6 +6,7 @@ sequences are parsed, scaled, windowed, and finally exposed as the batch
 contract consumed by the baseline and multitask models.
 """
 
+import os
 from typing import Any
 
 from torch.utils.data import DataLoader, Dataset
@@ -16,6 +17,20 @@ from src.data.base import BaseDatasetBuilder
 from src.data.datasets.smd import SMDDatasetParser
 from src.data.download import download_smd_dataset
 from src.data.scalers import SequenceStandardScaler
+
+
+def _resolve_data_loader_num_workers(data_config: dict[str, Any]) -> int:
+    # Kaggle and server runs often need a portable "use the machine" option
+    # instead of a hard-coded worker count. "auto" means use all visible CPU
+    # workers with a configurable floor.
+    configured_num_workers = data_config.get("num_workers", 0)
+    if isinstance(configured_num_workers, str):
+        if configured_num_workers != "auto":
+            raise ValueError("data.num_workers must be an integer or the string 'auto'")
+        visible_cpu_count = os.cpu_count() or 0
+        minimum_num_workers = int(data_config.get("min_num_workers", 4))
+        return max(visible_cpu_count, minimum_num_workers)
+    return int(configured_num_workers)
 
 
 class WindowDataset(Dataset):
@@ -96,6 +111,8 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
             for split_name, split_sequences in cleaned_sequences.items()
         }
 
+        resolved_num_workers = _resolve_data_loader_num_workers(data_config)
+
         datasets = {
             split_name: WindowDataset(
                 sequences=split_sequences,
@@ -111,21 +128,24 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
                 datasets["train"],
                 batch_size=int(data_config["batch_size"]),
                 shuffle=bool(data_config.get("shuffle_train", True)),
-                num_workers=int(data_config.get("num_workers", 0)),
+                num_workers=resolved_num_workers,
+                persistent_workers=resolved_num_workers > 0,
                 collate_fn=collate_windows,
             ),
             "val": DataLoader(
                 datasets["val"],
                 batch_size=int(data_config["batch_size"]),
                 shuffle=False,
-                num_workers=int(data_config.get("num_workers", 0)),
+                num_workers=resolved_num_workers,
+                persistent_workers=resolved_num_workers > 0,
                 collate_fn=collate_windows,
             ),
             "test": DataLoader(
                 datasets["test"],
                 batch_size=int(data_config["batch_size"]),
                 shuffle=False,
-                num_workers=int(data_config.get("num_workers", 0)),
+                num_workers=resolved_num_workers,
+                persistent_workers=resolved_num_workers > 0,
                 collate_fn=collate_windows,
             ),
         }
