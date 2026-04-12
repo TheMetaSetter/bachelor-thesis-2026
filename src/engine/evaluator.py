@@ -12,7 +12,7 @@ import torch
 
 from src.core.console import console_print, summarize_batch, summarize_tensor
 from src.core.contracts import validate_evaluation_record
-from src.metrics.pointwise import compute_pointwise_metrics
+from src.metrics.pointwise import compute_pointwise_curve_payload, compute_pointwise_metrics
 from src.models.base_model import BaseModel
 
 
@@ -42,6 +42,7 @@ class Evaluator:
         entity_score_sums: dict[str, torch.Tensor] = {}
         entity_score_counts: dict[str, torch.Tensor] = {}
         entity_labels: dict[str, torch.Tensor] = {}
+        forward_pass_seconds_history: list[float] = []
 
         with torch.no_grad():
             for batch_index, batch in enumerate(data_loader, start=1):
@@ -52,6 +53,10 @@ class Evaluator:
                 console_print("EVAL", "Evaluating batch", batch_index=batch_index, **summarize_batch(batch_on_device))
                 step_output = model.test_step(batch_on_device)
                 point_scores = step_output["outputs"]["point_scores"].detach().cpu()
+                if "forward_pass_seconds" in step_output["outputs"]["aux"]:
+                    forward_pass_seconds_history.append(
+                        float(step_output["outputs"]["aux"]["forward_pass_seconds"])
+                    )
                 console_print(
                     "EVAL",
                     "Produced evaluation batch outputs",
@@ -60,14 +65,14 @@ class Evaluator:
                     window_scores=summarize_tensor(step_output["outputs"]["window_scores"]),
                 )
 
-                for batch_index, meta in enumerate(batch["meta"]):
+                for window_index, meta in enumerate(batch["meta"]):
                     entity_id = meta["entity_id"]
                     end_index = int(meta["end_index"])
                     start_index = int(meta["start_index"])
                     entity_length = int(
                         max(
                             end_index,
-                            batch["point_labels"][batch_index].shape[0] + start_index,
+                            batch["point_labels"][window_index].shape[0] + start_index,
                         )
                     )
                     if entity_id not in entity_score_sums:
@@ -84,7 +89,7 @@ class Evaluator:
                             if sequence["meta"]["entity_id"] == entity_id
                         )
 
-                    entity_score_sums[entity_id][start_index:end_index] += point_scores[batch_index]
+                    entity_score_sums[entity_id][start_index:end_index] += point_scores[window_index]
                     entity_score_counts[entity_id][start_index:end_index] += 1.0
 
         evaluation_records: list[dict[str, Any]] = []
@@ -116,6 +121,14 @@ class Evaluator:
             threshold=threshold,
         )
         metrics["threshold"] = threshold
+        if forward_pass_seconds_history:
+            metrics["forward_pass_seconds_mean"] = (
+                sum(forward_pass_seconds_history) / len(forward_pass_seconds_history)
+            )
+        curves = compute_pointwise_curve_payload(
+            point_labels=concatenated_labels,
+            point_scores=concatenated_scores,
+        )
         console_print(
             "EVAL",
             "Completed evaluation",
@@ -124,9 +137,12 @@ class Evaluator:
             concatenated_labels_length=len(concatenated_labels),
             threshold=threshold,
             metrics=metrics,
+            roc_curve_points=len(curves["roc_curve"]["x"]),
+            pr_curve_points=len(curves["pr_curve"]["x"]),
         )
 
         return {
             "metrics": metrics,
             "records": evaluation_records,
+            "curves": curves,
         }

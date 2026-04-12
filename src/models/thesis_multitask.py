@@ -8,6 +8,7 @@ stage step that assembles the training objective.
 """
 
 import math
+import time
 from typing import Any, Callable
 
 import torch
@@ -473,6 +474,7 @@ class ThesisMultitaskModel(BaseModel):
         # encode once, build two branch views, fuse per task, then score.
         validate_batch(batch)
         console_print("MODEL", "Multitask forward input batch", **summarize_batch(batch))
+        forward_start_time = time.perf_counter()
 
         # Truyền lô dữ liệu qua encoder để mã hoá
         # Thu được các vec-tơ ẩn (hidden vector)
@@ -532,6 +534,7 @@ class ThesisMultitaskModel(BaseModel):
                 "hidden_classification": hidden_classification,
                 "alpha": fusion_outputs["alpha"],
                 "beta": fusion_outputs["beta"],
+                "forward_pass_seconds": time.perf_counter() - forward_start_time,
             },
         }
         validate_model_outputs(outputs)
@@ -551,6 +554,7 @@ class ThesisMultitaskModel(BaseModel):
             ),
             hidden_reconstruction=summarize_tensor(outputs["aux"]["hidden_reconstruction"]),
             hidden_classification=summarize_tensor(outputs["aux"]["hidden_classification"]),
+            forward_pass_seconds=outputs["aux"]["forward_pass_seconds"],
         )
         return outputs
 
@@ -768,6 +772,7 @@ class ThesisMultitaskModel(BaseModel):
             ),
             alpha=float(outputs["aux"]["alpha"].detach().cpu()),
             beta=float(outputs["aux"]["beta"].detach().cpu()),
+            forward_pass_seconds=outputs["aux"]["forward_pass_seconds"],
         )
         return {
             "loss": total_loss,

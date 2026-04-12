@@ -13,6 +13,7 @@ import torch
 from src.core.console import console_print, summarize_batch
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
+from src.metrics.pointwise import compute_binary_classification_metrics
 from src.models.base_model import BaseModel
 
 
@@ -51,6 +52,33 @@ class Trainer:
             aggregated_logs[key] = sum(batch_log[key] for batch_log in batch_logs) / len(batch_logs)
         return aggregated_logs
 
+    def _aggregate_multitask_classification_metrics(
+        self,
+        *,
+        logits_history: list[torch.Tensor],
+        label_history: list[torch.Tensor],
+        forward_pass_seconds_history: list[float],
+        stage_name: str,
+    ) -> dict[str, float]:
+        if not logits_history or not label_history:
+            return {}
+
+        concatenated_logits = torch.cat(logits_history, dim=0)
+        concatenated_labels = torch.cat(label_history, dim=0)
+        classification_metrics = compute_binary_classification_metrics(
+            logits=concatenated_logits,
+            labels=concatenated_labels,
+        )
+        prefixed_metrics = {
+            f"{stage_name}_{metric_name}": metric_value
+            for metric_name, metric_value in classification_metrics.items()
+        }
+        if forward_pass_seconds_history:
+            prefixed_metrics[f"{stage_name}_forward_pass_seconds_mean"] = (
+                sum(forward_pass_seconds_history) / len(forward_pass_seconds_history)
+            )
+        return prefixed_metrics
+
     def train(
         self,
         train_loader: Any,
@@ -82,6 +110,9 @@ class Trainer:
                 self.model.set_epoch_context(epoch_index=epoch_index, total_epochs=epochs)
             
             train_logs: list[dict[str, float]] = []
+            train_logits_history: list[torch.Tensor] = []
+            train_label_history: list[torch.Tensor] = []
+            train_forward_pass_seconds_history: list[float] = []
             console_print("TRAIN", "Starting epoch", epoch=epoch_index + 1)
             for train_batch_index, train_batch in enumerate(train_loader, start=1):
                 batch_on_device = self._move_batch_to_device(train_batch)
@@ -100,9 +131,24 @@ class Trainer:
                     step_log=step_output["log"],
                 )
                 train_logs.append(step_output["log"])
+                if (
+                    step_output["outputs"].get("logits") is not None
+                    and "classification_labels" in step_output["batch"]
+                ):
+                    train_logits_history.append(step_output["outputs"]["logits"].detach().cpu())
+                    train_label_history.append(
+                        step_output["batch"]["classification_labels"].detach().cpu()
+                    )
+                if "forward_pass_seconds" in step_output["outputs"]["aux"]:
+                    train_forward_pass_seconds_history.append(
+                        float(step_output["outputs"]["aux"]["forward_pass_seconds"])
+                    )
 
             self.model.eval()
             val_logs: list[dict[str, float]] = []
+            val_logits_history: list[torch.Tensor] = []
+            val_label_history: list[torch.Tensor] = []
+            val_forward_pass_seconds_history: list[float] = []
             with torch.no_grad():
                 for val_batch_index, val_batch in enumerate(val_loader, start=1):
                     batch_on_device = self._move_batch_to_device(val_batch)
@@ -116,10 +162,38 @@ class Trainer:
                         step_log=step_output["log"],
                     )
                     val_logs.append(step_output["log"])
+                    if (
+                        step_output["outputs"].get("logits") is not None
+                        and "classification_labels" in step_output["batch"]
+                    ):
+                        val_logits_history.append(step_output["outputs"]["logits"].detach().cpu())
+                        val_label_history.append(
+                            step_output["batch"]["classification_labels"].detach().cpu()
+                        )
+                    if "forward_pass_seconds" in step_output["outputs"]["aux"]:
+                        val_forward_pass_seconds_history.append(
+                            float(step_output["outputs"]["aux"]["forward_pass_seconds"])
+                        )
 
             epoch_metrics = {"epoch": epoch_index + 1}
             epoch_metrics.update(self._aggregate_logs(train_logs))
             epoch_metrics.update(self._aggregate_logs(val_logs))
+            epoch_metrics.update(
+                self._aggregate_multitask_classification_metrics(
+                    logits_history=train_logits_history,
+                    label_history=train_label_history,
+                    forward_pass_seconds_history=train_forward_pass_seconds_history,
+                    stage_name="train",
+                )
+            )
+            epoch_metrics.update(
+                self._aggregate_multitask_classification_metrics(
+                    logits_history=val_logits_history,
+                    label_history=val_label_history,
+                    forward_pass_seconds_history=val_forward_pass_seconds_history,
+                    stage_name="val",
+                )
+            )
             self.metric_history.append(epoch_metrics)
             self.experiment_logger.log_metrics(epoch_metrics)
             console_print("TRAIN", "Completed epoch", epoch=epoch_index + 1, epoch_metrics=epoch_metrics)

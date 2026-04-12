@@ -113,6 +113,7 @@ def run_evaluation_experiment(
     output_dir.mkdir(parents=True, exist_ok=True)
     records_path = output_dir / "evaluation_records.json"
     metrics_path = output_dir / "evaluation_metrics.json"
+    curves_path = output_dir / "evaluation_curves.json"
     resolved_config_path = output_dir / "resolved_experiment_config.json"
 
     serializable_records = [
@@ -126,6 +127,7 @@ def run_evaluation_experiment(
     ]
     records_path.write_text(json.dumps(serializable_records), encoding="utf-8")
     metrics_path.write_text(json.dumps(evaluation_outputs["metrics"]), encoding="utf-8")
+    curves_path.write_text(json.dumps(evaluation_outputs["curves"]), encoding="utf-8")
     resolved_config_path.write_text(
         json.dumps(experiment_config, indent=2, sort_keys=True),
         encoding="utf-8",
@@ -134,6 +136,7 @@ def run_evaluation_experiment(
         f"evaluation/{metric_name}": metric_value
         for metric_name, metric_value in evaluation_outputs["metrics"].items()
     }
+    experiment_logger.log_metrics(prefixed_metrics)
     experiment_logger.log_summary(prefixed_metrics | {"evaluation/checkpoint_path": checkpoint_path})
     experiment_logger.log_artifact_file(
         file_path=resolved_config_path,
@@ -156,8 +159,20 @@ def run_evaluation_experiment(
         aliases=["latest"],
         metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "evaluate"},
     )
+    experiment_logger.log_artifact_file(
+        file_path=curves_path,
+        artifact_name=f"{experiment_config['experiment_name']}-evaluation-curves",
+        artifact_type="evaluation",
+        aliases=["latest"],
+        metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "evaluate"},
+    )
     experiment_logger.close()
-    console_print("EVAL", "Finished evaluation experiment", metrics=evaluation_outputs["metrics"])
+    console_print(
+        "EVAL",
+        "Finished evaluation experiment",
+        metrics=evaluation_outputs["metrics"],
+        curves_path=curves_path,
+    )
     return evaluation_outputs
 
 
