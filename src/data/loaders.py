@@ -15,7 +15,7 @@ from src.data.cleaning import SequenceCleaningPipeline
 from src.data.collate import collate_windows
 from src.data.base import BaseDatasetBuilder
 from src.data.datasets.smd import SMDDatasetParser
-from src.data.download import download_smd_dataset
+from src.data.download import download_smd_dataset, get_smd_dataset_root
 from src.data.scalers import SequenceStandardScaler
 
 
@@ -31,6 +31,12 @@ def _resolve_data_loader_num_workers(data_config: dict[str, Any]) -> int:
         minimum_num_workers = int(data_config.get("min_num_workers", 4))
         return max(visible_cpu_count, minimum_num_workers)
     return int(configured_num_workers)
+
+
+def _resolve_smd_root_dir(data_config: dict[str, Any]) -> str:
+    # Keep the loader on the same root-resolution codepath as the public data
+    # API so environment overrides such as SMD_ROOT_DIR apply everywhere.
+    return str(get_smd_dataset_root(data_config["root_dir"]))
 
 
 class WindowDataset(Dataset):
@@ -89,13 +95,14 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
     def build(self, data_config: dict[str, Any]) -> dict[str, Any]:
         # The builder returns more than dataloaders on purpose: research code
         # often needs access to the parser, scaler, and scaled sequences later.
+        resolved_root_dir = _resolve_smd_root_dir(data_config)
         if bool(data_config.get("download", False)):
             download_smd_dataset(
-                root_dir=data_config["root_dir"],
+                root_dir=resolved_root_dir,
                 skip_existing_download=bool(data_config.get("skip_existing_download", True)),
             )
         parser = SMDDatasetParser(
-            root_dir=data_config["root_dir"],
+            root_dir=resolved_root_dir,
             validation_split_ratio=float(data_config["validation_split_ratio"]),
         )
         parsed_sequences = parser.parse()
