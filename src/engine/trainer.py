@@ -79,6 +79,49 @@ class Trainer:
             )
         return prefixed_metrics
 
+    def _run_validation_epoch(
+        self,
+        *,
+        val_loader: Any,
+        epoch_index: int,
+        stage_name: str,
+        step_method_name: str,
+    ) -> tuple[list[dict[str, float]], list[torch.Tensor], list[torch.Tensor], list[float]]:
+        stage_logs: list[dict[str, float]] = []
+        logits_history: list[torch.Tensor] = []
+        label_history: list[torch.Tensor] = []
+        forward_pass_seconds_history: list[float] = []
+        step_method = getattr(self.model, step_method_name)
+
+        with torch.no_grad():
+            for val_batch_index, val_batch in enumerate(val_loader, start=1):
+                batch_on_device = self._move_batch_to_device(val_batch)
+                console_print(stage_name.upper(), "Processing validation batch", epoch=epoch_index + 1, batch_index=val_batch_index)
+                step_output = step_method(batch_on_device)
+                console_print(
+                    stage_name.upper(),
+                    "Completed validation batch",
+                    epoch=epoch_index + 1,
+                    batch_index=val_batch_index,
+                    step_log=step_output["log"],
+                )
+                stage_logs.append(step_output["log"])
+                if (
+                    step_output["outputs"].get("logits") is not None
+                    and "classification_labels" in step_output["batch"]
+                    and f"{stage_name}_classification_loss" in step_output["log"]
+                ):
+                    logits_history.append(step_output["outputs"]["logits"].detach().cpu())
+                    label_history.append(
+                        step_output["batch"]["classification_labels"].detach().cpu()
+                    )
+                if "forward_pass_seconds" in step_output["outputs"]["aux"]:
+                    forward_pass_seconds_history.append(
+                        float(step_output["outputs"]["aux"]["forward_pass_seconds"])
+                    )
+
+        return stage_logs, logits_history, label_history, forward_pass_seconds_history
+
     def train(
         self,
         train_loader: Any,
@@ -145,39 +188,35 @@ class Trainer:
                     )
 
             self.model.eval()
-            val_logs: list[dict[str, float]] = []
-            val_logits_history: list[torch.Tensor] = []
-            val_label_history: list[torch.Tensor] = []
-            val_forward_pass_seconds_history: list[float] = []
-            with torch.no_grad():
-                for val_batch_index, val_batch in enumerate(val_loader, start=1):
-                    batch_on_device = self._move_batch_to_device(val_batch)
-                    console_print("VAL", "Processing validation batch", epoch=epoch_index + 1, batch_index=val_batch_index)
-                    step_output = self.model.validation_step(batch_on_device)
-                    console_print(
-                        "VAL",
-                        "Completed validation batch",
-                        epoch=epoch_index + 1,
-                        batch_index=val_batch_index,
-                        step_log=step_output["log"],
-                    )
-                    val_logs.append(step_output["log"])
-                    if (
-                        step_output["outputs"].get("logits") is not None
-                        and "classification_labels" in step_output["batch"]
-                    ):
-                        val_logits_history.append(step_output["outputs"]["logits"].detach().cpu())
-                        val_label_history.append(
-                            step_output["batch"]["classification_labels"].detach().cpu()
-                        )
-                    if "forward_pass_seconds" in step_output["outputs"]["aux"]:
-                        val_forward_pass_seconds_history.append(
-                            float(step_output["outputs"]["aux"]["forward_pass_seconds"])
-                        )
+            val_logs, _, _, val_forward_pass_seconds_history = self._run_validation_epoch(
+                val_loader=val_loader,
+                epoch_index=epoch_index,
+                stage_name="val",
+                step_method_name="validation_step",
+            )
+            val_synth_logs: list[dict[str, float]] = []
+            val_synth_logits_history: list[torch.Tensor] = []
+            val_synth_label_history: list[torch.Tensor] = []
+            val_synth_forward_pass_seconds_history: list[float] = []
+            if hasattr(self.model, "synthetic_validation_step"):
+                if hasattr(self.model, "prepare_synthetic_validation_epoch"):
+                    self.model.prepare_synthetic_validation_epoch()
+                (
+                    val_synth_logs,
+                    val_synth_logits_history,
+                    val_synth_label_history,
+                    val_synth_forward_pass_seconds_history,
+                ) = self._run_validation_epoch(
+                    val_loader=val_loader,
+                    epoch_index=epoch_index,
+                    stage_name="val_synth",
+                    step_method_name="synthetic_validation_step",
+                )
 
             epoch_metrics = {"epoch": epoch_index + 1}
             epoch_metrics.update(self._aggregate_logs(train_logs))
             epoch_metrics.update(self._aggregate_logs(val_logs))
+            epoch_metrics.update(self._aggregate_logs(val_synth_logs))
             epoch_metrics.update(
                 self._aggregate_multitask_classification_metrics(
                     logits_history=train_logits_history,
@@ -188,10 +227,10 @@ class Trainer:
             )
             epoch_metrics.update(
                 self._aggregate_multitask_classification_metrics(
-                    logits_history=val_logits_history,
-                    label_history=val_label_history,
-                    forward_pass_seconds_history=val_forward_pass_seconds_history,
-                    stage_name="val",
+                    logits_history=val_synth_logits_history,
+                    label_history=val_synth_label_history,
+                    forward_pass_seconds_history=val_synth_forward_pass_seconds_history,
+                    stage_name="val_synth",
                 )
             )
             self.metric_history.append(epoch_metrics)

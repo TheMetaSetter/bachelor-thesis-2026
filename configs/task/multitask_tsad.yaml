@@ -1,5 +1,7 @@
 task_name: multitask_tsad
 use_synthetic_augmentation: true
+use_synthetic_validation: true
+synthetic_validation_seed: 7
 freeze_fusion_for_epochs: 0
 warmup_alpha_value: 0.5
 warmup_beta_value: 0.5

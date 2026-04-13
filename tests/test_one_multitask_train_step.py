@@ -115,3 +115,57 @@ def test_one_multitask_train_step_runs_with_optional_losses_disabled() -> None:
     assert torch.isclose(step_output["loss"], expected_baseline_loss)
     assert model.alpha_logit.grad is not None
     assert model.beta_logit.grad is not None
+
+
+def test_usage_loss_schedule_weight_contributes_to_total_loss() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        dropout=0.0,
+        continuous_enabled=True,
+        continuous_num_prototypes=4,
+        discrete_enabled=True,
+        discrete_codebook_size=8,
+        gumbel_temperature=1.5,
+        alpha_logit_init=0.0,
+        beta_logit_init=0.0,
+        lambda_cls=1.0,
+        enable_diversity_loss=False,
+        enable_variance_loss=False,
+        enable_covariance_loss=False,
+        enable_usage_loss=True,
+        enable_gate_loss=False,
+        lambda_div=0.0,
+        lambda_var=0.0,
+        lambda_cov=0.0,
+        lambda_use=0.0,
+        usage_lambda_start=0.2,
+        usage_lambda_end=0.2,
+        usage_lambda_schedule_fraction=1.0,
+        lambda_gate=0.0,
+        use_synthetic_augmentation=True,
+        anomaly_probability=1.0,
+        min_segment_fraction=0.1,
+        max_segment_fraction=0.2,
+        spike_scale=3.0,
+    )
+    model.set_epoch_context(epoch_index=0, total_epochs=1)
+    batch = {
+        "x": torch.randn(2, 100, 38),
+        "point_labels": torch.zeros(2, 100, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": "machine-a"}, {"entity_id": "machine-b"}],
+    }
+
+    step_output = model.training_step(batch)
+    expected_loss = (
+        step_output["loss_terms"]["reconstruction_loss"]
+        + step_output["loss_terms"]["classification_loss"]
+        + 0.2 * step_output["loss_terms"]["usage_loss"]
+    )
+
+    assert step_output["loss_terms"]["usage_loss"].item() > 0.0
+    assert torch.isclose(step_output["loss"], expected_loss)

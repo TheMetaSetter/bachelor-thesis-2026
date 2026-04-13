@@ -69,6 +69,7 @@ class ThesisMultitaskModel(BaseModel):
         temperature_start: float = 1.0,
         temperature_end: float = 1.0,
         temperature_anneal_fraction: float = 1.0,
+        temperature_hold_fraction: float = 0.0,
         alpha_logit_init: float = 0.0,
         beta_logit_init: float = 0.0,
         lambda_cls: float = 1.0,
@@ -82,9 +83,14 @@ class ThesisMultitaskModel(BaseModel):
         lambda_cov: float = 0.0,
         lambda_use: float = 0.0,
         lambda_gate: float = 0.0,
+        usage_lambda_start: float | None = None,
+        usage_lambda_end: float | None = None,
+        usage_lambda_schedule_fraction: float = 1.0,
         variance_floor_gamma: float = 1.0,
         gate_barrier_margin: float = 0.25,
         use_synthetic_augmentation: bool = True,
+        use_synthetic_validation: bool = True,
+        synthetic_validation_seed: int = 7,
         freeze_fusion_for_epochs: int = 0,
         warmup_alpha_value: float = 0.5,
         warmup_beta_value: float = 0.5,
@@ -106,12 +112,17 @@ class ThesisMultitaskModel(BaseModel):
         self.temperature_start = temperature_start
         self.temperature_end = temperature_end
         self.temperature_anneal_fraction = temperature_anneal_fraction
+        self.temperature_hold_fraction = temperature_hold_fraction
         self.lambda_cls = lambda_cls
         self.lambda_div = lambda_div
         self.lambda_var = lambda_var
         self.lambda_cov = lambda_cov
         self.lambda_use = lambda_use
         self.lambda_gate = lambda_gate
+        self.usage_lambda_start = lambda_use if usage_lambda_start is None else usage_lambda_start
+        self.usage_lambda_end = lambda_use if usage_lambda_end is None else usage_lambda_end
+        self.usage_lambda_schedule_fraction = usage_lambda_schedule_fraction
+        self.current_usage_lambda = self.usage_lambda_start
         self.enable_diversity_loss = enable_diversity_loss
         self.enable_variance_loss = enable_variance_loss
         self.enable_covariance_loss = enable_covariance_loss
@@ -120,6 +131,8 @@ class ThesisMultitaskModel(BaseModel):
         self.variance_floor_gamma = variance_floor_gamma
         self.gate_barrier_margin = gate_barrier_margin
         self.use_synthetic_augmentation = use_synthetic_augmentation
+        self.use_synthetic_validation = use_synthetic_validation
+        self.synthetic_validation_seed = synthetic_validation_seed
         self.freeze_fusion_for_epochs = freeze_fusion_for_epochs
         self.warmup_alpha_value = warmup_alpha_value
         self.warmup_beta_value = warmup_beta_value
@@ -133,6 +146,7 @@ class ThesisMultitaskModel(BaseModel):
             "warmup_active": False,
             "freeze_fusion_for_epochs": self.freeze_fusion_for_epochs,
             "temperature": self.gumbel_temperature,
+            "usage_lambda": self.current_usage_lambda,
         }
 
         # Encoder block.
@@ -198,6 +212,14 @@ class ThesisMultitaskModel(BaseModel):
             spike_scale=spike_scale,
             anomaly_families=anomaly_families,
         )
+        self.synthetic_validation_injector = SyntheticAnomalyInjector(
+            anomaly_probability=anomaly_probability,
+            min_segment_fraction=min_segment_fraction,
+            max_segment_fraction=max_segment_fraction,
+            spike_scale=spike_scale,
+            anomaly_families=anomaly_families,
+            deterministic_seed=synthetic_validation_seed,
+        )
         self.optional_loss_configs: dict[str, dict[str, Any]] = {
             "diversity_loss": {
                 "enabled": self.lambda_div > 0.0,
@@ -215,7 +237,7 @@ class ThesisMultitaskModel(BaseModel):
                 "compute_fn": self._compute_covariance_reduction_loss,
             },
             "usage_loss": {
-                "enabled": self.lambda_use > 0.0,
+                "enabled": max(self.usage_lambda_start, self.usage_lambda_end) > 0.0,
                 "weight": self.lambda_use,
                 "compute_fn": self._compute_prototype_usage_loss,
             },
@@ -252,6 +274,12 @@ class ThesisMultitaskModel(BaseModel):
             lambda_gate=lambda_gate,
             temperature_start=temperature_start,
             temperature_end=temperature_end,
+            temperature_hold_fraction=temperature_hold_fraction,
+            usage_lambda_start=self.usage_lambda_start,
+            usage_lambda_end=self.usage_lambda_end,
+            usage_lambda_schedule_fraction=usage_lambda_schedule_fraction,
+            use_synthetic_validation=use_synthetic_validation,
+            synthetic_validation_seed=synthetic_validation_seed,
         )
 
     def _zero_loss(self, reference_tensor: torch.Tensor) -> torch.Tensor:
@@ -260,11 +288,16 @@ class ThesisMultitaskModel(BaseModel):
     def _compute_temperature_for_epoch(self, epoch_index: int, total_epochs: int) -> float:
         # The temperature schedule is kept inside the model because it changes
         # the discrete branch behavior, not the generic trainer behavior.
+        hold_epochs = math.ceil(total_epochs * self.temperature_hold_fraction)
+        if epoch_index < hold_epochs:
+            return float(self.temperature_start)
+
+        anneal_epoch_index = max(epoch_index - hold_epochs, 0)
         anneal_epochs = max(1, math.ceil(total_epochs * self.temperature_anneal_fraction))
         if anneal_epochs == 1:
             progress = 0.0
         else:
-            progress = min(epoch_index / float(anneal_epochs - 1), 1.0)
+            progress = min(anneal_epoch_index / float(anneal_epochs - 1), 1.0)
         if progress <= 0.0:
             return float(self.temperature_start)
         if progress >= 1.0:
@@ -273,12 +306,27 @@ class ThesisMultitaskModel(BaseModel):
             self.temperature_start + progress * (self.temperature_end - self.temperature_start)
         )
 
+    def _compute_usage_lambda_for_epoch(self, epoch_index: int, total_epochs: int) -> float:
+        usage_schedule_epochs = max(1, math.ceil(total_epochs * self.usage_lambda_schedule_fraction))
+        if usage_schedule_epochs == 1:
+            progress = 1.0
+        else:
+            progress = min(epoch_index / float(usage_schedule_epochs - 1), 1.0)
+        if progress <= 0.0:
+            return float(self.usage_lambda_start)
+        if progress >= 1.0:
+            return float(self.usage_lambda_end)
+        return float(
+            self.usage_lambda_start + progress * (self.usage_lambda_end - self.usage_lambda_start)
+        )
+
     def set_epoch_context(self, epoch_index: int, total_epochs: int) -> None:
         # Warm-up can temporarily pin fusion to a known regime so ablations can
         # compare continuous-only, discrete-only, and fused behavior cleanly.
         self.current_epoch_index = epoch_index
         self.current_total_epochs = total_epochs
         self.gumbel_temperature = self._compute_temperature_for_epoch(epoch_index, total_epochs)
+        self.current_usage_lambda = self._compute_usage_lambda_for_epoch(epoch_index, total_epochs)
         warmup_active = epoch_index < self.freeze_fusion_for_epochs
         self.active_alpha_override = self.warmup_alpha_value if warmup_active else None
         self.active_beta_override = self.warmup_beta_value if warmup_active else None
@@ -287,6 +335,7 @@ class ThesisMultitaskModel(BaseModel):
             "warmup_active": warmup_active,
             "freeze_fusion_for_epochs": self.freeze_fusion_for_epochs,
             "temperature": self.gumbel_temperature,
+            "usage_lambda": self.current_usage_lambda,
         }
         console_print(
             "MODEL",
@@ -295,12 +344,18 @@ class ThesisMultitaskModel(BaseModel):
             total_epochs=total_epochs,
             warmup_active=warmup_active,
             temperature=self.gumbel_temperature,
+            usage_lambda=self.current_usage_lambda,
             alpha_override=self.active_alpha_override,
             beta_override=self.active_beta_override,
         )
 
     def get_schedule_state(self) -> dict[str, Any]:
         return dict(self.schedule_state)
+
+    def prepare_synthetic_validation_epoch(self) -> None:
+        # The synthetic validation path must replay the same corruption pattern
+        # every epoch so the auxiliary classification curves are comparable.
+        self.synthetic_validation_injector.reset_rng()
 
     def _continuous_prototype_lookup(self, hidden: torch.Tensor) -> dict[str, Any]:
         # The continuous branch keeps a soft weighted prototype mixture.
@@ -415,7 +470,7 @@ class ThesisMultitaskModel(BaseModel):
                 cloned_batch[key] = value
         return cloned_batch
 
-    def _prepare_batch(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
+    def _prepare_clean_batch(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
         # The model owns augmentation timing because synthetic supervision is
         # part of the multitask objective, not a separate preprocessing pipeline.
         if (
@@ -468,6 +523,11 @@ class ThesisMultitaskModel(BaseModel):
             classification_label_distribution=summarize_label_distribution(prepared_batch["classification_labels"]),
         )
         return prepared_batch
+
+    def _prepare_batch(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
+        if stage_name == "val_synth" and self.use_synthetic_validation:
+            return self.synthetic_validation_injector.augment_batch(batch)
+        return self._prepare_clean_batch(batch, stage_name)
 
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
         # The forward pass is the main representation story of the thesis model:
@@ -667,14 +727,18 @@ class ThesisMultitaskModel(BaseModel):
         reconstruction_loss: torch.Tensor,
         classification_loss: torch.Tensor,
         optional_loss_values: dict[str, torch.Tensor],
+        classification_weight: float,
     ) -> torch.Tensor:
         # The weighted sum is intentionally explicit so readers can map each
         # `lambda_*` config field directly to one line of the objective. The
         # default beginning of training is still the small objective
         # `L_recon + lambda_cls * L_cls`.
-        total_loss = reconstruction_loss + self.lambda_cls * classification_loss
+        total_loss = reconstruction_loss + classification_weight * classification_loss
         for loss_name, loss_value in optional_loss_values.items():
-            total_loss = total_loss + self.optional_loss_configs[loss_name]["weight"] * loss_value
+            loss_weight = self.optional_loss_configs[loss_name]["weight"]
+            if loss_name == "usage_loss":
+                loss_weight = self.current_usage_lambda
+            total_loss = total_loss + loss_weight * loss_value
         return total_loss
 
     def _build_stage_log(
@@ -683,6 +747,8 @@ class ThesisMultitaskModel(BaseModel):
         outputs: dict[str, Any],
         loss_terms: dict[str, torch.Tensor],
         batch: dict[str, Any],
+        *,
+        include_classification_metrics: bool,
     ) -> dict[str, float]:
         # These logs are part of the branch-collapse observability surface, not
         # just convenience metrics. They are meant to support ablation reading.
@@ -705,20 +771,14 @@ class ThesisMultitaskModel(BaseModel):
                 .detach()
                 .cpu()
             )
-        predicted_labels = torch.argmax(outputs["logits"], dim=-1)
-        classification_accuracy = float(
-            (predicted_labels == batch["classification_labels"]).float().mean().detach().cpu()
-        )
-        return {
+        stage_log = {
             f"{stage_name}_loss": float(loss_terms["total_loss"].detach().cpu()),
             f"{stage_name}_reconstruction_loss": float(loss_terms["reconstruction_loss"].detach().cpu()),
-            f"{stage_name}_classification_loss": float(loss_terms["classification_loss"].detach().cpu()),
             f"{stage_name}_diversity_loss": float(loss_terms["diversity_loss"].detach().cpu()),
             f"{stage_name}_variance_loss": float(loss_terms["variance_loss"].detach().cpu()),
             f"{stage_name}_covariance_loss": float(loss_terms["covariance_loss"].detach().cpu()),
             f"{stage_name}_usage_loss": float(loss_terms["usage_loss"].detach().cpu()),
             f"{stage_name}_gate_loss": float(loss_terms["gate_loss"].detach().cpu()),
-            f"{stage_name}_classification_accuracy": classification_accuracy,
             f"{stage_name}_alpha": float(outputs["aux"]["alpha"].detach().cpu()),
             f"{stage_name}_beta": float(outputs["aux"]["beta"].detach().cpu()),
             f"{stage_name}_continuous_norm": float(
@@ -732,10 +792,28 @@ class ThesisMultitaskModel(BaseModel):
             f"{stage_name}_discrete_usage_concentration": discrete_usage_concentration,
             f"{stage_name}_discrete_usage_active_codes": discrete_usage_active_codes,
             f"{stage_name}_temperature": float(self.gumbel_temperature),
+            f"{stage_name}_usage_lambda": float(self.current_usage_lambda),
             f"{stage_name}_warmup_active": float(self.schedule_state["warmup_active"]),
         }
+        if include_classification_metrics:
+            predicted_labels = torch.argmax(outputs["logits"], dim=-1)
+            classification_accuracy = float(
+                (predicted_labels == batch["classification_labels"]).float().mean().detach().cpu()
+            )
+            stage_log[f"{stage_name}_classification_loss"] = float(
+                loss_terms["classification_loss"].detach().cpu()
+            )
+            stage_log[f"{stage_name}_classification_accuracy"] = classification_accuracy
+        return stage_log
 
-    def _shared_step(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
+    def _shared_step(
+        self,
+        batch: dict[str, Any],
+        stage_name: str,
+        *,
+        classification_weight: float,
+        include_classification_metrics: bool,
+    ) -> dict[str, Any]:
         # This is the one place where the actual multitask training objective is assembled.
         prepared_batch = self._prepare_batch(batch, stage_name)
         outputs = self.forward(prepared_batch)
@@ -747,6 +825,7 @@ class ThesisMultitaskModel(BaseModel):
             reconstruction_loss=reconstruction_loss,
             classification_loss=classification_loss,
             optional_loss_values=optional_loss_values,
+            classification_weight=classification_weight,
         )
 
         loss_terms = {
@@ -776,17 +855,46 @@ class ThesisMultitaskModel(BaseModel):
         )
         return {
             "loss": total_loss,
-            "log": self._build_stage_log(stage_name, outputs, loss_terms, prepared_batch),
+            "log": self._build_stage_log(
+                stage_name,
+                outputs,
+                loss_terms,
+                prepared_batch,
+                include_classification_metrics=include_classification_metrics,
+            ),
             "outputs": outputs,
             "loss_terms": loss_terms,
             "batch": prepared_batch,
         }
 
     def training_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(batch=batch, stage_name="train")
+        return self._shared_step(
+            batch=batch,
+            stage_name="train",
+            classification_weight=self.lambda_cls,
+            include_classification_metrics=True,
+        )
 
     def validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(batch=batch, stage_name="val")
+        return self._shared_step(
+            batch=batch,
+            stage_name="val",
+            classification_weight=0.0,
+            include_classification_metrics=False,
+        )
+
+    def synthetic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
+        return self._shared_step(
+            batch=batch,
+            stage_name="val_synth",
+            classification_weight=self.lambda_cls,
+            include_classification_metrics=True,
+        )
 
     def test_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(batch=batch, stage_name="test")
+        return self._shared_step(
+            batch=batch,
+            stage_name="test",
+            classification_weight=0.0,
+            include_classification_metrics=False,
+        )

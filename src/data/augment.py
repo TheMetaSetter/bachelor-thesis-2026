@@ -37,6 +37,7 @@ class SyntheticAnomalyInjector:
         max_segment_fraction: float = 0.2,
         spike_scale: float = 3.0,
         anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
+        deterministic_seed: int | None = None,
     ) -> None:
         # These checks keep augmentation behavior explicit. Research code becomes
         # very hard to trust when synthetic data is allowed to silently drift.
@@ -58,6 +59,8 @@ class SyntheticAnomalyInjector:
         self.max_segment_fraction = max_segment_fraction
         self.spike_scale = spike_scale
         self.epsilon = 1e-6
+        self.deterministic_seed = deterministic_seed
+        self._rng: torch.Generator | None = None
 
         # A new reader should notice that the taxonomy is visible in one place.
         # The rest of the file only dispatches through this registry.
@@ -82,6 +85,42 @@ class SyntheticAnomalyInjector:
         if unknown_families:
             raise ValueError(f"Unsupported anomaly_families: {unknown_families}")
 
+        self.reset_rng()
+
+    def reset_rng(self) -> None:
+        # Validation-time synthetic augmentation needs repeatable corruption so
+        # epoch-to-epoch classification curves remain comparable.
+        if self.deterministic_seed is None:
+            self._rng = None
+            return
+
+        generator = torch.Generator(device="cpu")
+        generator.manual_seed(int(self.deterministic_seed))
+        self._rng = generator
+
+    def _rand(self, *shape: int, device: torch.device, dtype: torch.dtype = torch.float32) -> torch.Tensor:
+        random_tensor = torch.rand(shape, generator=self._rng, dtype=dtype)
+        return random_tensor.to(device=device)
+
+    def _randn(self, *shape: int, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+        random_tensor = torch.randn(shape, generator=self._rng, dtype=dtype)
+        return random_tensor.to(device=device)
+
+    def _randint(
+        self,
+        low: int,
+        high: int,
+        shape: tuple[int, ...],
+        *,
+        device: torch.device,
+    ) -> torch.Tensor:
+        random_tensor = torch.randint(low, high, shape, generator=self._rng)
+        return random_tensor.to(device=device)
+
+    def _randperm(self, size: int, *, device: torch.device) -> torch.Tensor:
+        random_tensor = torch.randperm(size, generator=self._rng)
+        return random_tensor.to(device=device)
+
     def _clone_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         cloned_batch: dict[str, Any] = {}
         for key, value in batch.items():
@@ -99,19 +138,17 @@ class SyntheticAnomalyInjector:
         min_segment_length = max(1, int(window_size * self.min_segment_fraction))
         max_segment_length = max(min_segment_length, int(window_size * self.max_segment_fraction))
         max_segment_length = min(max_segment_length, window_size)
-        segment_length = int(
-            torch.randint(min_segment_length, max_segment_length + 1, (1,), device=device).item()
-        )
+        segment_length = int(self._randint(min_segment_length, max_segment_length + 1, (1,), device=device).item())
         max_start_index = max(window_size - segment_length, 0)
-        start_index = int(torch.randint(0, max_start_index + 1, (1,), device=device).item())
+        start_index = int(self._randint(0, max_start_index + 1, (1,), device=device).item())
         end_index = start_index + segment_length
         return start_index, end_index
 
     def _sample_affected_channels(self, num_channels: int, device: torch.device) -> list[int]:
         min_channels = max(1, num_channels // 10)
         max_channels = max(min_channels, num_channels // 2)
-        num_selected_channels = int(torch.randint(min_channels, max_channels + 1, (1,), device=device).item())
-        selected_indices = torch.randperm(num_channels, device=device)[:num_selected_channels]
+        num_selected_channels = int(self._randint(min_channels, max_channels + 1, (1,), device=device).item())
+        selected_indices = self._randperm(num_channels, device=device)[:num_selected_channels]
         return [int(index.item()) for index in selected_indices.sort().values]
 
     def _extract_channel_segment(
@@ -164,10 +201,10 @@ class SyntheticAnomalyInjector:
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
         segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
         segment_length = segment.shape[0]
-        num_spikes = int(torch.randint(1, min(segment_length, 3) + 1, (1,), device=segment.device).item())
-        spike_positions = torch.randperm(segment_length, device=segment.device)[:num_spikes].sort().values
+        num_spikes = int(self._randint(1, min(segment_length, 3) + 1, (1,), device=segment.device).item())
+        spike_positions = self._randperm(segment_length, device=segment.device)[:num_spikes].sort().values
         spike_strength = self._segment_scale(segment) * self.spike_scale
-        spike_noise = torch.randn(num_spikes, device=segment.device, dtype=segment.dtype) * spike_strength
+        spike_noise = self._randn(num_spikes, device=segment.device, dtype=segment.dtype) * spike_strength
         updated_segment = segment.clone()
         updated_segment[spike_positions] = updated_segment[spike_positions] + spike_noise
         local_mask = torch.zeros(segment_length, dtype=torch.long, device=segment.device)
@@ -211,7 +248,11 @@ class SyntheticAnomalyInjector:
         end_index: int,
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
         segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
-        speed_factor = float(torch.tensor([1.5, 2.0, 3.0], device=segment.device)[torch.randint(0, 3, (1,), device=segment.device)].item())
+        speed_factor = float(
+            torch.tensor([1.5, 2.0, 3.0], device=segment.device)[
+                self._randint(0, 3, (1,), device=segment.device)
+            ].item()
+        )
         source_positions = torch.linspace(
             0.0,
             segment.shape[0] - 1,
@@ -240,7 +281,7 @@ class SyntheticAnomalyInjector:
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
         segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
         noise_std = float((self._segment_scale(segment) * 0.35).detach().cpu())
-        updated_segment = segment + torch.randn_like(segment) * noise_std
+        updated_segment = segment + self._randn(*segment.shape, device=segment.device, dtype=segment.dtype) * noise_std
         local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
         anomalous_channel_window, channel_mask = self._apply_segment_update(
             clean_channel_window,
@@ -259,7 +300,7 @@ class SyntheticAnomalyInjector:
         end_index: int,
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
         segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
-        cutoff_mode = "zero" if bool(torch.rand(1, device=segment.device).item() < 0.5) else "hold"
+        cutoff_mode = "zero" if bool(self._rand(1, device=segment.device).item() < 0.5) else "hold"
         if cutoff_mode == "zero":
             updated_segment = torch.zeros_like(segment)
         else:
@@ -304,7 +345,11 @@ class SyntheticAnomalyInjector:
         segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
         center = segment.mean()
         scale_factor_candidates = torch.tensor([0.25, 0.5, 1.5, 2.0], device=segment.device, dtype=segment.dtype)
-        scale_factor = float(scale_factor_candidates[torch.randint(0, scale_factor_candidates.shape[0], (1,), device=segment.device)].item())
+        scale_factor = float(
+            scale_factor_candidates[
+                self._randint(0, scale_factor_candidates.shape[0], (1,), device=segment.device)
+            ].item()
+        )
         updated_segment = center + (segment - center) * scale_factor
         local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
         anomalous_channel_window, channel_mask = self._apply_segment_update(
@@ -325,7 +370,7 @@ class SyntheticAnomalyInjector:
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
         segment = self._extract_channel_segment(clean_channel_window, start_index, end_index)
         drift_scale = self._segment_scale(segment) * 0.15
-        drift_noise = torch.randn(segment.shape[0], device=segment.device, dtype=segment.dtype) * drift_scale
+        drift_noise = self._randn(segment.shape[0], device=segment.device, dtype=segment.dtype) * drift_scale
         drift_curve = torch.cumsum(drift_noise, dim=0)
         drift_curve = drift_curve - drift_curve[0]
         updated_segment = segment + drift_curve
@@ -411,9 +456,9 @@ class SyntheticAnomalyInjector:
 
         max_component_count = min(3, len(primitive_component_names))
         component_count = int(
-            torch.randint(2, max_component_count + 1, (1,), device=clean_channel_window.device).item()
+            self._randint(2, max_component_count + 1, (1,), device=clean_channel_window.device).item()
         )
-        component_indices = torch.randperm(
+        component_indices = self._randperm(
             len(primitive_component_names),
             device=clean_channel_window.device,
         )[:component_count]
@@ -451,7 +496,7 @@ class SyntheticAnomalyInjector:
         window_size, num_channels = clean_window.shape
         start_index, end_index = self._sample_segment_bounds(window_size, clean_window.device)
         anomaly_family_index = int(
-            torch.randint(0, len(self.anomaly_families), (1,), device=clean_window.device).item()
+            self._randint(0, len(self.anomaly_families), (1,), device=clean_window.device).item()
         )
         anomaly_family = self.anomaly_families[anomaly_family_index]
         affected_channels = self._sample_affected_channels(num_channels, clean_window.device)
@@ -510,7 +555,7 @@ class SyntheticAnomalyInjector:
         augmentation_metadata: list[dict[str, Any]] = []
 
         for batch_index in range(batch_size):
-            should_inject = bool(torch.rand(1, device=clean_windows.device).item() < self.anomaly_probability)
+            should_inject = bool(self._rand(1, device=clean_windows.device).item() < self.anomaly_probability)
             if not should_inject:
                 augmentation_metadata.append(self._build_clean_metadata())
                 continue

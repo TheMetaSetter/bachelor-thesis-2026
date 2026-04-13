@@ -121,6 +121,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["temperature_start"] = model_config.get("temperature_start")
         float_fields["temperature_end"] = model_config.get("temperature_end")
         float_fields["temperature_anneal_fraction"] = model_config.get("temperature_anneal_fraction")
+        float_fields["temperature_hold_fraction"] = model_config.get("temperature_hold_fraction", 0.0)
         float_fields["alpha_logit_init"] = model_config.get("alpha_logit_init")
         float_fields["beta_logit_init"] = model_config.get("beta_logit_init")
         float_fields["lambda_cls"] = model_config.get("lambda_cls")
@@ -129,6 +130,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["lambda_cov"] = model_config.get("lambda_cov")
         float_fields["lambda_use"] = model_config.get("lambda_use")
         float_fields["lambda_gate"] = model_config.get("lambda_gate")
+        float_fields["usage_lambda_start"] = model_config.get("usage_lambda_start", model_config.get("lambda_use"))
+        float_fields["usage_lambda_end"] = model_config.get("usage_lambda_end", model_config.get("lambda_use"))
+        float_fields["usage_lambda_schedule_fraction"] = model_config.get("usage_lambda_schedule_fraction", 1.0)
         float_fields["variance_floor_gamma"] = model_config.get("variance_floor_gamma")
         float_fields["gate_barrier_margin"] = model_config.get("gate_barrier_margin")
         float_fields["warmup_alpha_value"] = task_config.get("warmup_alpha_value")
@@ -157,6 +161,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "enable_usage_loss": model_config.get("enable_usage_loss", False),
             "enable_gate_loss": model_config.get("enable_gate_loss", False),
             "use_synthetic_augmentation": task_config.get("use_synthetic_augmentation"),
+            "use_synthetic_validation": task_config.get("use_synthetic_validation", True),
         }
         for field_name, field_value in boolean_fields.items():
             if not isinstance(field_value, bool):
@@ -202,6 +207,14 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("temperature_end must be positive")
         if not 0.0 < float(model_config["temperature_anneal_fraction"]) <= 1.0:
             raise ValueError("temperature_anneal_fraction must be in (0, 1]")
+        if not 0.0 <= float(model_config.get("temperature_hold_fraction", 0.0)) < 1.0:
+            raise ValueError("temperature_hold_fraction must be in [0, 1)")
+        if float(model_config.get("usage_lambda_start", model_config["lambda_use"])) < 0.0:
+            raise ValueError("usage_lambda_start must be non-negative")
+        if float(model_config.get("usage_lambda_end", model_config["lambda_use"])) < 0.0:
+            raise ValueError("usage_lambda_end must be non-negative")
+        if not 0.0 < float(model_config.get("usage_lambda_schedule_fraction", 1.0)) <= 1.0:
+            raise ValueError("usage_lambda_schedule_fraction must be in (0, 1]")
         if not 0.0 <= float(model_config["gate_barrier_margin"]) < 0.5:
             raise ValueError("gate_barrier_margin must be in [0, 0.5)")
         freeze_fusion_for_epochs = task_config.get("freeze_fusion_for_epochs")
@@ -224,6 +237,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("anomaly_families must be a non-empty list")
         if not all(isinstance(family_name, str) and family_name for family_name in anomaly_families):
             raise ValueError("anomaly_families must contain non-empty strings")
+        synthetic_validation_seed = task_config.get("synthetic_validation_seed", 7)
+        if not isinstance(synthetic_validation_seed, int) or synthetic_validation_seed < 0:
+            raise ValueError("synthetic_validation_seed must be a non-negative integer")
     if task_config.get("task_name") == "online_adaptation":
         if float(model_config["projector_dropout"]) < 0.0:
             raise ValueError("projector_dropout must be non-negative")

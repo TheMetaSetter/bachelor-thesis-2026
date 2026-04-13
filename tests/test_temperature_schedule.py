@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import torch
 
 from src.engine.checkpoint import CheckpointManager
@@ -41,6 +42,50 @@ def test_temperature_schedule_is_monotonic() -> None:
     assert observed_temperatures[-1] == 0.3
 
 
+def test_temperature_schedule_holds_before_annealing() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        encoder_dim=64,
+        hidden_dim=16,
+        use_synthetic_augmentation=False,
+        temperature_start=1.5,
+        temperature_end=0.7,
+        temperature_hold_fraction=0.25,
+        temperature_anneal_fraction=0.75,
+    )
+
+    observed_temperatures = []
+    for epoch_index in range(4):
+        model.set_epoch_context(epoch_index=epoch_index, total_epochs=4)
+        observed_temperatures.append(model.get_schedule_state()["temperature"])
+
+    assert observed_temperatures == [1.5, 1.5, 1.1, 0.7]
+
+
+def test_usage_lambda_schedule_is_exposed_through_epoch_context() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        encoder_dim=64,
+        hidden_dim=16,
+        use_synthetic_augmentation=False,
+        lambda_use=0.0,
+        usage_lambda_start=0.2,
+        usage_lambda_end=0.05,
+        usage_lambda_schedule_fraction=0.5,
+    )
+
+    observed_usage_lambdas = []
+    for epoch_index in range(4):
+        model.set_epoch_context(epoch_index=epoch_index, total_epochs=4)
+        observed_usage_lambdas.append(model.get_schedule_state()["usage_lambda"])
+
+    assert observed_usage_lambdas[0] == 0.2
+    assert observed_usage_lambdas[1] == 0.05
+    assert observed_usage_lambdas[2] == 0.05
+    assert observed_usage_lambdas[3] == 0.05
+
+
+@pytest.mark.filterwarnings("ignore:No positive class found in y_true, recall is set to one for all thresholds.")
 def test_trainer_keeps_warmup_alpha_and_beta_fixed_for_configured_epochs(tmp_path: Path) -> None:
     model = ThesisMultitaskModel(
         input_dim=38,

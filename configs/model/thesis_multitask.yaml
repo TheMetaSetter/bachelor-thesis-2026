@@ -12,6 +12,7 @@ gumbel_temperature: 1.5
 temperature_start: 1.5
 temperature_end: 0.7
 temperature_anneal_fraction: 0.8
+temperature_hold_fraction: 0.0
 alpha_logit_init: 0.0
 beta_logit_init: 0.0
 # Default thesis starting objective: L_recon + lambda_cls * L_cls.
@@ -23,5 +24,8 @@ lambda_var: 0.0
 lambda_cov: 0.0
 lambda_use: 0.0
 lambda_gate: 0.0
+usage_lambda_start: 0.0
+usage_lambda_end: 0.0
+usage_lambda_schedule_fraction: 1.0
 variance_floor_gamma: 1.0
 gate_barrier_margin: 0.25

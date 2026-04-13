@@ -214,3 +214,102 @@ def test_load_multitask_experiment_config_rejects_invalid_anomaly_families(tmp_p
 
     with pytest.raises(ValueError, match="anomaly_families"):
         load_experiment_config(experiment_config_path)
+
+
+def test_load_multitask_experiment_config_rejects_invalid_temperature_hold_fraction(tmp_path: Path) -> None:
+    data_config_path = tmp_path / "data.yaml"
+    model_config_path = tmp_path / "model.yaml"
+    task_config_path = tmp_path / "task.yaml"
+    experiment_config_path = tmp_path / "experiment.yaml"
+
+    data_config_path.write_text(
+        "\n".join(
+            [
+                "dataset_name: smd",
+                "root_dir: data/ServerMachineDataset",
+                "window_size: 100",
+                "stride: 10",
+                "batch_size: 8",
+                "num_workers: 0",
+                "validation_split_ratio: 0.2",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model_config_path.write_text(
+        "\n".join(
+            [
+                "model_name: thesis_multitask",
+                "input_dim: 38",
+                "encoder_dim: 64",
+                "hidden_dim: 32",
+                "num_classes: 2",
+                "dropout: 0.0",
+                "continuous_enabled: true",
+                "continuous_num_prototypes: 8",
+                "discrete_enabled: true",
+                "discrete_codebook_size: 16",
+                "gumbel_temperature: 1.0",
+                "temperature_start: 1.0",
+                "temperature_end: 1.0",
+                "temperature_anneal_fraction: 1.0",
+                "temperature_hold_fraction: 1.2",
+                "alpha_logit_init: 0.0",
+                "beta_logit_init: 0.0",
+                "lambda_cls: 1.0",
+                "lambda_div: 0.0",
+                "lambda_var: 0.0",
+                "lambda_cov: 0.0",
+                "lambda_use: 0.0",
+                "lambda_gate: 0.0",
+                "usage_lambda_start: 0.0",
+                "usage_lambda_end: 0.0",
+                "usage_lambda_schedule_fraction: 1.0",
+                "variance_floor_gamma: 1.0",
+                "gate_barrier_margin: 0.25",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    task_config_path.write_text(
+        "\n".join(
+            [
+                "task_name: multitask_tsad",
+                "use_synthetic_augmentation: true",
+                "use_synthetic_validation: true",
+                "synthetic_validation_seed: 7",
+                "freeze_fusion_for_epochs: 0",
+                "warmup_alpha_value: 0.5",
+                "warmup_beta_value: 0.5",
+                "anomaly_probability: 0.5",
+                "min_segment_fraction: 0.1",
+                "max_segment_fraction: 0.2",
+                "spike_scale: 3.0",
+                "anomaly_families:",
+                "  - spike",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    experiment_config_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: invalid_multitask_temperature_hold",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/invalid_multitask_temperature_hold",
+                "checkpoint_dir: outputs/invalid_multitask_temperature_hold/checkpoints",
+                f"data_config_path: {data_config_path}",
+                f"model_config_path: {model_config_path}",
+                f"task_config_path: {task_config_path}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "epochs: 1",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="temperature_hold_fraction"):
+        load_experiment_config(experiment_config_path)
