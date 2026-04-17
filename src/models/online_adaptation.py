@@ -91,12 +91,17 @@ class ResidualProjector(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(projector_hidden_dim, hidden_dim),
         )
+
+        # Khởi tạo tham số của lớp Linear cuối cùng
+        # bằng 0 hết.
         final_layer = self.network[-1]
         if isinstance(final_layer, nn.Linear):
             nn.init.zeros_(final_layer.weight)
             nn.init.zeros_(final_layer.bias)
 
     def forward(self, hidden: torch.Tensor) -> torch.Tensor:
+        # Khi mới khởi tạo thì self.network(hidden) 
+        # là ma trận chứa toàn số xấp xỉ 0.
         return hidden + self.network(hidden)
 
 

@@ -199,6 +199,7 @@ class ThesisMultitaskModel(BaseModel):
             nn.Linear(hidden_dim, num_classes),
         )
 
+
         # Offline objective helpers.
         # Optional losses are activated by `lambda_*` so ablations can stay on
         # one codepath instead of branching into separate model variants. The
@@ -220,6 +221,8 @@ class ThesisMultitaskModel(BaseModel):
             anomaly_families=anomaly_families,
             deterministic_seed=synthetic_validation_seed,
         )
+
+
         self.optional_loss_configs: dict[str, dict[str, Any]] = {
             "diversity_loss": {
                 "enabled": self.lambda_div > 0.0,
