@@ -1,0 +1,43 @@
+# Exp ID
+exp_id: default
+infer_options: [
+  "offline",
+]
+SEED: 2023
+
+# thresholding
+thresholding: q95.0
+
+# Data Preprocessing
+dataset: SWaT
+batch_size: 64
+eval_batch_size: 1
+window_size: 12
+stride: 12
+eval_stride: 12
+scaler: std
+
+# test-time Hyperparameters
+ttlr: 1e-03
+normalization: "None"
+gamma: 0.99
+
+# Saving Configs & Paths
+log_freq: 10
+checkpoint_path: ./checkpoints
+log_path: ./logs
+output_path: ./outputs
+plot_path: ./plots
+result_path: ./results
+plot_anomaly_scores: False
+plot_recon_status: False
+save_result: True # save result in pandas dataframe
+load_anoscs: True
+save_outputs: False # gt (X.pt) and reconstructed (Xhat.pt)
+save_roc_curve: False # whether to save fpr, tpr, thrs from sklearn.roc_curve
+save_pr_curve: False # whether to save prec, rec, thrs_prc from sklearn.roc_curve
+
+
+# Model-specific arguments
+defaults:
+  - model: MLP

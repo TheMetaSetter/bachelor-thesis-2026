@@ -1,0 +1,14 @@
+.idea/
+/logs/
+/outputs/
+/wandb/
+*.ipynb_checkpoints*
+/EDA_logs
+/wandb/
+/checkpoints/
+.ipynb_checkpoints/
+/plots/
+/result/
+/data/
+*__pycache__*
+/utils/secret.py

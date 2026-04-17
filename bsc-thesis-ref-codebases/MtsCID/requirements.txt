@@ -1,0 +1,9 @@
+# Python 3.8.6 required
+torch>=1.11.0
+scikit-learn
+kmeans_pytorch
+tqdm
+pandas
+einops
+matplotlib
+huggingface_hub

@@ -1,0 +1,33 @@
+# Exp ID
+exp_id: default
+SEED: 2023
+
+# Data Preprocessing
+dataset: SWaT
+batch_size: 64
+eval_batch_size: 1
+window_size: 12
+stride: 12
+eval_stride: 12
+scaler: std
+
+# Training Hyperparameters
+lr: 1e-03
+epochs: 10
+L2_reg: 0
+
+# Saving Configs & Paths
+log_freq: 10
+checkpoint_path: ./checkpoints
+log_path: ./logs
+output_path: ./outputs
+plot_path: ./plots
+result_path: ./results
+
+# normalization
+normalization: "None"
+gamma: 0.99
+
+# Model-specific arguments
+defaults:
+  - model: MLP

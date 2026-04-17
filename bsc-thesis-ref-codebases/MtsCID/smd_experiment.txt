@@ -1,0 +1,686 @@
+--------------------- Framework: MtsCID -------------------
+aggregation: normal_mean
+alpha: 1.0
+anomaly_only: False
+anomaly_ratio: 0.5
+batch_size: 64
+branch1_match_dimension: first
+branch1_networks: ['fc_linear', 'intra_fc_transformer', 'multiscale_ts_attention']
+branch2_match_dimension: first
+branch2_networks: ['multiscale_conv1d', 'inter_fc_transformer']
+branches_group_embedding: False_False
+d_model: 38
+data_path: data/SMD
+dataset: SMD
+decoder_group_embedding: False
+decoder_layers: 1
+decoder_networks: ['linear']
+device: cuda:0
+embedding_init: normal
+encoder_layers: 1
+end_lr: 5e-05
+framework: MtsCID
+input_c: 38
+memory_guided: sinusoid
+model_save_path: checkpoints
+multiscale_kernel_size: [5]
+multiscale_patch_size: [10, 20]
+num_epochs: 20
+num_workers: 4
+output_c: 38
+patience: 10
+peak_lr: 0.002
+plot_data: False
+run_times: 5
+temperature: 0.1
+test_only: False
+threshold_setting: optimal
+warmup_epoch: 0
+weight_decay: 5e-05
+win_size: 100
+/kaggle/working/bsc-thesis-ref-codebases/MtsCID
+['SMD_test.npy', 'SMD_train.npy', 'SMD_test_label.npy']
+Data loader path: /kaggle/working/bsc-thesis-ref-codebases/MtsCID/data_factory/data_loader.py
+Data path: data/SMD
+test: (708420, 38)
+train: (708405, 38)
+/kaggle/working/bsc-thesis-ref-codebases/MtsCID
+['SMD_test.npy', 'SMD_train.npy', 'SMD_test_label.npy']
+Data loader path: /kaggle/working/bsc-thesis-ref-codebases/MtsCID/data_factory/data_loader.py
+Data path: data/SMD
+test: (708420, 38)
+train: (708405, 38)
+--------------------------- Round 1 -----------------------------
+
+Epoch: 1 cost time: 3.5278632640838623
+Epoch: 1, Steps: 88 | Train Loss: 0.8941824 | Vali Loss: 0.6738132
+Epoch: 1, Steps: 88 | Train reconstruction Loss: 0.8525566 | Entropy Loss : 0.0416257
+Epoch: 1, Steps: 88 | Valid reconstruction Loss: 0.6362999 | Entropy Loss : 0.0375133
+Validation loss decreased (inf --> 0.673813).  Saving model ...
+
+Epoch: 2 cost time: 1.550323247909546
+Epoch: 2, Steps: 88 | Train Loss: 0.6656089 | Vali Loss: 0.5723819
+Epoch: 2, Steps: 88 | Train reconstruction Loss: 0.6300012 | Entropy Loss : 0.0356077
+Epoch: 2, Steps: 88 | Valid reconstruction Loss: 0.5354230 | Entropy Loss : 0.0369589
+Validation loss decreased (0.673813 --> 0.572382).  Saving model ...
+
+Epoch: 3 cost time: 1.5654840469360352
+Epoch: 3, Steps: 88 | Train Loss: 0.5955179 | Vali Loss: 0.5040463
+Epoch: 3, Steps: 88 | Train reconstruction Loss: 0.5612293 | Entropy Loss : 0.0342886
+Epoch: 3, Steps: 88 | Valid reconstruction Loss: 0.4692196 | Entropy Loss : 0.0348267
+Validation loss decreased (0.572382 --> 0.504046).  Saving model ...
+
+Epoch: 4 cost time: 1.558959722518921
+Epoch: 4, Steps: 88 | Train Loss: 0.5317689 | Vali Loss: 0.4695185
+Epoch: 4, Steps: 88 | Train reconstruction Loss: 0.4982296 | Entropy Loss : 0.0335393
+Epoch: 4, Steps: 88 | Valid reconstruction Loss: 0.4363878 | Entropy Loss : 0.0331307
+Validation loss decreased (0.504046 --> 0.469519).  Saving model ...
+
+Epoch: 5 cost time: 1.6221671104431152
+Epoch: 5, Steps: 88 | Train Loss: 0.5038216 | Vali Loss: 0.4461452
+Epoch: 5, Steps: 88 | Train reconstruction Loss: 0.4709344 | Entropy Loss : 0.0328872
+Epoch: 5, Steps: 88 | Valid reconstruction Loss: 0.4139283 | Entropy Loss : 0.0322169
+Validation loss decreased (0.469519 --> 0.446145).  Saving model ...
+
+Epoch: 6 cost time: 1.5264616012573242
+Epoch: 6, Steps: 88 | Train Loss: 0.4735253 | Vali Loss: 0.3907958
+Epoch: 6, Steps: 88 | Train reconstruction Loss: 0.4417025 | Entropy Loss : 0.0318228
+Epoch: 6, Steps: 88 | Valid reconstruction Loss: 0.3578337 | Entropy Loss : 0.0329621
+Validation loss decreased (0.446145 --> 0.390796).  Saving model ...
+
+Epoch: 7 cost time: 1.5354397296905518
+Epoch: 7, Steps: 88 | Train Loss: 0.4176770 | Vali Loss: 0.3545167
+Epoch: 7, Steps: 88 | Train reconstruction Loss: 0.3858590 | Entropy Loss : 0.0318180
+Epoch: 7, Steps: 88 | Valid reconstruction Loss: 0.3240577 | Entropy Loss : 0.0304591
+Validation loss decreased (0.390796 --> 0.354517).  Saving model ...
+
+Epoch: 8 cost time: 1.5727870464324951
+Epoch: 8, Steps: 88 | Train Loss: 0.4066655 | Vali Loss: 0.3466538
+Epoch: 8, Steps: 88 | Train reconstruction Loss: 0.3757603 | Entropy Loss : 0.0309052
+Epoch: 8, Steps: 88 | Valid reconstruction Loss: 0.3169983 | Entropy Loss : 0.0296555
+Validation loss decreased (0.354517 --> 0.346654).  Saving model ...
+
+Epoch: 9 cost time: 1.5486140251159668
+Epoch: 9, Steps: 88 | Train Loss: 0.3993774 | Vali Loss: 0.3405567
+Epoch: 9, Steps: 88 | Train reconstruction Loss: 0.3690591 | Entropy Loss : 0.0303183
+Epoch: 9, Steps: 88 | Valid reconstruction Loss: 0.3112174 | Entropy Loss : 0.0293393
+Validation loss decreased (0.346654 --> 0.340557).  Saving model ...
+
+Epoch: 10 cost time: 1.5142698287963867
+Epoch: 10, Steps: 88 | Train Loss: 0.3934045 | Vali Loss: 0.3266550
+Epoch: 10, Steps: 88 | Train reconstruction Loss: 0.3638166 | Entropy Loss : 0.0295879
+Epoch: 10, Steps: 88 | Valid reconstruction Loss: 0.3005550 | Entropy Loss : 0.0261000
+Validation loss decreased (0.340557 --> 0.326655).  Saving model ...
+
+Epoch: 11 cost time: 1.5916588306427002
+Epoch: 11, Steps: 88 | Train Loss: 0.3882916 | Vali Loss: 0.3273097
+Epoch: 11, Steps: 88 | Train reconstruction Loss: 0.3585348 | Entropy Loss : 0.0297568
+Epoch: 11, Steps: 88 | Valid reconstruction Loss: 0.3012070 | Entropy Loss : 0.0261027
+EarlyStopping counter: 1 out of 10
+
+Epoch: 12 cost time: 1.5651142597198486
+Epoch: 12, Steps: 88 | Train Loss: 0.3821228 | Vali Loss: 0.3167482
+Epoch: 12, Steps: 88 | Train reconstruction Loss: 0.3533854 | Entropy Loss : 0.0287374
+Epoch: 12, Steps: 88 | Valid reconstruction Loss: 0.2913522 | Entropy Loss : 0.0253960
+Validation loss decreased (0.326655 --> 0.316748).  Saving model ...
+
+Epoch: 13 cost time: 1.5239412784576416
+Epoch: 13, Steps: 88 | Train Loss: 0.3753992 | Vali Loss: 0.3166243
+Epoch: 13, Steps: 88 | Train reconstruction Loss: 0.3474346 | Entropy Loss : 0.0279646
+Epoch: 13, Steps: 88 | Valid reconstruction Loss: 0.2924492 | Entropy Loss : 0.0241750
+Validation loss decreased (0.316748 --> 0.316624).  Saving model ...
+
+Epoch: 14 cost time: 1.5944244861602783
+Epoch: 14, Steps: 88 | Train Loss: 0.3706799 | Vali Loss: 0.3127631
+Epoch: 14, Steps: 88 | Train reconstruction Loss: 0.3430814 | Entropy Loss : 0.0275985
+Epoch: 14, Steps: 88 | Valid reconstruction Loss: 0.2867731 | Entropy Loss : 0.0259900
+Validation loss decreased (0.316624 --> 0.312763).  Saving model ...
+
+Epoch: 15 cost time: 1.5645275115966797
+Epoch: 15, Steps: 88 | Train Loss: 0.3630534 | Vali Loss: 0.3070396
+Epoch: 15, Steps: 88 | Train reconstruction Loss: 0.3355494 | Entropy Loss : 0.0275040
+Epoch: 15, Steps: 88 | Valid reconstruction Loss: 0.2827945 | Entropy Loss : 0.0242451
+Validation loss decreased (0.312763 --> 0.307040).  Saving model ...
+
+Epoch: 16 cost time: 1.598921298980713
+Epoch: 16, Steps: 88 | Train Loss: 0.3567338 | Vali Loss: 0.3022273
+Epoch: 16, Steps: 88 | Train reconstruction Loss: 0.3302297 | Entropy Loss : 0.0265041
+Epoch: 16, Steps: 88 | Valid reconstruction Loss: 0.2781253 | Entropy Loss : 0.0241021
+Validation loss decreased (0.307040 --> 0.302227).  Saving model ...
+
+Epoch: 17 cost time: 1.5453386306762695
+Epoch: 17, Steps: 88 | Train Loss: 0.3514073 | Vali Loss: 0.2941173
+Epoch: 17, Steps: 88 | Train reconstruction Loss: 0.3253490 | Entropy Loss : 0.0260583
+Epoch: 17, Steps: 88 | Valid reconstruction Loss: 0.2712992 | Entropy Loss : 0.0228181
+Validation loss decreased (0.302227 --> 0.294117).  Saving model ...
+
+Epoch: 18 cost time: 1.5734827518463135
+Epoch: 18, Steps: 88 | Train Loss: 0.3468713 | Vali Loss: 0.2871096
+Epoch: 18, Steps: 88 | Train reconstruction Loss: 0.3219915 | Entropy Loss : 0.0248798
+Epoch: 18, Steps: 88 | Valid reconstruction Loss: 0.2663158 | Entropy Loss : 0.0207938
+Validation loss decreased (0.294117 --> 0.287110).  Saving model ...
+
+Epoch: 19 cost time: 1.5748088359832764
+Epoch: 19, Steps: 88 | Train Loss: 0.3416357 | Vali Loss: 0.2841761
+Epoch: 19, Steps: 88 | Train reconstruction Loss: 0.3183432 | Entropy Loss : 0.0232925
+Epoch: 19, Steps: 88 | Valid reconstruction Loss: 0.2654969 | Entropy Loss : 0.0186791
+Validation loss decreased (0.287110 --> 0.284176).  Saving model ...
+
+Epoch: 20 cost time: 1.565826654434204
+Epoch: 20, Steps: 88 | Train Loss: 0.3370773 | Vali Loss: 0.2866798
+Epoch: 20, Steps: 88 | Train reconstruction Loss: 0.3150347 | Entropy Loss : 0.0220426
+Epoch: 20, Steps: 88 | Valid reconstruction Loss: 0.2681485 | Entropy Loss : 0.0185313
+EarlyStopping counter: 1 out of 10
+============================TEST MODE============================
+Dataset: SMD
+Threshold : 0.10644501373171822
+===============================================================
+Dataset: SMD | Precision_adjusted: 0.9456 | Recall_adjusted: 0.9331 | f1_score_adjusted: 0.9393 
+--------------------------- Round 2 -----------------------------
+
+Epoch: 1 cost time: 1.5755817890167236
+Epoch: 1, Steps: 88 | Train Loss: 0.8966307 | Vali Loss: 0.6516783
+Epoch: 1, Steps: 88 | Train reconstruction Loss: 0.8572839 | Entropy Loss : 0.0393468
+Epoch: 1, Steps: 88 | Valid reconstruction Loss: 0.6132584 | Entropy Loss : 0.0384199
+Validation loss decreased (inf --> 0.651678).  Saving model ...
+
+Epoch: 2 cost time: 1.5639963150024414
+Epoch: 2, Steps: 88 | Train Loss: 0.6645165 | Vali Loss: 0.5775219
+Epoch: 2, Steps: 88 | Train reconstruction Loss: 0.6289875 | Entropy Loss : 0.0355290
+Epoch: 2, Steps: 88 | Valid reconstruction Loss: 0.5406895 | Entropy Loss : 0.0368324
+Validation loss decreased (0.651678 --> 0.577522).  Saving model ...
+
+Epoch: 3 cost time: 1.6396684646606445
+Epoch: 3, Steps: 88 | Train Loss: 0.5946662 | Vali Loss: 0.5043457
+Epoch: 3, Steps: 88 | Train reconstruction Loss: 0.5595268 | Entropy Loss : 0.0351395
+Epoch: 3, Steps: 88 | Valid reconstruction Loss: 0.4677094 | Entropy Loss : 0.0366363
+Validation loss decreased (0.577522 --> 0.504346).  Saving model ...
+
+Epoch: 4 cost time: 1.603360891342163
+Epoch: 4, Steps: 88 | Train Loss: 0.5328892 | Vali Loss: 0.4658060
+Epoch: 4, Steps: 88 | Train reconstruction Loss: 0.4984552 | Entropy Loss : 0.0344341
+Epoch: 4, Steps: 88 | Valid reconstruction Loss: 0.4288683 | Entropy Loss : 0.0369377
+Validation loss decreased (0.504346 --> 0.465806).  Saving model ...
+
+Epoch: 5 cost time: 1.5832266807556152
+Epoch: 5, Steps: 88 | Train Loss: 0.4885319 | Vali Loss: 0.4161047
+Epoch: 5, Steps: 88 | Train reconstruction Loss: 0.4547696 | Entropy Loss : 0.0337623
+Epoch: 5, Steps: 88 | Valid reconstruction Loss: 0.3792920 | Entropy Loss : 0.0368126
+Validation loss decreased (0.465806 --> 0.416105).  Saving model ...
+
+Epoch: 6 cost time: 1.5649454593658447
+Epoch: 6, Steps: 88 | Train Loss: 0.4312977 | Vali Loss: 0.3876297
+Epoch: 6, Steps: 88 | Train reconstruction Loss: 0.3978329 | Entropy Loss : 0.0334649
+Epoch: 6, Steps: 88 | Valid reconstruction Loss: 0.3537349 | Entropy Loss : 0.0338948
+Validation loss decreased (0.416105 --> 0.387630).  Saving model ...
+
+Epoch: 7 cost time: 1.5988104343414307
+Epoch: 7, Steps: 88 | Train Loss: 0.4201877 | Vali Loss: 0.4756813
+Epoch: 7, Steps: 88 | Train reconstruction Loss: 0.3861767 | Entropy Loss : 0.0340110
+Epoch: 7, Steps: 88 | Valid reconstruction Loss: 0.4387013 | Entropy Loss : 0.0369800
+EarlyStopping counter: 1 out of 10
+
+Epoch: 8 cost time: 1.6241717338562012
+Epoch: 8, Steps: 88 | Train Loss: 0.4115652 | Vali Loss: 0.3635734
+Epoch: 8, Steps: 88 | Train reconstruction Loss: 0.3779472 | Entropy Loss : 0.0336180
+Epoch: 8, Steps: 88 | Valid reconstruction Loss: 0.3277676 | Entropy Loss : 0.0358058
+Validation loss decreased (0.387630 --> 0.363573).  Saving model ...
+
+Epoch: 9 cost time: 1.592188835144043
+Epoch: 9, Steps: 88 | Train Loss: 0.4058456 | Vali Loss: 0.3532719
+Epoch: 9, Steps: 88 | Train reconstruction Loss: 0.3723598 | Entropy Loss : 0.0334858
+Epoch: 9, Steps: 88 | Valid reconstruction Loss: 0.3175703 | Entropy Loss : 0.0357016
+Validation loss decreased (0.363573 --> 0.353272).  Saving model ...
+
+Epoch: 10 cost time: 1.6351027488708496
+Epoch: 10, Steps: 88 | Train Loss: 0.3992521 | Vali Loss: 0.3435064
+Epoch: 10, Steps: 88 | Train reconstruction Loss: 0.3660176 | Entropy Loss : 0.0332345
+Epoch: 10, Steps: 88 | Valid reconstruction Loss: 0.3086859 | Entropy Loss : 0.0348205
+Validation loss decreased (0.353272 --> 0.343506).  Saving model ...
+
+Epoch: 11 cost time: 1.6180777549743652
+Epoch: 11, Steps: 88 | Train Loss: 0.3944533 | Vali Loss: 0.3407153
+Epoch: 11, Steps: 88 | Train reconstruction Loss: 0.3613186 | Entropy Loss : 0.0331347
+Epoch: 11, Steps: 88 | Valid reconstruction Loss: 0.3071248 | Entropy Loss : 0.0335905
+Validation loss decreased (0.343506 --> 0.340715).  Saving model ...
+
+Epoch: 12 cost time: 1.6083054542541504
+Epoch: 12, Steps: 88 | Train Loss: 0.3889486 | Vali Loss: 0.3629274
+Epoch: 12, Steps: 88 | Train reconstruction Loss: 0.3560853 | Entropy Loss : 0.0328633
+Epoch: 12, Steps: 88 | Valid reconstruction Loss: 0.3293880 | Entropy Loss : 0.0335395
+EarlyStopping counter: 1 out of 10
+
+Epoch: 13 cost time: 1.6209099292755127
+Epoch: 13, Steps: 88 | Train Loss: 0.3830476 | Vali Loss: 0.3298873
+Epoch: 13, Steps: 88 | Train reconstruction Loss: 0.3509082 | Entropy Loss : 0.0321394
+Epoch: 13, Steps: 88 | Valid reconstruction Loss: 0.2963813 | Entropy Loss : 0.0335060
+Validation loss decreased (0.340715 --> 0.329887).  Saving model ...
+
+Epoch: 14 cost time: 1.6057515144348145
+Epoch: 14, Steps: 88 | Train Loss: 0.3769210 | Vali Loss: 0.3291378
+Epoch: 14, Steps: 88 | Train reconstruction Loss: 0.3453052 | Entropy Loss : 0.0316158
+Epoch: 14, Steps: 88 | Valid reconstruction Loss: 0.2964758 | Entropy Loss : 0.0326620
+Validation loss decreased (0.329887 --> 0.329138).  Saving model ...
+
+Epoch: 15 cost time: 1.6361007690429688
+Epoch: 15, Steps: 88 | Train Loss: 0.3650860 | Vali Loss: 0.3274516
+Epoch: 15, Steps: 88 | Train reconstruction Loss: 0.3338600 | Entropy Loss : 0.0312260
+Epoch: 15, Steps: 88 | Valid reconstruction Loss: 0.2941072 | Entropy Loss : 0.0333444
+Validation loss decreased (0.329138 --> 0.327452).  Saving model ...
+
+Epoch: 16 cost time: 1.6445813179016113
+Epoch: 16, Steps: 88 | Train Loss: 0.3649783 | Vali Loss: 0.3150455
+Epoch: 16, Steps: 88 | Train reconstruction Loss: 0.3343056 | Entropy Loss : 0.0306727
+Epoch: 16, Steps: 88 | Valid reconstruction Loss: 0.2828115 | Entropy Loss : 0.0322340
+Validation loss decreased (0.327452 --> 0.315046).  Saving model ...
+
+Epoch: 17 cost time: 1.5925610065460205
+Epoch: 17, Steps: 88 | Train Loss: 0.3586875 | Vali Loss: 0.3178913
+Epoch: 17, Steps: 88 | Train reconstruction Loss: 0.3284388 | Entropy Loss : 0.0302487
+Epoch: 17, Steps: 88 | Valid reconstruction Loss: 0.2852098 | Entropy Loss : 0.0326815
+EarlyStopping counter: 1 out of 10
+
+Epoch: 18 cost time: 1.606306552886963
+Epoch: 18, Steps: 88 | Train Loss: 0.3523427 | Vali Loss: 0.3190675
+Epoch: 18, Steps: 88 | Train reconstruction Loss: 0.3224500 | Entropy Loss : 0.0298927
+Epoch: 18, Steps: 88 | Valid reconstruction Loss: 0.2879405 | Entropy Loss : 0.0311269
+EarlyStopping counter: 2 out of 10
+
+Epoch: 19 cost time: 1.5809669494628906
+Epoch: 19, Steps: 88 | Train Loss: 0.3469660 | Vali Loss: 0.3109400
+Epoch: 19, Steps: 88 | Train reconstruction Loss: 0.3175192 | Entropy Loss : 0.0294468
+Epoch: 19, Steps: 88 | Valid reconstruction Loss: 0.2808177 | Entropy Loss : 0.0301223
+Validation loss decreased (0.315046 --> 0.310940).  Saving model ...
+
+Epoch: 20 cost time: 1.621304988861084
+Epoch: 20, Steps: 88 | Train Loss: 0.3433515 | Vali Loss: 0.2940505
+Epoch: 20, Steps: 88 | Train reconstruction Loss: 0.3143484 | Entropy Loss : 0.0290031
+Epoch: 20, Steps: 88 | Valid reconstruction Loss: 0.2640936 | Entropy Loss : 0.0299570
+Validation loss decreased (0.310940 --> 0.294051).  Saving model ...
+============================TEST MODE============================
+Dataset: SMD
+Threshold : 0.11282540738582647
+===============================================================
+Dataset: SMD | Precision_adjusted: 0.9167 | Recall_adjusted: 0.9458 | f1_score_adjusted: 0.9310 
+--------------------------- Round 3 -----------------------------
+
+Epoch: 1 cost time: 1.602174997329712
+Epoch: 1, Steps: 88 | Train Loss: 0.9063717 | Vali Loss: 0.6562312
+Epoch: 1, Steps: 88 | Train reconstruction Loss: 0.8667939 | Entropy Loss : 0.0395778
+Epoch: 1, Steps: 88 | Valid reconstruction Loss: 0.6193275 | Entropy Loss : 0.0369036
+Validation loss decreased (inf --> 0.656231).  Saving model ...
+
+Epoch: 2 cost time: 1.5989735126495361
+Epoch: 2, Steps: 88 | Train Loss: 0.6532467 | Vali Loss: 0.5480540
+Epoch: 2, Steps: 88 | Train reconstruction Loss: 0.6180661 | Entropy Loss : 0.0351807
+Epoch: 2, Steps: 88 | Valid reconstruction Loss: 0.5112736 | Entropy Loss : 0.0367804
+Validation loss decreased (0.656231 --> 0.548054).  Saving model ...
+
+Epoch: 3 cost time: 1.5456111431121826
+Epoch: 3, Steps: 88 | Train Loss: 0.5791655 | Vali Loss: 0.5052370
+Epoch: 3, Steps: 88 | Train reconstruction Loss: 0.5449376 | Entropy Loss : 0.0342279
+Epoch: 3, Steps: 88 | Valid reconstruction Loss: 0.4691486 | Entropy Loss : 0.0360882
+Validation loss decreased (0.548054 --> 0.505237).  Saving model ...
+
+Epoch: 4 cost time: 1.616647720336914
+Epoch: 4, Steps: 88 | Train Loss: 0.4979156 | Vali Loss: 0.4213771
+Epoch: 4, Steps: 88 | Train reconstruction Loss: 0.4639652 | Entropy Loss : 0.0339504
+Epoch: 4, Steps: 88 | Valid reconstruction Loss: 0.3861535 | Entropy Loss : 0.0352236
+Validation loss decreased (0.505237 --> 0.421377).  Saving model ...
+
+Epoch: 5 cost time: 1.5661275386810303
+Epoch: 5, Steps: 88 | Train Loss: 0.4356492 | Vali Loss: 0.3682818
+Epoch: 5, Steps: 88 | Train reconstruction Loss: 0.4021698 | Entropy Loss : 0.0334794
+Epoch: 5, Steps: 88 | Valid reconstruction Loss: 0.3345332 | Entropy Loss : 0.0337486
+Validation loss decreased (0.421377 --> 0.368282).  Saving model ...
+
+Epoch: 6 cost time: 1.5960404872894287
+Epoch: 6, Steps: 88 | Train Loss: 0.4202503 | Vali Loss: 0.3600912
+Epoch: 6, Steps: 88 | Train reconstruction Loss: 0.3877293 | Entropy Loss : 0.0325210
+Epoch: 6, Steps: 88 | Valid reconstruction Loss: 0.3266791 | Entropy Loss : 0.0334121
+Validation loss decreased (0.368282 --> 0.360091).  Saving model ...
+
+Epoch: 7 cost time: 1.5618720054626465
+Epoch: 7, Steps: 88 | Train Loss: 0.4114147 | Vali Loss: 0.3502774
+Epoch: 7, Steps: 88 | Train reconstruction Loss: 0.3786366 | Entropy Loss : 0.0327781
+Epoch: 7, Steps: 88 | Valid reconstruction Loss: 0.3163502 | Entropy Loss : 0.0339272
+Validation loss decreased (0.360091 --> 0.350277).  Saving model ...
+
+Epoch: 8 cost time: 1.556931495666504
+Epoch: 8, Steps: 88 | Train Loss: 0.4044124 | Vali Loss: 0.3423064
+Epoch: 8, Steps: 88 | Train reconstruction Loss: 0.3721949 | Entropy Loss : 0.0322175
+Epoch: 8, Steps: 88 | Valid reconstruction Loss: 0.3111414 | Entropy Loss : 0.0311650
+Validation loss decreased (0.350277 --> 0.342306).  Saving model ...
+
+Epoch: 9 cost time: 1.6193485260009766
+Epoch: 9, Steps: 88 | Train Loss: 0.3976423 | Vali Loss: 0.3468186
+Epoch: 9, Steps: 88 | Train reconstruction Loss: 0.3660826 | Entropy Loss : 0.0315598
+Epoch: 9, Steps: 88 | Valid reconstruction Loss: 0.3147357 | Entropy Loss : 0.0320829
+EarlyStopping counter: 1 out of 10
+
+Epoch: 10 cost time: 1.6305253505706787
+Epoch: 10, Steps: 88 | Train Loss: 0.3929344 | Vali Loss: 0.3302839
+Epoch: 10, Steps: 88 | Train reconstruction Loss: 0.3617959 | Entropy Loss : 0.0311385
+Epoch: 10, Steps: 88 | Valid reconstruction Loss: 0.2981627 | Entropy Loss : 0.0321213
+Validation loss decreased (0.342306 --> 0.330284).  Saving model ...
+
+Epoch: 11 cost time: 1.6220569610595703
+Epoch: 11, Steps: 88 | Train Loss: 0.3865019 | Vali Loss: 0.3276271
+Epoch: 11, Steps: 88 | Train reconstruction Loss: 0.3560636 | Entropy Loss : 0.0304384
+Epoch: 11, Steps: 88 | Valid reconstruction Loss: 0.2964756 | Entropy Loss : 0.0311515
+Validation loss decreased (0.330284 --> 0.327627).  Saving model ...
+
+Epoch: 12 cost time: 1.5742342472076416
+Epoch: 12, Steps: 88 | Train Loss: 0.3799977 | Vali Loss: 0.3175458
+Epoch: 12, Steps: 88 | Train reconstruction Loss: 0.3497674 | Entropy Loss : 0.0302303
+Epoch: 12, Steps: 88 | Valid reconstruction Loss: 0.2872109 | Entropy Loss : 0.0303349
+Validation loss decreased (0.327627 --> 0.317546).  Saving model ...
+
+Epoch: 13 cost time: 1.601499080657959
+Epoch: 13, Steps: 88 | Train Loss: 0.3721728 | Vali Loss: 0.3331681
+Epoch: 13, Steps: 88 | Train reconstruction Loss: 0.3426207 | Entropy Loss : 0.0295520
+Epoch: 13, Steps: 88 | Valid reconstruction Loss: 0.3055953 | Entropy Loss : 0.0275729
+EarlyStopping counter: 1 out of 10
+
+Epoch: 14 cost time: 1.5734813213348389
+Epoch: 14, Steps: 88 | Train Loss: 0.3646941 | Vali Loss: 0.4584313
+Epoch: 14, Steps: 88 | Train reconstruction Loss: 0.3358738 | Entropy Loss : 0.0288203
+Epoch: 14, Steps: 88 | Valid reconstruction Loss: 0.4288901 | Entropy Loss : 0.0295411
+EarlyStopping counter: 2 out of 10
+
+Epoch: 15 cost time: 1.5512185096740723
+Epoch: 15, Steps: 88 | Train Loss: 0.3587159 | Vali Loss: 0.3632227
+Epoch: 15, Steps: 88 | Train reconstruction Loss: 0.3301857 | Entropy Loss : 0.0285302
+Epoch: 15, Steps: 88 | Valid reconstruction Loss: 0.3344992 | Entropy Loss : 0.0287236
+EarlyStopping counter: 3 out of 10
+
+Epoch: 16 cost time: 1.5548198223114014
+Epoch: 16, Steps: 88 | Train Loss: 0.3544648 | Vali Loss: 0.3120309
+Epoch: 16, Steps: 88 | Train reconstruction Loss: 0.3264709 | Entropy Loss : 0.0279939
+Epoch: 16, Steps: 88 | Valid reconstruction Loss: 0.2853963 | Entropy Loss : 0.0266345
+Validation loss decreased (0.317546 --> 0.312031).  Saving model ...
+
+Epoch: 17 cost time: 1.605785846710205
+Epoch: 17, Steps: 88 | Train Loss: 0.3484482 | Vali Loss: 0.3031551
+Epoch: 17, Steps: 88 | Train reconstruction Loss: 0.3210270 | Entropy Loss : 0.0274212
+Epoch: 17, Steps: 88 | Valid reconstruction Loss: 0.2768500 | Entropy Loss : 0.0263050
+Validation loss decreased (0.312031 --> 0.303155).  Saving model ...
+
+Epoch: 18 cost time: 1.6042335033416748
+Epoch: 18, Steps: 88 | Train Loss: 0.3201316 | Vali Loss: 0.2931656
+Epoch: 18, Steps: 88 | Train reconstruction Loss: 0.2918124 | Entropy Loss : 0.0283192
+Epoch: 18, Steps: 88 | Valid reconstruction Loss: 0.2651654 | Entropy Loss : 0.0280003
+Validation loss decreased (0.303155 --> 0.293166).  Saving model ...
+
+Epoch: 19 cost time: 1.5627336502075195
+Epoch: 19, Steps: 88 | Train Loss: 0.3395387 | Vali Loss: 0.2909949
+Epoch: 19, Steps: 88 | Train reconstruction Loss: 0.3127665 | Entropy Loss : 0.0267722
+Epoch: 19, Steps: 88 | Valid reconstruction Loss: 0.2664705 | Entropy Loss : 0.0245244
+Validation loss decreased (0.293166 --> 0.290995).  Saving model ...
+
+Epoch: 20 cost time: 1.5859777927398682
+Epoch: 20, Steps: 88 | Train Loss: 0.3359579 | Vali Loss: 0.2852658
+Epoch: 20, Steps: 88 | Train reconstruction Loss: 0.3095500 | Entropy Loss : 0.0264079
+Epoch: 20, Steps: 88 | Valid reconstruction Loss: 0.2602539 | Entropy Loss : 0.0250118
+Validation loss decreased (0.290995 --> 0.285266).  Saving model ...
+============================TEST MODE============================
+Dataset: SMD
+Threshold : 0.10784523487091094
+===============================================================
+Dataset: SMD | Precision_adjusted: 0.9443 | Recall_adjusted: 0.9209 | f1_score_adjusted: 0.9325 
+--------------------------- Round 4 -----------------------------
+
+Epoch: 1 cost time: 1.566495656967163
+Epoch: 1, Steps: 88 | Train Loss: 0.8899189 | Vali Loss: 0.6693228
+Epoch: 1, Steps: 88 | Train reconstruction Loss: 0.8510876 | Entropy Loss : 0.0388314
+Epoch: 1, Steps: 88 | Valid reconstruction Loss: 0.6310717 | Entropy Loss : 0.0382509
+Validation loss decreased (inf --> 0.669323).  Saving model ...
+
+Epoch: 2 cost time: 1.6075222492218018
+Epoch: 2, Steps: 88 | Train Loss: 0.6629592 | Vali Loss: 0.5877088
+Epoch: 2, Steps: 88 | Train reconstruction Loss: 0.6279762 | Entropy Loss : 0.0349830
+Epoch: 2, Steps: 88 | Valid reconstruction Loss: 0.5511788 | Entropy Loss : 0.0365301
+Validation loss decreased (0.669323 --> 0.587709).  Saving model ...
+
+Epoch: 3 cost time: 1.5801997184753418
+Epoch: 3, Steps: 88 | Train Loss: 0.5879393 | Vali Loss: 0.4961079
+Epoch: 3, Steps: 88 | Train reconstruction Loss: 0.5535163 | Entropy Loss : 0.0344231
+Epoch: 3, Steps: 88 | Valid reconstruction Loss: 0.4590909 | Entropy Loss : 0.0370170
+Validation loss decreased (0.587709 --> 0.496108).  Saving model ...
+
+Epoch: 4 cost time: 1.627101182937622
+Epoch: 4, Steps: 88 | Train Loss: 0.5210238 | Vali Loss: 0.4390258
+Epoch: 4, Steps: 88 | Train reconstruction Loss: 0.4869590 | Entropy Loss : 0.0340649
+Epoch: 4, Steps: 88 | Valid reconstruction Loss: 0.4042844 | Entropy Loss : 0.0347414
+Validation loss decreased (0.496108 --> 0.439026).  Saving model ...
+
+Epoch: 5 cost time: 1.577606201171875
+Epoch: 5, Steps: 88 | Train Loss: 0.4447951 | Vali Loss: 0.3864411
+Epoch: 5, Steps: 88 | Train reconstruction Loss: 0.4111784 | Entropy Loss : 0.0336167
+Epoch: 5, Steps: 88 | Valid reconstruction Loss: 0.3514531 | Entropy Loss : 0.0349880
+Validation loss decreased (0.439026 --> 0.386441).  Saving model ...
+
+Epoch: 6 cost time: 1.5909085273742676
+Epoch: 6, Steps: 88 | Train Loss: 0.4232748 | Vali Loss: 0.3849311
+Epoch: 6, Steps: 88 | Train reconstruction Loss: 0.3907125 | Entropy Loss : 0.0325623
+Epoch: 6, Steps: 88 | Valid reconstruction Loss: 0.3519376 | Entropy Loss : 0.0329935
+Validation loss decreased (0.386441 --> 0.384931).  Saving model ...
+
+Epoch: 7 cost time: 1.5900020599365234
+Epoch: 7, Steps: 88 | Train Loss: 0.4128574 | Vali Loss: 0.3791771
+Epoch: 7, Steps: 88 | Train reconstruction Loss: 0.3806866 | Entropy Loss : 0.0321707
+Epoch: 7, Steps: 88 | Valid reconstruction Loss: 0.3462250 | Entropy Loss : 0.0329521
+Validation loss decreased (0.384931 --> 0.379177).  Saving model ...
+
+Epoch: 8 cost time: 1.6058850288391113
+Epoch: 8, Steps: 88 | Train Loss: 0.4054493 | Vali Loss: 0.3473198
+Epoch: 8, Steps: 88 | Train reconstruction Loss: 0.3739798 | Entropy Loss : 0.0314694
+Epoch: 8, Steps: 88 | Valid reconstruction Loss: 0.3140922 | Entropy Loss : 0.0332276
+Validation loss decreased (0.379177 --> 0.347320).  Saving model ...
+
+Epoch: 9 cost time: 1.5958895683288574
+Epoch: 9, Steps: 88 | Train Loss: 0.3982672 | Vali Loss: 0.3417535
+Epoch: 9, Steps: 88 | Train reconstruction Loss: 0.3677472 | Entropy Loss : 0.0305201
+Epoch: 9, Steps: 88 | Valid reconstruction Loss: 0.3091168 | Entropy Loss : 0.0326366
+Validation loss decreased (0.347320 --> 0.341753).  Saving model ...
+
+Epoch: 10 cost time: 1.557626724243164
+Epoch: 10, Steps: 88 | Train Loss: 0.3929965 | Vali Loss: 0.3324297
+Epoch: 10, Steps: 88 | Train reconstruction Loss: 0.3627082 | Entropy Loss : 0.0302883
+Epoch: 10, Steps: 88 | Valid reconstruction Loss: 0.3013839 | Entropy Loss : 0.0310458
+Validation loss decreased (0.341753 --> 0.332430).  Saving model ...
+
+Epoch: 11 cost time: 1.576632022857666
+Epoch: 11, Steps: 88 | Train Loss: 0.3883650 | Vali Loss: 0.3283554
+Epoch: 11, Steps: 88 | Train reconstruction Loss: 0.3590187 | Entropy Loss : 0.0293463
+Epoch: 11, Steps: 88 | Valid reconstruction Loss: 0.2979003 | Entropy Loss : 0.0304551
+Validation loss decreased (0.332430 --> 0.328355).  Saving model ...
+
+Epoch: 12 cost time: 1.552929162979126
+Epoch: 12, Steps: 88 | Train Loss: 0.3818326 | Vali Loss: 0.3216593
+Epoch: 12, Steps: 88 | Train reconstruction Loss: 0.3534729 | Entropy Loss : 0.0283597
+Epoch: 12, Steps: 88 | Valid reconstruction Loss: 0.2910169 | Entropy Loss : 0.0306423
+Validation loss decreased (0.328355 --> 0.321659).  Saving model ...
+
+Epoch: 13 cost time: 1.5999937057495117
+Epoch: 13, Steps: 88 | Train Loss: 0.3738503 | Vali Loss: 0.3222256
+Epoch: 13, Steps: 88 | Train reconstruction Loss: 0.3473615 | Entropy Loss : 0.0264887
+Epoch: 13, Steps: 88 | Valid reconstruction Loss: 0.2926133 | Entropy Loss : 0.0296122
+EarlyStopping counter: 1 out of 10
+
+Epoch: 14 cost time: 1.6131165027618408
+Epoch: 14, Steps: 88 | Train Loss: 0.3660575 | Vali Loss: 0.3174365
+Epoch: 14, Steps: 88 | Train reconstruction Loss: 0.3400947 | Entropy Loss : 0.0259628
+Epoch: 14, Steps: 88 | Valid reconstruction Loss: 0.2897025 | Entropy Loss : 0.0277340
+Validation loss decreased (0.321659 --> 0.317436).  Saving model ...
+
+Epoch: 15 cost time: 1.573791265487671
+Epoch: 15, Steps: 88 | Train Loss: 0.3507538 | Vali Loss: 0.3312733
+Epoch: 15, Steps: 88 | Train reconstruction Loss: 0.3256444 | Entropy Loss : 0.0251094
+Epoch: 15, Steps: 88 | Valid reconstruction Loss: 0.3048587 | Entropy Loss : 0.0264146
+EarlyStopping counter: 1 out of 10
+
+Epoch: 16 cost time: 1.6417648792266846
+Epoch: 16, Steps: 88 | Train Loss: 0.3534419 | Vali Loss: 0.3056197
+Epoch: 16, Steps: 88 | Train reconstruction Loss: 0.3292347 | Entropy Loss : 0.0242072
+Epoch: 16, Steps: 88 | Valid reconstruction Loss: 0.2796615 | Entropy Loss : 0.0259582
+Validation loss decreased (0.317436 --> 0.305620).  Saving model ...
+
+Epoch: 17 cost time: 1.6210627555847168
+Epoch: 17, Steps: 88 | Train Loss: 0.3469504 | Vali Loss: 0.3136368
+Epoch: 17, Steps: 88 | Train reconstruction Loss: 0.3243469 | Entropy Loss : 0.0226034
+Epoch: 17, Steps: 88 | Valid reconstruction Loss: 0.2896387 | Entropy Loss : 0.0239981
+EarlyStopping counter: 1 out of 10
+
+Epoch: 18 cost time: 1.6033000946044922
+Epoch: 18, Steps: 88 | Train Loss: 0.3416778 | Vali Loss: 0.2883374
+Epoch: 18, Steps: 88 | Train reconstruction Loss: 0.3210918 | Entropy Loss : 0.0205860
+Epoch: 18, Steps: 88 | Valid reconstruction Loss: 0.2674135 | Entropy Loss : 0.0209239
+Validation loss decreased (0.305620 --> 0.288337).  Saving model ...
+
+Epoch: 19 cost time: 1.560967206954956
+Epoch: 19, Steps: 88 | Train Loss: 0.3340679 | Vali Loss: 0.2865520
+Epoch: 19, Steps: 88 | Train reconstruction Loss: 0.3164747 | Entropy Loss : 0.0175931
+Epoch: 19, Steps: 88 | Valid reconstruction Loss: 0.2704181 | Entropy Loss : 0.0161340
+Validation loss decreased (0.288337 --> 0.286552).  Saving model ...
+
+Epoch: 20 cost time: 1.6023738384246826
+Epoch: 20, Steps: 88 | Train Loss: 0.3296683 | Vali Loss: 0.2797510
+Epoch: 20, Steps: 88 | Train reconstruction Loss: 0.3135135 | Entropy Loss : 0.0161549
+Epoch: 20, Steps: 88 | Valid reconstruction Loss: 0.2636414 | Entropy Loss : 0.0161095
+Validation loss decreased (0.286552 --> 0.279751).  Saving model ...
+============================TEST MODE============================
+Dataset: SMD
+Threshold : 0.11166949152946473
+===============================================================
+Dataset: SMD | Precision_adjusted: 0.9313 | Recall_adjusted: 0.9202 | f1_score_adjusted: 0.9257 
+--------------------------- Round 5 -----------------------------
+
+Epoch: 1 cost time: 1.6077063083648682
+Epoch: 1, Steps: 88 | Train Loss: 0.8862594 | Vali Loss: 0.6442794
+Epoch: 1, Steps: 88 | Train reconstruction Loss: 0.8469921 | Entropy Loss : 0.0392673
+Epoch: 1, Steps: 88 | Valid reconstruction Loss: 0.6087328 | Entropy Loss : 0.0355466
+Validation loss decreased (inf --> 0.644279).  Saving model ...
+
+Epoch: 2 cost time: 1.6627025604248047
+Epoch: 2, Steps: 88 | Train Loss: 0.6673688 | Vali Loss: 0.5623031
+Epoch: 2, Steps: 88 | Train reconstruction Loss: 0.6321164 | Entropy Loss : 0.0352523
+Epoch: 2, Steps: 88 | Valid reconstruction Loss: 0.5262573 | Entropy Loss : 0.0360459
+Validation loss decreased (0.644279 --> 0.562303).  Saving model ...
+
+Epoch: 3 cost time: 1.5940768718719482
+Epoch: 3, Steps: 88 | Train Loss: 0.5969538 | Vali Loss: 0.4958256
+Epoch: 3, Steps: 88 | Train reconstruction Loss: 0.5617797 | Entropy Loss : 0.0351741
+Epoch: 3, Steps: 88 | Valid reconstruction Loss: 0.4602902 | Entropy Loss : 0.0355354
+Validation loss decreased (0.562303 --> 0.495826).  Saving model ...
+
+Epoch: 4 cost time: 1.5747103691101074
+Epoch: 4, Steps: 88 | Train Loss: 0.5332947 | Vali Loss: 0.4703898
+Epoch: 4, Steps: 88 | Train reconstruction Loss: 0.4991589 | Entropy Loss : 0.0341359
+Epoch: 4, Steps: 88 | Valid reconstruction Loss: 0.4349321 | Entropy Loss : 0.0354577
+Validation loss decreased (0.495826 --> 0.470390).  Saving model ...
+
+Epoch: 5 cost time: 1.591977596282959
+Epoch: 5, Steps: 88 | Train Loss: 0.4827513 | Vali Loss: 0.3861697
+Epoch: 5, Steps: 88 | Train reconstruction Loss: 0.4492417 | Entropy Loss : 0.0335095
+Epoch: 5, Steps: 88 | Valid reconstruction Loss: 0.3511757 | Entropy Loss : 0.0349940
+Validation loss decreased (0.470390 --> 0.386170).  Saving model ...
+
+Epoch: 6 cost time: 1.6026875972747803
+Epoch: 6, Steps: 88 | Train Loss: 0.4279911 | Vali Loss: 0.3708827
+Epoch: 6, Steps: 88 | Train reconstruction Loss: 0.3943174 | Entropy Loss : 0.0336737
+Epoch: 6, Steps: 88 | Valid reconstruction Loss: 0.3351645 | Entropy Loss : 0.0357183
+Validation loss decreased (0.386170 --> 0.370883).  Saving model ...
+
+Epoch: 7 cost time: 1.570387840270996
+Epoch: 7, Steps: 88 | Train Loss: 0.4061355 | Vali Loss: 0.3573057
+Epoch: 7, Steps: 88 | Train reconstruction Loss: 0.3725379 | Entropy Loss : 0.0335976
+Epoch: 7, Steps: 88 | Valid reconstruction Loss: 0.3249234 | Entropy Loss : 0.0323823
+Validation loss decreased (0.370883 --> 0.357306).  Saving model ...
+
+Epoch: 8 cost time: 1.5602142810821533
+Epoch: 8, Steps: 88 | Train Loss: 0.4067056 | Vali Loss: 0.3432249
+Epoch: 8, Steps: 88 | Train reconstruction Loss: 0.3743244 | Entropy Loss : 0.0323813
+Epoch: 8, Steps: 88 | Valid reconstruction Loss: 0.3092396 | Entropy Loss : 0.0339853
+Validation loss decreased (0.357306 --> 0.343225).  Saving model ...
+
+Epoch: 9 cost time: 1.5329945087432861
+Epoch: 9, Steps: 88 | Train Loss: 0.3978577 | Vali Loss: 0.3311219
+Epoch: 9, Steps: 88 | Train reconstruction Loss: 0.3654447 | Entropy Loss : 0.0324129
+Epoch: 9, Steps: 88 | Valid reconstruction Loss: 0.2998828 | Entropy Loss : 0.0312391
+Validation loss decreased (0.343225 --> 0.331122).  Saving model ...
+
+Epoch: 10 cost time: 1.6113765239715576
+Epoch: 10, Steps: 88 | Train Loss: 0.3935209 | Vali Loss: 0.3412943
+Epoch: 10, Steps: 88 | Train reconstruction Loss: 0.3619335 | Entropy Loss : 0.0315874
+Epoch: 10, Steps: 88 | Valid reconstruction Loss: 0.3106450 | Entropy Loss : 0.0306493
+EarlyStopping counter: 1 out of 10
+
+Epoch: 11 cost time: 1.575784683227539
+Epoch: 11, Steps: 88 | Train Loss: 0.3874029 | Vali Loss: 0.3351508
+Epoch: 11, Steps: 88 | Train reconstruction Loss: 0.3561519 | Entropy Loss : 0.0312509
+Epoch: 11, Steps: 88 | Valid reconstruction Loss: 0.3043139 | Entropy Loss : 0.0308369
+EarlyStopping counter: 2 out of 10
+
+Epoch: 12 cost time: 1.5615966320037842
+Epoch: 12, Steps: 88 | Train Loss: 0.3797971 | Vali Loss: 0.3240466
+Epoch: 12, Steps: 88 | Train reconstruction Loss: 0.3490842 | Entropy Loss : 0.0307129
+Epoch: 12, Steps: 88 | Valid reconstruction Loss: 0.2944300 | Entropy Loss : 0.0296166
+Validation loss decreased (0.331122 --> 0.324047).  Saving model ...
+
+Epoch: 13 cost time: 1.6092422008514404
+Epoch: 13, Steps: 88 | Train Loss: 0.3721428 | Vali Loss: 0.3150640
+Epoch: 13, Steps: 88 | Train reconstruction Loss: 0.3424674 | Entropy Loss : 0.0296754
+Epoch: 13, Steps: 88 | Valid reconstruction Loss: 0.2870184 | Entropy Loss : 0.0280456
+Validation loss decreased (0.324047 --> 0.315064).  Saving model ...
+
+Epoch: 14 cost time: 1.647101879119873
+Epoch: 14, Steps: 88 | Train Loss: 0.3656468 | Vali Loss: 0.3047279
+Epoch: 14, Steps: 88 | Train reconstruction Loss: 0.3364521 | Entropy Loss : 0.0291948
+Epoch: 14, Steps: 88 | Valid reconstruction Loss: 0.2771540 | Entropy Loss : 0.0275739
+Validation loss decreased (0.315064 --> 0.304728).  Saving model ...
+
+Epoch: 15 cost time: 1.5601887702941895
+Epoch: 15, Steps: 88 | Train Loss: 0.3587274 | Vali Loss: 0.3038046
+Epoch: 15, Steps: 88 | Train reconstruction Loss: 0.3302647 | Entropy Loss : 0.0284627
+Epoch: 15, Steps: 88 | Valid reconstruction Loss: 0.2767394 | Entropy Loss : 0.0270653
+Validation loss decreased (0.304728 --> 0.303805).  Saving model ...
+
+Epoch: 16 cost time: 1.6366076469421387
+Epoch: 16, Steps: 88 | Train Loss: 0.3540013 | Vali Loss: 0.2999204
+Epoch: 16, Steps: 88 | Train reconstruction Loss: 0.3258571 | Entropy Loss : 0.0281443
+Epoch: 16, Steps: 88 | Valid reconstruction Loss: 0.2732146 | Entropy Loss : 0.0267058
+Validation loss decreased (0.303805 --> 0.299920).  Saving model ...
+
+Epoch: 17 cost time: 1.600970983505249
+Epoch: 17, Steps: 88 | Train Loss: 0.3493458 | Vali Loss: 0.2998763
+Epoch: 17, Steps: 88 | Train reconstruction Loss: 0.3220518 | Entropy Loss : 0.0272940
+Epoch: 17, Steps: 88 | Valid reconstruction Loss: 0.2745524 | Entropy Loss : 0.0253239
+Validation loss decreased (0.299920 --> 0.299876).  Saving model ...
+
+Epoch: 18 cost time: 1.5807836055755615
+Epoch: 18, Steps: 88 | Train Loss: 0.3210002 | Vali Loss: 0.2932233
+Epoch: 18, Steps: 88 | Train reconstruction Loss: 0.2943663 | Entropy Loss : 0.0266339
+Epoch: 18, Steps: 88 | Valid reconstruction Loss: 0.2681683 | Entropy Loss : 0.0250550
+Validation loss decreased (0.299876 --> 0.293223).  Saving model ...
+
+Epoch: 19 cost time: 1.59922456741333
+Epoch: 19, Steps: 88 | Train Loss: 0.3410872 | Vali Loss: 0.2847106
+Epoch: 19, Steps: 88 | Train reconstruction Loss: 0.3160028 | Entropy Loss : 0.0250843
+Epoch: 19, Steps: 88 | Valid reconstruction Loss: 0.2612047 | Entropy Loss : 0.0235059
+Validation loss decreased (0.293223 --> 0.284711).  Saving model ...
+
+Epoch: 20 cost time: 1.5844190120697021
+Epoch: 20, Steps: 88 | Train Loss: 0.3374220 | Vali Loss: 0.2832677
+Epoch: 20, Steps: 88 | Train reconstruction Loss: 0.3134684 | Entropy Loss : 0.0239536
+Epoch: 20, Steps: 88 | Valid reconstruction Loss: 0.2623197 | Entropy Loss : 0.0209481
+Validation loss decreased (0.284711 --> 0.283268).  Saving model ...
+============================TEST MODE============================
+Dataset: SMD
+Threshold : 0.12579093344509662
+===============================================================
+Dataset: SMD | Precision_adjusted: 0.9279 | Recall_adjusted: 0.9340 | f1_score_adjusted: 0.9309 
+----------------------SMD Evaluation Results-----------------------
+[96mpc-a: 0.9332[0.9456203751505765, 0.9167434816960759, 0.944343828364447, 0.9313236861100609, 0.9278653125948919][0m
+[96mrc-a: 0.9308[0.9331272924874338, 0.9457614454557804, 0.92086673006385, 0.9202214373047141, 0.9340103246841461][0m
+[96mf1-a: 0.9319[0.9393272965262726, 0.9310214138115788, 0.9324525288470068, 0.9257342762202374, 0.9309226780936066][0m
