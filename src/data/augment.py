@@ -87,6 +87,17 @@ class SyntheticAnomalyInjector:
 
         self.reset_rng()
 
+    def __getstate__(self) -> dict[str, Any]:
+        # The deterministic RNG is runtime-only state. Rebuild it after copy or
+        # deserialization instead of trying to pickle the torch generator.
+        serialized_state = dict(self.__dict__)
+        serialized_state["_rng"] = None
+        return serialized_state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        self.reset_rng()
+
     def reset_rng(self) -> None:
         # Validation-time synthetic augmentation needs repeatable corruption so
         # epoch-to-epoch classification curves remain comparable.

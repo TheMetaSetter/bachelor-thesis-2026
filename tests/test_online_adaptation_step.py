@@ -63,6 +63,7 @@ def _build_reference_checkpoint(tmp_path: Path) -> Path:
         checkpoint_name="reference.pt",
         model=model,
         optimizer=optimizer,
+        scheduler=None,
         scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
         config=config,
         epoch=1,

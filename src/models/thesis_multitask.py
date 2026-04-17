@@ -27,21 +27,59 @@ from src.data.augment import REDLAMP_ANOMALY_FAMILIES, SyntheticAnomalyInjector
 from src.models.base_model import BaseModel
 
 
+def build_multilayer_perceptron(
+    *,
+    input_dim: int,
+    intermediate_dim: int,
+    output_dim: int,
+    num_linear_layers: int,
+    dropout: float,
+    apply_output_activation: bool,
+) -> nn.Sequential:
+    """Build a readable MLP with one explicit shared depth contract.
+
+    The repository keeps one thesis model in one file, so this helper exists
+    only to avoid repeating the same layer-construction pattern three times for
+    the encoder, reconstruction head, and classification head.
+    """
+    if num_linear_layers < 2:
+        raise ValueError("num_linear_layers must be at least 2")
+
+    layer_dims = [input_dim] + [intermediate_dim] * (num_linear_layers - 1) + [output_dim]
+    network_layers: list[nn.Module] = []
+    for layer_index, (layer_input_dim, layer_output_dim) in enumerate(zip(layer_dims[:-1], layer_dims[1:])):
+        is_last_linear_layer = layer_index == num_linear_layers - 1
+        network_layers.append(nn.Linear(layer_input_dim, layer_output_dim))
+        if not is_last_linear_layer:
+            network_layers.append(nn.ReLU())
+            network_layers.append(nn.Dropout(dropout))
+        elif apply_output_activation:
+            network_layers.append(nn.ReLU())
+
+    return nn.Sequential(*network_layers)
+
+
 class MultitaskWindowEncoder(nn.Module):
     def __init__(
         self,
         input_dim: int,
         encoder_dim: int,
         hidden_dim: int,
+        num_linear_layers: int = 3,
         dropout: float = 0.0,
     ) -> None:
         super().__init__()
-        self.network = nn.Sequential(
-            nn.Linear(input_dim, encoder_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(encoder_dim, hidden_dim),
-            nn.ReLU(),
+
+        # The encoder depth is shared with both task heads so the offline model
+        # can form a symmetric MLP contract from YAML instead of hard-coding
+        # different depths in different submodules.
+        self.network = build_multilayer_perceptron(
+            input_dim=input_dim,
+            intermediate_dim=encoder_dim,
+            output_dim=hidden_dim,
+            num_linear_layers=num_linear_layers,
+            dropout=dropout,
+            apply_output_activation=True,
         )
 
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
@@ -59,6 +97,7 @@ class ThesisMultitaskModel(BaseModel):
         input_dim: int,
         encoder_dim: int,
         hidden_dim: int,
+        mlp_num_linear_layers: int = 3,
         num_classes: int = 2,
         dropout: float = 0.0,
         continuous_enabled: bool = True,
@@ -104,6 +143,7 @@ class ThesisMultitaskModel(BaseModel):
         # This constructor stores both the architecture and the experiment
         # switches because the repository follows the one-model-one-file rule.
         self.hidden_dim = hidden_dim
+        self.mlp_num_linear_layers = mlp_num_linear_layers
         self.num_classes = num_classes
         self.continuous_num_prototypes = continuous_num_prototypes
         self.discrete_codebook_size = discrete_codebook_size
@@ -155,6 +195,7 @@ class ThesisMultitaskModel(BaseModel):
             input_dim=input_dim,
             encoder_dim=encoder_dim,
             hidden_dim=hidden_dim,
+            num_linear_layers=mlp_num_linear_layers,
             dropout=dropout,
         )
 
@@ -185,18 +226,22 @@ class ThesisMultitaskModel(BaseModel):
         # Task heads.
         # Supervision lives on the fused task-specific hidden states, not on the
         # branch-local states. That keeps the branches observable but not separate predictors.
-        self.reconstruction_head = nn.Sequential(
-            nn.Linear(hidden_dim, encoder_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(encoder_dim, input_dim),
+        self.reconstruction_head = build_multilayer_perceptron(
+            input_dim=hidden_dim,
+            intermediate_dim=encoder_dim,
+            output_dim=input_dim,
+            num_linear_layers=mlp_num_linear_layers,
+            dropout=dropout,
+            apply_output_activation=False,
         )
 
-        self.classification_head = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, num_classes),
+        self.classification_head = build_multilayer_perceptron(
+            input_dim=hidden_dim,
+            intermediate_dim=hidden_dim,
+            output_dim=num_classes,
+            num_linear_layers=mlp_num_linear_layers,
+            dropout=dropout,
+            apply_output_activation=False,
         )
 
 
@@ -268,6 +313,7 @@ class ThesisMultitaskModel(BaseModel):
             input_dim=input_dim,
             encoder_dim=encoder_dim,
             hidden_dim=hidden_dim,
+            mlp_num_linear_layers=mlp_num_linear_layers,
             num_classes=num_classes,
             lambda_cls=lambda_cls,
             lambda_div=lambda_div,

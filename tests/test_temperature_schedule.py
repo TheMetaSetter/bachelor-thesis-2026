@@ -101,6 +101,7 @@ def test_trainer_keeps_warmup_alpha_and_beta_fixed_for_configured_epochs(tmp_pat
     trainer = Trainer(
         model=model,
         optimizer=optimizer,
+        scheduler=None,
         checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
         experiment_logger=experiment_logger,
         device="cpu",

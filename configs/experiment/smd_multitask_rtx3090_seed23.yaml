@@ -1,8 +1,8 @@
-experiment_name: smd_multitask_rtx3090_full
-seed: 7
+experiment_name: smd_multitask_rtx3090_seed23
+seed: 23
 device: cuda
-output_dir: outputs/smd_multitask_rtx3090_full
-checkpoint_dir: outputs/smd_multitask_rtx3090_full/checkpoints
+output_dir: outputs/smd_multitask_rtx3090_seed23
+checkpoint_dir: outputs/smd_multitask_rtx3090_seed23/checkpoints
 data_config_path: configs/data/smd_rtx3090_512.yaml
 model_config_path: configs/model/thesis_multitask.yaml
 task_config_path: configs/task/multitask_tsad.yaml
@@ -38,4 +38,5 @@ logging:
     - 300ep
     - lr-scheduler
     - mlp-depth-3
-  wandb_run_name: smd_multitask_rtx3090_full_300ep
+    - seed-23
+  wandb_run_name: smd_multitask_rtx3090_seed23_300ep

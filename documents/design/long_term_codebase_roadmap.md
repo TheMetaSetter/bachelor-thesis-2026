@@ -458,3 +458,7 @@ The valuable part of the older roadmap was never the literal folder plan or the 
 - generalize only after one strong result
 
 That logic should remain the long-term planning rule for this repository.
+
+## Current execution note
+
+Multi-seed offline experimentation should remain launcher-based and preflight-validated. The repository should treat sequential seed runs as the guaranteed-safe path, and only treat parallel local runs as acceptable after isolated outputs, dry-run validation, and smoke-level concurrency checks are in place.

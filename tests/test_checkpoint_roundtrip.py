@@ -22,6 +22,7 @@ def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(tmp_pat
         checkpoint_name="roundtrip.pt",
         model=model,
         optimizer=optimizer,
+        scheduler=None,
         scaler_state=scaler.state_dict(),
         config=config,
         epoch=3,
@@ -37,3 +38,62 @@ def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(tmp_pat
     assert torch.equal(loaded_checkpoint["scaler_state_dict"]["feature_mean"], scaler.feature_mean)
     for parameter, reloaded_parameter in zip(model.parameters(), reloaded_model.parameters()):
         assert torch.allclose(parameter, reloaded_parameter)
+    assert "scheduler_state_dict" not in loaded_checkpoint
+
+
+def test_checkpoint_roundtrip_restores_scheduler_state_when_present(tmp_path: Path) -> None:
+    model = ReconstructionMLPAutoencoder(input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer=optimizer,
+        mode="min",
+        factor=0.5,
+        patience=1,
+        threshold=0.0,
+        threshold_mode="rel",
+        cooldown=0,
+        min_lr=1.0e-5,
+    )
+    scaler = SequenceStandardScaler()
+    scaler.feature_mean = torch.zeros(38)
+    scaler.feature_std = torch.ones(38)
+    config = {"experiment_name": "scheduler-roundtrip-test"}
+
+    scheduler.step(1.0)
+    scheduler.step(1.0)
+    scheduler.step(1.0)
+
+    checkpoint_manager = CheckpointManager(tmp_path)
+    checkpoint_path = checkpoint_manager.save_checkpoint(
+        checkpoint_name="scheduler_roundtrip.pt",
+        model=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        scaler_state=scaler.state_dict(),
+        config=config,
+        epoch=4,
+        metric_history=[{"val_loss": 1.0, "optimizer_lr": optimizer.param_groups[0]["lr"]}],
+    )
+
+    reloaded_model = ReconstructionMLPAutoencoder(input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0)
+    reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)
+    reloaded_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer=reloaded_optimizer,
+        mode="min",
+        factor=0.5,
+        patience=1,
+        threshold=0.0,
+        threshold_mode="rel",
+        cooldown=0,
+        min_lr=1.0e-5,
+    )
+    loaded_checkpoint = checkpoint_manager.load_checkpoint(
+        checkpoint_path,
+        reloaded_model,
+        reloaded_optimizer,
+        reloaded_scheduler,
+    )
+
+    assert "scheduler_state_dict" in loaded_checkpoint
+    assert reloaded_optimizer.param_groups[0]["lr"] == optimizer.param_groups[0]["lr"]
+    assert reloaded_scheduler.state_dict() == scheduler.state_dict()

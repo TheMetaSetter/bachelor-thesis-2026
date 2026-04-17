@@ -22,12 +22,14 @@ class Trainer:
         self,
         model: BaseModel,
         optimizer: torch.optim.Optimizer,
+        scheduler: Any | None,
         checkpoint_manager: CheckpointManager,
         experiment_logger: ExperimentLogger,
         device: str = "cpu",
     ) -> None:
         self.model = model
         self.optimizer = optimizer
+        self.scheduler = scheduler
         self.checkpoint_manager = checkpoint_manager
         self.experiment_logger = experiment_logger
         self.device = device
@@ -78,6 +80,41 @@ class Trainer:
                 sum(forward_pass_seconds_history) / len(forward_pass_seconds_history)
             )
         return prefixed_metrics
+
+    def _get_optimizer_learning_rates(self) -> list[float]:
+        return [float(parameter_group["lr"]) for parameter_group in self.optimizer.param_groups]
+
+    def _step_learning_rate_scheduler(self, epoch_metrics: dict[str, Any]) -> dict[str, float]:
+        learning_rate_metrics: dict[str, float] = {}
+        current_learning_rates = self._get_optimizer_learning_rates()
+        learning_rate_metrics["optimizer_lr"] = current_learning_rates[0]
+        for group_index, learning_rate in enumerate(current_learning_rates):
+            learning_rate_metrics[f"optimizer_lr_group_{group_index}"] = learning_rate
+
+        if self.scheduler is None:
+            learning_rate_metrics["scheduler_lr_reduced"] = 0.0
+            return learning_rate_metrics
+
+        monitor_value = float(epoch_metrics["val_loss"])
+        learning_rate_metrics["scheduler_monitor_val_loss"] = monitor_value
+        previous_learning_rates = list(current_learning_rates)
+        self.scheduler.step(monitor_value)
+        updated_learning_rates = self._get_optimizer_learning_rates()
+        learning_rate_metrics["optimizer_lr"] = updated_learning_rates[0]
+        for group_index, learning_rate in enumerate(updated_learning_rates):
+            learning_rate_metrics[f"optimizer_lr_group_{group_index}"] = learning_rate
+        learning_rate_metrics["scheduler_lr_reduced"] = float(
+            any(updated_learning_rate < previous_learning_rate for updated_learning_rate, previous_learning_rate in zip(updated_learning_rates, previous_learning_rates))
+        )
+        console_print(
+            "TRAIN",
+            "Stepped learning rate scheduler",
+            monitor_val_loss=monitor_value,
+            previous_learning_rates=previous_learning_rates,
+            updated_learning_rates=updated_learning_rates,
+            lr_reduced=learning_rate_metrics["scheduler_lr_reduced"],
+        )
+        return learning_rate_metrics
 
     def _run_validation_epoch(
         self,
@@ -233,6 +270,7 @@ class Trainer:
                     stage_name="val_synth",
                 )
             )
+            epoch_metrics.update(self._step_learning_rate_scheduler(epoch_metrics))
             self.metric_history.append(epoch_metrics)
             self.experiment_logger.log_metrics(epoch_metrics)
             console_print("TRAIN", "Completed epoch", epoch=epoch_index + 1, epoch_metrics=epoch_metrics)
@@ -245,6 +283,7 @@ class Trainer:
                     checkpoint_name="best.pt",
                     model=self.model,
                     optimizer=self.optimizer,
+                    scheduler=self.scheduler,
                     scaler_state=scaler_state,
                     config=config,
                     epoch=epoch_index + 1,

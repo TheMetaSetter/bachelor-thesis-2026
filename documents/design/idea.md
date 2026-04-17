@@ -901,3 +901,7 @@ offline dataset
 -> sliding window construction
 -> drift injection / non-stationarity injection
 -> online model update and evaluation
+
+## Current implementation note
+
+The active offline thesis model now treats multilayer perceptron depth as an explicit symmetric contract across the encoder, reconstruction head, and classification head. The intended default is a three-linear-layer encoder and three-linear-layer heads inside the same self-contained model file, rather than a hard-coded two-layer design.

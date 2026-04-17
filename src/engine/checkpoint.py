@@ -30,6 +30,7 @@ class CheckpointManager:
         checkpoint_name: str,
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
+        scheduler: Any | None,
         scaler_state: dict[str, Any],
         config: dict[str, Any],
         epoch: int,
@@ -45,6 +46,8 @@ class CheckpointManager:
             "epoch": epoch,
             "metric_history": metric_history,
         }
+        if scheduler is not None:
+            checkpoint_payload["scheduler_state_dict"] = scheduler.state_dict()
         if extra_state is not None:
             checkpoint_payload["extra_state"] = extra_state
         console_print(
@@ -54,6 +57,7 @@ class CheckpointManager:
             checkpoint_name=checkpoint_name,
             epoch=epoch,
             metric_history_length=len(metric_history),
+            has_scheduler_state=scheduler is not None,
             has_extra_state=extra_state is not None,
         )
         torch.save(checkpoint_payload, checkpoint_path)
@@ -79,17 +83,21 @@ class CheckpointManager:
         checkpoint_path: str | Path,
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer | None = None,
+        scheduler: Any | None = None,
     ) -> dict[str, Any]:
         console_print("CHECKPOINT", "Loading checkpoint", checkpoint_path=checkpoint_path)
         loaded_checkpoint = torch.load(checkpoint_path, map_location="cpu")
         model.load_state_dict(loaded_checkpoint["model_state_dict"])
         if optimizer is not None:
             optimizer.load_state_dict(loaded_checkpoint["optimizer_state_dict"])
+        if scheduler is not None and "scheduler_state_dict" in loaded_checkpoint:
+            scheduler.load_state_dict(loaded_checkpoint["scheduler_state_dict"])
         console_print(
             "CHECKPOINT",
             "Loaded checkpoint",
             checkpoint_path=checkpoint_path,
             epoch=loaded_checkpoint.get("epoch"),
             metric_history_length=len(loaded_checkpoint.get("metric_history", [])),
+            has_scheduler_state="scheduler_state_dict" in loaded_checkpoint,
         )
         return loaded_checkpoint

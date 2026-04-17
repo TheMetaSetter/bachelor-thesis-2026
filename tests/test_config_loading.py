@@ -30,6 +30,111 @@ def test_load_multitask_ablation_config_applies_overrides() -> None:
     assert loaded_config["task"]["anomaly_families"] == list(REDLAMP_ANOMALY_FAMILIES)
 
 
+def test_load_seed_specific_rtx3090_config_reads_valid_yaml() -> None:
+    loaded_config = load_experiment_config("configs/experiment/smd_multitask_rtx3090_seed11.yaml")
+    assert loaded_config["seed"] == 11
+    assert loaded_config["model"]["mlp_num_linear_layers"] == 3
+    assert loaded_config["output_dir"] == "outputs/smd_multitask_rtx3090_seed11"
+
+
+def test_load_multitask_experiment_config_rejects_invalid_mlp_num_linear_layers(tmp_path: Path) -> None:
+    data_config_path = tmp_path / "data.yaml"
+    model_config_path = tmp_path / "model.yaml"
+    task_config_path = tmp_path / "task.yaml"
+    experiment_config_path = tmp_path / "experiment.yaml"
+
+    data_config_path.write_text(
+        "\n".join(
+            [
+                "dataset_name: smd",
+                "root_dir: data/ServerMachineDataset",
+                "window_size: 100",
+                "stride: 10",
+                "batch_size: 8",
+                "num_workers: 0",
+                "validation_split_ratio: 0.2",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model_config_path.write_text(
+        "\n".join(
+            [
+                "model_name: thesis_multitask",
+                "input_dim: 38",
+                "encoder_dim: 64",
+                "hidden_dim: 32",
+                "mlp_num_linear_layers: 1",
+                "num_classes: 2",
+                "dropout: 0.0",
+                "continuous_enabled: true",
+                "continuous_num_prototypes: 8",
+                "discrete_enabled: true",
+                "discrete_codebook_size: 16",
+                "gumbel_temperature: 1.0",
+                "temperature_start: 1.0",
+                "temperature_end: 1.0",
+                "temperature_anneal_fraction: 1.0",
+                "alpha_logit_init: 0.0",
+                "beta_logit_init: 0.0",
+                "lambda_cls: 1.0",
+                "lambda_div: 0.0",
+                "lambda_var: 0.0",
+                "lambda_cov: 0.0",
+                "lambda_use: 0.0",
+                "lambda_gate: 0.0",
+                "usage_lambda_start: 0.0",
+                "usage_lambda_end: 0.0",
+                "usage_lambda_schedule_fraction: 1.0",
+                "variance_floor_gamma: 1.0",
+                "gate_barrier_margin: 0.25",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    task_config_path.write_text(
+        "\n".join(
+            [
+                "task_name: multitask_tsad",
+                "use_synthetic_augmentation: true",
+                "use_synthetic_validation: true",
+                "synthetic_validation_seed: 7",
+                "freeze_fusion_for_epochs: 0",
+                "warmup_alpha_value: 0.5",
+                "warmup_beta_value: 0.5",
+                "anomaly_probability: 0.5",
+                "min_segment_fraction: 0.1",
+                "max_segment_fraction: 0.2",
+                "spike_scale: 3.0",
+                f"anomaly_families: {list(REDLAMP_ANOMALY_FAMILIES)}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    experiment_config_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: invalid_multitask_depth",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/invalid_multitask_depth",
+                "checkpoint_dir: outputs/invalid_multitask_depth/checkpoints",
+                f"data_config_path: {data_config_path}",
+                f"model_config_path: {model_config_path}",
+                f"task_config_path: {task_config_path}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "epochs: 1",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="mlp_num_linear_layers"):
+        load_experiment_config(experiment_config_path)
+
+
 def test_load_experiment_config_rejects_missing_required_keys(tmp_path: Path) -> None:
     invalid_experiment_path = tmp_path / "invalid_experiment.yaml"
     invalid_experiment_path.write_text("experiment_name: broken\n", encoding="utf-8")
@@ -312,4 +417,83 @@ def test_load_multitask_experiment_config_rejects_invalid_temperature_hold_fract
     )
 
     with pytest.raises(ValueError, match="temperature_hold_fraction"):
+        load_experiment_config(experiment_config_path)
+
+
+def test_load_experiment_config_accepts_valid_reduce_on_plateau_scheduler() -> None:
+    loaded_config = load_experiment_config("configs/experiment/smd_multitask_rtx3090_full.yaml")
+    scheduler_config = loaded_config["optimizer"]["scheduler"]
+
+    assert scheduler_config["scheduler_name"] == "reduce_on_plateau"
+    assert scheduler_config["monitor_metric"] == "val_loss"
+    assert scheduler_config["patience"] == 20
+
+
+def test_load_experiment_config_rejects_invalid_scheduler_monitor_metric(tmp_path: Path) -> None:
+    experiment_config_path = tmp_path / "experiment.yaml"
+    experiment_config_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: invalid_scheduler_monitor_metric",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/invalid_scheduler_monitor_metric",
+                "checkpoint_dir: outputs/invalid_scheduler_monitor_metric/checkpoints",
+                f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
+                f"model_config_path: {Path('configs/model/thesis_multitask.yaml').resolve()}",
+                f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "  scheduler:",
+                "    scheduler_name: reduce_on_plateau",
+                "    monitor_metric: val_synth_loss",
+                "    factor: 0.5",
+                "    patience: 2",
+                "    threshold: 0.0001",
+                "    threshold_mode: rel",
+                "    cooldown: 0",
+                "    min_lr: 1.0e-5",
+                "epochs: 3",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="monitor_metric"):
+        load_experiment_config(experiment_config_path)
+
+
+def test_load_experiment_config_rejects_scheduler_min_lr_above_learning_rate(tmp_path: Path) -> None:
+    experiment_config_path = tmp_path / "experiment.yaml"
+    experiment_config_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: invalid_scheduler_min_lr",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/invalid_scheduler_min_lr",
+                "checkpoint_dir: outputs/invalid_scheduler_min_lr/checkpoints",
+                f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
+                f"model_config_path: {Path('configs/model/thesis_multitask.yaml').resolve()}",
+                f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "  scheduler:",
+                "    scheduler_name: reduce_on_plateau",
+                "    monitor_metric: val_loss",
+                "    factor: 0.5",
+                "    patience: 2",
+                "    threshold: 0.0001",
+                "    threshold_mode: rel",
+                "    cooldown: 0",
+                "    min_lr: 0.01",
+                "epochs: 3",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="min_lr"):
         load_experiment_config(experiment_config_path)

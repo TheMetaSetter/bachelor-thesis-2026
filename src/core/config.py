@@ -100,6 +100,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         integer_fields["encoder_dim"] = model_config.get("encoder_dim")
         integer_fields["hidden_dim"] = model_config.get("hidden_dim")
     if model_config.get("model_name") == "thesis_multitask":
+        integer_fields["mlp_num_linear_layers"] = model_config.get("mlp_num_linear_layers", 3)
         integer_fields["num_classes"] = model_config.get("num_classes")
         integer_fields["continuous_num_prototypes"] = model_config.get("continuous_num_prototypes")
         integer_fields["discrete_codebook_size"] = model_config.get("discrete_codebook_size")
@@ -153,6 +154,37 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         if not isinstance(field_value, (int, float)):
             raise ValueError(f"{field_name} must be numeric")
 
+    scheduler_config = optimizer_config.get("scheduler")
+    if scheduler_config is not None:
+        if not isinstance(scheduler_config, dict):
+            raise ValueError("optimizer.scheduler must be a mapping when provided")
+        scheduler_name = scheduler_config.get("scheduler_name")
+        if scheduler_name != "reduce_on_plateau":
+            raise ValueError("optimizer.scheduler.scheduler_name must be: reduce_on_plateau")
+        monitor_metric = scheduler_config.get("monitor_metric")
+        if monitor_metric != "val_loss":
+            raise ValueError("optimizer.scheduler.monitor_metric must be: val_loss")
+        scheduler_factor = scheduler_config.get("factor")
+        if not isinstance(scheduler_factor, (int, float)) or not 0.0 < float(scheduler_factor) < 1.0:
+            raise ValueError("optimizer.scheduler.factor must be in (0, 1)")
+        scheduler_patience = scheduler_config.get("patience")
+        if not isinstance(scheduler_patience, int) or scheduler_patience < 0:
+            raise ValueError("optimizer.scheduler.patience must be a non-negative integer")
+        scheduler_threshold = scheduler_config.get("threshold")
+        if not isinstance(scheduler_threshold, (int, float)) or float(scheduler_threshold) < 0.0:
+            raise ValueError("optimizer.scheduler.threshold must be non-negative")
+        scheduler_threshold_mode = scheduler_config.get("threshold_mode")
+        if scheduler_threshold_mode not in {"rel", "abs"}:
+            raise ValueError("optimizer.scheduler.threshold_mode must be one of: rel, abs")
+        scheduler_cooldown = scheduler_config.get("cooldown")
+        if not isinstance(scheduler_cooldown, int) or scheduler_cooldown < 0:
+            raise ValueError("optimizer.scheduler.cooldown must be a non-negative integer")
+        scheduler_min_lr = scheduler_config.get("min_lr")
+        if not isinstance(scheduler_min_lr, (int, float)) or float(scheduler_min_lr) <= 0.0:
+            raise ValueError("optimizer.scheduler.min_lr must be positive")
+        if float(scheduler_min_lr) > float(optimizer_config["learning_rate"]):
+            raise ValueError("optimizer.scheduler.min_lr must not exceed optimizer.learning_rate")
+
     if task_config.get("task_name") == "multitask_tsad":
         boolean_fields = {
             "enable_diversity_loss": model_config.get("enable_diversity_loss", False),
@@ -199,6 +231,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         if not isinstance(min_num_workers_value, int) or min_num_workers_value <= 0:
             raise ValueError("data.min_num_workers must be a positive integer when provided")
     if task_config.get("task_name") == "multitask_tsad":
+        if int(model_config.get("mlp_num_linear_layers", 3)) < 2:
+            raise ValueError("mlp_num_linear_layers must be at least 2")
         if float(model_config["gumbel_temperature"]) <= 0.0:
             raise ValueError("gumbel_temperature must be positive")
         if float(model_config["temperature_start"]) <= 0.0:

@@ -23,6 +23,7 @@ def test_online_model_rejects_reconstruction_reference_checkpoint(tmp_path: Path
         checkpoint_name="baseline.pt",
         model=model,
         optimizer=optimizer,
+        scheduler=None,
         scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
         config={
             "model": {

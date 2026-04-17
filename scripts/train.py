@@ -7,6 +7,7 @@ objects, then hand everything to the trainer.
 """
 
 import argparse
+from typing import Any
 
 import torch
 
@@ -59,6 +60,45 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
         model_kwargs_keys=sorted(model_kwargs.keys()),
     )
     return build_model(model_name, **model_kwargs)
+
+
+def build_scheduler_from_experiment_config(
+    optimizer: torch.optim.Optimizer,
+    experiment_config: dict[str, object],
+) -> Any | None:
+    optimizer_config = experiment_config["optimizer"]
+    scheduler_config = optimizer_config.get("scheduler")
+    if scheduler_config is None:
+        console_print("TRAIN", "No learning rate scheduler configured")
+        return None
+
+    scheduler_name = scheduler_config["scheduler_name"]
+    if scheduler_name != "reduce_on_plateau":
+        raise ValueError(f"Unsupported scheduler_name: {scheduler_name}")
+
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer=optimizer,
+        mode="min",
+        factor=float(scheduler_config["factor"]),
+        patience=int(scheduler_config["patience"]),
+        threshold=float(scheduler_config["threshold"]),
+        threshold_mode=str(scheduler_config["threshold_mode"]),
+        cooldown=int(scheduler_config["cooldown"]),
+        min_lr=float(scheduler_config["min_lr"]),
+    )
+    console_print(
+        "TRAIN",
+        "Initialized learning rate scheduler",
+        scheduler_name=scheduler_name,
+        monitor_metric=scheduler_config["monitor_metric"],
+        factor=scheduler_config["factor"],
+        patience=scheduler_config["patience"],
+        threshold=scheduler_config["threshold"],
+        threshold_mode=scheduler_config["threshold_mode"],
+        cooldown=scheduler_config["cooldown"],
+        min_lr=scheduler_config["min_lr"],
+    )
+    return scheduler
 
 
 def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, object]:
@@ -126,6 +166,7 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         learning_rate=experiment_config["optimizer"]["learning_rate"],
         weight_decay=experiment_config["optimizer"]["weight_decay"],
     )
+    scheduler = build_scheduler_from_experiment_config(optimizer, experiment_config)
     
     # Initialize experiment logger for tracking metrics, hyperparameters, and
     # artifacts. Logs are written to output_dir; config validates logging format.
@@ -160,6 +201,7 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
     trainer = Trainer(
         model=model,
         optimizer=optimizer,
+        scheduler=scheduler,
         checkpoint_manager=checkpoint_manager,
         experiment_logger=experiment_logger,
         device=experiment_config["device"],

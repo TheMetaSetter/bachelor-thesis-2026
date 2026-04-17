@@ -25,4 +25,4 @@ logging:
     - multitask
     - smoke
     - rtx3090
-  wandb_run_name: smd_multitask_rtx3090_smoke
+  wandb_run_name: smd_multitask_rtx3090_smoke_2
