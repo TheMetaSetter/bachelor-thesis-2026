@@ -1,0 +1,29 @@
+experiment_name: smd_multitask_rtx3090_smoke_seed11
+seed: 11
+device: cuda
+output_dir: outputs/smd_multitask_rtx3090_smoke_seed11
+checkpoint_dir: outputs/smd_multitask_rtx3090_smoke_seed11/checkpoints
+data_config_path: configs/data/smd_rtx3090_smoke.yaml
+model_config_path: configs/model/thesis_multitask.yaml
+task_config_path: configs/task/multitask_tsad.yaml
+model_overrides:
+  temperature_hold_fraction: 0.15
+  usage_lambda_start: 0.05
+  usage_lambda_end: 0.05
+  usage_lambda_schedule_fraction: 0.3
+optimizer:
+  learning_rate: 0.001
+  weight_decay: 0.0
+epochs: 1
+logging:
+  use_wandb: false
+  wandb_project: bachelor-thesis-2026
+  wandb_entity: themetasetter-i-h-c-qu-c-gia-tp-hcm
+  wandb_mode: disabled
+  wandb_tags:
+    - smd
+    - multitask
+    - smoke
+    - rtx3090
+    - seed-11
+  wandb_run_name: smd_multitask_rtx3090_smoke_seed11
