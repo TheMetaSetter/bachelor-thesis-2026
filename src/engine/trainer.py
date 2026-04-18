@@ -23,6 +23,7 @@ class Trainer:
         model: BaseModel,
         optimizer: torch.optim.Optimizer,
         scheduler: Any | None,
+        scheduler_monitor_metric: str | None,
         checkpoint_manager: CheckpointManager,
         experiment_logger: ExperimentLogger,
         device: str = "cpu",
@@ -30,6 +31,7 @@ class Trainer:
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
+        self.scheduler_monitor_metric = scheduler_monitor_metric
         self.checkpoint_manager = checkpoint_manager
         self.experiment_logger = experiment_logger
         self.device = device
@@ -95,8 +97,15 @@ class Trainer:
             learning_rate_metrics["scheduler_lr_reduced"] = 0.0
             return learning_rate_metrics
 
-        monitor_value = float(epoch_metrics["val_loss"])
-        learning_rate_metrics["scheduler_monitor_val_loss"] = monitor_value
+        if self.scheduler_monitor_metric is None:
+            raise ValueError("scheduler_monitor_metric must be set when scheduler is configured")
+        if self.scheduler_monitor_metric not in epoch_metrics:
+            raise KeyError(
+                f"Scheduler monitor metric '{self.scheduler_monitor_metric}' is missing from epoch metrics"
+            )
+
+        monitor_value = float(epoch_metrics[self.scheduler_monitor_metric])
+        learning_rate_metrics[f"scheduler_monitor_{self.scheduler_monitor_metric}"] = monitor_value
         previous_learning_rates = list(current_learning_rates)
         self.scheduler.step(monitor_value)
         updated_learning_rates = self._get_optimizer_learning_rates()
@@ -109,7 +118,8 @@ class Trainer:
         console_print(
             "TRAIN",
             "Stepped learning rate scheduler",
-            monitor_val_loss=monitor_value,
+            scheduler_monitor_metric=self.scheduler_monitor_metric,
+            monitor_value=monitor_value,
             previous_learning_rates=previous_learning_rates,
             updated_learning_rates=updated_learning_rates,
             lr_reduced=learning_rate_metrics["scheduler_lr_reduced"],

@@ -102,6 +102,7 @@ def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(tmp_path
         model=model,
         optimizer=optimizer,
         scheduler=None,
+        scheduler_monitor_metric=None,
         checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
         experiment_logger=experiment_logger,
         device="cpu",

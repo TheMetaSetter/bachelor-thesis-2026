@@ -12,9 +12,15 @@ from src.data.base import BaseSequenceParser
 
 
 class SMDDatasetParser(BaseSequenceParser):
-    def __init__(self, root_dir: str | Path, validation_split_ratio: float = 0.2) -> None:
+    def __init__(
+        self,
+        root_dir: str | Path,
+        validation_split_ratio: float = 0.2,
+        entity_ids: list[str] | None = None,
+    ) -> None:
         self.root_dir = Path(root_dir)
         self.validation_split_ratio = validation_split_ratio
+        self.entity_ids = entity_ids
         self.train_dir = self.root_dir / "train"
         self.test_dir = self.root_dir / "test"
         self.test_label_dir = self.root_dir / "test_label"
@@ -54,6 +60,9 @@ class SMDDatasetParser(BaseSequenceParser):
         train_files = sorted(self.train_dir.glob("*.txt"))
         test_files = sorted(self.test_dir.glob("*.txt"))
         label_files = sorted(self.test_label_dir.glob("*.txt"))
+        train_files_by_entity = {train_file.stem: train_file for train_file in train_files}
+        test_files_by_entity = {test_file.stem: test_file for test_file in test_files}
+        label_files_by_entity = {label_file.stem: label_file for label_file in label_files}
         console_print(
             "DATA",
             "Parsing SMD split files",
@@ -61,19 +70,34 @@ class SMDDatasetParser(BaseSequenceParser):
             train_count=len(train_files),
             test_count=len(test_files),
             label_count=len(label_files),
+            entity_ids=self.entity_ids,
         )
 
-        if len(train_files) != 28 or len(test_files) != 28 or len(label_files) != 28:
+        if self.entity_ids is None and (len(train_files) != 28 or len(test_files) != 28 or len(label_files) != 28):
             raise ValueError("SMD parser expected 28 machine files per split")
+
+        if self.entity_ids is None:
+            selected_entity_ids = sorted(train_files_by_entity.keys())
+        else:
+            selected_entity_ids = list(self.entity_ids)
+            if not selected_entity_ids:
+                raise ValueError("SMD parser requires at least one entity_id when filtering is enabled")
+            for entity_id in selected_entity_ids:
+                if entity_id not in train_files_by_entity:
+                    raise ValueError(f"Requested SMD entity is missing from train split: {entity_id}")
+                if entity_id not in test_files_by_entity:
+                    raise ValueError(f"Requested SMD entity is missing from test split: {entity_id}")
+                if entity_id not in label_files_by_entity:
+                    raise ValueError(f"Requested SMD entity is missing from test_label split: {entity_id}")
 
         train_sequences: list[dict[str, Any]] = []
         val_sequences: list[dict[str, Any]] = []
         test_sequences: list[dict[str, Any]] = []
 
-        for train_file, test_file, label_file in zip(train_files, test_files, label_files):
-            entity_id = train_file.stem
-            if test_file.stem != entity_id or label_file.stem != entity_id:
-                raise ValueError(f"Mismatched SMD files for entity: {entity_id}")
+        for entity_id in selected_entity_ids:
+            train_file = train_files_by_entity[entity_id]
+            test_file = test_files_by_entity[entity_id]
+            label_file = label_files_by_entity[entity_id]
 
             train_tensor = self._load_feature_matrix(train_file)
             test_tensor = self._load_feature_matrix(test_file)
@@ -127,6 +151,7 @@ class SMDDatasetParser(BaseSequenceParser):
         console_print(
             "DATA",
             "Completed SMD parsing",
+            selected_entity_ids=selected_entity_ids,
             train_sequences=len(train_sequences),
             val_sequences=len(val_sequences),
             test_sequences=len(test_sequences),

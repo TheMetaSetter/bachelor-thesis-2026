@@ -37,6 +37,14 @@ def test_load_seed_specific_rtx3090_config_reads_valid_yaml() -> None:
     assert loaded_config["output_dir"] == "outputs/smd_multitask_rtx3090_seed11"
 
 
+def test_load_single_entity_rtx3090_config_reads_valid_yaml() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc.yaml"
+    )
+    assert loaded_config["data"]["entity_ids"] == ["machine-2-1"]
+    assert loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_roc_auc"
+
+
 def test_load_multitask_experiment_config_rejects_invalid_mlp_num_linear_layers(tmp_path: Path) -> None:
     data_config_path = tmp_path / "data.yaml"
     model_config_path = tmp_path / "model.yaml"
@@ -132,6 +140,72 @@ def test_load_multitask_experiment_config_rejects_invalid_mlp_num_linear_layers(
     )
 
     with pytest.raises(ValueError, match="mlp_num_linear_layers"):
+        load_experiment_config(experiment_config_path)
+
+
+def test_load_experiment_config_rejects_invalid_data_entity_ids(tmp_path: Path) -> None:
+    data_config_path = tmp_path / "data.yaml"
+    model_config_path = tmp_path / "model.yaml"
+    task_config_path = tmp_path / "task.yaml"
+    experiment_config_path = tmp_path / "experiment.yaml"
+
+    data_config_path.write_text(
+        "\n".join(
+            [
+                "dataset_name: smd",
+                "root_dir: data/ServerMachineDataset",
+                "entity_ids: machine-2-1",
+                "window_size: 100",
+                "stride: 10",
+                "batch_size: 8",
+                "num_workers: 0",
+                "validation_split_ratio: 0.2",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model_config_path.write_text(
+        "\n".join(
+            [
+                "model_name: reconstruction_mlp_ae",
+                "input_dim: 38",
+                "encoder_dim: 64",
+                "hidden_dim: 16",
+                "dropout: 0.1",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    task_config_path.write_text(
+        "\n".join(
+            [
+                "task_name: reconstruction",
+                "loss_name: mse",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    experiment_config_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: invalid_data_entity_ids",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/invalid_data_entity_ids",
+                "checkpoint_dir: outputs/invalid_data_entity_ids/checkpoints",
+                f"data_config_path: {data_config_path}",
+                f"model_config_path: {model_config_path}",
+                f"task_config_path: {task_config_path}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "epochs: 1",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="data.entity_ids"):
         load_experiment_config(experiment_config_path)
 
 
@@ -427,6 +501,42 @@ def test_load_experiment_config_accepts_valid_reduce_on_plateau_scheduler() -> N
     assert scheduler_config["scheduler_name"] == "reduce_on_plateau"
     assert scheduler_config["monitor_metric"] == "val_loss"
     assert scheduler_config["patience"] == 20
+
+
+def test_load_experiment_config_accepts_valid_val_synth_roc_auc_scheduler(tmp_path: Path) -> None:
+    experiment_config_path = tmp_path / "experiment.yaml"
+    experiment_config_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: valid_scheduler_monitor_val_synth_roc_auc",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/valid_scheduler_monitor_val_synth_roc_auc",
+                "checkpoint_dir: outputs/valid_scheduler_monitor_val_synth_roc_auc/checkpoints",
+                f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
+                f"model_config_path: {Path('configs/model/thesis_multitask.yaml').resolve()}",
+                f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "  scheduler:",
+                "    scheduler_name: reduce_on_plateau",
+                "    monitor_metric: val_synth_roc_auc",
+                "    factor: 0.5",
+                "    patience: 2",
+                "    threshold: 0.0001",
+                "    threshold_mode: rel",
+                "    cooldown: 0",
+                "    min_lr: 1.0e-5",
+                "epochs: 3",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loaded_config = load_experiment_config(experiment_config_path)
+
+    assert loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_roc_auc"
 
 
 def test_load_experiment_config_rejects_invalid_scheduler_monitor_metric(tmp_path: Path) -> None:

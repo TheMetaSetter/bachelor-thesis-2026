@@ -489,7 +489,14 @@ class ThesisMultitaskModel(BaseModel):
         else:
             beta = continuous_hidden.new_tensor(float(self.active_beta_override))
 
+        # Beta là mức độ mà tác vụ tái tạo chuỗi (reconstruction) sử dụng
+        # nhánh các vec-tơ nguyên mẫu rời rạc (discrete prototype).
+        # Mình kì vọng giá trị này sẽ nhỏ.
         hidden_reconstruction = beta * discrete_hidden + (1.0 - beta) * continuous_hidden
+
+        # Alpha là mức độ mà tác vụ phân loại (classification) sử dụng nhánh các
+        # vec-tơ nguyên mẫu liên tục.
+        # Mình kì vọng giá trị này sẽ lớn.
         hidden_classification = alpha * discrete_hidden + (1.0 - alpha) * continuous_hidden
 
         return {

@@ -162,8 +162,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         if scheduler_name != "reduce_on_plateau":
             raise ValueError("optimizer.scheduler.scheduler_name must be: reduce_on_plateau")
         monitor_metric = scheduler_config.get("monitor_metric")
-        if monitor_metric != "val_loss":
-            raise ValueError("optimizer.scheduler.monitor_metric must be: val_loss")
+        if monitor_metric not in {"val_loss", "val_synth_roc_auc"}:
+            raise ValueError("optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_roc_auc")
         scheduler_factor = scheduler_config.get("factor")
         if not isinstance(scheduler_factor, (int, float)) or not 0.0 < float(scheduler_factor) < 1.0:
             raise ValueError("optimizer.scheduler.factor must be in (0, 1)")
@@ -230,6 +230,12 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     if min_num_workers_value is not None:
         if not isinstance(min_num_workers_value, int) or min_num_workers_value <= 0:
             raise ValueError("data.min_num_workers must be a positive integer when provided")
+    entity_ids = data_config.get("entity_ids")
+    if entity_ids is not None:
+        if not isinstance(entity_ids, list) or not entity_ids:
+            raise ValueError("data.entity_ids must be a non-empty list of strings when provided")
+        if not all(isinstance(entity_id, str) and entity_id for entity_id in entity_ids):
+            raise ValueError("data.entity_ids must contain non-empty strings")
     if task_config.get("task_name") == "multitask_tsad":
         if int(model_config.get("mlp_num_linear_layers", 3)) < 2:
             raise ValueError("mlp_num_linear_layers must be at least 2")

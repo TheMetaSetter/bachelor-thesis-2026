@@ -85,6 +85,7 @@ def _build_scheduler_experiment_config(
     patience: int = 1,
     cooldown: int = 0,
     min_lr: float = 1.0e-5,
+    monitor_metric: str = "val_loss",
 ) -> dict[str, Any]:
     return {
         "optimizer": {
@@ -92,7 +93,7 @@ def _build_scheduler_experiment_config(
             "weight_decay": 0.0,
             "scheduler": {
                 "scheduler_name": "reduce_on_plateau",
-                "monitor_metric": "val_loss",
+                "monitor_metric": monitor_metric,
                 "factor": 0.5,
                 "patience": patience,
                 "threshold": 0.0,
@@ -107,23 +108,38 @@ def _build_scheduler_experiment_config(
 def test_scheduler_builder_returns_none_without_scheduler_config() -> None:
     model = nn.Linear(2, 2)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
-    scheduler = build_scheduler_from_experiment_config(
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
         {"optimizer": {"learning_rate": 0.1, "weight_decay": 0.0}},
     )
 
     assert scheduler is None
+    assert scheduler_monitor_metric is None
 
 
 def test_scheduler_builder_returns_reduce_on_plateau_instance() -> None:
     model = nn.Linear(2, 2)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
-    scheduler = build_scheduler_from_experiment_config(
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
         _build_scheduler_experiment_config(),
     )
 
     assert isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau)
+    assert scheduler_monitor_metric == "val_loss"
+
+
+def test_scheduler_builder_supports_val_synth_roc_auc_monitor() -> None:
+    model = nn.Linear(2, 2)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
+        optimizer,
+        _build_scheduler_experiment_config(monitor_metric="val_synth_roc_auc"),
+    )
+
+    assert isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau)
+    assert scheduler.mode == "max"
+    assert scheduler_monitor_metric == "val_synth_roc_auc"
 
 
 def test_scheduler_respects_min_lr_floor() -> None:
@@ -176,7 +192,7 @@ def test_scheduler_respects_cooldown_between_reductions() -> None:
 def test_trainer_reduces_learning_rate_after_clean_validation_plateau(tmp_path: Path) -> None:
     model = DummyPlateauModel(val_loss_sequence=[1.0, 1.0, 1.0])
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
-    scheduler = build_scheduler_from_experiment_config(
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
         _build_scheduler_experiment_config(patience=1),
     )
@@ -185,6 +201,7 @@ def test_trainer_reduces_learning_rate_after_clean_validation_plateau(tmp_path: 
         model=model,
         optimizer=optimizer,
         scheduler=scheduler,
+        scheduler_monitor_metric=scheduler_monitor_metric,
         checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
         experiment_logger=experiment_logger,
         device="cpu",
@@ -217,7 +234,7 @@ def test_trainer_ignores_val_synth_metrics_for_scheduler_stepping(tmp_path: Path
         val_synth_loss_sequence=[1.0, 5.0, 10.0],
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
-    scheduler = build_scheduler_from_experiment_config(
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
         _build_scheduler_experiment_config(patience=0),
     )
@@ -226,6 +243,7 @@ def test_trainer_ignores_val_synth_metrics_for_scheduler_stepping(tmp_path: Path
         model=model,
         optimizer=optimizer,
         scheduler=scheduler,
+        scheduler_monitor_metric=scheduler_monitor_metric,
         checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
         experiment_logger=experiment_logger,
         device="cpu",
@@ -248,3 +266,44 @@ def test_trainer_ignores_val_synth_metrics_for_scheduler_stepping(tmp_path: Path
     assert [epoch_metrics["scheduler_lr_reduced"] for epoch_metrics in metric_history] == [0.0, 0.0, 0.0]
     assert metric_history[-1]["val_synth_loss"] == 10.0
     assert metric_history[-1]["scheduler_monitor_val_loss"] == 0.8
+
+
+def test_trainer_can_step_scheduler_from_val_synth_roc_auc(tmp_path: Path) -> None:
+    model = DummyPlateauModel(
+        val_loss_sequence=[1.0, 1.0, 1.0],
+        val_synth_loss_sequence=[1.0, 1.0, 1.0],
+    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
+        optimizer,
+        _build_scheduler_experiment_config(
+            patience=1,
+            monitor_metric="val_synth_roc_auc",
+        ),
+    )
+    experiment_logger = ExperimentLogger(tmp_path / "logs")
+    trainer = Trainer(
+        model=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        scheduler_monitor_metric=scheduler_monitor_metric,
+        checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
+        experiment_logger=experiment_logger,
+        device="cpu",
+    )
+    batch = _build_batch()
+
+    try:
+        outputs = trainer.train(
+            train_loader=[batch],
+            val_loader=[batch],
+            scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
+            config={"experiment_name": "scheduler-val-synth-roc-auc-test"},
+            epochs=3,
+        )
+    finally:
+        experiment_logger.close()
+
+    metric_history = outputs["metric_history"]
+    assert "val_synth_roc_auc" in metric_history[-1]
+    assert metric_history[-1]["scheduler_monitor_val_synth_roc_auc"] == metric_history[-1]["val_synth_roc_auc"]

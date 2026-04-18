@@ -125,6 +125,7 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
         parser = SMDDatasetParser(
             root_dir=resolved_root_dir,
             validation_split_ratio=float(data_config["validation_split_ratio"]),
+            entity_ids=data_config.get("entity_ids"),
         )
         parsed_sequences = parser.parse()
         cleaning_pipeline = SequenceCleaningPipeline(
