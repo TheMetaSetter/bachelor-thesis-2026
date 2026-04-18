@@ -1,9 +1,9 @@
-experiment_name: smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc
+experiment_name: smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc_2
 seed: 11
 device: cuda
-output_dir: outputs/smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc
+output_dir: outputs/smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc_2
 checkpoint_dir: outputs/smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc/checkpoints
-data_config_path: configs/data/smd_rtx3090_machine_2_1_512.yaml
+data_config_path: configs/data/smd_rtx3090_machine_2_1_64.yaml
 model_config_path: configs/model/thesis_multitask.yaml
 task_config_path: configs/task/multitask_tsad.yaml
 model_overrides:
@@ -41,4 +41,4 @@ logging:
     - mlp-depth-3
     - seed-11
     - machine-2-1
-  wandb_run_name: smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc_300ep
+  wandb_run_name: smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc_300ep_2
