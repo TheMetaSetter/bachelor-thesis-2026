@@ -111,6 +111,10 @@ class ThesisMultitaskModel(BaseModel):
         temperature_hold_fraction: float = 0.0,
         alpha_logit_init: float = 0.0,
         beta_logit_init: float = 0.0,
+        use_label_refurbishment: bool = False,
+        refurbishment_alpha: float = 0.0,
+        refurbishment_beta: float = 0.0,
+        reconstruction_normal_only: bool = False,
         lambda_cls: float = 1.0,
         enable_diversity_loss: bool = False,
         enable_variance_loss: bool = False,
@@ -153,6 +157,10 @@ class ThesisMultitaskModel(BaseModel):
         self.temperature_end = temperature_end
         self.temperature_anneal_fraction = temperature_anneal_fraction
         self.temperature_hold_fraction = temperature_hold_fraction
+        self.use_label_refurbishment = use_label_refurbishment
+        self.refurbishment_alpha = refurbishment_alpha
+        self.refurbishment_beta = refurbishment_beta
+        self.reconstruction_normal_only = reconstruction_normal_only
         self.lambda_cls = lambda_cls
         self.lambda_div = lambda_div
         self.lambda_var = lambda_var
@@ -188,6 +196,8 @@ class ThesisMultitaskModel(BaseModel):
             "temperature": self.gumbel_temperature,
             "usage_lambda": self.current_usage_lambda,
         }
+        if self.use_label_refurbishment and self.num_classes != 2:
+            raise ValueError("label refurbishment currently supports only binary classification")
 
         # Encoder block.
         # This produces the common hidden state that both prototype branches see.
@@ -315,6 +325,10 @@ class ThesisMultitaskModel(BaseModel):
             hidden_dim=hidden_dim,
             mlp_num_linear_layers=mlp_num_linear_layers,
             num_classes=num_classes,
+            use_label_refurbishment=use_label_refurbishment,
+            refurbishment_alpha=refurbishment_alpha,
+            refurbishment_beta=refurbishment_beta,
+            reconstruction_normal_only=reconstruction_normal_only,
             lambda_cls=lambda_cls,
             lambda_div=lambda_div,
             lambda_var=lambda_var,
@@ -686,14 +700,71 @@ class ThesisMultitaskModel(BaseModel):
         outputs: dict[str, Any],
         batch: dict[str, Any],
     ) -> torch.Tensor:
-        return torch.mean((outputs["recon"] - batch["x"]) ** 2)
+        squared_reconstruction_error = (outputs["recon"] - batch["x"]) ** 2
+        if not self.reconstruction_normal_only or "synthetic_anomaly_mask" not in batch:
+            return torch.mean(squared_reconstruction_error)
+
+        normal_time_step_mask = self._build_normal_time_step_mask(batch, squared_reconstruction_error)
+        expanded_normal_mask = normal_time_step_mask.unsqueeze(-1).expand_as(squared_reconstruction_error)
+        active_normal_cells = torch.count_nonzero(expanded_normal_mask)
+        if int(active_normal_cells.item()) == 0:
+            return torch.mean(squared_reconstruction_error)
+
+        return torch.sum(squared_reconstruction_error * expanded_normal_mask) / expanded_normal_mask.sum()
 
     def _compute_classification_loss(
         self,
         outputs: dict[str, Any],
         batch: dict[str, Any],
     ) -> torch.Tensor:
+        if self.use_label_refurbishment:
+            target_probabilities = self._build_refurbished_binary_targets(
+                batch["classification_labels"],
+                outputs["logits"].dtype,
+            )
+            log_probabilities = F.log_softmax(outputs["logits"], dim=-1)
+            return torch.mean(torch.sum(-target_probabilities * log_probabilities, dim=-1))
+
         return F.cross_entropy(outputs["logits"], batch["classification_labels"].long())
+
+    def _build_normal_time_step_mask(
+        self,
+        batch: dict[str, Any],
+        reference_tensor: torch.Tensor,
+    ) -> torch.Tensor:
+        anomaly_mask = batch["synthetic_anomaly_mask"].to(
+            device=reference_tensor.device,
+            dtype=reference_tensor.dtype,
+        )
+        normal_time_step_mask = 1.0 - anomaly_mask
+        return torch.clamp(normal_time_step_mask, min=0.0, max=1.0)
+
+    def _build_refurbished_binary_targets(
+        self,
+        classification_labels: torch.Tensor,
+        target_dtype: torch.dtype,
+    ) -> torch.Tensor:
+        if self.num_classes != 2:
+            raise ValueError("Binary label refurbishment requires num_classes == 2")
+
+        hard_labels = classification_labels.long()
+        target_probabilities = torch.zeros(
+            hard_labels.shape[0],
+            self.num_classes,
+            device=hard_labels.device,
+            dtype=target_dtype,
+        )
+        target_probabilities[:, 0] = torch.where(
+            hard_labels == 0,
+            1.0 - self.refurbishment_beta,
+            self.refurbishment_alpha,
+        )
+        target_probabilities[:, 1] = torch.where(
+            hard_labels == 0,
+            self.refurbishment_beta,
+            1.0 - self.refurbishment_alpha,
+        )
+        return target_probabilities
 
     def _compute_cross_branch_diversity_loss(self, outputs: dict[str, Any]) -> torch.Tensor:
         # This discourages the two branches from collapsing onto the same signal.

@@ -142,6 +142,19 @@ def test_scheduler_builder_supports_val_synth_roc_auc_monitor() -> None:
     assert scheduler_monitor_metric == "val_synth_roc_auc"
 
 
+def test_scheduler_builder_supports_val_synth_pr_auc_monitor() -> None:
+    model = nn.Linear(2, 2)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
+        optimizer,
+        _build_scheduler_experiment_config(monitor_metric="val_synth_pr_auc"),
+    )
+
+    assert isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau)
+    assert scheduler.mode == "max"
+    assert scheduler_monitor_metric == "val_synth_pr_auc"
+
+
 def test_scheduler_respects_min_lr_floor() -> None:
     model = nn.Linear(2, 2)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
@@ -307,3 +320,44 @@ def test_trainer_can_step_scheduler_from_val_synth_roc_auc(tmp_path: Path) -> No
     metric_history = outputs["metric_history"]
     assert "val_synth_roc_auc" in metric_history[-1]
     assert metric_history[-1]["scheduler_monitor_val_synth_roc_auc"] == metric_history[-1]["val_synth_roc_auc"]
+
+
+def test_trainer_can_step_scheduler_from_val_synth_pr_auc(tmp_path: Path) -> None:
+    model = DummyPlateauModel(
+        val_loss_sequence=[1.0, 1.0, 1.0],
+        val_synth_loss_sequence=[1.0, 1.0, 1.0],
+    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
+        optimizer,
+        _build_scheduler_experiment_config(
+            patience=1,
+            monitor_metric="val_synth_pr_auc",
+        ),
+    )
+    experiment_logger = ExperimentLogger(tmp_path / "logs")
+    trainer = Trainer(
+        model=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        scheduler_monitor_metric=scheduler_monitor_metric,
+        checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
+        experiment_logger=experiment_logger,
+        device="cpu",
+    )
+    batch = _build_batch()
+
+    try:
+        outputs = trainer.train(
+            train_loader=[batch],
+            val_loader=[batch],
+            scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
+            config={"experiment_name": "scheduler-val-synth-pr-auc-test"},
+            epochs=3,
+        )
+    finally:
+        experiment_logger.close()
+
+    metric_history = outputs["metric_history"]
+    assert "val_synth_pr_auc" in metric_history[-1]
+    assert metric_history[-1]["scheduler_monitor_val_synth_pr_auc"] == metric_history[-1]["val_synth_pr_auc"]

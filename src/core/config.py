@@ -125,6 +125,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["temperature_hold_fraction"] = model_config.get("temperature_hold_fraction", 0.0)
         float_fields["alpha_logit_init"] = model_config.get("alpha_logit_init")
         float_fields["beta_logit_init"] = model_config.get("beta_logit_init")
+        float_fields["refurbishment_alpha"] = model_config.get("refurbishment_alpha", 0.0)
+        float_fields["refurbishment_beta"] = model_config.get("refurbishment_beta", 0.0)
         float_fields["lambda_cls"] = model_config.get("lambda_cls")
         float_fields["lambda_div"] = model_config.get("lambda_div")
         float_fields["lambda_var"] = model_config.get("lambda_var")
@@ -162,8 +164,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         if scheduler_name != "reduce_on_plateau":
             raise ValueError("optimizer.scheduler.scheduler_name must be: reduce_on_plateau")
         monitor_metric = scheduler_config.get("monitor_metric")
-        if monitor_metric not in {"val_loss", "val_synth_roc_auc"}:
-            raise ValueError("optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_roc_auc")
+        if monitor_metric not in {"val_loss", "val_synth_roc_auc", "val_synth_pr_auc"}:
+            raise ValueError(
+                "optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_roc_auc, val_synth_pr_auc"
+            )
         scheduler_factor = scheduler_config.get("factor")
         if not isinstance(scheduler_factor, (int, float)) or not 0.0 < float(scheduler_factor) < 1.0:
             raise ValueError("optimizer.scheduler.factor must be in (0, 1)")
@@ -192,6 +196,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "enable_covariance_loss": model_config.get("enable_covariance_loss", False),
             "enable_usage_loss": model_config.get("enable_usage_loss", False),
             "enable_gate_loss": model_config.get("enable_gate_loss", False),
+            "use_label_refurbishment": model_config.get("use_label_refurbishment", False),
+            "reconstruction_normal_only": model_config.get("reconstruction_normal_only", False),
             "use_synthetic_augmentation": task_config.get("use_synthetic_augmentation"),
             "use_synthetic_validation": task_config.get("use_synthetic_validation", True),
         }
@@ -249,6 +255,12 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("temperature_anneal_fraction must be in (0, 1]")
         if not 0.0 <= float(model_config.get("temperature_hold_fraction", 0.0)) < 1.0:
             raise ValueError("temperature_hold_fraction must be in [0, 1)")
+        if not 0.0 <= float(model_config.get("refurbishment_alpha", 0.0)) <= 1.0:
+            raise ValueError("refurbishment_alpha must be in [0, 1]")
+        if not 0.0 <= float(model_config.get("refurbishment_beta", 0.0)) <= 1.0:
+            raise ValueError("refurbishment_beta must be in [0, 1]")
+        if bool(model_config.get("use_label_refurbishment", False)) and int(model_config["num_classes"]) != 2:
+            raise ValueError("use_label_refurbishment currently requires num_classes == 2")
         if float(model_config.get("usage_lambda_start", model_config["lambda_use"])) < 0.0:
             raise ValueError("usage_lambda_start must be non-negative")
         if float(model_config.get("usage_lambda_end", model_config["lambda_use"])) < 0.0:
