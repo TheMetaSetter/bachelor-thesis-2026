@@ -16,10 +16,10 @@ temperature_anneal_fraction: 0.8
 temperature_hold_fraction: 0.0
 alpha_logit_init: 0.0
 beta_logit_init: 0.0
-use_label_refurbishment: false
+use_label_refurbishment: true
 refurbishment_alpha: 0.0
 refurbishment_beta: 0.0
-reconstruction_normal_only: false
+reconstruction_normal_only: true
 # Default thesis starting objective: L_recon + lambda_cls * L_cls.
 # Keep all extra regularizers off at the beginning and enable them only after
 # concrete observed failure modes justify them.
