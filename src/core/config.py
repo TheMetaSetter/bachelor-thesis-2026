@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Config loading and validation for the active experiment families.
 
 This file owns two readability-critical jobs: loading the three referenced YAML
@@ -43,7 +44,11 @@ def _merge_config_section(
         raise ValueError("Config overrides must be mappings")
     merged_config = dict(base_config)
     merged_config.update(overrides)
-    console_print("CONFIG", "Merged config section overrides", override_keys=sorted(overrides.keys()))
+    console_print(
+        "CONFIG",
+        "Merged config section overrides",
+        override_keys=sorted(overrides.keys()),
+    )
     return merged_config
 
 
@@ -64,7 +69,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     ]
     for section_name in required_sections:
         if section_name not in experiment_config:
-            raise ValueError(f"Experiment config is missing required section: {section_name}")
+            raise ValueError(
+                f"Experiment config is missing required section: {section_name}"
+            )
     console_print(
         "CONFIG",
         "Validated experiment config sections",
@@ -78,7 +85,11 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     optimizer_config = experiment_config["optimizer"]
 
     supported_dataset_names = {"smd"}
-    supported_model_names = {"reconstruction_mlp_ae", "thesis_multitask", "online_adaptation"}
+    supported_model_names = {
+        "reconstruction_mlp_ae",
+        "thesis_multitask",
+        "online_adaptation",
+    }
     supported_task_names = {"reconstruction", "multitask_tsad", "online_adaptation"}
 
     if data_config.get("dataset_name") not in supported_dataset_names:
@@ -96,16 +107,28 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "batch_size": data_config.get("batch_size"),
         "input_dim": model_config.get("input_dim"),
     }
-    if model_config.get("model_name") in {"reconstruction_mlp_ae", "thesis_multitask", "online_adaptation"}:
+    if model_config.get("model_name") in {
+        "reconstruction_mlp_ae",
+        "thesis_multitask",
+        "online_adaptation",
+    }:
         integer_fields["encoder_dim"] = model_config.get("encoder_dim")
         integer_fields["hidden_dim"] = model_config.get("hidden_dim")
     if model_config.get("model_name") == "thesis_multitask":
-        integer_fields["mlp_num_linear_layers"] = model_config.get("mlp_num_linear_layers", 3)
+        integer_fields["mlp_num_linear_layers"] = model_config.get(
+            "mlp_num_linear_layers", 3
+        )
         integer_fields["num_classes"] = model_config.get("num_classes")
-        integer_fields["continuous_num_prototypes"] = model_config.get("continuous_num_prototypes")
-        integer_fields["discrete_codebook_size"] = model_config.get("discrete_codebook_size")
+        integer_fields["continuous_num_prototypes"] = model_config.get(
+            "continuous_num_prototypes"
+        )
+        integer_fields["discrete_codebook_size"] = model_config.get(
+            "discrete_codebook_size"
+        )
     if model_config.get("model_name") == "online_adaptation":
-        integer_fields["projector_hidden_dim"] = model_config.get("projector_hidden_dim")
+        integer_fields["projector_hidden_dim"] = model_config.get(
+            "projector_hidden_dim"
+        )
     for field_name, field_value in integer_fields.items():
         if not isinstance(field_value, int) or field_value <= 0:
             raise ValueError(f"{field_name} must be a positive integer")
@@ -121,11 +144,17 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["gumbel_temperature"] = model_config.get("gumbel_temperature")
         float_fields["temperature_start"] = model_config.get("temperature_start")
         float_fields["temperature_end"] = model_config.get("temperature_end")
-        float_fields["temperature_anneal_fraction"] = model_config.get("temperature_anneal_fraction")
-        float_fields["temperature_hold_fraction"] = model_config.get("temperature_hold_fraction", 0.0)
+        float_fields["temperature_anneal_fraction"] = model_config.get(
+            "temperature_anneal_fraction"
+        )
+        float_fields["temperature_hold_fraction"] = model_config.get(
+            "temperature_hold_fraction", 0.0
+        )
         float_fields["alpha_logit_init"] = model_config.get("alpha_logit_init")
         float_fields["beta_logit_init"] = model_config.get("beta_logit_init")
-        float_fields["refurbishment_alpha"] = model_config.get("refurbishment_alpha", 0.0)
+        float_fields["refurbishment_alpha"] = model_config.get(
+            "refurbishment_alpha", 0.0
+        )
         float_fields["refurbishment_beta"] = model_config.get("refurbishment_beta", 0.0)
         float_fields["lambda_cls"] = model_config.get("lambda_cls")
         float_fields["lambda_div"] = model_config.get("lambda_div")
@@ -133,9 +162,15 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["lambda_cov"] = model_config.get("lambda_cov")
         float_fields["lambda_use"] = model_config.get("lambda_use")
         float_fields["lambda_gate"] = model_config.get("lambda_gate")
-        float_fields["usage_lambda_start"] = model_config.get("usage_lambda_start", model_config.get("lambda_use"))
-        float_fields["usage_lambda_end"] = model_config.get("usage_lambda_end", model_config.get("lambda_use"))
-        float_fields["usage_lambda_schedule_fraction"] = model_config.get("usage_lambda_schedule_fraction", 1.0)
+        float_fields["usage_lambda_start"] = model_config.get(
+            "usage_lambda_start", model_config.get("lambda_use")
+        )
+        float_fields["usage_lambda_end"] = model_config.get(
+            "usage_lambda_end", model_config.get("lambda_use")
+        )
+        float_fields["usage_lambda_schedule_fraction"] = model_config.get(
+            "usage_lambda_schedule_fraction", 1.0
+        )
         float_fields["variance_floor_gamma"] = model_config.get("variance_floor_gamma")
         float_fields["gate_barrier_margin"] = model_config.get("gate_barrier_margin")
         float_fields["warmup_alpha_value"] = task_config.get("warmup_alpha_value")
@@ -150,8 +185,12 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["lambda_proto"] = model_config.get("lambda_proto")
         float_fields["lambda_anchor"] = model_config.get("lambda_anchor")
         float_fields["view_noise_std"] = task_config.get("view_noise_std")
-        float_fields["view_dropout_probability"] = task_config.get("view_dropout_probability")
-        float_fields["reset_alignment_threshold"] = task_config.get("reset_alignment_threshold")
+        float_fields["view_dropout_probability"] = task_config.get(
+            "view_dropout_probability"
+        )
+        float_fields["reset_alignment_threshold"] = task_config.get(
+            "reset_alignment_threshold"
+        )
     for field_name, field_value in float_fields.items():
         if not isinstance(field_value, (int, float)):
             raise ValueError(f"{field_name} must be numeric")
@@ -162,32 +201,51 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("optimizer.scheduler must be a mapping when provided")
         scheduler_name = scheduler_config.get("scheduler_name")
         if scheduler_name != "reduce_on_plateau":
-            raise ValueError("optimizer.scheduler.scheduler_name must be: reduce_on_plateau")
+            raise ValueError(
+                "optimizer.scheduler.scheduler_name must be: reduce_on_plateau"
+            )
         monitor_metric = scheduler_config.get("monitor_metric")
         if monitor_metric not in {"val_loss", "val_synth_roc_auc", "val_synth_pr_auc"}:
             raise ValueError(
                 "optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_roc_auc, val_synth_pr_auc"
             )
         scheduler_factor = scheduler_config.get("factor")
-        if not isinstance(scheduler_factor, (int, float)) or not 0.0 < float(scheduler_factor) < 1.0:
+        if (
+            not isinstance(scheduler_factor, (int, float))
+            or not 0.0 < float(scheduler_factor) < 1.0
+        ):
             raise ValueError("optimizer.scheduler.factor must be in (0, 1)")
         scheduler_patience = scheduler_config.get("patience")
         if not isinstance(scheduler_patience, int) or scheduler_patience < 0:
-            raise ValueError("optimizer.scheduler.patience must be a non-negative integer")
+            raise ValueError(
+                "optimizer.scheduler.patience must be a non-negative integer"
+            )
         scheduler_threshold = scheduler_config.get("threshold")
-        if not isinstance(scheduler_threshold, (int, float)) or float(scheduler_threshold) < 0.0:
+        if (
+            not isinstance(scheduler_threshold, (int, float))
+            or float(scheduler_threshold) < 0.0
+        ):
             raise ValueError("optimizer.scheduler.threshold must be non-negative")
         scheduler_threshold_mode = scheduler_config.get("threshold_mode")
         if scheduler_threshold_mode not in {"rel", "abs"}:
-            raise ValueError("optimizer.scheduler.threshold_mode must be one of: rel, abs")
+            raise ValueError(
+                "optimizer.scheduler.threshold_mode must be one of: rel, abs"
+            )
         scheduler_cooldown = scheduler_config.get("cooldown")
         if not isinstance(scheduler_cooldown, int) or scheduler_cooldown < 0:
-            raise ValueError("optimizer.scheduler.cooldown must be a non-negative integer")
+            raise ValueError(
+                "optimizer.scheduler.cooldown must be a non-negative integer"
+            )
         scheduler_min_lr = scheduler_config.get("min_lr")
-        if not isinstance(scheduler_min_lr, (int, float)) or float(scheduler_min_lr) <= 0.0:
+        if (
+            not isinstance(scheduler_min_lr, (int, float))
+            or float(scheduler_min_lr) <= 0.0
+        ):
             raise ValueError("optimizer.scheduler.min_lr must be positive")
         if float(scheduler_min_lr) > float(optimizer_config["learning_rate"]):
-            raise ValueError("optimizer.scheduler.min_lr must not exceed optimizer.learning_rate")
+            raise ValueError(
+                "optimizer.scheduler.min_lr must not exceed optimizer.learning_rate"
+            )
 
     if task_config.get("task_name") == "multitask_tsad":
         boolean_fields = {
@@ -196,17 +254,25 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "enable_covariance_loss": model_config.get("enable_covariance_loss", False),
             "enable_usage_loss": model_config.get("enable_usage_loss", False),
             "enable_gate_loss": model_config.get("enable_gate_loss", False),
-            "use_label_refurbishment": model_config.get("use_label_refurbishment", False),
-            "reconstruction_normal_only": model_config.get("reconstruction_normal_only", False),
+            "use_label_refurbishment": model_config.get(
+                "use_label_refurbishment", False
+            ),
+            "reconstruction_normal_only": model_config.get(
+                "reconstruction_normal_only", False
+            ),
             "use_synthetic_augmentation": task_config.get("use_synthetic_augmentation"),
-            "use_synthetic_validation": task_config.get("use_synthetic_validation", True),
+            "use_synthetic_validation": task_config.get(
+                "use_synthetic_validation", True
+            ),
         }
         for field_name, field_value in boolean_fields.items():
             if not isinstance(field_value, bool):
                 raise ValueError(f"{field_name} must be a boolean")
     if task_config.get("task_name") == "online_adaptation":
         boolean_fields = {
-            "enable_prototype_alignment": model_config.get("enable_prototype_alignment"),
+            "enable_prototype_alignment": model_config.get(
+                "enable_prototype_alignment"
+            ),
             "warm_start_projector": task_config.get("warm_start_projector"),
             "clean_stream_only": task_config.get("clean_stream_only"),
         }
@@ -221,7 +287,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     optional_data_boolean_fields = {
         "download": data_config.get("download", False),
         "skip_existing_download": data_config.get("skip_existing_download", True),
-        "annotate_cleaning_metadata": data_config.get("annotate_cleaning_metadata", False),
+        "annotate_cleaning_metadata": data_config.get(
+            "annotate_cleaning_metadata", False
+        ),
     }
     for field_name, field_value in optional_data_boolean_fields.items():
         if not isinstance(field_value, bool):
@@ -229,18 +297,26 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     num_workers_value = data_config.get("num_workers", 0)
     if isinstance(num_workers_value, str):
         if num_workers_value != "auto":
-            raise ValueError("data.num_workers must be a non-negative integer or 'auto'")
+            raise ValueError(
+                "data.num_workers must be a non-negative integer or 'auto'"
+            )
     elif not isinstance(num_workers_value, int) or num_workers_value < 0:
         raise ValueError("data.num_workers must be a non-negative integer or 'auto'")
     min_num_workers_value = data_config.get("min_num_workers")
     if min_num_workers_value is not None:
         if not isinstance(min_num_workers_value, int) or min_num_workers_value <= 0:
-            raise ValueError("data.min_num_workers must be a positive integer when provided")
+            raise ValueError(
+                "data.min_num_workers must be a positive integer when provided"
+            )
     entity_ids = data_config.get("entity_ids")
     if entity_ids is not None:
         if not isinstance(entity_ids, list) or not entity_ids:
-            raise ValueError("data.entity_ids must be a non-empty list of strings when provided")
-        if not all(isinstance(entity_id, str) and entity_id for entity_id in entity_ids):
+            raise ValueError(
+                "data.entity_ids must be a non-empty list of strings when provided"
+            )
+        if not all(
+            isinstance(entity_id, str) and entity_id for entity_id in entity_ids
+        ):
             raise ValueError("data.entity_ids must contain non-empty strings")
     if task_config.get("task_name") == "multitask_tsad":
         if int(model_config.get("mlp_num_linear_layers", 3)) < 2:
@@ -259,18 +335,36 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("refurbishment_alpha must be in [0, 1]")
         if not 0.0 <= float(model_config.get("refurbishment_beta", 0.0)) <= 1.0:
             raise ValueError("refurbishment_beta must be in [0, 1]")
-        if bool(model_config.get("use_label_refurbishment", False)) and int(model_config["num_classes"]) != 2:
-            raise ValueError("use_label_refurbishment currently requires num_classes == 2")
-        if float(model_config.get("usage_lambda_start", model_config["lambda_use"])) < 0.0:
+        if (
+            bool(model_config.get("use_label_refurbishment", False))
+            and int(model_config["num_classes"]) != 2
+        ):
+            raise ValueError(
+                "use_label_refurbishment currently requires num_classes == 2"
+            )
+        if (
+            float(model_config.get("usage_lambda_start", model_config["lambda_use"]))
+            < 0.0
+        ):
             raise ValueError("usage_lambda_start must be non-negative")
-        if float(model_config.get("usage_lambda_end", model_config["lambda_use"])) < 0.0:
+        if (
+            float(model_config.get("usage_lambda_end", model_config["lambda_use"]))
+            < 0.0
+        ):
             raise ValueError("usage_lambda_end must be non-negative")
-        if not 0.0 < float(model_config.get("usage_lambda_schedule_fraction", 1.0)) <= 1.0:
+        if (
+            not 0.0
+            < float(model_config.get("usage_lambda_schedule_fraction", 1.0))
+            <= 1.0
+        ):
             raise ValueError("usage_lambda_schedule_fraction must be in (0, 1]")
         if not 0.0 <= float(model_config["gate_barrier_margin"]) < 0.5:
             raise ValueError("gate_barrier_margin must be in [0, 0.5)")
         freeze_fusion_for_epochs = task_config.get("freeze_fusion_for_epochs")
-        if not isinstance(freeze_fusion_for_epochs, int) or freeze_fusion_for_epochs < 0:
+        if (
+            not isinstance(freeze_fusion_for_epochs, int)
+            or freeze_fusion_for_epochs < 0
+        ):
             raise ValueError("freeze_fusion_for_epochs must be a non-negative integer")
         if not 0.0 <= float(task_config["warmup_alpha_value"]) <= 1.0:
             raise ValueError("warmup_alpha_value must be between 0 and 1")
@@ -282,15 +376,25 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("min_segment_fraction must be between 0 and 1")
         if not 0.0 < float(task_config["max_segment_fraction"]) <= 1.0:
             raise ValueError("max_segment_fraction must be between 0 and 1")
-        if float(task_config["min_segment_fraction"]) > float(task_config["max_segment_fraction"]):
-            raise ValueError("min_segment_fraction must not exceed max_segment_fraction")
+        if float(task_config["min_segment_fraction"]) > float(
+            task_config["max_segment_fraction"]
+        ):
+            raise ValueError(
+                "min_segment_fraction must not exceed max_segment_fraction"
+            )
         anomaly_families = task_config.get("anomaly_families")
         if not isinstance(anomaly_families, list) or not anomaly_families:
             raise ValueError("anomaly_families must be a non-empty list")
-        if not all(isinstance(family_name, str) and family_name for family_name in anomaly_families):
+        if not all(
+            isinstance(family_name, str) and family_name
+            for family_name in anomaly_families
+        ):
             raise ValueError("anomaly_families must contain non-empty strings")
         synthetic_validation_seed = task_config.get("synthetic_validation_seed", 7)
-        if not isinstance(synthetic_validation_seed, int) or synthetic_validation_seed < 0:
+        if (
+            not isinstance(synthetic_validation_seed, int)
+            or synthetic_validation_seed < 0
+        ):
             raise ValueError("synthetic_validation_seed must be a non-negative integer")
     if task_config.get("task_name") == "online_adaptation":
         if float(model_config["projector_dropout"]) < 0.0:
@@ -305,8 +409,13 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("view_noise_std must be non-negative")
         if not 0.0 <= float(task_config["view_dropout_probability"]) <= 1.0:
             raise ValueError("view_dropout_probability must be between 0 and 1")
-        if task_config.get("target_param_group") not in {"projector_params", "online_encoder_params"}:
-            raise ValueError("target_param_group must be one of: projector_params, online_encoder_params")
+        if task_config.get("target_param_group") not in {
+            "projector_params",
+            "online_encoder_params",
+        }:
+            raise ValueError(
+                "target_param_group must be one of: projector_params, online_encoder_params"
+            )
         if task_config.get("reset_policy") not in {"disabled", "threshold"}:
             raise ValueError("reset_policy must be one of: disabled, threshold")
 
@@ -340,34 +449,64 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         use_wandb = logging_config.get("use_wandb")
         if use_wandb is not None and not isinstance(use_wandb, bool):
             raise ValueError("logging.use_wandb must be a boolean when provided")
-        if "wandb_project" in logging_config and not isinstance(logging_config["wandb_project"], str):
+        if "wandb_project" in logging_config and not isinstance(
+            logging_config["wandb_project"], str
+        ):
             raise ValueError("logging.wandb_project must be a string when provided")
-        if "wandb_entity" in logging_config and logging_config["wandb_entity"] is not None and not isinstance(logging_config["wandb_entity"], str):
+        if (
+            "wandb_entity" in logging_config
+            and logging_config["wandb_entity"] is not None
+            and not isinstance(logging_config["wandb_entity"], str)
+        ):
             raise ValueError("logging.wandb_entity must be a string or null")
         if "wandb_mode" in logging_config:
             if logging_config["wandb_mode"] not in {"online", "offline", "disabled"}:
-                raise ValueError("logging.wandb_mode must be one of: online, offline, disabled")
-        if "wandb_run_name" in logging_config and logging_config["wandb_run_name"] is not None and not isinstance(logging_config["wandb_run_name"], str):
+                raise ValueError(
+                    "logging.wandb_mode must be one of: online, offline, disabled"
+                )
+        if (
+            "wandb_run_name" in logging_config
+            and logging_config["wandb_run_name"] is not None
+            and not isinstance(logging_config["wandb_run_name"], str)
+        ):
             raise ValueError("logging.wandb_run_name must be a string or null")
-        if "wandb_job_type" in logging_config and logging_config["wandb_job_type"] is not None and not isinstance(logging_config["wandb_job_type"], str):
+        if (
+            "wandb_job_type" in logging_config
+            and logging_config["wandb_job_type"] is not None
+            and not isinstance(logging_config["wandb_job_type"], str)
+        ):
             raise ValueError("logging.wandb_job_type must be a string or null")
         if "wandb_tags" in logging_config:
             wandb_tags = logging_config["wandb_tags"]
             if wandb_tags is not None:
-                if not isinstance(wandb_tags, list) or not all(isinstance(tag, str) and tag for tag in wandb_tags):
-                    raise ValueError("logging.wandb_tags must be a list of non-empty strings or null")
+                if not isinstance(wandb_tags, list) or not all(
+                    isinstance(tag, str) and tag for tag in wandb_tags
+                ):
+                    raise ValueError(
+                        "logging.wandb_tags must be a list of non-empty strings or null"
+                    )
         kaggle_boolean_fields = {
-            "mirror_best_checkpoint_to_kaggle": logging_config.get("mirror_best_checkpoint_to_kaggle", False),
-            "mirror_output_dir_to_kaggle": logging_config.get("mirror_output_dir_to_kaggle", False),
+            "mirror_best_checkpoint_to_kaggle": logging_config.get(
+                "mirror_best_checkpoint_to_kaggle", False
+            ),
+            "mirror_output_dir_to_kaggle": logging_config.get(
+                "mirror_output_dir_to_kaggle", False
+            ),
         }
         for field_name, field_value in kaggle_boolean_fields.items():
             if not isinstance(field_value, bool):
-                raise ValueError(f"logging.{field_name} must be a boolean when provided")
+                raise ValueError(
+                    f"logging.{field_name} must be a boolean when provided"
+                )
         kaggle_dataset_handle = logging_config.get("kaggle_dataset_handle")
-        if kaggle_dataset_handle is not None and not isinstance(kaggle_dataset_handle, str):
+        if kaggle_dataset_handle is not None and not isinstance(
+            kaggle_dataset_handle, str
+        ):
             raise ValueError("logging.kaggle_dataset_handle must be a string or null")
         kaggle_version_notes = logging_config.get("kaggle_version_notes")
-        if kaggle_version_notes is not None and not isinstance(kaggle_version_notes, str):
+        if kaggle_version_notes is not None and not isinstance(
+            kaggle_version_notes, str
+        ):
             raise ValueError("logging.kaggle_version_notes must be a string or null")
         if (
             logging_config.get("mirror_best_checkpoint_to_kaggle", False)
@@ -382,7 +521,9 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
     # The experiment file names the three source YAMLs, then optional override
     # sections can narrow that base into a specific ablation or online run.
     experiment_path = Path(experiment_config_path)
-    console_print("CONFIG", "Loading experiment config", experiment_config_path=experiment_path)
+    console_print(
+        "CONFIG", "Loading experiment config", experiment_config_path=experiment_path
+    )
     root_config = load_yaml_config(experiment_path)
 
     required_reference_fields = [
@@ -392,7 +533,9 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
     ]
     for reference_field in required_reference_fields:
         if reference_field not in root_config:
-            raise ValueError(f"Experiment config is missing file reference: {reference_field}")
+            raise ValueError(
+                f"Experiment config is missing file reference: {reference_field}"
+            )
 
     resolved_experiment_config = dict(root_config)
     for section_name, reference_field in [
@@ -402,7 +545,9 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
     ]:
         config_reference = Path(root_config[reference_field])
         if not config_reference.is_absolute():
-            config_reference = experiment_path.parent.parent / config_reference.relative_to("configs")
+            config_reference = (
+                experiment_path.parent.parent / config_reference.relative_to("configs")
+            )
         console_print(
             "CONFIG",
             "Resolving referenced config",

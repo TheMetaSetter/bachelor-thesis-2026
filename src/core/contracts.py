@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Runtime contracts shared by the active thesis pipelines.
 
 A new reader should start here when they want to understand what every model,
@@ -12,7 +13,9 @@ from typing import Any
 import torch
 
 
-def _require_keys(container: dict[str, Any], required_keys: list[str], object_name: str) -> None:
+def _require_keys(
+    container: dict[str, Any], required_keys: list[str], object_name: str
+) -> None:
     for required_key in required_keys:
         if required_key not in container:
             raise ValueError(f"{object_name} is missing required key: {required_key}")
@@ -41,10 +44,16 @@ def _require_same_shape(
 def validate_raw_sequence(raw_sequence: dict[str, Any]) -> None:
     # Raw sequence validation happens before windowing so every later stage can
     # assume each entity already has the same basic fields and metadata keys.
-    _require_keys(raw_sequence, ["x", "point_labels", "mask", "timestamps", "meta"], "raw_sequence")
+    _require_keys(
+        raw_sequence,
+        ["x", "point_labels", "mask", "timestamps", "meta"],
+        "raw_sequence",
+    )
     _require_tensor_rank(raw_sequence["x"], 2, "raw_sequence['x']")
     if raw_sequence["point_labels"] is not None:
-        _require_tensor_rank(raw_sequence["point_labels"], 1, "raw_sequence['point_labels']")
+        _require_tensor_rank(
+            raw_sequence["point_labels"], 1, "raw_sequence['point_labels']"
+        )
         if raw_sequence["point_labels"].shape[0] != raw_sequence["x"].shape[0]:
             raise ValueError("point_labels length must match sequence length")
     if raw_sequence["mask"] is not None:
@@ -67,7 +76,14 @@ def validate_window(window: dict[str, Any]) -> None:
     meta = window["meta"]
     _require_keys(
         meta,
-        ["dataset_name", "entity_id", "split", "start_index", "end_index", "window_size"],
+        [
+            "dataset_name",
+            "entity_id",
+            "split",
+            "start_index",
+            "end_index",
+            "window_size",
+        ],
         "window['meta']",
     )
 
@@ -96,8 +112,12 @@ def validate_online_batch(batch: dict[str, Any]) -> None:
     _require_keys(batch, ["view_a", "view_b"], "online_batch")
     _require_tensor_rank(batch["view_a"], 3, "online_batch['view_a']")
     _require_tensor_rank(batch["view_b"], 3, "online_batch['view_b']")
-    _require_same_shape(batch["view_a"], batch["x"], "online_batch['view_a']", "online_batch['x']")
-    _require_same_shape(batch["view_b"], batch["x"], "online_batch['view_b']", "online_batch['x']")
+    _require_same_shape(
+        batch["view_a"], batch["x"], "online_batch['view_a']", "online_batch['x']"
+    )
+    _require_same_shape(
+        batch["view_b"], batch["x"], "online_batch['view_b']", "online_batch['x']"
+    )
 
 
 def validate_model_outputs(outputs: dict[str, Any]) -> None:
@@ -127,7 +147,11 @@ def validate_evaluation_record(evaluation_record: dict[str, Any]) -> None:
         ["entity_id", "point_scores", "point_labels", "num_points"],
         "evaluation_record",
     )
-    _require_tensor_rank(evaluation_record["point_scores"], 1, "evaluation_record['point_scores']")
-    _require_tensor_rank(evaluation_record["point_labels"], 1, "evaluation_record['point_labels']")
+    _require_tensor_rank(
+        evaluation_record["point_scores"], 1, "evaluation_record['point_scores']"
+    )
+    _require_tensor_rank(
+        evaluation_record["point_labels"], 1, "evaluation_record['point_labels']"
+    )
     if evaluation_record["point_scores"].shape[0] != evaluation_record["num_points"]:
         raise ValueError("point_scores length must equal num_points")

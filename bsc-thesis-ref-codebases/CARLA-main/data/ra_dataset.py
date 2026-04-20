@@ -4,10 +4,9 @@ from torch.utils.data import Dataset
 
 
 class SaveAugmentedDataset(Dataset):
-
     def __init__(self, data, target):
         super(SaveAugmentedDataset, self).__init__()
-        self.classes = ['Normal', 'Anomaly', 'Noise', 'Point', 'Subseq', 'Subseq2']
+        self.classes = ["Normal", "Anomaly", "Noise", "Point", "Subseq", "Subseq2"]
         self.targets = target
         self.data = data
 
@@ -24,11 +23,15 @@ class SaveAugmentedDataset(Dataset):
             class_name = self.classes[target]
         else:
             target = 0
-            class_name = ''
+            class_name = ""
 
-        ts_size = (ts.shape[0])
+        ts_size = ts.shape[0]
 
-        out = {'ts_org': ts, 'target': target, 'meta': {'ts_size': ts_size, 'index': index, 'class_name': class_name}}
+        out = {
+            "ts_org": ts,
+            "target": target,
+            "meta": {"ts_size": ts_size, "index": index, "class_name": class_name},
+        }
 
         return out
 

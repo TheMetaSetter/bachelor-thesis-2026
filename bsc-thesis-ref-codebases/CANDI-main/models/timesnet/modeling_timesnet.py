@@ -29,11 +29,13 @@ class TimesBlock(nn.Module):
         self.k = configs.top_k
         # parameter-efficient design
         self.conv = nn.Sequential(
-            Inception_Block_V1(configs.d_model, configs.d_ff,
-                               num_kernels=configs.num_kernels),
+            Inception_Block_V1(
+                configs.d_model, configs.d_ff, num_kernels=configs.num_kernels
+            ),
             nn.GELU(),
-            Inception_Block_V1(configs.d_ff, configs.d_model,
-                               num_kernels=configs.num_kernels)
+            Inception_Block_V1(
+                configs.d_ff, configs.d_model, num_kernels=configs.num_kernels
+            ),
         )
 
     def forward(self, x):
@@ -45,26 +47,29 @@ class TimesBlock(nn.Module):
             period = period_list[i]
             # padding
             if (self.seq_len + self.pred_len) % period != 0:
-                length = (
-                                 ((self.seq_len + self.pred_len) // period) + 1) * period
-                padding = torch.zeros([x.shape[0], (length - (self.seq_len + self.pred_len)), x.shape[2]]).to(x.device)
+                length = (((self.seq_len + self.pred_len) // period) + 1) * period
+                padding = torch.zeros(
+                    [x.shape[0], (length - (self.seq_len + self.pred_len)), x.shape[2]]
+                ).to(x.device)
                 out = torch.cat([x, padding], dim=1)
             else:
-                length = (self.seq_len + self.pred_len)
+                length = self.seq_len + self.pred_len
                 out = x
             # reshape
-            out = out.reshape(B, length // period, period,
-                              N).permute(0, 3, 1, 2).contiguous()
+            out = (
+                out.reshape(B, length // period, period, N)
+                .permute(0, 3, 1, 2)
+                .contiguous()
+            )
             # 2D conv: from 1d Variation to 2d Variation
             out = self.conv(out)
             # reshape back
             out = out.permute(0, 2, 3, 1).reshape(B, -1, N)
-            res.append(out[:, :(self.seq_len + self.pred_len), :])
+            res.append(out[:, : (self.seq_len + self.pred_len), :])
         res = torch.stack(res, dim=-1)
         # adaptive aggregation
         period_weight = F.softmax(period_weight, dim=1)
-        period_weight = period_weight.unsqueeze(
-            1).unsqueeze(1).repeat(1, T, N, 1)
+        period_weight = period_weight.unsqueeze(1).unsqueeze(1).repeat(1, T, N, 1)
         res = torch.sum(res * period_weight, -1)
         # residual connection
         res = res + x
@@ -85,14 +90,19 @@ class TimesNet(nn.Module):
         configs.seq_len = self.seq_len
         configs.enc_in = self.nvar
         configs.c_out = self.nvar
-        self.model = nn.ModuleList([TimesBlock(configs)
-                                    for _ in range(configs.e_layers)])
-        self.enc_embedding = DataEmbedding(configs.enc_in, configs.d_model, configs.embed, configs.freq,
-                                           configs.dropout)
+        self.model = nn.ModuleList(
+            [TimesBlock(configs) for _ in range(configs.e_layers)]
+        )
+        self.enc_embedding = DataEmbedding(
+            configs.enc_in,
+            configs.d_model,
+            configs.embed,
+            configs.freq,
+            configs.dropout,
+        )
         self.layer = configs.e_layers
         self.layer_norm = nn.LayerNorm(configs.d_model)
-        self.projection = nn.Linear(
-            configs.d_model, configs.c_out, bias=True)
+        self.projection = nn.Linear(configs.d_model, configs.c_out, bias=True)
 
         self.use_normalizer = False
 
@@ -107,7 +117,7 @@ class TimesNet(nn.Module):
             enc_out = self.layer_norm(self.model[i](enc_out))
         # project back
         dec_out = self.projection(enc_out)
-        
+
         if self.use_normalizer:
             dec_out = self.normalizer(dec_out, "denorm")
 
@@ -118,15 +128,19 @@ class TimesNet(nn.Module):
         is_training = copy.deepcopy(self.training)
         self.eval()
 
-        if self.cfg.TEST.TTA.ENABLE and self.cfg.TEST.TTA.METHOD == 'CANDI':
-            x_new = x + self.sana_in(x) if hasattr(self, 'sana_in') else x
+        if self.cfg.TEST.TTA.ENABLE and self.cfg.TEST.TTA.METHOD == "CANDI":
+            x_new = x + self.sana_in(x) if hasattr(self, "sana_in") else x
             reconstructed_x_new = self.forward(x_new)
-            reconstructed_x = reconstructed_x_new - self.sana_out(reconstructed_x_new) if hasattr(self, 'sana_out') else reconstructed_x_new
+            reconstructed_x = (
+                reconstructed_x_new - self.sana_out(reconstructed_x_new)
+                if hasattr(self, "sana_out")
+                else reconstructed_x_new
+            )
         else:
             reconstructed_x = self.forward(x)
 
         # Calculate reconstruction loss
-        loss = F.mse_loss(reconstructed_x, x, reduction='none')
+        loss = F.mse_loss(reconstructed_x, x, reduction="none")
 
         score = loss.mean(dim=tuple(range(1, loss.dim())))
 
@@ -140,9 +154,13 @@ class TimesNet(nn.Module):
         is_training = copy.deepcopy(self.training)
         self.eval()
 
-        if self.cfg.TEST.TTA.ENABLE and self.cfg.TEST.TTA.METHOD == 'CANDI' and hasattr(self, 'sana_in'):
+        if (
+            self.cfg.TEST.TTA.ENABLE
+            and self.cfg.TEST.TTA.METHOD == "CANDI"
+            and hasattr(self, "sana_in")
+        ):
             x = x + self.sana_in(x)
-        
+
         # Forward pass through the encoder to get representations
         enc_out = self.enc_embedding(x, None)  # [B,T,C]
         # TimesNet
@@ -153,8 +171,8 @@ class TimesNet(nn.Module):
         # z = enc_out.mean(dim=1)
         z = enc_out[:, -1, :]
         # z = F.normalize(z, p=2, dim=1)
-        
+
         # Restore the original training state of the model
         self.train(is_training)
-        
+
         return z

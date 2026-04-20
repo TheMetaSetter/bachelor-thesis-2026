@@ -103,7 +103,9 @@ def test_build_train_command_uses_normalized_config_path(tmp_path: Path) -> None
     assert Path(command[-1]) == experiment_config_path.resolve()
 
 
-def test_validate_unique_artifact_paths_rejects_duplicate_output_dir(tmp_path: Path) -> None:
+def test_validate_unique_artifact_paths_rejects_duplicate_output_dir(
+    tmp_path: Path,
+) -> None:
     dataset_root = tmp_path / "data_root"
     dataset_root.mkdir()
     config_a = write_reconstruction_experiment_config(
@@ -140,13 +142,17 @@ def test_validate_dataset_roots_rejects_missing_root(tmp_path: Path) -> None:
         dataset_root=missing_dataset_root,
     )
 
-    resolved_experiment_configs = load_resolved_experiment_configs([experiment_config_path])
+    resolved_experiment_configs = load_resolved_experiment_configs(
+        [experiment_config_path]
+    )
 
     with pytest.raises(FileNotFoundError, match="Dataset root does not exist"):
         validate_dataset_roots(resolved_experiment_configs)
 
 
-def test_run_command_stage_dry_run_accepts_three_distinct_configs(tmp_path: Path) -> None:
+def test_run_command_stage_dry_run_accepts_three_distinct_configs(
+    tmp_path: Path,
+) -> None:
     dataset_root = tmp_path / "data_root"
     dataset_root.mkdir()
     config_paths = [

@@ -5,7 +5,14 @@ from math import sqrt
 
 
 class FullAttention(nn.Module):
-    def __init__(self, mask_flag=True, factor=5, scale=None, attention_dropout=0.1, output_attention=False):
+    def __init__(
+        self,
+        mask_flag=True,
+        factor=5,
+        scale=None,
+        attention_dropout=0.1,
+        output_attention=False,
+    ):
         super(FullAttention, self).__init__()
         self.scale = scale
         self.mask_flag = mask_flag
@@ -15,7 +22,7 @@ class FullAttention(nn.Module):
     def forward(self, queries, keys, values, attn_mask, tau=None, delta=None):
         B, L, H, E = queries.shape
         _, S, _, D = values.shape
-        scale = self.scale or 1. / sqrt(E)
+        scale = self.scale or 1.0 / sqrt(E)
 
         scores = torch.einsum("blhe,bshe->bhls", queries, keys)
 
@@ -25,7 +32,7 @@ class FullAttention(nn.Module):
 
             scores.masked_fill_(attn_mask.mask, -np.inf)
 
-        A = self.dropout(torch.softmax(scale * scores, dim=-1))  
+        A = self.dropout(torch.softmax(scale * scores, dim=-1))
         V = torch.einsum("bhls,bshd->blhd", A, values)
 
         if self.output_attention:
@@ -35,8 +42,7 @@ class FullAttention(nn.Module):
 
 
 class AttentionLayer(nn.Module):
-    def __init__(self, attention, d_model, n_heads, d_keys=None,
-                 d_values=None):
+    def __init__(self, attention, d_model, n_heads, d_keys=None, d_values=None):
         super(AttentionLayer, self).__init__()
 
         d_keys = d_keys or (d_model // n_heads)
@@ -59,12 +65,7 @@ class AttentionLayer(nn.Module):
         values = self.value_projection(values).view(B, S, H, -1)
 
         out, attn = self.inner_attention(
-            queries,
-            keys,
-            values,
-            attn_mask,
-            tau=tau,
-            delta=delta
+            queries, keys, values, attn_mask, tau=tau, delta=delta
         )
         out = out.view(B, L, -1)
 

@@ -21,10 +21,11 @@ from .base import BaseDetector
 from ..utils.dataset import ReconstructDataset
 from ..utils.torch_utility import EarlyStoppingTorch, get_gpu
 
+
 class OmniAnomalyModel(nn.Module):
     def __init__(self, feats, device):
         super(OmniAnomalyModel, self).__init__()
-        self.name = 'OmniAnomaly'
+        self.name = "OmniAnomaly"
         self.device = device
         self.lr = 0.002
         self.beta = 0.01
@@ -33,23 +34,32 @@ class OmniAnomalyModel(nn.Module):
         self.n_latent = 8
         self.lstm = nn.GRU(feats, self.n_hidden, 2)
         self.encoder = nn.Sequential(
-            nn.Linear(self.n_hidden, self.n_hidden), nn.PReLU(),
-            nn.Linear(self.n_hidden, self.n_hidden), nn.PReLU(),
+            nn.Linear(self.n_hidden, self.n_hidden),
+            nn.PReLU(),
+            nn.Linear(self.n_hidden, self.n_hidden),
+            nn.PReLU(),
             # nn.Flatten(),
-            nn.Linear(self.n_hidden, 2*self.n_latent)
+            nn.Linear(self.n_hidden, 2 * self.n_latent),
         )
         self.decoder = nn.Sequential(
-            nn.Linear(self.n_latent, self.n_hidden), nn.PReLU(),
-            nn.Linear(self.n_hidden, self.n_hidden), nn.PReLU(),
-            nn.Linear(self.n_hidden, self.n_feats), nn.Sigmoid(),
+            nn.Linear(self.n_latent, self.n_hidden),
+            nn.PReLU(),
+            nn.Linear(self.n_hidden, self.n_hidden),
+            nn.PReLU(),
+            nn.Linear(self.n_hidden, self.n_feats),
+            nn.Sigmoid(),
         )
 
-    def forward(self, x, hidden = None):
+    def forward(self, x, hidden=None):
         bs = x.shape[0]
         win = x.shape[1]
 
         # hidden = torch.rand(2, bs, self.n_hidden, dtype=torch.float64) if hidden is not None else hidden
-        hidden = torch.rand(2, bs, self.n_hidden).to(self.device) if hidden is not None else hidden
+        hidden = (
+            torch.rand(2, bs, self.n_hidden).to(self.device)
+            if hidden is not None
+            else hidden
+        )
 
         out, hidden = self.lstm(x.view(-1, bs, self.n_feats), hidden)
 
@@ -60,24 +70,30 @@ class OmniAnomalyModel(nn.Module):
         x = self.encoder(out)
         mu, logvar = torch.split(x, [self.n_latent, self.n_latent], dim=-1)
         ## Reparameterization trick
-        std = torch.exp(0.5*logvar)
+        std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
-        x = mu + eps*std
+        x = mu + eps * std
         ## Decoder
-        x = self.decoder(x)             # (L, bs, n_feats)
-        return x.reshape(bs, win*self.n_feats), mu.reshape(bs, win*self.n_latent), logvar.reshape(bs, win*self.n_latent), hidden
+        x = self.decoder(x)  # (L, bs, n_feats)
+        return (
+            x.reshape(bs, win * self.n_feats),
+            mu.reshape(bs, win * self.n_latent),
+            logvar.reshape(bs, win * self.n_latent),
+            hidden,
+        )
 
 
 class OmniAnomaly(BaseDetector):
-    def __init__(self,
-                 win_size = 5,
-                 feats = 1,
-                 batch_size = 128,
-                 epochs = 50,
-                 patience = 3,
-                 lr = 0.002,
-                 validation_size=0.2
-                 ):
+    def __init__(
+        self,
+        win_size=5,
+        feats=1,
+        batch_size=128,
+        epochs=50,
+        patience=3,
+        lr=0.002,
+        validation_size=0.2,
+    ):
         super().__init__()
 
         self.__anomaly_score = None
@@ -91,31 +107,33 @@ class OmniAnomaly(BaseDetector):
         self.feats = feats
         self.validation_size = validation_size
 
-        self.model = OmniAnomalyModel(feats=self.feats, device=self.device).to(self.device)
+        self.model = OmniAnomalyModel(feats=self.feats, device=self.device).to(
+            self.device
+        )
         self.optimizer = torch.optim.AdamW(
             self.model.parameters(), lr=lr, weight_decay=1e-5
         )
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, 5, 0.9)
-        self.criterion = nn.MSELoss(reduction = 'none')
+        self.criterion = nn.MSELoss(reduction="none")
 
         self.early_stopping = EarlyStoppingTorch(None, patience=patience)
 
     def fit(self, data):
-        tsTrain = data[:int((1-self.validation_size)*len(data))]
-        tsValid = data[int((1-self.validation_size)*len(data)):]
+        tsTrain = data[: int((1 - self.validation_size) * len(data))]
+        tsValid = data[int((1 - self.validation_size) * len(data)) :]
 
         train_loader = DataLoader(
             dataset=ReconstructDataset(tsTrain, window_size=self.win_size),
             batch_size=self.batch_size,
-            shuffle=True
+            shuffle=True,
         )
-        
+
         valid_loader = DataLoader(
             dataset=ReconstructDataset(tsValid, window_size=self.win_size),
             batch_size=self.batch_size,
-            shuffle=False
+            shuffle=False,
         )
-        
+
         mses, klds = [], []
         for epoch in range(1, self.epochs + 1):
             self.model.train(mode=True)
@@ -124,12 +142,12 @@ class OmniAnomaly(BaseDetector):
             loop = tqdm.tqdm(
                 enumerate(train_loader), total=len(train_loader), leave=True
             )
-            for idx, (d, _) in loop:        
+            for idx, (d, _) in loop:
                 d = d.to(self.device)
                 # print('d: ', d.shape)
 
                 y_pred, mu, logvar, hidden = self.model(d, hidden if idx else None)
-                d = d.view(-1, self.feats*self.win_size)
+                d = d.view(-1, self.feats * self.win_size)
                 MSE = torch.mean(self.criterion(y_pred, d), axis=-1)
                 KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=-1)
                 loss = torch.mean(MSE + self.model.beta * KLD)
@@ -153,17 +171,23 @@ class OmniAnomaly(BaseDetector):
                 with torch.no_grad():
                     for idx, (d, _) in loop:
                         d = d.to(self.device)
-                        y_pred, mu, logvar, hidden = self.model(d, hidden if idx else None)
-                        d = d.view(-1, self.feats*self.win_size)
+                        y_pred, mu, logvar, hidden = self.model(
+                            d, hidden if idx else None
+                        )
+                        d = d.view(-1, self.feats * self.win_size)
                         MSE = torch.mean(self.criterion(y_pred, d), axis=-1)
-                        KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=-1)
+                        KLD = -0.5 * torch.sum(
+                            1 + logvar - mu.pow(2) - logvar.exp(), dim=-1
+                        )
                         loss = torch.mean(MSE + self.model.beta * KLD)
 
                         avg_loss_val += loss.cpu().item()
                         loop.set_description(
                             f"Validation Epoch [{epoch}/{self.epochs}]"
                         )
-                        loop.set_postfix(loss=loss.item(), avg_loss_val=avg_loss_val / (idx + 1))
+                        loop.set_postfix(
+                            loss=loss.item(), avg_loss_val=avg_loss_val / (idx + 1)
+                        )
 
             self.scheduler.step()
             if len(valid_loader) > 0:
@@ -179,7 +203,7 @@ class OmniAnomaly(BaseDetector):
         test_loader = DataLoader(
             dataset=ReconstructDataset(data, window_size=self.win_size),
             batch_size=self.batch_size,
-            shuffle=False
+            shuffle=False,
         )
 
         self.model.eval()
@@ -194,7 +218,7 @@ class OmniAnomaly(BaseDetector):
 
                 y_pred, _, _, hidden = self.model(d, hidden if idx else None)
                 y_preds.append(y_pred)
-                d = d.view(-1, self.feats*self.win_size)
+                d = d.view(-1, self.feats * self.win_size)
 
                 # print('y_pred: ', y_pred.shape)
                 # print('d: ', d.shape)
@@ -202,16 +226,19 @@ class OmniAnomaly(BaseDetector):
                 # print('loss: ', loss.shape)
 
                 scores.append(loss.cpu())
-        
+
         scores = torch.cat(scores, dim=0)
         scores = scores.numpy()
 
         self.__anomaly_score = scores
 
         if self.__anomaly_score.shape[0] < len(data):
-            self.__anomaly_score = np.array([self.__anomaly_score[0]]*math.ceil((self.win_size-1)/2) + 
-                        list(self.__anomaly_score) + [self.__anomaly_score[-1]]*((self.win_size-1)//2))
-        
+            self.__anomaly_score = np.array(
+                [self.__anomaly_score[0]] * math.ceil((self.win_size - 1) / 2)
+                + list(self.__anomaly_score)
+                + [self.__anomaly_score[-1]] * ((self.win_size - 1) // 2)
+            )
+
         return self.__anomaly_score
 
     def anomaly_score(self) -> np.ndarray:

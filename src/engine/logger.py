@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Experiment logging for metrics and resolved configs.
 
 This logger is intentionally small: it writes a JSONL metrics stream, persists
@@ -55,7 +56,9 @@ class ExperimentLogger:
                 "event": "run_start",
                 "experiment_name": experiment_config.get("experiment_name"),
                 "task_name": experiment_config.get("task", {}).get("task_name"),
-                "anomaly_families": experiment_config.get("task", {}).get("anomaly_families"),
+                "anomaly_families": experiment_config.get("task", {}).get(
+                    "anomaly_families"
+                ),
             }
             with self.metrics_path.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(run_start_record, sort_keys=True) + "\n")
@@ -72,7 +75,9 @@ class ExperimentLogger:
             try:
                 import wandb
             except ImportError as exc:
-                raise ValueError("Weights & Biases logging was enabled but wandb is not installed") from exc
+                raise ValueError(
+                    "Weights & Biases logging was enabled but wandb is not installed"
+                ) from exc
 
             self._wandb_run = wandb.init(
                 project=logging_config["wandb_project"],
@@ -81,7 +86,12 @@ class ExperimentLogger:
                 dir=str(self.output_dir),
                 config=experiment_config,
                 tags=logging_config.get("wandb_tags"),
-                name=logging_config.get("wandb_run_name", experiment_config.get("experiment_name") if experiment_config else None),
+                name=logging_config.get(
+                    "wandb_run_name",
+                    experiment_config.get("experiment_name")
+                    if experiment_config
+                    else None,
+                ),
                 job_type=logging_config.get("wandb_job_type"),
             )
             console_print(
@@ -97,8 +107,12 @@ class ExperimentLogger:
                 self._wandb_run.log(
                     {
                         "event/run_start": 1,
-                        "event/experiment_name": experiment_config.get("experiment_name"),
-                        "event/task_name": experiment_config.get("task", {}).get("task_name"),
+                        "event/experiment_name": experiment_config.get(
+                            "experiment_name"
+                        ),
+                        "event/task_name": experiment_config.get("task", {}).get(
+                            "task_name"
+                        ),
                     }
                 )
 
@@ -106,14 +120,23 @@ class ExperimentLogger:
         serializable_metrics = json.dumps(metrics, sort_keys=True)
         with self.metrics_path.open("a", encoding="utf-8") as handle:
             handle.write(serializable_metrics + "\n")
-        console_print("WANDB", "Logged metrics to JSONL", metrics_path=self.metrics_path, metrics=metrics)
+        console_print(
+            "WANDB",
+            "Logged metrics to JSONL",
+            metrics_path=self.metrics_path,
+            metrics=metrics,
+        )
         if self._wandb_run is not None:
             self._wandb_run.log(metrics)
             console_print("WANDB", "Logged metrics to W&B", metrics=metrics)
 
     def log_summary(self, summary: dict[str, Any]) -> None:
         if self._wandb_run is None:
-            console_print("WANDB", "Skipping W&B summary logging because no run is active", summary=summary)
+            console_print(
+                "WANDB",
+                "Skipping W&B summary logging because no run is active",
+                summary=summary,
+            )
             return
         for key, value in summary.items():
             self._wandb_run.summary[key] = value
@@ -129,7 +152,11 @@ class ExperimentLogger:
         metadata: dict[str, Any] | None = None,
     ) -> None:
         if self._wandb_run is None:
-            console_print("WANDB", "Skipping file artifact logging because no W&B run is active", file_path=file_path)
+            console_print(
+                "WANDB",
+                "Skipping file artifact logging because no W&B run is active",
+                file_path=file_path,
+            )
             return
 
         path = Path(file_path)

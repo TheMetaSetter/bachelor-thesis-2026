@@ -28,9 +28,13 @@ def test_public_data_api_matches_existing_bundle_lengths() -> None:
         }
     )
 
-    assert len(public_bundle.datasets["train"]) == len(builder_bundle["datasets"]["train"])
+    assert len(public_bundle.datasets["train"]) == len(
+        builder_bundle["datasets"]["train"]
+    )
     assert len(public_bundle.datasets["val"]) == len(builder_bundle["datasets"]["val"])
-    assert len(public_bundle.datasets["test"]) == len(builder_bundle["datasets"]["test"])
+    assert len(public_bundle.datasets["test"]) == len(
+        builder_bundle["datasets"]["test"]
+    )
 
 
 def test_public_data_api_returns_batch_contract_and_attribute_access() -> None:

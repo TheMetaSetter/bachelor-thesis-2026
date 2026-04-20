@@ -11,17 +11,18 @@ from torch.optim import Optimizer
 from tqdm import tqdm
 
 import models.optimizer as optim
-from datasets.loader import get_train_dataloader, get_val_dataloader, get_test_dataloader
+from datasets.loader import (
+    get_train_dataloader,
+    get_val_dataloader,
+    get_test_dataloader,
+)
 from utils.misc import mkdir
 from utils.meters import AverageMeter, ProgressMeter
 
 
 class Trainer:
     def __init__(
-            self,
-            cfg,
-            model,
-            optimizer: Optional[Union[Optimizer, List[Optimizer]]] = None
+        self, cfg, model, optimizer: Optional[Union[Optimizer, List[Optimizer]]] = None
     ):
         self.cfg = cfg
         self.cfg_model = getattr(cfg, cfg.MODEL.NAME)
@@ -49,7 +50,9 @@ class Trainer:
 
     def train(self):
         metric_best = self.cfg.TRAIN.METRIC_BEST
-        for cur_epoch in tqdm(range(self.cfg.SOLVER.START_EPOCH, self.cfg.SOLVER.MAX_EPOCH)):
+        for cur_epoch in tqdm(
+            range(self.cfg.SOLVER.START_EPOCH, self.cfg.SOLVER.MAX_EPOCH)
+        ):
             self.train_epoch()
 
             # Evaluate the model on validation set.
@@ -59,14 +62,18 @@ class Trainer:
                 is_best = self._check_improvement(tracking_meter.avg, metric_best)
                 # Save a checkpoint on improvement.
                 if is_best:
-                    with open(mkdir(self.cfg.RESULT_DIR) / "best_result.txt", 'w') as f:
-                        f.write(f"Val/{tracking_meter.name}: {tracking_meter.avg}\tEpoch: {self.cur_epoch}")
-                    print(f"[current best] Val/{tracking_meter.name}: {tracking_meter.avg}\tEpoch: {self.cur_epoch}")
+                    with open(mkdir(self.cfg.RESULT_DIR) / "best_result.txt", "w") as f:
+                        f.write(
+                            f"Val/{tracking_meter.name}: {tracking_meter.avg}\tEpoch: {self.cur_epoch}"
+                        )
+                    print(
+                        f"[current best] Val/{tracking_meter.name}: {tracking_meter.avg}\tEpoch: {self.cur_epoch}"
+                    )
                     self.save_best_model()
                     metric_best = tracking_meter.avg
                 elif self.cfg.TRAIN.SAVE_EVERY_EVAL:
                     self.save_best_model()
-                
+
             self.cur_epoch += 1
 
     def _check_improvement(self, cur_metric, metric_best):
@@ -77,14 +84,14 @@ class Trainer:
 
     def train_epoch(self):
         # set meters
-        batch_time = AverageMeter('Time', ':6.3f')
-        data_time = AverageMeter('Data', ':6.3f')
+        batch_time = AverageMeter("Time", ":6.3f")
+        data_time = AverageMeter("Data", ":6.3f")
         metric_meters = self._get_metric_meters()
         loss_meters = self._get_loss_meters()
         progress = ProgressMeter(
             len(self.train_loader),
             [batch_time, data_time, *metric_meters, *loss_meters],
-            prefix="Epoch: [{}]".format(self.cur_epoch)
+            prefix="Epoch: [{}]".format(self.cur_epoch),
         )
 
         # switch to train mode
@@ -104,16 +111,16 @@ class Trainer:
             data_time.update(time.time() - start)
 
             # Update the learning rate.
-            lr = optim.get_epoch_lr(self.cur_epoch + float(cur_iter) / data_size, self.cfg)
+            lr = optim.get_epoch_lr(
+                self.cur_epoch + float(cur_iter) / data_size, self.cfg
+            )
             if isinstance(self.optimizer, tuple):  # USAD
                 [optim.set_lr(optimizer, lr) for optimizer in self.optimizer]
             else:
                 optim.set_lr(self.optimizer, lr)
 
             # log to W&B
-            log_dict.update({
-                "lr/": lr
-            })
+            log_dict.update({"lr/": lr})
 
             outputs = self.train_step(inputs)
 
@@ -121,12 +128,18 @@ class Trainer:
             batch_size = self._find_batch_size(inputs)
             self._update_metric_meters(metric_meters, outputs["metrics"], batch_size)
             self._update_loss_meters(loss_meters, outputs["losses"], batch_size)
-            log_dict.update({
-                f"Train/{metric_meter.name}": metric_meter.val for metric_meter in metric_meters
-            })
-            log_dict.update({
-                f"Train/{loss_meter.name}": loss_meter.val for loss_meter in loss_meters
-            })
+            log_dict.update(
+                {
+                    f"Train/{metric_meter.name}": metric_meter.val
+                    for metric_meter in metric_meters
+                }
+            )
+            log_dict.update(
+                {
+                    f"Train/{loss_meter.name}": loss_meter.val
+                    for loss_meter in loss_meters
+                }
+            )
 
             if self._is_display_iter(cur_iter, len(self.train_loader)):
                 progress.display(cur_iter)
@@ -148,7 +161,9 @@ class Trainer:
         return [AverageMeter(metric_name, ":.3f") for metric_name in self.metric_names]
 
     def _get_loss_meters(self):
-        return [AverageMeter(f"Loss {loss_name}", ":.4e") for loss_name in self.loss_names]
+        return [
+            AverageMeter(f"Loss {loss_name}", ":.4e") for loss_name in self.loss_names
+        ]
 
     @staticmethod
     def _update_metric_meters(metric_meters, metrics, batch_size):
@@ -196,19 +211,21 @@ class Trainer:
             return inputs.shape[0] if len(inputs.shape) >= 1 else None
 
     def _is_eval_epoch(self, cur_epoch):
-        return (cur_epoch + 1 == self.cfg.SOLVER.MAX_EPOCH) or (cur_epoch + 1) % self.cfg.TRAIN.EVAL_PERIOD == 0
+        return (cur_epoch + 1 == self.cfg.SOLVER.MAX_EPOCH) or (
+            cur_epoch + 1
+        ) % self.cfg.TRAIN.EVAL_PERIOD == 0
 
     @torch.no_grad()
     def eval_epoch(self):
         # set meters
-        batch_time = AverageMeter('Time', ':6.3f')
-        data_time = AverageMeter('Data', ':6.3f')
+        batch_time = AverageMeter("Time", ":6.3f")
+        data_time = AverageMeter("Data", ":6.3f")
         metric_meters = self._get_metric_meters()
         loss_meters = self._get_loss_meters()
         progress = ProgressMeter(
             len(self.val_loader),
             [batch_time, data_time, *metric_meters, *loss_meters],
-            prefix="Validation epoch[{}]".format(self.cur_epoch)
+            prefix="Validation epoch[{}]".format(self.cur_epoch),
         )
         log_dict = {}
 
@@ -236,12 +253,15 @@ class Trainer:
             batch_time.update(time.time() - start)
             start = time.time()
 
-        log_dict.update({
-            f"Val/{metric_meter.name}": metric_meter.avg for metric_meter in metric_meters
-        })
-        log_dict.update({
-            f"Val/{loss_meter.name}": loss_meter.avg for loss_meter in loss_meters
-        })
+        log_dict.update(
+            {
+                f"Val/{metric_meter.name}": metric_meter.avg
+                for metric_meter in metric_meters
+            }
+        )
+        log_dict.update(
+            {f"Val/{loss_meter.name}": loss_meter.avg for loss_meter in loss_meters}
+        )
 
         if self.cfg.WANDB.ENABLE:
             wandb.log(log_dict)
@@ -262,14 +282,16 @@ class Trainer:
         return cur_iter % self.cfg.TRAIN.PRINT_FREQ == 0 or cur_iter == loader_len
 
     def save_best_model(self):
-        print('Saving best model')
+        print("Saving best model")
         checkpoint = {
             "epoch": self.cur_epoch,
             "model_state": self.model.state_dict(),
             "optimizer_state": self.optimizer.state_dict(),
             "cfg": self.cfg.dump(),
         }
-        with open(mkdir(self.cfg.TRAIN.CHECKPOINT_DIR) / 'checkpoint_best.pth', "wb") as f:
+        with open(
+            mkdir(self.cfg.TRAIN.CHECKPOINT_DIR) / "checkpoint_best.pth", "wb"
+        ) as f:
             torch.save(checkpoint, f)
 
     def load_best_model(self):
@@ -278,7 +300,7 @@ class Trainer:
             print(f"Loading checkpoint from {model_path}")
             checkpoint = torch.load(model_path, map_location="cpu")
 
-            state_dict = checkpoint['model_state']
+            state_dict = checkpoint["model_state"]
             msg = self.model.load_state_dict(state_dict, strict=True)
             assert set(msg.missing_keys) == set()
 
@@ -299,7 +321,7 @@ def build_trainer(cfg, model):
     if model_name not in trainer_classes:
         raise ValueError(f"Unknown model name: {model_name}")
 
-    module_path, class_name = trainer_classes[model_name].rsplit('.', 1)
+    module_path, class_name = trainer_classes[model_name].rsplit(".", 1)
     module = __import__(module_path, fromlist=[class_name])
     trainer_class = getattr(module, class_name)
 

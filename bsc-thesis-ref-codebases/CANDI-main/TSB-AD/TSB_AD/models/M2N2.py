@@ -3,6 +3,7 @@ This function is adapted from [M2N2] by [Dongmin Kim et al.]
 Original source: [https://github.com/carrtesy/M2N2]
 Reimplemented by: [EmorZz1G]
 """
+
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -15,13 +16,15 @@ from ..utils.torch_utility import EarlyStoppingTorch, get_gpu
 from torch.utils.data import DataLoader
 from ..utils.dataset import ReconstructDataset
 from typing import Literal
-        
+
 
 # models
-'''
+"""
 Basic MLP implementation by:
 Dongmin Kim (tommy.dm.kim@gmail.com)
-'''
+"""
+
+
 class Detrender(nn.Module):
     def __init__(self, num_features: int, gamma=0.99):
         """
@@ -31,24 +34,25 @@ class Detrender(nn.Module):
         super(Detrender, self).__init__()
         self.num_features = num_features
         self.gamma = gamma
-        self.mean = nn.Parameter(torch.zeros(1, 1, self.num_features), requires_grad=False)
+        self.mean = nn.Parameter(
+            torch.zeros(1, 1, self.num_features), requires_grad=False
+        )
 
-
-    def forward(self, x, mode:str):
-        if mode == 'norm':
+    def forward(self, x, mode: str):
+        if mode == "norm":
             x = self._normalize(x)
-        elif mode == 'denorm':
+        elif mode == "denorm":
             x = self._denormalize(x)
-        else: raise NotImplementedError
+        else:
+            raise NotImplementedError
         return x
 
-
     def _update_statistics(self, x):
-        dim2reduce = tuple(range(0, x.ndim-1))
+        dim2reduce = tuple(range(0, x.ndim - 1))
         mu = torch.mean(x, dim=dim2reduce, keepdim=True).detach()
-        self.mean.lerp_(mu, 1-self.gamma)
+        self.mean.lerp_(mu, 1 - self.gamma)
 
-    def _set_statistics(self, x:torch.Tensor):
+    def _set_statistics(self, x: torch.Tensor):
         self.mean = nn.Parameter(x, requires_grad=False)
 
     def _normalize(self, x):
@@ -61,11 +65,13 @@ class Detrender(nn.Module):
 
 
 class MLP(nn.Module):
-    def __init__(self, seq_len, num_channels, latent_space_size, gamma, normalization="None"):
+    def __init__(
+        self, seq_len, num_channels, latent_space_size, gamma, normalization="None"
+    ):
         super().__init__()
         self.L, self.C = seq_len, num_channels
-        self.encoder = Encoder(seq_len*num_channels, latent_space_size)
-        self.decoder = Decoder(seq_len*num_channels, latent_space_size)
+        self.encoder = Encoder(seq_len * num_channels, latent_space_size)
+        self.decoder = Decoder(seq_len * num_channels, latent_space_size)
         self.normalization = normalization
 
         if self.normalization == "Detrend":
@@ -74,15 +80,14 @@ class MLP(nn.Module):
         else:
             self.use_normalizer = False
 
-
     def forward(self, X):
         B, L, C = X.shape
         assert (L == self.L) and (C == self.C)
 
         if self.use_normalizer:
             X = self.normalizer(X, "norm")
-            
-        z = self.encoder(X.reshape(B, L*C))
+
+        z = self.encoder(X.reshape(B, L * C))
         out = self.decoder(z).reshape(B, L, C)
 
         if self.use_normalizer:
@@ -130,23 +135,30 @@ class Decoder(nn.Module):
 
 class MLP_Trainer:
     def __init__(
-            self, model, train_loader, valid_loader=None,
-            epochs=10, lr=1e-3, L2_reg=0, device='cuda'
-        ):
+        self,
+        model,
+        train_loader,
+        valid_loader=None,
+        epochs=10,
+        lr=1e-3,
+        L2_reg=0,
+        device="cuda",
+    ):
         self.model = model
         self.train_loader = train_loader
         self.valid_loader = valid_loader
         self.device = device
         self.epochs = epochs
         self.optimizer = torch.optim.AdamW(
-            params=self.model.parameters(), lr=lr, weight_decay=L2_reg)
+            params=self.model.parameters(), lr=lr, weight_decay=L2_reg
+        )
 
     def train(self):
         train_iterator = tqdm(
             range(1, self.epochs + 1),
             total=self.epochs,
             desc="training epochs",
-            leave=True
+            leave=True,
         )
         if self.valid_loader is not None:
             early_stop = EarlyStoppingTorch(patience=5)
@@ -185,7 +197,7 @@ class MLP_Trainer:
 
     @torch.no_grad()
     def valid(self):
-        assert self.valid_loader is not None, 'cannot valid without any data'
+        assert self.valid_loader is not None, "cannot valid without any data"
         self.model.eval()
         for i, batch_data in enumerate(self.valid_loader):
             X = batch_data[0].to(self.device)
@@ -193,8 +205,9 @@ class MLP_Trainer:
             loss = F.mse_loss(Xhat, X)
         return loss.item()
 
+
 class MLP_Tester:
-    def __init__(self, model, train_loader, test_loader, lr=1e-3, device='cuda'):
+    def __init__(self, model, train_loader, test_loader, lr=1e-3, device="cuda"):
         self.model = model
         self.train_loader = train_loader
         self.test_loader = test_loader
@@ -205,35 +218,28 @@ class MLP_Tester:
     def offline(self, dataloader):
         self.model.eval()
         it = tqdm(
-            dataloader,
-            total=len(dataloader),
-            desc="offline inference",
-            leave=True
+            dataloader, total=len(dataloader), desc="offline inference", leave=True
         )
         recon_errors = []
         for i, batch_data in enumerate(it):
             X = batch_data[0].to(self.device)
             B, L, C = X.shape
             Xhat = self.model(X)
-            recon_error = F.mse_loss(Xhat, X, reduction='none')
+            recon_error = F.mse_loss(Xhat, X, reduction="none")
             recon_error = recon_error.detach().cpu().numpy()
             recon_errors.append(recon_error)
             torch.cuda.empty_cache()
-        recon_errors = np.concatenate(recon_errors, axis=0) # (B, L, C)
-        anomaly_scores = recon_errors.mean(axis=2).reshape(-1) # (B, L) => (B*L,)
+        recon_errors = np.concatenate(recon_errors, axis=0)  # (B, L, C)
+        anomaly_scores = recon_errors.mean(axis=2).reshape(-1)  # (B, L) => (B*L,)
         return anomaly_scores
 
     def online(self, dataloader, init_thr, normalization="None"):
         self.model.train()
         it = tqdm(
-            dataloader,
-            total=len(dataloader),
-            desc="online inference",
-            leave=True
+            dataloader, total=len(dataloader), desc="online inference", leave=True
         )
         tau = init_thr
-        TT_optimizer = torch.optim.SGD(
-            [p for p in self.model.parameters()], lr=self.lr)
+        TT_optimizer = torch.optim.SGD([p for p in self.model.parameters()], lr=self.lr)
 
         Xs, Xhats = [], []
         preds = []
@@ -247,7 +253,7 @@ class MLP_Tester:
                 self.model.normalizer._update_statistics(X)
             # inference
             Xhat = self.model(X)
-            E = (Xhat-X)**2
+            E = (Xhat - X) ** 2
             A = E.mean(dim=2)
             # A: (B, L, C) -> (B, L)
             ytilde = (A >= tau).float()
@@ -261,32 +267,35 @@ class MLP_Tester:
             thrs.append(tau)
             # learn new-normals
             TT_optimizer.zero_grad()
-            mask = (ytilde == 0)
+            mask = ytilde == 0
             recon_loss = (A * mask).mean()
             recon_loss.backward()
             TT_optimizer.step()
             update_count += torch.sum(mask).item()
         # outputs
         anoscs = torch.cat(As, axis=0).reshape(-1).detach().cpu().numpy()
-        print('total update count:', update_count)
+        print("total update count:", update_count)
         return anoscs
 
+
 class M2N2(BaseDetector):
-    def __init__(self, 
-                 win_size=12,
-                 stride=12,
-                 num_channels=1, 
-                 batch_size=64,
-                 epochs=10,
-                 latent_dim=128,
-                 lr=1e-3,
-                 ttlr=1e-3, # learning rate for online test-time adaptation
-                 normalization="Detrend",
-                 gamma=0.99,
-                 th=0.95, # 95 percentile == 0.95 quantile
-                 valid_size=0.2,
-                 infer_mode='online'):
-        self.model_name = 'M2N2'
+    def __init__(
+        self,
+        win_size=12,
+        stride=12,
+        num_channels=1,
+        batch_size=64,
+        epochs=10,
+        latent_dim=128,
+        lr=1e-3,
+        ttlr=1e-3,  # learning rate for online test-time adaptation
+        normalization="Detrend",
+        gamma=0.99,
+        th=0.95,  # 95 percentile == 0.95 quantile
+        valid_size=0.2,
+        infer_mode="online",
+    ):
+        self.model_name = "M2N2"
         self.normalization = normalization
         self.device = get_gpu(True)
         self.model = MLP(
@@ -296,7 +305,7 @@ class M2N2(BaseDetector):
             gamma=gamma,
             normalization=normalization,
         ).to(self.device)
-        
+
         self.th = th
         self.lr = lr
         self.ttlr = ttlr
@@ -306,28 +315,31 @@ class M2N2(BaseDetector):
         self.stride = stride
         self.valid_size = valid_size
         self.infer_mode = infer_mode
-        
+
     def fit(self, data):
         if self.valid_size is None:
             self.train_loader = DataLoader(
                 dataset=ReconstructDataset(
-                    data, window_size=self.win_size, stride=self.stride),
+                    data, window_size=self.win_size, stride=self.stride
+                ),
                 batch_size=self.batch_size,
-                shuffle=True
+                shuffle=True,
             )
             self.valid_loader = None
         else:
-            data_train = data[:int((1-self.valid_size)*len(data))]
-            data_valid = data[int((1-self.valid_size)*len(data)):]
+            data_train = data[: int((1 - self.valid_size) * len(data))]
+            data_valid = data[int((1 - self.valid_size) * len(data)) :]
             self.train_loader = DataLoader(
                 dataset=ReconstructDataset(
-                    data_train, window_size=self.win_size, stride=self.stride),
+                    data_train, window_size=self.win_size, stride=self.stride
+                ),
                 batch_size=self.batch_size,
-                shuffle=True
+                shuffle=True,
             )
             self.valid_loader = DataLoader(
                 dataset=ReconstructDataset(
-                    data_valid, window_size=self.win_size, stride=self.stride),
+                    data_valid, window_size=self.win_size, stride=self.stride
+                ),
                 batch_size=self.batch_size,
                 shuffle=False,
             )
@@ -338,7 +350,7 @@ class M2N2(BaseDetector):
             valid_loader=self.valid_loader,
             epochs=self.epochs,
             lr=self.lr,
-            device=self.device
+            device=self.device,
         )
         self.trainer.train()
 
@@ -351,12 +363,13 @@ class M2N2(BaseDetector):
         )
         train_anoscs = self.tester.offline(self.train_loader)
         self.tau = np.quantile(train_anoscs, self.th)
-        print('tau', self.tau)
+        print("tau", self.tau)
 
     def decision_function(self, data):
         self.test_loader = DataLoader(
             dataset=ReconstructDataset(
-                data, window_size=self.win_size, stride=self.stride),
+                data, window_size=self.win_size, stride=self.stride
+            ),
             batch_size=self.batch_size,
             shuffle=False,
         )
@@ -367,29 +380,29 @@ class M2N2(BaseDetector):
             lr=self.ttlr,
             device=self.device,
         )
-        if self.infer_mode == 'online':
+        if self.infer_mode == "online":
             anoscs = self.tester.online(
-                self.test_loader, self.tau,
-                normalization=self.normalization)
+                self.test_loader, self.tau, normalization=self.normalization
+            )
         else:
             anoscs = self.tester.offline(self.test_loader)
 
-        self.decision_scores_ = pad_by_edge_value(anoscs, len(data), mode='right')
+        self.decision_scores_ = pad_by_edge_value(anoscs, len(data), mode="right")
         return self.decision_scores_
 
 
-def pad_by_edge_value(scores, target_len, mode: Literal['both', 'left', 'right']):
+def pad_by_edge_value(scores, target_len, mode: Literal["both", "left", "right"]):
     scores = np.array(scores).reshape(-1)
-    assert len(scores) <= target_len, f'the length of scores is more than target one'
-    print(f'origin length: {len(scores)}; target length: {target_len}')
+    assert len(scores) <= target_len, f"the length of scores is more than target one"
+    print(f"origin length: {len(scores)}; target length: {target_len}")
     current_len = scores.shape[0]
-    pad_total = max(target_len-current_len, 0)
-    if mode == 'left':
+    pad_total = max(target_len - current_len, 0)
+    if mode == "left":
         pad_before = pad_total
-    elif mode == 'right':
+    elif mode == "right":
         pad_before = 0
     else:
         pad_before = pad_total // 2 + 1
     pad_after = pad_total - pad_before
-    padded_scores = np.pad(scores, (pad_before, pad_after), mode='edge')
+    padded_scores = np.pad(scores, (pad_before, pad_after), mode="edge")
     return padded_scores

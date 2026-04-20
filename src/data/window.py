@@ -69,4 +69,3 @@ class Windowizer:
                 )
             )
         return all_windows
-

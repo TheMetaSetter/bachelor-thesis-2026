@@ -85,8 +85,12 @@ def test_usage_lambda_schedule_is_exposed_through_epoch_context() -> None:
     assert observed_usage_lambdas[3] == 0.05
 
 
-@pytest.mark.filterwarnings("ignore:No positive class found in y_true, recall is set to one for all thresholds.")
-def test_trainer_keeps_warmup_alpha_and_beta_fixed_for_configured_epochs(tmp_path: Path) -> None:
+@pytest.mark.filterwarnings(
+    "ignore:No positive class found in y_true, recall is set to one for all thresholds."
+)
+def test_trainer_keeps_warmup_alpha_and_beta_fixed_for_configured_epochs(
+    tmp_path: Path,
+) -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
         encoder_dim=64,
@@ -113,7 +117,10 @@ def test_trainer_keeps_warmup_alpha_and_beta_fixed_for_configured_epochs(tmp_pat
         outputs = trainer.train(
             train_loader=[batch],
             val_loader=[batch],
-            scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
             config={"experiment_name": "schedule-test"},
             epochs=2,
         )

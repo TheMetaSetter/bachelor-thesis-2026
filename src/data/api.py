@@ -109,6 +109,8 @@ def point_labels_to_window_labels(point_labels: torch.Tensor) -> torch.Tensor:
 
 def flatten_windows_for_baseline(batch_x: torch.Tensor) -> np.ndarray:
     if batch_x.ndim != 3:
-        raise ValueError(f"batch_x must have shape [batch, window, channels], got {tuple(batch_x.shape)}")
+        raise ValueError(
+            f"batch_x must have shape [batch, window, channels], got {tuple(batch_x.shape)}"
+        )
     flattened_windows = batch_x.reshape(batch_x.shape[0], -1)
     return flattened_windows.detach().cpu().numpy()

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Entrypoint for offline checkpoint evaluation.
 
 This script mirrors the training script closely on purpose. A new reader should
@@ -14,11 +15,17 @@ import torch
 
 # Add the src directory to the Python path
 import sys
+
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.console import console_print
 from src.core.config import load_experiment_config
-from src.core.registry import build_dataset, build_model, register_dataset, register_model
+from src.core.registry import (
+    build_dataset,
+    build_model,
+    register_dataset,
+    register_model,
+)
 from src.data.loaders import build_smd_dataset_bundle
 from src.data.scalers import SequenceStandardScaler
 from src.engine.checkpoint import CheckpointManager
@@ -75,7 +82,9 @@ def run_evaluation_experiment(
         device=experiment_config["device"],
     )
 
-    data_bundle = build_dataset(experiment_config["data"]["dataset_name"], experiment_config["data"])
+    data_bundle = build_dataset(
+        experiment_config["data"]["dataset_name"], experiment_config["data"]
+    )
     console_print(
         "DATA",
         "Built dataset bundle for evaluation",
@@ -86,14 +95,22 @@ def run_evaluation_experiment(
     model = build_model_from_experiment_config(experiment_config)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
-    loaded_checkpoint = checkpoint_manager.load_checkpoint(checkpoint_path, model, optimizer)
+    loaded_checkpoint = checkpoint_manager.load_checkpoint(
+        checkpoint_path, model, optimizer
+    )
     scaler.load_state_dict(loaded_checkpoint["scaler_state_dict"])
-    console_print("CHECKPOINT", "Loaded checkpoint for evaluation", checkpoint_path=checkpoint_path)
+    console_print(
+        "CHECKPOINT",
+        "Loaded checkpoint for evaluation",
+        checkpoint_path=checkpoint_path,
+    )
     evaluator = Evaluator(device=experiment_config["device"])
     evaluation_outputs = evaluator.evaluate(model, data_bundle["loaders"]["test"])
     logging_config = dict(experiment_config.get("logging", {}))
     logging_config.setdefault("wandb_job_type", "evaluate")
-    logging_config.setdefault("wandb_run_name", f"{experiment_config['experiment_name']}-evaluate")
+    logging_config.setdefault(
+        "wandb_run_name", f"{experiment_config['experiment_name']}-evaluate"
+    )
     experiment_logger = ExperimentLogger(
         experiment_config["output_dir"],
         experiment_config=experiment_config,
@@ -137,34 +154,48 @@ def run_evaluation_experiment(
         for metric_name, metric_value in evaluation_outputs["metrics"].items()
     }
     experiment_logger.log_metrics(prefixed_metrics)
-    experiment_logger.log_summary(prefixed_metrics | {"evaluation/checkpoint_path": checkpoint_path})
+    experiment_logger.log_summary(
+        prefixed_metrics | {"evaluation/checkpoint_path": checkpoint_path}
+    )
     experiment_logger.log_artifact_file(
         file_path=resolved_config_path,
         artifact_name=f"{experiment_config['experiment_name']}-resolved-config",
         artifact_type="config",
         aliases=["latest"],
-        metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "evaluate"},
+        metadata={
+            "experiment_name": experiment_config["experiment_name"],
+            "job_type": "evaluate",
+        },
     )
     experiment_logger.log_artifact_file(
         file_path=metrics_path,
         artifact_name=f"{experiment_config['experiment_name']}-evaluation-metrics",
         artifact_type="evaluation",
         aliases=["latest"],
-        metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "evaluate"},
+        metadata={
+            "experiment_name": experiment_config["experiment_name"],
+            "job_type": "evaluate",
+        },
     )
     experiment_logger.log_artifact_file(
         file_path=records_path,
         artifact_name=f"{experiment_config['experiment_name']}-evaluation-records",
         artifact_type="evaluation",
         aliases=["latest"],
-        metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "evaluate"},
+        metadata={
+            "experiment_name": experiment_config["experiment_name"],
+            "job_type": "evaluate",
+        },
     )
     experiment_logger.log_artifact_file(
         file_path=curves_path,
         artifact_name=f"{experiment_config['experiment_name']}-evaluation-curves",
         artifact_type="evaluation",
         aliases=["latest"],
-        metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "evaluate"},
+        metadata={
+            "experiment_name": experiment_config["experiment_name"],
+            "job_type": "evaluate",
+        },
     )
     experiment_logger.close()
     console_print(

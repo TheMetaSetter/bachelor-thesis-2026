@@ -80,8 +80,16 @@ def get_smd_dataset_root(root_dir: str | Path) -> Path:
 
 def is_smd_dataset_present(root_dir: str | Path) -> bool:
     dataset_root = get_smd_dataset_root(root_dir)
-    is_present = all((dataset_root / directory_name).exists() for directory_name in REQUIRED_DATASET_DIRECTORIES)
-    console_print("DATA", "Checked SMD dataset presence", dataset_root=dataset_root, is_present=is_present)
+    is_present = all(
+        (dataset_root / directory_name).exists()
+        for directory_name in REQUIRED_DATASET_DIRECTORIES
+    )
+    console_print(
+        "DATA",
+        "Checked SMD dataset presence",
+        dataset_root=dataset_root,
+        is_present=is_present,
+    )
     return is_present
 
 
@@ -104,7 +112,9 @@ def _request_github_listing(
     http_session: requests.Session,
     path_in_repository: str,
 ) -> list[dict[str, Any]]:
-    response = http_session.get(build_github_contents_api_url(path_in_repository), timeout=30)
+    response = http_session.get(
+        build_github_contents_api_url(path_in_repository), timeout=30
+    )
     response.raise_for_status()
     listing = response.json()
     if not isinstance(listing, list):
@@ -142,13 +152,17 @@ def download_smd_dataset(
 
     http_session = _build_http_session()
 
-    def download_binary_file(file_download_url: str, local_output_file_path: Path) -> None:
+    def download_binary_file(
+        file_download_url: str, local_output_file_path: Path
+    ) -> None:
         local_output_file_path.parent.mkdir(parents=True, exist_ok=True)
         file_response = http_session.get(file_download_url, timeout=60)
         file_response.raise_for_status()
         local_output_file_path.write_bytes(file_response.content)
 
-    def recursively_download_directory(repository_path: str, local_output_directory: Path) -> None:
+    def recursively_download_directory(
+        repository_path: str, local_output_directory: Path
+    ) -> None:
         github_items = _request_github_listing(http_session, repository_path)
         local_output_directory.mkdir(parents=True, exist_ok=True)
         for github_item in github_items:

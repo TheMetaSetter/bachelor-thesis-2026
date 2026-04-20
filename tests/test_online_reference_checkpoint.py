@@ -10,7 +10,9 @@ from src.models.online_adaptation import OnlineAdaptationModel
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 
 
-def test_online_model_rejects_reconstruction_reference_checkpoint(tmp_path: Path) -> None:
+def test_online_model_rejects_reconstruction_reference_checkpoint(
+    tmp_path: Path,
+) -> None:
     model = ReconstructionMLPAutoencoder(
         input_dim=38,
         encoder_dim=64,

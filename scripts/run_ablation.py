@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Thin orchestration script for YAML-driven offline ablations.
 
 This file exists so ablation comparison does not depend on ad hoc notebook code.
@@ -50,8 +51,12 @@ def _build_summary_row(
         "final_train_discrete_usage_concentration": final_epoch_metrics.get(
             "train_discrete_usage_concentration"
         ),
-        "roc_auc": evaluation_outputs["metrics"].get("roc_auc", evaluation_outputs["metrics"].get("auroc")),
-        "f1": evaluation_outputs["metrics"].get("f1", evaluation_outputs["metrics"].get("f1_at_threshold")),
+        "roc_auc": evaluation_outputs["metrics"].get(
+            "roc_auc", evaluation_outputs["metrics"].get("auroc")
+        ),
+        "f1": evaluation_outputs["metrics"].get(
+            "f1", evaluation_outputs["metrics"].get("f1_at_threshold")
+        ),
         "threshold": evaluation_outputs["metrics"]["threshold"],
         "lambda_cls": model_config["lambda_cls"],
         "lambda_div": model_config["lambda_div"],
@@ -85,7 +90,10 @@ def run_ablation_suite(
     first_experiment_config = load_experiment_config(experiment_config_paths[0])
     suite_logging_config = dict(first_experiment_config.get("logging", {}))
     suite_logging_config.setdefault("wandb_job_type", "ablation_summary")
-    suite_logging_config.setdefault("wandb_run_name", f"{first_experiment_config['experiment_name']}-ablation-summary")
+    suite_logging_config.setdefault(
+        "wandb_run_name",
+        f"{first_experiment_config['experiment_name']}-ablation-summary",
+    )
     suite_experiment_config = {
         "experiment_name": f"{first_experiment_config['experiment_name']}_ablation_suite",
         "task": {"task_name": "ablation_suite"},
@@ -106,7 +114,11 @@ def run_ablation_suite(
 
     try:
         for experiment_config_path in experiment_config_paths:
-            console_print("TRAIN", "Running ablation member", experiment_config_path=experiment_config_path)
+            console_print(
+                "TRAIN",
+                "Running ablation member",
+                experiment_config_path=experiment_config_path,
+            )
             experiment_config = load_experiment_config(experiment_config_path)
             training_outputs = run_training_experiment(experiment_config)
             evaluation_outputs = run_evaluation_experiment(
@@ -124,7 +136,9 @@ def run_ablation_suite(
 
         summary_json_path = summary_dir / "ablation_summary.json"
         summary_csv_path = summary_dir / "ablation_summary.csv"
-        summary_json_path.write_text(json.dumps(summary_rows, indent=2), encoding="utf-8")
+        summary_json_path.write_text(
+            json.dumps(summary_rows, indent=2), encoding="utf-8"
+        )
 
         if summary_rows:
             fieldnames = list(summary_rows[0].keys())
@@ -176,7 +190,9 @@ def run_ablation_suite(
         }
     finally:
         suite_logger.close()
-        console_print("TRAIN", "Closed ablation suite logger", summary_output_dir=summary_dir)
+        console_print(
+            "TRAIN", "Closed ablation suite logger", summary_output_dir=summary_dir
+        )
 
 
 def main() -> None:
@@ -194,7 +210,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    experiment_config_paths = args.experiment_configs or ["configs/experiment/smd_multitask_smoke.yaml"]
+    experiment_config_paths = args.experiment_configs or [
+        "configs/experiment/smd_multitask_smoke.yaml"
+    ]
     console_print(
         "CONFIG",
         "Loaded CLI ablation arguments",

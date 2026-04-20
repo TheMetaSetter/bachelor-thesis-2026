@@ -97,7 +97,9 @@ def _build_online_batch(batch_size: int = 2) -> dict[str, Any]:
     }
 
 
-def test_online_adaptation_step_updates_only_projector_parameters(tmp_path: Path) -> None:
+def test_online_adaptation_step_updates_only_projector_parameters(
+    tmp_path: Path,
+) -> None:
     checkpoint_path = _build_reference_checkpoint(tmp_path)
     model = OnlineAdaptationModel(
         input_dim=38,
@@ -118,11 +120,16 @@ def test_online_adaptation_step_updates_only_projector_parameters(tmp_path: Path
     optimizer = torch.optim.Adam(model.get_parameter_group("projector_params"), lr=1e-2)
     batch = _build_online_batch()
 
-    reference_before = [parameter.detach().clone() for parameter in model.reference_encoder.parameters()]
-    online_encoder_before = [
-        parameter.detach().clone() for parameter in model.online_encoder.encoder_parameters()
+    reference_before = [
+        parameter.detach().clone() for parameter in model.reference_encoder.parameters()
     ]
-    projector_before = [parameter.detach().clone() for parameter in model.projector.parameters()]
+    online_encoder_before = [
+        parameter.detach().clone()
+        for parameter in model.online_encoder.encoder_parameters()
+    ]
+    projector_before = [
+        parameter.detach().clone() for parameter in model.projector.parameters()
+    ]
 
     step_output = model.training_step(batch)
     optimizer.zero_grad()
@@ -133,11 +140,15 @@ def test_online_adaptation_step_updates_only_projector_parameters(tmp_path: Path
     assert step_output["outputs"]["window_scores"].shape == (2,)
     assert any(
         not torch.allclose(before_parameter, after_parameter)
-        for before_parameter, after_parameter in zip(projector_before, model.projector.parameters())
+        for before_parameter, after_parameter in zip(
+            projector_before, model.projector.parameters()
+        )
     )
     assert all(
         torch.allclose(before_parameter, after_parameter)
-        for before_parameter, after_parameter in zip(reference_before, model.reference_encoder.parameters())
+        for before_parameter, after_parameter in zip(
+            reference_before, model.reference_encoder.parameters()
+        )
     )
     assert all(
         torch.allclose(before_parameter, after_parameter)

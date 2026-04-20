@@ -1,10 +1,10 @@
-'''
+"""
 Lifeng Shen, Zhuocong Li, James T. Kwok:
 Timeseries Anomaly Detection using Temporal Hierarchical One-Class Network. NeurIPS 2020
 
 Re-implementation by:
 dongmin kim (tommy.dm.kim@gmail.com)
-'''
+"""
 
 import torch
 import torch.nn as nn
@@ -12,43 +12,46 @@ import torch.nn.functional as F
 import math
 from models.Normalizer import Detrender
 
+
 class THOC(nn.Module):
-    def __init__(self, C, W, n_hidden, tau=1, device="cpu", gamma=0.9, normalization="None"):
+    def __init__(
+        self, C, W, n_hidden, tau=1, device="cpu", gamma=0.9, normalization="None"
+    ):
         super(THOC, self).__init__()
         self.device = device
         self.C, self.W = C, W
         self.normalization = normalization
-        #self.L = math.floor(math.log(W, 2)) + 1 # number of DRNN layers
+        # self.L = math.floor(math.log(W, 2)) + 1 # number of DRNN layers
         self.L = 3
         self.tau = 1
         self.DRNN = DRNN(n_input=C, n_hidden=n_hidden, n_layers=self.L, device=device)
         self.K_l = 6
-        self.clusters = nn.ParameterList([
-            nn.Parameter(torch.zeros(n_hidden, self.K_l))
-            for _ in range(self.L)
-        ])
+        self.clusters = nn.ParameterList(
+            [nn.Parameter(torch.zeros(n_hidden, self.K_l)) for _ in range(self.L)]
+        )
 
         for c in self.clusters:
             nn.init.xavier_uniform_(c)
 
-        self.cnets = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(n_hidden, n_hidden),
-                nn.ReLU(),
-            ) for _ in range(self.L) # nn that maps f_bar to f_hat
-        ])
-
-        self.MLP = nn.Sequential(
-            nn.Linear(n_hidden*2, n_hidden*2),
-            nn.ReLU(),
-            nn.Linear(n_hidden*2, n_hidden),
-            nn.ReLU(),
-            nn.Linear(n_hidden, n_hidden)
+        self.cnets = nn.ModuleList(
+            [
+                nn.Sequential(
+                    nn.Linear(n_hidden, n_hidden),
+                    nn.ReLU(),
+                )
+                for _ in range(self.L)  # nn that maps f_bar to f_hat
+            ]
         )
 
-        self.TSSnets = nn.ModuleList([
-            nn.Linear(n_hidden, C) for _ in range(self.L)
-        ])
+        self.MLP = nn.Sequential(
+            nn.Linear(n_hidden * 2, n_hidden * 2),
+            nn.ReLU(),
+            nn.Linear(n_hidden * 2, n_hidden),
+            nn.ReLU(),
+            nn.Linear(n_hidden, n_hidden),
+        )
+
+        self.TSSnets = nn.ModuleList([nn.Linear(n_hidden, C) for _ in range(self.L)])
 
         if self.normalization == "Detrend":
             self.use_normalizer = True
@@ -56,18 +59,17 @@ class THOC(nn.Module):
         else:
             self.use_normalizer = False
 
-
     def forward(self, X):
-        '''
+        """
         :param X: (B, W, C)
         :return: Losses,
-        '''
+        """
         B, W, C = X.shape
 
         if self.use_normalizer:
             X = self.normalizer(X, "norm")
 
-        MTF_output = self.DRNN(X) # Multiscale Temporal Features from dilated RNN.
+        MTF_output = self.DRNN(X)  # Multiscale Temporal Features from dilated RNN.
 
         # THOC
         L_THOC = 0
@@ -78,28 +80,43 @@ class THOC(nn.Module):
         for i, cluster in enumerate(self.clusters):
             # Assignment
             eps = 1e-08
-            f_norm, c_norm = torch.norm(f_t_bar, dim=-1, keepdim=True), torch.norm(cluster, dim=0, keepdim=True)
-            f_norm, c_norm = torch.max(f_norm, eps*torch.ones_like(f_norm, device=self.device)), torch.max(c_norm, eps*torch.ones_like(c_norm, device=self.device))
+            f_norm, c_norm = (
+                torch.norm(f_t_bar, dim=-1, keepdim=True),
+                torch.norm(cluster, dim=0, keepdim=True),
+            )
+            f_norm, c_norm = (
+                torch.max(f_norm, eps * torch.ones_like(f_norm, device=self.device)),
+                torch.max(c_norm, eps * torch.ones_like(c_norm, device=self.device)),
+            )
             cosine_similarity = torch.einsum(
-                "Bph,hn->Bpn", f_t_bar / f_norm, cluster/c_norm
+                "Bph,hn->Bpn", f_t_bar / f_norm, cluster / c_norm
             )
 
-            P_ij = F.softmax(cosine_similarity/self.tau, dim=-1) # (B, num_cluster_{l-1}, num_cluster_{l})
-            R_ij = P_ij.squeeze(1) if len(Ps)==0 \
-                else torch.einsum("Bp,Bpn->Bn", Rs[i-1], P_ij)
+            P_ij = F.softmax(
+                cosine_similarity / self.tau, dim=-1
+            )  # (B, num_cluster_{l-1}, num_cluster_{l})
+            R_ij = (
+                P_ij.squeeze(1)
+                if len(Ps) == 0
+                else torch.einsum("Bp,Bpn->Bn", Rs[i - 1], P_ij)
+            )
             Ps.append(P_ij)
             Rs.append(R_ij)
 
             # Update
-            c_vectors = self.cnets[i](f_t_bar) # (B, num_cluster_{l-1}, hidden_dim)
+            c_vectors = self.cnets[i](f_t_bar)  # (B, num_cluster_{l-1}, hidden_dim)
             f_t_bar = torch.einsum(
                 "Bnp,Bph->Bnh", P_ij.transpose(-1, -2), c_vectors
-            ) # (B, num_cluster_{l}, hidden_dim)
+            )  # (B, num_cluster_{l}, hidden_dim)
 
             # fuse last hidden state
             B, num_prev_clusters, num_next_clusters = P_ij.shape
-            if i != self.L-1:
-                last_hidden_state = MTF_output[i + 1][:, -1, :].unsqueeze(1).repeat(1, num_next_clusters, 1)
+            if i != self.L - 1:
+                last_hidden_state = (
+                    MTF_output[i + 1][:, -1, :]
+                    .unsqueeze(1)
+                    .repeat(1, num_next_clusters, 1)
+                )
                 f_t_bar = self.MLP(torch.cat((f_t_bar, last_hidden_state), dim=-1))
 
             d = 1 - cosine_similarity
@@ -112,15 +129,17 @@ class THOC(nn.Module):
         # ORTH
         L_orth = 0
         for cluster in self.clusters:
-            c_sq = cluster.T @ cluster #(K_l, K_l)
+            c_sq = cluster.T @ cluster  # (K_l, K_l)
             K_l, _ = c_sq.shape
-            L_orth += torch.linalg.matrix_norm(c_sq-torch.eye(K_l, device=self.device))
+            L_orth += torch.linalg.matrix_norm(
+                c_sq - torch.eye(K_l, device=self.device)
+            )
         L_orth /= len(self.clusters)
 
         # TSS
         L_TSS = 0
         for i, net in enumerate(self.TSSnets):
-            src, tgt = MTF_output[i][:, :-2**(i), :], X[:, 2**(i):, :]
+            src, tgt = MTF_output[i][:, : -(2 ** (i)), :], X[:, 2 ** (i) :, :]
             L_TSS += F.mse_loss(net(src), tgt)
         L_TSS /= len(self.TSSnets)
 
@@ -135,10 +154,19 @@ class THOC(nn.Module):
 # Dilated RNN code modified from:
 # https://github.com/zalandoresearch/pytorch-dilated-rnn/blob/master/drnn.py
 class DRNN(nn.Module):
-    def __init__(self, n_input, n_hidden, n_layers, dropout=0, cell_type='GRU', batch_first=True, device="cpu"):
+    def __init__(
+        self,
+        n_input,
+        n_hidden,
+        n_layers,
+        dropout=0,
+        cell_type="GRU",
+        batch_first=True,
+        device="cpu",
+    ):
         super(DRNN, self).__init__()
 
-        self.dilations = [2 ** i for i in range(n_layers)]
+        self.dilations = [2**i for i in range(n_layers)]
         self.cell_type = cell_type
         self.batch_first = batch_first
         self.device = device
@@ -182,19 +210,25 @@ class DRNN(nn.Module):
         dilated_inputs = self._prepare_inputs(inputs, rate)
 
         if hidden is None:
-            dilated_outputs, hidden = self._apply_cell(dilated_inputs, cell, batch_size, rate, hidden_size)
+            dilated_outputs, hidden = self._apply_cell(
+                dilated_inputs, cell, batch_size, rate, hidden_size
+            )
         else:
             hidden = self._prepare_inputs(hidden, rate)
-            dilated_outputs, hidden = self._apply_cell(dilated_inputs, cell, batch_size, rate, hidden_size, hidden=hidden)
+            dilated_outputs, hidden = self._apply_cell(
+                dilated_inputs, cell, batch_size, rate, hidden_size, hidden=hidden
+            )
 
         splitted_outputs = self._split_outputs(dilated_outputs, rate)
         outputs = self._unpad_outputs(splitted_outputs, n_steps)
 
         return outputs, hidden
 
-    def _apply_cell(self, dilated_inputs, cell, batch_size, rate, hidden_size, hidden=None):
+    def _apply_cell(
+        self, dilated_inputs, cell, batch_size, rate, hidden_size, hidden=None
+    ):
         if hidden is None:
-            if self.cell_type == 'LSTM':
+            if self.cell_type == "LSTM":
                 c, m = self.init_hidden(batch_size * rate, hidden_size)
                 hidden = (c.unsqueeze(0), m.unsqueeze(0))
             else:
@@ -210,12 +244,15 @@ class DRNN(nn.Module):
     def _split_outputs(self, dilated_outputs, rate):
         batchsize = dilated_outputs.size(1) // rate
 
-        blocks = [dilated_outputs[:, i * batchsize: (i + 1) * batchsize, :] for i in range(rate)]
+        blocks = [
+            dilated_outputs[:, i * batchsize : (i + 1) * batchsize, :]
+            for i in range(rate)
+        ]
 
         interleaved = torch.stack((blocks)).transpose(1, 0).contiguous()
-        interleaved = interleaved.view(dilated_outputs.size(0) * rate,
-                                       batchsize,
-                                       dilated_outputs.size(2))
+        interleaved = interleaved.view(
+            dilated_outputs.size(0) * rate, batchsize, dilated_outputs.size(2)
+        )
         return interleaved
 
     def _pad_inputs(self, inputs, n_steps, rate):
@@ -224,9 +261,9 @@ class DRNN(nn.Module):
         if not is_even:
             dilated_steps = n_steps // rate + 1
 
-            zeros_ = torch.zeros(dilated_steps * rate - inputs.size(0),
-                                 inputs.size(1),
-                                 inputs.size(2)).to(self.device)
+            zeros_ = torch.zeros(
+                dilated_steps * rate - inputs.size(0), inputs.size(1), inputs.size(2)
+            ).to(self.device)
 
             inputs = torch.cat((inputs, zeros_))
         else:
@@ -246,10 +283,18 @@ class DRNN(nn.Module):
         else:
             return hidden
 
+
 if __name__ == "__main__":
     B, L, C = 64, 12, 51
     ip = torch.randn((B, L, C))
-    drnn = DRNN(n_input=C, n_hidden=128, n_layers=3, dropout=0, cell_type='GRU', batch_first=True)
+    drnn = DRNN(
+        n_input=C,
+        n_hidden=128,
+        n_layers=3,
+        dropout=0,
+        cell_type="GRU",
+        batch_first=True,
+    )
 
     print(drnn)
     print(drnn(ip))

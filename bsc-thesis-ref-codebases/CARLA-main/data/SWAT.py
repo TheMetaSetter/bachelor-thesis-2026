@@ -1,4 +1,3 @@
-
 import os
 import pandas
 import numpy as np
@@ -19,16 +18,25 @@ class SWAT(Dataset):
         transform (callable, optional): A function/transform that takes in a ts
             and returns a transformed version.
     """
-    base_folder = ''
 
-    def __init__(self, fname, root=MyPath.db_root_dir('swat'), train=True, transform=None, sanomaly= None, mean_data=None, std_data=None):
+    base_folder = ""
 
+    def __init__(
+        self,
+        fname,
+        root=MyPath.db_root_dir("swat"),
+        train=True,
+        transform=None,
+        sanomaly=None,
+        mean_data=None,
+        std_data=None,
+    ):
         super(SWAT, self).__init__()
         self.root = root
         self.transform = transform
         self.sanomaly = sanomaly
         self.train = train  # training set or test set
-        self.classes = ['Normal', 'Anomaly']
+        self.classes = ["Normal", "Anomaly"]
 
         self.data = []
         self.targets = []
@@ -36,17 +44,17 @@ class SWAT(Dataset):
         wsz, stride = 200, 10
 
         if self.train:
-            fname += '_train.csv'
+            fname += "_train.csv"
         else:
-            fname += '_test.csv'
+            fname += "_test.csv"
 
         file_path = os.path.join(self.root, fname)
         temp = pd.read_csv(file_path)
-        labels = np.asarray(temp['attack'])
+        labels = np.asarray(temp["attack"])
         temp = np.asarray(temp.iloc[:, 1:52])
 
-        if np.any(sum(np.isnan(temp))!=0):
-            print('Data contains NaN which replaced with zero')
+        if np.any(sum(np.isnan(temp)) != 0):
+            print("Data contains NaN which replaced with zero")
             temp = np.nan_to_num(temp)
 
         self.mean, self.std = mean_data, std_data
@@ -60,7 +68,7 @@ class SWAT(Dataset):
         if self.train:
             min_column = np.amin(temp, axis=0)
             max_column = np.amax(temp, axis=0)
-            self.mean, self.std = min_column, max_column 
+            self.mean, self.std = min_column, max_column
         else:
             self.mean, self.std = mean_data, std_data
             range_val = (std_data - mean_data) + 1e-20
@@ -73,13 +81,14 @@ class SWAT(Dataset):
     def convert_to_windows(self, w_size, stride):
         windows = []
         wlabels = []
-        sz = int((self.data.shape[0]-w_size)/stride)
+        sz = int((self.data.shape[0] - w_size) / stride)
         for i in range(0, sz):
             st = i * stride
-            w = self.data[st:st+w_size]
-            if self.targets[st:st+w_size].any() > 0:
+            w = self.data[st : st + w_size]
+            if self.targets[st : st + w_size].any() > 0:
                 lbl = 1
-            else: lbl=0
+            else:
+                lbl = 0
             windows.append(w)
             wlabels.append(lbl)
         return np.stack(windows), np.stack(wlabels)
@@ -93,15 +102,21 @@ class SWAT(Dataset):
         """
         ts_org = torch.from_numpy(self.data[index]).float().to(device)  # cuda
         if len(self.targets) > 0:
-            target = torch.tensor(self.targets[index].astype(int), dtype=torch.long).to(device)
+            target = torch.tensor(self.targets[index].astype(int), dtype=torch.long).to(
+                device
+            )
             class_name = self.classes[target]
         else:
             target = 0
-            class_name = ''
+            class_name = ""
 
         ts_size = (ts_org.shape[0], ts_org.shape[1])
 
-        out = {'ts_org': ts_org, 'target': target, 'meta': {'ts_size': ts_size, 'index': index, 'class_name': class_name}}
+        out = {
+            "ts_org": ts_org,
+            "target": target,
+            "meta": {"ts_size": ts_size, "index": index, "class_name": class_name},
+        }
 
         return out
 

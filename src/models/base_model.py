@@ -5,6 +5,7 @@ from typing import Any
 
 import torch.nn as nn
 
+
 # Unified API for all models
 class BaseModel(nn.Module, ABC):
     @abstractmethod

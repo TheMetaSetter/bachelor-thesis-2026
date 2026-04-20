@@ -1,28 +1,40 @@
 import numpy as np
-from sklearn.metrics import precision_recall_curve, roc_curve, auc, roc_auc_score, precision_score, recall_score, \
-    accuracy_score, fbeta_score, average_precision_score
+from sklearn.metrics import (
+    precision_recall_curve,
+    roc_curve,
+    auc,
+    roc_auc_score,
+    precision_score,
+    recall_score,
+    accuracy_score,
+    fbeta_score,
+    average_precision_score,
+)
 
 
 # function: calculate the point-adjust f-scores(whether top k)
-def get_point_adjust_scores(y_test, pred_labels, true_events, thereshold_k=0, whether_top_k=False):
+def get_point_adjust_scores(
+    y_test, pred_labels, true_events, thereshold_k=0, whether_top_k=False
+):
     tp = 0
     fn = 0
     for true_event in true_events.keys():
         true_start, true_end = true_events[true_event]
         if whether_top_k is False:
             if pred_labels[true_start:true_end].sum() > 0:
-                tp += (true_end - true_start)
+                tp += true_end - true_start
             else:
-                fn += (true_end - true_start)
+                fn += true_end - true_start
         else:
             if pred_labels[true_start:true_end].sum() > thereshold_k:
-                tp += (true_end - true_start)
+                tp += true_end - true_start
             else:
-                fn += (true_end - true_start)
+                fn += true_end - true_start
     fp = np.sum(pred_labels) - np.sum(pred_labels * y_test)
 
     prec, rec, fscore = get_prec_rec_fscore(tp, fp, fn)
     return fp, fn, tp, prec, rec, fscore
+
 
 def get_adjust_F1PA(pred, gt):
     anomaly_state = False
@@ -45,13 +57,14 @@ def get_adjust_F1PA(pred, gt):
             anomaly_state = False
         if anomaly_state:
             pred[i] = 1
-            
+
     from sklearn.metrics import precision_recall_fscore_support
     from sklearn.metrics import accuracy_score
 
     accuracy = accuracy_score(gt, pred)
-    precision, recall, f_score, support = precision_recall_fscore_support(gt, pred,
-                                                                          average='binary')
+    precision, recall, f_score, support = precision_recall_fscore_support(
+        gt, pred, average="binary"
+    )
     return accuracy, precision, recall, f_score
 
 
@@ -86,7 +99,5 @@ def get_accuracy_precision_recall_fscore(y_true: list, y_pred: list):
     if precision == 0 and recall == 0:
         f05_score = 0
     else:
-        f05_score = fbeta_score(y_true, y_pred, average='binary', beta=0.5)
+        f05_score = fbeta_score(y_true, y_pred, average="binary", beta=0.5)
     return accuracy, precision, recall, f_score, f05_score
-
-

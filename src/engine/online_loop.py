@@ -32,14 +32,27 @@ class OnlineLoop:
             key: value.to(self.device) if isinstance(value, torch.Tensor) else value
             for key, value in batch.items()
         }
-        console_print("ONLINE", "Moved online batch to device", device=self.device, **summarize_batch(batch_on_device))
+        console_print(
+            "ONLINE",
+            "Moved online batch to device",
+            device=self.device,
+            **summarize_batch(batch_on_device),
+        )
         return batch_on_device
 
-    def _measure_update_norm(self, before_parameters: list[torch.Tensor], after_parameters: list[torch.Tensor]) -> float:
+    def _measure_update_norm(
+        self,
+        before_parameters: list[torch.Tensor],
+        after_parameters: list[torch.Tensor],
+    ) -> float:
         update_norm = 0.0
-        for before_parameter, after_parameter in zip(before_parameters, after_parameters):
-            update_norm += float(torch.sum((after_parameter - before_parameter) ** 2).detach().cpu())
-        return update_norm ** 0.5
+        for before_parameter, after_parameter in zip(
+            before_parameters, after_parameters
+        ):
+            update_norm += float(
+                torch.sum((after_parameter - before_parameter) ** 2).detach().cpu()
+            )
+        return update_norm**0.5
 
     def run(
         self,
@@ -72,11 +85,15 @@ class OnlineLoop:
             self.model.eval()
             with torch.no_grad():
                 pre_outputs = self.model.forward(batch_on_device)
-            pre_window_score_mean = float(pre_outputs["window_scores"].mean().detach().cpu())
+            pre_window_score_mean = float(
+                pre_outputs["window_scores"].mean().detach().cpu()
+            )
 
             trainable_parameters = [
                 parameter.detach().clone()
-                for parameter in self.model.get_parameter_group(self.model.target_param_group)
+                for parameter in self.model.get_parameter_group(
+                    self.model.target_param_group
+                )
             ]
 
             self.model.train()
@@ -89,29 +106,44 @@ class OnlineLoop:
             self.model.eval()
             with torch.no_grad():
                 post_outputs = self.model.forward(batch_on_device)
-            post_window_score_mean = float(post_outputs["window_scores"].mean().detach().cpu())
+            post_window_score_mean = float(
+                post_outputs["window_scores"].mean().detach().cpu()
+            )
 
             updated_parameters = [
                 parameter.detach().clone()
-                for parameter in self.model.get_parameter_group(self.model.target_param_group)
+                for parameter in self.model.get_parameter_group(
+                    self.model.target_param_group
+                )
             ]
-            update_norm = self._measure_update_norm(trainable_parameters, updated_parameters)
+            update_norm = self._measure_update_norm(
+                trainable_parameters, updated_parameters
+            )
 
             step_metrics = {
                 "online/step": step_index,
                 "online/pre_window_score_mean": pre_window_score_mean,
                 "online/post_window_score_mean": post_window_score_mean,
                 "online/update_norm": update_norm,
-                "online/alignment_loss": float(post_outputs["aux"]["alignment_loss"].detach().cpu()),
+                "online/alignment_loss": float(
+                    post_outputs["aux"]["alignment_loss"].detach().cpu()
+                ),
                 "online/prototype_alignment_loss": float(
                     post_outputs["aux"]["prototype_alignment_loss"].detach().cpu()
                 ),
-                "online/projector_drift": float(post_outputs["aux"]["projector_drift"].detach().cpu()),
+                "online/projector_drift": float(
+                    post_outputs["aux"]["projector_drift"].detach().cpu()
+                ),
             }
             self.metric_history.append(step_metrics)
             if step_index % log_every_n_steps == 0:
                 self.experiment_logger.log_metrics(step_metrics)
-            console_print("ONLINE", "Completed online step", step_index=step_index, step_metrics=step_metrics)
+            console_print(
+                "ONLINE",
+                "Completed online step",
+                step_index=step_index,
+                step_metrics=step_metrics,
+            )
 
             records.append(
                 {
@@ -128,7 +160,11 @@ class OnlineLoop:
             )
 
             if step_index % checkpoint_every_n_steps == 0:
-                console_print("CHECKPOINT", "Saving periodic online checkpoint", step_index=step_index)
+                console_print(
+                    "CHECKPOINT",
+                    "Saving periodic online checkpoint",
+                    step_index=step_index,
+                )
                 final_checkpoint_path = self.checkpoint_manager.save_checkpoint(
                     checkpoint_name=f"online_step_{step_index}.pt",
                     model=self.model,
@@ -150,7 +186,11 @@ class OnlineLoop:
                     },
                 )
 
-        console_print("CHECKPOINT", "Saving final online checkpoint", total_steps=len(self.metric_history))
+        console_print(
+            "CHECKPOINT",
+            "Saving final online checkpoint",
+            total_steps=len(self.metric_history),
+        )
         final_checkpoint_path = self.checkpoint_manager.save_checkpoint(
             checkpoint_name="online_final.pt",
             model=self.model,

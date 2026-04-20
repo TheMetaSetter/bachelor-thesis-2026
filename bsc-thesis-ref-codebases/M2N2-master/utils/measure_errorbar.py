@@ -20,7 +20,7 @@ final_results = {
 }
 
 for d in exps:
-    with open(os.path.join(result_dir, path, d, f"{id}.json"), 'r') as f:
+    with open(os.path.join(result_dir, path, d, f"{id}.json"), "r") as f:
         result = json.load(f)
 
     for k in result:
@@ -50,7 +50,11 @@ with open(os.path.join(result_dir, path, f"{id}_errorbar.json"), "w") as f:
     json.dump(final_results, f)
 
 df = pd.DataFrame(final_results["results"])
-final_results_df = pd.DataFrame(df.iloc[0].apply(lambda x: f"{x:.3f}") + " $\pm$ " + df.iloc[1].apply(lambda x: f"{x:.3f}")).transpose()
+final_results_df = pd.DataFrame(
+    df.iloc[0].apply(lambda x: f"{x:.3f}")
+    + " $\pm$ "
+    + df.iloc[1].apply(lambda x: f"{x:.3f}")
+).transpose()
 final_results_df.to_csv(os.path.join(result_dir, path, f"{id}_final_results.csv"))
 
 

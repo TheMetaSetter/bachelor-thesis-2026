@@ -8,19 +8,25 @@ from src.core.console import console_print
 
 
 class ArtifactSink(Protocol):
-    def save_file(self, path: str | Path, metadata: dict[str, Any] | None = None) -> None:
-        ...
+    def save_file(
+        self, path: str | Path, metadata: dict[str, Any] | None = None
+    ) -> None: ...
 
-    def save_directory(self, path: str | Path, metadata: dict[str, Any] | None = None) -> None:
-        ...
+    def save_directory(
+        self, path: str | Path, metadata: dict[str, Any] | None = None
+    ) -> None: ...
 
 
 @dataclass
 class NoOpArtifactSink:
-    def save_file(self, path: str | Path, metadata: dict[str, Any] | None = None) -> None:
+    def save_file(
+        self, path: str | Path, metadata: dict[str, Any] | None = None
+    ) -> None:
         return
 
-    def save_directory(self, path: str | Path, metadata: dict[str, Any] | None = None) -> None:
+    def save_directory(
+        self, path: str | Path, metadata: dict[str, Any] | None = None
+    ) -> None:
         return
 
 
@@ -29,9 +35,16 @@ class WandbArtifactSink:
     experiment_logger: Any
     artifact_type: str = "checkpoint"
 
-    def save_file(self, path: str | Path, metadata: dict[str, Any] | None = None) -> None:
+    def save_file(
+        self, path: str | Path, metadata: dict[str, Any] | None = None
+    ) -> None:
         path_obj = Path(path)
-        console_print("WANDB", "Logging file artifact to W&B", path=path_obj, artifact_type=self.artifact_type)
+        console_print(
+            "WANDB",
+            "Logging file artifact to W&B",
+            path=path_obj,
+            artifact_type=self.artifact_type,
+        )
         self.experiment_logger.log_artifact_file(
             file_path=path_obj,
             artifact_name=path_obj.stem,
@@ -40,9 +53,16 @@ class WandbArtifactSink:
             metadata=metadata,
         )
 
-    def save_directory(self, path: str | Path, metadata: dict[str, Any] | None = None) -> None:
+    def save_directory(
+        self, path: str | Path, metadata: dict[str, Any] | None = None
+    ) -> None:
         path_obj = Path(path)
-        console_print("WANDB", "Logging directory artifact to W&B", path=path_obj, artifact_type=self.artifact_type)
+        console_print(
+            "WANDB",
+            "Logging directory artifact to W&B",
+            path=path_obj,
+            artifact_type=self.artifact_type,
+        )
         self.experiment_logger.log_artifact_directory(
             directory_path=path_obj,
             artifact_name=path_obj.name,
@@ -77,10 +97,14 @@ class KaggleArtifactSink:
             version_notes=self.version_notes,
         )
 
-    def save_file(self, path: str | Path, metadata: dict[str, Any] | None = None) -> None:
+    def save_file(
+        self, path: str | Path, metadata: dict[str, Any] | None = None
+    ) -> None:
         self._upload_directory(Path(path).parent)
 
-    def save_directory(self, path: str | Path, metadata: dict[str, Any] | None = None) -> None:
+    def save_directory(
+        self, path: str | Path, metadata: dict[str, Any] | None = None
+    ) -> None:
         self._upload_directory(Path(path))
 
 
@@ -106,11 +130,17 @@ def build_artifact_sinks(
     include_wandb_sink: bool = False,
 ) -> list[ArtifactSink]:
     if not logging_config:
-        console_print("WANDB", "No logging config provided for checkpoint artifact sinks")
+        console_print(
+            "WANDB", "No logging config provided for checkpoint artifact sinks"
+        )
         return []
 
     artifact_sinks: list[ArtifactSink] = []
-    if include_wandb_sink and logging_config.get("use_wandb", False) and experiment_logger is not None:
+    if (
+        include_wandb_sink
+        and logging_config.get("use_wandb", False)
+        and experiment_logger is not None
+    ):
         artifact_sinks.append(WandbArtifactSink(experiment_logger=experiment_logger))
     if logging_config.get("mirror_best_checkpoint_to_kaggle", False):
         artifact_sinks.append(_build_kaggle_sink(logging_config))
@@ -133,8 +163,16 @@ def build_output_artifact_sinks(
         return []
 
     artifact_sinks: list[ArtifactSink] = []
-    if include_wandb_sink and logging_config.get("use_wandb", False) and experiment_logger is not None:
-        artifact_sinks.append(WandbArtifactSink(experiment_logger=experiment_logger, artifact_type="run-output"))
+    if (
+        include_wandb_sink
+        and logging_config.get("use_wandb", False)
+        and experiment_logger is not None
+    ):
+        artifact_sinks.append(
+            WandbArtifactSink(
+                experiment_logger=experiment_logger, artifact_type="run-output"
+            )
+        )
     if logging_config.get("mirror_output_dir_to_kaggle", False):
         artifact_sinks.append(_build_kaggle_sink(logging_config))
     console_print(

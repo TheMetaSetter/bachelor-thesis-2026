@@ -107,8 +107,7 @@ class Loader(object):
         return windows
 
     def _create_windows(self):
-        """
-        """
+        """ """
         self.Y_windows = []
         self.mask_windows = []
         self.X_windows = []
@@ -120,8 +119,12 @@ class Loader(object):
                 if self.dataset.n_exogenous:
                     self.X_windows.append(self._array_to_windows(entity.X))
 
-        self.Y_windows = t.cat(self.Y_windows)          # Merge lists of windows into a single list of windows
-        self.mask_windows = t.cat(self.mask_windows)    # Merge lists of mask into a single list of masks
+        self.Y_windows = t.cat(
+            self.Y_windows
+        )  # Merge lists of windows into a single list of windows
+        self.mask_windows = t.cat(
+            self.mask_windows
+        )  # Merge lists of mask into a single list of masks
 
         if self.dataset.n_exogenous:
             self.X_windows = t.cat(self.X_windows)

@@ -7,7 +7,9 @@ import torch
 from src.data.stream import OnlineWindowBatcher, SMDOnlineStream
 
 
-def _build_sequence(entity_id: str, sequence_length: int = 130, num_channels: int = 38) -> dict[str, Any]:
+def _build_sequence(
+    entity_id: str, sequence_length: int = 130, num_channels: int = 38
+) -> dict[str, Any]:
     return {
         "x": torch.randn(sequence_length, num_channels),
         "point_labels": torch.zeros(sequence_length, dtype=torch.long),
@@ -74,4 +76,7 @@ def test_online_batcher_restores_stream_state() -> None:
 
     assert first_batch["view_a"].shape[-2:] == (100, 38)
     assert first_batch["view_b"].shape[-2:] == (100, 38)
-    assert restored_batch["meta"][0]["stream_step"] == saved_state["stream_state_dict"]["cursor"]["position"]
+    assert (
+        restored_batch["meta"][0]["stream_step"]
+        == saved_state["stream_state_dict"]["cursor"]["position"]
+    )

@@ -72,7 +72,9 @@ def _build_reference_checkpoint(tmp_path: Path) -> Path:
     )
 
 
-def _build_sequence(entity_id: str, sequence_length: int = 130, num_channels: int = 38) -> dict[str, Any]:
+def _build_sequence(
+    entity_id: str, sequence_length: int = 130, num_channels: int = 38
+) -> dict[str, Any]:
     return {
         "x": torch.randn(sequence_length, num_channels),
         "point_labels": torch.zeros(sequence_length, dtype=torch.long),
@@ -137,7 +139,10 @@ def test_online_checkpoint_roundtrip_restores_extra_state(tmp_path: Path) -> Non
             "projector_anchor_state_dict": model.get_projector_anchor_state_dict(),
             "target_param_group": "projector_params",
             "online_metric_history": [{"online/alignment_loss": 1.0}],
-            "reset_policy_state": {"reset_policy": "disabled", "reset_alignment_threshold": 0.0},
+            "reset_policy_state": {
+                "reset_policy": "disabled",
+                "reset_alignment_threshold": 0.0,
+            },
         },
     )
 
@@ -157,7 +162,9 @@ def test_online_checkpoint_roundtrip_restores_extra_state(tmp_path: Path) -> Non
         target_param_group="projector_params",
         clean_stream_only=True,
     )
-    reloaded_optimizer = torch.optim.Adam(reloaded_model.get_parameter_group("projector_params"), lr=1e-3)
+    reloaded_optimizer = torch.optim.Adam(
+        reloaded_model.get_parameter_group("projector_params"), lr=1e-3
+    )
     loaded_checkpoint = checkpoint_manager.load_checkpoint(
         checkpoint_path,
         reloaded_model,
@@ -169,5 +176,13 @@ def test_online_checkpoint_roundtrip_restores_extra_state(tmp_path: Path) -> Non
 
     assert loaded_checkpoint["extra_state"]["target_param_group"] == "projector_params"
     assert "stream_state_dict" in loaded_checkpoint["extra_state"]
-    assert loaded_checkpoint["extra_state"]["online_metric_history"][0]["online/alignment_loss"] == 1.0
-    assert reloaded_model.get_projector_anchor_state_dict().keys() == model.get_projector_anchor_state_dict().keys()
+    assert (
+        loaded_checkpoint["extra_state"]["online_metric_history"][0][
+            "online/alignment_loss"
+        ]
+        == 1.0
+    )
+    assert (
+        reloaded_model.get_projector_anchor_state_dict().keys()
+        == model.get_projector_anchor_state_dict().keys()
+    )

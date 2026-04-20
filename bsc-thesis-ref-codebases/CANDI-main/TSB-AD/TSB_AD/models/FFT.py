@@ -8,9 +8,17 @@ from dataclasses import dataclass
 from TSB_AD.models.base import BaseDetector
 from TSB_AD.utils.utility import zscore
 
-class FFT(BaseDetector):
 
-    def __init__(self, ifft_parameters=5, local_neighbor_window=21, local_outlier_threshold=0.6, max_region_size=50, max_sign_change_distance=10, normalize=True):
+class FFT(BaseDetector):
+    def __init__(
+        self,
+        ifft_parameters=5,
+        local_neighbor_window=21,
+        local_outlier_threshold=0.6,
+        max_region_size=50,
+        max_sign_change_distance=10,
+        normalize=True,
+    ):
         super().__init__()
 
         self.ifft_parameters = ifft_parameters
@@ -24,13 +32,13 @@ class FFT(BaseDetector):
     def fit(self, X, y=None):
         """Fit detector. y is ignored in unsupervised methods."""
         n_samples, n_features = X.shape
-        if self.normalize: 
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
             else:
                 X = zscore(X, axis=1, ddof=1)
         self.data = X
-        self.decision_scores_ = self.detect_anomalies()  
+        self.decision_scores_ = self.detect_anomalies()
         return self
 
     def decision_function(self, X):
@@ -48,7 +56,7 @@ class FFT(BaseDetector):
         for region in regions:
             start_index = local_outliers[region.start_idx].index
             end_index = local_outliers[region.end_idx].index
-            anomaly_scores[start_index:end_index + 1] = region.score
+            anomaly_scores[start_index : end_index + 1] = region.score
 
         decision_scores_ = anomaly_scores
         return decision_scores_
@@ -73,7 +81,9 @@ class FFT(BaseDetector):
         score_idxs = []
         for i in range(n):
             if so[i] > mso:
-                nav = np.mean(self.data[max(i - neighbor_c, 0):min(i + neighbor_c + 1, n)])
+                nav = np.mean(
+                    self.data[max(i - neighbor_c, 0) : min(i + neighbor_c + 1, n)]
+                )
                 scores.append(self.data[i] - nav)
                 score_idxs.append(i)
 
@@ -81,11 +91,14 @@ class FFT(BaseDetector):
             return []
 
         ms = np.mean(scores)
-        sds = np.std(scores) + 1e-6  
+        sds = np.std(scores) + 1e-6
         z_scores = (np.array(scores) - ms) / sds
 
-        return [self.LocalOutlier(index=score_idxs[i], z_score=z_scores[i])
-                for i in range(len(scores)) if abs(z_scores[i]) > self.local_outlier_threshold]
+        return [
+            self.LocalOutlier(index=score_idxs[i], z_score=z_scores[i])
+            for i in range(len(scores))
+            if abs(z_scores[i]) > self.local_outlier_threshold
+        ]
 
     def calculate_region_outliers(self, local_outliers):
         def distance(a: int, b: int) -> int:
@@ -100,8 +113,17 @@ class FFT(BaseDetector):
                 i += 1
             end_idx = i
             if end_idx > start_idx:
-                score = np.mean([abs(local_outliers[j].z_score) for j in range(start_idx, end_idx + 1)])
-                regions.append(self.RegionOutlier(start_idx=start_idx, end_idx=end_idx, score=score))
+                score = np.mean(
+                    [
+                        abs(local_outliers[j].z_score)
+                        for j in range(start_idx, end_idx + 1)
+                    ]
+                )
+                regions.append(
+                    self.RegionOutlier(
+                        start_idx=start_idx, end_idx=end_idx, score=score
+                    )
+                )
             i += 1
 
         return regions
@@ -133,6 +155,6 @@ class FFT(BaseDetector):
         for region in regions:
             start_index = local_outliers[region.start_idx].index
             end_index = local_outliers[region.end_idx].index
-            anomaly_scores[start_index:end_index + 1] = region.score
+            anomaly_scores[start_index : end_index + 1] = region.score
 
         return anomaly_scores

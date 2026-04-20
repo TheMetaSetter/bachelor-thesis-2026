@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Entrypoint for offline training experiments.
 
 A fresher can read this script as the shortest explanation of the runtime graph:
@@ -14,11 +15,17 @@ import torch
 # Add src to path for imports
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.console import console_print
 from src.core.config import load_experiment_config
-from src.core.registry import build_dataset, build_model, register_dataset, register_model
+from src.core.registry import (
+    build_dataset,
+    build_model,
+    register_dataset,
+    register_model,
+)
 from src.core.seed import seed_everything
 from src.data.loaders import build_smd_dataset_bundle
 from src.engine.checkpoint import CheckpointManager
@@ -106,15 +113,15 @@ def build_scheduler_from_experiment_config(
 
 def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, object]:
     """Execute a complete training experiment from configuration.
-    
+
     This helper is shared by the CLI and by tests or orchestration scripts.
     It orchestrates the entire training pipeline: seeding, component registration,
     data loading, model construction, and training execution.
-    
+
     Args:
         experiment_config: Dictionary containing all experiment hyperparameters,
             data settings, model architecture, optimizer config, and paths.
-    
+
     Returns:
         Training results dictionary from trainer.train() containing metrics,
             final losses, and other tracked experiment outcomes.
@@ -132,7 +139,7 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         checkpoint_dir=experiment_config["checkpoint_dir"],
         epochs=experiment_config["epochs"],
     )
-    
+
     # Register dataset and model builders into the global registry. This decouples
     # experiment configuration (which uses string names) from actual constructors,
     # allowing experiments to be defined in YAML without hardcoded imports.
@@ -140,7 +147,9 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
 
     # Load and preprocess the dataset specified in config. Returns a bundle containing
     # train/val data loaders and a fitted scaler (for input normalization).
-    data_bundle = build_dataset(experiment_config["data"]["dataset_name"], experiment_config["data"])
+    data_bundle = build_dataset(
+        experiment_config["data"]["dataset_name"], experiment_config["data"]
+    )
     console_print(
         "DATA",
         "Built dataset bundle for training",
@@ -149,12 +158,12 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         val_windows=len(data_bundle["datasets"]["val"]),
         test_windows=len(data_bundle["datasets"]["test"]),
     )
-    
+
     # Construct the model architecture and task logic from config. This combines
     # model-specific parameters (layer sizes, etc.) with task-specific logic
     # (loss weights, multitask heads, etc.) into a single PyTorch module.
     model = build_model_from_experiment_config(experiment_config)
-    
+
     # Create the Adam optimizer with learning rate and weight decay from config.
     # Adam is chosen for its adaptive learning rate and stable convergence properties.
     optimizer = torch.optim.Adam(
@@ -169,8 +178,10 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         learning_rate=experiment_config["optimizer"]["learning_rate"],
         weight_decay=experiment_config["optimizer"]["weight_decay"],
     )
-    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(optimizer, experiment_config)
-    
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
+        optimizer, experiment_config
+    )
+
     # Initialize experiment logger for tracking metrics, hyperparameters, and
     # artifacts. Logs are written to output_dir; config validates logging format.
     logging_config = dict(experiment_config.get("logging", {}))
@@ -187,17 +198,21 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         use_wandb=logging_config.get("use_wandb", False),
         wandb_run_name=logging_config.get("wandb_run_name"),
         wandb_job_type=logging_config.get("wandb_job_type"),
-        mirror_best_checkpoint_to_kaggle=logging_config.get("mirror_best_checkpoint_to_kaggle", False),
-        mirror_output_dir_to_kaggle=logging_config.get("mirror_output_dir_to_kaggle", False),
+        mirror_best_checkpoint_to_kaggle=logging_config.get(
+            "mirror_best_checkpoint_to_kaggle", False
+        ),
+        mirror_output_dir_to_kaggle=logging_config.get(
+            "mirror_output_dir_to_kaggle", False
+        ),
     )
-    
+
     # Initialize checkpoint manager for saving/loading model states, enabling
     # experiment resumption and best-model tracking across epochs.
     checkpoint_manager = CheckpointManager(
         experiment_config["checkpoint_dir"],
         artifact_sinks=experiment_logger.build_artifact_sinks(logging_config),
     )
-    
+
     # Assemble the trainer with all engine components (model, optimizer, logging,
     # checkpointing). The trainer coordinates training loops, validation, and
     # checkpoint orchestration on the specified device (GPU/CPU).
@@ -210,7 +225,7 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         experiment_logger=experiment_logger,
         device=experiment_config["device"],
     )
-    
+
     # Execute training with try-finally to ensure graceful logger shutdown even
     # if training fails or is interrupted. This flushes buffered metrics to disk.
     try:
@@ -232,7 +247,9 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
             {
                 "run/output_dir": str(experiment_config["output_dir"]),
                 "run/checkpoint_dir": str(experiment_config["checkpoint_dir"]),
-                "run/best_checkpoint_path": str(best_checkpoint_path) if best_checkpoint_path is not None else None,
+                "run/best_checkpoint_path": str(best_checkpoint_path)
+                if best_checkpoint_path is not None
+                else None,
             }
         )
         experiment_logger.log_artifact_file(
@@ -259,7 +276,10 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
             )
         experiment_logger.mirror_output_directory(
             logging_config,
-            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "train"},
+            metadata={
+                "experiment_name": experiment_config["experiment_name"],
+                "job_type": "train",
+            },
         )
         return training_outputs
     finally:
@@ -277,7 +297,11 @@ def main() -> None:
     args = parser.parse_args()
 
     experiment_config = load_experiment_config(args.experiment_config)
-    console_print("CONFIG", "Loaded CLI training experiment config", experiment_config_path=args.experiment_config)
+    console_print(
+        "CONFIG",
+        "Loaded CLI training experiment config",
+        experiment_config_path=args.experiment_config,
+    )
     run_training_experiment(experiment_config)
 
 

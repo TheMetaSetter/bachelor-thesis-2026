@@ -1,12 +1,13 @@
 import logging
 
+
 def make_logger(filename, logger_name=None):
     logger = logging.getLogger(logger_name)
     logger.handlers.clear()
     logger.propagate = False
 
     logger.setLevel(logging.INFO)
-    formatter = logging.Formatter('[%(asctime)s] %(message)s')
+    formatter = logging.Formatter("[%(asctime)s] %(message)s")
 
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.INFO)

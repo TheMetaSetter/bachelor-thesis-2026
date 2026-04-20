@@ -59,10 +59,10 @@ class Encoder(nn.Module):
 class TokenEmbedding(nn.Module):
     def __init__(
         self,
-        in_dim,         # Input dimension của TokenEmbedding block là số lượng biến (variable)
-                        # của một time-series sub-sequence (window).
-        d_model,        # Kích thước của vec-tơ embedding mà TokenEmbedding block sẽ trả về.
-        n_window=100,   # Số lượng time-step trong một sub-sequence.
+        in_dim,  # Input dimension của TokenEmbedding block là số lượng biến (variable)
+        # của một time-series sub-sequence (window).
+        d_model,  # Kích thước của vec-tơ embedding mà TokenEmbedding block sẽ trả về.
+        n_window=100,  # Số lượng time-step trong một sub-sequence.
         n_layers=1,
         branch_layers=["fc_linear", "intra_fc_transformer"],
         group_embedding="False",
@@ -75,24 +75,32 @@ class TokenEmbedding(nn.Module):
     ):
         super(TokenEmbedding, self).__init__()
 
-        self.window_size = n_window     # Số lượng time-point trong một sub-sequence (window)
-        self.d_model = d_model          # Kích thước của vec-tơ embedding
-        
-        self.n_layers = n_layers        # Số lượng 1D Convolutional block trên nhánh i-Encoder.
-                                        # i-Encoder được cấu hình bằng `branch2_networks` trong file `main.py`.
-                                        # i-Encoder được sử dụng bằng thuộc tính `self.encoder_branch2` trong file `Transformer.py`.
-                                        # Convolutional block ở đây thực chất là `Inception_Block` trong file `Conv_Blocks.py`
-                                        # lấy ý tưởng và đơn giản hoá từ kiến trúc Inception của Google.
-        self.branch_layers = branch_layers  # Các loại block được sử dụng cho nhánh hiện tại.
-                                            # Nhánh hiện tại có thể là `t-AutoEncoder` (tương ứng `branch1_networks`)
-                                            # hoặc `i-Encoder` (tương ứng `branch2_networks` trong `main.py`).
-        self.group_embedding = group_embedding  # Có sử dụng kỹ thuật group convolution hay không?
-                                                # Nhắc lại: Kỹ thuật group convolution chia các filter
-                                                # của một convolutional layer ra thành nhiều group.
-                                                # Mỗi filter group sẽ phụ trách một nhóm các input channel khác nhau.
-                                                # Filter trong một group sẽ có độ sâu (depth) bằng với số lượng input channel
-                                                # mà group đó phụ trách. Thường thì số lượng input channel được chia đều cho
-                                                # các filter group.
+        self.window_size = (
+            n_window  # Số lượng time-point trong một sub-sequence (window)
+        )
+        self.d_model = d_model  # Kích thước của vec-tơ embedding
+
+        self.n_layers = (
+            n_layers  # Số lượng 1D Convolutional block trên nhánh i-Encoder.
+        )
+        # i-Encoder được cấu hình bằng `branch2_networks` trong file `main.py`.
+        # i-Encoder được sử dụng bằng thuộc tính `self.encoder_branch2` trong file `Transformer.py`.
+        # Convolutional block ở đây thực chất là `Inception_Block` trong file `Conv_Blocks.py`
+        # lấy ý tưởng và đơn giản hoá từ kiến trúc Inception của Google.
+        self.branch_layers = (
+            branch_layers  # Các loại block được sử dụng cho nhánh hiện tại.
+        )
+        # Nhánh hiện tại có thể là `t-AutoEncoder` (tương ứng `branch1_networks`)
+        # hoặc `i-Encoder` (tương ứng `branch2_networks` trong `main.py`).
+        self.group_embedding = (
+            group_embedding  # Có sử dụng kỹ thuật group convolution hay không?
+        )
+        # Nhắc lại: Kỹ thuật group convolution chia các filter
+        # của một convolutional layer ra thành nhiều group.
+        # Mỗi filter group sẽ phụ trách một nhóm các input channel khác nhau.
+        # Filter trong một group sẽ có độ sâu (depth) bằng với số lượng input channel
+        # mà group đó phụ trách. Thường thì số lượng input channel được chia đều cho
+        # các filter group.
         self.match_dimension = match_dimension
         self.kernel_size = kernel_size
         self.multiscale_patch_size = multiscale_patch_size
@@ -104,7 +112,6 @@ class TokenEmbedding(nn.Module):
         self.encoder_layers = nn.ModuleList([])
         self.norm_layers = nn.ModuleList([])
 
-        
         # Đối với mỗi loại layer (loại block) trong branch hiện tại (có thể là branch1 hoặc branch2)
         for i, e_layer in enumerate(branch_layers):
             ## 1. Quản lý input và output dimension của mỗi loại layer trong branch hiện tại.
@@ -173,24 +180,31 @@ class TokenEmbedding(nn.Module):
             if e_layer == "dropout":
                 self.encoder_layers.append(nn.Dropout(p=dropout))
                 self.norm_layers.append(nn.Identity())
-            elif e_layer == "fc_linear":    # Điều kiện đầu tiên được khớp đối với t-Autoencoder (branch1_network)
+            elif (
+                e_layer == "fc_linear"
+            ):  # Điều kiện đầu tiên được khớp đối với t-Autoencoder (branch1_network)
                 self.encoder_layers.append(
                     nn.ModuleList(
                         [
                             nn.Linear(updated_in_dim, extended_dim, bias=False)
-                            for _ in range(num_in_fc_networks)  # Mặc định thì `num_in_fc_networks = 2`.
-                                                                # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
-                                                                # Một block tính toán trên phần thực của tần số.
-                                                                # Một block tính toán trên phần ảo của tần số.
+                            for _ in range(
+                                num_in_fc_networks
+                            )  # Mặc định thì `num_in_fc_networks = 2`.
+                            # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
+                            # Một block tính toán trên phần thực của tần số.
+                            # Một block tính toán trên phần ảo của tần số.
                         ]
                     )
                 )
                 self.norm_layers.append(
                     nn.ModuleList(
-                        [nn.LayerNorm(extended_dim) for _ in range(num_in_fc_networks)] # Mặc định thì `num_in_fc_networks = 2`.
-                                                                # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
-                                                                # Một block tính toán trên phần thực của tần số.
-                                                                # Một block tính toán trên phần ảo của tần số.
+                        [
+                            nn.LayerNorm(extended_dim)
+                            for _ in range(num_in_fc_networks)
+                        ]  # Mặc định thì `num_in_fc_networks = 2`.
+                        # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
+                        # Một block tính toán trên phần thực của tần số.
+                        # Một block tính toán trên phần ảo của tần số.
                     )
                 )
             elif e_layer == "linear":
@@ -198,10 +212,12 @@ class TokenEmbedding(nn.Module):
                     nn.ModuleList(
                         [
                             nn.Linear(updated_in_dim, extended_dim, bias=False)
-                            for _ in range(num_in_fc_networks)  # Mặc định thì `num_in_fc_networks = 2`.
-                                                                # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
-                                                                # Một block tính toán trên phần thực của tần số.
-                                                                # Một block tính toán trên phần ảo của tần số.
+                            for _ in range(
+                                num_in_fc_networks
+                            )  # Mặc định thì `num_in_fc_networks = 2`.
+                            # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
+                            # Một block tính toán trên phần thực của tần số.
+                            # Một block tính toán trên phần ảo của tần số.
                         ]
                     )
                 )
@@ -224,10 +240,12 @@ class TokenEmbedding(nn.Module):
                         nn.ModuleList(
                             [
                                 nn.LayerNorm(self.window_size)
-                                for _ in range(num_in_fc_networks)  # Mặc định thì `num_in_fc_networks = 2`.
-                                                                    # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
-                                                                    # Một block tính toán trên phần thực của tần số.
-                                                                    # Một block tính toán trên phần ảo của tần số.
+                                for _ in range(
+                                    num_in_fc_networks
+                                )  # Mặc định thì `num_in_fc_networks = 2`.
+                                # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
+                                # Một block tính toán trên phần thực của tần số.
+                                # Một block tính toán trên phần ảo của tần số.
                             ]
                         )
                     )
@@ -246,10 +264,12 @@ class TokenEmbedding(nn.Module):
                                 dropout=dropout,
                                 activation="gelu",
                             )
-                            for _ in range(num_in_fc_networks)  # Mặc định thì `num_in_fc_networks = 2`.
-                                                                # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
-                                                                # Một block tính toán trên phần thực của tần số.
-                                                                # Một block tính toán trên phần ảo của tần số.
+                            for _ in range(
+                                num_in_fc_networks
+                            )  # Mặc định thì `num_in_fc_networks = 2`.
+                            # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
+                            # Một block tính toán trên phần thực của tần số.
+                            # Một block tính toán trên phần ảo của tần số.
                         ]
                     )
                 )
@@ -257,15 +277,19 @@ class TokenEmbedding(nn.Module):
                     nn.ModuleList(
                         [
                             nn.LayerNorm(self.window_size)
-                            for _ in range(num_in_fc_networks)  # Mặc định thì `num_in_fc_networks = 2`.
-                                                                # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
-                                                                # Một block tính toán trên phần thực của tần số.
-                                                                # Một block tính toán trên phần ảo của tần số.
+                            for _ in range(
+                                num_in_fc_networks
+                            )  # Mặc định thì `num_in_fc_networks = 2`.
+                            # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
+                            # Một block tính toán trên phần thực của tần số.
+                            # Một block tính toán trên phần ảo của tần số.
                         ]
                     )
                 )
 
-            elif e_layer == "intra_fc_transformer":     # Điều kiện thứ hai được khớp đối với t-Autoencoder (branch1_network)
+            elif (
+                e_layer == "intra_fc_transformer"
+            ):  # Điều kiện thứ hai được khớp đối với t-Autoencoder (branch1_network)
                 w_model = self.window_size // 2 + 1
                 attention_layer = AttentionLayer(
                     w_size=w_model, d_model=extended_dim, n_heads=1, dropout=dropout
@@ -280,10 +304,12 @@ class TokenEmbedding(nn.Module):
                                 dropout=dropout,
                                 activation="gelu",
                             )
-                            for _ in range(num_in_fc_networks)  # Mặc định thì `num_in_fc_networks = 2`.
-                                                                # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
-                                                                # Một block tính toán trên phần thực của tần số.
-                                                                # Một block tính toán trên phần ảo của tần số.
+                            for _ in range(
+                                num_in_fc_networks
+                            )  # Mặc định thì `num_in_fc_networks = 2`.
+                            # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
+                            # Một block tính toán trên phần thực của tần số.
+                            # Một block tính toán trên phần ảo của tần số.
                         ]
                     )
                 )
@@ -291,15 +317,19 @@ class TokenEmbedding(nn.Module):
                     nn.ModuleList(
                         [
                             nn.LayerNorm(self.window_size)
-                            for _ in range(num_in_fc_networks)  # Mặc định thì `num_in_fc_networks = 2`.
-                                                                # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
-                                                                # Một block tính toán trên phần thực của tần số.
-                                                                # Một block tính toán trên phần ảo của tần số.
+                            for _ in range(
+                                num_in_fc_networks
+                            )  # Mặc định thì `num_in_fc_networks = 2`.
+                            # Mỗi ModuleList như thế này sẽ chứa 2 block cùng loại.
+                            # Một block tính toán trên phần thực của tần số.
+                            # Một block tính toán trên phần ảo của tần số.
                         ]
                     )
                 )
 
-            elif e_layer == "multiscale_ts_attention":  # Điều kiện thứ ba được khớp đối với t-Autoencoder (branch1_network)
+            elif (
+                e_layer == "multiscale_ts_attention"
+            ):  # Điều kiện thứ ba được khớp đối với t-Autoencoder (branch1_network)
                 self.encoder_layers.append(
                     Inception_Attention_Block(
                         w_size=self.window_size,
@@ -361,7 +391,6 @@ class TokenEmbedding(nn.Module):
 
         # TODO: Biến này là gì?
         amplitudeRevIN = RevIN(int(L // 2 + 1))
-
 
         for i, (embedding_layer, norm_layer) in enumerate(
             zip(self.encoder_layers, self.norm_layers)

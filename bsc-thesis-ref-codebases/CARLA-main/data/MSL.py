@@ -1,4 +1,3 @@
-
 import os
 import pandas
 import numpy as np
@@ -12,53 +11,61 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class MSL(Dataset):
-    base_folder = ''
+    base_folder = ""
 
-    def __init__(self, fname, root=MyPath.db_root_dir('msl'), train=True, transform=None, sanomaly= None, mean_data=None, std_data=None):
-
+    def __init__(
+        self,
+        fname,
+        root=MyPath.db_root_dir("msl"),
+        train=True,
+        transform=None,
+        sanomaly=None,
+        mean_data=None,
+        std_data=None,
+    ):
         super(MSL, self).__init__()
         self.root = root
         self.transform = transform
         self.sanomaly = sanomaly
         self.train = train  # training set or test set
-        self.classes = ['Normal', 'Anomaly']
+        self.classes = ["Normal", "Anomaly"]
         self.data = []
         self.targets = []
         wsz, stride = 200, 1
 
-        with open(os.path.join(self.root, 'labeled_anomalies.csv'), 'r') as file:
-            csv_reader = pandas.read_csv(file, delimiter=',')
+        with open(os.path.join(self.root, "labeled_anomalies.csv"), "r") as file:
+            csv_reader = pandas.read_csv(file, delimiter=",")
 
-        data_info = csv_reader[csv_reader['chan_id'] == fname]
+        data_info = csv_reader[csv_reader["chan_id"] == fname]
 
         if self.train:
-            self.base_folder += 'train'
+            self.base_folder += "train"
         else:
-            self.base_folder += 'test'
+            self.base_folder += "test"
             labels = []
             for index, row in data_info.iterrows():
-                anomalies = ast.literal_eval(row['anomaly_sequences'])
+                anomalies = ast.literal_eval(row["anomaly_sequences"])
                 length = row.iloc[-1]
                 label = np.zeros([length], dtype=bool)
                 for anomaly in anomalies:
-                    label[anomaly[0]:anomaly[1] + 1] = True
+                    label[anomaly[0] : anomaly[1] + 1] = True
                 labels.extend(label)
             self.targets = np.asarray(labels)
 
             self.mean, self.std = mean_data, std_data
 
-        file_path = os.path.join(self.root, self.base_folder, fname+'.npy')
+        file_path = os.path.join(self.root, self.base_folder, fname + ".npy")
         temp = np.load(file_path)
-        if np.any(sum(np.isnan(temp))!=0):
-            print('Data contains NaN which replaced with zero')
+        if np.any(sum(np.isnan(temp)) != 0):
+            print("Data contains NaN which replaced with zero")
             temp = np.nan_to_num(temp)
 
         if self.train:
             self.mean = np.mean(temp, axis=0)
-            self.std = np.std(temp , axis=0)
+            self.std = np.std(temp, axis=0)
             # min_column = np.amin(temp, axis=0)
             # max_column = np.amax(temp, axis=0)
-            # self.mean, self.std = min_column, max_column 
+            # self.mean, self.std = min_column, max_column
         else:
             self.mean, self.std = mean_data, std_data
             # range_val = (std_data - mean_data) + 1e-20
@@ -72,14 +79,15 @@ class MSL(Dataset):
     def convert_to_windows(self, w_size, stride):
         windows = []
         wlabels = []
-        sz = int((self.data.shape[0]-w_size)/stride)
+        sz = int((self.data.shape[0] - w_size) / stride)
         for i in range(0, sz):
             st = i * stride
-            w = self.data[st:st+w_size]
-            if sum(self.targets[st:st+w_size]) > 0:
+            w = self.data[st : st + w_size]
+            if sum(self.targets[st : st + w_size]) > 0:
                 lbl = 1
-            else: lbl=0
-                    
+            else:
+                lbl = 0
+
             windows.append(w)
             wlabels.append(lbl)
         return np.stack(windows), np.stack(wlabels)
@@ -96,15 +104,21 @@ class MSL(Dataset):
 
         if len(self.targets) > 0:
             # target = self.targets[index].astype(int)
-            target = torch.tensor(self.targets[index].astype(int), dtype=torch.long).to(device)
+            target = torch.tensor(self.targets[index].astype(int), dtype=torch.long).to(
+                device
+            )
             class_name = self.classes[target]
         else:
             target = 0
-            class_name = ''
+            class_name = ""
 
         ts_size = (ts_org.shape[0], ts_org.shape[1])
 
-        out = {'ts_org': ts_org, 'target': target, 'meta': {'ts_size': ts_size, 'index': index, 'class_name': class_name}}
+        out = {
+            "ts_org": ts_org,
+            "target": target,
+            "meta": {"ts_size": ts_size, "index": index, "class_name": class_name},
+        }
 
         return out
 

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Sequential window streaming for the first online adaptation slice.
 
 The offline data path exposes shuffled batches. This file instead preserves time
@@ -45,7 +46,9 @@ class SMDOnlineStream:
         # The first accepted online slice is intentionally conservative. The
         # stream therefore supports only clean sequential windows right now.
         if not clean_stream_only:
-            raise ValueError("The first online adaptation slice supports only clean_stream_only=True")
+            raise ValueError(
+                "The first online adaptation slice supports only clean_stream_only=True"
+            )
         self.sequences = sequences
         self.window_size = window_size
         self.stride = stride
@@ -92,7 +95,9 @@ class SMDOnlineStream:
             raise StopIteration("No more windows remain in the online stream")
 
         stream_step = self.cursor.position
-        sequence_index, start_index, end_index = self.index_records[self.cursor.position]
+        sequence_index, start_index, end_index = self.index_records[
+            self.cursor.position
+        ]
         sequence = self.sequences[sequence_index]
         self.cursor.position += 1
 
@@ -101,7 +106,9 @@ class SMDOnlineStream:
             "point_labels": None
             if sequence["point_labels"] is None
             else sequence["point_labels"][start_index:end_index].clone(),
-            "mask": None if sequence["mask"] is None else sequence["mask"][start_index:end_index].clone(),
+            "mask": None
+            if sequence["mask"] is None
+            else sequence["mask"][start_index:end_index].clone(),
             "timestamps": None
             if sequence["timestamps"] is None
             else sequence["timestamps"][start_index:end_index].clone(),
@@ -168,7 +175,9 @@ class OnlineWindowBatcher:
         # the main experiment question is adaptation, not aggressive augmentation.
         view_tensor = batch_tensor.clone()
         if self.view_noise_std > 0.0:
-            view_tensor = view_tensor + torch.randn_like(view_tensor) * self.view_noise_std
+            view_tensor = (
+                view_tensor + torch.randn_like(view_tensor) * self.view_noise_std
+            )
         if self.view_dropout_probability > 0.0:
             keep_mask = torch.rand_like(view_tensor).ge(self.view_dropout_probability)
             view_tensor = view_tensor * keep_mask.to(view_tensor.dtype)

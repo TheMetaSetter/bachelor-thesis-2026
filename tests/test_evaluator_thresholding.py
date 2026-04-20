@@ -11,7 +11,9 @@ from src.metrics.pointwise import (
 )
 
 
-def test_select_point_score_threshold_ignores_zero_mass_when_positive_scores_exist() -> None:
+def test_select_point_score_threshold_ignores_zero_mass_when_positive_scores_exist() -> (
+    None
+):
     point_scores = np.array([0.0, 0.0, 0.0, 0.2, 0.4, 0.8], dtype=np.float32)
 
     threshold = select_point_score_threshold(point_scores, quantile=0.5)

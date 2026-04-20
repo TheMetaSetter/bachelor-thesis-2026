@@ -48,7 +48,9 @@ class MomentWindowAdapter(BaseBatchAdapter):
     def prepare_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         batch_x = batch["x"]
         if batch_x.ndim != 3:
-            raise ValueError(f"Expected batch['x'] with shape [B, L, D], got {tuple(batch_x.shape)}")
+            raise ValueError(
+                f"Expected batch['x'] with shape [B, L, D], got {tuple(batch_x.shape)}"
+            )
 
         moment_x_enc = batch_x.transpose(1, 2).contiguous()
         observed_window_length = int(moment_x_enc.shape[-1])
@@ -58,7 +60,9 @@ class MomentWindowAdapter(BaseBatchAdapter):
             )
         if observed_window_length < self.context_length:
             padding_length = self.context_length - observed_window_length
-            moment_x_enc = torch.nn.functional.pad(moment_x_enc, (0, padding_length), value=0.0)
+            moment_x_enc = torch.nn.functional.pad(
+                moment_x_enc, (0, padding_length), value=0.0
+            )
 
         input_mask = torch.zeros(
             (batch_x.shape[0], self.context_length),

@@ -16,20 +16,21 @@ import torch
 class THOC_Trainer(Trainer):
     def __init__(self, args, logger, train_loader):
         super(THOC_Trainer, self).__init__(
-            args=args,
-            logger=logger,
-            train_loader=train_loader
+            args=args, logger=logger, train_loader=train_loader
         )
 
         self.model = THOC(
             C=self.args.num_channels,
             W=self.args.window_size,
             n_hidden=self.args.model.hidden_dim,
-            device=self.args.device
+            device=self.args.device,
         ).to(self.args.device)
 
-        self.optimizer = torch.optim.AdamW(params=self.model.parameters(), lr=self.args.lr,
-                                           weight_decay=self.args.model.L2_reg)
+        self.optimizer = torch.optim.AdamW(
+            params=self.model.parameters(),
+            lr=self.args.lr,
+            weight_decay=self.args.model.L2_reg,
+        )
 
     def train(self):
         wandb.watch(self.model, log="all", log_freq=100)
@@ -38,20 +39,21 @@ class THOC_Trainer(Trainer):
             range(1, self.args.epochs + 1),
             total=self.args.epochs,
             desc="training epochs",
-            leave=True
+            leave=True,
         )
 
         best_train_stats = None
         for epoch in train_iterator:
             train_stats = self.train_epoch()
             self.logger.info(f"epoch {epoch} | train_stats: {train_stats}")
-            self.checkpoint(os.path.join(self.args.checkpoint_path, f"epoch{epoch}.pth"))
+            self.checkpoint(
+                os.path.join(self.args.checkpoint_path, f"epoch{epoch}.pth")
+            )
 
             if best_train_stats is None or train_stats < best_train_stats:
                 self.logger.info(f"Saving best results @epoch{epoch}")
                 self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))
                 best_train_stats = train_stats
-
 
     def train_epoch(self):
         self.model.train()
@@ -66,7 +68,6 @@ class THOC_Trainer(Trainer):
         train_summary /= len(self.train_loader)
         return train_summary
 
-
     def _process_batch(self, batch_data) -> dict:
         out = dict()
         X = batch_data[0].to(self.args.device)
@@ -77,15 +78,20 @@ class THOC_Trainer(Trainer):
             out.update({k: loss_dict[k].item()})
 
         self.optimizer.zero_grad()
-        loss = loss_dict["L_THOC"] + self.args.model.LAMBDA_orth * loss_dict["L_orth"] + self.args.model.LAMBDA_TSS * loss_dict["L_TSS"]
+        loss = (
+            loss_dict["L_THOC"]
+            + self.args.model.LAMBDA_orth * loss_dict["L_orth"]
+            + self.args.model.LAMBDA_TSS * loss_dict["L_TSS"]
+        )
         loss.backward()
         self.optimizer.step()
 
-        out.update({
-            "summary": loss.item(),
-        })
+        out.update(
+            {
+                "summary": loss.item(),
+            }
+        )
         return out
-
 
 
 class THOC_Tester(Tester):
@@ -101,13 +107,12 @@ class THOC_Tester(Tester):
             C=self.args.num_channels,
             W=self.args.window_size,
             n_hidden=self.args.model.hidden_dim,
-            device=self.args.device
+            device=self.args.device,
         ).to(self.args.device)
 
         if load:
             self.load_trained_model()
             self.prepare_stats()
-
 
     @torch.no_grad()
     def calculate_anomaly_scores(self, dataloader):
@@ -115,7 +120,7 @@ class THOC_Tester(Tester):
             dataloader,
             total=len(dataloader),
             desc="calculating anomaly scores",
-            leave=True
+            leave=True,
         )
 
         anomaly_scores = []

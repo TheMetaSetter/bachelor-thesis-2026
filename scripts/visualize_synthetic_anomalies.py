@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Visualization helper for inspecting one synthetic anomaly family at a time."""
 
 import argparse
@@ -9,6 +10,7 @@ import torch
 
 # Add src to path for imports
 import sys
+
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.config import load_experiment_config
@@ -28,15 +30,21 @@ def save_synthetic_anomaly_visualization(
 
     clean_window = clean_batch["x"][sample_index].detach().cpu()
     augmented_window = augmented_batch["x"][sample_index].detach().cpu()
-    anomaly_mask = augmented_batch["synthetic_anomaly_mask"][sample_index].detach().cpu()
+    anomaly_mask = (
+        augmented_batch["synthetic_anomaly_mask"][sample_index].detach().cpu()
+    )
     metadata = augmented_batch["augmentation_metadata"][sample_index]
 
     channels_to_plot = min(3, clean_window.shape[1])
     figure, axes = plt.subplots(3, 1, figsize=(10, 8), constrained_layout=True)
 
     for channel_index in range(channels_to_plot):
-        axes[0].plot(clean_window[:, channel_index].numpy(), label=f"channel {channel_index}")
-        axes[1].plot(augmented_window[:, channel_index].numpy(), label=f"channel {channel_index}")
+        axes[0].plot(
+            clean_window[:, channel_index].numpy(), label=f"channel {channel_index}"
+        )
+        axes[1].plot(
+            augmented_window[:, channel_index].numpy(), label=f"channel {channel_index}"
+        )
 
     axes[0].set_title("Clean window")
     axes[1].set_title(
@@ -53,7 +61,9 @@ def save_synthetic_anomaly_visualization(
     for axis in axes[:2]:
         axis.legend(loc="upper right")
         if metadata["start_index"] is not None and metadata["end_index"] is not None:
-            axis.axvspan(metadata["start_index"], metadata["end_index"], color="red", alpha=0.15)
+            axis.axvspan(
+                metadata["start_index"], metadata["end_index"], color="red", alpha=0.15
+            )
 
     figure.savefig(output_file, dpi=150)
     plt.close(figure)
@@ -72,7 +82,9 @@ def build_demo_batch(experiment_config_path: str | None = None) -> dict:
 
     experiment_config = load_experiment_config(experiment_config_path)
     register_dataset("smd", build_smd_dataset_bundle)
-    data_bundle = build_dataset(experiment_config["data"]["dataset_name"], experiment_config["data"])
+    data_bundle = build_dataset(
+        experiment_config["data"]["dataset_name"], experiment_config["data"]
+    )
     return next(iter(data_bundle["loaders"]["train"]))
 
 

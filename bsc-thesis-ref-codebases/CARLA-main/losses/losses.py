@@ -1,55 +1,54 @@
-
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
 
-EPS=1e-8
+EPS = 1e-8
 
 
 class MaskedCrossEntropyLoss(nn.Module):
     def __init__(self):
         super(MaskedCrossEntropyLoss, self).__init__()
-        
-    def forward(self, input, target, mask, weight, reduction='mean'):
+
+    def forward(self, input, target, mask, weight, reduction="mean"):
         if not (mask != 0).any():
-            raise ValueError('Mask in MaskedCrossEntropyLoss is all zeros.')
+            raise ValueError("Mask in MaskedCrossEntropyLoss is all zeros.")
         target = torch.masked_select(target, mask)
         b, c = input.size()
         n = target.size(0)
         input = torch.masked_select(input, mask.view(b, 1)).view(n, c)
-        return F.cross_entropy(input, target, weight = weight, reduction = reduction)
+        return F.cross_entropy(input, target, weight=weight, reduction=reduction)
 
 
 def entropy(x, input_as_probabilities):
-    """ 
-    Helper function to compute the entropy over the batch 
+    """
+    Helper function to compute the entropy over the batch
 
     input: batch w/ shape [b, num_classes]
     output: entropy value [is ideally -log(num_classes)]
     """
 
     if input_as_probabilities:
-        x_ =  torch.clamp(x, min = EPS)
-        b =  x_ * torch.log(x_)
+        x_ = torch.clamp(x, min=EPS)
+        b = x_ * torch.log(x_)
     else:
-        b = F.softmax(x, dim = 1) * F.log_softmax(x, dim = 1)
+        b = F.softmax(x, dim=1) * F.log_softmax(x, dim=1)
 
-    if len(b.size()) == 2: # Sample-wise entropy
-        return -b.sum(dim = 1).mean()
-    elif len(b.size()) == 1: # Distribution-wise entropy
-        return - b.sum()
+    if len(b.size()) == 2:  # Sample-wise entropy
+        return -b.sum(dim=1).mean()
+    elif len(b.size()) == 1:  # Distribution-wise entropy
+        return -b.sum()
     else:
-        raise ValueError('Input tensor is %d-Dimensional' %(len(b.size())))
+        raise ValueError("Input tensor is %d-Dimensional" % (len(b.size())))
 
 
 class ClassificationLoss(nn.Module):
-    def __init__(self, entropy_weight = 2.0, inconsistency_weight=0.0):
+    def __init__(self, entropy_weight=2.0, inconsistency_weight=0.0):
         super(ClassificationLoss, self).__init__()
-        self.softmax = nn.Softmax(dim = 1)
+        self.softmax = nn.Softmax(dim=1)
         self.bce = nn.BCELoss()
-        self.entropy_weight = entropy_weight 
+        self.entropy_weight = entropy_weight
         self.inconsistency_weight = inconsistency_weight
 
     def forward(self, anchors, nneighbors, fneighbors):
@@ -66,23 +65,31 @@ class ClassificationLoss(nn.Module):
         anchors_prob = self.softmax(anchors)
         positives_prob = self.softmax(nneighbors)
         negatives_prob = self.softmax(fneighbors)
-       
+
         # Similarity in output space
-        similarity = torch.bmm(anchors_prob.view(b, 1, n), positives_prob.view(b, n, 1)).squeeze()
+        similarity = torch.bmm(
+            anchors_prob.view(b, 1, n), positives_prob.view(b, n, 1)
+        ).squeeze()
         ones = torch.ones_like(similarity)
         consistency_loss = self.bce(similarity, ones)
 
         # DiSimilarity in output space
-        negsimilarity = torch.bmm(anchors_prob.view(b, 1, n), negatives_prob.view(b, n, 1)).squeeze()
+        negsimilarity = torch.bmm(
+            anchors_prob.view(b, 1, n), negatives_prob.view(b, n, 1)
+        ).squeeze()
         zeros = torch.zeros_like(negsimilarity)
         inconsistency_loss = self.bce(negsimilarity, zeros)
-        
+
         # Entropy loss
-        entropy_loss = entropy(torch.mean(anchors_prob, 0), input_as_probabilities = True)
-        #-torch.sum(anchors_prob * torch.log(anchors_prob + 1e-12), dim=-1).mean() #
+        entropy_loss = entropy(torch.mean(anchors_prob, 0), input_as_probabilities=True)
+        # -torch.sum(anchors_prob * torch.log(anchors_prob + 1e-12), dim=-1).mean() #
 
         # Total loss
-        total_loss = consistency_loss - self.entropy_weight * entropy_loss + self.inconsistency_weight * inconsistency_loss
+        total_loss = (
+            consistency_loss
+            - self.entropy_weight * entropy_loss
+            + self.inconsistency_weight * inconsistency_loss
+        )
 
         return total_loss, consistency_loss, inconsistency_loss, entropy_loss
 
@@ -107,7 +114,9 @@ class PretextLoss(nn.Module):
 
         # Split the input features into 3 group having size of `self.bs`, which is the batch size
         # Batch size is 50 for SMD dataset, for example.
-        features_org, features_pos, features_subseq = torch.split(features, self.bs, dim=0)
+        features_org, features_pos, features_subseq = torch.split(
+            features, self.bs, dim=0
+        )
 
         # Normalize features for stable distance computation
         anchor = F.normalize(features_org, dim=-1)
@@ -118,10 +127,17 @@ class PretextLoss(nn.Module):
         if current_loss is not None:
             self.margin = max(0.01, self.margin - self.adjust_factor * current_loss)
 
-        positive_distance = torch.sum((anchor - positive) ** 2, dim=-1) / self.temperature
-        negative_distance = torch.sum(torch.pow(anchor.unsqueeze(1) - negative, 2), dim=-1) / self.temperature
+        positive_distance = (
+            torch.sum((anchor - positive) ** 2, dim=-1) / self.temperature
+        )
+        negative_distance = (
+            torch.sum(torch.pow(anchor.unsqueeze(1) - negative, 2), dim=-1)
+            / self.temperature
+        )
         hard_negative_distance = torch.min(negative_distance, dim=1)[0]
-        loss = torch.clamp(self.margin + positive_distance - hard_negative_distance, min=0.0)
+        loss = torch.clamp(
+            self.margin + positive_distance - hard_negative_distance, min=0.0
+        )
         # clamped_distance = torch.clamp(self.margin + positive_distance - negative_distance, min=0.0)
         # loss = torch.sum(clamped_distance, dim=1)
         loss = torch.mean(loss)
@@ -147,7 +163,6 @@ class PretextLoss(nn.Module):
 
         # return loss
 
-
     def cosine_similarity(self, x1, x2):
         dot_product = torch.sum(x1 * x2, dim=1)
         norm_product = torch.norm(x1, dim=1) * torch.norm(x2, dim=1)
@@ -155,6 +170,4 @@ class PretextLoss(nn.Module):
         return cosine_similarity
 
     def euclidan_dist(self, x1, x2):
-        return torch.sqrt(((x1 - x2)**2).sum(dim=1))
-
-
+        return torch.sqrt(((x1 - x2) ** 2).sum(dim=1))

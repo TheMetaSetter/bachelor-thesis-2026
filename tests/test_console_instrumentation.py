@@ -83,7 +83,9 @@ def test_model_construction_emits_parameter_summary(capsys) -> None:
     assert "lambda_use=0.010000" in captured.out
 
 
-def test_run_training_experiment_emits_runtime_console_messages(capsys, tmp_path: Path) -> None:
+def test_run_training_experiment_emits_runtime_console_messages(
+    capsys, tmp_path: Path
+) -> None:
     experiment_config = {
         "experiment_name": "console_instrumentation_smoke",
         "seed": 7,

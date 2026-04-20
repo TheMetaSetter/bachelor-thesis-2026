@@ -15,7 +15,7 @@ from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.estimator_checks import check_estimator
 
 from ..utils.stat_models import pairwise_distances_no_broadcast
-from ..utils.utility import check_parameter    
+from ..utils.utility import check_parameter
 from .base import BaseDetector
 from ..utils.utility import zscore
 
@@ -130,10 +130,19 @@ class CBLOF(BaseDetector):
         ``threshold_`` on ``decision_scores_``.
     """
 
-    def __init__(self, n_clusters=8, contamination=0.1,
-                 clustering_estimator=None, alpha=0.9, beta=5,
-                 use_weights=False, check_estimator=False, random_state=0,
-                 n_jobs=1, normalize=True):
+    def __init__(
+        self,
+        n_clusters=8,
+        contamination=0.1,
+        clustering_estimator=None,
+        alpha=0.9,
+        beta=5,
+        use_weights=False,
+        check_estimator=False,
+        random_state=0,
+        n_jobs=1,
+        normalize=True,
+    ):
         super(CBLOF, self).__init__(contamination=contamination)
         self.n_clusters = n_clusters
         self.clustering_estimator = clustering_estimator
@@ -166,13 +175,14 @@ class CBLOF(BaseDetector):
         X = check_array(X)
         self._set_n_classes(y)
         n_samples, n_features = X.shape
-        if self.normalize: X = zscore(X, axis=1, ddof=1)
+        if self.normalize:
+            X = zscore(X, axis=1, ddof=1)
 
         # check parameters
         # number of clusters are default to 8
-        self._validate_estimator(default=KMeans(
-            n_clusters=self.n_clusters,
-            random_state=self.random_state))
+        self._validate_estimator(
+            default=KMeans(n_clusters=self.n_clusters, random_state=self.random_state)
+        )
 
         self.clustering_estimator_.fit(X=X, y=y)
         # Get the labels of the clustering results
@@ -184,15 +194,17 @@ class CBLOF(BaseDetector):
         self.n_clusters_ = self.cluster_sizes_.shape[0]
 
         if self.n_clusters_ != self.n_clusters:
-            warnings.warn("The chosen clustering for CBLOF forms {0} clusters"
-                          "which is inconsistent with n_clusters ({1}).".
-                          format(self.n_clusters_, self.n_clusters))
+            warnings.warn(
+                "The chosen clustering for CBLOF forms {0} clusters"
+                "which is inconsistent with n_clusters ({1}).".format(
+                    self.n_clusters_, self.n_clusters
+                )
+            )
 
         self._set_cluster_centers(X, n_features)
         self._set_small_large_clusters(n_samples)
 
-        self.decision_scores_ = self._decision_function(X,
-                                                        self.cluster_labels_)
+        self.decision_scores_ = self._decision_function(X, self.cluster_labels_)
 
         self._process_decision_scores()
         return self
@@ -215,19 +227,23 @@ class CBLOF(BaseDetector):
         anomaly_scores : numpy array of shape (n_samples,)
             The anomaly score of the input samples.
         """
-        check_is_fitted(self, ['decision_scores_', 'threshold_', 'labels_'])
+        check_is_fitted(self, ["decision_scores_", "threshold_", "labels_"])
         X = check_array(X)
         labels = self.clustering_estimator_.predict(X)
         return self._decision_function(X, labels)
 
     def _validate_estimator(self, default=None):
-        """Check the value of alpha and beta and clustering algorithm.
-        """
-        check_parameter(self.alpha, low=0, high=1, param_name='alpha',
-                        include_left=False, include_right=False)
+        """Check the value of alpha and beta and clustering algorithm."""
+        check_parameter(
+            self.alpha,
+            low=0,
+            high=1,
+            param_name="alpha",
+            include_left=False,
+            include_right=False,
+        )
 
-        check_parameter(self.beta, low=1, param_name='beta',
-                        include_left=False)
+        check_parameter(self.beta, low=1, param_name="beta", include_left=False)
 
         if self.clustering_estimator is not None:
             self.clustering_estimator_ = self.clustering_estimator
@@ -243,18 +259,21 @@ class CBLOF(BaseDetector):
 
     def _set_cluster_centers(self, X, n_features):
         # Noted not all clustering algorithms have cluster_centers_
-        if hasattr(self.clustering_estimator_, 'cluster_centers_'):
+        if hasattr(self.clustering_estimator_, "cluster_centers_"):
             self.cluster_centers_ = self.clustering_estimator_.cluster_centers_
         else:
             # Set the cluster center as the mean of all the samples within
             # the cluster
-            warnings.warn("The chosen clustering for CBLOF does not have"
-                          "the center of clusters. Calculate the center"
-                          "as the mean of the clusters.")
+            warnings.warn(
+                "The chosen clustering for CBLOF does not have"
+                "the center of clusters. Calculate the center"
+                "as the mean of the clusters."
+            )
             self.cluster_centers_ = np.zeros([self.n_clusters_, n_features])
             for i in range(self.n_clusters_):
                 self.cluster_centers_[i, :] = np.mean(
-                    X[np.where(self.cluster_labels_ == i)], axis=0)
+                    X[np.where(self.cluster_labels_ == i)], axis=0
+                )
 
     def _set_small_large_clusters(self, n_samples):
         # Sort the index of clusters by the number of samples belonging to it
@@ -273,8 +292,11 @@ class CBLOF(BaseDetector):
             if temp_sum >= n_samples * self.alpha:
                 alpha_list.append(i)
 
-            if size_clusters[sorted_cluster_indices[i - 1]] / size_clusters[
-                sorted_cluster_indices[i]] >= self.beta:
+            if (
+                size_clusters[sorted_cluster_indices[i - 1]]
+                / size_clusters[sorted_cluster_indices[i]]
+                >= self.beta
+            ):
                 beta_list.append(i)
 
             # Find the separation index fulfills both alpha and beta
@@ -287,34 +309,40 @@ class CBLOF(BaseDetector):
         elif len(beta_list) > 0:
             self._clustering_threshold = beta_list[0]
         else:
-            raise ValueError("Could not form valid cluster separation. Please "
-                             "change n_clusters or change clustering method")
+            raise ValueError(
+                "Could not form valid cluster separation. Please "
+                "change n_clusters or change clustering method"
+            )
 
         self.small_cluster_labels_ = sorted_cluster_indices[
-                                     self._clustering_threshold:]
+            self._clustering_threshold :
+        ]
         self.large_cluster_labels_ = sorted_cluster_indices[
-                                     0:self._clustering_threshold]
+            0 : self._clustering_threshold
+        ]
 
         # No need to calculate small cluster center
         # self.small_cluster_centers_ = self.cluster_centers_[
         #     self.small_cluster_labels_]
 
-        self._large_cluster_centers = self.cluster_centers_[
-            self.large_cluster_labels_]
+        self._large_cluster_centers = self.cluster_centers_[self.large_cluster_labels_]
 
     def _decision_function(self, X, labels):
         # Initialize the score array
-        scores = np.zeros([X.shape[0], ])
+        scores = np.zeros(
+            [
+                X.shape[0],
+            ]
+        )
 
-        small_indices = np.where(
-            np.isin(labels, self.small_cluster_labels_))[0]
-        large_indices = np.where(
-            np.isin(labels, self.large_cluster_labels_))[0]
+        small_indices = np.where(np.isin(labels, self.small_cluster_labels_))[0]
+        large_indices = np.where(np.isin(labels, self.large_cluster_labels_))[0]
 
         if small_indices.shape[0] != 0:
             # Calculate the outlier factor for the samples in small clusters
-            dist_to_large_center = cdist(X[small_indices, :],
-                                         self._large_cluster_centers)
+            dist_to_large_center = cdist(
+                X[small_indices, :], self._large_cluster_centers
+            )
 
             scores[small_indices] = np.min(dist_to_large_center, axis=1)
 
@@ -323,7 +351,8 @@ class CBLOF(BaseDetector):
             large_centers = self.cluster_centers_[labels[large_indices]]
 
             scores[large_indices] = pairwise_distances_no_broadcast(
-                X[large_indices, :], large_centers)
+                X[large_indices, :], large_centers
+            )
 
         if self.use_weights:
             # Weights are calculated as the number of elements in the cluster

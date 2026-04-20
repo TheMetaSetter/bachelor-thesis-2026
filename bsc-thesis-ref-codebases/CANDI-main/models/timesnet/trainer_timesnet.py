@@ -45,5 +45,7 @@ class TimesnetTrainer(Trainer):
             "optimizer_state": self.optimizer.state_dict(),
             "cfg": self.cfg.dump(),
         }
-        with open(mkdir(self.cfg.TRAIN.CHECKPOINT_DIR) / 'checkpoint_best.pth', "wb") as f:
+        with open(
+            mkdir(self.cfg.TRAIN.CHECKPOINT_DIR) / "checkpoint_best.pth", "wb"
+        ) as f:
             torch.save(checkpoint, f)

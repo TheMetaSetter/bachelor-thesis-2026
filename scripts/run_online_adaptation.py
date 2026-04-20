@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Entrypoint for the first online adaptation slice.
 
 Read this script after the offline train and evaluate scripts. It follows the
@@ -18,7 +19,12 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.console import console_print
 from src.core.config import load_experiment_config
-from src.core.registry import build_dataset, build_model, register_dataset, register_model
+from src.core.registry import (
+    build_dataset,
+    build_model,
+    register_dataset,
+    register_model,
+)
 from src.core.seed import seed_everything
 from src.data.loaders import build_smd_dataset_bundle
 from src.data.stream import OnlineWindowBatcher, SMDOnlineStream
@@ -38,7 +44,9 @@ def register_runtime_components() -> None:
     console_print("REGISTRY", "Registered online adaptation runtime components")
 
 
-def build_model_from_experiment_config(experiment_config: dict[str, Any]) -> torch.nn.Module:
+def build_model_from_experiment_config(
+    experiment_config: dict[str, Any],
+) -> torch.nn.Module:
     # Only the online-specific task keys are passed into the online model here,
     # because the online file owns the adaptation boundary directly.
     model_name = experiment_config["model"]["model_name"]
@@ -71,7 +79,9 @@ def build_model_from_experiment_config(experiment_config: dict[str, Any]) -> tor
     return build_model(model_name, **model_kwargs)
 
 
-def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[str, Any]:
+def run_online_adaptation_experiment(
+    experiment_config: dict[str, Any],
+) -> dict[str, Any]:
     # The first accepted online runtime is intentionally conservative:
     # build a clean stream, adapt a small parameter group, and checkpoint often.
     seed_everything(int(experiment_config["seed"]))
@@ -86,7 +96,9 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
         checkpoint_dir=experiment_config["checkpoint_dir"],
     )
 
-    data_bundle = build_dataset(experiment_config["data"]["dataset_name"], experiment_config["data"])
+    data_bundle = build_dataset(
+        experiment_config["data"]["dataset_name"], experiment_config["data"]
+    )
     console_print(
         "DATA",
         "Built dataset bundle for online adaptation",
@@ -138,7 +150,9 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
         stream=online_stream,
         batch_size=int(experiment_config["data"]["batch_size"]),
         view_noise_std=float(experiment_config["task"]["view_noise_std"]),
-        view_dropout_probability=float(experiment_config["task"]["view_dropout_probability"]),
+        view_dropout_probability=float(
+            experiment_config["task"]["view_dropout_probability"]
+        ),
     )
     console_print(
         "ONLINE",
@@ -163,7 +177,9 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
             config=experiment_config,
             max_online_steps=int(experiment_config["task"]["max_online_steps"]),
             log_every_n_steps=int(experiment_config["task"]["log_every_n_steps"]),
-            checkpoint_every_n_steps=int(experiment_config["task"]["checkpoint_every_n_steps"]),
+            checkpoint_every_n_steps=int(
+                experiment_config["task"]["checkpoint_every_n_steps"]
+            ),
         )
         console_print(
             "ONLINE",
@@ -176,11 +192,17 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
         metrics_path = output_dir / "online_metrics.json"
         records_path = output_dir / "online_records.json"
 
-        metrics_path.write_text(json.dumps(online_outputs["metric_history"], indent=2), encoding="utf-8")
-        records_path.write_text(json.dumps(online_outputs["records"], indent=2), encoding="utf-8")
+        metrics_path.write_text(
+            json.dumps(online_outputs["metric_history"], indent=2), encoding="utf-8"
+        )
+        records_path.write_text(
+            json.dumps(online_outputs["records"], indent=2), encoding="utf-8"
+        )
         experiment_logger.log_summary(
             {
-                "online/final_checkpoint_path": str(online_outputs["final_checkpoint_path"]),
+                "online/final_checkpoint_path": str(
+                    online_outputs["final_checkpoint_path"]
+                ),
                 "online/num_logged_steps": len(online_outputs["metric_history"]),
             }
         )
@@ -189,35 +211,50 @@ def run_online_adaptation_experiment(experiment_config: dict[str, Any]) -> dict[
             artifact_name=f"{experiment_config['experiment_name']}-resolved-config",
             artifact_type="config",
             aliases=["latest"],
-            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+            metadata={
+                "experiment_name": experiment_config["experiment_name"],
+                "job_type": "online_adaptation",
+            },
         )
         experiment_logger.log_artifact_file(
             file_path=experiment_logger.metrics_path,
             artifact_name=f"{experiment_config['experiment_name']}-metrics",
             artifact_type="metrics",
             aliases=["latest"],
-            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+            metadata={
+                "experiment_name": experiment_config["experiment_name"],
+                "job_type": "online_adaptation",
+            },
         )
         experiment_logger.log_artifact_file(
             file_path=metrics_path,
             artifact_name=f"{experiment_config['experiment_name']}-online-metrics",
             artifact_type="online-evaluation",
             aliases=["latest"],
-            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+            metadata={
+                "experiment_name": experiment_config["experiment_name"],
+                "job_type": "online_adaptation",
+            },
         )
         experiment_logger.log_artifact_file(
             file_path=records_path,
             artifact_name=f"{experiment_config['experiment_name']}-online-records",
             artifact_type="online-evaluation",
             aliases=["latest"],
-            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+            metadata={
+                "experiment_name": experiment_config["experiment_name"],
+                "job_type": "online_adaptation",
+            },
         )
         experiment_logger.log_artifact_file(
             file_path=online_outputs["final_checkpoint_path"],
             artifact_name=f"{experiment_config['experiment_name']}-checkpoint",
             artifact_type="checkpoint",
             aliases=["final", "latest"],
-            metadata={"experiment_name": experiment_config["experiment_name"], "job_type": "online_adaptation"},
+            metadata={
+                "experiment_name": experiment_config["experiment_name"],
+                "job_type": "online_adaptation",
+            },
         )
         experiment_logger.mirror_output_directory(
             logging_config,
@@ -240,7 +277,11 @@ def main() -> None:
     args = parser.parse_args()
 
     experiment_config = load_experiment_config(args.experiment_config)
-    console_print("CONFIG", "Loaded CLI online adaptation config", experiment_config_path=args.experiment_config)
+    console_print(
+        "CONFIG",
+        "Loaded CLI online adaptation config",
+        experiment_config_path=args.experiment_config,
+    )
     run_online_adaptation_experiment(experiment_config)
 
 

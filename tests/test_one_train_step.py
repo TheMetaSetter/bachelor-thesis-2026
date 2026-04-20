@@ -6,7 +6,9 @@ from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 
 
 def test_one_forward_and_backward_step_runs() -> None:
-    model = ReconstructionMLPAutoencoder(input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0)
+    model = ReconstructionMLPAutoencoder(
+        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     batch = {
         "x": torch.randn(2, 100, 38),

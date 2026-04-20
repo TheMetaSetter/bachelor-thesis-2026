@@ -14,7 +14,8 @@ from .base import BaseDetector
 from ..utils.utility import zscore
 import numpy as np
 import math
-__all__ = ['MCD']
+
+__all__ = ["MCD"]
 
 
 class MCD(BaseDetector):
@@ -111,9 +112,17 @@ class MCD(BaseDetector):
         ``threshold_`` on ``decision_scores_``.
     """
 
-    def __init__(self, slidingWindow=100, sub=True, contamination=0.1, store_precision=True,
-                 assume_centered=False, support_fraction=None,
-                 random_state=2024, normalize=True):
+    def __init__(
+        self,
+        slidingWindow=100,
+        sub=True,
+        contamination=0.1,
+        store_precision=True,
+        assume_centered=False,
+        support_fraction=None,
+        random_state=2024,
+        normalize=True,
+    ):
         super(MCD, self).__init__(contamination=contamination)
         self.store_precision = store_precision
         self.sub = sub
@@ -143,11 +152,11 @@ class MCD(BaseDetector):
         n_samples, n_features = X.shape
 
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
 
         # Validate inputs X and y (optional)
@@ -157,24 +166,28 @@ class MCD(BaseDetector):
         support_fraction = self.support_fraction
         while True:
             try:
-                self.detector_ = MinCovDet(store_precision=self.store_precision,
-                                        assume_centered=self.assume_centered,
-                                        support_fraction=support_fraction,
-                                        random_state=self.random_state)
+                self.detector_ = MinCovDet(
+                    store_precision=self.store_precision,
+                    assume_centered=self.assume_centered,
+                    support_fraction=support_fraction,
+                    random_state=self.random_state,
+                )
                 self.detector_.fit(X=X, y=y)
                 break
             except ValueError:
                 support_fraction = support_fraction + 0.1
                 if support_fraction >= 1:
                     support_fraction = None
-                    
 
         # Use mahalanabis distance as the outlier score
         self.decision_scores_ = self.detector_.dist_
         # padded decision_scores_
         if self.decision_scores_.shape[0] < n_samples:
-            self.decision_scores_ = np.array([self.decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(self.decision_scores_) + [self.decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            self.decision_scores_ = np.array(
+                [self.decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(self.decision_scores_)
+                + [self.decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
 
         self._process_decision_scores()
         return self
@@ -197,25 +210,28 @@ class MCD(BaseDetector):
         anomaly_scores : numpy array of shape (n_samples,)
             The anomaly score of the input samples.
         """
-        check_is_fitted(self, ['decision_scores_', 'threshold_', 'labels_'])
+        check_is_fitted(self, ["decision_scores_", "threshold_", "labels_"])
         n_samples, n_features = X.shape
-        if n_features == 1: 
+        if n_features == 1:
             # Converting time series data into matrix format
-            X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+            X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
-                
+
         X = check_array(X)
 
         # Computer mahalanobis distance of the samples
         decision_scores_ = self.detector_.mahalanobis(X)
         # padded decision_scores_
         if decision_scores_.shape[0] < n_samples:
-            decision_scores_ = np.array([decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(decision_scores_) + [decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            decision_scores_ = np.array(
+                [decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(decision_scores_)
+                + [decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
 
         return decision_scores_
 
@@ -265,7 +281,7 @@ class MCD(BaseDetector):
 
     @property
     def precision_(self):
-        """ Estimated pseudo inverse matrix.
+        """Estimated pseudo inverse matrix.
         (stored only if store_precision is True)
 
         Decorator for scikit-learn MinCovDet attributes.

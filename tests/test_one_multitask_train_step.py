@@ -5,7 +5,9 @@ import torch
 from src.models.thesis_multitask import ThesisMultitaskModel
 
 
-def test_one_multitask_forward_and_backward_step_runs_with_optional_losses_enabled() -> None:
+def test_one_multitask_forward_and_backward_step_runs_with_optional_losses_enabled() -> (
+    None
+):
     model = ThesisMultitaskModel(
         input_dim=38,
         encoder_dim=64,

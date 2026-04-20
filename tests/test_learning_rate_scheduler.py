@@ -22,7 +22,9 @@ class DummyPlateauModel(nn.Module):
         super().__init__()
         self.scalar = nn.Parameter(torch.tensor(1.0))
         self.val_loss_sequence = val_loss_sequence
-        self.val_synth_loss_sequence = val_synth_loss_sequence or list(val_loss_sequence)
+        self.val_synth_loss_sequence = val_synth_loss_sequence or list(
+            val_loss_sequence
+        )
         self.validation_step_index = 0
         self.synthetic_validation_step_index = 0
 
@@ -50,11 +52,15 @@ class DummyPlateauModel(nn.Module):
         }
 
     def synthetic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        val_synth_loss = float(self.val_synth_loss_sequence[self.synthetic_validation_step_index])
+        val_synth_loss = float(
+            self.val_synth_loss_sequence[self.synthetic_validation_step_index]
+        )
         self.synthetic_validation_step_index += 1
         loss = self.scalar * 0.0 + val_synth_loss
         synthetic_batch = dict(batch)
-        synthetic_batch["classification_labels"] = torch.tensor([0, 1], dtype=torch.long)
+        synthetic_batch["classification_labels"] = torch.tensor(
+            [0, 1], dtype=torch.long
+        )
         return {
             "loss": loss,
             "log": {
@@ -202,7 +208,9 @@ def test_scheduler_respects_cooldown_between_reductions() -> None:
     assert learning_rate_after_second_reduction == 0.025
 
 
-def test_trainer_reduces_learning_rate_after_clean_validation_plateau(tmp_path: Path) -> None:
+def test_trainer_reduces_learning_rate_after_clean_validation_plateau(
+    tmp_path: Path,
+) -> None:
     model = DummyPlateauModel(val_loss_sequence=[1.0, 1.0, 1.0])
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
@@ -225,7 +233,10 @@ def test_trainer_reduces_learning_rate_after_clean_validation_plateau(tmp_path: 
         outputs = trainer.train(
             train_loader=[batch],
             val_loader=[batch],
-            scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
             config={"experiment_name": "scheduler-plateau-test"},
             epochs=3,
         )
@@ -241,7 +252,9 @@ def test_trainer_reduces_learning_rate_after_clean_validation_plateau(tmp_path: 
     assert metric_history[2]["optimizer_lr_group_0"] == 0.05
 
 
-def test_trainer_ignores_val_synth_metrics_for_scheduler_stepping(tmp_path: Path) -> None:
+def test_trainer_ignores_val_synth_metrics_for_scheduler_stepping(
+    tmp_path: Path,
+) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[1.0, 0.9, 0.8],
         val_synth_loss_sequence=[1.0, 5.0, 10.0],
@@ -267,7 +280,10 @@ def test_trainer_ignores_val_synth_metrics_for_scheduler_stepping(tmp_path: Path
         outputs = trainer.train(
             train_loader=[batch],
             val_loader=[batch],
-            scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
             config={"experiment_name": "scheduler-ignore-val-synth-test"},
             epochs=3,
         )
@@ -275,8 +291,14 @@ def test_trainer_ignores_val_synth_metrics_for_scheduler_stepping(tmp_path: Path
         experiment_logger.close()
 
     metric_history = outputs["metric_history"]
-    assert [epoch_metrics["optimizer_lr"] for epoch_metrics in metric_history] == [0.1, 0.1, 0.1]
-    assert [epoch_metrics["scheduler_lr_reduced"] for epoch_metrics in metric_history] == [0.0, 0.0, 0.0]
+    assert [epoch_metrics["optimizer_lr"] for epoch_metrics in metric_history] == [
+        0.1,
+        0.1,
+        0.1,
+    ]
+    assert [
+        epoch_metrics["scheduler_lr_reduced"] for epoch_metrics in metric_history
+    ] == [0.0, 0.0, 0.0]
     assert metric_history[-1]["val_synth_loss"] == 10.0
     assert metric_history[-1]["scheduler_monitor_val_loss"] == 0.8
 
@@ -310,7 +332,10 @@ def test_trainer_can_step_scheduler_from_val_synth_roc_auc(tmp_path: Path) -> No
         outputs = trainer.train(
             train_loader=[batch],
             val_loader=[batch],
-            scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
             config={"experiment_name": "scheduler-val-synth-roc-auc-test"},
             epochs=3,
         )
@@ -319,7 +344,10 @@ def test_trainer_can_step_scheduler_from_val_synth_roc_auc(tmp_path: Path) -> No
 
     metric_history = outputs["metric_history"]
     assert "val_synth_roc_auc" in metric_history[-1]
-    assert metric_history[-1]["scheduler_monitor_val_synth_roc_auc"] == metric_history[-1]["val_synth_roc_auc"]
+    assert (
+        metric_history[-1]["scheduler_monitor_val_synth_roc_auc"]
+        == metric_history[-1]["val_synth_roc_auc"]
+    )
 
 
 def test_trainer_can_step_scheduler_from_val_synth_pr_auc(tmp_path: Path) -> None:
@@ -351,7 +379,10 @@ def test_trainer_can_step_scheduler_from_val_synth_pr_auc(tmp_path: Path) -> Non
         outputs = trainer.train(
             train_loader=[batch],
             val_loader=[batch],
-            scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
             config={"experiment_name": "scheduler-val-synth-pr-auc-test"},
             epochs=3,
         )
@@ -360,4 +391,7 @@ def test_trainer_can_step_scheduler_from_val_synth_pr_auc(tmp_path: Path) -> Non
 
     metric_history = outputs["metric_history"]
     assert "val_synth_pr_auc" in metric_history[-1]
-    assert metric_history[-1]["scheduler_monitor_val_synth_pr_auc"] == metric_history[-1]["val_synth_pr_auc"]
+    assert (
+        metric_history[-1]["scheduler_monitor_val_synth_pr_auc"]
+        == metric_history[-1]["val_synth_pr_auc"]
+    )

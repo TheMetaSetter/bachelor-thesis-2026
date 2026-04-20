@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Self-contained reconstruction baseline for the thesis codebase.
 
 A new reader should start here if they want the smallest full model in the
@@ -12,7 +13,12 @@ from typing import Any
 import torch
 import torch.nn as nn
 
-from src.core.console import console_print, print_parameter_summary, summarize_batch, summarize_tensor
+from src.core.console import (
+    console_print,
+    print_parameter_summary,
+    summarize_batch,
+    summarize_tensor,
+)
 from src.core.contracts import validate_batch, validate_model_outputs
 from src.models.base_model import BaseModel
 
@@ -47,7 +53,9 @@ class ReconstructionMLPAutoencoder(BaseModel):
             nn.Linear(encoder_dim, input_dim),
         )
         if loss_name != "mse":
-            raise ValueError("ReconstructionMLPAutoencoder currently supports only loss_name='mse'")
+            raise ValueError(
+                "ReconstructionMLPAutoencoder currently supports only loss_name='mse'"
+            )
         self.loss_name = loss_name
         print_parameter_summary(
             "MODEL",
@@ -117,7 +125,9 @@ class ReconstructionMLPAutoencoder(BaseModel):
     ) -> dict[str, float]:
         return {
             f"{stage_name}_loss": float(loss.detach().cpu()),
-            f"{stage_name}_mean_point_score": float(outputs["point_scores"].mean().detach().cpu()),
+            f"{stage_name}_mean_point_score": float(
+                outputs["point_scores"].mean().detach().cpu()
+            ),
         }
 
     def _shared_step(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:

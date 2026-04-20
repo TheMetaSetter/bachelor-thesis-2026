@@ -19,7 +19,9 @@ class SequenceStandardScaler:
         for sequence in sequences:
             validate_raw_sequence(sequence)
 
-        stacked_training_points = torch.cat([sequence["x"] for sequence in sequences], dim=0)
+        stacked_training_points = torch.cat(
+            [sequence["x"] for sequence in sequences], dim=0
+        )
         self.feature_mean = stacked_training_points.mean(dim=0)
         raw_feature_std = stacked_training_points.std(dim=0, unbiased=False)
         self.feature_std = torch.clamp(raw_feature_std, min=self.epsilon)
@@ -30,14 +32,20 @@ class SequenceStandardScaler:
             raise RuntimeError("Scaler must be fit before transform")
 
         transformed_sequence = dict(sequence)
-        transformed_sequence["x"] = (sequence["x"] - self.feature_mean) / self.feature_std
+        transformed_sequence["x"] = (
+            sequence["x"] - self.feature_mean
+        ) / self.feature_std
         transformed_sequence["meta"] = dict(sequence["meta"])
         return transformed_sequence
 
-    def transform_sequences(self, sequences: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def transform_sequences(
+        self, sequences: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         return [self.transform_sequence(sequence) for sequence in sequences]
 
-    def fit_transform_sequences(self, sequences: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def fit_transform_sequences(
+        self, sequences: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         self.fit(sequences)
         return self.transform_sequences(sequences)
 

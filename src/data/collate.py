@@ -22,11 +22,15 @@ def collate_windows(windows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
     if all(window["point_labels"] is not None for window in windows):
-        batch["point_labels"] = torch.stack([window["point_labels"] for window in windows], dim=0)
+        batch["point_labels"] = torch.stack(
+            [window["point_labels"] for window in windows], dim=0
+        )
     if all(window["mask"] is not None for window in windows):
         batch["mask"] = torch.stack([window["mask"] for window in windows], dim=0)
     if all(window["timestamps"] is not None for window in windows):
-        batch["timestamps"] = torch.stack([window["timestamps"] for window in windows], dim=0)
+        batch["timestamps"] = torch.stack(
+            [window["timestamps"] for window in windows], dim=0
+        )
 
     validate_batch(batch)
     console_print("DATA", "Built collated batch", **summarize_batch(batch))

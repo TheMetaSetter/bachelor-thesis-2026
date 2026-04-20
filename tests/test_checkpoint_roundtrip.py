@@ -9,8 +9,12 @@ from src.engine.checkpoint import CheckpointManager
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 
 
-def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(tmp_path: Path) -> None:
-    model = ReconstructionMLPAutoencoder(input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0)
+def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(
+    tmp_path: Path,
+) -> None:
+    model = ReconstructionMLPAutoencoder(
+        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scaler = SequenceStandardScaler()
     scaler.feature_mean = torch.zeros(38)
@@ -29,20 +33,32 @@ def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(tmp_pat
         metric_history=[{"val_loss": 1.0}],
     )
 
-    reloaded_model = ReconstructionMLPAutoencoder(input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0)
+    reloaded_model = ReconstructionMLPAutoencoder(
+        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    )
     reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)
-    loaded_checkpoint = checkpoint_manager.load_checkpoint(checkpoint_path, reloaded_model, reloaded_optimizer)
+    loaded_checkpoint = checkpoint_manager.load_checkpoint(
+        checkpoint_path, reloaded_model, reloaded_optimizer
+    )
 
     assert loaded_checkpoint["config"] == config
     assert loaded_checkpoint["epoch"] == 3
-    assert torch.equal(loaded_checkpoint["scaler_state_dict"]["feature_mean"], scaler.feature_mean)
-    for parameter, reloaded_parameter in zip(model.parameters(), reloaded_model.parameters()):
+    assert torch.equal(
+        loaded_checkpoint["scaler_state_dict"]["feature_mean"], scaler.feature_mean
+    )
+    for parameter, reloaded_parameter in zip(
+        model.parameters(), reloaded_model.parameters()
+    ):
         assert torch.allclose(parameter, reloaded_parameter)
     assert "scheduler_state_dict" not in loaded_checkpoint
 
 
-def test_checkpoint_roundtrip_restores_scheduler_state_when_present(tmp_path: Path) -> None:
-    model = ReconstructionMLPAutoencoder(input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0)
+def test_checkpoint_roundtrip_restores_scheduler_state_when_present(
+    tmp_path: Path,
+) -> None:
+    model = ReconstructionMLPAutoencoder(
+        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer=optimizer,
@@ -72,10 +88,14 @@ def test_checkpoint_roundtrip_restores_scheduler_state_when_present(tmp_path: Pa
         scaler_state=scaler.state_dict(),
         config=config,
         epoch=4,
-        metric_history=[{"val_loss": 1.0, "optimizer_lr": optimizer.param_groups[0]["lr"]}],
+        metric_history=[
+            {"val_loss": 1.0, "optimizer_lr": optimizer.param_groups[0]["lr"]}
+        ],
     )
 
-    reloaded_model = ReconstructionMLPAutoencoder(input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0)
+    reloaded_model = ReconstructionMLPAutoencoder(
+        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    )
     reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)
     reloaded_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer=reloaded_optimizer,

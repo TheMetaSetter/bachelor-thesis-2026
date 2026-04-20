@@ -1,16 +1,25 @@
 import copy
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, \
-    confusion_matrix, roc_curve, auc, precision_recall_curve
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    roc_curve,
+    auc,
+    precision_recall_curve,
+)
 import numpy as np
 import os
 
+
 def get_summary_stats(gt, pred):
-    '''
+    """
     return acc, prec, recall, f1, (tn, fp, fn, tp)
-    '''
+    """
 
     # filter out -1's (paddings)
-    mask = (gt != -1)
+    mask = gt != -1
     _gt = np.copy(gt)[mask]
     _pred = np.copy(pred)[mask]
 
@@ -39,7 +48,6 @@ def get_summary_stats(gt, pred):
         f"fp": fp,
         f"fn": fn,
         f"tp": tp,
-
         # adjusted metrics
         f"Accuracy_PA": acc_PA,
         f"Precision_PA": p_PA,
@@ -55,9 +63,11 @@ def get_summary_stats(gt, pred):
     return result
 
 
-def calculate_roc_auc(gt, anomaly_scores, path, save_roc_curve=False, drop_intermediate=True):
+def calculate_roc_auc(
+    gt, anomaly_scores, path, save_roc_curve=False, drop_intermediate=True
+):
     # filter out pads
-    mask = (gt != -1)
+    mask = gt != -1
     _gt = gt[mask]
     _anomaly_scores = anomaly_scores[mask]
 
@@ -66,19 +76,20 @@ def calculate_roc_auc(gt, anomaly_scores, path, save_roc_curve=False, drop_inter
     roc_auc = auc(fpr, tpr)
 
     if save_roc_curve:
-        with open(os.path.join(path, "fpr.npy"), 'wb') as f:
+        with open(os.path.join(path, "fpr.npy"), "wb") as f:
             np.save(f, fpr)
-        with open(os.path.join(path, "tpr.npy"), 'wb') as f:
+        with open(os.path.join(path, "tpr.npy"), "wb") as f:
             np.save(f, tpr)
-        with open(os.path.join(path, "thr.npy"), 'wb') as f:
+        with open(os.path.join(path, "thr.npy"), "wb") as f:
             np.save(f, thr)
     del _gt, _anomaly_scores, fpr, tpr, thr
 
     return roc_auc
 
+
 def calculate_pr_auc(gt, anomaly_scores, path, save_pr_curve=False):
     # filter out pads
-    mask = (gt != -1)
+    mask = gt != -1
     _gt = gt[mask]
     _anomaly_scores = anomaly_scores[mask]
 
@@ -87,23 +98,23 @@ def calculate_pr_auc(gt, anomaly_scores, path, save_pr_curve=False):
     pr_auc = auc(rec, prec)
 
     if save_pr_curve:
-        with open(os.path.join(path, "prec.npy"), 'wb') as f:
+        with open(os.path.join(path, "prec.npy"), "wb") as f:
             np.save(f, prec)
-        with open(os.path.join(path, "rec.npy"), 'wb') as f:
+        with open(os.path.join(path, "rec.npy"), "wb") as f:
             np.save(f, rec)
-        with open(os.path.join(path, "thr_prauc.npy"), 'wb') as f:
+        with open(os.path.join(path, "thr_prauc.npy"), "wb") as f:
             np.save(f, thr)
     del _gt, _anomaly_scores, prec, rec, thr
 
     return pr_auc
 
 
-
-
-'''
+"""
 Point-Adjust
 https://github.com/thuml/Anomaly-Transformer/blob/main/solver.py
-'''
+"""
+
+
 def PA(y, y_pred):
     anomaly_state = False
     y_pred_pa = copy.deepcopy(y_pred)

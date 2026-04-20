@@ -68,7 +68,9 @@ def test_refurbished_binary_targets_match_configured_alpha_and_beta() -> None:
     )
     hard_labels = torch.tensor([0, 1], dtype=torch.long)
 
-    refurbished_targets = model._build_refurbished_binary_targets(hard_labels, torch.float32)
+    refurbished_targets = model._build_refurbished_binary_targets(
+        hard_labels, torch.float32
+    )
 
     expected_targets = torch.tensor([[0.9, 0.1], [0.2, 0.8]], dtype=torch.float32)
     assert torch.allclose(refurbished_targets, expected_targets)
@@ -100,7 +102,9 @@ def test_masked_reconstruction_loss_falls_back_to_full_mse_when_disabled() -> No
     assert reconstruction_loss.item() == 2.0
 
 
-def test_training_step_runs_with_refurbishment_and_normal_only_masking_enabled() -> None:
+def test_training_step_runs_with_refurbishment_and_normal_only_masking_enabled() -> (
+    None
+):
     model = _build_model(
         use_label_refurbishment=True,
         refurbishment_alpha=0.2,
@@ -125,5 +129,10 @@ def test_training_step_runs_with_refurbishment_and_normal_only_masking_enabled()
     assert step_output["loss_terms"]["reconstruction_loss"].item() >= 0.0
     assert step_output["batch"]["classification_labels"].dtype == torch.long
     assert step_output["batch"]["classification_labels"].shape == (2,)
-    assert torch.all(step_output["batch"]["classification_labels"] == torch.tensor([1, 1]))
-    assert step_output["loss_terms"]["reconstruction_loss"] <= full_reconstruction_mean_squared_error + 1.0e-6
+    assert torch.all(
+        step_output["batch"]["classification_labels"] == torch.tensor([1, 1])
+    )
+    assert (
+        step_output["loss_terms"]["reconstruction_loss"]
+        <= full_reconstruction_mean_squared_error + 1.0e-6
+    )

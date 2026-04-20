@@ -21,31 +21,41 @@ from .base import BaseDetector
 from ..utils.dataset import ReconstructDataset
 from ..utils.torch_utility import EarlyStoppingTorch, get_gpu
 
+
 class USADModel(nn.Module):
     def __init__(self, feats, n_window=5):
         super(USADModel, self).__init__()
-        self.name = 'USAD'
+        self.name = "USAD"
         self.lr = 0.0001
         self.n_feats = feats
         self.n_hidden = 16
         self.n_latent = 5
-        self.n_window = n_window # USAD w_size = 5
+        self.n_window = n_window  # USAD w_size = 5
         self.n = self.n_feats * self.n_window
         self.encoder = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(self.n, self.n_hidden), nn.ReLU(True),
-            nn.Linear(self.n_hidden, self.n_hidden), nn.ReLU(True),
-            nn.Linear(self.n_hidden, self.n_latent), nn.ReLU(True),
+            nn.Linear(self.n, self.n_hidden),
+            nn.ReLU(True),
+            nn.Linear(self.n_hidden, self.n_hidden),
+            nn.ReLU(True),
+            nn.Linear(self.n_hidden, self.n_latent),
+            nn.ReLU(True),
         )
         self.decoder1 = nn.Sequential(
-            nn.Linear(self.n_latent,self.n_hidden), nn.ReLU(True),
-            nn.Linear(self.n_hidden, self.n_hidden), nn.ReLU(True),
-            nn.Linear(self.n_hidden, self.n), nn.Sigmoid(),
+            nn.Linear(self.n_latent, self.n_hidden),
+            nn.ReLU(True),
+            nn.Linear(self.n_hidden, self.n_hidden),
+            nn.ReLU(True),
+            nn.Linear(self.n_hidden, self.n),
+            nn.Sigmoid(),
         )
         self.decoder2 = nn.Sequential(
-            nn.Linear(self.n_latent,self.n_hidden), nn.ReLU(True),
-            nn.Linear(self.n_hidden, self.n_hidden), nn.ReLU(True),
-            nn.Linear(self.n_hidden, self.n), nn.Sigmoid(),
+            nn.Linear(self.n_latent, self.n_hidden),
+            nn.ReLU(True),
+            nn.Linear(self.n_hidden, self.n_hidden),
+            nn.ReLU(True),
+            nn.Linear(self.n_hidden, self.n),
+            nn.Sigmoid(),
         )
 
     def forward(self, g):
@@ -63,15 +73,16 @@ class USADModel(nn.Module):
 
 
 class USAD(BaseDetector):
-    def __init__(self,
-                 win_size = 5,
-                 feats = 1,
-                 batch_size = 128,
-                 epochs = 10,
-                 patience = 3,
-                 lr = 1e-4,
-                 validation_size=0.2
-                 ):
+    def __init__(
+        self,
+        win_size=5,
+        feats=1,
+        batch_size=128,
+        epochs=10,
+        patience=3,
+        lr=1e-4,
+        validation_size=0.2,
+    ):
         super().__init__()
 
         self.__anomaly_score = None
@@ -90,26 +101,26 @@ class USAD(BaseDetector):
             self.model.parameters(), lr=lr, weight_decay=1e-5
         )
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, 5, 0.9)
-        self.criterion = nn.MSELoss(reduction = 'none')
+        self.criterion = nn.MSELoss(reduction="none")
 
         self.early_stopping = EarlyStoppingTorch(None, patience=patience)
 
     def fit(self, data):
-        tsTrain = data[:int((1-self.validation_size)*len(data))]
-        tsValid = data[int((1-self.validation_size)*len(data)):]
+        tsTrain = data[: int((1 - self.validation_size) * len(data))]
+        tsValid = data[int((1 - self.validation_size) * len(data)) :]
 
         train_loader = DataLoader(
             dataset=ReconstructDataset(tsTrain, window_size=self.win_size),
             batch_size=self.batch_size,
-            shuffle=True
+            shuffle=True,
         )
-        
+
         valid_loader = DataLoader(
             dataset=ReconstructDataset(tsValid, window_size=self.win_size),
             batch_size=self.batch_size,
-            shuffle=False
+            shuffle=False,
         )
-        
+
         l1s, l2s = [], []
         for epoch in range(1, self.epochs + 1):
             self.model.train(mode=True)
@@ -118,17 +129,21 @@ class USAD(BaseDetector):
             loop = tqdm.tqdm(
                 enumerate(train_loader), total=len(train_loader), leave=True
             )
-            for idx, (d, _) in loop:        
-                d = d.to(self.device)     # (bs, win, feat)
+            for idx, (d, _) in loop:
+                d = d.to(self.device)  # (bs, win, feat)
                 # print('d: ', d.shape)
 
                 ae1s, ae2s, ae2ae1s = self.model(d)
                 # print('ae2ae1s: ', ae2ae1s.shape)
 
-                d = d.view(ae2ae1s.shape[0], self.feats*self.win_size)
+                d = d.view(ae2ae1s.shape[0], self.feats * self.win_size)
 
-                l1 = (1 / n) * self.criterion(ae1s, d) + (1 - 1/n) * self.criterion(ae2ae1s, d)
-                l2 = (1 / n) * self.criterion(ae2s, d) - (1 - 1/n) * self.criterion(ae2ae1s, d)
+                l1 = (1 / n) * self.criterion(ae1s, d) + (1 - 1 / n) * self.criterion(
+                    ae2ae1s, d
+                )
+                l2 = (1 / n) * self.criterion(ae2s, d) - (1 - 1 / n) * self.criterion(
+                    ae2ae1s, d
+                )
                 # print('l1: ', l1.shape)
 
                 l1s.append(torch.mean(l1).item())
@@ -153,10 +168,14 @@ class USAD(BaseDetector):
                     for idx, (d, _) in loop:
                         d = d.to(self.device)
                         ae1s, ae2s, ae2ae1s = self.model(d)
-                        d = d.view(ae2ae1s.shape[0], self.feats*self.win_size)
+                        d = d.view(ae2ae1s.shape[0], self.feats * self.win_size)
 
-                        l1 = (1 / n) * self.criterion(ae1s, d) + (1 - 1/n) * self.criterion(ae2ae1s, d)
-                        l2 = (1 / n) * self.criterion(ae2s, d) - (1 - 1/n) * self.criterion(ae2ae1s, d)
+                        l1 = (1 / n) * self.criterion(ae1s, d) + (
+                            1 - 1 / n
+                        ) * self.criterion(ae2ae1s, d)
+                        l2 = (1 / n) * self.criterion(ae2s, d) - (
+                            1 - 1 / n
+                        ) * self.criterion(ae2ae1s, d)
 
                         l1s.append(torch.mean(l1).item())
                         l2s.append(torch.mean(l2).item())
@@ -165,7 +184,9 @@ class USAD(BaseDetector):
                         loop.set_description(
                             f"Validation Epoch [{epoch}/{self.epochs}]"
                         )
-                        loop.set_postfix(loss=loss.item(), avg_loss_val=avg_loss_val / (idx + 1))
+                        loop.set_postfix(
+                            loss=loss.item(), avg_loss_val=avg_loss_val / (idx + 1)
+                        )
 
             self.scheduler.step()
             if len(valid_loader) > 0:
@@ -181,7 +202,7 @@ class USAD(BaseDetector):
         test_loader = DataLoader(
             dataset=ReconstructDataset(data, window_size=self.win_size),
             batch_size=self.batch_size,
-            shuffle=False
+            shuffle=False,
         )
 
         self.model.eval()
@@ -194,7 +215,7 @@ class USAD(BaseDetector):
                 # print('d: ', d.shape)
 
                 ae1, ae2, ae2ae1 = self.model(d)
-                d = d.view(ae2ae1.shape[0], self.feats*self.win_size)
+                d = d.view(ae2ae1.shape[0], self.feats * self.win_size)
 
                 # print('ae2ae1: ', ae2ae1.shape)
                 # print('d: ', d.shape)
@@ -204,16 +225,19 @@ class USAD(BaseDetector):
                 loss = torch.mean(loss, axis=-1)
 
                 scores.append(loss.cpu())
-        
+
         scores = torch.cat(scores, dim=0)
         scores = scores.numpy()
 
         self.__anomaly_score = scores
 
         if self.__anomaly_score.shape[0] < len(data):
-            self.__anomaly_score = np.array([self.__anomaly_score[0]]*math.ceil((self.win_size-1)/2) + 
-                        list(self.__anomaly_score) + [self.__anomaly_score[-1]]*((self.win_size-1)//2))
-        
+            self.__anomaly_score = np.array(
+                [self.__anomaly_score[0]] * math.ceil((self.win_size - 1) / 2)
+                + list(self.__anomaly_score)
+                + [self.__anomaly_score[-1]] * ((self.win_size - 1) // 2)
+            )
+
         return self.__anomaly_score
 
     def anomaly_score(self) -> np.ndarray:

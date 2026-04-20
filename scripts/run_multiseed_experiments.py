@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Launch multiple offline training experiments with isolated configs.
 
 This script stays intentionally small. It validates that each experiment config
@@ -23,7 +24,9 @@ REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Launch multiple offline seed experiments")
+    parser = argparse.ArgumentParser(
+        description="Launch multiple offline seed experiments"
+    )
     parser.add_argument(
         "--config-paths",
         nargs="+",
@@ -68,7 +71,9 @@ def normalize_config_path(config_path: str | Path) -> Path:
     return path.resolve()
 
 
-def load_resolved_experiment_configs(config_paths: list[str | Path]) -> list[dict[str, Any]]:
+def load_resolved_experiment_configs(
+    config_paths: list[str | Path],
+) -> list[dict[str, Any]]:
     resolved_experiment_configs: list[dict[str, Any]] = []
     for config_path in config_paths:
         normalized_config_path = normalize_config_path(config_path)
@@ -94,7 +99,9 @@ def validate_dataset_roots(resolved_experiment_configs: list[dict[str, Any]]) ->
             )
 
 
-def validate_unique_artifact_paths(resolved_experiment_configs: list[dict[str, Any]]) -> None:
+def validate_unique_artifact_paths(
+    resolved_experiment_configs: list[dict[str, Any]],
+) -> None:
     seen_output_dirs: dict[Path, str] = {}
     seen_checkpoint_dirs: dict[Path, str] = {}
     for resolved_experiment_config in resolved_experiment_configs:
@@ -144,7 +151,9 @@ def run_commands_sequentially(commands: list[list[str]], dry_run: bool) -> None:
         subprocess.run(command, cwd=REPOSITORY_ROOT, check=True)
 
 
-def terminate_running_processes(running_processes: list[tuple[list[str], subprocess.Popen[Any]]]) -> None:
+def terminate_running_processes(
+    running_processes: list[tuple[list[str], subprocess.Popen[Any]]],
+) -> None:
     for _, running_process in running_processes:
         if running_process.poll() is None:
             running_process.terminate()
@@ -186,7 +195,9 @@ def run_commands_in_parallel(
                     if other_process is not process
                 ]
                 terminate_running_processes(other_running_processes)
-                raise RuntimeError(f"Parallel command failed with exit code {return_code}: {' '.join(command)}")
+                raise RuntimeError(
+                    f"Parallel command failed with exit code {return_code}: {' '.join(command)}"
+                )
 
         running_processes = next_running_processes
         if pending_commands or running_processes:

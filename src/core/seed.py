@@ -14,4 +14,6 @@ def seed_everything(seed: int) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
-    console_print("CONFIG", "Seeded runtime", seed=seed, cuda_available=torch.cuda.is_available())
+    console_print(
+        "CONFIG", "Seeded runtime", seed=seed, cuda_available=torch.cuda.is_available()
+    )

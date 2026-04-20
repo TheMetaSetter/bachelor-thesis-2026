@@ -22,14 +22,14 @@ class HBOS(BaseDetector):
     """Histogram- based outlier detection (HBOS) is an efficient unsupervised
     method. It assumes the feature independence and calculates the degree
     of outlyingness by building histograms. See :cite:`goldstein2012histogram`
-    for details.    
+    for details.
 
-    Two versions of HBOS are supported:        
+    Two versions of HBOS are supported:
     - Static number of bins: uses a static number of bins for all features.
-    - Automatic number of bins: every feature uses a number of bins deemed to 
+    - Automatic number of bins: every feature uses a number of bins deemed to
       be optimal according to the Birge-Rozenblac method
       (:cite:`birge2006many`).
-      
+
     Parameters
     ----------
     n_bins : int or string, optional (default=10)
@@ -73,7 +73,16 @@ class HBOS(BaseDetector):
         ``threshold_`` on ``decision_scores_``.
     """
 
-    def __init__(self, slidingWindow=100, sub=True, n_bins=10, alpha=0.1, tol=0.5, contamination=0.1, normalize=True):
+    def __init__(
+        self,
+        slidingWindow=100,
+        sub=True,
+        n_bins=10,
+        alpha=0.1,
+        tol=0.5,
+        contamination=0.1,
+        normalize=True,
+    ):
         super(HBOS, self).__init__(contamination=contamination)
         self.slidingWindow = slidingWindow
         self.sub = sub
@@ -82,8 +91,8 @@ class HBOS(BaseDetector):
         self.tol = tol
         self.normalize = normalize
 
-        check_parameter(alpha, 0, 1, param_name='alpha')
-        check_parameter(tol, 0, 1, param_name='tol')
+        check_parameter(alpha, 0, 1, param_name="alpha")
+        check_parameter(tol, 0, 1, param_name="tol")
 
     def fit(self, X, y=None):
         """Fit detector. y is ignored in unsupervised methods.
@@ -104,11 +113,11 @@ class HBOS(BaseDetector):
         n_samples, n_features = X.shape
 
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
 
         # validate inputs X and y (optional)
@@ -125,18 +134,15 @@ class HBOS(BaseDetector):
             # build the histograms for all dimensions
             for i in range(n_features):
                 n_bins = get_optimal_n_bins(X[:, i])
-                hist, bin_edges = np.histogram(X[:, i], bins=n_bins,
-                                               density=True)
+                hist, bin_edges = np.histogram(X[:, i], bins=n_bins, density=True)
                 self.hist_.append(hist)
                 self.bin_edges_.append(bin_edges)
                 # the sum of (width * height) should equal to 1
-                assert (np.isclose(1, np.sum(
-                    hist * np.diff(bin_edges)), atol=0.1))
+                assert np.isclose(1, np.sum(hist * np.diff(bin_edges)), atol=0.1)
 
-            outlier_scores = _calculate_outlier_scores_auto(X, self.bin_edges_,
-                                                            self.hist_,
-                                                            self.alpha,
-                                                            self.tol)
+            outlier_scores = _calculate_outlier_scores_auto(
+                X, self.bin_edges_, self.hist_, self.alpha, self.tol
+            )
 
         elif check_parameter(self.n_bins, low=2, high=np.inf):
             self.hist_ = np.zeros([self.n_bins, n_features])
@@ -144,25 +150,28 @@ class HBOS(BaseDetector):
 
             # build the histograms for all dimensions
             for i in range(n_features):
-                self.hist_[:, i], self.bin_edges_[:, i] = \
-                    np.histogram(X[:, i], bins=self.n_bins, density=True)
+                self.hist_[:, i], self.bin_edges_[:, i] = np.histogram(
+                    X[:, i], bins=self.n_bins, density=True
+                )
                 # the sum of (width * height) should equal to 1
                 # assert (np.isclose(1, np.sum(
                 #     self.hist_[:, i] * np.diff(self.bin_edges_[:, i])),
                 #                    atol=0.1))
 
-            outlier_scores = _calculate_outlier_scores(X, self.bin_edges_,
-                                                       self.hist_,
-                                                       self.n_bins,
-                                                       self.alpha, self.tol)
+            outlier_scores = _calculate_outlier_scores(
+                X, self.bin_edges_, self.hist_, self.n_bins, self.alpha, self.tol
+            )
 
         # invert decision_scores_. Outliers comes with higher outlier scores
         self.decision_scores_ = invert_order(np.sum(outlier_scores, axis=1))
 
         # padded decision_scores_
         if self.decision_scores_.shape[0] < n_samples:
-            self.decision_scores_ = np.array([self.decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(self.decision_scores_) + [self.decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            self.decision_scores_ = np.array(
+                [self.decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(self.decision_scores_)
+                + [self.decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
         self._process_decision_scores()
         return self
 
@@ -184,42 +193,42 @@ class HBOS(BaseDetector):
         anomaly_scores : numpy array of shape (n_samples,)
             The anomaly score of the input samples.
         """
-        check_is_fitted(self, ['hist_', 'bin_edges_'])
+        check_is_fitted(self, ["hist_", "bin_edges_"])
 
         n_samples, n_features = X.shape
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
-                        
+
         X = check_array(X)
 
         if isinstance(self.n_bins, str) and self.n_bins.lower() == "auto":
-            outlier_scores = _calculate_outlier_scores_auto(X, self.bin_edges_,
-                                                            self.hist_,
-                                                            self.alpha,
-                                                            self.tol)
+            outlier_scores = _calculate_outlier_scores_auto(
+                X, self.bin_edges_, self.hist_, self.alpha, self.tol
+            )
         elif check_parameter(self.n_bins, low=2, high=np.inf):
-            outlier_scores = _calculate_outlier_scores(X, self.bin_edges_,
-                                                       self.hist_,
-                                                       self.n_bins,
-                                                       self.alpha, self.tol)
+            outlier_scores = _calculate_outlier_scores(
+                X, self.bin_edges_, self.hist_, self.n_bins, self.alpha, self.tol
+            )
 
         # invert outlier scores. Outliers comes with higher outlier scores
         decision_scores_ = invert_order(np.sum(outlier_scores, axis=1))
         # padded decision_scores_
         if decision_scores_.shape[0] < n_samples:
-            decision_scores_ = np.array([decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(decision_scores_) + [decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            decision_scores_ = np.array(
+                [decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(decision_scores_)
+                + [decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
         return decision_scores_
 
 
 # @njit #due to variable size of histograms, can no longer naively use numba for jit
-def _calculate_outlier_scores_auto(X, bin_edges, hist, alpha,
-                                   tol):  # pragma: no cover
+def _calculate_outlier_scores_auto(X, bin_edges, hist, alpha, tol):  # pragma: no cover
     """The internal function to calculate the outlier scores based on
     the bins and histograms constructed with the training data. The program
     is optimized through numba. It is excluded from coverage test for
@@ -253,7 +262,6 @@ def _calculate_outlier_scores_auto(X, bin_edges, hist, alpha,
     outlier_scores = np.zeros(shape=(n_samples, n_features))
 
     for i in range(n_features):
-
         # Find the indices of the bins to which each value belongs.
         # See documentation for np.digitize since it is tricky
         # >>> x = np.array([0.2, 6.4, 3.0, 1.6, -1, 100, 10])
@@ -270,7 +278,6 @@ def _calculate_outlier_scores_auto(X, bin_edges, hist, alpha,
         optimal_n_bins = get_optimal_n_bins(X[:, i])
 
         for j in range(n_samples):
-
             # If the sample does not belong to any bins
             # bin_ind == 0 (fall outside since it is too small)
             if bin_inds[j] == 0:
@@ -303,8 +310,9 @@ def _calculate_outlier_scores_auto(X, bin_edges, hist, alpha,
 
 
 @njit
-def _calculate_outlier_scores(X, bin_edges, hist, n_bins, alpha,
-                              tol):  # pragma: no cover
+def _calculate_outlier_scores(
+    X, bin_edges, hist, n_bins, alpha, tol
+):  # pragma: no cover
     """The internal function to calculate the outlier scores based on
     the bins and histograms constructed with the training data. The program
     is optimized through numba. It is excluded from coverage test for
@@ -322,7 +330,7 @@ def _calculate_outlier_scores(X, bin_edges, hist, n_bins, alpha,
         The density of each histogram.
 
     n_bins : int
-        The number of bins. 
+        The number of bins.
 
     alpha : float in (0, 1)
         The regularizer for preventing overflow.
@@ -341,7 +349,6 @@ def _calculate_outlier_scores(X, bin_edges, hist, n_bins, alpha,
     outlier_scores = np.zeros(shape=(n_samples, n_features))
 
     for i in range(n_features):
-
         # Find the indices of the bins to which each value belongs.
         # See documentation for np.digitize since it is tricky
         # >>> x = np.array([0.2, 6.4, 3.0, 1.6, -1, 100, 10])
@@ -356,7 +363,6 @@ def _calculate_outlier_scores(X, bin_edges, hist, n_bins, alpha,
         out_score_i = np.log2(hist[:, i] + alpha)
 
         for j in range(n_samples):
-
             # If the sample does not belong to any bins
             # bin_ind == 0 (fall outside since it is too small)
             if bin_inds[j] == 0:

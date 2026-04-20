@@ -198,7 +198,10 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
 
         def load_checkpoint(self, checkpoint_path, model, optimizer):
             return {
-                "scaler_state_dict": {"feature_mean": torch.zeros(1), "feature_std": torch.ones(1)},
+                "scaler_state_dict": {
+                    "feature_mean": torch.zeros(1),
+                    "feature_std": torch.ones(1),
+                },
             }
 
     class _FakeScaler:
@@ -229,7 +232,11 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
                     }
                 ],
                 "curves": {
-                    "roc_curve": {"x": [0.0, 1.0], "y": [0.0, 1.0], "thresholds": [1.0, 0.0]},
+                    "roc_curve": {
+                        "x": [0.0, 1.0],
+                        "y": [0.0, 1.0],
+                        "thresholds": [1.0, 0.0],
+                    },
                     "pr_curve": {"x": [0.0, 1.0], "y": [1.0, 0.5], "thresholds": [0.9]},
                 },
             }
@@ -253,7 +260,9 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
         },
     }
 
-    outputs = run_evaluation_experiment(experiment_config, checkpoint_path=str(tmp_path / "best.pt"))
+    outputs = run_evaluation_experiment(
+        experiment_config, checkpoint_path=str(tmp_path / "best.pt")
+    )
 
     curves_path = tmp_path / "outputs" / "evaluation_curves.json"
     assert outputs["metrics"]["fpr"] == 0.25
@@ -262,7 +271,10 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
     saved_curves = json.loads(curves_path.read_text(encoding="utf-8"))
     assert "roc_curve" in saved_curves
     assert "pr_curve" in saved_curves
-    assert any("evaluation/precision" in logged_metrics for logged_metrics in fake_run.logged_metrics)
+    assert any(
+        "evaluation/precision" in logged_metrics
+        for logged_metrics in fake_run.logged_metrics
+    )
     assert any(
         artifact.name == "evaluation-metrics-test-evaluation-curves"
         for artifact, _ in fake_run.logged_artifacts

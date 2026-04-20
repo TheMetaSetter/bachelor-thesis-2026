@@ -27,9 +27,12 @@ import matplotlib.pyplot as plt
 # code referrence:
 # https://github.com/thuml/Anomaly-Transformer/blob/72a71e5f0847bd14ba0253de899f7b0d5ba6ee97/solver.py#L130
 
+
 class AnomalyTransformer_Trainer(Trainer):
     def __init__(self, args, logger, train_loader):
-        super(AnomalyTransformer_Trainer, self).__init__(args=args, logger=logger, train_loader=train_loader)
+        super(AnomalyTransformer_Trainer, self).__init__(
+            args=args, logger=logger, train_loader=train_loader
+        )
         self.model = AnomalyTransformer(
             win_size=self.args.window_size,
             enc_in=self.args.num_channels,
@@ -38,7 +41,6 @@ class AnomalyTransformer_Trainer(Trainer):
         ).to(self.args.device)
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=args.lr)
         self.criterion = nn.MSELoss()
-
 
     def train(self):
         wandb.watch(self.model, log="all", log_freq=100)
@@ -52,7 +54,6 @@ class AnomalyTransformer_Trainer(Trainer):
             epoch_time = time.time()
             self.model.train()
             for i, (input_data, labels) in enumerate(self.train_loader):
-
                 self.optimizer.zero_grad()
                 iter_count += 1
                 input = input_data.float().to(self.args.device)
@@ -62,10 +63,48 @@ class AnomalyTransformer_Trainer(Trainer):
                 series_loss = 0.0
                 prior_loss = 0.0
                 for u in range(len(prior)):
-                    series_loss += (torch.mean(my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()))
-                                    + torch.mean(my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,self.args.window_size)).detach(), series[u])))
-                    prior_loss += (torch.mean(my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)),series[u].detach()))
-                                   + torch.mean(my_kl_loss(series[u].detach(), (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)))))
+                    series_loss += torch.mean(
+                        my_kl_loss(
+                            series[u],
+                            (
+                                prior[u]
+                                / torch.unsqueeze(
+                                    torch.sum(prior[u], dim=-1), dim=-1
+                                ).repeat(1, 1, 1, self.args.window_size)
+                            ).detach(),
+                        )
+                    ) + torch.mean(
+                        my_kl_loss(
+                            (
+                                prior[u]
+                                / torch.unsqueeze(
+                                    torch.sum(prior[u], dim=-1), dim=-1
+                                ).repeat(1, 1, 1, self.args.window_size)
+                            ).detach(),
+                            series[u],
+                        )
+                    )
+                    prior_loss += torch.mean(
+                        my_kl_loss(
+                            (
+                                prior[u]
+                                / torch.unsqueeze(
+                                    torch.sum(prior[u], dim=-1), dim=-1
+                                ).repeat(1, 1, 1, self.args.window_size)
+                            ),
+                            series[u].detach(),
+                        )
+                    ) + torch.mean(
+                        my_kl_loss(
+                            series[u].detach(),
+                            (
+                                prior[u]
+                                / torch.unsqueeze(
+                                    torch.sum(prior[u], dim=-1), dim=-1
+                                ).repeat(1, 1, 1, self.args.window_size)
+                            ),
+                        )
+                    )
                 series_loss = series_loss / len(prior)
                 prior_loss = prior_loss / len(prior)
 
@@ -78,7 +117,9 @@ class AnomalyTransformer_Trainer(Trainer):
                 if (i + 1) % 100 == 0:
                     speed = (time.time() - time_now) / iter_count
                     left_time = speed * ((self.args.epochs - epoch) * train_steps - i)
-                    self.logger.info(f"\tspeed: {speed:.4f}s/iter; left time: {left_time:.4f}s")
+                    self.logger.info(
+                        f"\tspeed: {speed:.4f}s/iter; left time: {left_time:.4f}s"
+                    )
                     iter_count = 0
                     time_now = time.time()
 
@@ -87,18 +128,26 @@ class AnomalyTransformer_Trainer(Trainer):
                 loss2.backward()
                 self.optimizer.step()
 
-            self.logger.info(f"Epoch: {epoch + 1} cost time: {time.time() - epoch_time}")
+            self.logger.info(
+                f"Epoch: {epoch + 1} cost time: {time.time() - epoch_time}"
+            )
             train_loss = np.average(loss1_list)
-            self.logger.info(f"Epoch: {epoch + 1}, Steps: {train_steps} | Train Loss: {train_loss:.7f} ")
+            self.logger.info(
+                f"Epoch: {epoch + 1}, Steps: {train_steps} | Train Loss: {train_loss:.7f} "
+            )
             adjust_learning_rate(self.optimizer, epoch + 1, self.args.lr)
-            self.logger.info(f'Updating learning rate to {self.optimizer.param_groups[0]["lr"]}')
+            self.logger.info(
+                f"Updating learning rate to {self.optimizer.param_groups[0]['lr']}"
+            )
 
             self.checkpoint(os.path.join(self.args.checkpoint_path, f"best.pth"))
 
 
 class AnomalyTransformer_Tester(Tester):
     def __init__(self, args, logger, train_loader, test_loader, load=False):
-        super(AnomalyTransformer_Tester, self).__init__(args=args, logger=logger, train_loader=train_loader, test_loader=test_loader)
+        super(AnomalyTransformer_Tester, self).__init__(
+            args=args, logger=logger, train_loader=train_loader, test_loader=test_loader
+        )
         self.model = AnomalyTransformer(
             win_size=self.args.window_size,
             enc_in=self.args.num_channels,
@@ -110,8 +159,6 @@ class AnomalyTransformer_Tester(Tester):
         if load:
             self.load_trained_model()
             self.prepare_stats()
-
-
 
     def calculate_anomaly_scores(self, dataloader):
         temperature = self.args.model.temperature
@@ -128,11 +175,55 @@ class AnomalyTransformer_Tester(Tester):
             prior_loss = 0.0
             for u in range(len(prior)):
                 if u == 0:
-                    series_loss = my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
-                    prior_loss = my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
+                    series_loss = (
+                        my_kl_loss(
+                            series[u],
+                            (
+                                prior[u]
+                                / torch.unsqueeze(
+                                    torch.sum(prior[u], dim=-1), dim=-1
+                                ).repeat(1, 1, 1, self.args.window_size)
+                            ).detach(),
+                        )
+                        * temperature
+                    )
+                    prior_loss = (
+                        my_kl_loss(
+                            (
+                                prior[u]
+                                / torch.unsqueeze(
+                                    torch.sum(prior[u], dim=-1), dim=-1
+                                ).repeat(1, 1, 1, self.args.window_size)
+                            ),
+                            series[u].detach(),
+                        )
+                        * temperature
+                    )
                 else:
-                    series_loss += my_kl_loss(series[u], (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)).detach()) * temperature
-                    prior_loss += my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.args.window_size)), series[u].detach()) * temperature
+                    series_loss += (
+                        my_kl_loss(
+                            series[u],
+                            (
+                                prior[u]
+                                / torch.unsqueeze(
+                                    torch.sum(prior[u], dim=-1), dim=-1
+                                ).repeat(1, 1, 1, self.args.window_size)
+                            ).detach(),
+                        )
+                        * temperature
+                    )
+                    prior_loss += (
+                        my_kl_loss(
+                            (
+                                prior[u]
+                                / torch.unsqueeze(
+                                    torch.sum(prior[u], dim=-1), dim=-1
+                                ).repeat(1, 1, 1, self.args.window_size)
+                            ),
+                            series[u].detach(),
+                        )
+                        * temperature
+                    )
             metric = torch.softmax((-series_loss - prior_loss), dim=-1)
 
             cri = metric * loss

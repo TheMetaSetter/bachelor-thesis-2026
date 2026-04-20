@@ -62,12 +62,18 @@ def test_multitask_model_uses_shared_three_layer_mlp_depth() -> None:
         beta_logit_init=0.0,
     )
 
-    encoder_linear_layers = [layer for layer in model.encoder.network if isinstance(layer, torch.nn.Linear)]
+    encoder_linear_layers = [
+        layer for layer in model.encoder.network if isinstance(layer, torch.nn.Linear)
+    ]
     reconstruction_linear_layers = [
-        layer for layer in model.reconstruction_head if isinstance(layer, torch.nn.Linear)
+        layer
+        for layer in model.reconstruction_head
+        if isinstance(layer, torch.nn.Linear)
     ]
     classification_linear_layers = [
-        layer for layer in model.classification_head if isinstance(layer, torch.nn.Linear)
+        layer
+        for layer in model.classification_head
+        if isinstance(layer, torch.nn.Linear)
     ]
 
     assert len(encoder_linear_layers) == 3

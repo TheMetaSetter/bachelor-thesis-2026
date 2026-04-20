@@ -16,6 +16,7 @@ from .feature import Window
 from ..utils.utility import invert_order
 from ..utils.utility import zscore
 
+
 # noinspection PyProtectedMember
 class LOF(BaseDetector):
     """Wrapper of scikit-learn LOF Class with more functionalities.
@@ -136,9 +137,21 @@ class LOF(BaseDetector):
         ``threshold_`` on ``decision_scores_``.
     """
 
-    def __init__(self, slidingWindow=100, sub=True, n_neighbors=20, algorithm='auto', leaf_size=30,
-                 metric='minkowski', p=2, metric_params=None,
-                 contamination=0.1, n_jobs=1, novelty=True, normalize=True):
+    def __init__(
+        self,
+        slidingWindow=100,
+        sub=True,
+        n_neighbors=20,
+        algorithm="auto",
+        leaf_size=30,
+        metric="minkowski",
+        p=2,
+        metric_params=None,
+        contamination=0.1,
+        n_jobs=1,
+        novelty=True,
+        normalize=True,
+    ):
         super(LOF, self).__init__(contamination=contamination)
 
         self.slidingWindow = slidingWindow
@@ -175,26 +188,28 @@ class LOF(BaseDetector):
         # print('self.slidingWindow: ', self.slidingWindow)
 
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
-                
+
         # validate inputs X and y (optional)
         X = check_array(X)
         self._set_n_classes(y)
 
-        self.detector_ = LocalOutlierFactor(n_neighbors=self.n_neighbors,
-                                            algorithm=self.algorithm,
-                                            leaf_size=self.leaf_size,
-                                            metric=self.metric,
-                                            p=self.p,
-                                            metric_params=self.metric_params,
-                                            contamination=self.contamination,
-                                            n_jobs=self.n_jobs,
-                                            novelty=self.novelty)
+        self.detector_ = LocalOutlierFactor(
+            n_neighbors=self.n_neighbors,
+            algorithm=self.algorithm,
+            leaf_size=self.leaf_size,
+            metric=self.metric,
+            p=self.p,
+            metric_params=self.metric_params,
+            contamination=self.contamination,
+            n_jobs=self.n_jobs,
+            novelty=self.novelty,
+        )
         self.detector_.fit(X=X, y=y)
 
         # Invert decision_scores_. Outliers comes with higher outlier scores
@@ -202,8 +217,11 @@ class LOF(BaseDetector):
 
         # padded decision_scores_
         if self.decision_scores_.shape[0] < n_samples:
-            self.decision_scores_ = np.array([self.decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(self.decision_scores_) + [self.decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            self.decision_scores_ = np.array(
+                [self.decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(self.decision_scores_)
+                + [self.decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
 
         self._process_decision_scores()
         return self
@@ -227,18 +245,18 @@ class LOF(BaseDetector):
             The anomaly score of the input samples.
         """
 
-        check_is_fitted(self, ['decision_scores_', 'threshold_', 'labels_'])
+        check_is_fitted(self, ["decision_scores_", "threshold_", "labels_"])
 
-        print('self.slidingWindow: ', self.slidingWindow)
+        print("self.slidingWindow: ", self.slidingWindow)
         n_samples, n_features = X.shape
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
-                
+
         # Invert outlier scores. Outliers comes with higher outlier scores
         # noinspection PyProtectedMember
         try:
@@ -251,8 +269,11 @@ class LOF(BaseDetector):
 
         # padded decision_scores_
         if decision_scores_.shape[0] < n_samples:
-            decision_scores_ = np.array([decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(decision_scores_) + [decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            decision_scores_ = np.array(
+                [decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(decision_scores_)
+                + [decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
         return decision_scores_
 
     @property

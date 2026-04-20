@@ -15,14 +15,21 @@ def test_load_experiment_config_reads_valid_yaml() -> None:
 
 
 def test_load_online_experiment_config_reads_valid_yaml() -> None:
-    loaded_config = load_experiment_config("configs/experiment/smd_online_adaptation.yaml")
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_online_adaptation.yaml"
+    )
     assert loaded_config["model"]["model_name"] == "online_adaptation"
     assert loaded_config["task"]["target_param_group"] == "projector_params"
-    assert loaded_config["task"]["reference_checkpoint_path"] == "outputs/smd_multitask/checkpoints/best.pt"
+    assert (
+        loaded_config["task"]["reference_checkpoint_path"]
+        == "outputs/smd_multitask/checkpoints/best.pt"
+    )
 
 
 def test_load_multitask_ablation_config_applies_overrides() -> None:
-    loaded_config = load_experiment_config("configs/experiment/smd_multitask_continuous_only.yaml")
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_multitask_continuous_only.yaml"
+    )
     assert loaded_config["model"]["lambda_gate"] == 0.01
     assert loaded_config["task"]["freeze_fusion_for_epochs"] == 3
     assert loaded_config["task"]["warmup_alpha_value"] == 0.0
@@ -31,7 +38,9 @@ def test_load_multitask_ablation_config_applies_overrides() -> None:
 
 
 def test_load_seed_specific_rtx3090_config_reads_valid_yaml() -> None:
-    loaded_config = load_experiment_config("configs/experiment/smd_multitask_rtx3090_seed11.yaml")
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_multitask_rtx3090_seed11.yaml"
+    )
     assert loaded_config["seed"] == 11
     assert loaded_config["model"]["mlp_num_linear_layers"] == 3
     assert loaded_config["output_dir"] == "outputs/smd_multitask_rtx3090_seed11"
@@ -42,10 +51,14 @@ def test_load_single_entity_rtx3090_config_reads_valid_yaml() -> None:
         "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_val_synth_pr_auc.yaml"
     )
     assert loaded_config["data"]["entity_ids"] == ["machine-2-1"]
-    assert loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_pr_auc"
+    assert (
+        loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_pr_auc"
+    )
 
 
-def test_load_multitask_experiment_config_rejects_invalid_mlp_num_linear_layers(tmp_path: Path) -> None:
+def test_load_multitask_experiment_config_rejects_invalid_mlp_num_linear_layers(
+    tmp_path: Path,
+) -> None:
     data_config_path = tmp_path / "data.yaml"
     model_config_path = tmp_path / "model.yaml"
     task_config_path = tmp_path / "task.yaml"
@@ -217,7 +230,9 @@ def test_load_experiment_config_rejects_missing_required_keys(tmp_path: Path) ->
         load_experiment_config(invalid_experiment_path)
 
 
-def test_load_online_experiment_config_rejects_invalid_target_param_group(tmp_path: Path) -> None:
+def test_load_online_experiment_config_rejects_invalid_target_param_group(
+    tmp_path: Path,
+) -> None:
     data_config_path = tmp_path / "data.yaml"
     model_config_path = tmp_path / "model.yaml"
     task_config_path = tmp_path / "task.yaml"
@@ -298,7 +313,9 @@ def test_load_online_experiment_config_rejects_invalid_target_param_group(tmp_pa
         load_experiment_config(experiment_config_path)
 
 
-def test_load_multitask_experiment_config_rejects_invalid_anomaly_families(tmp_path: Path) -> None:
+def test_load_multitask_experiment_config_rejects_invalid_anomaly_families(
+    tmp_path: Path,
+) -> None:
     data_config_path = tmp_path / "data.yaml"
     model_config_path = tmp_path / "model.yaml"
     task_config_path = tmp_path / "task.yaml"
@@ -395,7 +412,9 @@ def test_load_multitask_experiment_config_rejects_invalid_anomaly_families(tmp_p
         load_experiment_config(experiment_config_path)
 
 
-def test_load_multitask_experiment_config_rejects_invalid_temperature_hold_fraction(tmp_path: Path) -> None:
+def test_load_multitask_experiment_config_rejects_invalid_temperature_hold_fraction(
+    tmp_path: Path,
+) -> None:
     data_config_path = tmp_path / "data.yaml"
     model_config_path = tmp_path / "model.yaml"
     task_config_path = tmp_path / "task.yaml"
@@ -495,7 +514,9 @@ def test_load_multitask_experiment_config_rejects_invalid_temperature_hold_fract
 
 
 def test_load_experiment_config_accepts_valid_reduce_on_plateau_scheduler() -> None:
-    loaded_config = load_experiment_config("configs/experiment/smd_multitask_rtx3090_full.yaml")
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_multitask_rtx3090_full.yaml"
+    )
     scheduler_config = loaded_config["optimizer"]["scheduler"]
 
     assert scheduler_config["scheduler_name"] == "reduce_on_plateau"
@@ -503,7 +524,9 @@ def test_load_experiment_config_accepts_valid_reduce_on_plateau_scheduler() -> N
     assert scheduler_config["patience"] == 20
 
 
-def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(tmp_path: Path) -> None:
+def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(
+    tmp_path: Path,
+) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     experiment_config_path.write_text(
         "\n".join(
@@ -536,10 +559,14 @@ def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(tmp_pat
 
     loaded_config = load_experiment_config(experiment_config_path)
 
-    assert loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_pr_auc"
+    assert (
+        loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_pr_auc"
+    )
 
 
-def test_load_experiment_config_accepts_label_refurbishment_and_masking_fields(tmp_path: Path) -> None:
+def test_load_experiment_config_accepts_label_refurbishment_and_masking_fields(
+    tmp_path: Path,
+) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     model_config_path = tmp_path / "model.yaml"
     model_config_path.write_text(
@@ -610,7 +637,9 @@ def test_load_experiment_config_accepts_label_refurbishment_and_masking_fields(t
     assert loaded_config["model"]["reconstruction_normal_only"] is True
 
 
-def test_load_experiment_config_rejects_invalid_scheduler_monitor_metric(tmp_path: Path) -> None:
+def test_load_experiment_config_rejects_invalid_scheduler_monitor_metric(
+    tmp_path: Path,
+) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     experiment_config_path.write_text(
         "\n".join(
@@ -645,7 +674,9 @@ def test_load_experiment_config_rejects_invalid_scheduler_monitor_metric(tmp_pat
         load_experiment_config(experiment_config_path)
 
 
-def test_load_experiment_config_rejects_invalid_refurbishment_alpha(tmp_path: Path) -> None:
+def test_load_experiment_config_rejects_invalid_refurbishment_alpha(
+    tmp_path: Path,
+) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     model_config_path = tmp_path / "model.yaml"
     model_config_path.write_text(
@@ -712,7 +743,9 @@ def test_load_experiment_config_rejects_invalid_refurbishment_alpha(tmp_path: Pa
         load_experiment_config(experiment_config_path)
 
 
-def test_load_experiment_config_rejects_scheduler_min_lr_above_learning_rate(tmp_path: Path) -> None:
+def test_load_experiment_config_rejects_scheduler_min_lr_above_learning_rate(
+    tmp_path: Path,
+) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     experiment_config_path.write_text(
         "\n".join(

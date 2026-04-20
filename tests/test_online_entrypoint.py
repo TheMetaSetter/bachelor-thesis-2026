@@ -19,7 +19,9 @@ class _FakeOnlineModel(torch.nn.Module):
 
 
 class _FakeOnlineLoop:
-    def __init__(self, model, optimizer, checkpoint_manager, experiment_logger, device: str) -> None:
+    def __init__(
+        self, model, optimizer, checkpoint_manager, experiment_logger, device: str
+    ) -> None:
         self.model = model
 
     def run(
@@ -38,8 +40,12 @@ class _FakeOnlineLoop:
         }
 
 
-def test_run_online_adaptation_experiment_writes_summary_artifacts(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr("scripts.run_online_adaptation.register_runtime_components", lambda: None)
+def test_run_online_adaptation_experiment_writes_summary_artifacts(
+    monkeypatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        "scripts.run_online_adaptation.register_runtime_components", lambda: None
+    )
     monkeypatch.setattr(
         "scripts.run_online_adaptation.build_dataset",
         lambda dataset_name, data_config: {
@@ -63,7 +69,14 @@ def test_run_online_adaptation_experiment_writes_summary_artifacts(monkeypatch, 
             "scaler": type(
                 "Scaler",
                 (),
-                {"state_dict": staticmethod(lambda: {"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)})},
+                {
+                    "state_dict": staticmethod(
+                        lambda: {
+                            "feature_mean": torch.zeros(38),
+                            "feature_std": torch.ones(38),
+                        }
+                    )
+                },
             )(),
         },
     )

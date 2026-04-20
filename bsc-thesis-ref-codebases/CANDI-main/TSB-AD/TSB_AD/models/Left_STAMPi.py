@@ -5,8 +5,8 @@ from stumpy import stumpi
 from TSB_AD.models.base import BaseDetector
 from TSB_AD.utils.utility import zscore
 
-class Left_STAMPi(BaseDetector):
 
+class Left_STAMPi(BaseDetector):
     def __init__(self, n_init_train=100, window_size=50, normalize=True):
         super().__init__()
         self.n_init_train = n_init_train
@@ -30,14 +30,16 @@ class Left_STAMPi(BaseDetector):
             Fitted estimator.
         """
         n_samples, n_features = X.shape
-        if self.normalize: 
+        if self.normalize:
             X = zscore(X, axis=0, ddof=0)
 
         warmup = self.n_init_train
         ws = self.window_size
 
         if ws > warmup:
-            logging.warning(f"WARN: window_size is larger than n_init_train. Adjusting to n_init_train={warmup}.")
+            logging.warning(
+                f"WARN: window_size is larger than n_init_train. Adjusting to n_init_train={warmup}."
+            )
             ws = warmup
         if ws < 3:
             logging.warning("WARN: window_size must be at least 3. Adjusting to 3.")
@@ -46,9 +48,9 @@ class Left_STAMPi(BaseDetector):
         self.stream = stumpi(X[:warmup, 0], m=ws, egress=False)
         for point in X[warmup:, 0]:
             self.stream.update(point)
-  
+
         self.decision_scores_ = self.stream.left_P_
-        self.decision_scores_[:warmup] = 0  
+        self.decision_scores_[:warmup] = 0
 
         return self
 
@@ -66,7 +68,9 @@ class Left_STAMPi(BaseDetector):
             The anomaly score of the input samples.
         """
         n_samples = X.shape[0]
-        padded_scores = self.pad_anomaly_scores(self.decision_scores_, n_samples, self.window_size)
+        padded_scores = self.pad_anomaly_scores(
+            self.decision_scores_, n_samples, self.window_size
+        )
         return padded_scores
 
     @staticmethod

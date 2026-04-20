@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Projector-first online adaptation model for the first accepted Phase 4 slice.
 
 This file should be read after the offline multitask model. The online path is
@@ -28,7 +29,9 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 class ThesisMultitaskEncoderAdapter(nn.Module):
     # The adapter keeps the online file readable by reusing the offline encoder
     # without forcing the rest of the online logic back into the multitask file.
-    def __init__(self, thesis_model: ThesisMultitaskModel, freeze_parameters: bool = True) -> None:
+    def __init__(
+        self, thesis_model: ThesisMultitaskModel, freeze_parameters: bool = True
+    ) -> None:
         super().__init__()
         self.model = copy.deepcopy(thesis_model)
         if freeze_parameters:
@@ -38,7 +41,9 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
         return self.model.encoder(batch)
 
-    def score_from_hidden(self, hidden: torch.Tensor, x_tensor: torch.Tensor) -> dict[str, Any]:
+    def score_from_hidden(
+        self, hidden: torch.Tensor, x_tensor: torch.Tensor
+    ) -> dict[str, Any]:
         continuous_outputs = self.model._continuous_prototype_lookup(hidden)
         discrete_outputs = self.model._discrete_prototype_lookup(hidden)
         fusion_outputs = self.model._compute_fusion_outputs(
@@ -83,7 +88,9 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
 class ResidualProjector(nn.Module):
     # The projector is residual and near-identity on purpose. That makes it the
     # safest first parameter group to adapt online.
-    def __init__(self, hidden_dim: int, projector_hidden_dim: int, dropout: float = 0.0) -> None:
+    def __init__(
+        self, hidden_dim: int, projector_hidden_dim: int, dropout: float = 0.0
+    ) -> None:
         super().__init__()
         self.network = nn.Sequential(
             nn.Linear(hidden_dim, projector_hidden_dim),
@@ -100,7 +107,7 @@ class ResidualProjector(nn.Module):
             nn.init.zeros_(final_layer.bias)
 
     def forward(self, hidden: torch.Tensor) -> torch.Tensor:
-        # Khi mới khởi tạo thì self.network(hidden) 
+        # Khi mới khởi tạo thì self.network(hidden)
         # là ma trận chứa toàn số xấp xỉ 0.
         return hidden + self.network(hidden)
 
@@ -129,9 +136,13 @@ class OnlineAdaptationModel(BaseModel):
         # The first online slice is intentionally narrow so that a new reader
         # can reason about one adaptation mechanism at a time.
         if not clean_stream_only:
-            raise ValueError("The first online adaptation slice supports only clean_stream_only=True")
+            raise ValueError(
+                "The first online adaptation slice supports only clean_stream_only=True"
+            )
         if score_source != "projected_hidden":
-            raise ValueError("The first online adaptation slice supports only score_source='projected_hidden'")
+            raise ValueError(
+                "The first online adaptation slice supports only score_source='projected_hidden'"
+            )
 
         self.input_dim = input_dim
         self.encoder_dim = encoder_dim
@@ -152,8 +163,12 @@ class OnlineAdaptationModel(BaseModel):
         # The offline multitask checkpoint is the source of truth for the
         # representation geometry used by both the reference and online encoders.
         frozen_multitask_model = self._load_reference_model(reference_checkpoint_path)
-        self.reference_encoder = ThesisMultitaskEncoderAdapter(frozen_multitask_model, freeze_parameters=True)
-        self.online_encoder = ThesisMultitaskEncoderAdapter(frozen_multitask_model, freeze_parameters=True)
+        self.reference_encoder = ThesisMultitaskEncoderAdapter(
+            frozen_multitask_model, freeze_parameters=True
+        )
+        self.online_encoder = ThesisMultitaskEncoderAdapter(
+            frozen_multitask_model, freeze_parameters=True
+        )
         self.projector = ResidualProjector(
             hidden_dim=hidden_dim,
             projector_hidden_dim=projector_hidden_dim,
@@ -180,11 +195,14 @@ class OnlineAdaptationModel(BaseModel):
             lambda_anchor=lambda_anchor,
             target_param_group=target_param_group,
             trainable_group_parameters=sum(
-                parameter.numel() for parameter in self.get_parameter_group(target_param_group)
+                parameter.numel()
+                for parameter in self.get_parameter_group(target_param_group)
             ),
         )
 
-    def _load_reference_model(self, checkpoint_path: str | Path) -> ThesisMultitaskModel:
+    def _load_reference_model(
+        self, checkpoint_path: str | Path
+    ) -> ThesisMultitaskModel:
         # The online runtime is defined only for multitask checkpoints. Failing
         # early here prevents confusing baseline-versus-online mismatches later.
         loaded_checkpoint = torch.load(checkpoint_path, map_location="cpu")
@@ -196,9 +214,7 @@ class OnlineAdaptationModel(BaseModel):
                 f"but found model_name={model_name!r}"
             )
         model_kwargs = {
-            key: value
-            for key, value in config["model"].items()
-            if key != "model_name"
+            key: value for key, value in config["model"].items() if key != "model_name"
         }
         model_kwargs.update(
             {
@@ -224,7 +240,9 @@ class OnlineAdaptationModel(BaseModel):
             for parameter_name, parameter in self.projector_anchor_state_dict.items()
         }
 
-    def load_projector_anchor_state_dict(self, state_dict: dict[str, torch.Tensor]) -> None:
+    def load_projector_anchor_state_dict(
+        self, state_dict: dict[str, torch.Tensor]
+    ) -> None:
         self.projector_anchor_state_dict = {
             parameter_name: parameter.detach().cpu().clone()
             for parameter_name, parameter in state_dict.items()
@@ -243,23 +261,37 @@ class OnlineAdaptationModel(BaseModel):
         if target_param_group == "projector_params":
             for parameter in self.projector.parameters():
                 parameter.requires_grad = True
-            console_print("MODEL", "Set trainable parameter group", target_param_group=target_param_group)
+            console_print(
+                "MODEL",
+                "Set trainable parameter group",
+                target_param_group=target_param_group,
+            )
             return
         if target_param_group == "online_encoder_params":
             for parameter in self.online_encoder.encoder_parameters():
                 parameter.requires_grad = True
-            console_print("MODEL", "Set trainable parameter group", target_param_group=target_param_group)
+            console_print(
+                "MODEL",
+                "Set trainable parameter group",
+                target_param_group=target_param_group,
+            )
             return
-        raise ValueError("target_param_group must be either 'projector_params' or 'online_encoder_params'")
+        raise ValueError(
+            "target_param_group must be either 'projector_params' or 'online_encoder_params'"
+        )
 
     def get_parameter_group(self, target_param_group: str) -> list[nn.Parameter]:
         if target_param_group == "projector_params":
             return list(self.projector.parameters())
         if target_param_group == "online_encoder_params":
             return self.online_encoder.encoder_parameters()
-        raise ValueError("target_param_group must be either 'projector_params' or 'online_encoder_params'")
+        raise ValueError(
+            "target_param_group must be either 'projector_params' or 'online_encoder_params'"
+        )
 
-    def _replace_batch_x(self, batch: dict[str, Any], x_tensor: torch.Tensor) -> dict[str, Any]:
+    def _replace_batch_x(
+        self, batch: dict[str, Any], x_tensor: torch.Tensor
+    ) -> dict[str, Any]:
         replaced_batch = dict(batch)
         replaced_batch["x"] = x_tensor
         return replaced_batch
@@ -273,8 +305,12 @@ class OnlineAdaptationModel(BaseModel):
         # learns to match reference geometry before widening adaptation scope.
         pooled_reference = F.normalize(reference_hidden.mean(dim=1), dim=-1)
         pooled_projected = F.normalize(projected_hidden.mean(dim=1), dim=-1)
-        similarity_logits = pooled_projected @ pooled_reference.T / self.alignment_temperature
-        labels = torch.arange(similarity_logits.shape[0], device=similarity_logits.device)
+        similarity_logits = (
+            pooled_projected @ pooled_reference.T / self.alignment_temperature
+        )
+        labels = torch.arange(
+            similarity_logits.shape[0], device=similarity_logits.device
+        )
         return 0.5 * (
             F.cross_entropy(similarity_logits, labels)
             + F.cross_entropy(similarity_logits.T, labels)
@@ -289,16 +325,22 @@ class OnlineAdaptationModel(BaseModel):
         # the online objective small unless this extra term is explicitly enabled.
         if not self.enable_prototype_alignment:
             return projected_hidden.new_zeros(())
-        prototype_target = self.reference_encoder.compute_prototype_target(reference_hidden)
+        prototype_target = self.reference_encoder.compute_prototype_target(
+            reference_hidden
+        )
         return torch.mean((projected_hidden - prototype_target) ** 2)
 
     def _compute_anchor_loss(self) -> torch.Tensor:
         # The anchor term measures drift away from the projector's initial state.
         anchor_loss = None
         for parameter_name, parameter in self.projector.named_parameters():
-            anchor_parameter = self.projector_anchor_state_dict[parameter_name].to(parameter.device)
+            anchor_parameter = self.projector_anchor_state_dict[parameter_name].to(
+                parameter.device
+            )
             parameter_loss = torch.mean((parameter - anchor_parameter) ** 2)
-            anchor_loss = parameter_loss if anchor_loss is None else anchor_loss + parameter_loss
+            anchor_loss = (
+                parameter_loss if anchor_loss is None else anchor_loss + parameter_loss
+            )
         if anchor_loss is None:
             return torch.zeros((), dtype=torch.float32)
         return anchor_loss
@@ -306,9 +348,15 @@ class OnlineAdaptationModel(BaseModel):
     def _compute_projector_drift(self) -> torch.Tensor:
         drift_value = None
         for parameter_name, parameter in self.projector.named_parameters():
-            anchor_parameter = self.projector_anchor_state_dict[parameter_name].to(parameter.device)
+            anchor_parameter = self.projector_anchor_state_dict[parameter_name].to(
+                parameter.device
+            )
             parameter_drift = torch.mean((parameter - anchor_parameter) ** 2)
-            drift_value = parameter_drift if drift_value is None else drift_value + parameter_drift
+            drift_value = (
+                parameter_drift
+                if drift_value is None
+                else drift_value + parameter_drift
+            )
         if drift_value is None:
             return torch.zeros((), dtype=torch.float32)
         return torch.sqrt(drift_value)
@@ -317,16 +365,28 @@ class OnlineAdaptationModel(BaseModel):
         # The forward path follows the design narrative literally:
         # build two views, encode them separately, project the online one, then score in reference space.
         validate_online_batch(batch)
-        console_print("MODEL", "Online adaptation forward input batch", **summarize_batch(batch))
-        reference_outputs = self.reference_encoder(self._replace_batch_x(batch, batch["view_a"]))
-        online_outputs = self.online_encoder(self._replace_batch_x(batch, batch["view_b"]))
+        console_print(
+            "MODEL", "Online adaptation forward input batch", **summarize_batch(batch)
+        )
+        reference_outputs = self.reference_encoder(
+            self._replace_batch_x(batch, batch["view_a"])
+        )
+        online_outputs = self.online_encoder(
+            self._replace_batch_x(batch, batch["view_b"])
+        )
         reference_hidden = reference_outputs["hidden"]
         online_hidden = online_outputs["hidden"]
         projected_hidden = self.projector(online_hidden)
 
-        scored_outputs = self.reference_encoder.score_from_hidden(projected_hidden, batch["x"])
-        alignment_loss = self._compute_alignment_loss(reference_hidden, projected_hidden)
-        prototype_alignment_loss = self._compute_prototype_alignment_loss(reference_hidden, projected_hidden)
+        scored_outputs = self.reference_encoder.score_from_hidden(
+            projected_hidden, batch["x"]
+        )
+        alignment_loss = self._compute_alignment_loss(
+            reference_hidden, projected_hidden
+        )
+        prototype_alignment_loss = self._compute_prototype_alignment_loss(
+            reference_hidden, projected_hidden
+        )
         anchor_loss = self._compute_anchor_loss()
         projector_drift = self._compute_projector_drift()
 
@@ -375,13 +435,21 @@ class OnlineAdaptationModel(BaseModel):
     ) -> dict[str, float]:
         return {
             f"{stage_name}_loss": float(total_loss.detach().cpu()),
-            f"{stage_name}_alignment_loss": float(outputs["aux"]["alignment_loss"].detach().cpu()),
+            f"{stage_name}_alignment_loss": float(
+                outputs["aux"]["alignment_loss"].detach().cpu()
+            ),
             f"{stage_name}_prototype_alignment_loss": float(
                 outputs["aux"]["prototype_alignment_loss"].detach().cpu()
             ),
-            f"{stage_name}_anchor_loss": float(outputs["aux"]["anchor_loss"].detach().cpu()),
-            f"{stage_name}_projector_drift": float(outputs["aux"]["projector_drift"].detach().cpu()),
-            f"{stage_name}_window_score_mean": float(outputs["window_scores"].mean().detach().cpu()),
+            f"{stage_name}_anchor_loss": float(
+                outputs["aux"]["anchor_loss"].detach().cpu()
+            ),
+            f"{stage_name}_projector_drift": float(
+                outputs["aux"]["projector_drift"].detach().cpu()
+            ),
+            f"{stage_name}_window_score_mean": float(
+                outputs["window_scores"].mean().detach().cpu()
+            ),
         }
 
     def _shared_step(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
@@ -405,7 +473,9 @@ class OnlineAdaptationModel(BaseModel):
             batch_size=batch["x"].shape[0],
             total_loss=float(total_loss.detach().cpu()),
             alignment_loss=float(outputs["aux"]["alignment_loss"].detach().cpu()),
-            prototype_alignment_loss=float(outputs["aux"]["prototype_alignment_loss"].detach().cpu()),
+            prototype_alignment_loss=float(
+                outputs["aux"]["prototype_alignment_loss"].detach().cpu()
+            ),
             anchor_loss=float(outputs["aux"]["anchor_loss"].detach().cpu()),
             projector_drift=float(outputs["aux"]["projector_drift"].detach().cpu()),
         )

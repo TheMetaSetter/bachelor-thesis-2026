@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Render per-entity evaluation figures from saved anomaly scores.
 
 This script is the reader-facing visualization entrypoint for offline anomaly
@@ -60,7 +61,9 @@ def save_entity_evaluation_visualization(
     point_labels = torch.tensor(evaluation_record["point_labels"], dtype=torch.long)
 
     if raw_values.shape[0] != point_scores.shape[0]:
-        raise ValueError("raw sequence length must match evaluation point_scores length")
+        raise ValueError(
+            "raw sequence length must match evaluation point_scores length"
+        )
 
     predicted_mask = (point_scores > threshold).numpy().astype(np.int64)
     ground_truth_mask = point_labels.numpy().astype(np.int64)
@@ -80,8 +83,16 @@ def save_entity_evaluation_visualization(
 
     time_index = np.arange(raw_values.shape[0])
     score_axis = axes[0]
-    score_axis.plot(time_index, point_scores.numpy(), color="navy", linewidth=1.0, label="point score")
-    score_axis.axhline(threshold, color="black", linestyle="--", linewidth=1.0, label="threshold")
+    score_axis.plot(
+        time_index,
+        point_scores.numpy(),
+        color="navy",
+        linewidth=1.0,
+        label="point score",
+    )
+    score_axis.axhline(
+        threshold, color="black", linestyle="--", linewidth=1.0, label="threshold"
+    )
     score_axis.fill_between(
         time_index,
         threshold,
@@ -137,9 +148,21 @@ def render_evaluation_visualizations(
 ) -> list[Path]:
     experiment_config = load_experiment_config(experiment_config_path)
     base_output_dir = Path(experiment_config["output_dir"])
-    records_path = Path(evaluation_records_path) if evaluation_records_path is not None else base_output_dir / "evaluation_records.json"
-    metrics_path = Path(evaluation_metrics_path) if evaluation_metrics_path is not None else base_output_dir / "evaluation_metrics.json"
-    render_dir = Path(output_dir) if output_dir is not None else base_output_dir / "evaluation_plots"
+    records_path = (
+        Path(evaluation_records_path)
+        if evaluation_records_path is not None
+        else base_output_dir / "evaluation_records.json"
+    )
+    metrics_path = (
+        Path(evaluation_metrics_path)
+        if evaluation_metrics_path is not None
+        else base_output_dir / "evaluation_metrics.json"
+    )
+    render_dir = (
+        Path(output_dir)
+        if output_dir is not None
+        else base_output_dir / "evaluation_plots"
+    )
 
     evaluation_records = _load_json_file(records_path)
     evaluation_metrics = _load_json_file(metrics_path)
@@ -147,12 +170,13 @@ def render_evaluation_visualizations(
 
     parser = SMDDatasetParser(
         root_dir=experiment_config["data"]["root_dir"],
-        validation_split_ratio=float(experiment_config["data"]["validation_split_ratio"]),
+        validation_split_ratio=float(
+            experiment_config["data"]["validation_split_ratio"]
+        ),
     )
     raw_test_sequences = parser.parse()["test"]
     sequence_by_entity_id = {
-        sequence["meta"]["entity_id"]: sequence
-        for sequence in raw_test_sequences
+        sequence["meta"]["entity_id"]: sequence for sequence in raw_test_sequences
     }
 
     requested_entity_ids = set(entity_ids) if entity_ids else None

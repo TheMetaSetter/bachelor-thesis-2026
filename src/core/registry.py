@@ -11,12 +11,16 @@ MODEL_BUILDERS: dict[str, Callable[..., Any]] = {}
 
 def register_dataset(name: str, builder: Callable[..., Any]) -> None:
     DATASET_BUILDERS[name] = builder
-    console_print("REGISTRY", "Registered dataset builder", name=name, builder=builder.__name__)
+    console_print(
+        "REGISTRY", "Registered dataset builder", name=name, builder=builder.__name__
+    )
 
 
 def register_model(name: str, builder: Callable[..., Any]) -> None:
     MODEL_BUILDERS[name] = builder
-    console_print("REGISTRY", "Registered model builder", name=name, builder=builder.__name__)
+    console_print(
+        "REGISTRY", "Registered model builder", name=name, builder=builder.__name__
+    )
 
 
 def build_dataset(name: str, *args: Any, **kwargs: Any) -> Any:

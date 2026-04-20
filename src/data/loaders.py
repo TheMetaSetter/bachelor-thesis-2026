@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Offline SMD data path from full entity sequences to fixed-size windows.
 
 A fresher should read this file before reading the models. It shows how raw SMD
@@ -40,7 +41,11 @@ def _resolve_data_loader_num_workers(data_config: dict[str, Any]) -> int:
         )
         return resolved_num_workers
     resolved_num_workers = int(configured_num_workers)
-    console_print("DATA", "Resolved explicit data loader workers", resolved_num_workers=resolved_num_workers)
+    console_print(
+        "DATA",
+        "Resolved explicit data loader workers",
+        resolved_num_workers=resolved_num_workers,
+    )
     return resolved_num_workers
 
 
@@ -48,7 +53,11 @@ def _resolve_smd_root_dir(data_config: dict[str, Any]) -> str:
     # Keep the loader on the same root-resolution codepath as the public data
     # API so environment overrides such as SMD_ROOT_DIR apply everywhere.
     resolved_root_dir = str(get_smd_dataset_root(data_config["root_dir"]))
-    console_print("DATA", "Resolved SMD root directory for loader builder", resolved_root_dir=resolved_root_dir)
+    console_print(
+        "DATA",
+        "Resolved SMD root directory for loader builder",
+        resolved_root_dir=resolved_root_dir,
+    )
     return resolved_root_dir
 
 
@@ -89,7 +98,9 @@ class WindowDataset(Dataset):
             "point_labels": None
             if sequence["point_labels"] is None
             else sequence["point_labels"][start_index:end_index].clone(),
-            "mask": None if sequence["mask"] is None else sequence["mask"][start_index:end_index].clone(),
+            "mask": None
+            if sequence["mask"] is None
+            else sequence["mask"][start_index:end_index].clone(),
             "timestamps": None
             if sequence["timestamps"] is None
             else sequence["timestamps"][start_index:end_index].clone(),
@@ -120,7 +131,9 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
         if bool(data_config.get("download", False)):
             download_smd_dataset(
                 root_dir=resolved_root_dir,
-                skip_existing_download=bool(data_config.get("skip_existing_download", True)),
+                skip_existing_download=bool(
+                    data_config.get("skip_existing_download", True)
+                ),
             )
         parser = SMDDatasetParser(
             root_dir=resolved_root_dir,

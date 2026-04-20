@@ -2,14 +2,14 @@
 # github: https://github.com/johnpaparrizos/TSB-UAD/blob/main/TSB_AD/utils/metrics.py
 import numpy as np
 from sklearn import metrics
-from metrics.evaluate_utils import find_length,range_convers_new
+from metrics.evaluate_utils import find_length, range_convers_new
 
 
 def extend_postive_range(x, window=16):
     label = x.copy().astype(float)
-#     print(label)
+    #     print(label)
     L = range_convers_new(label)  # index of non-zero segments
-#     print(L)
+    #     print(L)
     length = len(label)
     for k in range(len(L)):
         s = L[k][0]
@@ -59,7 +59,7 @@ def TPR_FPR_RangeAUC(labels, pred, P, L):
 
     existence = 0
     for seg in L:
-        if np.sum(product[seg[0]:(seg[1] + 1)]) > 0:
+        if np.sum(product[seg[0] : (seg[1] + 1)]) > 0:
             existence += 1
 
     existence_ratio = existence / len(L)
@@ -81,7 +81,9 @@ def TPR_FPR_RangeAUC(labels, pred, P, L):
     return TPR_RangeAUC, FPR_RangeAUC, Precision_RangeAUC
 
 
-def Range_AUC(score_t_test, y_test,  window=5, percentage=0, plot_ROC=False, AUC_type='window'):
+def Range_AUC(
+    score_t_test, y_test, window=5, percentage=0, plot_ROC=False, AUC_type="window"
+):
     # AUC_type='window'/'percentage'
     score = score_t_test
     labels = y_test
@@ -89,7 +91,7 @@ def Range_AUC(score_t_test, y_test,  window=5, percentage=0, plot_ROC=False, AUC
 
     P = np.sum(labels)
     # print(np.sum(labels))
-    if AUC_type == 'window':
+    if AUC_type == "window":
         labels = extend_postive_range(labels, window=window)
     else:
         labels = extend_postive_range_individual(labels, percentage=percentage)
@@ -131,7 +133,7 @@ def Range_AUC(score_t_test, y_test,  window=5, percentage=0, plot_ROC=False, AUC
     return AUC_range
 
 
-def point_wise_AUC(score_t_test, y_test,  plot_ROC=False):
+def point_wise_AUC(score_t_test, y_test, plot_ROC=False):
     # area under curve
     label = y_test
     score = score_t_test

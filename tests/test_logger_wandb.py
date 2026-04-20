@@ -39,7 +39,9 @@ class _FakeRun:
         self.finished = True
 
 
-def test_experiment_logger_logs_metrics_and_artifacts_to_wandb(monkeypatch, tmp_path: Path) -> None:
+def test_experiment_logger_logs_metrics_and_artifacts_to_wandb(
+    monkeypatch, tmp_path: Path
+) -> None:
     fake_run = _FakeRun()
     fake_wandb = SimpleNamespace(
         init=lambda **kwargs: fake_run,
@@ -48,11 +50,14 @@ def test_experiment_logger_logs_metrics_and_artifacts_to_wandb(monkeypatch, tmp_
     monkeypatch.setitem(sys.modules, "wandb", fake_wandb)
 
     artifact_file = tmp_path / "artifact.json"
-    artifact_file.write_text("{\"ok\": true}", encoding="utf-8")
+    artifact_file.write_text('{"ok": true}', encoding="utf-8")
 
     logger = ExperimentLogger(
         tmp_path / "outputs",
-        experiment_config={"experiment_name": "logger-test", "task": {"task_name": "multitask_tsad"}},
+        experiment_config={
+            "experiment_name": "logger-test",
+            "task": {"task_name": "multitask_tsad"},
+        },
         logging_config={
             "use_wandb": True,
             "wandb_project": "bachelor-thesis-2026",

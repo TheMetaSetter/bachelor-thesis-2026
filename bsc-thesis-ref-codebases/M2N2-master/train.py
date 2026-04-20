@@ -29,7 +29,9 @@ import os
 import wandb
 import hydra
 from omegaconf import DictConfig
-import warnings; warnings.filterwarnings("ignore")
+import warnings
+
+warnings.filterwarnings("ignore")
 
 from utils.logger import make_logger
 from utils.argpass import prepare_arguments
@@ -38,7 +40,13 @@ from utils.secret import WANDB_API_KEY, WANDB_ENTITY, WANDB_PROJECT_NAME
 
 import torch
 
-from Exp import MLP_Trainer, LSTMEncDec_Trainer, USAD_Trainer, THOC_Trainer, AnomalyTransformer_Trainer
+from Exp import (
+    MLP_Trainer,
+    LSTMEncDec_Trainer,
+    USAD_Trainer,
+    THOC_Trainer,
+    AnomalyTransformer_Trainer,
+)
 from data.load_data import DataFactory
 
 
@@ -53,7 +61,7 @@ def main(cfg: DictConfig) -> None:
     wandb.config.update(args)
 
     # Logger
-    logger = make_logger(os.path.join(args.log_path, f'{args.exp_id}_train.log'))
+    logger = make_logger(os.path.join(args.log_path, f"{args.exp_id}_train.log"))
     logger.info("=== TRAINING START ===")
     logger.info(f"Configurations: {args}")
 

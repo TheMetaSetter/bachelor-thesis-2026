@@ -24,8 +24,10 @@ def get_events(y_test, outlier=1, normal=0):
     return events
 
 
-def get_composite_fscore_raw(y_test, pred_labels,  true_events, return_prec_rec=False):
-    tp = np.sum([pred_labels[start:end + 1].any() for start, end in true_events.values()])
+def get_composite_fscore_raw(y_test, pred_labels, true_events, return_prec_rec=False):
+    tp = np.sum(
+        [pred_labels[start : end + 1].any() for start, end in true_events.values()]
+    )
     fn = len(true_events) - tp
     rec_e = tp / (tp + fn)
     prec_t = precision_score(y_test, pred_labels)
@@ -46,7 +48,11 @@ def main():
     pred_labels[55:62] = 1
     # pred_labels[51:55] = 1
     # true_events = get_events(y_test)
-    prec_t, rec_e, fscore_c = get_composite_fscore_raw(pred_labels, y_test, return_prec_rec=True)
+    prec_t, rec_e, fscore_c = get_composite_fscore_raw(
+        pred_labels, y_test, return_prec_rec=True
+    )
+
+
 #     print("Prec_t: {}, rec_e: {}, fscore_c: {}".format(prec_t, rec_e, fscore_c))
 
 

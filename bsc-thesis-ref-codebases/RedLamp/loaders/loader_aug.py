@@ -22,10 +22,9 @@ class Loader_aug(object):
         shuffle: bool = True,
         verbose: bool = False,
     ) -> "Loader_aug":
-        
         """
         Docstring for __init__
-        
+
         :param self: Description
         :param dataset: Description
         :type dataset: Union[Dataset, Entity]
@@ -60,10 +59,12 @@ class Loader_aug(object):
 
         # Đây là những thông tin mà một instance của class Loader_aug phải tự
         # biết về bản thân mình.
-        self.dataset = dataset              # Instance này dùng để tải tập dữ liệu nào?
-        self.batch_size = batch_size        # Instance này tải tập dữ liệu đó với batch size là bao nhiêu?
+        self.dataset = dataset  # Instance này dùng để tải tập dữ liệu nào?
+        self.batch_size = (
+            batch_size  # Instance này tải tập dữ liệu đó với batch size là bao nhiêu?
+        )
         self.anomaly_types = anomaly_types  # Instance này dùng các loại bất thường tổng hợp (synthetic anomaly types) nào để gia tăng dữ liệu (data augmentation)?
-        self.min_range = min_range          # 
+        self.min_range = min_range  #
         self.min_features = min_features
         self.max_features = max_features
         self.fast_sampling = fast_sampling

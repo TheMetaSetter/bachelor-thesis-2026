@@ -85,7 +85,9 @@ class CheckpointManager:
         optimizer: torch.optim.Optimizer | None = None,
         scheduler: Any | None = None,
     ) -> dict[str, Any]:
-        console_print("CHECKPOINT", "Loading checkpoint", checkpoint_path=checkpoint_path)
+        console_print(
+            "CHECKPOINT", "Loading checkpoint", checkpoint_path=checkpoint_path
+        )
         loaded_checkpoint = torch.load(checkpoint_path, map_location="cpu")
         model.load_state_dict(loaded_checkpoint["model_state_dict"])
         if optimizer is not None:

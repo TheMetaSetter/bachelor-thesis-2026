@@ -67,4 +67,3 @@ def test_windowizer_transform_combines_windows_without_crossing_entities() -> No
         "machine-b",
         "machine-b",
     ]
-

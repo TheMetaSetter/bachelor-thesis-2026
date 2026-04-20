@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from src.data.download import get_smd_dataset_root, is_smd_dataset_present, list_smd_download_plan
+from src.data.download import (
+    get_smd_dataset_root,
+    is_smd_dataset_present,
+    list_smd_download_plan,
+)
 
 
 def test_smd_download_plan_points_to_canonical_dataset_layout() -> None:

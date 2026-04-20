@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Self-contained multitask prototype-fusion model.
 
 This is the main offline thesis model, so the file is intentionally long and
@@ -45,9 +46,13 @@ def build_multilayer_perceptron(
     if num_linear_layers < 2:
         raise ValueError("num_linear_layers must be at least 2")
 
-    layer_dims = [input_dim] + [intermediate_dim] * (num_linear_layers - 1) + [output_dim]
+    layer_dims = (
+        [input_dim] + [intermediate_dim] * (num_linear_layers - 1) + [output_dim]
+    )
     network_layers: list[nn.Module] = []
-    for layer_index, (layer_input_dim, layer_output_dim) in enumerate(zip(layer_dims[:-1], layer_dims[1:])):
+    for layer_index, (layer_input_dim, layer_output_dim) in enumerate(
+        zip(layer_dims[:-1], layer_dims[1:])
+    ):
         is_last_linear_layer = layer_index == num_linear_layers - 1
         network_layers.append(nn.Linear(layer_input_dim, layer_output_dim))
         if not is_last_linear_layer:
@@ -167,8 +172,12 @@ class ThesisMultitaskModel(BaseModel):
         self.lambda_cov = lambda_cov
         self.lambda_use = lambda_use
         self.lambda_gate = lambda_gate
-        self.usage_lambda_start = lambda_use if usage_lambda_start is None else usage_lambda_start
-        self.usage_lambda_end = lambda_use if usage_lambda_end is None else usage_lambda_end
+        self.usage_lambda_start = (
+            lambda_use if usage_lambda_start is None else usage_lambda_start
+        )
+        self.usage_lambda_end = (
+            lambda_use if usage_lambda_end is None else usage_lambda_end
+        )
         self.usage_lambda_schedule_fraction = usage_lambda_schedule_fraction
         self.current_usage_lambda = self.usage_lambda_start
         self.enable_diversity_loss = enable_diversity_loss
@@ -197,7 +206,9 @@ class ThesisMultitaskModel(BaseModel):
             "usage_lambda": self.current_usage_lambda,
         }
         if self.use_label_refurbishment and self.num_classes != 2:
-            raise ValueError("label refurbishment currently supports only binary classification")
+            raise ValueError(
+                "label refurbishment currently supports only binary classification"
+            )
 
         # Encoder block.
         # This produces the common hidden state that both prototype branches see.
@@ -222,7 +233,9 @@ class ThesisMultitaskModel(BaseModel):
         # This branch assigns tokens to a codebook through Gumbel-Softmax.
         if discrete_enabled and discrete_codebook_size > 0:
             self.discrete_assignment = nn.Linear(hidden_dim, discrete_codebook_size)
-            self.discrete_codebook = nn.Parameter(torch.randn(discrete_codebook_size, hidden_dim))
+            self.discrete_codebook = nn.Parameter(
+                torch.randn(discrete_codebook_size, hidden_dim)
+            )
         else:
             self.discrete_assignment = None
             self.register_parameter("discrete_codebook", None)
@@ -254,7 +267,6 @@ class ThesisMultitaskModel(BaseModel):
             apply_output_activation=False,
         )
 
-
         # Offline objective helpers.
         # Optional losses are activated by `lambda_*` so ablations can stay on
         # one codepath instead of branching into separate model variants. The
@@ -276,7 +288,6 @@ class ThesisMultitaskModel(BaseModel):
             anomaly_families=anomaly_families,
             deterministic_seed=synthetic_validation_seed,
         )
-
 
         self.optional_loss_configs: dict[str, dict[str, Any]] = {
             "diversity_loss": {
@@ -348,7 +359,9 @@ class ThesisMultitaskModel(BaseModel):
     def _zero_loss(self, reference_tensor: torch.Tensor) -> torch.Tensor:
         return reference_tensor.new_zeros(())
 
-    def _compute_temperature_for_epoch(self, epoch_index: int, total_epochs: int) -> float:
+    def _compute_temperature_for_epoch(
+        self, epoch_index: int, total_epochs: int
+    ) -> float:
         # The temperature schedule is kept inside the model because it changes
         # the discrete branch behavior, not the generic trainer behavior.
         hold_epochs = math.ceil(total_epochs * self.temperature_hold_fraction)
@@ -356,7 +369,9 @@ class ThesisMultitaskModel(BaseModel):
             return float(self.temperature_start)
 
         anneal_epoch_index = max(epoch_index - hold_epochs, 0)
-        anneal_epochs = max(1, math.ceil(total_epochs * self.temperature_anneal_fraction))
+        anneal_epochs = max(
+            1, math.ceil(total_epochs * self.temperature_anneal_fraction)
+        )
         if anneal_epochs == 1:
             progress = 0.0
         else:
@@ -366,11 +381,16 @@ class ThesisMultitaskModel(BaseModel):
         if progress >= 1.0:
             return float(self.temperature_end)
         return float(
-            self.temperature_start + progress * (self.temperature_end - self.temperature_start)
+            self.temperature_start
+            + progress * (self.temperature_end - self.temperature_start)
         )
 
-    def _compute_usage_lambda_for_epoch(self, epoch_index: int, total_epochs: int) -> float:
-        usage_schedule_epochs = max(1, math.ceil(total_epochs * self.usage_lambda_schedule_fraction))
+    def _compute_usage_lambda_for_epoch(
+        self, epoch_index: int, total_epochs: int
+    ) -> float:
+        usage_schedule_epochs = max(
+            1, math.ceil(total_epochs * self.usage_lambda_schedule_fraction)
+        )
         if usage_schedule_epochs == 1:
             progress = 1.0
         else:
@@ -380,7 +400,8 @@ class ThesisMultitaskModel(BaseModel):
         if progress >= 1.0:
             return float(self.usage_lambda_end)
         return float(
-            self.usage_lambda_start + progress * (self.usage_lambda_end - self.usage_lambda_start)
+            self.usage_lambda_start
+            + progress * (self.usage_lambda_end - self.usage_lambda_start)
         )
 
     def set_epoch_context(self, epoch_index: int, total_epochs: int) -> None:
@@ -388,8 +409,12 @@ class ThesisMultitaskModel(BaseModel):
         # compare continuous-only, discrete-only, and fused behavior cleanly.
         self.current_epoch_index = epoch_index
         self.current_total_epochs = total_epochs
-        self.gumbel_temperature = self._compute_temperature_for_epoch(epoch_index, total_epochs)
-        self.current_usage_lambda = self._compute_usage_lambda_for_epoch(epoch_index, total_epochs)
+        self.gumbel_temperature = self._compute_temperature_for_epoch(
+            epoch_index, total_epochs
+        )
+        self.current_usage_lambda = self._compute_usage_lambda_for_epoch(
+            epoch_index, total_epochs
+        )
         warmup_active = epoch_index < self.freeze_fusion_for_epochs
         self.active_alpha_override = self.warmup_alpha_value if warmup_active else None
         self.active_beta_override = self.warmup_beta_value if warmup_active else None
@@ -506,12 +531,16 @@ class ThesisMultitaskModel(BaseModel):
         # Beta là mức độ mà tác vụ tái tạo chuỗi (reconstruction) sử dụng
         # nhánh các vec-tơ nguyên mẫu rời rạc (discrete prototype).
         # Mình kì vọng giá trị này sẽ nhỏ.
-        hidden_reconstruction = beta * discrete_hidden + (1.0 - beta) * continuous_hidden
+        hidden_reconstruction = (
+            beta * discrete_hidden + (1.0 - beta) * continuous_hidden
+        )
 
         # Alpha là mức độ mà tác vụ phân loại (classification) sử dụng nhánh các
         # vec-tơ nguyên mẫu liên tục.
         # Mình kì vọng giá trị này sẽ lớn.
-        hidden_classification = alpha * discrete_hidden + (1.0 - alpha) * continuous_hidden
+        hidden_classification = (
+            alpha * discrete_hidden + (1.0 - alpha) * continuous_hidden
+        )
 
         return {
             "hidden_reconstruction": hidden_reconstruction,
@@ -535,12 +564,16 @@ class ThesisMultitaskModel(BaseModel):
             if isinstance(value, torch.Tensor):
                 cloned_batch[key] = value.clone()
             elif isinstance(value, list):
-                cloned_batch[key] = [dict(item) if isinstance(item, dict) else item for item in value]
+                cloned_batch[key] = [
+                    dict(item) if isinstance(item, dict) else item for item in value
+                ]
             else:
                 cloned_batch[key] = value
         return cloned_batch
 
-    def _prepare_clean_batch(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
+    def _prepare_clean_batch(
+        self, batch: dict[str, Any], stage_name: str
+    ) -> dict[str, Any]:
         # The model owns augmentation timing because synthetic supervision is
         # part of the multitask objective, not a separate preprocessing pipeline.
         if (
@@ -552,7 +585,9 @@ class ThesisMultitaskModel(BaseModel):
                 stage_name.upper(),
                 "Received pre-augmented multitask batch",
                 **summarize_batch(batch),
-                classification_label_distribution=summarize_label_distribution(batch["classification_labels"]),
+                classification_label_distribution=summarize_label_distribution(
+                    batch["classification_labels"]
+                ),
             )
             return self._clone_batch(batch)
 
@@ -585,12 +620,16 @@ class ThesisMultitaskModel(BaseModel):
             for _ in range(batch_size)
         ]
         if prepared_batch["point_labels"] is None:
-            prepared_batch["point_labels"] = prepared_batch["synthetic_anomaly_mask"].clone()
+            prepared_batch["point_labels"] = prepared_batch[
+                "synthetic_anomaly_mask"
+            ].clone()
         console_print(
             stage_name.upper(),
             "Prepared clean multitask batch",
             **summarize_batch(prepared_batch),
-            classification_label_distribution=summarize_label_distribution(prepared_batch["classification_labels"]),
+            classification_label_distribution=summarize_label_distribution(
+                prepared_batch["classification_labels"]
+            ),
         )
         return prepared_batch
 
@@ -603,7 +642,9 @@ class ThesisMultitaskModel(BaseModel):
         # The forward pass is the main representation story of the thesis model:
         # encode once, build two branch views, fuse per task, then score.
         validate_batch(batch)
-        console_print("MODEL", "Multitask forward input batch", **summarize_batch(batch))
+        console_print(
+            "MODEL", "Multitask forward input batch", **summarize_batch(batch)
+        )
         forward_start_time = time.perf_counter()
 
         # Truyền lô dữ liệu qua encoder để mã hoá
@@ -677,22 +718,36 @@ class ThesisMultitaskModel(BaseModel):
             logits=summarize_tensor(outputs["logits"]),
             point_scores=summarize_tensor(outputs["point_scores"]),
             window_scores=summarize_tensor(outputs["window_scores"]),
-            continuous_hidden=summarize_tensor(outputs["aux"]["continuous_branch"]["prototype_context"]),
-            discrete_hidden=summarize_tensor(outputs["aux"]["discrete_branch"]["quantized_hidden"]),
+            continuous_hidden=summarize_tensor(
+                outputs["aux"]["continuous_branch"]["prototype_context"]
+            ),
+            discrete_hidden=summarize_tensor(
+                outputs["aux"]["discrete_branch"]["quantized_hidden"]
+            ),
             assignment_probabilities=summarize_tensor(
                 outputs["aux"]["discrete_branch"]["assignment_probabilities"]
             ),
-            hidden_reconstruction=summarize_tensor(outputs["aux"]["hidden_reconstruction"]),
-            hidden_classification=summarize_tensor(outputs["aux"]["hidden_classification"]),
+            hidden_reconstruction=summarize_tensor(
+                outputs["aux"]["hidden_reconstruction"]
+            ),
+            hidden_classification=summarize_tensor(
+                outputs["aux"]["hidden_classification"]
+            ),
             forward_pass_seconds=outputs["aux"]["forward_pass_seconds"],
         )
         return outputs
 
-    def _normalize_branch_tokens(self, branch_hidden: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        normalized_hidden = self.branch_layer_norm(branch_hidden).reshape(-1, self.hidden_dim)
+    def _normalize_branch_tokens(
+        self, branch_hidden: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        normalized_hidden = self.branch_layer_norm(branch_hidden).reshape(
+            -1, self.hidden_dim
+        )
         feature_mean = normalized_hidden.mean(dim=0, keepdim=True)
         feature_std = normalized_hidden.std(dim=0, unbiased=False, keepdim=True)
-        standardized_hidden = (normalized_hidden - feature_mean) / (feature_std + self.epsilon)
+        standardized_hidden = (normalized_hidden - feature_mean) / (
+            feature_std + self.epsilon
+        )
         return normalized_hidden, standardized_hidden
 
     def _compute_reconstruction_loss(
@@ -704,13 +759,20 @@ class ThesisMultitaskModel(BaseModel):
         if not self.reconstruction_normal_only or "synthetic_anomaly_mask" not in batch:
             return torch.mean(squared_reconstruction_error)
 
-        normal_time_step_mask = self._build_normal_time_step_mask(batch, squared_reconstruction_error)
-        expanded_normal_mask = normal_time_step_mask.unsqueeze(-1).expand_as(squared_reconstruction_error)
+        normal_time_step_mask = self._build_normal_time_step_mask(
+            batch, squared_reconstruction_error
+        )
+        expanded_normal_mask = normal_time_step_mask.unsqueeze(-1).expand_as(
+            squared_reconstruction_error
+        )
         active_normal_cells = torch.count_nonzero(expanded_normal_mask)
         if int(active_normal_cells.item()) == 0:
             return torch.mean(squared_reconstruction_error)
 
-        return torch.sum(squared_reconstruction_error * expanded_normal_mask) / expanded_normal_mask.sum()
+        return (
+            torch.sum(squared_reconstruction_error * expanded_normal_mask)
+            / expanded_normal_mask.sum()
+        )
 
     def _compute_classification_loss(
         self,
@@ -723,7 +785,9 @@ class ThesisMultitaskModel(BaseModel):
                 outputs["logits"].dtype,
             )
             log_probabilities = F.log_softmax(outputs["logits"], dim=-1)
-            return torch.mean(torch.sum(-target_probabilities * log_probabilities, dim=-1))
+            return torch.mean(
+                torch.sum(-target_probabilities * log_probabilities, dim=-1)
+            )
 
         return F.cross_entropy(outputs["logits"], batch["classification_labels"].long())
 
@@ -766,32 +830,44 @@ class ThesisMultitaskModel(BaseModel):
         )
         return target_probabilities
 
-    def _compute_cross_branch_diversity_loss(self, outputs: dict[str, Any]) -> torch.Tensor:
+    def _compute_cross_branch_diversity_loss(
+        self, outputs: dict[str, Any]
+    ) -> torch.Tensor:
         # This discourages the two branches from collapsing onto the same signal.
         continuous_hidden = outputs["aux"]["continuous_branch"]["prototype_context"]
         discrete_hidden = outputs["aux"]["discrete_branch"]["quantized_hidden"]
         _, standardized_continuous = self._normalize_branch_tokens(continuous_hidden)
         _, standardized_discrete = self._normalize_branch_tokens(discrete_hidden)
         num_tokens = standardized_continuous.shape[0]
-        cross_branch_correlation = standardized_continuous.T @ standardized_discrete / num_tokens
+        cross_branch_correlation = (
+            standardized_continuous.T @ standardized_discrete / num_tokens
+        )
         return cross_branch_correlation.pow(2).mean()
 
     def _compute_variance_floor_loss(self, outputs: dict[str, Any]) -> torch.Tensor:
         variance_losses: list[torch.Tensor] = []
         for branch_name in ["continuous_branch", "discrete_branch"]:
             branch_hidden = outputs["aux"][branch_name][
-                "prototype_context" if branch_name == "continuous_branch" else "quantized_hidden"
+                "prototype_context"
+                if branch_name == "continuous_branch"
+                else "quantized_hidden"
             ]
             normalized_hidden, _ = self._normalize_branch_tokens(branch_hidden)
             feature_std = normalized_hidden.std(dim=0, unbiased=False)
-            variance_losses.append(F.relu(self.variance_floor_gamma - feature_std).pow(2).mean())
+            variance_losses.append(
+                F.relu(self.variance_floor_gamma - feature_std).pow(2).mean()
+            )
         return torch.stack(variance_losses).sum()
 
-    def _compute_covariance_reduction_loss(self, outputs: dict[str, Any]) -> torch.Tensor:
+    def _compute_covariance_reduction_loss(
+        self, outputs: dict[str, Any]
+    ) -> torch.Tensor:
         covariance_losses: list[torch.Tensor] = []
         for branch_name in ["continuous_branch", "discrete_branch"]:
             branch_hidden = outputs["aux"][branch_name][
-                "prototype_context" if branch_name == "continuous_branch" else "quantized_hidden"
+                "prototype_context"
+                if branch_name == "continuous_branch"
+                else "quantized_hidden"
             ]
             _, standardized_hidden = self._normalize_branch_tokens(branch_hidden)
             num_tokens = standardized_hidden.shape[0]
@@ -802,7 +878,8 @@ class ThesisMultitaskModel(BaseModel):
                 covariance_losses.append(self._zero_loss(branch_hidden))
             else:
                 covariance_losses.append(
-                    off_diagonal_matrix.pow(2).sum() / (self.hidden_dim * (self.hidden_dim - 1))
+                    off_diagonal_matrix.pow(2).sum()
+                    / (self.hidden_dim * (self.hidden_dim - 1))
                 )
         return torch.stack(covariance_losses).sum()
 
@@ -812,14 +889,18 @@ class ThesisMultitaskModel(BaseModel):
     # and one for usage of discrete prototypes.
     def _compute_prototype_usage_loss(self, outputs: dict[str, Any]) -> torch.Tensor:
         # Usage balancing is the main protection against dead or ignored codes.
-        assignment_probabilities = outputs["aux"]["discrete_branch"]["assignment_probabilities"]
+        assignment_probabilities = outputs["aux"]["discrete_branch"][
+            "assignment_probabilities"
+        ]
         if assignment_probabilities is None or self.discrete_codebook_size <= 0:
             return self._zero_loss(outputs["hidden"])
         average_usage = assignment_probabilities.mean(dim=(0, 1))
         target_usage = torch.full_like(average_usage, 1.0 / self.discrete_codebook_size)
         return torch.sum((average_usage - target_usage) ** 2)
 
-    def _compute_gate_regularization_loss(self, outputs: dict[str, Any]) -> torch.Tensor:
+    def _compute_gate_regularization_loss(
+        self, outputs: dict[str, Any]
+    ) -> torch.Tensor:
         # Gate entropy regularization keeps the fusion scalars from collapsing
         # too confidently unless the data actually supports that decision.
         alpha = outputs["aux"]["alpha"]
@@ -839,10 +920,14 @@ class ThesisMultitaskModel(BaseModel):
         beta_penalty = 1.0 - beta_entropy / max_entropy
         return 0.5 * (alpha_penalty + beta_penalty)
 
-    def _compute_optional_loss_terms(self, outputs: dict[str, Any]) -> dict[str, torch.Tensor]:
+    def _compute_optional_loss_terms(
+        self, outputs: dict[str, Any]
+    ) -> dict[str, torch.Tensor]:
         optional_loss_values: dict[str, torch.Tensor] = {}
         for loss_name, loss_config in self.optional_loss_configs.items():
-            compute_fn: Callable[[dict[str, Any]], torch.Tensor] = loss_config["compute_fn"]
+            compute_fn: Callable[[dict[str, Any]], torch.Tensor] = loss_config[
+                "compute_fn"
+            ]
             if loss_config["enabled"]:
                 optional_loss_values[loss_name] = compute_fn(outputs)
             else:
@@ -879,7 +964,9 @@ class ThesisMultitaskModel(BaseModel):
     ) -> dict[str, float]:
         # These logs are part of the branch-collapse observability surface, not
         # just convenience metrics. They are meant to support ablation reading.
-        assignment_probabilities = outputs["aux"]["discrete_branch"]["assignment_probabilities"]
+        assignment_probabilities = outputs["aux"]["discrete_branch"][
+            "assignment_probabilities"
+        ]
         if assignment_probabilities is None or self.discrete_codebook_size <= 0:
             discrete_usage_top1 = 0.0
             discrete_usage_entropy = 0.0
@@ -890,29 +977,57 @@ class ThesisMultitaskModel(BaseModel):
             average_usage = average_usage / average_usage.sum().clamp_min(self.epsilon)
             discrete_usage_top1 = float(average_usage.max().detach().cpu())
             discrete_usage_entropy = float(
-                (-(average_usage * torch.log(average_usage.clamp_min(self.epsilon))).sum()).detach().cpu()
+                (
+                    -(
+                        average_usage * torch.log(average_usage.clamp_min(self.epsilon))
+                    ).sum()
+                )
+                .detach()
+                .cpu()
             )
-            discrete_usage_concentration = float(torch.sum(average_usage.pow(2)).detach().cpu())
+            discrete_usage_concentration = float(
+                torch.sum(average_usage.pow(2)).detach().cpu()
+            )
             discrete_usage_active_codes = float(
-                torch.sum((average_usage > (1.0 / max(self.discrete_codebook_size * 2, 1))).float())
+                torch.sum(
+                    (
+                        average_usage > (1.0 / max(self.discrete_codebook_size * 2, 1))
+                    ).float()
+                )
                 .detach()
                 .cpu()
             )
         stage_log = {
             f"{stage_name}_loss": float(loss_terms["total_loss"].detach().cpu()),
-            f"{stage_name}_reconstruction_loss": float(loss_terms["reconstruction_loss"].detach().cpu()),
-            f"{stage_name}_diversity_loss": float(loss_terms["diversity_loss"].detach().cpu()),
-            f"{stage_name}_variance_loss": float(loss_terms["variance_loss"].detach().cpu()),
-            f"{stage_name}_covariance_loss": float(loss_terms["covariance_loss"].detach().cpu()),
+            f"{stage_name}_reconstruction_loss": float(
+                loss_terms["reconstruction_loss"].detach().cpu()
+            ),
+            f"{stage_name}_diversity_loss": float(
+                loss_terms["diversity_loss"].detach().cpu()
+            ),
+            f"{stage_name}_variance_loss": float(
+                loss_terms["variance_loss"].detach().cpu()
+            ),
+            f"{stage_name}_covariance_loss": float(
+                loss_terms["covariance_loss"].detach().cpu()
+            ),
             f"{stage_name}_usage_loss": float(loss_terms["usage_loss"].detach().cpu()),
             f"{stage_name}_gate_loss": float(loss_terms["gate_loss"].detach().cpu()),
             f"{stage_name}_alpha": float(outputs["aux"]["alpha"].detach().cpu()),
             f"{stage_name}_beta": float(outputs["aux"]["beta"].detach().cpu()),
             f"{stage_name}_continuous_norm": float(
-                outputs["aux"]["continuous_branch"]["prototype_context"].norm(dim=-1).mean().detach().cpu()
+                outputs["aux"]["continuous_branch"]["prototype_context"]
+                .norm(dim=-1)
+                .mean()
+                .detach()
+                .cpu()
             ),
             f"{stage_name}_discrete_norm": float(
-                outputs["aux"]["discrete_branch"]["quantized_hidden"].norm(dim=-1).mean().detach().cpu()
+                outputs["aux"]["discrete_branch"]["quantized_hidden"]
+                .norm(dim=-1)
+                .mean()
+                .detach()
+                .cpu()
             ),
             f"{stage_name}_discrete_usage_top1": discrete_usage_top1,
             f"{stage_name}_discrete_usage_entropy": discrete_usage_entropy,
@@ -925,7 +1040,11 @@ class ThesisMultitaskModel(BaseModel):
         if include_classification_metrics:
             predicted_labels = torch.argmax(outputs["logits"], dim=-1)
             classification_accuracy = float(
-                (predicted_labels == batch["classification_labels"]).float().mean().detach().cpu()
+                (predicted_labels == batch["classification_labels"])
+                .float()
+                .mean()
+                .detach()
+                .cpu()
             )
             stage_log[f"{stage_name}_classification_loss"] = float(
                 loss_terms["classification_loss"].detach().cpu()
@@ -970,7 +1089,9 @@ class ThesisMultitaskModel(BaseModel):
             classification_loss=float(classification_loss.detach().cpu()),
             diversity_loss=float(optional_loss_values["diversity_loss"].detach().cpu()),
             variance_loss=float(optional_loss_values["variance_loss"].detach().cpu()),
-            covariance_loss=float(optional_loss_values["covariance_loss"].detach().cpu()),
+            covariance_loss=float(
+                optional_loss_values["covariance_loss"].detach().cpu()
+            ),
             usage_loss=float(optional_loss_values["usage_loss"].detach().cpu()),
             gate_loss=float(optional_loss_values["gate_loss"].detach().cpu()),
             classification_label_distribution=summarize_label_distribution(

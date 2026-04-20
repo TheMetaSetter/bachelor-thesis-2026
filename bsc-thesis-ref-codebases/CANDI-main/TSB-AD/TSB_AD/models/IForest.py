@@ -16,9 +16,11 @@ from sklearn.utils.validation import check_is_fitted
 
 from .feature import Window
 from .base import BaseDetector
+
 # noinspection PyProtectedMember
 from ..utils.utility import invert_order
 from ..utils.utility import zscore
+
 
 class IForest(BaseDetector):
     """Wrapper of scikit-learn Isolation Forest with more functionalities.
@@ -136,19 +138,21 @@ class IForest(BaseDetector):
         ``threshold_`` on ``decision_scores_``.
     """
 
-    def __init__(self,
-                 slidingWindow=100,
-                 n_estimators=100,
-                 sub=True,
-                 max_samples="auto",
-                 contamination=0.1,
-                 max_features=1.,
-                 bootstrap=False,
-                 n_jobs=1,
-                 behaviour='old',
-                 random_state=0,         # set the random state
-                 verbose=0, 
-                 normalize=True):
+    def __init__(
+        self,
+        slidingWindow=100,
+        n_estimators=100,
+        sub=True,
+        max_samples="auto",
+        contamination=0.1,
+        max_features=1.0,
+        bootstrap=False,
+        n_jobs=1,
+        behaviour="old",
+        random_state=0,  # set the random state
+        verbose=0,
+        normalize=True,
+    ):
         super(IForest, self).__init__(contamination=contamination)
         self.slidingWindow = slidingWindow
         self.sub = sub
@@ -181,11 +185,11 @@ class IForest(BaseDetector):
         n_samples, n_features = X.shape
 
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)        
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
 
         # validate inputs X and y (optional)
@@ -196,14 +200,16 @@ class IForest(BaseDetector):
         # to IsolationForest that shifts the location of the anomaly scores
         # noinspection PyProtectedMember
 
-        self.detector_ = IsolationForest(n_estimators=self.n_estimators,
-                                         max_samples=self.max_samples,
-                                         contamination=self.contamination,
-                                         max_features=self.max_features,
-                                         bootstrap=self.bootstrap,
-                                         n_jobs=self.n_jobs,
-                                         random_state=self.random_state,
-                                         verbose=self.verbose)
+        self.detector_ = IsolationForest(
+            n_estimators=self.n_estimators,
+            max_samples=self.max_samples,
+            contamination=self.contamination,
+            max_features=self.max_features,
+            bootstrap=self.bootstrap,
+            n_jobs=self.n_jobs,
+            random_state=self.random_state,
+            verbose=self.verbose,
+        )
 
         self.detector_.fit(X=X, y=None, sample_weight=None)
 
@@ -212,8 +218,11 @@ class IForest(BaseDetector):
 
         # padded decision_scores_
         if self.decision_scores_.shape[0] < n_samples:
-            self.decision_scores_ = np.array([self.decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(self.decision_scores_) + [self.decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            self.decision_scores_ = np.array(
+                [self.decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(self.decision_scores_)
+                + [self.decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
         self._process_decision_scores()
         return self
 
@@ -235,23 +244,26 @@ class IForest(BaseDetector):
         anomaly_scores : numpy array of shape (n_samples,)
             The anomaly score of the input samples.
         """
-        check_is_fitted(self, ['decision_scores_', 'threshold_', 'labels_'])
+        check_is_fitted(self, ["decision_scores_", "threshold_", "labels_"])
 
         n_samples, n_features = X.shape
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
-                
+
         # invert outlier scores. Outliers comes with higher outlier scores
         decision_scores_ = invert_order(self.detector_.decision_function(X))
         # padded decision_scores_
         if decision_scores_.shape[0] < n_samples:
-            decision_scores_ = np.array([decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(decision_scores_) + [decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            decision_scores_ = np.array(
+                [decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(decision_scores_)
+                + [decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
         return decision_scores_
 
     @property
@@ -318,8 +330,7 @@ class IForest(BaseDetector):
             array of zeros.
         """
         check_is_fitted(self)
-        all_importances = Parallel(
-            n_jobs=self.n_jobs)(
+        all_importances = Parallel(n_jobs=self.n_jobs)(
             delayed(getattr)(tree, "feature_importances_")
             for tree in self.detector_.estimators_
             if tree.tree_.node_count > 1

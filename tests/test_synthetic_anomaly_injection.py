@@ -43,13 +43,20 @@ def test_synthetic_anomaly_injection_preserves_shapes_and_adds_labels() -> None:
     assert augmented_batch["meta"] == batch["meta"]
     assert augmented_batch["augmentation_metadata"][0]["is_synthetic_anomaly"] is True
     assert augmented_batch["augmentation_metadata"][0]["anomaly_family"] != "clean"
-    assert augmented_batch["augmentation_metadata"][0]["anomaly_family_index"] is not None
+    assert (
+        augmented_batch["augmentation_metadata"][0]["anomaly_family_index"] is not None
+    )
     assert augmented_batch["augmentation_metadata"][0]["affected_channels"]
-    assert isinstance(augmented_batch["augmentation_metadata"][0]["family_parameters_by_channel"], dict)
+    assert isinstance(
+        augmented_batch["augmentation_metadata"][0]["family_parameters_by_channel"],
+        dict,
+    )
 
 
 @pytest.mark.parametrize("anomaly_family", REDLAMP_ANOMALY_FAMILIES)
-def test_each_redlamp_family_is_reachable_and_records_metadata(anomaly_family: str) -> None:
+def test_each_redlamp_family_is_reachable_and_records_metadata(
+    anomaly_family: str,
+) -> None:
     injector = SyntheticAnomalyInjector(
         anomaly_probability=1.0,
         min_segment_fraction=0.2,
@@ -71,4 +78,7 @@ def test_each_redlamp_family_is_reachable_and_records_metadata(anomaly_family: s
 
     if anomaly_family == "mixture":
         first_channel = str(metadata["affected_channels"][0])
-        assert "mixture_components" in metadata["family_parameters_by_channel"][first_channel]
+        assert (
+            "mixture_components"
+            in metadata["family_parameters_by_channel"][first_channel]
+        )

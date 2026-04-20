@@ -60,9 +60,13 @@ class SMDDatasetParser(BaseSequenceParser):
         train_files = sorted(self.train_dir.glob("*.txt"))
         test_files = sorted(self.test_dir.glob("*.txt"))
         label_files = sorted(self.test_label_dir.glob("*.txt"))
-        train_files_by_entity = {train_file.stem: train_file for train_file in train_files}
+        train_files_by_entity = {
+            train_file.stem: train_file for train_file in train_files
+        }
         test_files_by_entity = {test_file.stem: test_file for test_file in test_files}
-        label_files_by_entity = {label_file.stem: label_file for label_file in label_files}
+        label_files_by_entity = {
+            label_file.stem: label_file for label_file in label_files
+        }
         console_print(
             "DATA",
             "Parsing SMD split files",
@@ -73,7 +77,9 @@ class SMDDatasetParser(BaseSequenceParser):
             entity_ids=self.entity_ids,
         )
 
-        if self.entity_ids is None and (len(train_files) != 28 or len(test_files) != 28 or len(label_files) != 28):
+        if self.entity_ids is None and (
+            len(train_files) != 28 or len(test_files) != 28 or len(label_files) != 28
+        ):
             raise ValueError("SMD parser expected 28 machine files per split")
 
         if self.entity_ids is None:
@@ -81,14 +87,22 @@ class SMDDatasetParser(BaseSequenceParser):
         else:
             selected_entity_ids = list(self.entity_ids)
             if not selected_entity_ids:
-                raise ValueError("SMD parser requires at least one entity_id when filtering is enabled")
+                raise ValueError(
+                    "SMD parser requires at least one entity_id when filtering is enabled"
+                )
             for entity_id in selected_entity_ids:
                 if entity_id not in train_files_by_entity:
-                    raise ValueError(f"Requested SMD entity is missing from train split: {entity_id}")
+                    raise ValueError(
+                        f"Requested SMD entity is missing from train split: {entity_id}"
+                    )
                 if entity_id not in test_files_by_entity:
-                    raise ValueError(f"Requested SMD entity is missing from test split: {entity_id}")
+                    raise ValueError(
+                        f"Requested SMD entity is missing from test split: {entity_id}"
+                    )
                 if entity_id not in label_files_by_entity:
-                    raise ValueError(f"Requested SMD entity is missing from test_label split: {entity_id}")
+                    raise ValueError(
+                        f"Requested SMD entity is missing from test_label split: {entity_id}"
+                    )
 
         train_sequences: list[dict[str, Any]] = []
         val_sequences: list[dict[str, Any]] = []
@@ -111,12 +125,18 @@ class SMDDatasetParser(BaseSequenceParser):
                 test_labels=summarize_tensor(test_labels),
             )
             if test_tensor.shape[0] != test_labels.shape[0]:
-                raise ValueError(f"Test labels do not match test sequence length for {entity_id}")
+                raise ValueError(
+                    f"Test labels do not match test sequence length for {entity_id}"
+                )
 
-            validation_length = max(1, int(train_tensor.shape[0] * self.validation_split_ratio))
+            validation_length = max(
+                1, int(train_tensor.shape[0] * self.validation_split_ratio)
+            )
             train_cutoff = train_tensor.shape[0] - validation_length
             if train_cutoff < 1:
-                raise ValueError(f"Validation split ratio leaves no training data for {entity_id}")
+                raise ValueError(
+                    f"Validation split ratio leaves no training data for {entity_id}"
+                )
 
             train_sequences.append(
                 self._build_raw_sequence(

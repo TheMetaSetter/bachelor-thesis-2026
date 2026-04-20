@@ -17,7 +17,9 @@ class _FakeLogger:
     def __init__(self) -> None:
         self.logged_files: list[str] = []
 
-    def log_artifact_file(self, *, file_path, artifact_name, artifact_type, aliases=None, metadata=None) -> None:
+    def log_artifact_file(
+        self, *, file_path, artifact_name, artifact_type, aliases=None, metadata=None
+    ) -> None:
         self.logged_files.append(str(file_path))
 
     def log_artifact_directory(
@@ -50,7 +52,9 @@ def test_build_artifact_sinks_returns_expected_sink_variants() -> None:
     assert any(isinstance(sink, KaggleArtifactSink) for sink in kaggle_sinks)
 
 
-def test_build_output_artifact_sinks_selects_kaggle_sink_only_for_output_policy() -> None:
+def test_build_output_artifact_sinks_selects_kaggle_sink_only_for_output_policy() -> (
+    None
+):
     output_sinks = build_output_artifact_sinks(
         {
             "mirror_output_dir_to_kaggle": True,
@@ -94,7 +98,9 @@ def test_experiment_logger_mirrors_output_directory_with_output_policy(
     assert mirrored_paths == [(str(tmp_path), {"experiment_name": "demo"})]
 
 
-def test_kaggle_artifact_sink_requires_kagglehub_when_used(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_kaggle_artifact_sink_requires_kagglehub_when_used(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     sink = KaggleArtifactSink(dataset_handle="user/dataset")
     checkpoint_path = tmp_path / "best.pt"
     checkpoint_path.write_bytes(b"checkpoint")

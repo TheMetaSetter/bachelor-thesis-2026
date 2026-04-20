@@ -1,5 +1,4 @@
-"""A set of utility functions to support outlier detection.
-"""
+"""A set of utility functions to support outlier detection."""
 
 from __future__ import division
 from __future__ import print_function
@@ -21,18 +20,19 @@ import torch.nn as nn
 MAX_INT = np.iinfo(np.int32).max
 MIN_INT = -1 * MAX_INT
 
+
 def zscore(a, axis=0, ddof=0):
     a = np.asanyarray(a)
     mns = a.mean(axis=axis)
     sstd = a.std(axis=axis, ddof=ddof)
 
     if axis and mns.ndim < a.ndim:
-        res = ((a - np.expand_dims(mns, axis=axis)) /
-               np.expand_dims(sstd, axis=axis))
+        res = (a - np.expand_dims(mns, axis=axis)) / np.expand_dims(sstd, axis=axis)
     else:
         res = (a - mns) / sstd
 
     return np.nan_to_num(res)
+
 
 def pairwise_distances_no_broadcast(X, Y):
     """Utility function to calculate row-wise euclidean distance of two matrix.
@@ -54,21 +54,23 @@ def pairwise_distances_no_broadcast(X, Y):
     Y = check_array(Y)
 
     if X.shape[0] != Y.shape[0] or X.shape[1] != Y.shape[1]:
-        raise ValueError("pairwise_distances_no_broadcast function receive"
-                         "matrix with different shapes {0} and {1}".format(
-            X.shape, Y.shape))
-        
+        raise ValueError(
+            "pairwise_distances_no_broadcast function receive"
+            "matrix with different shapes {0} and {1}".format(X.shape, Y.shape)
+        )
+
     euclidean_sq = np.square(Y - X)
     return np.sqrt(np.sum(euclidean_sq, axis=1)).ravel()
+
 
 def getSplit(X):
     """
     Randomly selects a split value from set of scalar data 'X'.
     Returns the split value.
-    
+
     Parameters
     ----------
-    X : array 
+    X : array
         Array of scalar values
     Returns
     -------
@@ -79,12 +81,13 @@ def getSplit(X):
     xmax = X.max()
     return np.random.uniform(xmin, xmax)
 
+
 def similarityScore(S, node, alpha):
     """
     Given a set of instances S falling into node and a value alpha >=0,
     returns for all element x in S the weighted similarity score between x
     and the centroid M of S (node.M)
-    
+
     Parameters
     ----------
     S : array  of instances
@@ -101,8 +104,10 @@ def similarityScore(S, node, alpha):
     d = np.shape(S)[1]
     if len(S) > 0:
         d = np.shape(S)[1]
-        U = (S-node.M)/node.Mstd # normalize using the standard deviation vector to the mean
-        U = (2)**(-alpha*(np.sum(U*U/d, axis=1)))
+        U = (
+            S - node.M
+        ) / node.Mstd  # normalize using the standard deviation vector to the mean
+        U = (2) ** (-alpha * (np.sum(U * U / d, axis=1)))
     else:
         U = 0
 
@@ -113,10 +118,10 @@ def EE(hist):
     """
     given a list of positive values as a histogram drawn from any information source,
     returns the empirical entropy of its discrete probability function.
-    
+
     Parameters
     ----------
-    hist: array 
+    hist: array
         histogram
     Returns
     -------
@@ -126,18 +131,18 @@ def EE(hist):
     h = np.asarray(hist, dtype=np.float64)
     if h.sum() <= 0 or (h < 0).any():
         return 0
-    h = h/h.sum()
-    return -(h*np.ma.log2(h)).sum()
+    h = h / h.sum()
+    return -(h * np.ma.log2(h)).sum()
 
 
 def weightFeature(s, nbins):
-    '''
-    Given a list of values corresponding to a feature dimension, returns a weight (in [0,1]) that is 
-    one minus the normalized empirical entropy, a way to characterize the importance of the feature dimension. 
-    
+    """
+    Given a list of values corresponding to a feature dimension, returns a weight (in [0,1]) that is
+    one minus the normalized empirical entropy, a way to characterize the importance of the feature dimension.
+
     Parameters
     ----------
-    s: array 
+    s: array
         list of scalar values corresponding to a feature dimension
     nbins: int
         the number of bins used to discretize the feature dimension using an histogram.
@@ -145,17 +150,23 @@ def weightFeature(s, nbins):
     -------
     float
         the importance weight for feature s.
-    '''
+    """
     if s.min() == s.max():
         return 0
     hist = np.histogram(s, bins=nbins, density=True)
     ent = EE(hist[0])
-    ent = ent/np.log2(nbins)
-    return 1-ent
+    ent = ent / np.log2(nbins)
+    return 1 - ent
 
 
-def check_parameter(param, low=MIN_INT, high=MAX_INT, param_name='',
-                    include_left=False, include_right=False):
+def check_parameter(
+    param,
+    low=MIN_INT,
+    high=MAX_INT,
+    param_name="",
+    include_left=False,
+    include_right=False,
+):
     """Check if an input is within the defined range.
 
     Parameters
@@ -187,52 +198,58 @@ def check_parameter(param, low=MIN_INT, high=MAX_INT, param_name='',
 
     # param, low and high should all be numerical
     if not isinstance(param, (numbers.Integral, np.integer, float)):
-        raise TypeError('{param_name} is set to {param} Not numerical'.format(
-            param=param, param_name=param_name))
+        raise TypeError(
+            "{param_name} is set to {param} Not numerical".format(
+                param=param, param_name=param_name
+            )
+        )
 
     if not isinstance(low, (numbers.Integral, np.integer, float)):
-        raise TypeError('low is set to {low}. Not numerical'.format(low=low))
+        raise TypeError("low is set to {low}. Not numerical".format(low=low))
 
     if not isinstance(high, (numbers.Integral, np.integer, float)):
-        raise TypeError('high is set to {high}. Not numerical'.format(
-            high=high))
+        raise TypeError("high is set to {high}. Not numerical".format(high=high))
 
     # at least one of the bounds should be specified
     if low is MIN_INT and high is MAX_INT:
-        raise ValueError('Neither low nor high bounds is undefined')
+        raise ValueError("Neither low nor high bounds is undefined")
 
     # if wrong bound values are used
     if low > high:
-        raise ValueError(
-            'Lower bound > Higher bound')
+        raise ValueError("Lower bound > Higher bound")
 
     # value check under different bound conditions
     if (include_left and include_right) and (param < low or param > high):
         raise ValueError(
-            '{param_name} is set to {param}. '
-            'Not in the range of [{low}, {high}].'.format(
-                param=param, low=low, high=high, param_name=param_name))
+            "{param_name} is set to {param}. "
+            "Not in the range of [{low}, {high}].".format(
+                param=param, low=low, high=high, param_name=param_name
+            )
+        )
 
-    elif (include_left and not include_right) and (
-            param < low or param >= high):
+    elif (include_left and not include_right) and (param < low or param >= high):
         raise ValueError(
-            '{param_name} is set to {param}. '
-            'Not in the range of [{low}, {high}).'.format(
-                param=param, low=low, high=high, param_name=param_name))
+            "{param_name} is set to {param}. "
+            "Not in the range of [{low}, {high}).".format(
+                param=param, low=low, high=high, param_name=param_name
+            )
+        )
 
-    elif (not include_left and include_right) and (
-            param <= low or param > high):
+    elif (not include_left and include_right) and (param <= low or param > high):
         raise ValueError(
-            '{param_name} is set to {param}. '
-            'Not in the range of ({low}, {high}].'.format(
-                param=param, low=low, high=high, param_name=param_name))
+            "{param_name} is set to {param}. "
+            "Not in the range of ({low}, {high}].".format(
+                param=param, low=low, high=high, param_name=param_name
+            )
+        )
 
-    elif (not include_left and not include_right) and (
-            param <= low or param >= high):
+    elif (not include_left and not include_right) and (param <= low or param >= high):
         raise ValueError(
-            '{param_name} is set to {param}. '
-            'Not in the range of ({low}, {high}).'.format(
-                param=param, low=low, high=high, param_name=param_name))
+            "{param_name} is set to {param}. "
+            "Not in the range of ({low}, {high}).".format(
+                param=param, low=low, high=high, param_name=param_name
+            )
+        )
     else:
         return True
 
@@ -245,8 +262,7 @@ def check_detector(detector):
         Detector instance for which the check is performed.
     """
 
-    if not hasattr(detector, 'fit') or not hasattr(detector,
-                                                   'decision_function'):
+    if not hasattr(detector, "fit") or not hasattr(detector, "decision_function"):
         raise AttributeError("%s is not a detector instance." % (detector))
 
 
@@ -284,7 +300,9 @@ def standardizer(X, X_t=None, keep_scalar=False):
             raise ValueError(
                 "The number of input data feature should be consistent"
                 "X has {0} features and X_t has {1} features.".format(
-                    X.shape[1], X_t.shape[1]))
+                    X.shape[1], X_t.shape[1]
+                )
+            )
         if keep_scalar:
             return scaler.transform(X), scaler.transform(X_t), scaler
         else:
@@ -312,7 +330,7 @@ def score_to_label(pred_scores, outliers_fraction=0.1):
     check_parameter(outliers_fraction, 0, 1)
 
     threshold = percentile(pred_scores, 100 * (1 - outliers_fraction))
-    pred_labels = (pred_scores > threshold).astype('int')
+    pred_labels = (pred_scores > threshold).astype("int")
     return pred_labels
 
 
@@ -380,9 +398,10 @@ def get_label_n(y, y_pred, n=None):
         outliers_fraction = np.count_nonzero(y) / y_len
 
     threshold = percentile(y_pred, 100 * (1 - outliers_fraction))
-    y_pred = (y_pred > threshold).astype('int')
+    y_pred = (y_pred > threshold).astype("int")
 
     return y_pred
+
 
 def get_intersection(lst1, lst2):
     """get the overlapping between two lists
@@ -414,7 +433,8 @@ def get_list_diff(li1, li2):
         The difference between li1 and li2.
     """
 
-    return (list(set(li1) - set(li2)))
+    return list(set(li1) - set(li2))
+
 
 def get_diff_elements(li1, li2):
     """get the elements in li1 but not li2, and vice versa
@@ -429,10 +449,11 @@ def get_diff_elements(li1, li2):
     difference : list
         The difference between li1 and li2.
     """
-    
-    return (list(set(li1) - set(li2)) + list(set(li2) - set(li1)))
 
-def argmaxn(value_list, n, order='desc'):
+    return list(set(li1) - set(li2)) + list(set(li2) - set(li1))
+
+
+def argmaxn(value_list, n, order="desc"):
     """Return the index of top n elements in the list
     if order is set to 'desc', otherwise return the index of n smallest ones.
     Parameters
@@ -455,24 +476,23 @@ def argmaxn(value_list, n, order='desc'):
     length = len(value_list)
 
     # validate the choice of n
-    check_parameter(n, 1, length, include_left=True, include_right=True,
-                    param_name='n')
+    check_parameter(n, 1, length, include_left=True, include_right=True, param_name="n")
 
     # for the smallest n, flip the value
-    if order != 'desc':
+    if order != "desc":
         n = length - n
 
     value_sorted = np.partition(value_list, length - n)
     threshold = value_sorted[int(length - n)]
 
-    if order == 'desc':
+    if order == "desc":
         return np.where(np.greater_equal(value_list, threshold))[0]
     else:  # return the index of n smallest elements
         return np.where(np.less(value_list, threshold))[0]
 
 
-def invert_order(scores, method='multiplication'):
-    """ Invert the order of a list of values. The smallest value becomes
+def invert_order(scores, method="multiplication"):
+    """Invert the order of a list of values. The smallest value becomes
     the largest in the inverted list. This is useful while combining
     multiple detectors since their score order could be different.
     Parameters
@@ -498,15 +518,15 @@ def invert_order(scores, method='multiplication'):
 
     scores = column_or_1d(scores)
 
-    if method == 'multiplication':
+    if method == "multiplication":
         return scores.ravel() * -1
 
-    if method == 'subtraction':
+    if method == "subtraction":
         return (scores.max() - scores).ravel()
 
 
 def _get_sklearn_version():  # pragma: no cover
-    """ Utility function to decide the version of sklearn.
+    """Utility function to decide the version of sklearn.
     PyOD will result in different behaviors with different sklearn version
     Returns
     -------
@@ -514,15 +534,17 @@ def _get_sklearn_version():  # pragma: no cover
     """
 
     sklearn_version = str(sklearn.__version__)
-    if int(sklearn_version.split(".")[1]) < 19 or int(
-            sklearn_version.split(".")[1]) > 23:
+    if (
+        int(sklearn_version.split(".")[1]) < 19
+        or int(sklearn_version.split(".")[1]) > 23
+    ):
         raise ValueError("Sklearn version error")
 
     return int(sklearn_version.split(".")[1])
 
 
 def _sklearn_version_21():  # pragma: no cover
-    """ Utility function to decide the version of sklearn
+    """Utility function to decide the version of sklearn
     In sklearn 21.0, LOF is changed. Specifically, _decision_function
     is replaced by _score_samples
     Returns
@@ -537,9 +559,10 @@ def _sklearn_version_21():  # pragma: no cover
         return False
 
 
-def generate_bagging_indices(random_state, bootstrap_features, n_features,
-                             min_features, max_features):
-    """ Randomly draw feature indices. Internal use only.
+def generate_bagging_indices(
+    random_state, bootstrap_features, n_features, min_features, max_features
+):
+    """Randomly draw feature indices. Internal use only.
     Modified from sklearn/ensemble/bagging.py
     Parameters
     ----------
@@ -567,14 +590,15 @@ def generate_bagging_indices(random_state, bootstrap_features, n_features,
     random_n_features = random_state.randint(min_features, max_features)
 
     # Draw indices
-    feature_indices = generate_indices(random_state, bootstrap_features,
-                                       n_features, random_n_features)
+    feature_indices = generate_indices(
+        random_state, bootstrap_features, n_features, random_n_features
+    )
 
     return feature_indices
 
 
 def generate_indices(random_state, bootstrap, n_population, n_samples):
-    """ Draw randomly sampled indices. Internal use only.
+    """Draw randomly sampled indices. Internal use only.
     See sklearn/ensemble/bagging.py
     Parameters
     ----------
@@ -597,36 +621,40 @@ def generate_indices(random_state, bootstrap, n_population, n_samples):
     if bootstrap:
         indices = random_state.randint(0, n_population, n_samples)
     else:
-        indices = sample_without_replacement(n_population, n_samples,
-                                             random_state=random_state)
+        indices = sample_without_replacement(
+            n_population, n_samples, random_state=random_state
+        )
 
     return indices
 
 
-def EuclideanDist(x,y):
+def EuclideanDist(x, y):
     return np.sqrt(np.sum((x - y) ** 2))
 
+
 def dist2set(x, X):
-    l=len(X)
-    ldist=[]
+    l = len(X)
+    ldist = []
     for i in range(l):
-        ldist.append(EuclideanDist(x,X[i]))
+        ldist.append(EuclideanDist(x, X[i]))
     return ldist
 
-def c_factor(n) :
-    if(n<2):
-        n=2
-    return 2.0*(np.log(n-1)+0.5772156649) - (2.0*(n-1.)/(n*1.0))
+
+def c_factor(n):
+    if n < 2:
+        n = 2
+    return 2.0 * (np.log(n - 1) + 0.5772156649) - (2.0 * (n - 1.0) / (n * 1.0))
 
 
-def all_branches(node, current=[], branches = None):
-    current = current[:node.e]
-    if branches is None: branches = []
-    if node.ntype == 'inNode':
-        current.append('L')
+def all_branches(node, current=[], branches=None):
+    current = current[: node.e]
+    if branches is None:
+        branches = []
+    if node.ntype == "inNode":
+        current.append("L")
         all_branches(node.left, current=current, branches=branches)
         current = current[:-1]
-        current.append('R')
+        current.append("R")
         all_branches(node.right, current=current, branches=branches)
     else:
         branches.append(current)
@@ -636,11 +664,12 @@ def all_branches(node, current=[], branches = None):
 def branch2num(branch, init_root=0):
     num = [init_root]
     for b in branch:
-        if b == 'L':
+        if b == "L":
             num.append(num[-1] * 2 + 1)
-        if b == 'R':
+        if b == "R":
             num.append(num[-1] * 2 + 2)
     return num
+
 
 def _get_n_jobs(n_jobs):
     """Get number of jobs for the computation.
@@ -663,7 +692,7 @@ def _get_n_jobs(n_jobs):
     if n_jobs < 0:
         return max(cpu_count() + 1 + n_jobs, 1)
     elif n_jobs == 0:
-        raise ValueError('Parameter n_jobs == 0 has no meaning.')
+        raise ValueError("Parameter n_jobs == 0 has no meaning.")
     else:
         return n_jobs
 
@@ -677,7 +706,7 @@ def _partition_estimators(n_estimators, n_jobs):
 
     # Partition estimators between jobs
     n_estimators_per_job = (n_estimators // n_jobs) * np.ones(n_jobs, dtype=int)
-    n_estimators_per_job[:n_estimators % n_jobs] += 1
+    n_estimators_per_job[: n_estimators % n_jobs] += 1
     starts = np.cumsum(n_estimators_per_job)
 
     return n_jobs, n_estimators_per_job.tolist(), [0] + starts.tolist()
@@ -708,40 +737,41 @@ def _pprint(params, offset=0, printer=repr):
     np.set_printoptions(precision=5, threshold=64, edgeitems=2)
     params_list = list()
     this_line_length = offset
-    line_sep = ',\n' + (1 + offset // 2) * ' '
+    line_sep = ",\n" + (1 + offset // 2) * " "
     for i, (k, v) in enumerate(sorted(params.items())):
         if type(v) is float:
             # use str for representing floating point numbers
             # this way we get consistent representation across
             # architectures and versions.
-            this_repr = '%s=%s' % (k, str(v))
+            this_repr = "%s=%s" % (k, str(v))
         else:
             # use repr of the rest
-            this_repr = '%s=%s' % (k, printer(v))
+            this_repr = "%s=%s" % (k, printer(v))
         if len(this_repr) > 500:
-            this_repr = this_repr[:300] + '...' + this_repr[-100:]
+            this_repr = this_repr[:300] + "..." + this_repr[-100:]
         if i > 0:
-            if this_line_length + len(this_repr) >= 75 or '\n' in this_repr:
+            if this_line_length + len(this_repr) >= 75 or "\n" in this_repr:
                 params_list.append(line_sep)
                 this_line_length = len(line_sep)
             else:
-                params_list.append(', ')
+                params_list.append(", ")
                 this_line_length += 2
         params_list.append(this_repr)
         this_line_length += len(this_repr)
 
     np.set_printoptions(**options)
-    lines = ''.join(params_list)
+    lines = "".join(params_list)
     # Strip trailing space to avoid nightmare in doctests
-    lines = '\n'.join(l.rstrip(' ') for l in lines.split('\n'))
+    lines = "\n".join(l.rstrip(" ") for l in lines.split("\n"))
     return lines
+
 
 def get_activation_by_name(name):
     activations = {
-        'relu': nn.ReLU(),
-        'sigmoid': nn.Sigmoid(),
-        'tanh': nn.Tanh(),
-        'leakyrelu':nn.LeakyReLU()
+        "relu": nn.ReLU(),
+        "sigmoid": nn.Sigmoid(),
+        "tanh": nn.Tanh(),
+        "leakyrelu": nn.LeakyReLU(),
     }
 
     if name in activations.keys():
@@ -750,28 +780,29 @@ def get_activation_by_name(name):
     else:
         raise ValueError(name, "is not a valid activation function")
 
+
 def get_optimal_n_bins(X, upper_bound=None, epsilon=1):
-    """ Determine optimal number of bins for a histogram using the Birge 
+    """Determine optimal number of bins for a histogram using the Birge
     Rozenblac method (see :cite:`birge2006many` for details.)
-     
-    See  https://doi.org/10.1051/ps:2006001 
-     
-    Parameters 
-    ---------- 
-    X : array-like of shape (n_samples, n_features) 
-        The samples to determine the optimal number of bins for. 
-         
-    upper_bound :  int, default=None 
-        The maximum value of n_bins to be considered. 
-        If set to None, np.sqrt(X.shape[0]) will be used as upper bound. 
-         
-    epsilon : float, default = 1 
-        A stabilizing term added to the logarithm to prevent division by zero. 
-         
-    Returns 
-    ------- 
-    optimal_n_bins : int 
-        The optimal value of n_bins according to the Birge Rozenblac method 
+
+    See  https://doi.org/10.1051/ps:2006001
+
+    Parameters
+    ----------
+    X : array-like of shape (n_samples, n_features)
+        The samples to determine the optimal number of bins for.
+
+    upper_bound :  int, default=None
+        The maximum value of n_bins to be considered.
+        If set to None, np.sqrt(X.shape[0]) will be used as upper bound.
+
+    epsilon : float, default = 1
+        A stabilizing term added to the logarithm to prevent division by zero.
+
+    Returns
+    -------
+    optimal_n_bins : int
+        The optimal value of n_bins according to the Birge Rozenblac method
     """
     if upper_bound is None:
         upper_bound = int(np.sqrt(X.shape[0]))
@@ -783,7 +814,8 @@ def get_optimal_n_bins(X, upper_bound=None, epsilon=1):
         histogram, _ = np.histogram(X, bins=b)
 
         maximum_likelihood[i] = np.sum(
-            histogram * np.log(b * histogram / n + epsilon) - (
-                    b - 1 + np.power(np.log(b), 2.5)))
+            histogram * np.log(b * histogram / n + epsilon)
+            - (b - 1 + np.power(np.log(b), 2.5))
+        )
 
     return np.argmax(maximum_likelihood) + 1

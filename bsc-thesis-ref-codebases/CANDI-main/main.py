@@ -15,8 +15,8 @@ def main():
     # setup wandb
     if cfg.WANDB.ENABLE:
         set_wandb(cfg)
-    
-    with open(mkdir(cfg.RESULT_DIR) / 'config.txt', 'w') as f:
+
+    with open(mkdir(cfg.RESULT_DIR) / "config.txt", "w") as f:
         f.write(cfg.dump())
 
     # set random seed
@@ -34,6 +34,7 @@ def main():
         model = trainer.load_best_model()
         predictor = Predictor(cfg, model, tta=cfg.TEST.TTA.ENABLE)
         predictor.predict()
-            
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     main()

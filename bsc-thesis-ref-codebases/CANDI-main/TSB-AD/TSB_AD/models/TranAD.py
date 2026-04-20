@@ -23,6 +23,7 @@ from .base import BaseDetector
 from ..utils.dataset import ReconstructDataset
 from ..utils.torch_utility import EarlyStoppingTorch, get_gpu
 
+
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=5000):
         super(PositionalEncoding, self).__init__()
@@ -42,6 +43,7 @@ class PositionalEncoding(nn.Module):
         x = x + self.pe[pos : pos + x.size(0), :]
         return self.dropout(x)
 
+
 class TransformerEncoderLayer(nn.Module):
     def __init__(self, d_model, nhead, dim_feedforward=16, dropout=0):
         super(TransformerEncoderLayer, self).__init__()
@@ -60,6 +62,7 @@ class TransformerEncoderLayer(nn.Module):
         src2 = self.linear2(self.dropout(self.activation(self.linear1(src))))
         src = src + self.dropout2(src2)
         return src
+
 
 class TransformerDecoderLayer(nn.Module):
     def __init__(self, d_model, nhead, dim_feedforward=16, dropout=0):
@@ -83,6 +86,7 @@ class TransformerDecoderLayer(nn.Module):
         tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt))))
         tgt = tgt + self.dropout3(tgt2)
         return tgt
+
 
 class TranADModel(nn.Module):
     def __init__(self, batch_size, feats, win_size):
@@ -126,15 +130,16 @@ class TranADModel(nn.Module):
 
 
 class TranAD(BaseDetector):
-    def __init__(self,
-                 win_size = 100,
-                 feats = 1,
-                 batch_size = 128,
-                 epochs = 50,
-                 patience = 3,
-                 lr = 1e-4,
-                 validation_size=0.2
-                 ):
+    def __init__(
+        self,
+        win_size=100,
+        feats=1,
+        batch_size=128,
+        epochs=50,
+        patience=3,
+        lr=1e-4,
+        validation_size=0.2,
+    ):
         super().__init__()
 
         self.__anomaly_score = None
@@ -148,7 +153,9 @@ class TranAD(BaseDetector):
         self.feats = feats
         self.validation_size = validation_size
 
-        self.model = TranADModel(batch_size=self.batch_size, feats=self.feats, win_size=self.win_size).to(self.device)
+        self.model = TranADModel(
+            batch_size=self.batch_size, feats=self.feats, win_size=self.win_size
+        ).to(self.device)
         self.optimizer = torch.optim.AdamW(
             self.model.parameters(), lr=lr, weight_decay=1e-5
         )
@@ -158,28 +165,28 @@ class TranAD(BaseDetector):
         self.early_stopping = EarlyStoppingTorch(None, patience=patience)
 
     def fit(self, data):
-        tsTrain = data[:int((1-self.validation_size)*len(data))]
-        tsValid = data[int((1-self.validation_size)*len(data)):]
+        tsTrain = data[: int((1 - self.validation_size) * len(data))]
+        tsValid = data[int((1 - self.validation_size) * len(data)) :]
 
         train_loader = DataLoader(
             dataset=ReconstructDataset(tsTrain, window_size=self.win_size),
             batch_size=self.batch_size,
-            shuffle=True
+            shuffle=True,
         )
-        
+
         valid_loader = DataLoader(
             dataset=ReconstructDataset(tsValid, window_size=self.win_size),
             batch_size=self.batch_size,
-            shuffle=False
+            shuffle=False,
         )
-        
+
         for epoch in range(1, self.epochs + 1):
             self.model.train(mode=True)
             avg_loss = 0
             loop = tqdm.tqdm(
                 enumerate(train_loader), total=len(train_loader), leave=True
             )
-            for idx, (x, _) in loop:                
+            for idx, (x, _) in loop:
                 if torch.isnan(x).any() or torch.isinf(x).any():
                     print("Input data contains nan or inf")
                     x = torch.nan_to_num(x)
@@ -191,7 +198,9 @@ class TranAD(BaseDetector):
 
                 self.optimizer.zero_grad()
                 z = self.model(x, elem)
-                loss = (1 / epoch) * self.criterion(z[0], elem) + (1 - 1 / epoch) * self.criterion(z[1], elem)
+                loss = (1 / epoch) * self.criterion(z[0], elem) + (
+                    1 - 1 / epoch
+                ) * self.criterion(z[1], elem)
                 loss.backward(retain_graph=True)
 
                 self.optimizer.step()
@@ -210,8 +219,7 @@ class TranAD(BaseDetector):
                     enumerate(valid_loader), total=len(valid_loader), leave=True
                 )
                 with torch.no_grad():
-                    for idx, (x, _) in loop:      
-
+                    for idx, (x, _) in loop:
                         if torch.isnan(x).any() or torch.isinf(x).any():
                             print("Input data contains nan or inf")
                             x = torch.nan_to_num(x)
@@ -229,8 +237,12 @@ class TranAD(BaseDetector):
                         ) * self.criterion(z[1], elem)
 
                         avg_loss_val += loss.cpu().item()
-                        loop.set_description(f"Validation Epoch [{epoch}/{self.epochs}]")
-                        loop.set_postfix(loss=loss.item(), avg_loss_val=avg_loss_val / (idx + 1))
+                        loop.set_description(
+                            f"Validation Epoch [{epoch}/{self.epochs}]"
+                        )
+                        loop.set_postfix(
+                            loss=loss.item(), avg_loss_val=avg_loss_val / (idx + 1)
+                        )
 
             self.scheduler.step()
             if len(valid_loader) > 0:
@@ -246,7 +258,7 @@ class TranAD(BaseDetector):
         test_loader = DataLoader(
             dataset=ReconstructDataset(data, window_size=self.win_size),
             batch_size=self.batch_size,
-            shuffle=False
+            shuffle=False,
         )
 
         self.model.eval()
@@ -270,9 +282,12 @@ class TranAD(BaseDetector):
         self.__anomaly_score = scores
 
         if self.__anomaly_score.shape[0] < len(data):
-            self.__anomaly_score = np.array([self.__anomaly_score[0]]*math.ceil((self.win_size-1)/2) + 
-                        list(self.__anomaly_score) + [self.__anomaly_score[-1]]*((self.win_size-1)//2))
-        
+            self.__anomaly_score = np.array(
+                [self.__anomaly_score[0]] * math.ceil((self.win_size - 1) / 2)
+                + list(self.__anomaly_score)
+                + [self.__anomaly_score[-1]] * ((self.win_size - 1) // 2)
+            )
+
         return self.__anomaly_score
 
     def anomaly_score(self) -> np.ndarray:

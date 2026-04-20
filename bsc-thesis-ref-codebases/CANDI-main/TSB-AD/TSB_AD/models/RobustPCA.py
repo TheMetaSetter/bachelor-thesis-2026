@@ -15,6 +15,7 @@ from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.validation import check_array
 from scipy.spatial.distance import cdist
 
+
 class Robust_PCA:
     def __init__(self, D, mu=None, lmbda=None):
         self.D = D
@@ -35,7 +36,7 @@ class Robust_PCA:
 
     @staticmethod
     def frobenius_norm(M):
-        return np.linalg.norm(M, ord='fro')
+        return np.linalg.norm(M, ord="fro")
 
     @staticmethod
     def shrink(M, tau):
@@ -55,38 +56,40 @@ class Robust_PCA:
         if tol:
             _tol = tol
         else:
-            _tol = 1E-7 * self.frobenius_norm(self.D)
+            _tol = 1e-7 * self.frobenius_norm(self.D)
 
-        #this loop implements the principal component pursuit (PCP) algorithm
-        #located in the table on page 29 of https://arxiv.org/pdf/0912.3599.pdf
+        # this loop implements the principal component pursuit (PCP) algorithm
+        # located in the table on page 29 of https://arxiv.org/pdf/0912.3599.pdf
         while (err > _tol) and iter < max_iter:
             Lk = self.svd_threshold(
-                self.D - Sk + self.mu_inv * Yk, self.mu_inv)                            #this line implements step 3
+                self.D - Sk + self.mu_inv * Yk, self.mu_inv
+            )  # this line implements step 3
             Sk = self.shrink(
-                self.D - Lk + (self.mu_inv * Yk), self.mu_inv * self.lmbda)             #this line implements step 4
-            Yk = Yk + self.mu * (self.D - Lk - Sk)                                      #this line implements step 5
+                self.D - Lk + (self.mu_inv * Yk), self.mu_inv * self.lmbda
+            )  # this line implements step 4
+            Yk = Yk + self.mu * (self.D - Lk - Sk)  # this line implements step 5
             err = self.frobenius_norm(self.D - Lk - Sk)
             iter += 1
             if (iter % iter_print) == 0 or iter == 1 or iter > max_iter or err <= _tol:
-                print('iteration: {0}, error: {1}'.format(iter, err))
+                print("iteration: {0}, error: {1}".format(iter, err))
 
         self.L = Lk
         self.S = Sk
         return Lk, Sk
-    
+
+
 class RobustPCA(BaseDetector):
-    def __init__(self, max_iter: int = 1000, n_components = None, zero_pruning = True):
+    def __init__(self, max_iter: int = 1000, n_components=None, zero_pruning=True):
         self.pca: Optional[PCA] = None
         self.max_iter = max_iter
         self.n_components = n_components
         self.zero_pruning = zero_pruning
 
     def fit(self, X, y=None):
-
         if self.zero_pruning:
             non_zero_columns = np.any(X != 0, axis=0)
             X = X[:, non_zero_columns]
-        
+
         rpca = Robust_PCA(X)
         L, S = rpca.fit(max_iter=self.max_iter)
         self.detector_ = PCA(n_components=L.shape[1])

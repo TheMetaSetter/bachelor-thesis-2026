@@ -16,8 +16,9 @@ from sklearn.utils.validation import check_is_fitted
 from .feature import Window
 from .base import BaseDetector
 from ..utils.utility import check_parameter
-from ..utils.utility import standardizer    
+from ..utils.utility import standardizer
 from ..utils.utility import zscore
+
 
 class PCA(BaseDetector):
     """Principal component analysis (PCA) can be used in detecting outliers.
@@ -185,11 +186,24 @@ class PCA(BaseDetector):
         ``threshold_`` on ``decision_scores_``.
     """
 
-    def __init__(self, slidingWindow=100, sub = True, n_components=None, n_selected_components=None,
-                 contamination=0.1, copy=True, whiten=False, svd_solver='auto',
-                 tol=0.0, iterated_power='auto', random_state=0,
-                 weighted=True, standardization=True, zero_pruning=True, normalize=True):
-
+    def __init__(
+        self,
+        slidingWindow=100,
+        sub=True,
+        n_components=None,
+        n_selected_components=None,
+        contamination=0.1,
+        copy=True,
+        whiten=False,
+        svd_solver="auto",
+        tol=0.0,
+        iterated_power="auto",
+        random_state=0,
+        weighted=True,
+        standardization=True,
+        zero_pruning=True,
+        normalize=True,
+    ):
         super(PCA, self).__init__(contamination=contamination)
         self.slidingWindow = slidingWindow
         self.sub = sub
@@ -226,13 +240,13 @@ class PCA(BaseDetector):
         n_samples, n_features = X.shape
 
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
-                
+
         # validate inputs X and y (optional)
         X = check_array(X)
         self._set_n_classes(y)
@@ -246,13 +260,15 @@ class PCA(BaseDetector):
             non_zero_columns = np.any(X != 0, axis=0)
             X = X[:, non_zero_columns]
 
-        self.detector_ = sklearn_PCA(n_components=self.n_components,
-                                     copy=self.copy,
-                                     whiten=self.whiten,
-                                     svd_solver=self.svd_solver,
-                                     tol=self.tol,
-                                     iterated_power=self.iterated_power,
-                                     random_state=self.random_state)
+        self.detector_ = sklearn_PCA(
+            n_components=self.n_components,
+            copy=self.copy,
+            whiten=self.whiten,
+            svd_solver=self.svd_solver,
+            tol=self.tol,
+            iterated_power=self.iterated_power,
+            random_state=self.random_state,
+        )
         self.detector_.fit(X=X, y=y)
 
         # copy the attributes from the sklearn PCA object
@@ -264,12 +280,21 @@ class PCA(BaseDetector):
             self.n_selected_components_ = self.n_components_
         else:
             self.n_selected_components_ = self.n_selected_components
-        check_parameter(self.n_selected_components_, 1, self.n_components_,
-                        include_left=True, include_right=True,
-                        param_name='n_selected_components_')
+        check_parameter(
+            self.n_selected_components_,
+            1,
+            self.n_components_,
+            include_left=True,
+            include_right=True,
+            param_name="n_selected_components_",
+        )
 
         # use eigenvalues as the weights of eigenvectors
-        self.w_components_ = np.ones([self.n_components_, ])
+        self.w_components_ = np.ones(
+            [
+                self.n_components_,
+            ]
+        )
         if self.weighted:
             self.w_components_ = self.detector_.explained_variance_ratio_
 
@@ -280,18 +305,23 @@ class PCA(BaseDetector):
         # are used since they better reflect the variance change
 
         self.selected_components_ = self.components_[
-                                    -1 * self.n_selected_components_:, :]
+            -1 * self.n_selected_components_ :, :
+        ]
         self.selected_w_components_ = self.w_components_[
-                                      -1 * self.n_selected_components_:]
+            -1 * self.n_selected_components_ :
+        ]
 
         self.decision_scores_ = np.sum(
-            cdist(X, self.selected_components_) / self.selected_w_components_,
-            axis=1).ravel()
+            cdist(X, self.selected_components_) / self.selected_w_components_, axis=1
+        ).ravel()
 
         # padded decision_scores_
         if self.decision_scores_.shape[0] < n_samples:
-            self.decision_scores_ = np.array([self.decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(self.decision_scores_) + [self.decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            self.decision_scores_ = np.array(
+                [self.decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(self.decision_scores_)
+                + [self.decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
 
         self._process_decision_scores()
         return self
@@ -314,16 +344,16 @@ class PCA(BaseDetector):
         anomaly_scores : numpy array of shape (n_samples,)
             The anomaly score of the input samples.
         """
-        check_is_fitted(self, ['components_', 'w_components_'])
+        check_is_fitted(self, ["components_", "w_components_"])
 
         n_samples, n_features = X.shape
-                    
+
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
 
         X = check_array(X)
@@ -331,12 +361,15 @@ class PCA(BaseDetector):
             X = self.scaler_.transform(X)
 
         decision_scores_ = np.sum(
-            cdist(X, self.selected_components_) / self.selected_w_components_,
-            axis=1).ravel()
+            cdist(X, self.selected_components_) / self.selected_w_components_, axis=1
+        ).ravel()
         # padded decision_scores_
         if decision_scores_.shape[0] < n_samples:
-            decision_scores_ = np.array([decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(decision_scores_) + [decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            decision_scores_ = np.array(
+                [decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(decision_scores_)
+                + [decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
         return decision_scores_
 
     @property

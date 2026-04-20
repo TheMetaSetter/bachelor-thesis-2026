@@ -3,13 +3,14 @@
 import numpy as np
 from metrics.evaluate_utils import range_convers_new
 
+
 # the existence reward on the bias
 def b(bias, i, length):
-    if bias == 'flat':
+    if bias == "flat":
         return 1
-    elif bias == 'front-end bias':
+    elif bias == "front-end bias":
         return length - i + 1
-    elif bias == 'back-end bias':
+    elif bias == "back-end bias":
         return i
     else:
         if i <= length / 2:
@@ -24,7 +25,7 @@ def w(AnomalyRange, p):
     start = AnomalyRange[0]
     AnomalyLength = AnomalyRange[1] - AnomalyRange[0] + 1
     # flat/'front-end bias'/'back-end bias'
-    bias = 'flat'
+    bias = "flat"
     for i in range(start, start + AnomalyLength):
         bi = b(bias, i, AnomalyLength)
         MaxValue += bi
@@ -53,10 +54,10 @@ def Cardinality_factor(Anomolyrange, Prange):
 
 
 def existence_reward(labels, preds):
-    '''
+    """
     labels: list of ordered pair
     preds predicted data
-    '''
+    """
 
     score = 0
     for i in labels:
@@ -85,7 +86,7 @@ def range_recall_new(labels, preds, alpha):
         return 0, 0, 0
 
 
-def customizable_f1_score(y_test, pred_labels,  alpha=0.2):
+def customizable_f1_score(y_test, pred_labels, alpha=0.2):
     label = y_test
     preds = pred_labels
     Rrecall, ExistenceReward, OverlapReward = range_recall_new(label, preds, alpha)

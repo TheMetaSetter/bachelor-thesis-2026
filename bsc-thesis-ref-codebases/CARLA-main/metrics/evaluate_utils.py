@@ -3,9 +3,13 @@ from statsmodels.tsa.stattools import acf
 from scipy.signal import argrelextrema
 
 
-def get_composite_fscore_from_scores(score_t_test, thres, true_events, prec_t, return_prec_rec=False):
+def get_composite_fscore_from_scores(
+    score_t_test, thres, true_events, prec_t, return_prec_rec=False
+):
     pred_labels = score_t_test > thres
-    tp = np.sum([pred_labels[start:end + 1].any() for start, end in true_events.values()])
+    tp = np.sum(
+        [pred_labels[start : end + 1].any() for start, end in true_events.values()]
+    )
     fn = len(true_events) - tp
     rec_e = tp / (tp + fn)
     fscore_c = 2 * rec_e * prec_t / (rec_e + prec_t)
@@ -21,10 +25,11 @@ class NptConfig:
         for k, v in config_dict.items():
             setattr(self, k, v)
 
+
 def find_length(data):
     if len(data.shape) > 1:
         return 0
-    data = data[:min(20000, len(data))]
+    data = data[: min(20000, len(data))]
 
     base = 3
     auto_corr = acf(data, nlags=400, fft=True)[base:]
@@ -40,10 +45,10 @@ def find_length(data):
 
 
 def range_convers_new(label):
-    '''
+    """
     input: arrays of binary values
     output: list of ordered pair [[a0,b0], [a1,b1]... ] of the inputs
-    '''
+    """
     L = []
     i = 0
     j = 0

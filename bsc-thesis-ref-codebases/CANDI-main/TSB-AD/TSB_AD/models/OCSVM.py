@@ -19,6 +19,7 @@ from .base import BaseDetector
 from ..utils.utility import invert_order
 from ..utils.utility import zscore
 
+
 class OCSVM(BaseDetector):
     """Wrapper of scikit-learn one-class SVM Class with more functionalities.
     Unsupervised Outlier Detection.
@@ -117,9 +118,23 @@ class OCSVM(BaseDetector):
         ``threshold_`` on ``decision_scores_``.
     """
 
-    def __init__(self, slidingWindow=100, kernel='rbf', sub=True, degree=3, gamma='auto', coef0=0.0,
-                 tol=1e-3, nu=0.5, shrinking=True, cache_size=200,
-                 verbose=False, max_iter=-1, contamination=0.1, normalize=True):
+    def __init__(
+        self,
+        slidingWindow=100,
+        kernel="rbf",
+        sub=True,
+        degree=3,
+        gamma="auto",
+        coef0=0.0,
+        tol=1e-3,
+        nu=0.5,
+        shrinking=True,
+        cache_size=200,
+        verbose=False,
+        max_iter=-1,
+        contamination=0.1,
+        normalize=True,
+    ):
         super(OCSVM, self).__init__(contamination=contamination)
         self.slidingWindow = slidingWindow
         self.sub = sub
@@ -158,31 +173,32 @@ class OCSVM(BaseDetector):
         n_samples, n_features = X.shape
 
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
 
         # validate inputs X and y (optional)
         X = check_array(X)
-        X = MinMaxScaler(feature_range=(0,1)).fit_transform(X.T).T
+        X = MinMaxScaler(feature_range=(0, 1)).fit_transform(X.T).T
 
         self._set_n_classes(y)
 
-        self.detector_ = OneClassSVM(kernel=self.kernel,
-                                     degree=self.degree,
-                                     gamma=self.gamma,
-                                     coef0=self.coef0,
-                                     tol=self.tol,
-                                     nu=self.nu,
-                                     shrinking=self.shrinking,
-                                     cache_size=self.cache_size,
-                                     verbose=self.verbose,
-                                     max_iter=self.max_iter)
-        self.detector_.fit(X=X, y=y, sample_weight=sample_weight,
-                           **params)
+        self.detector_ = OneClassSVM(
+            kernel=self.kernel,
+            degree=self.degree,
+            gamma=self.gamma,
+            coef0=self.coef0,
+            tol=self.tol,
+            nu=self.nu,
+            shrinking=self.shrinking,
+            cache_size=self.cache_size,
+            verbose=self.verbose,
+            max_iter=self.max_iter,
+        )
+        self.detector_.fit(X=X, y=y, sample_weight=sample_weight, **params)
 
         # invert decision_scores_. Outliers comes with higher outlier scores
         self.decision_scores_ = invert_order(self.detector_.decision_function(X))
@@ -208,24 +224,27 @@ class OCSVM(BaseDetector):
         anomaly_scores : numpy array of shape (n_samples,)
             The anomaly score of the input samples.
         """
-        check_is_fitted(self, ['decision_scores_', 'threshold_', 'labels_'])
+        check_is_fitted(self, ["decision_scores_", "threshold_", "labels_"])
 
         n_samples, n_features = X.shape
 
         # Converting time series data into matrix format
-        X = Window(window = self.slidingWindow).convert(X)
-        if self.normalize: 
+        X = Window(window=self.slidingWindow).convert(X)
+        if self.normalize:
             if n_features == 1:
                 X = zscore(X, axis=0, ddof=0)
-            else: 
+            else:
                 X = zscore(X, axis=1, ddof=1)
-                
+
         # invert outlier scores. Outliers comes with higher outlier scores
         decision_scores_ = invert_order(self.detector_.decision_function(X))
         # padded decision_scores_
         if decision_scores_.shape[0] < n_samples:
-            decision_scores_ = np.array([decision_scores_[0]]*math.ceil((self.slidingWindow-1)/2) + 
-                        list(decision_scores_) + [decision_scores_[-1]]*((self.slidingWindow-1)//2))
+            decision_scores_ = np.array(
+                [decision_scores_[0]] * math.ceil((self.slidingWindow - 1) / 2)
+                + list(decision_scores_)
+                + [decision_scores_[-1]] * ((self.slidingWindow - 1) // 2)
+            )
 
         return decision_scores_
 
@@ -262,7 +281,7 @@ class OCSVM(BaseDetector):
 
     @property
     def intercept_(self):
-        """ Constant in the decision function.
+        """Constant in the decision function.
         Decorator for scikit-learn One class SVM attributes.
         """
         return self.detector_.intercept_

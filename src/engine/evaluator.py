@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Evaluation loop that merges overlapping window scores back to entity timelines.
 
 A new reader should pair this file with the batch and output contracts. The
@@ -12,11 +13,16 @@ import torch
 
 from src.core.console import console_print, summarize_batch, summarize_tensor
 from src.core.contracts import validate_evaluation_record
-from src.metrics.pointwise import compute_pointwise_curve_payload, compute_pointwise_metrics
+from src.metrics.pointwise import (
+    compute_pointwise_curve_payload,
+    compute_pointwise_metrics,
+)
 from src.models.base_model import BaseModel
 
 
-def select_point_score_threshold(point_scores: np.ndarray, quantile: float = 0.95) -> float:
+def select_point_score_threshold(
+    point_scores: np.ndarray, quantile: float = 0.95
+) -> float:
     # The smoke runs can produce many exact zeros, so selecting a threshold from
     # only the positive support avoids the "everything is anomalous" failure
     # mode in plots and thresholded metrics.
@@ -38,7 +44,12 @@ class Evaluator:
         # downstream metrics should be interpreted on the original timeline.
         model.to(self.device)
         model.eval()
-        console_print("EVAL", "Starting evaluation", device=self.device, num_batches=len(data_loader))
+        console_print(
+            "EVAL",
+            "Starting evaluation",
+            device=self.device,
+            num_batches=len(data_loader),
+        )
         entity_score_sums: dict[str, torch.Tensor] = {}
         entity_score_counts: dict[str, torch.Tensor] = {}
         entity_labels: dict[str, torch.Tensor] = {}
@@ -47,10 +58,17 @@ class Evaluator:
         with torch.no_grad():
             for batch_index, batch in enumerate(data_loader, start=1):
                 batch_on_device = {
-                    key: value.to(self.device) if isinstance(value, torch.Tensor) else value
+                    key: value.to(self.device)
+                    if isinstance(value, torch.Tensor)
+                    else value
                     for key, value in batch.items()
                 }
-                console_print("EVAL", "Evaluating batch", batch_index=batch_index, **summarize_batch(batch_on_device))
+                console_print(
+                    "EVAL",
+                    "Evaluating batch",
+                    batch_index=batch_index,
+                    **summarize_batch(batch_on_device),
+                )
                 step_output = model.test_step(batch_on_device)
                 point_scores = step_output["outputs"]["point_scores"].detach().cpu()
                 if "forward_pass_seconds" in step_output["outputs"]["aux"]:
@@ -62,7 +80,9 @@ class Evaluator:
                     "Produced evaluation batch outputs",
                     batch_index=batch_index,
                     point_scores=summarize_tensor(point_scores),
-                    window_scores=summarize_tensor(step_output["outputs"]["window_scores"]),
+                    window_scores=summarize_tensor(
+                        step_output["outputs"]["window_scores"]
+                    ),
                 )
 
                 for window_index, meta in enumerate(batch["meta"]):
@@ -81,15 +101,21 @@ class Evaluator:
                             for sequence in data_loader.dataset.sequences
                             if sequence["meta"]["entity_id"] == entity_id
                         )
-                        entity_score_sums[entity_id] = torch.zeros(sequence_length, dtype=torch.float32)
-                        entity_score_counts[entity_id] = torch.zeros(sequence_length, dtype=torch.float32)
+                        entity_score_sums[entity_id] = torch.zeros(
+                            sequence_length, dtype=torch.float32
+                        )
+                        entity_score_counts[entity_id] = torch.zeros(
+                            sequence_length, dtype=torch.float32
+                        )
                         entity_labels[entity_id] = next(
                             sequence["point_labels"].clone()
                             for sequence in data_loader.dataset.sequences
                             if sequence["meta"]["entity_id"] == entity_id
                         )
 
-                    entity_score_sums[entity_id][start_index:end_index] += point_scores[window_index]
+                    entity_score_sums[entity_id][start_index:end_index] += point_scores[
+                        window_index
+                    ]
                     entity_score_counts[entity_id][start_index:end_index] += 1.0
 
         evaluation_records: list[dict[str, Any]] = []
@@ -122,9 +148,9 @@ class Evaluator:
         )
         metrics["threshold"] = threshold
         if forward_pass_seconds_history:
-            metrics["forward_pass_seconds_mean"] = (
-                sum(forward_pass_seconds_history) / len(forward_pass_seconds_history)
-            )
+            metrics["forward_pass_seconds_mean"] = sum(
+                forward_pass_seconds_history
+            ) / len(forward_pass_seconds_history)
         curves = compute_pointwise_curve_payload(
             point_labels=concatenated_labels,
             point_scores=concatenated_scores,

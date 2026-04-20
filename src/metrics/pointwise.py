@@ -23,7 +23,9 @@ def _safe_metric(metric_function: Any, *args: Any, **kwargs: Any) -> float:
         return float("nan")
 
 
-def _safe_curve(metric_function: Any, *args: Any, **kwargs: Any) -> dict[str, list[float]]:
+def _safe_curve(
+    metric_function: Any, *args: Any, **kwargs: Any
+) -> dict[str, list[float]]:
     try:
         curve_outputs = metric_function(*args, **kwargs)
     except ValueError:
@@ -73,8 +75,12 @@ def compute_binary_classification_metrics(
     return {
         "roc_auc": _safe_metric(roc_auc_score, label_array, probabilities),
         "pr_auc": _safe_metric(average_precision_score, label_array, probabilities),
-        "precision": _safe_metric(precision_score, label_array, binary_predictions, zero_division=0),
-        "recall": _safe_metric(recall_score, label_array, binary_predictions, zero_division=0),
+        "precision": _safe_metric(
+            precision_score, label_array, binary_predictions, zero_division=0
+        ),
+        "recall": _safe_metric(
+            recall_score, label_array, binary_predictions, zero_division=0
+        ),
         "fpr": _compute_false_positive_rate(label_array, binary_predictions),
     }
 
@@ -90,8 +96,12 @@ def compute_pointwise_metrics(
     return {
         "roc_auc": _safe_metric(roc_auc_score, point_labels, point_scores),
         "pr_auc": _safe_metric(average_precision_score, point_labels, point_scores),
-        "precision": _safe_metric(precision_score, point_labels, binary_predictions, zero_division=0),
-        "recall": _safe_metric(recall_score, point_labels, binary_predictions, zero_division=0),
+        "precision": _safe_metric(
+            precision_score, point_labels, binary_predictions, zero_division=0
+        ),
+        "recall": _safe_metric(
+            recall_score, point_labels, binary_predictions, zero_division=0
+        ),
         "f1": _safe_metric(f1_score, point_labels, binary_predictions, zero_division=0),
         "fpr": _compute_false_positive_rate(point_labels, binary_predictions),
     }

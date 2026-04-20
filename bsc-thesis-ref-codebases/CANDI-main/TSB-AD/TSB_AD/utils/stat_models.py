@@ -1,4 +1,4 @@
-""" A collection of statistical models
+"""A collection of statistical models
 code copied from pyod documentation https://github.com/yzhao062/pyod/blob/master/pyod/utils/stat_models.py
 """
 # Author: Yue Zhao <zhaoy@cmu.edu>
@@ -12,6 +12,7 @@ from scipy.stats import pearsonr
 from sklearn.utils.validation import check_array
 from sklearn.utils.validation import check_consistent_length
 from numba import njit
+
 
 def pairwise_distances_no_broadcast(X, Y):
     """Utility function to calculate row-wise euclidean distance of two matrix.
@@ -33,9 +34,10 @@ def pairwise_distances_no_broadcast(X, Y):
     Y = check_array(Y)
 
     if X.shape[0] != Y.shape[0] or X.shape[1] != Y.shape[1]:
-        raise ValueError("pairwise_distances_no_broadcast function receive"
-                         "matrix with different shapes {0} and {1}".format(
-            X.shape, Y.shape))
+        raise ValueError(
+            "pairwise_distances_no_broadcast function receive"
+            "matrix with different shapes {0} and {1}".format(X.shape, Y.shape)
+        )
     return _pairwise_distances_no_broadcast_helper(X, Y)
 
 
@@ -159,6 +161,7 @@ def pearsonr_mat(mat, w=None):
 
     return pear_mat
 
+
 def column_ecdf(matrix: np.ndarray) -> np.ndarray:
     """
     Utility function to compute the column wise empirical cumulative distribution of a 2D feature matrix,
@@ -178,11 +181,17 @@ def column_ecdf(matrix: np.ndarray) -> np.ndarray:
 
     """
     # check the matrix dimensions
-    assert len(matrix.shape) == 2, 'Matrix needs to be two dimensional for the ECDF computation.'
+    assert len(matrix.shape) == 2, (
+        "Matrix needs to be two dimensional for the ECDF computation."
+    )
 
     # create a probability array the same shape as the feature matrix which we will reorder to build
     # the ecdf
-    probabilities = np.linspace(np.ones(matrix.shape[1]) / matrix.shape[0], np.ones(matrix.shape[1]), matrix.shape[0])
+    probabilities = np.linspace(
+        np.ones(matrix.shape[1]) / matrix.shape[0],
+        np.ones(matrix.shape[1]),
+        matrix.shape[0],
+    )
 
     # get the sorting indices for a numpy array
     sort_idx = np.argsort(matrix, axis=0)
@@ -199,6 +208,7 @@ def column_ecdf(matrix: np.ndarray) -> np.ndarray:
     reordered_probabilities = np.ones_like(probabilities)
     np.put_along_axis(reordered_probabilities, sort_idx, probabilities, axis=0)
     return reordered_probabilities
+
 
 @njit
 def ecdf_terminate_equals_inplace(matrix: np.ndarray, probabilities: np.ndarray):

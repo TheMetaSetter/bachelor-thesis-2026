@@ -19,11 +19,13 @@ from ..utils.stat_models import column_ecdf
 from ..utils.utility import _partition_estimators
 from ..utils.utility import zscore
 
+
 def skew(X, axis=0):
     return np.nan_to_num(skew_sp(X, axis=axis))
 
+
 def _parallel_ecdf(n_dims, X):
-    """Private method to calculate ecdf in parallel.    
+    """Private method to calculate ecdf in parallel.
     Parameters
     ----------
     n_dims : int
@@ -44,9 +46,10 @@ def _parallel_ecdf(n_dims, X):
     U_r_mat = np.zeros([X.shape[0], n_dims])
 
     for i in range(n_dims):
-        U_l_mat[:, i: i + 1] = column_ecdf(X[:, i: i + 1])
-        U_r_mat[:, i: i + 1] = column_ecdf(X[:, i: i + 1] * -1)
+        U_l_mat[:, i : i + 1] = column_ecdf(X[:, i : i + 1])
+        U_r_mat[:, i : i + 1] = column_ecdf(X[:, i : i + 1] * -1)
     return U_l_mat, U_r_mat
+
 
 class COPOD(BaseDetector):
     """COPOD class for Copula Based Outlier Detector.
@@ -60,7 +63,7 @@ class COPOD(BaseDetector):
         The amount of contamination of the data set, i.e.
         the proportion of outliers in the data set. Used when fitting to
         define the threshold on the decision function.
-        
+
     n_jobs : optional (default=1)
         The number of jobs to run in parallel for both `fit` and
         `predict`. If -1, then the number of jobs is set to the
@@ -87,7 +90,7 @@ class COPOD(BaseDetector):
     def __init__(self, contamination=0.1, n_jobs=1, normalize=True):
         super(COPOD, self).__init__(contamination=contamination)
 
-        #TODO: Make it parameterized for n_jobs
+        # TODO: Make it parameterized for n_jobs
         self.n_jobs = n_jobs
         self.normalize = normalize
 
@@ -105,7 +108,8 @@ class COPOD(BaseDetector):
             Fitted estimator.
         """
         X = check_array(X)
-        if self.normalize: X = zscore(X, axis=1, ddof=1)
+        if self.normalize:
+            X = zscore(X, axis=1, ddof=1)
 
         self._set_n_classes(y)
         self.decision_scores_ = self.decision_function(X)
@@ -129,17 +133,18 @@ class COPOD(BaseDetector):
         # use multi-thread execution
         if self.n_jobs != 1:
             return self._decision_function_parallel(X)
-        if hasattr(self, 'X_train'):
+        if hasattr(self, "X_train"):
             original_size = X.shape[0]
             X = np.concatenate((self.X_train, X), axis=0)
         self.U_l = -1 * np.log(column_ecdf(X))
         self.U_r = -1 * np.log(column_ecdf(-X))
 
         skewness = np.sign(skew(X, axis=0))
-        self.U_skew = self.U_l * -1 * np.sign(
-            skewness - 1) + self.U_r * np.sign(skewness + 1)
+        self.U_skew = self.U_l * -1 * np.sign(skewness - 1) + self.U_r * np.sign(
+            skewness + 1
+        )
         self.O = np.maximum(self.U_skew, np.add(self.U_l, self.U_r) / 2)
-        if hasattr(self, 'X_train'):
+        if hasattr(self, "X_train"):
             decision_scores_ = self.O.sum(axis=1)[-original_size:]
         else:
             decision_scores_ = self.O.sum(axis=1)
@@ -158,47 +163,46 @@ class COPOD(BaseDetector):
         anomaly_scores : numpy array of shape (n_samples,)
             The anomaly score of the input samples.
         """
-        if hasattr(self, 'X_train'):
+        if hasattr(self, "X_train"):
             original_size = X.shape[0]
             X = np.concatenate((self.X_train, X), axis=0)
 
         n_samples, n_features = X.shape[0], X.shape[1]
 
         if n_features < 2:
-            raise ValueError(
-                'n_jobs should not be used on one dimensional dataset')
+            raise ValueError("n_jobs should not be used on one dimensional dataset")
 
         if n_features <= self.n_jobs:
             self.n_jobs = n_features
             warnings.warn("n_features <= n_jobs; setting them equal instead.")
 
-        n_jobs, n_dims_list, starts = _partition_estimators(n_features,
-                                                            self.n_jobs)
+        n_jobs, n_dims_list, starts = _partition_estimators(n_features, self.n_jobs)
 
-        all_results = Parallel(n_jobs=n_jobs, max_nbytes=None,
-                               verbose=True)(
+        all_results = Parallel(n_jobs=n_jobs, max_nbytes=None, verbose=True)(
             delayed(_parallel_ecdf)(
                 n_dims_list[i],
-                X[:, starts[i]:starts[i + 1]],
+                X[:, starts[i] : starts[i + 1]],
             )
-            for i in range(n_jobs))
+            for i in range(n_jobs)
+        )
 
         # recover the results
         self.U_l = np.zeros([n_samples, n_features])
         self.U_r = np.zeros([n_samples, n_features])
 
         for i in range(n_jobs):
-            self.U_l[:, starts[i]:starts[i + 1]] = all_results[i][0]
-            self.U_r[:, starts[i]:starts[i + 1]] = all_results[i][1]
+            self.U_l[:, starts[i] : starts[i + 1]] = all_results[i][0]
+            self.U_r[:, starts[i] : starts[i + 1]] = all_results[i][1]
 
         self.U_l = -1 * np.log(self.U_l)
         self.U_r = -1 * np.log(self.U_r)
 
         skewness = np.sign(skew(X, axis=0))
-        self.U_skew = self.U_l * -1 * np.sign(
-            skewness - 1) + self.U_r * np.sign(skewness + 1)
+        self.U_skew = self.U_l * -1 * np.sign(skewness - 1) + self.U_r * np.sign(
+            skewness + 1
+        )
         self.O = np.maximum(self.U_skew, np.add(self.U_l, self.U_r) / 2)
-        if hasattr(self, 'X_train'):
+        if hasattr(self, "X_train"):
             decision_scores_ = self.O.sum(axis=1)[-original_size:]
         else:
             decision_scores_ = self.O.sum(axis=1)

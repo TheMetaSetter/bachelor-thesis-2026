@@ -52,8 +52,12 @@ def _write_common_yaml_files(tmp_path: Path) -> tuple[Path, Path, Path]:
     return data_config_path, model_config_path, task_config_path
 
 
-def test_load_experiment_config_accepts_optional_kaggle_logging_keys(tmp_path: Path) -> None:
-    data_config_path, model_config_path, task_config_path = _write_common_yaml_files(tmp_path)
+def test_load_experiment_config_accepts_optional_kaggle_logging_keys(
+    tmp_path: Path,
+) -> None:
+    data_config_path, model_config_path, task_config_path = _write_common_yaml_files(
+        tmp_path
+    )
     experiment_config_path = tmp_path / "experiment.yaml"
     experiment_config_path.write_text(
         "\n".join(
@@ -84,8 +88,12 @@ def test_load_experiment_config_accepts_optional_kaggle_logging_keys(tmp_path: P
     assert loaded_config["logging"]["kaggle_dataset_handle"] == "user/dataset"
 
 
-def test_load_experiment_config_rejects_kaggle_mirroring_without_dataset_handle(tmp_path: Path) -> None:
-    data_config_path, model_config_path, task_config_path = _write_common_yaml_files(tmp_path)
+def test_load_experiment_config_rejects_kaggle_mirroring_without_dataset_handle(
+    tmp_path: Path,
+) -> None:
+    data_config_path, model_config_path, task_config_path = _write_common_yaml_files(
+        tmp_path
+    )
     experiment_config_path = tmp_path / "experiment.yaml"
     experiment_config_path.write_text(
         "\n".join(

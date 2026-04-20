@@ -3,41 +3,63 @@ import numpy as np
 import math
 import copy
 
-def generate_curve(label, score, slidingWindow, version='opt', thre=250):
-    if version =='opt_mem':
-        tpr_3d, fpr_3d, prec_3d, window_3d, avg_auc_3d, avg_ap_3d = basic_metricor().RangeAUC_volume_opt_mem(labels_original=label, score=score, windowSize=slidingWindow, thre=thre)
+
+def generate_curve(label, score, slidingWindow, version="opt", thre=250):
+    if version == "opt_mem":
+        tpr_3d, fpr_3d, prec_3d, window_3d, avg_auc_3d, avg_ap_3d = (
+            basic_metricor().RangeAUC_volume_opt_mem(
+                labels_original=label, score=score, windowSize=slidingWindow, thre=thre
+            )
+        )
     else:
-        tpr_3d, fpr_3d, prec_3d, window_3d, avg_auc_3d, avg_ap_3d = basic_metricor().RangeAUC_volume_opt(labels_original=label, score=score, windowSize=slidingWindow, thre=thre)
+        tpr_3d, fpr_3d, prec_3d, window_3d, avg_auc_3d, avg_ap_3d = (
+            basic_metricor().RangeAUC_volume_opt(
+                labels_original=label, score=score, windowSize=slidingWindow, thre=thre
+            )
+        )
 
-
-    X = np.array(tpr_3d).reshape(1,-1).ravel()
-    X_ap = np.array(tpr_3d)[:,:-1].reshape(1,-1).ravel()
-    Y = np.array(fpr_3d).reshape(1,-1).ravel()
-    W = np.array(prec_3d).reshape(1,-1).ravel()
+    X = np.array(tpr_3d).reshape(1, -1).ravel()
+    X_ap = np.array(tpr_3d)[:, :-1].reshape(1, -1).ravel()
+    Y = np.array(fpr_3d).reshape(1, -1).ravel()
+    W = np.array(prec_3d).reshape(1, -1).ravel()
     Z = np.repeat(window_3d, len(tpr_3d[0]))
-    Z_ap = np.repeat(window_3d, len(tpr_3d[0])-1)
+    Z_ap = np.repeat(window_3d, len(tpr_3d[0]) - 1)
 
-    return Y, Z, X, X_ap, W, Z_ap,avg_auc_3d, avg_ap_3d
+    return Y, Z, X, X_ap, W, Z_ap, avg_auc_3d, avg_ap_3d
 
-class basic_metricor():
-    def __init__(self, a = 1, probability = True, bias = 'flat', ):
+
+class basic_metricor:
+    def __init__(
+        self,
+        a=1,
+        probability=True,
+        bias="flat",
+    ):
         self.a = a
         self.probability = probability
         self.bias = bias
         self.eps = 1e-15
 
-    def detect_model(self, model, label, contamination = 0.1, window = 100, is_A = False, is_threshold = True):
+    def detect_model(
+        self, model, label, contamination=0.1, window=100, is_A=False, is_threshold=True
+    ):
         if is_threshold:
-            score = self.scale_threshold(model.decision_scores_, model._mu, model._sigma)
+            score = self.scale_threshold(
+                model.decision_scores_, model._mu, model._sigma
+            )
         else:
-            score = self.scale_contamination(model.decision_scores_, contamination = contamination)
+            score = self.scale_contamination(
+                model.decision_scores_, contamination=contamination
+            )
         if is_A is False:
-            scoreX = np.zeros(len(score)+window)
-            scoreX[math.ceil(window/2): len(score)+window - math.floor(window/2)] = score
+            scoreX = np.zeros(len(score) + window)
+            scoreX[
+                math.ceil(window / 2) : len(score) + window - math.floor(window / 2)
+            ] = score
         else:
             scoreX = score
 
-        self.score_=scoreX
+        self.score_ = scoreX
         L = self.metric(label, scoreX)
         return L
 
@@ -46,12 +68,12 @@ class basic_metricor():
         MaxValue = 0
         start = AnomalyRange[0]
         AnomalyLength = AnomalyRange[1] - AnomalyRange[0] + 1
-        for i in range(start, start +AnomalyLength):
+        for i in range(start, start + AnomalyLength):
             bi = self.b(i, AnomalyLength)
-            MaxValue +=  bi
+            MaxValue += bi
             if i in p:
                 MyValue += bi
-        return MyValue/MaxValue
+        return MyValue / MaxValue
 
     def Cardinality_factor(self, Anomolyrange, Prange):
         score = 0
@@ -59,7 +81,7 @@ class basic_metricor():
         end = Anomolyrange[1]
         for i in Prange:
             if i[0] >= start and i[0] <= end:
-                score +=1
+                score += 1
             elif start >= i[0] and start <= i[1]:
                 score += 1
             elif end >= i[0] and end <= i[1]:
@@ -69,26 +91,28 @@ class basic_metricor():
         if score == 0:
             return 0
         else:
-            return 1/score
+            return 1 / score
 
     def b(self, i, length):
         bias = self.bias
-        if bias == 'flat':
+        if bias == "flat":
             return 1
-        elif bias == 'front-end bias':
+        elif bias == "front-end bias":
             return length - i + 1
-        elif bias == 'back-end bias':
+        elif bias == "back-end bias":
             return i
         else:
-            if i <= length/2:
+            if i <= length / 2:
                 return i
             else:
                 return length - i + 1
 
     def scale_threshold(self, score, score_mu, score_sigma):
-        return (score >= (score_mu + 3*score_sigma)).astype(int)
+        return (score >= (score_mu + 3 * score_sigma)).astype(int)
 
-    def _adjust_predicts(self, score, label, threshold=None, pred=None, calc_latency=False):
+    def _adjust_predicts(
+        self, score, label, threshold=None, pred=None, calc_latency=False
+    ):
         """
         Calculate adjusted predict labels using given `score`, `threshold` (or given `pred`) and `label`.
 
@@ -117,15 +141,15 @@ class basic_metricor():
         anomaly_count = 0
         for i in range(len(score)):
             if actual[i] and predict[i] and not anomaly_state:
-                    anomaly_state = True
-                    anomaly_count += 1
-                    for j in range(i, 0, -1):
-                        if not actual[j]:
-                            break
-                        else:
-                            if not predict[j]:
-                                predict[j] = True
-                                latency += 1
+                anomaly_state = True
+                anomaly_count += 1
+                for j in range(i, 0, -1):
+                    if not actual[j]:
+                        break
+                    else:
+                        if not predict[j]:
+                            predict[j] = True
+                            latency += 1
             elif not actual[i]:
                 anomaly_state = False
             if anomaly_state:
@@ -136,68 +160,86 @@ class basic_metricor():
             return predict
 
     def metric_new(self, label, score, preds, plot_ROC=False, alpha=0.2):
-        '''input:
-               Real labels and anomaly score in prediction
+        """input:
+            Real labels and anomaly score in prediction
 
-           output:
-               AUC,
-               Precision,
-               Recall,
-               F-score,
-               Range-precision,
-               Range-recall,
-               Range-Fscore,
-               Precison@k,
+        output:
+            AUC,
+            Precision,
+            Recall,
+            F-score,
+            Range-precision,
+            Range-recall,
+            Range-Fscore,
+            Precison@k,
 
-            k is chosen to be # of outliers in real labels
-        '''
+         k is chosen to be # of outliers in real labels
+        """
         if np.sum(label) == 0:
-            print('All labels are 0. Label must have groud truth value for calculating AUC score.')
+            print(
+                "All labels are 0. Label must have groud truth value for calculating AUC score."
+            )
             return None
 
         if np.isnan(score).any() or score is None:
-            print('Score must not be none.')
+            print("Score must not be none.")
             return None
 
-        #area under curve
+        # area under curve
         auc = metrics.roc_auc_score(label, score)
         # plor ROC curve
         if plot_ROC:
-            fpr, tpr, thresholds  = metrics.roc_curve(label, score)
+            fpr, tpr, thresholds = metrics.roc_curve(label, score)
             # display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=auc)
             # display.plot()
 
-        #precision, recall, F
+        # precision, recall, F
         if preds is None:
-            preds = score > (np.mean(score)+3*np.std(score))
-        Precision, Recall, F, Support = metrics.precision_recall_fscore_support(label, preds, zero_division=0)
+            preds = score > (np.mean(score) + 3 * np.std(score))
+        Precision, Recall, F, Support = metrics.precision_recall_fscore_support(
+            label, preds, zero_division=0
+        )
         precision = Precision[1]
         recall = Recall[1]
         f = F[1]
 
-        #point-adjust
+        # point-adjust
         adjust_preds = self._adjust_predicts(score, label, pred=preds)
         PointF1PA = metrics.f1_score(label, adjust_preds)
 
-        #range anomaly
-        Rrecall, ExistenceReward, OverlapReward = self.range_recall_new(label, preds, alpha)
+        # range anomaly
+        Rrecall, ExistenceReward, OverlapReward = self.range_recall_new(
+            label, preds, alpha
+        )
         Rprecision = self.range_recall_new(preds, label, 0)[0]
 
-        if Rprecision + Rrecall==0:
-            Rf=0
+        if Rprecision + Rrecall == 0:
+            Rf = 0
         else:
             Rf = 2 * Rrecall * Rprecision / (Rprecision + Rrecall)
 
         # top-k
         k = int(np.sum(label))
-        threshold = np.percentile(score, 100 * (1-k/len(label)))
+        threshold = np.percentile(score, 100 * (1 - k / len(label)))
 
         # precision_at_k = metrics.top_k_accuracy_score(label, score, k)
         p_at_k = np.where(preds > threshold)[0]
         TP_at_k = sum(label[p_at_k])
-        precision_at_k = TP_at_k/k
+        precision_at_k = TP_at_k / k
 
-        L = [auc, precision, recall, f, PointF1PA, Rrecall, ExistenceReward, OverlapReward, Rprecision, Rf, precision_at_k]
+        L = [
+            auc,
+            precision,
+            recall,
+            f,
+            PointF1PA,
+            Rrecall,
+            ExistenceReward,
+            OverlapReward,
+            Rprecision,
+            Rf,
+            precision_at_k,
+        ]
         if plot_ROC:
             return L, fpr, tpr
         return L
@@ -215,7 +257,9 @@ class basic_metricor():
             F1 = np.max(f1_scores)
             threshold = thresholds[np.argmax(f1_scores)]
         else:
-            Precision, Recall, F, Support = metrics.precision_recall_fscore_support(label, preds, zero_division=0)
+            Precision, Recall, F, Support = metrics.precision_recall_fscore_support(
+                label, preds, zero_division=0
+            )
             F1 = F[1]
         return F1
 
@@ -234,9 +278,14 @@ class basic_metricor():
                 events_gt = convert_vector_to_events(label)
                 Trange = (0, len(preds))
                 affiliation_metrics = pr_from_events(events_pred, events_gt, Trange)
-                Affiliation_Precision = affiliation_metrics['Affiliation_Precision']
-                Affiliation_Recall = affiliation_metrics['Affiliation_Recall']
-                Affiliation_F = 2*Affiliation_Precision*Affiliation_Recall / (Affiliation_Precision+Affiliation_Recall+self.eps)
+                Affiliation_Precision = affiliation_metrics["Affiliation_Precision"]
+                Affiliation_Recall = affiliation_metrics["Affiliation_Recall"]
+                Affiliation_F = (
+                    2
+                    * Affiliation_Precision
+                    * Affiliation_Recall
+                    / (Affiliation_Precision + Affiliation_Recall + self.eps)
+                )
 
                 Affiliation_scores.append(Affiliation_F)
 
@@ -248,14 +297,18 @@ class basic_metricor():
             events_gt = convert_vector_to_events(label)
             Trange = (0, len(preds))
             affiliation_metrics = pr_from_events(events_pred, events_gt, Trange)
-            Affiliation_Precision = affiliation_metrics['Affiliation_Precision']
-            Affiliation_Recall = affiliation_metrics['Affiliation_Recall']
-            Affiliation_F1 = 2*Affiliation_Precision*Affiliation_Recall / (Affiliation_Precision+Affiliation_Recall+self.eps)
+            Affiliation_Precision = affiliation_metrics["Affiliation_Precision"]
+            Affiliation_Recall = affiliation_metrics["Affiliation_Recall"]
+            Affiliation_F1 = (
+                2
+                * Affiliation_Precision
+                * Affiliation_Recall
+                / (Affiliation_Precision + Affiliation_Recall + self.eps)
+            )
 
         return Affiliation_F1
 
     def metric_RF1(self, label, score, preds=None):
-
         if preds is None:
             thresholds = np.linspace(score.min(), score.max(), 100)
             Rf1_scores = []
@@ -263,10 +316,12 @@ class basic_metricor():
             for threshold in thresholds:
                 preds = (score > threshold).astype(int)
 
-                Rrecall, ExistenceReward, OverlapReward = self.range_recall_new(label, preds, alpha=0.2)
+                Rrecall, ExistenceReward, OverlapReward = self.range_recall_new(
+                    label, preds, alpha=0.2
+                )
                 Rprecision = self.range_recall_new(preds, label, 0)[0]
-                if Rprecision + Rrecall==0:
-                    Rf=0
+                if Rprecision + Rrecall == 0:
+                    Rf = 0
                 else:
                     Rf = 2 * Rrecall * Rprecision / (Rprecision + Rrecall)
 
@@ -275,16 +330,17 @@ class basic_metricor():
             RF1_Threshold = thresholds[np.argmax(Rf1_scores)]
             RF1 = max(Rf1_scores)
         else:
-            Rrecall, ExistenceReward, OverlapReward = self.range_recall_new(label, preds, alpha=0.2)
+            Rrecall, ExistenceReward, OverlapReward = self.range_recall_new(
+                label, preds, alpha=0.2
+            )
             Rprecision = self.range_recall_new(preds, label, 0)[0]
-            if Rprecision + Rrecall==0:
-                RF1=0
+            if Rprecision + Rrecall == 0:
+                RF1 = 0
             else:
                 RF1 = 2 * Rrecall * Rprecision / (Rprecision + Rrecall)
         return RF1
 
     def metric_PointF1PA(self, label, score, preds=None):
-
         if preds is None:
             thresholds = np.linspace(score.min(), score.max(), 100)
             PointF1PA_scores = []
@@ -329,6 +385,7 @@ class basic_metricor():
 
     def metric_EventF1PA(self, label, score, preds=None):
         from sklearn.metrics import precision_score
+
         true_events = self._get_events(label)
 
         if preds is None:
@@ -338,9 +395,14 @@ class basic_metricor():
             for threshold in thresholds:
                 preds = (score > threshold).astype(int)
 
-                tp = np.sum([preds[start:end + 1].any() for start, end in true_events.values()])
+                tp = np.sum(
+                    [
+                        preds[start : end + 1].any()
+                        for start, end in true_events.values()
+                    ]
+                )
                 fn = len(true_events) - tp
-                rec_e = tp/(tp + fn)
+                rec_e = tp / (tp + fn)
                 prec_t = precision_score(label, preds)
                 EventF1PA = 2 * rec_e * prec_t / (rec_e + prec_t + self.eps)
 
@@ -350,43 +412,42 @@ class basic_metricor():
             EventF1PA1 = max(EventF1PA_scores)
 
         else:
-
-            tp = np.sum([preds[start:end + 1].any() for start, end in true_events.values()])
+            tp = np.sum(
+                [preds[start : end + 1].any() for start, end in true_events.values()]
+            )
             fn = len(true_events) - tp
-            rec_e = tp/(tp + fn)
+            rec_e = tp / (tp + fn)
             prec_t = precision_score(label, preds)
             EventF1PA1 = 2 * rec_e * prec_t / (rec_e + prec_t + self.eps)
 
         return EventF1PA1
 
     def range_recall_new(self, labels, preds, alpha):
-        p = np.where(preds == 1)[0]    # positions of predicted label==1
+        p = np.where(preds == 1)[0]  # positions of predicted label==1
         range_pred = self.range_convers_new(preds)
         range_label = self.range_convers_new(labels)
 
-        Nr = len(range_label)    # total # of real anomaly segments
+        Nr = len(range_label)  # total # of real anomaly segments
 
         ExistenceReward = self.existence_reward(range_label, preds)
-
 
         OverlapReward = 0
         for i in range_label:
             OverlapReward += self.w(i, p) * self.Cardinality_factor(i, range_pred)
 
-
-        score = alpha * ExistenceReward + (1-alpha) * OverlapReward
+        score = alpha * ExistenceReward + (1 - alpha) * OverlapReward
         if Nr != 0:
-            return score/Nr, ExistenceReward/Nr, OverlapReward/Nr
+            return score / Nr, ExistenceReward / Nr, OverlapReward / Nr
         else:
-            return 0,0,0
+            return 0, 0, 0
 
     def range_convers_new(self, label):
-        '''
+        """
         input: arrays of binary values
         output: list of ordered pair [[a0,b0], [a1,b1]... ] of the inputs
-        '''
+        """
         anomaly_starts = np.where(np.diff(label) == 1)[0] + 1
-        anomaly_ends, = np.where(np.diff(label) == -1)
+        (anomaly_ends,) = np.where(np.diff(label) == -1)
         if len(anomaly_ends):
             if not len(anomaly_starts) or anomaly_ends[0] < anomaly_starts[0]:
                 # we started with an anomaly, so the start of the first anomaly is the start of the labels
@@ -398,59 +459,58 @@ class basic_metricor():
         return list(zip(anomaly_starts, anomaly_ends))
 
     def existence_reward(self, labels, preds):
-        '''
+        """
         labels: list of ordered pair
         preds predicted data
-        '''
+        """
 
         score = 0
         for i in labels:
-            if preds[i[0]:i[1]+1].any():
+            if preds[i[0] : i[1] + 1].any():
                 score += 1
         return score
 
     def num_nonzero_segments(self, x):
-        count=0
-        if x[0]>0:
-            count+=1
+        count = 0
+        if x[0] > 0:
+            count += 1
         for i in range(1, len(x)):
-            if x[i]>0 and x[i-1]==0:
-                count+=1
+            if x[i] > 0 and x[i - 1] == 0:
+                count += 1
         return count
 
     def extend_postive_range(self, x, window=5):
         label = x.copy().astype(float)
-        L = self.range_convers_new(label)   # index of non-zero segments
+        L = self.range_convers_new(label)  # index of non-zero segments
         length = len(label)
         for k in range(len(L)):
             s = L[k][0]
             e = L[k][1]
 
+            x1 = np.arange(e, min(e + window // 2, length))
+            label[x1] += np.sqrt(1 - (x1 - e) / (window))
 
-            x1 = np.arange(e,min(e+window//2,length))
-            label[x1] += np.sqrt(1 - (x1-e)/(window))
-
-            x2 = np.arange(max(s-window//2,0),s)
-            label[x2] += np.sqrt(1 - (s-x2)/(window))
+            x2 = np.arange(max(s - window // 2, 0), s)
+            label[x2] += np.sqrt(1 - (s - x2) / (window))
 
         label = np.minimum(np.ones(length), label)
         return label
 
     def extend_postive_range_individual(self, x, percentage=0.2):
         label = x.copy().astype(float)
-        L = self.range_convers_new(label)   # index of non-zero segments
+        L = self.range_convers_new(label)  # index of non-zero segments
         length = len(label)
         for k in range(len(L)):
             s = L[k][0]
             e = L[k][1]
 
-            l0 = int((e-s+1)*percentage)
+            l0 = int((e - s + 1) * percentage)
 
-            x1 = np.arange(e,min(e+l0,length))
-            label[x1] += np.sqrt(1 - (x1-e)/(2*l0))
+            x1 = np.arange(e, min(e + l0, length))
+            label[x1] += np.sqrt(1 - (x1 - e) / (2 * l0))
 
-            x2 = np.arange(max(s-l0,0),s)
-            label[x2] += np.sqrt(1 - (s-x2)/(2*l0))
+            x2 = np.arange(max(s - l0, 0), s)
+            label[x2] += np.sqrt(1 - (s - x2) / (2 * l0))
 
         label = np.minimum(np.ones(length), label)
         return label
@@ -471,7 +531,9 @@ class basic_metricor():
 
         existence = 0
         for seg in L:
-            if np.sum(product[seg[0]:(seg[1] + 1)]) > 0:  # if newlabels>0, that segment must contained
+            if (
+                np.sum(product[seg[0] : (seg[1] + 1)]) > 0
+            ):  # if newlabels>0, that segment must contained
                 existence += 1
 
         existence_ratio = existence / len(L)
@@ -492,13 +554,15 @@ class basic_metricor():
 
         return TPR_RangeAUC, FPR_RangeAUC, Precision_RangeAUC
 
-    def RangeAUC(self, labels, score, window=0, percentage=0, plot_ROC=False, AUC_type='window'):
+    def RangeAUC(
+        self, labels, score, window=0, percentage=0, plot_ROC=False, AUC_type="window"
+    ):
         # AUC_type='window'/'percentage'
         score_sorted = -np.sort(-score)
 
         P = np.sum(labels)
         # print(np.sum(labels))
-        if AUC_type == 'window':
+        if AUC_type == "window":
             labels = self.extend_postive_range(labels, window=window)
         else:
             labels = self.extend_postive_range_individual(labels, percentage=percentage)
@@ -540,12 +604,12 @@ class basic_metricor():
         return AUC_range
 
     def range_convers_new(self, label):
-        '''
+        """
         input: arrays of binary values
         output: list of ordered pair [[a0,b0], [a1,b1]... ] of the inputs
-        '''
+        """
         anomaly_starts = np.where(np.diff(label) == 1)[0] + 1
-        anomaly_ends, = np.where(np.diff(label) == -1)
+        (anomaly_ends,) = np.where(np.diff(label) == -1)
         if len(anomaly_ends):
             if not len(anomaly_starts) or anomaly_ends[0] < anomaly_starts[0]:
                 # we started with an anomaly, so the start of the first anomaly is the start of the labels
@@ -560,10 +624,21 @@ class basic_metricor():
         a = max(sequence_original[0][0] - window // 2, 0)
         sequence_new = []
         for i in range(len(sequence_original) - 1):
-            if sequence_original[i][1] + window // 2 < sequence_original[i + 1][0] - window // 2:
+            if (
+                sequence_original[i][1] + window // 2
+                < sequence_original[i + 1][0] - window // 2
+            ):
                 sequence_new.append((a, sequence_original[i][1] + window // 2))
                 a = sequence_original[i + 1][0] - window // 2
-        sequence_new.append((a, min(sequence_original[len(sequence_original) - 1][1] + window // 2, len(label) - 1)))
+        sequence_new.append(
+            (
+                a,
+                min(
+                    sequence_original[len(sequence_original) - 1][1] + window // 2,
+                    len(label) - 1,
+                ),
+            )
+        )
         return sequence_new
 
     def sequencing(self, x, L, window=5):
@@ -608,7 +683,6 @@ class basic_metricor():
             N_pred[k] = np.sum(pred)
 
         for window in window_3d:
-
             labels_extended = self.sequencing(labels_original, seq, window)
             L = self.new_sequence(labels_extended, seq, window)
 
@@ -623,17 +697,19 @@ class basic_metricor():
                 existence = 0
 
                 for seg in L:
-                    labels[seg[0]:seg[1] + 1] = labels_extended[seg[0]:seg[1] + 1] * pred[seg[0]:seg[1] + 1]
-                    if (pred[seg[0]:(seg[1] + 1)] > 0).any():
+                    labels[seg[0] : seg[1] + 1] = (
+                        labels_extended[seg[0] : seg[1] + 1] * pred[seg[0] : seg[1] + 1]
+                    )
+                    if (pred[seg[0] : (seg[1] + 1)] > 0).any():
                         existence += 1
                 for seg in seq:
-                    labels[seg[0]:seg[1] + 1] = 1
+                    labels[seg[0] : seg[1] + 1] = 1
 
                 TP = 0
                 N_labels = 0
                 for seg in l:
-                    TP += np.dot(labels[seg[0]:seg[1] + 1], pred[seg[0]:seg[1] + 1])
-                    N_labels += np.sum(labels[seg[0]:seg[1] + 1])
+                    TP += np.dot(labels[seg[0] : seg[1] + 1], pred[seg[0] : seg[1] + 1])
+                    N_labels += np.sum(labels[seg[0] : seg[1] + 1])
 
                 TP += tp[j]
                 FP = N_pred[j] - TP
@@ -662,7 +738,7 @@ class basic_metricor():
             width = TF_list[1:, 1] - TF_list[:-1, 1]
             height = (TF_list[1:, 0] + TF_list[:-1, 0]) / 2
             AUC_range = np.dot(width, height)
-            auc_3d[window] = (AUC_range)
+            auc_3d[window] = AUC_range
 
             width_PR = TF_list[1:-1, 0] - TF_list[:-2, 0]
             height_PR = Precision_list[1:]
@@ -670,7 +746,14 @@ class basic_metricor():
             AP_range = np.dot(width_PR, height_PR)
             ap_3d[window] = AP_range
 
-        return tpr_3d, fpr_3d, prec_3d, window_3d, sum(auc_3d) / len(window_3d), sum(ap_3d) / len(window_3d)
+        return (
+            tpr_3d,
+            fpr_3d,
+            prec_3d,
+            window_3d,
+            sum(auc_3d) / len(window_3d),
+            sum(ap_3d) / len(window_3d),
+        )
 
     def RangeAUC_volume_opt_mem(self, labels_original, score, windowSize, thre=250):
         window_3d = np.arange(0, windowSize + 1, 1)
@@ -710,17 +793,19 @@ class basic_metricor():
                 existence = 0
 
                 for seg in L:
-                    labels[seg[0]:seg[1] + 1] = labels_extended[seg[0]:seg[1] + 1] * p[j][seg[0]:seg[1] + 1]
-                    if (p[j][seg[0]:(seg[1] + 1)] > 0).any():
+                    labels[seg[0] : seg[1] + 1] = (
+                        labels_extended[seg[0] : seg[1] + 1] * p[j][seg[0] : seg[1] + 1]
+                    )
+                    if (p[j][seg[0] : (seg[1] + 1)] > 0).any():
                         existence += 1
                 for seg in seq:
-                    labels[seg[0]:seg[1] + 1] = 1
+                    labels[seg[0] : seg[1] + 1] = 1
 
                 N_labels = 0
                 TP = 0
                 for seg in l:
-                    TP += np.dot(labels[seg[0]:seg[1] + 1], p[j][seg[0]:seg[1] + 1])
-                    N_labels += np.sum(labels[seg[0]:seg[1] + 1])
+                    TP += np.dot(labels[seg[0] : seg[1] + 1], p[j][seg[0] : seg[1] + 1])
+                    N_labels += np.sum(labels[seg[0] : seg[1] + 1])
 
                 TP += tp[j]
                 FP = N_pred[j] - TP
@@ -748,14 +833,20 @@ class basic_metricor():
             width = TF_list[1:, 1] - TF_list[:-1, 1]
             height = (TF_list[1:, 0] + TF_list[:-1, 0]) / 2
             AUC_range = np.dot(width, height)
-            auc_3d[window] = (AUC_range)
+            auc_3d[window] = AUC_range
 
             width_PR = TF_list[1:-1, 0] - TF_list[:-2, 0]
             height_PR = Precision_list[1:]
             AP_range = np.dot(width_PR, height_PR)
-            ap_3d[window] = (AP_range)
-        return tpr_3d, fpr_3d, prec_3d, window_3d, sum(auc_3d) / len(window_3d), sum(ap_3d) / len(window_3d)
-
+            ap_3d[window] = AP_range
+        return (
+            tpr_3d,
+            fpr_3d,
+            prec_3d,
+            window_3d,
+            sum(auc_3d) / len(window_3d),
+            sum(ap_3d) / len(window_3d),
+        )
 
     def metric_VUS_pred(self, labels, preds, windowSize):
         window_3d = np.arange(0, windowSize + 1, 1)
@@ -770,32 +861,41 @@ class basic_metricor():
         N_pred = np.sum(preds)
 
         for window in window_3d:
-
             labels_extended = self.sequencing(labels, seq, window)
             L = self.new_sequence(labels_extended, seq, window)
-                
+
             labels = labels_extended.copy()
             existence = 0
 
             for seg in L:
-                labels[seg[0]:seg[1] + 1] = labels_extended[seg[0]:seg[1] + 1] * preds[seg[0]:seg[1] + 1]
-                if (preds[seg[0]:(seg[1] + 1)] > 0).any():
+                labels[seg[0] : seg[1] + 1] = (
+                    labels_extended[seg[0] : seg[1] + 1] * preds[seg[0] : seg[1] + 1]
+                )
+                if (preds[seg[0] : (seg[1] + 1)] > 0).any():
                     existence += 1
             for seg in seq:
-                labels[seg[0]:seg[1] + 1] = 1
+                labels[seg[0] : seg[1] + 1] = 1
 
             TP = 0
             N_labels = 0
             for seg in l:
-                TP += np.dot(labels[seg[0]:seg[1] + 1], preds[seg[0]:seg[1] + 1])
-                N_labels += np.sum(labels[seg[0]:seg[1] + 1])
+                TP += np.dot(labels[seg[0] : seg[1] + 1], preds[seg[0] : seg[1] + 1])
+                N_labels += np.sum(labels[seg[0] : seg[1] + 1])
 
             P_new = (P + N_labels) / 2
             recall = min(TP / P_new, 1)
-            Precision = TP / N_pred            
+            Precision = TP / N_pred
 
             recall_3d[window] = recall
             prec_3d[window] = Precision
-            f_3d[window] = 2 * Precision * recall / (Precision + recall) if (Precision + recall) > 0 else 0
+            f_3d[window] = (
+                2 * Precision * recall / (Precision + recall)
+                if (Precision + recall) > 0
+                else 0
+            )
 
-        return sum(recall_3d) / len(window_3d), sum(prec_3d) / len(window_3d), sum(f_3d) / len(window_3d)
+        return (
+            sum(recall_3d) / len(window_3d),
+            sum(prec_3d) / len(window_3d),
+            sum(f_3d) / len(window_3d),
+        )

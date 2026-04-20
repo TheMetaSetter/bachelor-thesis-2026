@@ -37,7 +37,9 @@ def format_console_value(value: Any) -> str:
         preview_values = [format_console_value(item) for item in list(value)[:8]]
         if len(value) > 8:
             preview_values.append("...")
-        bracket_open, bracket_close = ("[", "]") if isinstance(value, list) else ("(", ")")
+        bracket_open, bracket_close = (
+            ("[", "]") if isinstance(value, list) else ("(", ")")
+        )
         return bracket_open + ", ".join(preview_values) + bracket_close
     return _format_scalar(value)
 
@@ -56,11 +58,7 @@ def console_print(prefix: str, message: str, **fields: Any) -> None:
 def summarize_tensor(tensor: torch.Tensor | None) -> str:
     if tensor is None:
         return "None"
-    return (
-        f"shape={tuple(tensor.shape)}, "
-        f"dtype={tensor.dtype}, "
-        f"device={tensor.device}"
-    )
+    return f"shape={tuple(tensor.shape)}, dtype={tensor.dtype}, device={tensor.device}"
 
 
 def summarize_batch(batch: dict[str, Any]) -> dict[str, Any]:
@@ -72,9 +70,13 @@ def summarize_batch(batch: dict[str, Any]) -> dict[str, Any]:
         "meta_count": len(batch.get("meta", [])),
     }
     if "classification_labels" in batch:
-        batch_summary["classification_labels"] = summarize_tensor(batch.get("classification_labels"))
+        batch_summary["classification_labels"] = summarize_tensor(
+            batch.get("classification_labels")
+        )
     if "synthetic_anomaly_mask" in batch:
-        batch_summary["synthetic_anomaly_mask"] = summarize_tensor(batch.get("synthetic_anomaly_mask"))
+        batch_summary["synthetic_anomaly_mask"] = summarize_tensor(
+            batch.get("synthetic_anomaly_mask")
+        )
     if "view_a" in batch:
         batch_summary["view_a"] = summarize_tensor(batch.get("view_a"))
     if "view_b" in batch:
@@ -105,11 +107,17 @@ def count_parameters(component: nn.Module | nn.Parameter | torch.Tensor | None) 
     return 0
 
 
-def count_trainable_parameters(component: nn.Module | nn.Parameter | torch.Tensor | None) -> int:
+def count_trainable_parameters(
+    component: nn.Module | nn.Parameter | torch.Tensor | None,
+) -> int:
     if component is None:
         return 0
     if isinstance(component, nn.Module):
-        return sum(parameter.numel() for parameter in component.parameters() if parameter.requires_grad)
+        return sum(
+            parameter.numel()
+            for parameter in component.parameters()
+            if parameter.requires_grad
+        )
     if isinstance(component, nn.Parameter):
         return int(component.numel()) if component.requires_grad else 0
     return 0
@@ -127,7 +135,9 @@ def print_parameter_summary(
         f"Parameter summary for {model_name}",
         total_parameters=sum(parameter.numel() for parameter in model.parameters()),
         trainable_parameters=sum(
-            parameter.numel() for parameter in model.parameters() if parameter.requires_grad
+            parameter.numel()
+            for parameter in model.parameters()
+            if parameter.requires_grad
         ),
         **extra_fields,
     )

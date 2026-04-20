@@ -8,7 +8,11 @@ from tqdm import tqdm
 from sklearn.metrics import roc_auc_score, precision_recall_curve, auc
 
 from threshold import Thresholder
-from datasets.loader import get_train_dataloader, get_val_dataloader, get_test_dataloader
+from datasets.loader import (
+    get_train_dataloader,
+    get_val_dataloader,
+    get_test_dataloader,
+)
 from trainer import prepare_inputs
 from utils.misc import mkdir
 from tta.adapter import construct_adapter
@@ -24,7 +28,7 @@ class Predictor:
         self.cfg.DATA.TRAIN_STEP = 1
         self.cfg.TRAIN.SHUFFLE = False
         self.cfg.TRAIN.DROP_LAST = False
-        
+
         self.train_loader = get_train_dataloader(self.cfg)
         self.val_loader = get_val_dataloader(self.cfg)
         self.test_loader = get_test_dataloader(self.cfg)
@@ -33,9 +37,9 @@ class Predictor:
     def predict(self):
         self.model.eval()
         log_dict = {}
-        
+
         self.train_scores = self._get_train_scores()
-        if self.tta and self.cfg.TEST.TTA.METHOD == 'CANDI':
+        if self.tta and self.cfg.TEST.TTA.METHOD == "CANDI":
             self.val_scores, self.val_inputs = self._get_val_scores(return_inputs=True)
         else:
             self.val_scores = self._get_val_scores()
@@ -46,50 +50,68 @@ class Predictor:
 
         assert len(self.test_scores) == len(self.test_labels)
 
-        self.thresholder = Thresholder(self.cfg, self.test_scores, self.test_labels, self.train_scores, self.val_scores)
+        self.thresholder = Thresholder(
+            self.cfg,
+            self.test_scores,
+            self.test_labels,
+            self.train_scores,
+            self.val_scores,
+        )
 
         pred = self.test_scores > self.thresholder.threshold
 
-        results = self.get_results(self.test_scores, self.test_labels, pred)  # {AUROC: , AUPRC: , Precision: , Recall: , F1: }
+        results = self.get_results(
+            self.test_scores, self.test_labels, pred
+        )  # {AUROC: , AUPRC: , Precision: , Recall: , F1: }
 
         if self.tta:
-            self.cfg.TEST.THRESHOLD.TYPE = 'ratio'
-            self.thresholder = Thresholder(self.cfg, None, None, self.train_scores, self.val_scores)
+            self.cfg.TEST.THRESHOLD.TYPE = "ratio"
+            self.thresholder = Thresholder(
+                self.cfg, None, None, self.train_scores, self.val_scores
+            )
             self.adapter = construct_adapter(
-                self.cfg, 
-                self.model, 
-                self.thresholder, 
+                self.cfg,
+                self.model,
+                self.thresholder,
                 test_labels=self.test_labels,  # for CANDIAdapter
                 val_scores=self.val_scores,  # for CANDIAdapter
-                val_inputs=self.val_inputs if self.cfg.TEST.TTA.METHOD == 'CANDI' else None  # for CANDIAdapter
-                )
+                val_inputs=self.val_inputs
+                if self.cfg.TEST.TTA.METHOD == "CANDI"
+                else None,  # for CANDIAdapter
+            )
 
             self.test_scores_w_tta = []
             pred_w_tta = []
-            for inputs in tqdm(self.test_loader, desc='test scores'):
+            for inputs in tqdm(self.test_loader, desc="test scores"):
                 inputs, labels = prepare_inputs(inputs)
                 scores = self.model.get_anomaly_scores(inputs)
                 self.test_scores_w_tta.append(scores)
                 pred_w_tta.append(scores > self.adapter.thresholder.threshold)
-                
+
                 self.adapter.adapt(inputs, scores)
-                
-            self.test_scores_w_tta = torch.concat(self.test_scores_w_tta, dim=0).cpu().numpy()
+
+            self.test_scores_w_tta = (
+                torch.concat(self.test_scores_w_tta, dim=0).cpu().numpy()
+            )
             pred_w_tta = torch.concat(pred_w_tta, dim=0).cpu().numpy()
 
-            results_w_tta = self.get_results(self.test_scores_w_tta, self.test_labels, pred_w_tta)  # {AUROC: , AUPRC: , Precision: , Recall: , F1: }
+            results_w_tta = self.get_results(
+                self.test_scores_w_tta, self.test_labels, pred_w_tta
+            )  # {AUROC: , AUPRC: , Precision: , Recall: , F1: }
             results_w_tta = {f"{k}_w_tta": v for k, v in results_w_tta.items()}
             results = {f"{k}_wo_tta": v for k, v in results.items()}
             results.update(results_w_tta)
 
         self.save_results(results)
-        self.save_to_npy(**{
-            "train_scores": self.train_scores, 
-            "val_scores": self.val_scores,
-            "test_scores": self.test_scores, 
-            "test_labels": self.test_labels, 
-            "threshold": self.thresholder.threshold
-        })
+        self.save_to_npy(
+            **{
+                "train_scores": self.train_scores,
+                "val_scores": self.val_scores,
+                "test_scores": self.test_scores,
+                "test_labels": self.test_labels,
+                "threshold": self.thresholder.threshold,
+            }
+        )
         if self.tta:
             self.save_to_npy(test_scores_w_tta=self.test_scores_w_tta)
 
@@ -119,13 +141,13 @@ class Predictor:
             return scores_np
 
     def _get_train_scores(self, **kwargs):
-        return self._get_scores_all(self.train_loader, 'train scores', **kwargs)
-    
+        return self._get_scores_all(self.train_loader, "train scores", **kwargs)
+
     def _get_val_scores(self, **kwargs):
-        return self._get_scores_all(self.val_loader, 'val scores', **kwargs)
+        return self._get_scores_all(self.val_loader, "val scores", **kwargs)
 
     def _get_test_scores(self, **kwargs):
-        return self._get_scores_all(self.test_loader, 'test scores', **kwargs)
+        return self._get_scores_all(self.test_loader, "test scores", **kwargs)
 
     @torch.no_grad()
     def _get_test_labels(self) -> np.ndarray:
@@ -140,16 +162,16 @@ class Predictor:
     @staticmethod
     def get_results(scores, labels, pred):
         results = {}
-        
+
         #! AUROC
         auroc = float(roc_auc_score(labels, scores))
         results.update({"AUROC": auroc})
-        
+
         #! AUPRC
         precision, recall, thresholds = precision_recall_curve(labels, scores)
         auprc = float(auc(recall, precision))
         results.update({"AUPRC": auprc})
-        
+
         #! Precision, Recall, F1
         tp = np.sum((pred == 1) & (labels == 1))
         fp = np.sum((pred == 1) & (labels == 0))
@@ -158,15 +180,19 @@ class Predictor:
         recall = tp / (tp + fn + 1e-12)
         f1 = 2 * (precision * recall) / (precision + recall + 1e-12)
         results.update({"Precision": precision, "Recall": recall, "F1": f1})
-        
+
         return results
 
     def save_results(self, results, score_type=None):
-        results_string = ", ".join([f"{metric}: {value:.04f}" for metric, value in results.items()])
+        results_string = ", ".join(
+            [f"{metric}: {value:.04f}" for metric, value in results.items()]
+        )
         print(results_string)
 
-        file_name = 'test' if score_type is None else f'test_{score_type}'
-        with open(os.path.join(mkdir(self.cfg.RESULT_DIR) / f"{file_name}.txt"), "w") as f:
+        file_name = "test" if score_type is None else f"test_{score_type}"
+        with open(
+            os.path.join(mkdir(self.cfg.RESULT_DIR) / f"{file_name}.txt"), "w"
+        ) as f:
             f.write(results_string)
 
     def save_to_npy(self, **kwargs):

@@ -68,7 +68,9 @@ def test_clean_validation_omits_classification_metrics() -> None:
     assert step_output["log"]["val_usage_lambda"] == 0.2
     assert "val_classification_loss" not in step_output["log"]
     assert "val_classification_accuracy" not in step_output["log"]
-    assert torch.count_nonzero(step_output["batch"]["classification_labels"]).item() == 0
+    assert (
+        torch.count_nonzero(step_output["batch"]["classification_labels"]).item() == 0
+    )
 
 
 def test_synthetic_validation_is_deterministic_after_rng_reset() -> None:
@@ -89,12 +91,17 @@ def test_synthetic_validation_is_deterministic_after_rng_reset() -> None:
         first_step["batch"]["synthetic_anomaly_mask"],
         second_step["batch"]["synthetic_anomaly_mask"],
     )
-    assert first_step["batch"]["augmentation_metadata"] == second_step["batch"]["augmentation_metadata"]
+    assert (
+        first_step["batch"]["augmentation_metadata"]
+        == second_step["batch"]["augmentation_metadata"]
+    )
     assert "val_synth_classification_loss" in first_step["log"]
     assert "val_synth_classification_accuracy" in first_step["log"]
 
 
-def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(tmp_path: Path) -> None:
+def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(
+    tmp_path: Path,
+) -> None:
     model = _build_model()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     experiment_logger = ExperimentLogger(tmp_path / "logs")
@@ -113,7 +120,10 @@ def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(tmp_path
         outputs = trainer.train(
             train_loader=[batch],
             val_loader=[batch],
-            scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
             config={"experiment_name": "validation-alignment-test"},
             epochs=1,
         )

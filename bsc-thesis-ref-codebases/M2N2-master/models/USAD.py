@@ -1,13 +1,14 @@
-'''
+"""
 Julien Audibert, Pietro Michiardi, Frédéric Guyard, Sébastien Marti, Maria A. Zuluaga:
 USAD: UnSupervised Anomaly Detection on Multivariate Time Series. KDD 2020: 3395-3404
 
 Re-implementation by:
 Dongmin Kim (tommy.dm.kim@gmail.com)
-'''
+"""
 
 import torch
 import torch.nn as nn
+
 
 class Encoder(nn.Module):
     def __init__(self, input_size, latent_space_size):
@@ -60,5 +61,3 @@ class USAD(nn.Module):
         z = self.encoder(x)
         AE1_out, AE2_out = self.decoder1(z), self.decoder2(z)
         return AE1_out, AE2_out
-
-

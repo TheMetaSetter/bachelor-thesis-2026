@@ -22,15 +22,21 @@ class SequenceCleaningPipeline:
         validate_raw_sequence(sequence)
         cleaned_sequence = dict(sequence)
         cleaned_sequence["meta"] = dict(sequence["meta"])
-        if int(cleaned_sequence["meta"]["sequence_length"]) != int(cleaned_sequence["x"].shape[0]):
+        if int(cleaned_sequence["meta"]["sequence_length"]) != int(
+            cleaned_sequence["x"].shape[0]
+        ):
             raise ValueError("sequence_length metadata must match x length")
-        if int(cleaned_sequence["meta"]["num_channels"]) != int(cleaned_sequence["x"].shape[1]):
+        if int(cleaned_sequence["meta"]["num_channels"]) != int(
+            cleaned_sequence["x"].shape[1]
+        ):
             raise ValueError("num_channels metadata must match x width")
         if self.annotate_metadata:
             cleaned_sequence["meta"]["cleaning"] = "validated_sequence_contract"
         return cleaned_sequence
 
-    def transform_sequences(self, sequences: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def transform_sequences(
+        self, sequences: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         return [self.transform_sequence(sequence) for sequence in sequences]
 
     def transform_splits(

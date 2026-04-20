@@ -18,30 +18,33 @@ class Adapter:
         This method is a placeholder for the adapt function.
         It should be overridden in subclasses to implement specific adaptation logic.
         """
-        raise NotImplementedError("The adapt method should be implemented in subclasses.")
+        raise NotImplementedError(
+            "The adapt method should be implemented in subclasses."
+        )
 
 
 def construct_adapter(cfg, model, thresholder, **kwargs):
     """
     Constructs an adapter for the given model based on the configuration.
-    
+
     Args:
         cfg: Configuration object containing settings for the adapter.
         model: The model to be adapted.
-        
+
     Returns:
         An instance of Adapter configured with the provided model and settings.
     """
     model_name = cfg.MODEL.NAME
-    
-    if cfg.TEST.TTA.METHOD == 'M2N2':
+
+    if cfg.TEST.TTA.METHOD == "M2N2":
         from tta.m2n2.adapter_m2n2 import MLPAdapter, TimesNetAdapter
+
         cfg.TEST.TTA.STEPS = 1
-    elif cfg.TEST.TTA.METHOD == 'CANDI':
+    elif cfg.TEST.TTA.METHOD == "CANDI":
         from tta.candi.adapter_candi import MLPAdapter, TimesNetAdapter
     else:
         raise ValueError(f"Unknown TTA method: {cfg.TEST.TTA.METHOD}")
-    
+
     if model_name == "TIMESNET":
         return TimesNetAdapter(cfg, model, thresholder, **kwargs)
     elif model_name == "MLP":

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Epoch-based training loop shared by the offline models.
 
 The engine stays intentionally small. A new reader should notice that this file
@@ -44,7 +45,12 @@ class Trainer:
             key: value.to(self.device) if isinstance(value, torch.Tensor) else value
             for key, value in batch.items()
         }
-        console_print("TRAIN", "Moved batch to device", device=self.device, **summarize_batch(batch_on_device))
+        console_print(
+            "TRAIN",
+            "Moved batch to device",
+            device=self.device,
+            **summarize_batch(batch_on_device),
+        )
         return batch_on_device
 
     def _aggregate_logs(self, batch_logs: list[dict[str, float]]) -> dict[str, float]:
@@ -53,7 +59,9 @@ class Trainer:
 
         aggregated_logs: dict[str, float] = {}
         for key in batch_logs[0]:
-            aggregated_logs[key] = sum(batch_log[key] for batch_log in batch_logs) / len(batch_logs)
+            aggregated_logs[key] = sum(
+                batch_log[key] for batch_log in batch_logs
+            ) / len(batch_logs)
         return aggregated_logs
 
     def _aggregate_multitask_classification_metrics(
@@ -78,15 +86,20 @@ class Trainer:
             for metric_name, metric_value in classification_metrics.items()
         }
         if forward_pass_seconds_history:
-            prefixed_metrics[f"{stage_name}_forward_pass_seconds_mean"] = (
-                sum(forward_pass_seconds_history) / len(forward_pass_seconds_history)
-            )
+            prefixed_metrics[f"{stage_name}_forward_pass_seconds_mean"] = sum(
+                forward_pass_seconds_history
+            ) / len(forward_pass_seconds_history)
         return prefixed_metrics
 
     def _get_optimizer_learning_rates(self) -> list[float]:
-        return [float(parameter_group["lr"]) for parameter_group in self.optimizer.param_groups]
+        return [
+            float(parameter_group["lr"])
+            for parameter_group in self.optimizer.param_groups
+        ]
 
-    def _step_learning_rate_scheduler(self, epoch_metrics: dict[str, Any]) -> dict[str, float]:
+    def _step_learning_rate_scheduler(
+        self, epoch_metrics: dict[str, Any]
+    ) -> dict[str, float]:
         learning_rate_metrics: dict[str, float] = {}
         current_learning_rates = self._get_optimizer_learning_rates()
         learning_rate_metrics["optimizer_lr"] = current_learning_rates[0]
@@ -98,14 +111,18 @@ class Trainer:
             return learning_rate_metrics
 
         if self.scheduler_monitor_metric is None:
-            raise ValueError("scheduler_monitor_metric must be set when scheduler is configured")
+            raise ValueError(
+                "scheduler_monitor_metric must be set when scheduler is configured"
+            )
         if self.scheduler_monitor_metric not in epoch_metrics:
             raise KeyError(
                 f"Scheduler monitor metric '{self.scheduler_monitor_metric}' is missing from epoch metrics"
             )
 
         monitor_value = float(epoch_metrics[self.scheduler_monitor_metric])
-        learning_rate_metrics[f"scheduler_monitor_{self.scheduler_monitor_metric}"] = monitor_value
+        learning_rate_metrics[f"scheduler_monitor_{self.scheduler_monitor_metric}"] = (
+            monitor_value
+        )
         previous_learning_rates = list(current_learning_rates)
         self.scheduler.step(monitor_value)
         updated_learning_rates = self._get_optimizer_learning_rates()
@@ -113,7 +130,12 @@ class Trainer:
         for group_index, learning_rate in enumerate(updated_learning_rates):
             learning_rate_metrics[f"optimizer_lr_group_{group_index}"] = learning_rate
         learning_rate_metrics["scheduler_lr_reduced"] = float(
-            any(updated_learning_rate < previous_learning_rate for updated_learning_rate, previous_learning_rate in zip(updated_learning_rates, previous_learning_rates))
+            any(
+                updated_learning_rate < previous_learning_rate
+                for updated_learning_rate, previous_learning_rate in zip(
+                    updated_learning_rates, previous_learning_rates
+                )
+            )
         )
         console_print(
             "TRAIN",
@@ -133,7 +155,9 @@ class Trainer:
         epoch_index: int,
         stage_name: str,
         step_method_name: str,
-    ) -> tuple[list[dict[str, float]], list[torch.Tensor], list[torch.Tensor], list[float]]:
+    ) -> tuple[
+        list[dict[str, float]], list[torch.Tensor], list[torch.Tensor], list[float]
+    ]:
         stage_logs: list[dict[str, float]] = []
         logits_history: list[torch.Tensor] = []
         label_history: list[torch.Tensor] = []
@@ -143,7 +167,12 @@ class Trainer:
         with torch.no_grad():
             for val_batch_index, val_batch in enumerate(val_loader, start=1):
                 batch_on_device = self._move_batch_to_device(val_batch)
-                console_print(stage_name.upper(), "Processing validation batch", epoch=epoch_index + 1, batch_index=val_batch_index)
+                console_print(
+                    stage_name.upper(),
+                    "Processing validation batch",
+                    epoch=epoch_index + 1,
+                    batch_index=val_batch_index,
+                )
                 step_output = step_method(batch_on_device)
                 console_print(
                     stage_name.upper(),
@@ -158,7 +187,9 @@ class Trainer:
                     and "classification_labels" in step_output["batch"]
                     and f"{stage_name}_classification_loss" in step_output["log"]
                 ):
-                    logits_history.append(step_output["outputs"]["logits"].detach().cpu())
+                    logits_history.append(
+                        step_output["outputs"]["logits"].detach().cpu()
+                    )
                     label_history.append(
                         step_output["batch"]["classification_labels"].detach().cpu()
                     )
@@ -197,8 +228,10 @@ class Trainer:
             if hasattr(self.model, "set_epoch_context"):
                 # Some models need epoch context to update schedules without
                 # creating a second training codepath in the engine.
-                self.model.set_epoch_context(epoch_index=epoch_index, total_epochs=epochs)
-            
+                self.model.set_epoch_context(
+                    epoch_index=epoch_index, total_epochs=epochs
+                )
+
             train_logs: list[dict[str, float]] = []
             train_logits_history: list[torch.Tensor] = []
             train_label_history: list[torch.Tensor] = []
@@ -206,7 +239,12 @@ class Trainer:
             console_print("TRAIN", "Starting epoch", epoch=epoch_index + 1)
             for train_batch_index, train_batch in enumerate(train_loader, start=1):
                 batch_on_device = self._move_batch_to_device(train_batch)
-                console_print("TRAIN", "Processing training batch", epoch=epoch_index + 1, batch_index=train_batch_index)
+                console_print(
+                    "TRAIN",
+                    "Processing training batch",
+                    epoch=epoch_index + 1,
+                    batch_index=train_batch_index,
+                )
                 step_output = self.model.training_step(batch_on_device)
                 loss = step_output["loss"]
                 self.optimizer.zero_grad()
@@ -225,7 +263,9 @@ class Trainer:
                     step_output["outputs"].get("logits") is not None
                     and "classification_labels" in step_output["batch"]
                 ):
-                    train_logits_history.append(step_output["outputs"]["logits"].detach().cpu())
+                    train_logits_history.append(
+                        step_output["outputs"]["logits"].detach().cpu()
+                    )
                     train_label_history.append(
                         step_output["batch"]["classification_labels"].detach().cpu()
                     )
@@ -235,11 +275,13 @@ class Trainer:
                     )
 
             self.model.eval()
-            val_logs, _, _, val_forward_pass_seconds_history = self._run_validation_epoch(
-                val_loader=val_loader,
-                epoch_index=epoch_index,
-                stage_name="val",
-                step_method_name="validation_step",
+            val_logs, _, _, val_forward_pass_seconds_history = (
+                self._run_validation_epoch(
+                    val_loader=val_loader,
+                    epoch_index=epoch_index,
+                    stage_name="val",
+                    step_method_name="validation_step",
+                )
             )
             val_synth_logs: list[dict[str, float]] = []
             val_synth_logits_history: list[torch.Tensor] = []
@@ -283,12 +325,22 @@ class Trainer:
             epoch_metrics.update(self._step_learning_rate_scheduler(epoch_metrics))
             self.metric_history.append(epoch_metrics)
             self.experiment_logger.log_metrics(epoch_metrics)
-            console_print("TRAIN", "Completed epoch", epoch=epoch_index + 1, epoch_metrics=epoch_metrics)
+            console_print(
+                "TRAIN",
+                "Completed epoch",
+                epoch=epoch_index + 1,
+                epoch_metrics=epoch_metrics,
+            )
 
             current_val_loss = float(epoch_metrics.get("val_loss", float("inf")))
             if current_val_loss <= best_val_loss:
                 best_val_loss = current_val_loss
-                console_print("CHECKPOINT", "Validation loss improved; saving best checkpoint", epoch=epoch_index + 1, best_val_loss=best_val_loss)
+                console_print(
+                    "CHECKPOINT",
+                    "Validation loss improved; saving best checkpoint",
+                    epoch=epoch_index + 1,
+                    best_val_loss=best_val_loss,
+                )
                 best_checkpoint_path = self.checkpoint_manager.save_checkpoint(
                     checkpoint_name="best.pt",
                     model=self.model,

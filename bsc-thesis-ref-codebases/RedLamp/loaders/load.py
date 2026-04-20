@@ -390,7 +390,7 @@ def load_smd(
             entities.append(entity)
 
         smd = Dataset(entities=entities, name=name, verbose=verbose)
-        
+
         return smd
 
 

@@ -5,7 +5,9 @@ from pathlib import Path
 from scripts.run_ablation import run_ablation_suite
 
 
-def test_run_ablation_suite_writes_compact_summary_artifacts(monkeypatch, tmp_path: Path) -> None:
+def test_run_ablation_suite_writes_compact_summary_artifacts(
+    monkeypatch, tmp_path: Path
+) -> None:
     def fake_train(experiment_config: dict[str, object]) -> dict[str, object]:
         return {
             "best_checkpoint_path": tmp_path / "best.pt",
@@ -21,7 +23,9 @@ def test_run_ablation_suite_writes_compact_summary_artifacts(monkeypatch, tmp_pa
             ],
         }
 
-    def fake_evaluate(experiment_config: dict[str, object], checkpoint_path: str) -> dict[str, object]:
+    def fake_evaluate(
+        experiment_config: dict[str, object], checkpoint_path: str
+    ) -> dict[str, object]:
         return {
             "metrics": {
                 "auroc": 0.75,

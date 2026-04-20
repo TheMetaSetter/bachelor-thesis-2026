@@ -1,4 +1,3 @@
-
 import os
 import pandas
 import numpy as np
@@ -18,23 +17,35 @@ class Yahoo(Dataset):
         transform (callable, optional): A function/transform that takes in a ts
             and returns a transformed version.
     """
-    base_folder = ''
 
-    def __init__(self, fname, root=MyPath.db_root_dir('yahoo'), train=True, transform=None, sanomaly= None, mean_data=None, std_data=None, data=None, label=None):
+    base_folder = ""
 
+    def __init__(
+        self,
+        fname,
+        root=MyPath.db_root_dir("yahoo"),
+        train=True,
+        transform=None,
+        sanomaly=None,
+        mean_data=None,
+        std_data=None,
+        data=None,
+        label=None,
+    ):
         super(Yahoo, self).__init__()
         self.root = root
         self.transform = transform
         self.sanomaly = sanomaly
         self.train = train  # training set or test set
-        self.classes = ['Normal', 'Anomaly']
+        self.classes = ["Normal", "Anomaly"]
 
         self.mean, self.std = mean_data, std_data
         if self.train:
             self.mean = data.mean()
             self.std = data.std()
         else:
-            if self.std == 0.0: self.std = 1.0
+            if self.std == 0.0:
+                self.std = 1.0
             data = (data - self.mean) / self.std
 
         self.data = np.asarray(data)
@@ -46,13 +57,14 @@ class Yahoo(Dataset):
     def convert_to_windows(self, w_size, stride):
         windows = []
         wlabels = []
-        sz = int((self.data.shape[0]-w_size)/stride)
+        sz = int((self.data.shape[0] - w_size) / stride)
         for i in range(0, sz):
             st = i * stride
-            w = self.data[st:st+w_size]
-            if sum(self.targets[st:st+w_size]) > 0:
+            w = self.data[st : st + w_size]
+            if sum(self.targets[st : st + w_size]) > 0:
                 lbl = 1
-            else: lbl=0
+            else:
+                lbl = 0
             windows.append(w)
             wlabels.append(lbl)
         return np.stack(windows), np.stack(wlabels)
@@ -66,15 +78,21 @@ class Yahoo(Dataset):
         """
         ts_org = torch.from_numpy(self.data[index]).float().to(device)  # cuda
         if len(self.targets) > 0:
-            target = torch.tensor(self.targets[index].astype(int), dtype=torch.long).to(device)
+            target = torch.tensor(self.targets[index].astype(int), dtype=torch.long).to(
+                device
+            )
             class_name = self.classes[target]
         else:
             target = 0
-            class_name = ''
+            class_name = ""
 
         ts_size = len(ts_org)
 
-        out = {'ts_org': ts_org, 'target': target, 'meta': {'ts_size': ts_size, 'index': index, 'class_name': class_name}}
+        out = {
+            "ts_org": ts_org,
+            "target": target,
+            "meta": {"ts_size": ts_size, "index": index, "class_name": class_name},
+        }
 
         return out
 
