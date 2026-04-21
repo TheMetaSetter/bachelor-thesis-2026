@@ -484,6 +484,9 @@ class ThesisMultitaskModel(BaseModel):
         code_indices = None
 
         if self.discrete_assignment is not None and self.discrete_codebook is not None:
+            
+            # Hiện tại, discrete assignment là một lớp linear
+            # với tham số học được.
             assignment_logits = self.discrete_assignment(hidden)
             assignment_probabilities = F.gumbel_softmax(
                 assignment_logits,
@@ -1064,9 +1067,12 @@ class ThesisMultitaskModel(BaseModel):
         prepared_batch = self._prepare_batch(batch, stage_name)
         outputs = self.forward(prepared_batch)
 
+        # Tính toán các hàm loss thành phần
         reconstruction_loss = self._compute_reconstruction_loss(outputs, prepared_batch)
         classification_loss = self._compute_classification_loss(outputs, prepared_batch)
         optional_loss_values = self._compute_optional_loss_terms(outputs)
+
+        # Tính toán hàm loss tổng
         total_loss = self._compute_total_loss(
             reconstruction_loss=reconstruction_loss,
             classification_loss=classification_loss,
