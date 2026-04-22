@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.core.config import load_experiment_config
+from src.core.config import load_experiment_config, load_yaml_config, validate_experiment_config
 from src.data.augment import REDLAMP_ANOMALY_FAMILIES
 
 
@@ -26,6 +26,88 @@ def test_load_online_experiment_config_reads_valid_yaml() -> None:
     )
 
 
+def test_multitask_config_accepts_memory_bootstrap_fields(tmp_path: Path) -> None:
+    config_path = tmp_path / "experiment.yaml"
+    config_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: memory-plan-smoke",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/test",
+                "checkpoint_dir: outputs/test/checkpoints",
+                "data:",
+                "  dataset_name: smd",
+                "  root_dir: data/ServerMachineDataset",
+                "  window_size: 100",
+                "  stride: 10",
+                "  batch_size: 2",
+                "  num_workers: 0",
+                "  validation_split_ratio: 0.2",
+                "model:",
+                "  model_name: thesis_multitask",
+                "  input_dim: 38",
+                "  encoder_dim: 64",
+                "  hidden_dim: 16",
+                "  mlp_num_linear_layers: 3",
+                "  num_classes: 2",
+                "  dropout: 0.0",
+                "  continuous_num_prototypes: 4",
+                "  discrete_codebook_size: 8",
+                "  gumbel_temperature: 1.0",
+                "  temperature_start: 1.0",
+                "  temperature_end: 1.0",
+                "  temperature_anneal_fraction: 1.0",
+                "  alpha_logit_init: 0.0",
+                "  beta_logit_init: 0.0",
+                "  lambda_cls: 1.0",
+                "  lambda_div: 0.0",
+                "  lambda_var: 0.0",
+                "  lambda_cov: 0.0",
+                "  lambda_use: 0.0",
+                "  lambda_gate: 0.0",
+                "  usage_lambda_start: 0.0",
+                "  usage_lambda_end: 0.0",
+                "  usage_lambda_schedule_fraction: 1.0",
+                "  variance_floor_gamma: 1.0",
+                "  gate_barrier_margin: 0.25",
+                "  bootstrap_encoder_epochs: 10",
+                "  discrete_ema_decay: 0.99",
+                "  memory_norm_epsilon: 1.0e-6",
+                "  memory_initialization_batches: 16",
+                "  memory_initialization_with_synthetic_windows: true",
+                "task:",
+                "  task_name: multitask_tsad",
+                "  use_synthetic_augmentation: true",
+                "  use_synthetic_validation: true",
+                "  synthetic_validation_seed: 7",
+                "  anomaly_probability: 0.5",
+                "  min_segment_fraction: 0.1",
+                "  max_segment_fraction: 0.2",
+                "  spike_scale: 3.0",
+                "  freeze_fusion_for_epochs: 0",
+                "  warmup_alpha_value: 0.0",
+                "  warmup_beta_value: 0.0",
+                f"  anomaly_families: {list(REDLAMP_ANOMALY_FAMILIES)}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "epochs: 12",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loaded_config = load_yaml_config(config_path)
+    validate_experiment_config(loaded_config)
+
+    assert loaded_config["model"]["bootstrap_encoder_epochs"] == 10
+    assert loaded_config["model"]["discrete_ema_decay"] == 0.99
+    assert loaded_config["model"]["memory_norm_epsilon"] == 1.0e-6
+    assert loaded_config["model"]["memory_initialization_batches"] == 16
+    assert (
+        loaded_config["model"]["memory_initialization_with_synthetic_windows"] is True
+    )
 def test_load_multitask_ablation_config_applies_overrides() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/smd_multitask_continuous_only.yaml"

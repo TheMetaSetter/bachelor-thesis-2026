@@ -125,6 +125,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         integer_fields["discrete_codebook_size"] = model_config.get(
             "discrete_codebook_size"
         )
+        integer_fields["memory_initialization_batches"] = model_config.get(
+            "memory_initialization_batches", 16
+        )
     if model_config.get("model_name") == "online_adaptation":
         integer_fields["projector_hidden_dim"] = model_config.get(
             "projector_hidden_dim"
@@ -173,6 +176,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         )
         float_fields["variance_floor_gamma"] = model_config.get("variance_floor_gamma")
         float_fields["gate_barrier_margin"] = model_config.get("gate_barrier_margin")
+        float_fields["discrete_ema_decay"] = model_config.get("discrete_ema_decay", 0.99)
+        float_fields["memory_norm_epsilon"] = model_config.get(
+            "memory_norm_epsilon", 1.0e-6
+        )
         float_fields["warmup_alpha_value"] = task_config.get("warmup_alpha_value")
         float_fields["warmup_beta_value"] = task_config.get("warmup_beta_value")
         float_fields["anomaly_probability"] = task_config.get("anomaly_probability")
@@ -260,6 +267,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "reconstruction_normal_only": model_config.get(
                 "reconstruction_normal_only", False
             ),
+            "memory_initialization_with_synthetic_windows": model_config.get(
+                "memory_initialization_with_synthetic_windows", True
+            ),
             "use_synthetic_augmentation": task_config.get("use_synthetic_augmentation"),
             "use_synthetic_validation": task_config.get(
                 "use_synthetic_validation", True
@@ -342,6 +352,17 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError(
                 "use_label_refurbishment currently requires num_classes == 2"
             )
+        bootstrap_encoder_epochs = model_config.get("bootstrap_encoder_epochs", 10)
+        if (
+            not isinstance(bootstrap_encoder_epochs, int)
+            or isinstance(bootstrap_encoder_epochs, bool)
+            or bootstrap_encoder_epochs < 0
+        ):
+            raise ValueError("bootstrap_encoder_epochs must be a non-negative integer")
+        if not 0.0 < float(model_config.get("discrete_ema_decay", 0.99)) < 1.0:
+            raise ValueError("discrete_ema_decay must be in (0, 1)")
+        if float(model_config.get("memory_norm_epsilon", 1.0e-6)) <= 0.0:
+            raise ValueError("memory_norm_epsilon must be positive")
         if (
             float(model_config.get("usage_lambda_start", model_config["lambda_use"]))
             < 0.0

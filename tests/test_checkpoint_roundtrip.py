@@ -117,3 +117,43 @@ def test_checkpoint_roundtrip_restores_scheduler_state_when_present(
     assert "scheduler_state_dict" in loaded_checkpoint
     assert reloaded_optimizer.param_groups[0]["lr"] == optimizer.param_groups[0]["lr"]
     assert reloaded_scheduler.state_dict() == scheduler.state_dict()
+
+
+def test_checkpoint_roundtrip_restores_extra_memory_state(tmp_path: Path) -> None:
+    model = ReconstructionMLPAutoencoder(
+        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    checkpoint_manager = CheckpointManager(tmp_path)
+
+    checkpoint_path = checkpoint_manager.save_checkpoint(
+        checkpoint_name="memory_extra_state.pt",
+        model=model,
+        optimizer=optimizer,
+        scheduler=None,
+        scaler_state={
+            "feature_mean": torch.zeros(38),
+            "feature_std": torch.ones(38),
+        },
+        config={"experiment_name": "memory-extra-state"},
+        epoch=1,
+        metric_history=[],
+        extra_state={
+            "memory_training_enabled": True,
+            "memory_initialized": True,
+            "bootstrap_encoder_epochs": 10,
+        },
+    )
+
+    loaded_checkpoint = checkpoint_manager.load_checkpoint(
+        checkpoint_path, model, optimizer
+    )
+
+    assert loaded_checkpoint["extra_state"] == {
+        "memory_training_enabled": True,
+        "memory_initialized": True,
+        "bootstrap_encoder_epochs": 10,
+    }
+    assert loaded_checkpoint["extra_state"]["memory_training_enabled"] is True
+    assert loaded_checkpoint["extra_state"]["memory_initialized"] is True
+    assert loaded_checkpoint["extra_state"]["bootstrap_encoder_epochs"] == 10
