@@ -103,7 +103,7 @@ def test_bootstrap_epochs_bypass_memory_and_keep_state_unchanged() -> None:
     )
 
 
-def test_trainer_reaches_memory_initialization_boundary_after_bootstrap(
+def test_trainer_initializes_memory_after_bootstrap_window(
     tmp_path: Path,
 ) -> None:
     model = _build_model(bootstrap_encoder_epochs=1)
@@ -130,7 +130,8 @@ def test_trainer_reaches_memory_initialization_boundary_after_bootstrap(
     best_checkpoint = torch.load(training_outputs["best_checkpoint_path"])
 
     assert training_outputs["metric_history"][0]["train_memory_mode"] == 0.0
-    assert training_outputs["metric_history"][1]["train_memory_ready_for_initialization"] == 1.0
-    assert model.memory_ready_for_initialization is True
-    assert model.memory_initialized is False
-    assert best_checkpoint["extra_state"]["memory_ready_for_initialization"] is True
+    assert training_outputs["metric_history"][1]["train_memory_mode"] == 1.0
+    assert training_outputs["metric_history"][1]["train_memory_initialized"] == 1.0
+    assert model.memory_ready_for_initialization is False
+    assert model.memory_initialized is True
+    assert best_checkpoint["extra_state"]["memory_initialized"] is True

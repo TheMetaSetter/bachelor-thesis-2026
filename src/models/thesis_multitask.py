@@ -534,22 +534,36 @@ class ThesisMultitaskModel(BaseModel):
         train_loader: Any,
         device: str,
     ) -> bool:
-        # Task 2 only adds the lifecycle hook. Task 3 will replace this
-        # placeholder transition with actual data-driven memory initialization.
-        del train_loader
-        del device
         if self.memory_initialized:
             return False
         if self.current_epoch_index < self.bootstrap_encoder_epochs:
             return False
         self.memory_ready_for_initialization = True
+        token_pool = self._collect_memory_initialization_token_pool_from_loader(
+            train_loader,
+            device,
+        )
+        hidden_tokens = token_pool["hidden_tokens"]
+        if hidden_tokens.shape[0] == 0:
+            console_print(
+                "MODEL",
+                "No normal hidden tokens were available for memory initialization",
+                epoch=self.current_epoch_index + 1,
+                num_batches_used=token_pool["num_batches_used"],
+            )
+            return False
+        self._initialize_memory_buffers_from_token_pool(hidden_tokens)
+        self.mark_memories_initialized(initialization_epoch=self.current_epoch_index + 1)
         console_print(
             "MODEL",
-            "Prototype memories are ready for initialization",
+            "Initialized prototype memories from normal hidden tokens",
             epoch=self.current_epoch_index + 1,
             bootstrap_encoder_epochs=self.bootstrap_encoder_epochs,
+            num_batches_used=token_pool["num_batches_used"],
+            num_clean_tokens=token_pool["num_clean_tokens"],
+            num_synthetic_normal_tokens=token_pool["num_synthetic_normal_tokens"],
         )
-        return False
+        return True
 
     def load_checkpoint_extra_state(self, extra_state: dict[str, Any] | None) -> None:
         if not extra_state:
@@ -570,6 +584,153 @@ class ThesisMultitaskModel(BaseModel):
             "memory_initialization_epoch",
             self.memory_initialization_epoch,
         )
+
+    def _move_initialization_batch_to_device(
+        self,
+        batch: dict[str, Any],
+        device: str,
+    ) -> dict[str, Any]:
+        return {
+            key: value.to(device) if isinstance(value, torch.Tensor) else value
+            for key, value in batch.items()
+        }
+
+    def _normalize_memory_vectors(self, vectors: torch.Tensor) -> torch.Tensor:
+        return F.normalize(vectors, dim=-1, eps=self.memory_norm_epsilon)
+
+    def _select_covering_vectors(
+        self,
+        candidate_vectors: torch.Tensor,
+        num_vectors: int,
+    ) -> torch.Tensor:
+        if candidate_vectors.shape[0] == 0:
+            raise ValueError("candidate_vectors must contain at least one token")
+
+        normalized_vectors = self._normalize_memory_vectors(candidate_vectors)
+        if normalized_vectors.shape[0] <= num_vectors:
+            repeated_indices = torch.arange(
+                num_vectors,
+                device=normalized_vectors.device,
+            ) % normalized_vectors.shape[0]
+            return normalized_vectors.index_select(0, repeated_indices)
+
+        mean_vector = normalized_vectors.mean(dim=0, keepdim=True)
+        squared_distances_to_mean = torch.sum(
+            (normalized_vectors - mean_vector) ** 2,
+            dim=1,
+        )
+        first_index = int(torch.argmin(squared_distances_to_mean).item())
+        selected_indices = [first_index]
+        minimum_squared_distances = torch.sum(
+            (normalized_vectors - normalized_vectors[first_index]) ** 2,
+            dim=1,
+        )
+
+        while len(selected_indices) < num_vectors:
+            next_index = int(torch.argmax(minimum_squared_distances).item())
+            selected_indices.append(next_index)
+            next_squared_distances = torch.sum(
+                (normalized_vectors - normalized_vectors[next_index]) ** 2,
+                dim=1,
+            )
+            minimum_squared_distances = torch.minimum(
+                minimum_squared_distances,
+                next_squared_distances,
+            )
+
+        selected_index_tensor = torch.tensor(
+            selected_indices,
+            device=normalized_vectors.device,
+        )
+        return normalized_vectors.index_select(0, selected_index_tensor)
+
+    def _collect_memory_initialization_token_pool_from_loader(
+        self,
+        train_loader: Any,
+        device: str,
+    ) -> dict[str, Any]:
+        clean_hidden_tokens: list[torch.Tensor] = []
+        synthetic_normal_hidden_tokens: list[torch.Tensor] = []
+        num_batches_used = 0
+        previous_training_mode = self.training
+
+        self.eval()
+        with torch.no_grad():
+            for batch_index, raw_batch in enumerate(train_loader):
+                if batch_index >= self.memory_initialization_batches:
+                    break
+                num_batches_used += 1
+                batch_on_device = self._move_initialization_batch_to_device(
+                    raw_batch,
+                    device,
+                )
+                clean_batch = self._prepare_clean_batch(
+                    batch_on_device,
+                    stage_name="memory_init",
+                )
+                clean_hidden = self.encoder(clean_batch)["hidden"].reshape(
+                    -1,
+                    self.hidden_dim,
+                )
+                clean_hidden_tokens.append(clean_hidden)
+
+                if (
+                    self.memory_initialization_with_synthetic_windows
+                    and self.use_synthetic_augmentation
+                ):
+                    synthetic_batch = self.synthetic_anomaly_injector.augment_batch(
+                        self._clone_batch(batch_on_device)
+                    )
+                    synthetic_hidden = self.encoder(synthetic_batch)["hidden"]
+                    normal_time_step_mask = (
+                        synthetic_batch["synthetic_anomaly_mask"] == 0
+                    )
+                    synthetic_normal_hidden = synthetic_hidden[normal_time_step_mask]
+                    if synthetic_normal_hidden.numel() > 0:
+                        synthetic_normal_hidden_tokens.append(
+                            synthetic_normal_hidden
+                        )
+
+        self.train(previous_training_mode)
+
+        hidden_token_groups = clean_hidden_tokens + synthetic_normal_hidden_tokens
+        if hidden_token_groups:
+            hidden_tokens = torch.cat(hidden_token_groups, dim=0)
+        else:
+            hidden_tokens = torch.empty(0, self.hidden_dim, device=device)
+
+        return {
+            "hidden_tokens": hidden_tokens,
+            "num_batches_used": num_batches_used,
+            "num_clean_tokens": sum(
+                int(hidden_group.shape[0]) for hidden_group in clean_hidden_tokens
+            ),
+            "num_synthetic_normal_tokens": sum(
+                int(hidden_group.shape[0])
+                for hidden_group in synthetic_normal_hidden_tokens
+            ),
+        }
+
+    def _initialize_memory_buffers_from_token_pool(
+        self,
+        hidden_tokens: torch.Tensor,
+    ) -> None:
+        if hidden_tokens.shape[0] == 0:
+            raise ValueError("hidden_tokens must contain at least one normal token")
+
+        if self.continuous_prototype_bank is not None:
+            continuous_seed_vectors = self._select_covering_vectors(
+                hidden_tokens,
+                self.continuous_num_prototypes,
+            )
+            self.continuous_prototype_bank.copy_(continuous_seed_vectors)
+
+        if self.discrete_codebook is not None:
+            discrete_seed_vectors = self._select_covering_vectors(
+                hidden_tokens.flip(0),
+                self.discrete_codebook_size,
+            )
+            self.discrete_codebook.copy_(discrete_seed_vectors)
 
     def prepare_synthetic_validation_epoch(self) -> None:
         # The synthetic validation path must replay the same corruption pattern

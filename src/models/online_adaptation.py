@@ -44,8 +44,14 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
     def score_from_hidden(
         self, hidden: torch.Tensor, x_tensor: torch.Tensor
     ) -> dict[str, Any]:
-        continuous_outputs = self.model._continuous_prototype_lookup(hidden)
-        discrete_outputs = self.model._discrete_prototype_lookup(hidden)
+        continuous_outputs = self.model._continuous_prototype_lookup(
+            hidden,
+            stage_name="test",
+        )
+        discrete_outputs = self.model._discrete_prototype_lookup(
+            hidden,
+            stage_name="test",
+        )
         fusion_outputs = self.model._compute_fusion_outputs(
             continuous_hidden=continuous_outputs["prototype_context"],
             discrete_hidden=discrete_outputs["quantized_hidden"],
@@ -75,9 +81,15 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
 
     def compute_prototype_target(self, hidden: torch.Tensor) -> torch.Tensor:
         prototype_targets: list[torch.Tensor] = []
-        continuous_outputs = self.model._continuous_prototype_lookup(hidden)
+        continuous_outputs = self.model._continuous_prototype_lookup(
+            hidden,
+            stage_name="test",
+        )
         prototype_targets.append(continuous_outputs["prototype_context"])
-        discrete_outputs = self.model._discrete_prototype_lookup(hidden)
+        discrete_outputs = self.model._discrete_prototype_lookup(
+            hidden,
+            stage_name="test",
+        )
         prototype_targets.append(discrete_outputs["quantized_hidden"])
         return torch.stack(prototype_targets, dim=0).mean(dim=0)
 
@@ -225,6 +237,10 @@ class OnlineAdaptationModel(BaseModel):
         )
         reference_model = ThesisMultitaskModel(**model_kwargs)
         reference_model.load_state_dict(loaded_checkpoint["model_state_dict"])
+        if hasattr(reference_model, "load_checkpoint_extra_state"):
+            reference_model.load_checkpoint_extra_state(
+                loaded_checkpoint.get("extra_state")
+            )
         reference_model.eval()
         return reference_model
 

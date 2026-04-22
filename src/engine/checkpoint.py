@@ -90,6 +90,8 @@ class CheckpointManager:
         )
         loaded_checkpoint = torch.load(checkpoint_path, map_location="cpu")
         model.load_state_dict(loaded_checkpoint["model_state_dict"])
+        if hasattr(model, "load_checkpoint_extra_state"):
+            model.load_checkpoint_extra_state(loaded_checkpoint.get("extra_state"))
         if optimizer is not None:
             optimizer.load_state_dict(loaded_checkpoint["optimizer_state_dict"])
         if scheduler is not None and "scheduler_state_dict" in loaded_checkpoint:
