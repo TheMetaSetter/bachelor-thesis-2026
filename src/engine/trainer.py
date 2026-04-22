@@ -231,6 +231,17 @@ class Trainer:
                 self.model.set_epoch_context(
                     epoch_index=epoch_index, total_epochs=epochs
                 )
+            if hasattr(self.model, "maybe_initialize_memories_from_loader"):
+                memory_initialized = self.model.maybe_initialize_memories_from_loader(
+                    train_loader=train_loader,
+                    device=self.device,
+                )
+                console_print(
+                    "TRAIN",
+                    "Checked prototype memory initialization hook",
+                    epoch=epoch_index + 1,
+                    memory_initialized=memory_initialized,
+                )
 
             train_logs: list[dict[str, float]] = []
             train_logits_history: list[torch.Tensor] = []
@@ -350,6 +361,11 @@ class Trainer:
                     config=config,
                     epoch=epoch_index + 1,
                     metric_history=self.metric_history,
+                    extra_state=(
+                        self.model.get_checkpoint_extra_state()
+                        if hasattr(self.model, "get_checkpoint_extra_state")
+                        else None
+                    ),
                 )
 
         return {

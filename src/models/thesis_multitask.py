@@ -136,6 +136,11 @@ class ThesisMultitaskModel(BaseModel):
         usage_lambda_schedule_fraction: float = 1.0,
         variance_floor_gamma: float = 1.0,
         gate_barrier_margin: float = 0.25,
+        bootstrap_encoder_epochs: int = 0,
+        discrete_ema_decay: float = 0.99,
+        memory_norm_epsilon: float = 1.0e-6,
+        memory_initialization_batches: int = 16,
+        memory_initialization_with_synthetic_windows: bool = True,
         use_synthetic_augmentation: bool = True,
         use_synthetic_validation: bool = True,
         synthetic_validation_seed: int = 7,
@@ -187,6 +192,13 @@ class ThesisMultitaskModel(BaseModel):
         self.enable_gate_loss = enable_gate_loss
         self.variance_floor_gamma = variance_floor_gamma
         self.gate_barrier_margin = gate_barrier_margin
+        self.bootstrap_encoder_epochs = bootstrap_encoder_epochs
+        self.discrete_ema_decay = discrete_ema_decay
+        self.memory_norm_epsilon = memory_norm_epsilon
+        self.memory_initialization_batches = memory_initialization_batches
+        self.memory_initialization_with_synthetic_windows = (
+            memory_initialization_with_synthetic_windows
+        )
         self.use_synthetic_augmentation = use_synthetic_augmentation
         self.use_synthetic_validation = use_synthetic_validation
         self.synthetic_validation_seed = synthetic_validation_seed
@@ -198,6 +210,16 @@ class ThesisMultitaskModel(BaseModel):
         self.current_total_epochs = 1
         self.active_alpha_override: float | None = None
         self.active_beta_override: float | None = None
+        self.continuous_memory_enabled = (
+            continuous_enabled and continuous_num_prototypes > 0
+        )
+        self.discrete_memory_enabled = (
+            discrete_enabled and discrete_codebook_size > 0
+        )
+        self.memory_initialized = bootstrap_encoder_epochs <= 0
+        self.memory_training_enabled = self.memory_initialized
+        self.memory_ready_for_initialization = False
+        self.memory_initialization_epoch: int | None = None
         self.schedule_state = {
             "epoch": 1,
             "warmup_active": False,
@@ -222,23 +244,25 @@ class ThesisMultitaskModel(BaseModel):
 
         # Continuous branch.
         # This branch retrieves a soft prototype context from a learned bank.
-        if continuous_enabled and continuous_num_prototypes > 0:
-            self.continuous_prototype_bank = nn.Parameter(
-                torch.randn(continuous_num_prototypes, hidden_dim)
+        if self.continuous_memory_enabled:
+            self.register_buffer(
+                "continuous_prototype_bank",
+                torch.randn(continuous_num_prototypes, hidden_dim),
             )
         else:
-            self.register_parameter("continuous_prototype_bank", None)
+            self.register_buffer("continuous_prototype_bank", None)
 
         # Discrete branch.
         # This branch assigns tokens to a codebook through Gumbel-Softmax.
-        if discrete_enabled and discrete_codebook_size > 0:
+        if self.discrete_memory_enabled:
             self.discrete_assignment = nn.Linear(hidden_dim, discrete_codebook_size)
-            self.discrete_codebook = nn.Parameter(
-                torch.randn(discrete_codebook_size, hidden_dim)
+            self.register_buffer(
+                "discrete_codebook",
+                torch.randn(discrete_codebook_size, hidden_dim),
             )
         else:
             self.discrete_assignment = None
-            self.register_parameter("discrete_codebook", None)
+            self.register_buffer("discrete_codebook", None)
 
         # Fusion scalars.
         # `alpha` controls the classification mix and `beta` controls the
@@ -352,6 +376,11 @@ class ThesisMultitaskModel(BaseModel):
             usage_lambda_start=self.usage_lambda_start,
             usage_lambda_end=self.usage_lambda_end,
             usage_lambda_schedule_fraction=usage_lambda_schedule_fraction,
+            bootstrap_encoder_epochs=bootstrap_encoder_epochs,
+            discrete_ema_decay=discrete_ema_decay,
+            memory_norm_epsilon=memory_norm_epsilon,
+            memory_initialization_batches=memory_initialization_batches,
+            memory_initialization_with_synthetic_windows=memory_initialization_with_synthetic_windows,
             use_synthetic_validation=use_synthetic_validation,
             synthetic_validation_seed=synthetic_validation_seed,
         )
@@ -424,6 +453,10 @@ class ThesisMultitaskModel(BaseModel):
             "freeze_fusion_for_epochs": self.freeze_fusion_for_epochs,
             "temperature": self.gumbel_temperature,
             "usage_lambda": self.current_usage_lambda,
+            "bootstrap_active": self._is_bootstrap_active(),
+            "train_memory_mode": float(
+                not self._should_bypass_memory_for_stage("train")
+            ),
         }
         console_print(
             "MODEL",
@@ -435,23 +468,130 @@ class ThesisMultitaskModel(BaseModel):
             usage_lambda=self.current_usage_lambda,
             alpha_override=self.active_alpha_override,
             beta_override=self.active_beta_override,
+            bootstrap_active=self.schedule_state["bootstrap_active"],
+            train_memory_mode=self.schedule_state["train_memory_mode"],
         )
 
     def get_schedule_state(self) -> dict[str, Any]:
         return dict(self.schedule_state)
+
+    def _is_bootstrap_active(self) -> bool:
+        return (
+            self.bootstrap_encoder_epochs > 0
+            and self.current_epoch_index < self.bootstrap_encoder_epochs
+            and not self.memory_initialized
+        )
+
+    def _should_bypass_memory_for_stage(self, stage_name: str) -> bool:
+        del stage_name
+        return self._is_bootstrap_active() or not self.memory_initialized
+
+    def get_memory_lifecycle_state(self) -> dict[str, Any]:
+        return {
+            "bootstrap_encoder_epochs": self.bootstrap_encoder_epochs,
+            "current_epoch": self.current_epoch_index + 1,
+            "memory_initialized": self.memory_initialized,
+            "memory_training_enabled": self.memory_training_enabled,
+            "memory_ready_for_initialization": self.memory_ready_for_initialization,
+            "memory_initialization_epoch": self.memory_initialization_epoch,
+            "memory_mode": float(not self._should_bypass_memory_for_stage("train")),
+            "train_memory_mode": float(
+                not self._should_bypass_memory_for_stage("train")
+            ),
+        }
+
+    def get_checkpoint_extra_state(self) -> dict[str, Any]:
+        return self.get_memory_lifecycle_state()
+
+    def get_memory_tensor_state(self) -> dict[str, torch.Tensor | None]:
+        return {
+            "continuous_prototype_bank": (
+                None
+                if self.continuous_prototype_bank is None
+                else self.continuous_prototype_bank.detach().clone()
+            ),
+            "discrete_codebook": (
+                None
+                if self.discrete_codebook is None
+                else self.discrete_codebook.detach().clone()
+            ),
+        }
+
+    def mark_memories_initialized(self, initialization_epoch: int | None = None) -> None:
+        self.memory_initialized = True
+        self.memory_training_enabled = True
+        self.memory_ready_for_initialization = False
+        self.memory_initialization_epoch = initialization_epoch
+        console_print(
+            "MODEL",
+            "Marked prototype memories as initialized",
+            initialization_epoch=initialization_epoch,
+            memory_state=self.get_memory_lifecycle_state(),
+        )
+
+    def maybe_initialize_memories_from_loader(
+        self,
+        train_loader: Any,
+        device: str,
+    ) -> bool:
+        # Task 2 only adds the lifecycle hook. Task 3 will replace this
+        # placeholder transition with actual data-driven memory initialization.
+        del train_loader
+        del device
+        if self.memory_initialized:
+            return False
+        if self.current_epoch_index < self.bootstrap_encoder_epochs:
+            return False
+        self.memory_ready_for_initialization = True
+        console_print(
+            "MODEL",
+            "Prototype memories are ready for initialization",
+            epoch=self.current_epoch_index + 1,
+            bootstrap_encoder_epochs=self.bootstrap_encoder_epochs,
+        )
+        return False
+
+    def load_checkpoint_extra_state(self, extra_state: dict[str, Any] | None) -> None:
+        if not extra_state:
+            return
+        self.memory_initialized = bool(
+            extra_state.get("memory_initialized", self.memory_initialized)
+        )
+        self.memory_training_enabled = bool(
+            extra_state.get("memory_training_enabled", self.memory_training_enabled)
+        )
+        self.memory_ready_for_initialization = bool(
+            extra_state.get(
+                "memory_ready_for_initialization",
+                self.memory_ready_for_initialization,
+            )
+        )
+        self.memory_initialization_epoch = extra_state.get(
+            "memory_initialization_epoch",
+            self.memory_initialization_epoch,
+        )
 
     def prepare_synthetic_validation_epoch(self) -> None:
         # The synthetic validation path must replay the same corruption pattern
         # every epoch so the auxiliary classification curves are comparable.
         self.synthetic_validation_injector.reset_rng()
 
-    def _continuous_prototype_lookup(self, hidden: torch.Tensor) -> dict[str, Any]:
+    def _continuous_prototype_lookup(
+        self,
+        hidden: torch.Tensor,
+        *,
+        stage_name: str,
+    ) -> dict[str, Any]:
         # The continuous branch keeps a soft weighted prototype mixture.
         continuous_hidden = hidden
         attention_logits = None
         attention_weights = None
+        memory_bypass_active = self._should_bypass_memory_for_stage(stage_name)
 
-        if self.continuous_prototype_bank is not None:
+        if (
+            self.continuous_prototype_bank is not None
+            and not memory_bypass_active
+        ):
             attention_logits = torch.einsum(
                 "blh,kh->blk",
                 hidden,
@@ -471,19 +611,31 @@ class ThesisMultitaskModel(BaseModel):
             "prototype_weights": attention_weights,
             "aux": {
                 "branch_name": "continuous",
-                "enabled": self.continuous_prototype_bank is not None,
+                "enabled": self.continuous_memory_enabled,
                 "num_prototypes": self.continuous_num_prototypes,
+                "memory_bypass_active": memory_bypass_active,
+                "memory_initialized": self.memory_initialized,
             },
         }
 
-    def _discrete_prototype_lookup(self, hidden: torch.Tensor) -> dict[str, Any]:
+    def _discrete_prototype_lookup(
+        self,
+        hidden: torch.Tensor,
+        *,
+        stage_name: str,
+    ) -> dict[str, Any]:
         # The discrete branch keeps a quantized codebook view of the same tokens.
         discrete_hidden = hidden
         assignment_logits = None
         assignment_probabilities = None
         code_indices = None
+        memory_bypass_active = self._should_bypass_memory_for_stage(stage_name)
 
-        if self.discrete_assignment is not None and self.discrete_codebook is not None:
+        if (
+            self.discrete_assignment is not None
+            and self.discrete_codebook is not None
+            and not memory_bypass_active
+        ):
             # Hiện tại, discrete assignment là một lớp linear
             # với tham số học được.
             assignment_logits = self.discrete_assignment(hidden)
@@ -508,9 +660,11 @@ class ThesisMultitaskModel(BaseModel):
             "code_indices": code_indices,
             "aux": {
                 "branch_name": "discrete",
-                "enabled": self.discrete_assignment is not None,
+                "enabled": self.discrete_memory_enabled,
                 "codebook_size": self.discrete_codebook_size,
                 "temperature": self.gumbel_temperature,
+                "memory_bypass_active": memory_bypass_active,
+                "memory_initialized": self.memory_initialized,
             },
         }
 
@@ -640,7 +794,11 @@ class ThesisMultitaskModel(BaseModel):
             return self.synthetic_validation_injector.augment_batch(batch)
         return self._prepare_clean_batch(batch, stage_name)
 
-    def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
+    def forward(
+        self,
+        batch: dict[str, Any],
+        stage_name: str = "train",
+    ) -> dict[str, Any]:
         # The forward pass is the main representation story of the thesis model:
         # encode once, build two branch views, fuse per task, then score.
         validate_batch(batch)
@@ -656,10 +814,16 @@ class ThesisMultitaskModel(BaseModel):
         hidden = encoder_outputs["hidden"]
 
         # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu liên tục
-        continuous_outputs = self._continuous_prototype_lookup(hidden)
+        continuous_outputs = self._continuous_prototype_lookup(
+            hidden,
+            stage_name=stage_name,
+        )
 
         # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu rời rạc
-        discrete_outputs = self._discrete_prototype_lookup(hidden)
+        discrete_outputs = self._discrete_prototype_lookup(
+            hidden,
+            stage_name=stage_name,
+        )
 
         # Kết hợp vec-tơ ẩn từ hai nhánh lại với nhau
         fusion_outputs = self._compute_fusion_outputs(
@@ -707,6 +871,7 @@ class ThesisMultitaskModel(BaseModel):
                 "hidden_classification": hidden_classification,
                 "alpha": fusion_outputs["alpha"],
                 "beta": fusion_outputs["beta"],
+                "memory": self.get_memory_lifecycle_state(),
                 "forward_pass_seconds": time.perf_counter() - forward_start_time,
             },
         }
@@ -1038,6 +1203,16 @@ class ThesisMultitaskModel(BaseModel):
             f"{stage_name}_temperature": float(self.gumbel_temperature),
             f"{stage_name}_usage_lambda": float(self.current_usage_lambda),
             f"{stage_name}_warmup_active": float(self.schedule_state["warmup_active"]),
+            f"{stage_name}_memory_initialized": float(
+                outputs["aux"]["memory"]["memory_initialized"]
+            ),
+            f"{stage_name}_memory_training_enabled": float(
+                outputs["aux"]["memory"]["memory_training_enabled"]
+            ),
+            f"{stage_name}_memory_ready_for_initialization": float(
+                outputs["aux"]["memory"]["memory_ready_for_initialization"]
+            ),
+            f"{stage_name}_memory_mode": float(outputs["aux"]["memory"]["train_memory_mode"]),
         }
         if include_classification_metrics:
             predicted_labels = torch.argmax(outputs["logits"], dim=-1)
@@ -1069,7 +1244,7 @@ class ThesisMultitaskModel(BaseModel):
         prepared_batch = self._prepare_batch(batch, stage_name)
 
         # Đưa các mẫu dữ liệu qua mạng để tính toán ra kết quả
-        outputs = self.forward(prepared_batch)
+        outputs = self.forward(prepared_batch, stage_name=stage_name)
 
         # Tính toán các hàm loss thành phần
         reconstruction_loss = self._compute_reconstruction_loss(outputs, prepared_batch)
