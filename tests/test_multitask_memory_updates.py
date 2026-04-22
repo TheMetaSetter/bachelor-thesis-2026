@@ -79,3 +79,29 @@ def test_continuous_memory_bank_rows_keep_controlled_norm() -> None:
 
     assert torch.all(row_norms > 0.0)
     assert torch.max(row_norms) - torch.min(row_norms) < 1.0e-3
+
+
+def test_training_step_updates_discrete_memory_and_ema_state() -> None:
+    model = _build_initialized_model()
+    codebook_before = model.discrete_codebook.clone()
+    counts_before = model.discrete_ema_counts.clone()
+    sums_before = model.discrete_ema_sums.clone()
+
+    model.training_step(_build_batch())
+
+    assert not torch.allclose(model.discrete_codebook, codebook_before)
+    assert not torch.allclose(model.discrete_ema_counts, counts_before)
+    assert not torch.allclose(model.discrete_ema_sums, sums_before)
+
+
+def test_test_step_does_not_update_discrete_memory_or_ema_state() -> None:
+    model = _build_initialized_model()
+    codebook_before = model.discrete_codebook.clone()
+    counts_before = model.discrete_ema_counts.clone()
+    sums_before = model.discrete_ema_sums.clone()
+
+    model.test_step(_build_batch())
+
+    assert torch.allclose(model.discrete_codebook, codebook_before)
+    assert torch.allclose(model.discrete_ema_counts, counts_before)
+    assert torch.allclose(model.discrete_ema_sums, sums_before)

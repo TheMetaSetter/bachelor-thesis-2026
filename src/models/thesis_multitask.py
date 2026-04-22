@@ -260,9 +260,19 @@ class ThesisMultitaskModel(BaseModel):
                 "discrete_codebook",
                 torch.randn(discrete_codebook_size, hidden_dim),
             )
+            self.register_buffer(
+                "discrete_ema_counts",
+                torch.zeros(discrete_codebook_size),
+            )
+            self.register_buffer(
+                "discrete_ema_sums",
+                torch.zeros(discrete_codebook_size, hidden_dim),
+            )
         else:
             self.discrete_assignment = None
             self.register_buffer("discrete_codebook", None)
+            self.register_buffer("discrete_ema_counts", None)
+            self.register_buffer("discrete_ema_sums", None)
 
         self.continuous_update_gate = nn.Sequential(
             nn.Linear(self.hidden_dim * 2, self.hidden_dim),
@@ -530,6 +540,16 @@ class ThesisMultitaskModel(BaseModel):
                 if self.discrete_codebook is None
                 else self.discrete_codebook.detach().clone()
             ),
+            "discrete_ema_counts": (
+                None
+                if self.discrete_ema_counts is None
+                else self.discrete_ema_counts.detach().clone()
+            ),
+            "discrete_ema_sums": (
+                None
+                if self.discrete_ema_sums is None
+                else self.discrete_ema_sums.detach().clone()
+            ),
         }
 
     def mark_memories_initialized(self, initialization_epoch: int | None = None) -> None:
@@ -749,6 +769,10 @@ class ThesisMultitaskModel(BaseModel):
                 self.discrete_codebook_size,
             )
             self.discrete_codebook.copy_(discrete_seed_vectors)
+            if self.discrete_ema_counts is not None:
+                self.discrete_ema_counts.fill_(1.0)
+            if self.discrete_ema_sums is not None:
+                self.discrete_ema_sums.copy_(discrete_seed_vectors)
 
     def _update_continuous_memory_bank(
         self,
@@ -793,6 +817,53 @@ class ThesisMultitaskModel(BaseModel):
             self.continuous_prototype_bank.copy_(updated_memory.detach())
 
         return updated_memory
+
+    def _update_discrete_codebook_memory(
+        self,
+        hidden: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        if (
+            self.discrete_assignment is None
+            or self.discrete_codebook is None
+            or self.discrete_ema_counts is None
+            or self.discrete_ema_sums is None
+        ):
+            raise ValueError("discrete memory state is not available")
+
+        normalized_hidden = self._normalize_hidden_for_memory(hidden)
+        assignment_logits = self.discrete_assignment(normalized_hidden)
+        assignment_probabilities = F.gumbel_softmax(
+            assignment_logits,
+            tau=self.gumbel_temperature,
+            hard=False,
+            dim=-1,
+        )
+        flattened_probabilities = assignment_probabilities.reshape(
+            -1,
+            self.discrete_codebook_size,
+        )
+        flattened_hidden = normalized_hidden.reshape(-1, self.hidden_dim)
+        batch_counts = flattened_probabilities.sum(dim=0)
+        batch_sums = flattened_probabilities.T @ flattened_hidden
+
+        with torch.no_grad():
+            self.discrete_ema_counts.mul_(self.discrete_ema_decay).add_(
+                (1.0 - self.discrete_ema_decay) * batch_counts.detach()
+            )
+            self.discrete_ema_sums.mul_(self.discrete_ema_decay).add_(
+                (1.0 - self.discrete_ema_decay) * batch_sums.detach()
+            )
+            normalized_codebook = self.discrete_ema_sums / self.discrete_ema_counts.clamp_min(
+                self.memory_norm_epsilon
+            ).unsqueeze(-1)
+            normalized_codebook = self._normalize_memory_vectors(normalized_codebook)
+            self.discrete_codebook.copy_(normalized_codebook)
+
+        return (
+            assignment_logits,
+            assignment_probabilities,
+            self._normalize_memory_vectors(self.discrete_codebook),
+        )
 
     def prepare_synthetic_validation_epoch(self) -> None:
         # The synthetic validation path must replay the same corruption pattern
@@ -850,34 +921,32 @@ class ThesisMultitaskModel(BaseModel):
         hidden: torch.Tensor,
         *,
         stage_name: str,
+        active_codebook: torch.Tensor | None = None,
+        precomputed_assignment_logits: torch.Tensor | None = None,
+        precomputed_assignment_probabilities: torch.Tensor | None = None,
     ) -> dict[str, Any]:
         # The discrete branch keeps a quantized codebook view of the same tokens.
         normalized_hidden = self._normalize_hidden_for_memory(hidden)
         discrete_hidden = normalized_hidden
-        assignment_logits = None
-        assignment_probabilities = None
+        assignment_logits = precomputed_assignment_logits
+        assignment_probabilities = precomputed_assignment_probabilities
         code_indices = None
         memory_bypass_active = self._should_bypass_memory_for_stage(stage_name)
-        normalized_codebook = (
-            None
-            if self.discrete_codebook is None
-            else self._normalize_memory_vectors(self.discrete_codebook)
-        )
+        normalized_codebook = active_codebook
+        if normalized_codebook is None and self.discrete_codebook is not None:
+            normalized_codebook = self._normalize_memory_vectors(self.discrete_codebook)
 
-        if (
-            self.discrete_assignment is not None
-            and normalized_codebook is not None
-            and not memory_bypass_active
-        ):
-            # Hiện tại, discrete assignment là một lớp linear
-            # với tham số học được.
-            assignment_logits = self.discrete_assignment(normalized_hidden)
-            assignment_probabilities = F.gumbel_softmax(
-                assignment_logits,
-                tau=self.gumbel_temperature,
-                hard=False,
-                dim=-1,
-            )
+        if normalized_codebook is not None and not memory_bypass_active:
+            if assignment_logits is None or assignment_probabilities is None:
+                if self.discrete_assignment is None:
+                    raise ValueError("discrete_assignment is not available")
+                assignment_logits = self.discrete_assignment(normalized_hidden)
+                assignment_probabilities = F.gumbel_softmax(
+                    assignment_logits,
+                    tau=self.gumbel_temperature,
+                    hard=False,
+                    dim=-1,
+                )
             discrete_hidden = torch.einsum(
                 "blk,kh->blh",
                 assignment_probabilities,
@@ -1057,6 +1126,22 @@ class ThesisMultitaskModel(BaseModel):
             )
         else:
             active_continuous_memory_bank = None
+        if self.discrete_codebook is not None and self._should_update_memory(stage_name):
+            (
+                active_assignment_logits,
+                active_assignment_probabilities,
+                active_discrete_codebook,
+            ) = self._update_discrete_codebook_memory(hidden)
+        elif self.discrete_codebook is not None:
+            active_assignment_logits = None
+            active_assignment_probabilities = None
+            active_discrete_codebook = self._normalize_memory_vectors(
+                self.discrete_codebook
+            )
+        else:
+            active_assignment_logits = None
+            active_assignment_probabilities = None
+            active_discrete_codebook = None
 
         # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu liên tục
         continuous_outputs = self._continuous_prototype_lookup(
@@ -1069,6 +1154,9 @@ class ThesisMultitaskModel(BaseModel):
         discrete_outputs = self._discrete_prototype_lookup(
             hidden,
             stage_name=stage_name,
+            active_codebook=active_discrete_codebook,
+            precomputed_assignment_logits=active_assignment_logits,
+            precomputed_assignment_probabilities=active_assignment_probabilities,
         )
 
         # Kết hợp vec-tơ ẩn từ hai nhánh lại với nhau
@@ -1114,6 +1202,7 @@ class ThesisMultitaskModel(BaseModel):
                 "discrete_branch": discrete_outputs,
                 "fusion": fusion_outputs["aux"],
                 "active_continuous_memory_bank": active_continuous_memory_bank,
+                "active_discrete_codebook": active_discrete_codebook,
                 "hidden_reconstruction": hidden_reconstruction,
                 "hidden_classification": hidden_classification,
                 "alpha": fusion_outputs["alpha"],

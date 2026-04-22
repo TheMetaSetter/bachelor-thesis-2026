@@ -7,6 +7,7 @@ import torch
 from src.data.scalers import SequenceStandardScaler
 from src.engine.checkpoint import CheckpointManager
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
+from src.models.thesis_multitask import ThesisMultitaskModel
 
 
 def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(
@@ -157,3 +158,59 @@ def test_checkpoint_roundtrip_restores_extra_memory_state(tmp_path: Path) -> Non
     assert loaded_checkpoint["extra_state"]["memory_training_enabled"] is True
     assert loaded_checkpoint["extra_state"]["memory_initialized"] is True
     assert loaded_checkpoint["extra_state"]["bootstrap_encoder_epochs"] == 10
+
+
+def test_multitask_checkpoint_roundtrip_restores_memory_buffers(tmp_path: Path) -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        encoder_dim=64,
+        hidden_dim=16,
+        use_synthetic_augmentation=False,
+        bootstrap_encoder_epochs=1,
+    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    initialization_batch = {
+        "x": torch.randn(2, 100, 38),
+        "point_labels": torch.zeros(2, 100, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": "machine-a"}, {"entity_id": "machine-b"}],
+    }
+    model.set_epoch_context(epoch_index=1, total_epochs=2)
+    model.maybe_initialize_memories_from_loader([initialization_batch], device="cpu")
+    checkpoint_manager = CheckpointManager(tmp_path)
+
+    checkpoint_path = checkpoint_manager.save_checkpoint(
+        checkpoint_name="multitask_memory.pt",
+        model=model,
+        optimizer=optimizer,
+        scheduler=None,
+        scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
+        config={"experiment_name": "multitask-memory"},
+        epoch=1,
+        metric_history=[],
+        extra_state=model.get_checkpoint_extra_state(),
+    )
+
+    reloaded_model = ThesisMultitaskModel(
+        input_dim=38,
+        encoder_dim=64,
+        hidden_dim=16,
+        use_synthetic_augmentation=False,
+        bootstrap_encoder_epochs=1,
+    )
+    reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)
+    loaded_checkpoint = checkpoint_manager.load_checkpoint(
+        checkpoint_path,
+        reloaded_model,
+        reloaded_optimizer,
+    )
+
+    assert torch.allclose(
+        model.continuous_prototype_bank,
+        reloaded_model.continuous_prototype_bank,
+    )
+    assert torch.allclose(model.discrete_codebook, reloaded_model.discrete_codebook)
+    assert torch.allclose(model.discrete_ema_counts, reloaded_model.discrete_ema_counts)
+    assert torch.allclose(model.discrete_ema_sums, reloaded_model.discrete_ema_sums)
+    assert loaded_checkpoint["extra_state"]["memory_initialized"] is True
