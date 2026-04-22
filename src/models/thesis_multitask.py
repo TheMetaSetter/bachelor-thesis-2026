@@ -264,6 +264,13 @@ class ThesisMultitaskModel(BaseModel):
             self.discrete_assignment = None
             self.register_buffer("discrete_codebook", None)
 
+        self.continuous_update_gate = nn.Sequential(
+            nn.Linear(self.hidden_dim * 2, self.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.Sigmoid(),
+        )
+
         # Fusion scalars.
         # `alpha` controls the classification mix and `beta` controls the
         # reconstruction mix so the two tasks can prefer different geometry.
@@ -350,6 +357,7 @@ class ThesisMultitaskModel(BaseModel):
                 "continuous_prototype_bank": self.continuous_prototype_bank,
                 "discrete_assignment": self.discrete_assignment,
                 "discrete_codebook": self.discrete_codebook,
+                "continuous_update_gate": self.continuous_update_gate,
                 "reconstruction_head": self.reconstruction_head,
                 "classification_head": self.classification_head,
                 "alpha_logit": self.alpha_logit,
@@ -486,6 +494,13 @@ class ThesisMultitaskModel(BaseModel):
         del stage_name
         return self._is_bootstrap_active() or not self.memory_initialized
 
+    def _should_update_memory(self, stage_name: str) -> bool:
+        return (
+            stage_name == "train"
+            and self.memory_training_enabled
+            and self.memory_initialized
+        )
+
     def get_memory_lifecycle_state(self) -> dict[str, Any]:
         return {
             "bootstrap_encoder_epochs": self.bootstrap_encoder_epochs,
@@ -597,6 +612,9 @@ class ThesisMultitaskModel(BaseModel):
 
     def _normalize_memory_vectors(self, vectors: torch.Tensor) -> torch.Tensor:
         return F.normalize(vectors, dim=-1, eps=self.memory_norm_epsilon)
+
+    def _normalize_hidden_for_memory(self, hidden: torch.Tensor) -> torch.Tensor:
+        return F.normalize(hidden, dim=-1, eps=self.memory_norm_epsilon)
 
     def _select_covering_vectors(
         self,
@@ -732,6 +750,50 @@ class ThesisMultitaskModel(BaseModel):
             )
             self.discrete_codebook.copy_(discrete_seed_vectors)
 
+    def _update_continuous_memory_bank(
+        self,
+        hidden: torch.Tensor,
+    ) -> torch.Tensor:
+        if self.continuous_prototype_bank is None:
+            raise ValueError("continuous_prototype_bank is not available")
+
+        normalized_hidden = self._normalize_hidden_for_memory(hidden)
+        normalized_memory = self._normalize_memory_vectors(
+            self.continuous_prototype_bank
+        )
+        prototype_to_token_logits = torch.einsum(
+            "kh,blh->kbl",
+            normalized_memory,
+            normalized_hidden,
+        ) / math.sqrt(self.hidden_dim)
+        prototype_to_token_weights = torch.softmax(
+            prototype_to_token_logits.reshape(self.continuous_num_prototypes, -1),
+            dim=-1,
+        ).reshape_as(prototype_to_token_logits)
+        weighted_hidden_summary = torch.einsum(
+            "kbl,blh->kh",
+            prototype_to_token_weights,
+            normalized_hidden,
+        )
+        weighted_hidden_summary = self._normalize_memory_vectors(
+            weighted_hidden_summary
+        )
+        gate_input = torch.cat(
+            [normalized_memory, weighted_hidden_summary],
+            dim=-1,
+        )
+        update_gate = self.continuous_update_gate(gate_input)
+        updated_memory = (
+            (1.0 - update_gate) * normalized_memory
+            + update_gate * weighted_hidden_summary
+        )
+        updated_memory = self._normalize_memory_vectors(updated_memory)
+
+        with torch.no_grad():
+            self.continuous_prototype_bank.copy_(updated_memory.detach())
+
+        return updated_memory
+
     def prepare_synthetic_validation_epoch(self) -> None:
         # The synthetic validation path must replay the same corruption pattern
         # every epoch so the auxiliary classification curves are comparable.
@@ -742,28 +804,32 @@ class ThesisMultitaskModel(BaseModel):
         hidden: torch.Tensor,
         *,
         stage_name: str,
+        active_memory_bank: torch.Tensor | None = None,
     ) -> dict[str, Any]:
         # The continuous branch keeps a soft weighted prototype mixture.
-        continuous_hidden = hidden
+        normalized_hidden = self._normalize_hidden_for_memory(hidden)
+        continuous_hidden = normalized_hidden
         attention_logits = None
         attention_weights = None
         memory_bypass_active = self._should_bypass_memory_for_stage(stage_name)
+        memory_bank_for_read = active_memory_bank
 
         if (
-            self.continuous_prototype_bank is not None
+            memory_bank_for_read is not None
             and not memory_bypass_active
         ):
             attention_logits = torch.einsum(
                 "blh,kh->blk",
-                hidden,
-                self.continuous_prototype_bank,
+                normalized_hidden,
+                memory_bank_for_read,
             ) / math.sqrt(self.hidden_dim)
             attention_weights = torch.softmax(attention_logits, dim=-1)
             continuous_hidden = torch.einsum(
                 "blk,kh->blh",
                 attention_weights,
-                self.continuous_prototype_bank,
+                memory_bank_for_read,
             )
+            continuous_hidden = self._normalize_hidden_for_memory(continuous_hidden)
 
         return {
             "hidden": hidden,
@@ -786,20 +852,26 @@ class ThesisMultitaskModel(BaseModel):
         stage_name: str,
     ) -> dict[str, Any]:
         # The discrete branch keeps a quantized codebook view of the same tokens.
-        discrete_hidden = hidden
+        normalized_hidden = self._normalize_hidden_for_memory(hidden)
+        discrete_hidden = normalized_hidden
         assignment_logits = None
         assignment_probabilities = None
         code_indices = None
         memory_bypass_active = self._should_bypass_memory_for_stage(stage_name)
+        normalized_codebook = (
+            None
+            if self.discrete_codebook is None
+            else self._normalize_memory_vectors(self.discrete_codebook)
+        )
 
         if (
             self.discrete_assignment is not None
-            and self.discrete_codebook is not None
+            and normalized_codebook is not None
             and not memory_bypass_active
         ):
             # Hiện tại, discrete assignment là một lớp linear
             # với tham số học được.
-            assignment_logits = self.discrete_assignment(hidden)
+            assignment_logits = self.discrete_assignment(normalized_hidden)
             assignment_probabilities = F.gumbel_softmax(
                 assignment_logits,
                 tau=self.gumbel_temperature,
@@ -809,8 +881,9 @@ class ThesisMultitaskModel(BaseModel):
             discrete_hidden = torch.einsum(
                 "blk,kh->blh",
                 assignment_probabilities,
-                self.discrete_codebook,
+                normalized_codebook,
             )
+            discrete_hidden = self._normalize_hidden_for_memory(discrete_hidden)
             code_indices = torch.argmax(assignment_probabilities, dim=-1)
 
         return {
@@ -973,11 +1046,23 @@ class ThesisMultitaskModel(BaseModel):
         # Một vec-tơ ẩn cho mỗi bước thời gian (timestep)
         encoder_outputs = self.encoder(batch)
         hidden = encoder_outputs["hidden"]
+        if (
+            self.continuous_prototype_bank is not None
+            and self._should_update_memory(stage_name)
+        ):
+            active_continuous_memory_bank = self._update_continuous_memory_bank(hidden)
+        elif self.continuous_prototype_bank is not None:
+            active_continuous_memory_bank = self._normalize_memory_vectors(
+                self.continuous_prototype_bank
+            )
+        else:
+            active_continuous_memory_bank = None
 
         # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu liên tục
         continuous_outputs = self._continuous_prototype_lookup(
             hidden,
             stage_name=stage_name,
+            active_memory_bank=active_continuous_memory_bank,
         )
 
         # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu rời rạc
@@ -1028,6 +1113,7 @@ class ThesisMultitaskModel(BaseModel):
                 "continuous_branch": continuous_outputs,
                 "discrete_branch": discrete_outputs,
                 "fusion": fusion_outputs["aux"],
+                "active_continuous_memory_bank": active_continuous_memory_bank,
                 "hidden_reconstruction": hidden_reconstruction,
                 "hidden_classification": hidden_classification,
                 "alpha": fusion_outputs["alpha"],
