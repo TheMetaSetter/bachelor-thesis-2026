@@ -14,6 +14,7 @@ def register_dataset(name: str, builder: Callable[..., Any]) -> None:
     Hàm này nhận vào tên của một tập dữ liệu
     và đăng ký (register) builder tương ứng
     với tập dữ liệu đó vào danh sách dataset builder.
+    Đây là mẫu thiết kế registry pattern.
     """
 
     DATASET_BUILDERS[name] = builder
