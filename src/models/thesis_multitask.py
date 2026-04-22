@@ -484,7 +484,6 @@ class ThesisMultitaskModel(BaseModel):
         code_indices = None
 
         if self.discrete_assignment is not None and self.discrete_codebook is not None:
-            
             # Hiện tại, discrete assignment là một lớp linear
             # với tham số học được.
             assignment_logits = self.discrete_assignment(hidden)
@@ -533,14 +532,14 @@ class ThesisMultitaskModel(BaseModel):
 
         # Beta là mức độ mà tác vụ tái tạo chuỗi (reconstruction) sử dụng
         # nhánh các vec-tơ nguyên mẫu rời rạc (discrete prototype).
-        # Mình kì vọng giá trị này sẽ nhỏ.
+        # Mình kì vọng giá trị này sẽ nhỏ hơn alpha.
         hidden_reconstruction = (
             beta * discrete_hidden + (1.0 - beta) * continuous_hidden
         )
 
         # Alpha là mức độ mà tác vụ phân loại (classification) sử dụng nhánh các
-        # vec-tơ nguyên mẫu liên tục.
-        # Mình kì vọng giá trị này sẽ lớn.
+        # vec-tơ nguyên mẫu rời rạc.
+        # Mình kì vọng giá trị này sẽ lớn hơn beta.
         hidden_classification = (
             alpha * discrete_hidden + (1.0 - alpha) * continuous_hidden
         )
@@ -1064,7 +1063,12 @@ class ThesisMultitaskModel(BaseModel):
         include_classification_metrics: bool,
     ) -> dict[str, Any]:
         # This is the one place where the actual multitask training objective is assembled.
+
+        # Chuẩn bị batch dữ liệu nghĩa là tải các mẫu dữ liệu lên từ
+        # dataset và tiêm bất thường nhân tạo vào nếu cần.
         prepared_batch = self._prepare_batch(batch, stage_name)
+
+        # Đưa các mẫu dữ liệu qua mạng để tính toán ra kết quả
         outputs = self.forward(prepared_batch)
 
         # Tính toán các hàm loss thành phần

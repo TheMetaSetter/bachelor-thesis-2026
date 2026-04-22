@@ -82,9 +82,12 @@ def run_evaluation_experiment(
         device=experiment_config["device"],
     )
 
+    # `experiment_config["data"]` là load từ một trong các file
+    # bên trong thư mục `configs/data`
     data_bundle = build_dataset(
         experiment_config["data"]["dataset_name"], experiment_config["data"]
     )
+
     console_print(
         "DATA",
         "Built dataset bundle for evaluation",
@@ -99,13 +102,19 @@ def run_evaluation_experiment(
         checkpoint_path, model, optimizer
     )
     scaler.load_state_dict(loaded_checkpoint["scaler_state_dict"])
+
+    # In log
     console_print(
         "CHECKPOINT",
         "Loaded checkpoint for evaluation",
         checkpoint_path=checkpoint_path,
     )
+
+    # Gọi evaluator từ file src/engine/evaluator.py
+    # Gọi phương thức evaluate của class Evaluator
     evaluator = Evaluator(device=experiment_config["device"])
     evaluation_outputs = evaluator.evaluate(model, data_bundle["loaders"]["test"])
+
     logging_config = dict(experiment_config.get("logging", {}))
     logging_config.setdefault("wandb_job_type", "evaluate")
     logging_config.setdefault(

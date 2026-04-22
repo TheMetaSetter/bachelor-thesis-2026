@@ -10,6 +10,12 @@ MODEL_BUILDERS: dict[str, Callable[..., Any]] = {}
 
 
 def register_dataset(name: str, builder: Callable[..., Any]) -> None:
+    """
+    Hàm này nhận vào tên của một tập dữ liệu
+    và đăng ký (register) builder tương ứng
+    với tập dữ liệu đó vào danh sách dataset builder.
+    """
+
     DATASET_BUILDERS[name] = builder
     console_print(
         "REGISTRY", "Registered dataset builder", name=name, builder=builder.__name__
@@ -24,6 +30,12 @@ def register_model(name: str, builder: Callable[..., Any]) -> None:
 
 
 def build_dataset(name: str, *args: Any, **kwargs: Any) -> Any:
+
+    """
+    Hàm này có nhiệm vụ build 
+    Hàm này nhận vào tên của tập dữ liệu cần build
+    và các tham số cấu hình tương ứng với tập dữ liệu đó.
+    """
     if name not in DATASET_BUILDERS:
         raise KeyError(f"Unknown dataset builder: {name}")
     console_print("REGISTRY", "Building dataset", name=name)

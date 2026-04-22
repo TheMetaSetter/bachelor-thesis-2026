@@ -23,6 +23,12 @@ from src.models.base_model import BaseModel
 def select_point_score_threshold(
     point_scores: np.ndarray, quantile: float = 0.95
 ) -> float:
+    """
+    Hàm này có nhiệm vụ chọn threshold
+    để biến anomaly score liên tục
+    thành dự đoán nhị phân.
+    """
+
     # The smoke runs can produce many exact zeros, so selecting a threshold from
     # only the positive support avoids the "everything is anomalous" failure
     # mode in plots and thresholded metrics.
@@ -56,21 +62,31 @@ class Evaluator:
         forward_pass_seconds_history: list[float] = []
 
         with torch.no_grad():
+            # Với mỗi batch dữ liệu đọc được từ data_loader,
             for batch_index, batch in enumerate(data_loader, start=1):
+                # Tạo cấu trúc dữ liệu cho batch dữ liệu hiện tại
                 batch_on_device = {
                     key: value.to(self.device)
                     if isinstance(value, torch.Tensor)
                     else value
                     for key, value in batch.items()
                 }
+
+                # In log
                 console_print(
                     "EVAL",
                     "Evaluating batch",
                     batch_index=batch_index,
                     **summarize_batch(batch_on_device),
                 )
+
+                # Tính anomaly score cho từng điểm dữ liệu (timestep)
+                # trong từng window của batch
                 step_output = model.test_step(batch_on_device)
+
                 point_scores = step_output["outputs"]["point_scores"].detach().cpu()
+
+                # In log lên màn hình console
                 if "forward_pass_seconds" in step_output["outputs"]["aux"]:
                     forward_pass_seconds_history.append(
                         float(step_output["outputs"]["aux"]["forward_pass_seconds"])
