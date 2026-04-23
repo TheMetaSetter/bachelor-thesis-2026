@@ -144,6 +144,28 @@ def test_load_single_entity_rtx3090_config_reads_valid_yaml() -> None:
     )
 
 
+def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_window10_binary.yaml"
+    )
+
+    assert loaded_config["data"]["entity_ids"] == ["machine-2-1"]
+    assert loaded_config["data"]["window_size"] == 10
+    assert loaded_config["data"]["stride"] == 10
+    assert loaded_config["data"]["batch_size"] == 256
+    assert loaded_config["model"]["num_classes"] == 2
+    assert loaded_config["task"]["anomaly_families"] == [
+        "spike",
+        "noise",
+        "cutoff",
+        "scale",
+        "contextual",
+    ]
+    assert loaded_config["task"]["min_segment_fraction"] == 0.3
+    assert loaded_config["task"]["max_segment_fraction"] == 0.6
+    assert loaded_config["task"]["balance_binary_classes_within_batch"] is True
+
+
 def test_load_multitask_experiment_config_rejects_invalid_mlp_num_linear_layers(
     tmp_path: Path,
 ) -> None:

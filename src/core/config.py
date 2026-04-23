@@ -281,6 +281,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "use_synthetic_validation": task_config.get(
                 "use_synthetic_validation", True
             ),
+            "balance_binary_classes_within_batch": task_config.get(
+                "balance_binary_classes_within_batch", False
+            ),
         }
         for field_name, field_value in boolean_fields.items():
             if not isinstance(field_value, bool):

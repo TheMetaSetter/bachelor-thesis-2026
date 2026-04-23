@@ -41,6 +41,7 @@ class SyntheticAnomalyInjector:
         max_segment_fraction: float = 0.2,
         spike_scale: float = 3.0,
         anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
+        balance_binary_classes_within_batch: bool = False,
         deterministic_seed: int | None = None,
     ) -> None:
         # These checks keep augmentation behavior explicit. Research code becomes
@@ -64,6 +65,7 @@ class SyntheticAnomalyInjector:
         self.min_segment_fraction = min_segment_fraction
         self.max_segment_fraction = max_segment_fraction
         self.spike_scale = spike_scale
+        self.balance_binary_classes_within_batch = balance_binary_classes_within_batch
         self.epsilon = 1e-6
         self.deterministic_seed = deterministic_seed
         self._rng: torch.Generator | None = None
@@ -683,6 +685,26 @@ class SyntheticAnomalyInjector:
             "family_parameters_by_channel": {},
         }
 
+    def _sample_injection_decisions(
+        self,
+        batch_size: int,
+        device: torch.device,
+    ) -> torch.Tensor:
+        if not self.balance_binary_classes_within_batch:
+            return self._rand(batch_size, device=device) < self.anomaly_probability
+
+        num_anomalous_windows = int(batch_size * self.anomaly_probability + 0.5)
+        num_anomalous_windows = max(0, min(batch_size, num_anomalous_windows))
+        injection_decisions = torch.zeros(batch_size, dtype=torch.bool, device=device)
+        if num_anomalous_windows == 0:
+            return injection_decisions
+
+        anomalous_indices = self._randperm(batch_size, device=device)[
+            :num_anomalous_windows
+        ]
+        injection_decisions[anomalous_indices] = True
+        return injection_decisions
+
     def augment_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         # The output batch keeps the original keys and only adds multitask
         # supervision fields, which is why the rest of the codepath stays small.
@@ -702,12 +724,13 @@ class SyntheticAnomalyInjector:
             batch_size, dtype=torch.long, device=clean_windows.device
         )
         augmentation_metadata: list[dict[str, Any]] = []
+        injection_decisions = self._sample_injection_decisions(
+            batch_size=batch_size,
+            device=clean_windows.device,
+        )
 
         for batch_index in range(batch_size):
-            should_inject = bool(
-                self._rand(1, device=clean_windows.device).item()
-                < self.anomaly_probability
-            )
+            should_inject = bool(injection_decisions[batch_index].item())
             if not should_inject:
                 augmentation_metadata.append(self._build_clean_metadata())
                 continue

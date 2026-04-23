@@ -151,6 +151,7 @@ class ThesisMultitaskModel(BaseModel):
         min_segment_fraction: float = 0.1,
         max_segment_fraction: float = 0.2,
         spike_scale: float = 3.0,
+        balance_binary_classes_within_batch: bool = False,
         anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
     ) -> None:
         super().__init__()
@@ -318,6 +319,7 @@ class ThesisMultitaskModel(BaseModel):
             max_segment_fraction=max_segment_fraction,
             spike_scale=spike_scale,
             anomaly_families=anomaly_families,
+            balance_binary_classes_within_batch=balance_binary_classes_within_batch,
         )
         self.synthetic_validation_injector = SyntheticAnomalyInjector(
             anomaly_probability=anomaly_probability,
@@ -325,6 +327,7 @@ class ThesisMultitaskModel(BaseModel):
             max_segment_fraction=max_segment_fraction,
             spike_scale=spike_scale,
             anomaly_families=anomaly_families,
+            balance_binary_classes_within_batch=balance_binary_classes_within_batch,
             deterministic_seed=synthetic_validation_seed,
         )
 

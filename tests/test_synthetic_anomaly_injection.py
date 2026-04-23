@@ -53,6 +53,32 @@ def test_synthetic_anomaly_injection_preserves_shapes_and_adds_labels() -> None:
     )
 
 
+def test_balanced_binary_injection_uses_fixed_positive_quota() -> None:
+    injector = SyntheticAnomalyInjector(
+        anomaly_probability=0.5,
+        min_segment_fraction=0.3,
+        max_segment_fraction=0.6,
+        anomaly_families=("spike", "noise"),
+        balance_binary_classes_within_batch=True,
+        deterministic_seed=7,
+    )
+    batch = {
+        "x": torch.randn(8, 10, 3),
+        "point_labels": torch.zeros(8, 10, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": f"machine-{index}"} for index in range(8)],
+    }
+
+    augmented_batch = injector.augment_batch(batch)
+
+    assert augmented_batch["classification_labels"].sum().item() == 4
+    assert (
+        torch.count_nonzero(augmented_batch["classification_labels"] == 0).item() == 4
+    )
+    assert augmented_batch["synthetic_anomaly_mask"].sum().item() > 0
+
+
 @pytest.mark.parametrize("anomaly_family", REDLAMP_ANOMALY_FAMILIES)
 def test_each_redlamp_family_is_reachable_and_records_metadata(
     anomaly_family: str,
