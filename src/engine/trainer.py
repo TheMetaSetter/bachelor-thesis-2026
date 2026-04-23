@@ -156,6 +156,7 @@ class Trainer:
         )
         checkpoint_monitor_modes = {
             "val_loss": "min",
+            "val_synth_loss": "min",
             "val_synth_roc_auc": "max",
             "val_synth_pr_auc": "max",
         }

@@ -162,6 +162,19 @@ def test_scheduler_builder_supports_val_synth_pr_auc_monitor() -> None:
     assert scheduler_monitor_metric == "val_synth_pr_auc"
 
 
+def test_scheduler_builder_supports_val_synth_loss_monitor() -> None:
+    model = nn.Linear(2, 2)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
+        optimizer,
+        _build_scheduler_experiment_config(monitor_metric="val_synth_loss"),
+    )
+
+    assert isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau)
+    assert scheduler.mode == "min"
+    assert scheduler_monitor_metric == "val_synth_loss"
+
+
 def test_scheduler_respects_min_lr_floor() -> None:
     model = nn.Linear(2, 2)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
@@ -398,6 +411,56 @@ def test_trainer_can_step_scheduler_from_val_synth_pr_auc(tmp_path: Path) -> Non
     )
 
 
+def test_trainer_can_step_scheduler_from_val_synth_loss(tmp_path: Path) -> None:
+    model = DummyPlateauModel(
+        val_loss_sequence=[0.5, 0.4, 0.3],
+        val_synth_loss_sequence=[1.0, 1.0, 1.0],
+    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
+        optimizer,
+        _build_scheduler_experiment_config(
+            patience=1,
+            monitor_metric="val_synth_loss",
+        ),
+    )
+    experiment_logger = ExperimentLogger(tmp_path / "logs")
+    trainer = Trainer(
+        model=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        scheduler_monitor_metric=scheduler_monitor_metric,
+        checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
+        experiment_logger=experiment_logger,
+        device="cpu",
+    )
+    batch = _build_batch()
+
+    try:
+        outputs = trainer.train(
+            train_loader=[batch],
+            val_loader=[batch],
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
+            config={"experiment_name": "scheduler-val-synth-loss-test"},
+            epochs=3,
+        )
+    finally:
+        experiment_logger.close()
+
+    metric_history = outputs["metric_history"]
+    assert metric_history[0]["optimizer_lr"] == 0.1
+    assert metric_history[1]["optimizer_lr"] == 0.1
+    assert metric_history[2]["optimizer_lr"] == 0.05
+    assert metric_history[2]["scheduler_lr_reduced"] == 1.0
+    assert (
+        metric_history[2]["scheduler_monitor_val_synth_loss"]
+        == metric_history[2]["val_synth_loss"]
+    )
+
+
 def test_trainer_tracks_best_checkpoint_from_scheduler_monitor_metric(
     tmp_path: Path,
 ) -> None:
@@ -462,6 +525,54 @@ def test_trainer_tracks_best_checkpoint_from_scheduler_monitor_metric(
 
     assert best_checkpoint["epoch"] == 2
     assert best_checkpoint["metric_history"][-1]["val_synth_pr_auc"] == 0.90
+    assert best_checkpoint["metric_history"][-1]["val_loss"] == 0.7
+
+
+def test_trainer_tracks_best_checkpoint_from_val_synth_loss(
+    tmp_path: Path,
+) -> None:
+    model = DummyPlateauModel(
+        val_loss_sequence=[0.8, 0.7, 0.6],
+        val_synth_loss_sequence=[0.9, 0.2, 0.5],
+    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
+        optimizer,
+        _build_scheduler_experiment_config(
+            patience=1,
+            monitor_metric="val_synth_loss",
+        ),
+    )
+    experiment_logger = ExperimentLogger(tmp_path / "logs")
+    trainer = Trainer(
+        model=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        scheduler_monitor_metric=scheduler_monitor_metric,
+        checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
+        experiment_logger=experiment_logger,
+        device="cpu",
+    )
+    batch = _build_batch()
+
+    try:
+        outputs = trainer.train(
+            train_loader=[batch],
+            val_loader=[batch],
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
+            config={"experiment_name": "scheduler-monitor-best-val-synth-loss-test"},
+            epochs=3,
+        )
+    finally:
+        experiment_logger.close()
+
+    best_checkpoint = torch.load(outputs["best_checkpoint_path"], map_location="cpu")
+
+    assert best_checkpoint["epoch"] == 2
+    assert best_checkpoint["metric_history"][-1]["val_synth_loss"] == 0.2
     assert best_checkpoint["metric_history"][-1]["val_loss"] == 0.7
 
 

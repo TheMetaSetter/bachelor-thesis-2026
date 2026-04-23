@@ -652,6 +652,46 @@ def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(
     )
 
 
+def test_load_experiment_config_accepts_valid_val_synth_loss_scheduler(
+    tmp_path: Path,
+) -> None:
+    experiment_config_path = tmp_path / "experiment.yaml"
+    experiment_config_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: valid_scheduler_monitor_val_synth_loss",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/valid_scheduler_monitor_val_synth_loss",
+                "checkpoint_dir: outputs/valid_scheduler_monitor_val_synth_loss/checkpoints",
+                f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
+                f"model_config_path: {Path('configs/model/thesis_multitask.yaml').resolve()}",
+                f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "  scheduler:",
+                "    scheduler_name: reduce_on_plateau",
+                "    monitor_metric: val_synth_loss",
+                "    factor: 0.5",
+                "    patience: 2",
+                "    threshold: 0.0001",
+                "    threshold_mode: rel",
+                "    cooldown: 0",
+                "    min_lr: 1.0e-5",
+                "epochs: 3",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loaded_config = load_experiment_config(experiment_config_path)
+
+    assert (
+        loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_loss"
+    )
+
+
 def test_load_experiment_config_accepts_label_refurbishment_and_masking_fields(
     tmp_path: Path,
 ) -> None:
@@ -745,7 +785,7 @@ def test_load_experiment_config_rejects_invalid_scheduler_monitor_metric(
                 "  weight_decay: 0.0",
                 "  scheduler:",
                 "    scheduler_name: reduce_on_plateau",
-                "    monitor_metric: val_synth_loss",
+                "    monitor_metric: val_synth_precision",
                 "    factor: 0.5",
                 "    patience: 2",
                 "    threshold: 0.0001",

@@ -83,7 +83,11 @@ def build_scheduler_from_experiment_config(
     if scheduler_name != "reduce_on_plateau":
         raise ValueError(f"Unsupported scheduler_name: {scheduler_name}")
     monitor_metric = str(scheduler_config["monitor_metric"])
-    scheduler_mode = "min" if monitor_metric == "val_loss" else "max"
+    scheduler_mode = (
+        "min"
+        if monitor_metric in {"val_loss", "val_synth_loss"}
+        else "max"
+    )
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer=optimizer,

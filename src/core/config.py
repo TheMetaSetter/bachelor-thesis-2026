@@ -214,9 +214,14 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 "optimizer.scheduler.scheduler_name must be: reduce_on_plateau"
             )
         monitor_metric = scheduler_config.get("monitor_metric")
-        if monitor_metric not in {"val_loss", "val_synth_roc_auc", "val_synth_pr_auc"}:
+        if monitor_metric not in {
+            "val_loss",
+            "val_synth_loss",
+            "val_synth_roc_auc",
+            "val_synth_pr_auc",
+        }:
             raise ValueError(
-                "optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_roc_auc, val_synth_pr_auc"
+                "optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_loss, val_synth_roc_auc, val_synth_pr_auc"
             )
         scheduler_factor = scheduler_config.get("factor")
         if (
