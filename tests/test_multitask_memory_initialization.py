@@ -40,7 +40,9 @@ def _build_initialization_model() -> ThesisMultitaskModel:
         spike_scale=3.0,
     )
 
-    def _identity_encoder_forward(batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    def _identity_encoder_forward(
+        batch: dict[str, torch.Tensor],
+    ) -> dict[str, torch.Tensor]:
         hidden = batch["x"]
         return {
             "hidden": hidden,

@@ -176,7 +176,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         )
         float_fields["variance_floor_gamma"] = model_config.get("variance_floor_gamma")
         float_fields["gate_barrier_margin"] = model_config.get("gate_barrier_margin")
-        float_fields["discrete_ema_decay"] = model_config.get("discrete_ema_decay", 0.99)
+        float_fields["discrete_ema_decay"] = model_config.get(
+            "discrete_ema_decay", 0.99
+        )
         float_fields["memory_norm_epsilon"] = model_config.get(
             "memory_norm_epsilon", 1.0e-6
         )

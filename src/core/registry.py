@@ -31,9 +31,8 @@ def register_model(name: str, builder: Callable[..., Any]) -> None:
 
 
 def build_dataset(name: str, *args: Any, **kwargs: Any) -> Any:
-
     """
-    Hàm này có nhiệm vụ build 
+    Hàm này có nhiệm vụ build
     Hàm này nhận vào tên của tập dữ liệu cần build
     và các tham số cấu hình tương ứng với tập dữ liệu đó.
     """

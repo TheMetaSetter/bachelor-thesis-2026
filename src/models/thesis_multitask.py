@@ -213,9 +213,7 @@ class ThesisMultitaskModel(BaseModel):
         self.continuous_memory_enabled = (
             continuous_enabled and continuous_num_prototypes > 0
         )
-        self.discrete_memory_enabled = (
-            discrete_enabled and discrete_codebook_size > 0
-        )
+        self.discrete_memory_enabled = discrete_enabled and discrete_codebook_size > 0
         self.memory_initialized = bootstrap_encoder_epochs <= 0
         self.memory_training_enabled = self.memory_initialized
         self.memory_ready_for_initialization = False
@@ -552,7 +550,9 @@ class ThesisMultitaskModel(BaseModel):
             ),
         }
 
-    def mark_memories_initialized(self, initialization_epoch: int | None = None) -> None:
+    def mark_memories_initialized(
+        self, initialization_epoch: int | None = None
+    ) -> None:
         self.memory_initialized = True
         self.memory_training_enabled = True
         self.memory_ready_for_initialization = False
@@ -588,7 +588,9 @@ class ThesisMultitaskModel(BaseModel):
             )
             return False
         self._initialize_memory_buffers_from_token_pool(hidden_tokens)
-        self.mark_memories_initialized(initialization_epoch=self.current_epoch_index + 1)
+        self.mark_memories_initialized(
+            initialization_epoch=self.current_epoch_index + 1
+        )
         console_print(
             "MODEL",
             "Initialized prototype memories from normal hidden tokens",
@@ -646,10 +648,13 @@ class ThesisMultitaskModel(BaseModel):
 
         normalized_vectors = self._normalize_memory_vectors(candidate_vectors)
         if normalized_vectors.shape[0] <= num_vectors:
-            repeated_indices = torch.arange(
-                num_vectors,
-                device=normalized_vectors.device,
-            ) % normalized_vectors.shape[0]
+            repeated_indices = (
+                torch.arange(
+                    num_vectors,
+                    device=normalized_vectors.device,
+                )
+                % normalized_vectors.shape[0]
+            )
             return normalized_vectors.index_select(0, repeated_indices)
 
         mean_vector = normalized_vectors.mean(dim=0, keepdim=True)
@@ -725,9 +730,7 @@ class ThesisMultitaskModel(BaseModel):
                     )
                     synthetic_normal_hidden = synthetic_hidden[normal_time_step_mask]
                     if synthetic_normal_hidden.numel() > 0:
-                        synthetic_normal_hidden_tokens.append(
-                            synthetic_normal_hidden
-                        )
+                        synthetic_normal_hidden_tokens.append(synthetic_normal_hidden)
 
         self.train(previous_training_mode)
 
@@ -808,9 +811,8 @@ class ThesisMultitaskModel(BaseModel):
         )
         update_gate = self.continuous_update_gate(gate_input)
         updated_memory = (
-            (1.0 - update_gate) * normalized_memory
-            + update_gate * weighted_hidden_summary
-        )
+            1.0 - update_gate
+        ) * normalized_memory + update_gate * weighted_hidden_summary
         updated_memory = self._normalize_memory_vectors(updated_memory)
 
         with torch.no_grad():
@@ -853,9 +855,12 @@ class ThesisMultitaskModel(BaseModel):
             self.discrete_ema_sums.mul_(self.discrete_ema_decay).add_(
                 (1.0 - self.discrete_ema_decay) * batch_sums.detach()
             )
-            normalized_codebook = self.discrete_ema_sums / self.discrete_ema_counts.clamp_min(
-                self.memory_norm_epsilon
-            ).unsqueeze(-1)
+            normalized_codebook = (
+                self.discrete_ema_sums
+                / self.discrete_ema_counts.clamp_min(
+                    self.memory_norm_epsilon
+                ).unsqueeze(-1)
+            )
             normalized_codebook = self._normalize_memory_vectors(normalized_codebook)
             self.discrete_codebook.copy_(normalized_codebook)
 
@@ -885,10 +890,7 @@ class ThesisMultitaskModel(BaseModel):
         memory_bypass_active = self._should_bypass_memory_for_stage(stage_name)
         memory_bank_for_read = active_memory_bank
 
-        if (
-            memory_bank_for_read is not None
-            and not memory_bypass_active
-        ):
+        if memory_bank_for_read is not None and not memory_bypass_active:
             attention_logits = torch.einsum(
                 "blh,kh->blk",
                 normalized_hidden,
@@ -1115,9 +1117,8 @@ class ThesisMultitaskModel(BaseModel):
         # Một vec-tơ ẩn cho mỗi bước thời gian (timestep)
         encoder_outputs = self.encoder(batch)
         hidden = encoder_outputs["hidden"]
-        if (
-            self.continuous_prototype_bank is not None
-            and self._should_update_memory(stage_name)
+        if self.continuous_prototype_bank is not None and self._should_update_memory(
+            stage_name
         ):
             active_continuous_memory_bank = self._update_continuous_memory_bank(hidden)
         elif self.continuous_prototype_bank is not None:
@@ -1126,7 +1127,9 @@ class ThesisMultitaskModel(BaseModel):
             )
         else:
             active_continuous_memory_bank = None
-        if self.discrete_codebook is not None and self._should_update_memory(stage_name):
+        if self.discrete_codebook is not None and self._should_update_memory(
+            stage_name
+        ):
             (
                 active_assignment_logits,
                 active_assignment_probabilities,
@@ -1548,7 +1551,9 @@ class ThesisMultitaskModel(BaseModel):
             f"{stage_name}_memory_ready_for_initialization": float(
                 outputs["aux"]["memory"]["memory_ready_for_initialization"]
             ),
-            f"{stage_name}_memory_mode": float(outputs["aux"]["memory"]["train_memory_mode"]),
+            f"{stage_name}_memory_mode": float(
+                outputs["aux"]["memory"]["train_memory_mode"]
+            ),
         }
         if include_classification_metrics:
             predicted_labels = torch.argmax(outputs["logits"], dim=-1)

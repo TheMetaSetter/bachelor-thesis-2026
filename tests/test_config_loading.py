@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from src.core.config import load_experiment_config, load_yaml_config, validate_experiment_config
+from src.core.config import (
+    load_experiment_config,
+    load_yaml_config,
+    validate_experiment_config,
+)
 from src.data.augment import REDLAMP_ANOMALY_FAMILIES
 
 
@@ -108,6 +112,8 @@ def test_multitask_config_accepts_memory_bootstrap_fields(tmp_path: Path) -> Non
     assert (
         loaded_config["model"]["memory_initialization_with_synthetic_windows"] is True
     )
+
+
 def test_load_multitask_ablation_config_applies_overrides() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/smd_multitask_continuous_only.yaml"
