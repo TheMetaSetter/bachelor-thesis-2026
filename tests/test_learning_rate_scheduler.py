@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from types import MethodType
 
 import torch
 from torch import nn
@@ -395,3 +396,110 @@ def test_trainer_can_step_scheduler_from_val_synth_pr_auc(tmp_path: Path) -> Non
         metric_history[-1]["scheduler_monitor_val_synth_pr_auc"]
         == metric_history[-1]["val_synth_pr_auc"]
     )
+
+
+def test_trainer_tracks_best_checkpoint_from_scheduler_monitor_metric(
+    tmp_path: Path,
+) -> None:
+    model = DummyPlateauModel(
+        val_loss_sequence=[0.8, 0.7, 0.6],
+        val_synth_loss_sequence=[1.0, 1.0, 1.0],
+    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
+        optimizer,
+        _build_scheduler_experiment_config(
+            patience=1,
+            monitor_metric="val_synth_pr_auc",
+        ),
+    )
+    experiment_logger = ExperimentLogger(tmp_path / "logs")
+    trainer = Trainer(
+        model=model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        scheduler_monitor_metric=scheduler_monitor_metric,
+        checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
+        experiment_logger=experiment_logger,
+        device="cpu",
+    )
+    val_synth_pr_auc_sequence = iter([0.20, 0.90, 0.50])
+
+    def fake_aggregate_multitask_classification_metrics(
+        self,
+        *,
+        logits_history: list[torch.Tensor],
+        label_history: list[torch.Tensor],
+        forward_pass_seconds_history: list[float],
+        stage_name: str,
+    ) -> dict[str, float]:
+        del logits_history, label_history, forward_pass_seconds_history
+        if stage_name == "val_synth":
+            return {"val_synth_pr_auc": next(val_synth_pr_auc_sequence)}
+        return {}
+
+    trainer._aggregate_multitask_classification_metrics = MethodType(
+        fake_aggregate_multitask_classification_metrics,
+        trainer,
+    )
+    batch = _build_batch()
+
+    try:
+        outputs = trainer.train(
+            train_loader=[batch],
+            val_loader=[batch],
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
+            config={"experiment_name": "scheduler-monitor-best-checkpoint-test"},
+            epochs=3,
+        )
+    finally:
+        experiment_logger.close()
+
+    best_checkpoint = torch.load(outputs["best_checkpoint_path"], map_location="cpu")
+
+    assert best_checkpoint["epoch"] == 2
+    assert best_checkpoint["metric_history"][-1]["val_synth_pr_auc"] == 0.90
+    assert best_checkpoint["metric_history"][-1]["val_loss"] == 0.7
+
+
+def test_trainer_tracks_best_checkpoint_from_val_loss_without_scheduler(
+    tmp_path: Path,
+) -> None:
+    model = DummyPlateauModel(
+        val_loss_sequence=[0.8, 0.5, 0.6],
+        val_synth_loss_sequence=[1.0, 1.0, 1.0],
+    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    experiment_logger = ExperimentLogger(tmp_path / "logs")
+    trainer = Trainer(
+        model=model,
+        optimizer=optimizer,
+        scheduler=None,
+        scheduler_monitor_metric=None,
+        checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
+        experiment_logger=experiment_logger,
+        device="cpu",
+    )
+    batch = _build_batch()
+
+    try:
+        outputs = trainer.train(
+            train_loader=[batch],
+            val_loader=[batch],
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
+            config={"experiment_name": "val-loss-best-checkpoint-test"},
+            epochs=3,
+        )
+    finally:
+        experiment_logger.close()
+
+    best_checkpoint = torch.load(outputs["best_checkpoint_path"], map_location="cpu")
+
+    assert best_checkpoint["epoch"] == 2
+    assert best_checkpoint["metric_history"][-1]["val_loss"] == 0.5

@@ -148,6 +148,45 @@ class Trainer:
         )
         return learning_rate_metrics
 
+    def _resolve_best_checkpoint_monitor(self) -> tuple[str, str]:
+        checkpoint_monitor_metric = (
+            "val_loss"
+            if self.scheduler_monitor_metric is None
+            else self.scheduler_monitor_metric
+        )
+        checkpoint_monitor_modes = {
+            "val_loss": "min",
+            "val_synth_roc_auc": "max",
+            "val_synth_pr_auc": "max",
+        }
+        if checkpoint_monitor_metric not in checkpoint_monitor_modes:
+            raise ValueError(
+                f"Unsupported checkpoint monitor metric: {checkpoint_monitor_metric}"
+            )
+        return checkpoint_monitor_metric, checkpoint_monitor_modes[
+            checkpoint_monitor_metric
+        ]
+
+    def _build_initial_best_checkpoint_value(self, monitor_mode: str) -> float:
+        if monitor_mode == "min":
+            return float("inf")
+        if monitor_mode == "max":
+            return float("-inf")
+        raise ValueError(f"Unsupported checkpoint monitor mode: {monitor_mode}")
+
+    def _is_best_checkpoint_metric_improved(
+        self,
+        *,
+        candidate_metric_value: float,
+        best_metric_value: float,
+        monitor_mode: str,
+    ) -> bool:
+        if monitor_mode == "min":
+            return candidate_metric_value <= best_metric_value
+        if monitor_mode == "max":
+            return candidate_metric_value >= best_metric_value
+        raise ValueError(f"Unsupported checkpoint monitor mode: {monitor_mode}")
+
     def _run_validation_epoch(
         self,
         *,
@@ -210,7 +249,13 @@ class Trainer:
     ) -> dict[str, Any]:
         # The trainer owns loop mechanics only. The model owns the meaning of a
         # training step, including optional schedules such as fusion warm-up.
-        best_val_loss = float("inf")
+        (
+            best_checkpoint_monitor_metric,
+            best_checkpoint_monitor_mode,
+        ) = self._resolve_best_checkpoint_monitor()
+        best_checkpoint_metric_value = self._build_initial_best_checkpoint_value(
+            best_checkpoint_monitor_mode
+        )
         best_checkpoint_path = None
 
         self.model.to(self.device)
@@ -343,14 +388,27 @@ class Trainer:
                 epoch_metrics=epoch_metrics,
             )
 
-            current_val_loss = float(epoch_metrics.get("val_loss", float("inf")))
-            if current_val_loss <= best_val_loss:
-                best_val_loss = current_val_loss
+            if best_checkpoint_monitor_metric not in epoch_metrics:
+                raise KeyError(
+                    f"Best checkpoint monitor metric '{best_checkpoint_monitor_metric}' is missing from epoch metrics"
+                )
+            current_checkpoint_metric_value = float(
+                epoch_metrics[best_checkpoint_monitor_metric]
+            )
+            if self._is_best_checkpoint_metric_improved(
+                candidate_metric_value=current_checkpoint_metric_value,
+                best_metric_value=best_checkpoint_metric_value,
+                monitor_mode=best_checkpoint_monitor_mode,
+            ):
+                best_checkpoint_metric_value = current_checkpoint_metric_value
                 console_print(
                     "CHECKPOINT",
-                    "Validation loss improved; saving best checkpoint",
+                    "Checkpoint monitor improved; saving best checkpoint",
                     epoch=epoch_index + 1,
-                    best_val_loss=best_val_loss,
+                    checkpoint_monitor_metric=best_checkpoint_monitor_metric,
+                    checkpoint_monitor_mode=best_checkpoint_monitor_mode,
+                    checkpoint_monitor_value=current_checkpoint_metric_value,
+                    best_checkpoint_metric_value=best_checkpoint_metric_value,
                 )
                 best_checkpoint_path = self.checkpoint_manager.save_checkpoint(
                     checkpoint_name="best.pt",
