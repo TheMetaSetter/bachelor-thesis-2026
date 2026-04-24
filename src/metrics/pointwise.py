@@ -92,7 +92,15 @@ def compute_pointwise_metrics(
 ) -> dict[str, float]:
     # Use a strict comparison so a collapsed zero threshold does not mark every
     # zero-valued point as anomalous.
+
+    # TODO: Không được phép sử dụng các point-adjusted metrics
+    # TODO: Đọc, hiểu bản chất và sử dụng thêm metric VUS-PR.
+
+    # Dựa vào threshold đã tính toán ra dựa trên
+    # anomlay score của tất cả timestep trong validation set
+    # để convert score sang dự đoán nhị phân.
     binary_predictions = (point_scores > threshold).astype(np.int64)
+
     return {
         "roc_auc": _safe_metric(roc_auc_score, point_labels, point_scores),
         "pr_auc": _safe_metric(average_precision_score, point_labels, point_scores),

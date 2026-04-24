@@ -61,6 +61,8 @@ This is important so I will repeat 3 times.
 
 - Stick to "least amount of codepaths" principle, which means configurations, models, pre-processing, all of that should be obvious to users. Reading should be obvious and configurations should be obvious.
 
+- Do not write overly long `for` loops. When a loop starts handling many responsibilities at once, split the work into small, clearly named helper functions or methods so each step can be read, reused, tested, and modified independently.
+
 - Write explanatory comments to support user reading code. Comments should be updated in parallel with code or implementations.
 
 - Write explanatory comments to support user reading code. Comments should be updated in parallel with code or implementations.
