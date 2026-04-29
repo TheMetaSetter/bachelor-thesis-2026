@@ -27,12 +27,14 @@ def adjust_learning_rate(args, optimizer, loader, step):
         lr = scale * q + end_lr * (1 - q)
 
     for i, param_group in enumerate(optimizer.param_groups):
-        if 'fix_lr' in param_group and param_group['fix_lr']:  # fixed LR
-            param_group['lr'] = scale * args.base_lr
-        elif i == 1 and args.base_lr_biases is not None:  # cosine schedule with base_lr_biases
-            param_group['lr'] = lr * args.base_lr_biases
+        if "fix_lr" in param_group and param_group["fix_lr"]:  # fixed LR
+            param_group["lr"] = scale * args.base_lr
+        elif (
+            i == 1 and args.base_lr_biases is not None
+        ):  # cosine schedule with base_lr_biases
+            param_group["lr"] = lr * args.base_lr_biases
         else:  # default: cosine schedule
-            param_group['lr'] = lr * args.base_lr
+            param_group["lr"] = lr * args.base_lr
 
 
 def adjust_learning_rate_per_epoch(args, optimizer, epoch):
@@ -48,12 +50,14 @@ def adjust_learning_rate_per_epoch(args, optimizer, epoch):
         lr = scale * q + end_lr * (1 - q)
 
     for i, param_group in enumerate(optimizer.param_groups):
-        if 'fix_lr' in param_group and param_group['fix_lr']:  # fixed LR
-            param_group['lr'] = scale * args.base_lr
-        elif i == 1 and args.base_lr_biases is not None:  # cosine schedule with base_lr_biases
-            param_group['lr'] = lr * args.base_lr_biases
+        if "fix_lr" in param_group and param_group["fix_lr"]:  # fixed LR
+            param_group["lr"] = scale * args.base_lr
+        elif (
+            i == 1 and args.base_lr_biases is not None
+        ):  # cosine schedule with base_lr_biases
+            param_group["lr"] = lr * args.base_lr_biases
         else:  # default: cosine schedule
-            param_group['lr'] = lr * args.base_lr
+            param_group["lr"] = lr * args.base_lr
 
 
 class LARS(optim.Optimizer):
@@ -141,32 +145,39 @@ def get_optimizer(args, model):
         print(f"Using different learning rate for biases and BN: {args.base_lr_biases}")
 
     if args.optimizer == "adamw":  # to use with ViTs
-        assert not args.use_constant_pred_lr, "AdamW with constant predictor lr not implemented"
-        parameters = [{'params': param_weights}, {'params': param_biases, 'weight_decay': 0.0}]
+        assert not args.use_constant_pred_lr, (
+            "AdamW with constant predictor lr not implemented"
+        )
+        parameters = [
+            {"params": param_weights},
+            {"params": param_biases, "weight_decay": 0.0},
+        ]
         optimizer = torch.optim.AdamW(
             parameters,
             lr=0,  # will be set later in adjust_learning_rate()
             weight_decay=args.wd,
         )
     elif args.optimizer == "lars":
-        assert not args.use_constant_pred_lr, "LARS with constant predictor lr not implemented"
-        parameters = [{'params': param_weights}, {'params': param_biases}]
+        assert not args.use_constant_pred_lr, (
+            "LARS with constant predictor lr not implemented"
+        )
+        parameters = [{"params": param_weights}, {"params": param_biases}]
         optimizer = LARS(
             parameters,
             lr=0,  # will be set later in adjust_learning_rate()
             weight_decay=args.wd,
             weight_decay_filter=exclude_bias_and_norm,
-            lars_adaptation_filter=exclude_bias_and_norm
+            lars_adaptation_filter=exclude_bias_and_norm,
         )
     elif args.optimizer == "sgd":
         if args.use_constant_pred_lr:
             parameters = [
-                {'params': param_weights, 'fix_lr': False},
-                {'params': param_biases, 'fix_lr': False},
-                {'params': param_predictor, 'fix_lr': True}
+                {"params": param_weights, "fix_lr": False},
+                {"params": param_biases, "fix_lr": False},
+                {"params": param_predictor, "fix_lr": True},
             ]
         else:
-            parameters = [{'params': param_weights}, {'params': param_biases}]
+            parameters = [{"params": param_weights}, {"params": param_biases}]
         optimizer = torch.optim.SGD(
             parameters,
             lr=0,  # will be set later in adjust_learning_rate()
@@ -177,4 +188,3 @@ def get_optimizer(args, model):
         raise ValueError(f"Unknown optimizer: {args.optimizer}")
 
     return optimizer
-

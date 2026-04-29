@@ -18,8 +18,20 @@ class Conv2DWithSamePadding(nn.Conv2d):
         out_height = (in_height + self.stride[0] - 1) // self.stride[0]
         out_width = (in_width + self.stride[1] - 1) // self.stride[1]
 
-        pad_along_height = max((out_height - 1) * self.stride[0] + (self.kernel_size[0] - 1) * self.dilation[0] + 1 - in_height, 0)
-        pad_along_width = max((out_width - 1) * self.stride[1] + (self.kernel_size[1] - 1) * self.dilation[1] + 1 - in_width, 0)
+        pad_along_height = max(
+            (out_height - 1) * self.stride[0]
+            + (self.kernel_size[0] - 1) * self.dilation[0]
+            + 1
+            - in_height,
+            0,
+        )
+        pad_along_width = max(
+            (out_width - 1) * self.stride[1]
+            + (self.kernel_size[1] - 1) * self.dilation[1]
+            + 1
+            - in_width,
+            0,
+        )
 
         pad_top = pad_along_height // 2
         pad_bottom = pad_along_height - pad_top
@@ -45,7 +57,9 @@ def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
 
 def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution"""
-    return Conv2DWithSamePadding(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
+    return Conv2DWithSamePadding(
+        in_planes, out_planes, kernel_size=1, stride=stride, bias=False
+    )
 
 
 class BasicBlock(nn.Module):
@@ -203,15 +217,19 @@ class ResNet(nn.Module):
         )
         self.bn1 = norm_layer(num_out_filters)
         self.relu = nn.ReLU(inplace=True)
+
         # equivalent to JAX's 'SAME' padding with kernel_size=3, stride=2 (FOR image size 224x224)
         # (which pads bottom and right with 1 extra row/col since input size is odd)
         def maxpool_jax_like(x):
             return torch.nn.functional.max_pool2d(
-                torch.nn.functional.pad(x, (0, 1, 0, 1), mode="constant", value=float("-inf")),
+                torch.nn.functional.pad(
+                    x, (0, 1, 0, 1), mode="constant", value=float("-inf")
+                ),
                 kernel_size=3,
                 stride=2,
                 padding=0,
             )
+
         self.maxpool = maxpool_jax_like
 
         self.layer1 = self._make_layer(block, num_out_filters, layers[0])

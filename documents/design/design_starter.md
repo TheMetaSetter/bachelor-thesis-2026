@@ -765,6 +765,28 @@ Rules:
 - `point_labels` and `point_scores` preserve timestep-level evidence for eventwise or pointwise metrics.
 - Aggregated metrics are computed from collections of `evaluation_record`, not from ad hoc tensors with dataset-specific shapes.
 
+### 6. Threshold calibration and leakage rule
+
+The evaluator must keep anomaly-score computation separate from threshold calibration.
+
+For the default static-threshold protocol:
+
+- reconstruction-based models may compute point scores as reconstruction MSE and may derive window scores by averaging point scores inside a window;
+- overlapping window point scores may be averaged back onto the original entity timeline before metrics are computed;
+- the scalar threshold used for validation, test, or streaming inference must be calibrated on a known calibration split such as train or validation, not on the same test sequence being evaluated;
+- a test evaluator must receive an already-calibrated threshold or a serialized threshold-calibration artifact;
+- computing a 95th quantile or any high quantile from the full test score vector is allowed only as an explicitly named oracle/offline diagnostic, never as the default reported protocol.
+
+This rule matters because full-test quantile thresholding assumes that all future test windows are already available. That assumption is incompatible with streaming evaluation and can also leak the anomaly-score distribution of the evaluation set into the decision rule.
+
+For stream testing, the stricter rule is:
+
+- the threshold at time `t` may depend on train/validation calibration and on stream observations available before or at `t`;
+- the threshold at time `t` must not depend on windows or scores from future stream positions;
+- online adaptive thresholding may use rolling, learned, or probabilistic updates, but the state update must be causal and checkpointable.
+
+Current unresolved implementation problem: `src/engine/evaluator.py` currently computes `quantile=0.95` from the concatenated scores of whichever loader is passed to `evaluate()`. Since `scripts/evaluate.py` passes the test loader, the active CLI path calibrates the threshold on the full test timeline. This must be refactored into an explicit calibration step before the default evaluation results are treated as thesis-valid.
+
 ### What must remain unchanged when swapping datasets or models
 
 - Dataset modules may change how raw files are read, but they must still emit `raw_sequence` with the same keys and tensor orientation.

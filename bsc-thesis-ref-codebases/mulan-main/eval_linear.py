@@ -27,7 +27,9 @@ def get_arguments():
         description="Evaluate a pretrained model on ImageNet"
     )
 
-    parser.add_argument('--experiment-name', default='default', type=str, help='name of the experiment')
+    parser.add_argument(
+        "--experiment-name", default="default", type=str, help="name of the experiment"
+    )
     parser.add_argument(
         "--print-freq", default=50, type=int, metavar="N", help="print frequency"
     )
@@ -46,18 +48,36 @@ def get_arguments():
 
     # Model
     parser.add_argument("--arch", type=str, default="resnet50")
-    parser.add_argument("--patch-size", type=int, default=16,
-                        help='Patch size for ViT (ignored for ResNet)')
-    parser.add_argument('--stop-grad-conv1', action='store_true',
-                        help='stop-grad after first conv, or patch embedding')
-    parser.add_argument('--n-last-blocks', default=1, type=int,
-                        help="Concatenate [CLS] tokens for the `n` last blocks. "
-                             "DINO uses `n=4` when evaluating ViT-Small and `n=1` with ViT-Base.")
-    parser.add_argument('--avgpool_patchtokens', action='store_true',
-                        help='use avgpool of patch tokens in addition to [CLS] token (default: False)')
-    parser.add_argument('--drop-path-rate', type=float, default=0.0,
-                        help='stochastic depth rate (not used for linear eval, set to 0)')
-    parser.add_argument('--nesterov', action='store_true', help='use Nesterov momentum')
+    parser.add_argument(
+        "--patch-size",
+        type=int,
+        default=16,
+        help="Patch size for ViT (ignored for ResNet)",
+    )
+    parser.add_argument(
+        "--stop-grad-conv1",
+        action="store_true",
+        help="stop-grad after first conv, or patch embedding",
+    )
+    parser.add_argument(
+        "--n-last-blocks",
+        default=1,
+        type=int,
+        help="Concatenate [CLS] tokens for the `n` last blocks. "
+        "DINO uses `n=4` when evaluating ViT-Small and `n=1` with ViT-Base.",
+    )
+    parser.add_argument(
+        "--avgpool_patchtokens",
+        action="store_true",
+        help="use avgpool of patch tokens in addition to [CLS] token (default: False)",
+    )
+    parser.add_argument(
+        "--drop-path-rate",
+        type=float,
+        default=0.0,
+        help="stochastic depth rate (not used for linear eval, set to 0)",
+    )
+    parser.add_argument("--nesterov", action="store_true", help="use Nesterov momentum")
 
     # Optim
     parser.add_argument(
@@ -108,13 +128,19 @@ def get_arguments():
         metavar="N",
         help="number of data loader workers",
     )
-    parser.add_argument("--no-fp16", action="store_true", help="disable mixed precision")
+    parser.add_argument(
+        "--no-fp16", action="store_true", help="disable mixed precision"
+    )
 
-    parser.add_argument("--use-jax-resnet", action="store_true",
-                        help="use JAX ResNet50 implementation (for models converted from JAX)")
+    parser.add_argument(
+        "--use-jax-resnet",
+        action="store_true",
+        help="use JAX ResNet50 implementation (for models converted from JAX)",
+    )
 
-    parser.add_argument('--device', default='cuda',
-                        help='device to use for training / testing')
+    parser.add_argument(
+        "--device", default="cuda", help="device to use for training / testing"
+    )
 
     return parser
 
@@ -142,10 +168,14 @@ def main():
 
     backbone, embedding_dim = get_backbone(args)
     if "vit" in args.arch:
-        embedding_dim = embedding_dim * (args.n_last_blocks + int(args.avgpool_patchtokens))
-        print(f"Using CLS tokens from the last {args.n_last_blocks} blocks, "
-              f"{'and avgpool of patch tokens, ' if args.avgpool_patchtokens else ''}"
-              f"effective embedding dimension is {embedding_dim}")
+        embedding_dim = embedding_dim * (
+            args.n_last_blocks + int(args.avgpool_patchtokens)
+        )
+        print(
+            f"Using CLS tokens from the last {args.n_last_blocks} blocks, "
+            f"{'and avgpool of patch tokens, ' if args.avgpool_patchtokens else ''}"
+            f"effective embedding dimension is {embedding_dim}"
+        )
     state_dict = torch.load(args.pretrained, map_location="cpu", weights_only=False)
     if "model" in state_dict:
         state_dict = state_dict["model"]
@@ -171,22 +201,32 @@ def main():
         head.requires_grad_(True)
 
     if args.distributed:
-        backbone = torch.nn.parallel.DistributedDataParallel(backbone, device_ids=[args.gpu],
-                                                             output_device=args.gpu, find_unused_parameters=False)
-        head = torch.nn.parallel.DistributedDataParallel(head, device_ids=[args.gpu], output_device=args.gpu,
-                                                         find_unused_parameters=False)
+        backbone = torch.nn.parallel.DistributedDataParallel(
+            backbone,
+            device_ids=[args.gpu],
+            output_device=args.gpu,
+            find_unused_parameters=False,
+        )
+        head = torch.nn.parallel.DistributedDataParallel(
+            head,
+            device_ids=[args.gpu],
+            output_device=args.gpu,
+            find_unused_parameters=False,
+        )
 
     criterion = nn.CrossEntropyLoss().to(args.device)
 
     param_groups = [dict(params=head.parameters(), lr=args.lr_head)]
     if args.weights == "finetune":
         param_groups.append(dict(params=backbone.parameters(), lr=args.lr_backbone))
-    optimizer = optim.SGD(param_groups, 0, momentum=0.9, weight_decay=args.wd, nesterov=args.nesterov)
+    optimizer = optim.SGD(
+        param_groups, 0, momentum=0.9, weight_decay=args.wd, nesterov=args.nesterov
+    )
     scaler = torch.amp.GradScaler(enabled=not args.no_fp16)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
 
     # automatically resume from checkpoint if it exists
-    resume_path = Path(args.output_dir) / f'checkpoint.pth'
+    resume_path = Path(args.output_dir) / f"checkpoint.pth"
     if os.path.isfile(resume_path):
         checkpoint = torch.load(resume_path, map_location="cpu", weights_only=False)
         start_epoch = checkpoint["epoch"]
@@ -195,7 +235,7 @@ def main():
         head.load_state_dict(checkpoint["head"])
         optimizer.load_state_dict(checkpoint["optimizer"])
         scheduler.load_state_dict(checkpoint["scheduler"])
-        scaler.load_state_dict(checkpoint['scaler'])
+        scaler.load_state_dict(checkpoint["scaler"])
     else:
         start_epoch = 0
         best_acc = argparse.Namespace(top1=0, top5=0)
@@ -254,7 +294,9 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         train_dataset, sampler=train_sampler, **kwargs
     )
-    val_loader = torch.utils.data.DataLoader(val_dataset, **kwargs)  # so far, each GPU has full validation set
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset, **kwargs
+    )  # so far, each GPU has full validation set
 
     # estimate the mean and std of the features (per feature dimension)
     # TODO: adapt for DDP (if val set is split across GPUs, the estimated mean/std will be incorrect)
@@ -266,10 +308,20 @@ def main():
             images = images.to(args.device, non_blocking=True)
             with torch.no_grad():
                 if "vit" in args.arch:
-                    intermediate_output = backbone.get_intermediate_layers(images, args.n_last_blocks)
+                    intermediate_output = backbone.get_intermediate_layers(
+                        images, args.n_last_blocks
+                    )
                     feats = torch.cat([x[:, 0] for x in intermediate_output], dim=-1)
                     if args.avgpool_patchtokens:
-                        feats = torch.cat((feats.unsqueeze(-1), torch.mean(intermediate_output[-1][:, 1:], dim=1).unsqueeze(-1)), dim=-1)
+                        feats = torch.cat(
+                            (
+                                feats.unsqueeze(-1),
+                                torch.mean(
+                                    intermediate_output[-1][:, 1:], dim=1
+                                ).unsqueeze(-1),
+                            ),
+                            dim=-1,
+                        )
                         feats = feats.reshape(feats.shape[0], -1)
                 else:
                     feats = backbone(images)
@@ -278,11 +330,15 @@ def main():
 
         features_mean = features_all.mean(dim=0).to(args.device)
         features_std = features_all.std(dim=0).to(args.device)
-        print(f"Features mean: {features_mean.mean().item()} and std: {features_std.mean().item()}")
+        print(
+            f"Features mean: {features_mean.mean().item()} and std: {features_std.mean().item()}"
+        )
         del features_all  # discard the features
         print("Features will be normalized during linear evaluation")
 
-    eval_type = f"Finetune {args.train_percent}%" if args.weights == "finetune" else f"Linear"
+    eval_type = (
+        f"Finetune {args.train_percent}%" if args.weights == "finetune" else f"Linear"
+    )
 
     num_steps = len(train_loader)
     if not args.no_fp16:
@@ -306,11 +362,17 @@ def main():
             assert False, f"Invalid weights argument: {args.weights}"
 
         metric_logger = utils.MetricLogger(delimiter="  ")
-        metric_logger.add_meter('lr_backbone', utils.SmoothedValue(window_size=1, fmt='{value}'))
-        metric_logger.add_meter('lr_head', utils.SmoothedValue(window_size=1, fmt='{value}'))
-        header = f'{eval_type} EVAL epoch: [{epoch}]'
+        metric_logger.add_meter(
+            "lr_backbone", utils.SmoothedValue(window_size=1, fmt="{value}")
+        )
+        metric_logger.add_meter(
+            "lr_head", utils.SmoothedValue(window_size=1, fmt="{value}")
+        )
+        header = f"{eval_type} EVAL epoch: [{epoch}]"
 
-        for step, (images, targets) in enumerate(metric_logger.log_every(train_loader, args.print_freq, header)):
+        for step, (images, targets) in enumerate(
+            metric_logger.log_every(train_loader, args.print_freq, header)
+        ):
             global_step = epoch * num_steps + step
             images = images.to(args.device, non_blocking=True)
             targets = targets.to(args.device, non_blocking=True)
@@ -318,22 +380,34 @@ def main():
             optimizer.zero_grad()
 
             # forward pass backbone
-            with torch.amp.autocast('cuda', enabled=not args.no_fp16):
+            with torch.amp.autocast("cuda", enabled=not args.no_fp16):
                 if "vit" in args.arch:
-                    intermediate_output = backbone.get_intermediate_layers(images, args.n_last_blocks)
+                    intermediate_output = backbone.get_intermediate_layers(
+                        images, args.n_last_blocks
+                    )
                     features = torch.cat([x[:, 0] for x in intermediate_output], dim=-1)
                     if args.avgpool_patchtokens:
-                        features = torch.cat((features.unsqueeze(-1), torch.mean(intermediate_output[-1][:, 1:], dim=1).unsqueeze(-1)), dim=-1)
+                        features = torch.cat(
+                            (
+                                features.unsqueeze(-1),
+                                torch.mean(
+                                    intermediate_output[-1][:, 1:], dim=1
+                                ).unsqueeze(-1),
+                            ),
+                            dim=-1,
+                        )
                         features = features.reshape(features.shape[0], -1)
                 else:
                     features = backbone(images)
 
             # normalize features if specified
             if args.normalize_features:
-                features = (features - features_mean) / (features_std[None, :] + 1e-8)  # normalize the features
+                features = (features - features_mean) / (
+                    features_std[None, :] + 1e-8
+                )  # normalize the features
 
             # forward pass head
-            with torch.amp.autocast('cuda', enabled=not args.no_fp16):
+            with torch.amp.autocast("cuda", enabled=not args.no_fp16):
                 output = head(features)
 
             loss = criterion(output, targets)
@@ -367,22 +441,32 @@ def main():
                 targets = targets.to(args.device, non_blocking=True)
 
                 if "vit" in args.arch:
-                    intermediate_output = backbone.get_intermediate_layers(images, args.n_last_blocks)
+                    intermediate_output = backbone.get_intermediate_layers(
+                        images, args.n_last_blocks
+                    )
                     features = torch.cat([x[:, 0] for x in intermediate_output], dim=-1)
                     if args.avgpool_patchtokens:
-                        features = torch.cat((features.unsqueeze(-1), torch.mean(intermediate_output[-1][:, 1:], dim=1).unsqueeze(-1)), dim=-1)
+                        features = torch.cat(
+                            (
+                                features.unsqueeze(-1),
+                                torch.mean(
+                                    intermediate_output[-1][:, 1:], dim=1
+                                ).unsqueeze(-1),
+                            ),
+                            dim=-1,
+                        )
                         features = features.reshape(features.shape[0], -1)
                 else:
                     features = backbone(images)
 
                 if args.normalize_features:
-                    features = (features - features_mean) / (features_std[None, :] + 1e-8)  # normalize the features
+                    features = (features - features_mean) / (
+                        features_std[None, :] + 1e-8
+                    )  # normalize the features
 
                 outputs = head(features)
 
-                acc1, acc5 = accuracy(
-                    outputs, targets, topk=(1, 5)
-                )
+                acc1, acc5 = accuracy(outputs, targets, topk=(1, 5))
                 top1.update(acc1[0].item(), images.size(0))
                 top5.update(acc5[0].item(), images.size(0))
 
@@ -410,7 +494,7 @@ def main():
                 head=head.state_dict(),
                 optimizer=optimizer.state_dict(),
                 scheduler=scheduler.state_dict(),
-                scaler=scaler.state_dict()
+                scaler=scaler.state_dict(),
             )
             torch.save(state, args.output_dir / "checkpoint.pth")
 

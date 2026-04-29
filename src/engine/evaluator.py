@@ -115,9 +115,7 @@ class Evaluator:
 
         sequence = sequences_by_entity[entity_id]
         sequence_length = sequence["x"].shape[0]
-        entity_score_sums[entity_id] = torch.zeros(
-            sequence_length, dtype=torch.float32
-        )
+        entity_score_sums[entity_id] = torch.zeros(sequence_length, dtype=torch.float32)
         entity_score_counts[entity_id] = torch.zeros(
             sequence_length, dtype=torch.float32
         )

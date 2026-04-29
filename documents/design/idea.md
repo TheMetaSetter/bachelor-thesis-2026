@@ -547,6 +547,22 @@ We briefly discussed that some anomaly-detection reporting conventions, especial
 
 The evaluation protocol must be clean enough that later reviewers cannot dismiss your numbers as metric artifacts.
 
+### 9a. Full-test quantile thresholding leaks test-time information
+
+A separate evaluation risk is threshold leakage. If the threshold is selected as a high quantile of all anomaly scores on the test sequence, then the evaluation has already seen future test windows before making the earliest anomaly decisions.
+
+That protocol is not valid for streaming and is also weak for ordinary held-out testing, because the decision rule is calibrated on the same distribution it is supposed to evaluate.
+
+The cleaner thesis protocol is:
+
+1. learn the model on train;
+2. calibrate the static threshold on train or validation reconstruction scores;
+3. freeze and save that threshold;
+4. evaluate validation, test, or stream windows with that fixed threshold unless the experiment is explicitly an adaptive-threshold experiment;
+5. if the threshold adapts online, update it only from causal state available up to the current stream position.
+
+Current codebase mismatch: the active offline evaluator computes the 95th-quantile threshold from the loader being evaluated. When that loader is the test loader, the reported threshold is not train/validation-calibrated. This remains an unresolved protocol problem and should be fixed before treating thresholded test metrics as final thesis evidence.
+
 ### 10. SMD handling must be done carefully
 
 SMD is not just “one dataset” in the naive sense. It contains multiple machine subsets, and code organization, checkpoint naming, and metric aggregation should respect that structure.

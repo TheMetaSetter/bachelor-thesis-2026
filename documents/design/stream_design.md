@@ -187,6 +187,35 @@ raw dataset
 -> online evaluation
 ```
 
+### Thresholding and future-leakage rule
+
+The streaming evaluator must be causal. At stream position `t`, the anomaly decision may use:
+
+* model state and scaler state learned before deployment;
+* a static threshold calibrated from train and/or validation scores before deployment;
+* threshold state updated from observations up to the current position;
+* the current window score.
+
+It must not use:
+
+* the full future test sequence;
+* quantiles computed from all test-window scores before making online decisions;
+* labels from the current or future test stream to tune the decision rule.
+
+The static baseline for streaming should therefore be:
+
+```text
+train model
+-> run calibration on train/validation windows only
+-> save threshold artifact
+-> stream test windows sequentially
+-> compare each score against the saved threshold
+```
+
+An adaptive-threshold experiment may update the threshold during the test stream, but the update must be explicitly causal. A rolling quantile, a classical threshold forecaster, or a probabilistic threshold posterior is acceptable only if its state contains past observations and never scores from future windows.
+
+Current unresolved problem: the active offline evaluator computes a 95th-quantile threshold from the score vector of the loader being evaluated. When the loader is the test loader, this is an oracle-style full-test threshold and is not compatible with the streaming protocol in this document. The implementation needs a separate threshold calibration API and an online evaluator path that consumes a pre-calibrated or causally updated threshold.
+
 ### Unified interface
 
 For reusability, each dataset stream should expose a unified interface such as:

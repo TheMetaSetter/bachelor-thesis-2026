@@ -709,9 +709,7 @@ def test_load_experiment_config_accepts_valid_val_synth_loss_scheduler(
 
     loaded_config = load_experiment_config(experiment_config_path)
 
-    assert (
-        loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_loss"
-    )
+    assert loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_loss"
 
 
 def test_load_experiment_config_accepts_label_refurbishment_and_masking_fields(

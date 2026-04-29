@@ -33,7 +33,9 @@ class RandomCutout(Module):
             raise TypeError("Ratio should be a sequence")
         if (scale[0] > scale[1]) or (ratio[0] > ratio[1]):
             warnings.warn("Scale and ratio should be of kind (min, max)")
-        if not (isinstance(fill, float) or (isinstance(fill, Sequence) and len(fill) == 3)):
+        if not (
+            isinstance(fill, float) or (isinstance(fill, Sequence) and len(fill) == 3)
+        ):
             raise ValueError("Fill should be an integer or a tuple of length 3")
 
         self.scale = scale
@@ -50,7 +52,9 @@ class RandomCutout(Module):
 
         log_ratio = self._log_ratio
         for _ in range(10):
-            target_area = area * torch.empty(1).uniform_(self.scale[0], self.scale[1]).item()
+            target_area = (
+                area * torch.empty(1).uniform_(self.scale[0], self.scale[1]).item()
+            )
             aspect_ratio = torch.exp(
                 torch.empty(1).uniform_(
                     log_ratio[0],  # type: ignore[arg-type]
@@ -85,12 +89,18 @@ class RandomCutout(Module):
     def forward(self, inpt: Tensor) -> Any:
         if not isinstance(inpt, Tensor):
             NotImplementedError("The transform only supports input Tensors")
-        assert inpt.dim() == 3 and inpt.shape[0] == 3, f"Input tensor should be a tensor of (C, H, W) shape"
+        assert inpt.dim() == 3 and inpt.shape[0] == 3, (
+            f"Input tensor should be a tensor of (C, H, W) shape"
+        )
         params = self._get_params(inpt)
 
         fill = self.fill.to(inpt.dtype)
         out = inpt.clone()
-        out[:, params['top']:params['top']+params['height'], params['left']:params['left']+params['width']] = fill
+        out[
+            :,
+            params["top"] : params["top"] + params["height"],
+            params["left"] : params["left"] + params["width"],
+        ] = fill
 
         return out
 
@@ -103,7 +113,9 @@ class TrainTransformBYOL(object):
                     224, interpolation=InterpolationMode.BICUBIC
                 ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.RandomApply(
                     [
                         transforms_v2.ColorJitter(
@@ -113,7 +125,7 @@ class TrainTransformBYOL(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0)),  
+                transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0)),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -125,7 +137,9 @@ class TrainTransformBYOL(object):
                     224, interpolation=transforms_v2.InterpolationMode.BICUBIC
                 ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.RandomApply(
                     [
                         transforms_v2.ColorJitter(
@@ -135,10 +149,11 @@ class TrainTransformBYOL(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.RandomApply([
-                    transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))
-                ], p=0.1),  
-                transforms_v2.RandomSolarize(threshold=0.5, p=0.2), 
+                transforms_v2.RandomApply(
+                    [transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))],
+                    p=0.1,
+                ),
+                transforms_v2.RandomSolarize(threshold=0.5, p=0.2),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -157,7 +172,7 @@ class TrainTransformSimSiam(object):
         self.transform = transforms_v2.Compose(
             [
                 transforms_v2.RandomResizedCrop(
-                    224, scale=(0.2, 1.), interpolation=InterpolationMode.BICUBIC
+                    224, scale=(0.2, 1.0), interpolation=InterpolationMode.BICUBIC
                 ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
                 transforms_v2.ToDtype(torch.float32, scale=True),
@@ -170,9 +185,10 @@ class TrainTransformSimSiam(object):
                     p=0.8,
                 ),  # saturation=0.4 for SimSiam
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.RandomApply([
-                    transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))
-                ], p=0.5),
+                transforms_v2.RandomApply(
+                    [transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))],
+                    p=0.5,
+                ),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -190,14 +206,17 @@ class TrainTransformMoCov3(object):
     """
     The only difference with BYOL is the min glob scale
     """
+
     def __init__(self):
         self.transform = transforms_v2.Compose(
             [
                 transforms_v2.RandomResizedCrop(
-                    224, scale=(0.2, 1.), interpolation=InterpolationMode.BICUBIC
+                    224, scale=(0.2, 1.0), interpolation=InterpolationMode.BICUBIC
                 ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.RandomApply(
                     [
                         transforms_v2.ColorJitter(
@@ -207,7 +226,7 @@ class TrainTransformMoCov3(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0)),  
+                transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0)),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -216,10 +235,14 @@ class TrainTransformMoCov3(object):
         self.transform_prime = transforms_v2.Compose(
             [
                 transforms_v2.RandomResizedCrop(
-                    224, scale=(0.2, 1.), interpolation=transforms_v2.InterpolationMode.BICUBIC
+                    224,
+                    scale=(0.2, 1.0),
+                    interpolation=transforms_v2.InterpolationMode.BICUBIC,
                 ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.RandomApply(
                     [
                         transforms_v2.ColorJitter(
@@ -229,10 +252,11 @@ class TrainTransformMoCov3(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.RandomApply([
-                    transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))
-                ], p=0.1),  
-                transforms_v2.RandomSolarize(threshold=0.5, p=0.2), 
+                transforms_v2.RandomApply(
+                    [transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))],
+                    p=0.1,
+                ),
+                transforms_v2.RandomSolarize(threshold=0.5, p=0.2),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -250,12 +274,17 @@ class TrainTransformNoCrop(object):
     """
     No random cropping, but all other augmentations are kept the same as BYOL
     """
+
     def __init__(self):
         self.transform = transforms_v2.Compose(
             [
-                transforms_v2.Resize((224, 224), interpolation=InterpolationMode.BICUBIC),
+                transforms_v2.Resize(
+                    (224, 224), interpolation=InterpolationMode.BICUBIC
+                ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.RandomApply(
                     [
                         transforms_v2.ColorJitter(
@@ -265,7 +294,7 @@ class TrainTransformNoCrop(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0)),  
+                transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0)),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -273,9 +302,13 @@ class TrainTransformNoCrop(object):
         )
         self.transform_prime = transforms_v2.Compose(
             [
-                transforms_v2.Resize((224, 224), interpolation=InterpolationMode.BICUBIC),
+                transforms_v2.Resize(
+                    (224, 224), interpolation=InterpolationMode.BICUBIC
+                ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.RandomApply(
                     [
                         transforms_v2.ColorJitter(
@@ -285,10 +318,11 @@ class TrainTransformNoCrop(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.RandomApply([
-                    transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))
-                ], p=0.1),  
-                transforms_v2.RandomSolarize(threshold=0.5, p=0.2), 
+                transforms_v2.RandomApply(
+                    [transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))],
+                    p=0.1,
+                ),
+                transforms_v2.RandomSolarize(threshold=0.5, p=0.2),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -306,11 +340,16 @@ class TrainTransformOnlyCutoutAsym(object):
     """
     Use only cutout augmentation. And only in the 1st view.
     """
+
     def __init__(self, cutout_range: Tuple[float, float] = (0.2, 0.6)):
         self.transform = transforms_v2.Compose(
             [
-                transforms_v2.Resize((224, 224), interpolation=InterpolationMode.BICUBIC),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.Resize(
+                    (224, 224), interpolation=InterpolationMode.BICUBIC
+                ),
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 RandomCutout(scale=cutout_range, fill=(0.485, 0.456, 0.406)),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -319,8 +358,12 @@ class TrainTransformOnlyCutoutAsym(object):
         )
         self.transform_prime = transforms_v2.Compose(
             [
-                transforms_v2.Resize((224, 224), interpolation=InterpolationMode.BICUBIC),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.Resize(
+                    (224, 224), interpolation=InterpolationMode.BICUBIC
+                ),
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -338,11 +381,16 @@ class TrainTransformOnlyCutout(object):
     """
     Use only cutout augmentation. In both views.
     """
+
     def __init__(self, cutout_range: Tuple[float, float] = (0.2, 0.6)):
         self.transform = transforms_v2.Compose(
             [
-                transforms_v2.Resize((224, 224), interpolation=InterpolationMode.BICUBIC),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.Resize(
+                    (224, 224), interpolation=InterpolationMode.BICUBIC
+                ),
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 RandomCutout(scale=cutout_range, fill=(0.485, 0.456, 0.406)),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -361,13 +409,16 @@ class TrainTransformOnlyCrop(object):
     """
     Use only random cropping in both views
     """
+
     def __init__(self):
         self.transform = transforms_v2.Compose(
             [
                 transforms_v2.RandomResizedCrop(
                     224, interpolation=InterpolationMode.BICUBIC
                 ),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -383,23 +434,27 @@ class TrainTransformOnlyCrop(object):
 
 class TrainTransformMultiTask(object):
     def __init__(
-            self,
-            tasks: Sequence[str] = ("global", "local", "cutout"),
-            num_views_per_task: Sequence[int] = (2, 2, 1),
-            cutout_range: Tuple[float, float] = (0.2, 0.6),
-            min_glob_scale: float = 0.25,
-            min_loc_scale: float = 0.08,
-            max_loc_scale: float = 0.25,
-            loc_crop_size: int = 96
+        self,
+        tasks: Sequence[str] = ("global", "local", "cutout"),
+        num_views_per_task: Sequence[int] = (2, 2, 1),
+        cutout_range: Tuple[float, float] = (0.2, 0.6),
+        min_glob_scale: float = 0.25,
+        min_loc_scale: float = 0.08,
+        max_loc_scale: float = 0.25,
+        loc_crop_size: int = 96,
     ):
-        assert len(tasks) == len(num_views_per_task), \
-            (f"Mismatch between number of tasks and the length of the num_views_per_task tuple, "
-             f"got {len(tasks) = } != {len(num_views_per_task) = }")
-        assert tasks[0] == "global" and num_views_per_task[0] == 2, \
+        assert len(tasks) == len(num_views_per_task), (
+            f"Mismatch between number of tasks and the length of the num_views_per_task tuple, "
+            f"got {len(tasks) = } != {len(num_views_per_task) = }"
+        )
+        assert tasks[0] == "global" and num_views_per_task[0] == 2, (
             "There should be 2 global views, and global should be the 1st task"
+        )
         assert all(num_views > 0 for num_views in num_views_per_task)
         assert 0 <= cutout_range[0] <= cutout_range[1] <= 1.0
-        assert min_loc_scale <= max_loc_scale <= 1.0, "min_loc_scale must be <= max_loc_scale <= 1.0"
+        assert min_loc_scale <= max_loc_scale <= 1.0, (
+            "min_loc_scale must be <= max_loc_scale <= 1.0"
+        )
         assert min_glob_scale <= 1.0, "min_glob_scale must be <= 1.0"
 
         scale_ranges = {
@@ -427,10 +482,14 @@ class TrainTransformMultiTask(object):
         augs_g1 = transforms_v2.Compose(
             [
                 transforms_v2.RandomResizedCrop(
-                    224, scale=(min_glob_scale, 1.0), interpolation=InterpolationMode.BICUBIC
+                    224,
+                    scale=(min_glob_scale, 1.0),
+                    interpolation=InterpolationMode.BICUBIC,
                 ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.RandomApply(
                     [
                         transforms_v2.ColorJitter(
@@ -440,7 +499,7 @@ class TrainTransformMultiTask(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0)),  
+                transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0)),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -449,10 +508,14 @@ class TrainTransformMultiTask(object):
         augs_g2 = transforms_v2.Compose(
             [
                 transforms_v2.RandomResizedCrop(
-                    224, scale=(min_glob_scale, 1.0), interpolation=transforms_v2.InterpolationMode.BICUBIC
+                    224,
+                    scale=(min_glob_scale, 1.0),
+                    interpolation=transforms_v2.InterpolationMode.BICUBIC,
                 ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.RandomApply(
                     [
                         transforms_v2.ColorJitter(
@@ -462,10 +525,11 @@ class TrainTransformMultiTask(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.RandomApply([
-                    transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))
-                ], p=0.1), 
-                transforms_v2.RandomSolarize(threshold=0.5, p=0.2), 
+                transforms_v2.RandomApply(
+                    [transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))],
+                    p=0.1,
+                ),
+                transforms_v2.RandomSolarize(threshold=0.5, p=0.2),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -474,10 +538,14 @@ class TrainTransformMultiTask(object):
         augs_local = transforms_v2.Compose(
             [
                 transforms_v2.RandomResizedCrop(
-                    loc_crop_size, scale=(min_loc_scale, max_loc_scale), interpolation=InterpolationMode.BICUBIC
+                    loc_crop_size,
+                    scale=(min_loc_scale, max_loc_scale),
+                    interpolation=InterpolationMode.BICUBIC,
                 ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.RandomApply(
                     [
                         transforms_v2.ColorJitter(
@@ -487,9 +555,10 @@ class TrainTransformMultiTask(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.RandomApply([
-                    transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))
-                ], p=0.5),
+                transforms_v2.RandomApply(
+                    [transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))],
+                    p=0.5,
+                ),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -498,10 +567,14 @@ class TrainTransformMultiTask(object):
         augs_cutout = transforms_v2.Compose(
             [
                 transforms_v2.RandomResizedCrop(
-                    224, scale=(0.25, 1.0), interpolation=transforms_v2.InterpolationMode.BICUBIC
+                    224,
+                    scale=(0.25, 1.0),
+                    interpolation=transforms_v2.InterpolationMode.BICUBIC,
                 ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 RandomCutout(scale=cutout_range, fill=(0.485, 0.456, 0.406)),
                 transforms_v2.RandomApply(
                     [
@@ -512,9 +585,10 @@ class TrainTransformMultiTask(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.RandomApply([
-                    transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))
-                ], p=0.5),
+                transforms_v2.RandomApply(
+                    [transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))],
+                    p=0.5,
+                ),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -525,10 +599,14 @@ class TrainTransformMultiTask(object):
         augs_global_more = transforms_v2.Compose(
             [
                 transforms_v2.RandomResizedCrop(
-                    224, scale=(min_glob_scale, 1.0), interpolation=transforms_v2.InterpolationMode.BICUBIC
+                    224,
+                    scale=(min_glob_scale, 1.0),
+                    interpolation=transforms_v2.InterpolationMode.BICUBIC,
                 ),
                 transforms_v2.RandomHorizontalFlip(p=0.5),
-                transforms_v2.ToDtype(torch.float32, scale=True),  # values are scaled to [0, 1] here
+                transforms_v2.ToDtype(
+                    torch.float32, scale=True
+                ),  # values are scaled to [0, 1] here
                 transforms_v2.RandomApply(
                     [
                         transforms_v2.ColorJitter(
@@ -538,9 +616,10 @@ class TrainTransformMultiTask(object):
                     p=0.8,
                 ),
                 transforms_v2.RandomGrayscale(p=0.2),
-                transforms_v2.RandomApply([
-                    transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))
-                ], p=0.5),
+                transforms_v2.RandomApply(
+                    [transforms_v2.GaussianBlur(kernel_size=23, sigma=(0.1, 2.0))],
+                    p=0.5,
+                ),
                 transforms_v2.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -578,20 +657,28 @@ def get_train_transforms(args):
     elif version == "mocov3":  # MoCov3's default
         return TrainTransformMoCov3()
     elif version == "no_crop":
-        warnings.warn("Using 'no-crop' transform! This is only meant for ablation studies.")
+        warnings.warn(
+            "Using 'no-crop' transform! This is only meant for ablation studies."
+        )
         return TrainTransformNoCrop()
     elif version == "only_cutout_asym":
-        warnings.warn("Using only cutout (asym) transform! This is only meant for ablation studies.")
+        warnings.warn(
+            "Using only cutout (asym) transform! This is only meant for ablation studies."
+        )
         return TrainTransformOnlyCutoutAsym(
             cutout_range=args.cutout_range,
         )
     elif version == "only_cutout":
-        warnings.warn("Using only cutout (symmetric) transform! This is only meant for ablation studies.")
+        warnings.warn(
+            "Using only cutout (symmetric) transform! This is only meant for ablation studies."
+        )
         return TrainTransformOnlyCutout(
             cutout_range=args.cutout_range,
         )
     elif version == "only_crop":
-        warnings.warn("Using only crop (symmetric) transform! This is only meant for ablation studies.")
+        warnings.warn(
+            "Using only crop (symmetric) transform! This is only meant for ablation studies."
+        )
         return TrainTransformOnlyCrop()
     elif version == "multitask":
         return TrainTransformMultiTask(
@@ -601,7 +688,7 @@ def get_train_transforms(args):
             min_glob_scale=args.min_glob_scale,
             min_loc_scale=args.min_loc_scale,
             max_loc_scale=args.max_loc_scale,
-            loc_crop_size=args.loc_crop_size
+            loc_crop_size=args.loc_crop_size,
         )
     else:
         raise ValueError(f"Unknown version {version}")

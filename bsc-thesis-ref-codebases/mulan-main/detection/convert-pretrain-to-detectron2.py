@@ -30,7 +30,11 @@ if __name__ == "__main__":
         print(old_k, "->", k)
         newmodel[k] = v.numpy()
 
-    res = {"model": newmodel, "__author__": "BYOL_multitask", "matching_heuristics": True}
+    res = {
+        "model": newmodel,
+        "__author__": "BYOL_multitask",
+        "matching_heuristics": True,
+    }
 
     with open(sys.argv[2], "wb") as f:
         pkl.dump(res, f)

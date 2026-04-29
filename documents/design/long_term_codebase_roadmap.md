@@ -261,6 +261,19 @@ The long-term target is:
 - more reliable evaluation thresholds and score diagnostics
 - clearer mapping from synthetic anomaly families to downstream classification usefulness
 
+### Immediate unresolved evaluation debt
+
+The active offline evaluator currently selects the 95th-quantile threshold from the full score vector of the loader being evaluated. In the CLI evaluation path, that loader is the test loader. This is useful only as an oracle-style diagnostic and must not be the default thesis protocol.
+
+The required long-term direction is:
+
+1. add an explicit threshold calibration step over train or validation scores;
+2. persist the calibrated threshold with the checkpoint or evaluation artifacts;
+3. make test evaluation consume that threshold instead of recomputing it from test scores;
+4. keep any online adaptive threshold strictly causal, using only past and current stream state.
+
+Until this is implemented, thresholded test metrics should be marked as provisional and potentially optimistic.
+
 **Acceptance rule**
 
 The repository should be able to answer, from YAML-driven experiments alone:
@@ -410,8 +423,8 @@ The most important risks to cover are:
 - synthetic anomaly metadata correctness
 - stream order preservation
 - overlap-aware evaluation correctness
-- thresholding correctness
-- no future leakage in online processing
+- thresholding correctness, including train/validation calibration before test evaluation
+- no future leakage in online processing or threshold updates
 - drift-scenario correctness once drift injection is added
 
 The current repository already covers much of the offline and early online surface. Future tests should emphasize the new streaming and drift risks rather than only expanding generic unit coverage.
