@@ -791,28 +791,45 @@ class ThesisMultitaskModel(BaseModel):
         normalized_memory = self._normalize_memory_vectors(
             self.continuous_prototype_bank
         )
+
+        # k prototypes with each prototype having h dimensions (containing h numbers)
+        # b windows with each window having l timesteps,
+        # with each timestep having h dimensions (containing h numbers)
+        # k @ b.T is making each prototype attending to each timestep in a window
+        # across all b windows in a batch.
         prototype_to_token_logits = torch.einsum(
             "kh,blh->kbl",
-            normalized_memory,
-            normalized_hidden,
-        ) / math.sqrt(self.hidden_dim)
+            normalized_memory,  # (n_continuous_prototypes, d_model)
+            normalized_hidden,  # (batch_size, n_timesteps, d_model)
+        ) / math.sqrt(self.hidden_dim)  # (n_continuous_prototypes, batch_size, n_timesteps)
+        
+
+        # n_continuous_prototypes là self.continuous_num_prototypes
+        # d_model là h
+
         prototype_to_token_weights = torch.softmax(
             prototype_to_token_logits.reshape(self.continuous_num_prototypes, -1),
+            # (n_continuous_prototypes, batch_size * n_timesteps)
             dim=-1,
-        ).reshape_as(prototype_to_token_logits)
+        ).reshape_as(prototype_to_token_logits) # (n_continuous_prototypes, batch_size, n_timesteps)
+
         weighted_hidden_summary = torch.einsum(
             "kbl,blh->kh",
             prototype_to_token_weights,
             normalized_hidden,
         )
+
         weighted_hidden_summary = self._normalize_memory_vectors(
             weighted_hidden_summary
         )
+
         gate_input = torch.cat(
             [normalized_memory, weighted_hidden_summary],
             dim=-1,
         )
+
         update_gate = self.continuous_update_gate(gate_input)
+        
         updated_memory = (
             1.0 - update_gate
         ) * normalized_memory + update_gate * weighted_hidden_summary
