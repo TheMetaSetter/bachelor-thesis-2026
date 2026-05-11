@@ -3,7 +3,12 @@ from __future__ import annotations
 import pytest
 import torch
 
-from src.data.augment import REDLAMP_ANOMALY_FAMILIES, SyntheticAnomalyInjector
+from src.data.augment import (
+    BINARY_SYNTHETIC_CLASS_NAMES,
+    REDLAMP_ANOMALY_FAMILIES,
+    REDLAMP_MULTICLASS_CLASS_NAMES,
+    SyntheticAnomalyInjector,
+)
 
 
 def _build_batch() -> dict[str, object]:
@@ -21,6 +26,7 @@ def test_synthetic_anomaly_injector_defaults_to_redlamp_taxonomy() -> None:
 
     assert injector.anomaly_families == REDLAMP_ANOMALY_FAMILIES
     assert tuple(injector.family_registry.keys()) == REDLAMP_ANOMALY_FAMILIES
+    assert REDLAMP_MULTICLASS_CLASS_NAMES == ("normal", *REDLAMP_ANOMALY_FAMILIES)
 
 
 def test_synthetic_anomaly_injection_preserves_shapes_and_adds_labels() -> None:
@@ -50,6 +56,35 @@ def test_synthetic_anomaly_injection_preserves_shapes_and_adds_labels() -> None:
     assert isinstance(
         augmented_batch["augmentation_metadata"][0]["family_parameters_by_channel"],
         dict,
+    )
+    assert augmented_batch["classification_class_names"] == BINARY_SYNTHETIC_CLASS_NAMES
+
+
+@pytest.mark.parametrize("anomaly_family", REDLAMP_ANOMALY_FAMILIES)
+def test_redlamp_multiclass_injection_maps_family_to_shared_class_index(
+    anomaly_family: str,
+) -> None:
+    injector = SyntheticAnomalyInjector(
+        anomaly_probability=1.0,
+        min_segment_fraction=0.2,
+        max_segment_fraction=0.2,
+        anomaly_families=(anomaly_family,),
+        classification_label_mode="redlamp_multiclass",
+    )
+    batch = _build_batch()
+
+    augmented_batch = injector.augment_batch(batch)
+    expected_class_index = REDLAMP_MULTICLASS_CLASS_NAMES.index(anomaly_family)
+
+    assert augmented_batch["classification_class_names"] == (
+        REDLAMP_MULTICLASS_CLASS_NAMES
+    )
+    assert torch.equal(
+        augmented_batch["classification_labels"],
+        torch.full((2,), expected_class_index, dtype=torch.long),
+    )
+    assert augmented_batch["augmentation_metadata"][0]["anomaly_family"] == (
+        anomaly_family
     )
 
 

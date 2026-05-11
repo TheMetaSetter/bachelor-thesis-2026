@@ -31,6 +31,8 @@ REDLAMP_ANOMALY_FAMILIES: tuple[str, ...] = (
     "upsidedown",
     "mixture",
 )
+REDLAMP_MULTICLASS_CLASS_NAMES: tuple[str, ...] = ("normal", *REDLAMP_ANOMALY_FAMILIES)
+BINARY_SYNTHETIC_CLASS_NAMES: tuple[str, ...] = ("normal", "synthetic_anomaly")
 
 
 class SyntheticAnomalyInjector:
@@ -43,6 +45,7 @@ class SyntheticAnomalyInjector:
         anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
         balance_binary_classes_within_batch: bool = False,
         deterministic_seed: int | None = None,
+        classification_label_mode: str = "binary",
     ) -> None:
         # These checks keep augmentation behavior explicit. Research code becomes
         # very hard to trust when synthetic data is allowed to silently drift.
@@ -60,12 +63,17 @@ class SyntheticAnomalyInjector:
             raise ValueError("spike_scale must be positive")
         if not anomaly_families:
             raise ValueError("anomaly_families must not be empty")
+        if classification_label_mode not in {"binary", "redlamp_multiclass"}:
+            raise ValueError(
+                "classification_label_mode must be one of: binary, redlamp_multiclass"
+            )
 
         self.anomaly_probability = anomaly_probability
         self.min_segment_fraction = min_segment_fraction
         self.max_segment_fraction = max_segment_fraction
         self.spike_scale = spike_scale
         self.balance_binary_classes_within_batch = balance_binary_classes_within_batch
+        self.classification_label_mode = classification_label_mode
         self.epsilon = 1e-6
         self.deterministic_seed = deterministic_seed
         self._rng: torch.Generator | None = None
@@ -99,6 +107,18 @@ class SyntheticAnomalyInjector:
             raise ValueError(f"Unsupported anomaly_families: {unknown_families}")
 
         self.reset_rng()
+
+    def _classification_class_names(self) -> tuple[str, ...]:
+        if self.classification_label_mode == "binary":
+            return BINARY_SYNTHETIC_CLASS_NAMES
+        return REDLAMP_MULTICLASS_CLASS_NAMES
+
+    def _classification_label_from_metadata(self, metadata: dict[str, Any]) -> int:
+        if not metadata["is_synthetic_anomaly"]:
+            return 0
+        if self.classification_label_mode == "binary":
+            return 1
+        return REDLAMP_MULTICLASS_CLASS_NAMES.index(metadata["anomaly_family"])
 
     def __getstate__(self) -> dict[str, Any]:
         # The deterministic RNG is runtime-only state. Rebuild it after copy or
@@ -740,7 +760,9 @@ class SyntheticAnomalyInjector:
             )
             augmented_batch["x"][batch_index] = augmented_window
             anomaly_masks[batch_index] = anomaly_mask
-            classification_labels[batch_index] = 1
+            classification_labels[batch_index] = self._classification_label_from_metadata(
+                window_metadata
+            )
             augmentation_metadata.append(window_metadata)
 
         original_point_labels = batch.get("point_labels")
@@ -752,6 +774,7 @@ class SyntheticAnomalyInjector:
             )
 
         augmented_batch["classification_labels"] = classification_labels
+        augmented_batch["classification_class_names"] = self._classification_class_names()
         augmented_batch["synthetic_anomaly_mask"] = anomaly_masks
         augmented_batch["augmentation_metadata"] = augmentation_metadata
         anomalous_windows = int(classification_labels.sum().detach().cpu())

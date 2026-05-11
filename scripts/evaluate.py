@@ -31,6 +31,7 @@ from src.data.scalers import SequenceStandardScaler
 from src.engine.checkpoint import CheckpointManager
 from src.engine.evaluator import Evaluator
 from src.engine.logger import ExperimentLogger
+from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 from src.models.thesis_multitask import ThesisMultitaskModel
 
@@ -39,6 +40,7 @@ def register_runtime_components() -> None:
     register_dataset("smd", build_smd_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
+    register_model("redlamp_mlp_baseline", RedLampMLPBaseline)
     console_print("REGISTRY", "Registered evaluation runtime components")
 
 
@@ -58,6 +60,8 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
             if key != "task_name"
         }
     )
+    if model_name == "redlamp_mlp_baseline":
+        model_kwargs["window_size"] = experiment_config["data"]["window_size"]
     console_print(
         "MODEL",
         "Building evaluation model from experiment config",

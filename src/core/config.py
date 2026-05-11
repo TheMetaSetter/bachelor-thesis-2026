@@ -88,6 +88,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     supported_model_names = {
         "reconstruction_mlp_ae",
         "thesis_multitask",
+        "redlamp_mlp_baseline",
         "online_adaptation",
     }
     supported_task_names = {"reconstruction", "multitask_tsad", "online_adaptation"}
@@ -128,6 +129,13 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         integer_fields["memory_initialization_batches"] = model_config.get(
             "memory_initialization_batches", 16
         )
+    if model_config.get("model_name") == "redlamp_mlp_baseline":
+        integer_fields["latent_dim"] = model_config.get("latent_dim")
+        integer_fields["mlp_num_linear_layers"] = model_config.get(
+            "mlp_num_linear_layers", 3
+        )
+        integer_fields["classifier_dim"] = model_config.get("classifier_dim")
+        integer_fields["num_classes"] = model_config.get("num_classes")
     if model_config.get("model_name") == "online_adaptation":
         integer_fields["projector_hidden_dim"] = model_config.get(
             "projector_hidden_dim"
@@ -141,47 +149,57 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "learning_rate": optimizer_config.get("learning_rate"),
         "weight_decay": optimizer_config.get("weight_decay"),
     }
-    if model_config.get("model_name") in {"reconstruction_mlp_ae", "thesis_multitask"}:
+    if model_config.get("model_name") in {
+        "reconstruction_mlp_ae",
+        "thesis_multitask",
+        "redlamp_mlp_baseline",
+    }:
         float_fields["dropout"] = model_config.get("dropout")
     if task_config.get("task_name") == "multitask_tsad":
-        float_fields["gumbel_temperature"] = model_config.get("gumbel_temperature")
-        float_fields["temperature_start"] = model_config.get("temperature_start")
-        float_fields["temperature_end"] = model_config.get("temperature_end")
-        float_fields["temperature_anneal_fraction"] = model_config.get(
-            "temperature_anneal_fraction"
-        )
-        float_fields["temperature_hold_fraction"] = model_config.get(
-            "temperature_hold_fraction", 0.0
-        )
-        float_fields["alpha_logit_init"] = model_config.get("alpha_logit_init")
-        float_fields["beta_logit_init"] = model_config.get("beta_logit_init")
+        if model_config.get("model_name") == "thesis_multitask":
+            float_fields["gumbel_temperature"] = model_config.get("gumbel_temperature")
+            float_fields["temperature_start"] = model_config.get("temperature_start")
+            float_fields["temperature_end"] = model_config.get("temperature_end")
+            float_fields["temperature_anneal_fraction"] = model_config.get(
+                "temperature_anneal_fraction"
+            )
+            float_fields["temperature_hold_fraction"] = model_config.get(
+                "temperature_hold_fraction", 0.0
+            )
+            float_fields["alpha_logit_init"] = model_config.get("alpha_logit_init")
+            float_fields["beta_logit_init"] = model_config.get("beta_logit_init")
         float_fields["refurbishment_alpha"] = model_config.get(
             "refurbishment_alpha", 0.0
         )
         float_fields["refurbishment_beta"] = model_config.get("refurbishment_beta", 0.0)
         float_fields["lambda_cls"] = model_config.get("lambda_cls")
-        float_fields["lambda_div"] = model_config.get("lambda_div")
-        float_fields["lambda_var"] = model_config.get("lambda_var")
-        float_fields["lambda_cov"] = model_config.get("lambda_cov")
-        float_fields["lambda_use"] = model_config.get("lambda_use")
-        float_fields["lambda_gate"] = model_config.get("lambda_gate")
-        float_fields["usage_lambda_start"] = model_config.get(
-            "usage_lambda_start", model_config.get("lambda_use")
-        )
-        float_fields["usage_lambda_end"] = model_config.get(
-            "usage_lambda_end", model_config.get("lambda_use")
-        )
-        float_fields["usage_lambda_schedule_fraction"] = model_config.get(
-            "usage_lambda_schedule_fraction", 1.0
-        )
-        float_fields["variance_floor_gamma"] = model_config.get("variance_floor_gamma")
-        float_fields["gate_barrier_margin"] = model_config.get("gate_barrier_margin")
-        float_fields["discrete_ema_decay"] = model_config.get(
-            "discrete_ema_decay", 0.99
-        )
-        float_fields["memory_norm_epsilon"] = model_config.get(
-            "memory_norm_epsilon", 1.0e-6
-        )
+        if model_config.get("model_name") == "thesis_multitask":
+            float_fields["lambda_div"] = model_config.get("lambda_div")
+            float_fields["lambda_var"] = model_config.get("lambda_var")
+            float_fields["lambda_cov"] = model_config.get("lambda_cov")
+            float_fields["lambda_use"] = model_config.get("lambda_use")
+            float_fields["lambda_gate"] = model_config.get("lambda_gate")
+            float_fields["usage_lambda_start"] = model_config.get(
+                "usage_lambda_start", model_config.get("lambda_use")
+            )
+            float_fields["usage_lambda_end"] = model_config.get(
+                "usage_lambda_end", model_config.get("lambda_use")
+            )
+            float_fields["usage_lambda_schedule_fraction"] = model_config.get(
+                "usage_lambda_schedule_fraction", 1.0
+            )
+            float_fields["variance_floor_gamma"] = model_config.get(
+                "variance_floor_gamma"
+            )
+            float_fields["gate_barrier_margin"] = model_config.get(
+                "gate_barrier_margin"
+            )
+            float_fields["discrete_ema_decay"] = model_config.get(
+                "discrete_ema_decay", 0.99
+            )
+            float_fields["memory_norm_epsilon"] = model_config.get(
+                "memory_norm_epsilon", 1.0e-6
+            )
         float_fields["warmup_alpha_value"] = task_config.get("warmup_alpha_value")
         float_fields["warmup_beta_value"] = task_config.get("warmup_beta_value")
         float_fields["anomaly_probability"] = task_config.get("anomaly_probability")
@@ -285,6 +303,17 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 "balance_binary_classes_within_batch", False
             ),
         }
+        if model_config.get("model_name") == "redlamp_mlp_baseline":
+            for model_only_field in [
+                "enable_diversity_loss",
+                "enable_variance_loss",
+                "enable_covariance_loss",
+                "enable_usage_loss",
+                "enable_gate_loss",
+                "memory_initialization_with_synthetic_windows",
+                "reconstruction_normal_only",
+            ]:
+                boolean_fields.pop(model_only_field, None)
         for field_name, field_value in boolean_fields.items():
             if not isinstance(field_value, bool):
                 raise ValueError(f"{field_name} must be a boolean")
@@ -341,56 +370,71 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     if task_config.get("task_name") == "multitask_tsad":
         if int(model_config.get("mlp_num_linear_layers", 3)) < 2:
             raise ValueError("mlp_num_linear_layers must be at least 2")
-        if float(model_config["gumbel_temperature"]) <= 0.0:
-            raise ValueError("gumbel_temperature must be positive")
-        if float(model_config["temperature_start"]) <= 0.0:
-            raise ValueError("temperature_start must be positive")
-        if float(model_config["temperature_end"]) <= 0.0:
-            raise ValueError("temperature_end must be positive")
-        if not 0.0 < float(model_config["temperature_anneal_fraction"]) <= 1.0:
-            raise ValueError("temperature_anneal_fraction must be in (0, 1]")
-        if not 0.0 <= float(model_config.get("temperature_hold_fraction", 0.0)) < 1.0:
-            raise ValueError("temperature_hold_fraction must be in [0, 1)")
+        if model_config.get("model_name") == "thesis_multitask":
+            if float(model_config["gumbel_temperature"]) <= 0.0:
+                raise ValueError("gumbel_temperature must be positive")
+            if float(model_config["temperature_start"]) <= 0.0:
+                raise ValueError("temperature_start must be positive")
+            if float(model_config["temperature_end"]) <= 0.0:
+                raise ValueError("temperature_end must be positive")
+            if not 0.0 < float(model_config["temperature_anneal_fraction"]) <= 1.0:
+                raise ValueError("temperature_anneal_fraction must be in (0, 1]")
+            if (
+                not 0.0
+                <= float(model_config.get("temperature_hold_fraction", 0.0))
+                < 1.0
+            ):
+                raise ValueError("temperature_hold_fraction must be in [0, 1)")
         if not 0.0 <= float(model_config.get("refurbishment_alpha", 0.0)) <= 1.0:
             raise ValueError("refurbishment_alpha must be in [0, 1]")
         if not 0.0 <= float(model_config.get("refurbishment_beta", 0.0)) <= 1.0:
             raise ValueError("refurbishment_beta must be in [0, 1]")
+        classification_label_mode = task_config.get("classification_label_mode", "binary")
+        if classification_label_mode not in {"binary", "redlamp_multiclass"}:
+            raise ValueError(
+                "classification_label_mode must be one of: binary, redlamp_multiclass"
+            )
         if (
-            bool(model_config.get("use_label_refurbishment", False))
-            and int(model_config["num_classes"]) != 2
+            classification_label_mode == "redlamp_multiclass"
+            and int(model_config["num_classes"]) != 12
         ):
             raise ValueError(
-                "use_label_refurbishment currently requires num_classes == 2"
+                "classification_label_mode='redlamp_multiclass' requires num_classes == 12"
             )
-        bootstrap_encoder_epochs = model_config.get("bootstrap_encoder_epochs", 10)
-        if (
-            not isinstance(bootstrap_encoder_epochs, int)
-            or isinstance(bootstrap_encoder_epochs, bool)
-            or bootstrap_encoder_epochs < 0
-        ):
-            raise ValueError("bootstrap_encoder_epochs must be a non-negative integer")
-        if not 0.0 < float(model_config.get("discrete_ema_decay", 0.99)) < 1.0:
-            raise ValueError("discrete_ema_decay must be in (0, 1)")
-        if float(model_config.get("memory_norm_epsilon", 1.0e-6)) <= 0.0:
-            raise ValueError("memory_norm_epsilon must be positive")
-        if (
-            float(model_config.get("usage_lambda_start", model_config["lambda_use"]))
-            < 0.0
-        ):
-            raise ValueError("usage_lambda_start must be non-negative")
-        if (
-            float(model_config.get("usage_lambda_end", model_config["lambda_use"]))
-            < 0.0
-        ):
-            raise ValueError("usage_lambda_end must be non-negative")
-        if (
-            not 0.0
-            < float(model_config.get("usage_lambda_schedule_fraction", 1.0))
-            <= 1.0
-        ):
-            raise ValueError("usage_lambda_schedule_fraction must be in (0, 1]")
-        if not 0.0 <= float(model_config["gate_barrier_margin"]) < 0.5:
-            raise ValueError("gate_barrier_margin must be in [0, 0.5)")
+        if model_config.get("model_name") == "thesis_multitask":
+            bootstrap_encoder_epochs = model_config.get("bootstrap_encoder_epochs", 10)
+            if (
+                not isinstance(bootstrap_encoder_epochs, int)
+                or isinstance(bootstrap_encoder_epochs, bool)
+                or bootstrap_encoder_epochs < 0
+            ):
+                raise ValueError(
+                    "bootstrap_encoder_epochs must be a non-negative integer"
+                )
+            if not 0.0 < float(model_config.get("discrete_ema_decay", 0.99)) < 1.0:
+                raise ValueError("discrete_ema_decay must be in (0, 1)")
+            if float(model_config.get("memory_norm_epsilon", 1.0e-6)) <= 0.0:
+                raise ValueError("memory_norm_epsilon must be positive")
+            if (
+                float(
+                    model_config.get("usage_lambda_start", model_config["lambda_use"])
+                )
+                < 0.0
+            ):
+                raise ValueError("usage_lambda_start must be non-negative")
+            if (
+                float(model_config.get("usage_lambda_end", model_config["lambda_use"]))
+                < 0.0
+            ):
+                raise ValueError("usage_lambda_end must be non-negative")
+            if (
+                not 0.0
+                < float(model_config.get("usage_lambda_schedule_fraction", 1.0))
+                <= 1.0
+            ):
+                raise ValueError("usage_lambda_schedule_fraction must be in (0, 1]")
+            if not 0.0 <= float(model_config["gate_barrier_margin"]) < 0.5:
+                raise ValueError("gate_barrier_margin must be in [0, 0.5)")
         freeze_fusion_for_epochs = task_config.get("freeze_fusion_for_epochs")
         if (
             not isinstance(freeze_fusion_for_epochs, int)

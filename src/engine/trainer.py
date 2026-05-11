@@ -14,7 +14,10 @@ import torch
 from src.core.console import console_print, summarize_batch
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
-from src.metrics.pointwise import compute_binary_classification_metrics
+from src.metrics.pointwise import (
+    compute_binary_classification_metrics,
+    compute_multiclass_classification_metrics,
+)
 from src.models.base_model import BaseModel
 
 
@@ -77,10 +80,17 @@ class Trainer:
 
         concatenated_logits = torch.cat(logits_history, dim=0)
         concatenated_labels = torch.cat(label_history, dim=0)
-        classification_metrics = compute_binary_classification_metrics(
-            logits=concatenated_logits,
-            labels=concatenated_labels,
-        )
+        num_classes = concatenated_logits.shape[-1]
+        if num_classes == 2:
+            classification_metrics = compute_binary_classification_metrics(
+                logits=concatenated_logits,
+                labels=concatenated_labels,
+            )
+        else:
+            classification_metrics = compute_multiclass_classification_metrics(
+                logits=concatenated_logits,
+                labels=concatenated_labels,
+            )
         prefixed_metrics = {
             f"{stage_name}_{metric_name}": metric_value
             for metric_name, metric_value in classification_metrics.items()

@@ -173,8 +173,13 @@ class SyntheticAnomalyConfig:
     spike_scale: float = 3.0
     balance_binary_classes_within_batch: bool = False
     anomaly_families: tuple[str, ...] = REDLAMP_ANOMALY_FAMILIES
+    classification_label_mode: str = "binary"
 
     def __post_init__(self) -> None:
+        if self.classification_label_mode not in {"binary", "redlamp_multiclass"}:
+            raise ValueError(
+                "classification_label_mode must be one of: binary, redlamp_multiclass"
+            )
         object.__setattr__(self, "anomaly_families", tuple(self.anomaly_families))
 
 
@@ -267,6 +272,7 @@ class ThesisMultitaskModelConfig:
             "spike_scale",
             "balance_binary_classes_within_batch",
             "anomaly_families",
+            "classification_label_mode",
         }
 
         architecture_values = take_group(architecture_keys)
@@ -392,6 +398,7 @@ class ThesisMultitaskModel(BaseModel):
         self.use_synthetic_augmentation = synthetic.use_synthetic_augmentation
         self.use_synthetic_validation = synthetic.use_synthetic_validation
         self.synthetic_validation_seed = synthetic.synthetic_validation_seed
+        self.classification_label_mode = synthetic.classification_label_mode
         self.freeze_fusion_for_epochs = schedule.freeze_fusion_for_epochs
         self.warmup_alpha_value = schedule.warmup_alpha_value
         self.warmup_beta_value = schedule.warmup_beta_value
@@ -418,7 +425,11 @@ class ThesisMultitaskModel(BaseModel):
             "temperature": self.gumbel_temperature,
             "usage_lambda": self.current_usage_lambda,
         }
-        if self.use_label_refurbishment and self.num_classes != 2:
+        if (
+            self.use_label_refurbishment
+            and self.classification_label_mode == "binary"
+            and self.num_classes != 2
+        ):
             raise ValueError(
                 "label refurbishment currently supports only binary classification"
             )
@@ -538,6 +549,7 @@ class ThesisMultitaskModel(BaseModel):
             balance_binary_classes_within_batch=(
                 synthetic.balance_binary_classes_within_batch
             ),
+            classification_label_mode=synthetic.classification_label_mode,
         )
         self.synthetic_validation_injector = SyntheticAnomalyInjector(
             anomaly_probability=synthetic.anomaly_probability,
@@ -549,6 +561,7 @@ class ThesisMultitaskModel(BaseModel):
                 synthetic.balance_binary_classes_within_batch
             ),
             deterministic_seed=synthetic.synthetic_validation_seed,
+            classification_label_mode=synthetic.classification_label_mode,
         )
 
     def _build_optional_loss_configs(self) -> None:
@@ -1433,6 +1446,7 @@ class ThesisMultitaskModel(BaseModel):
         # Rồi, lấy trung bình.
         pooled_classification_hidden = hidden_classification.mean(dim=1)
         logits = self.classification_head(pooled_classification_hidden)
+        class_probabilities = torch.softmax(logits, dim=-1)
 
         # Độ bất thường được tính bằng cách
         # Tính toán độ lỗi (error) giữa bản gốc và bản tái tạo
@@ -1460,6 +1474,7 @@ class ThesisMultitaskModel(BaseModel):
                 "hidden_classification": hidden_classification,
                 "alpha": fusion_outputs["alpha"],
                 "beta": fusion_outputs["beta"],
+                "class_probabilities": class_probabilities,
                 "memory": self.get_memory_lifecycle_state(),
                 "forward_pass_seconds": time.perf_counter() - forward_start_time,
             },
@@ -1536,7 +1551,7 @@ class ThesisMultitaskModel(BaseModel):
         batch: dict[str, Any],
     ) -> torch.Tensor:
         if self.use_label_refurbishment:
-            target_probabilities = self._build_refurbished_binary_targets(
+            target_probabilities = self._build_refurbished_classification_targets(
                 batch["classification_labels"],
                 outputs["logits"].dtype,
             )
@@ -1559,32 +1574,59 @@ class ThesisMultitaskModel(BaseModel):
         normal_time_step_mask = 1.0 - anomaly_mask
         return torch.clamp(normal_time_step_mask, min=0.0, max=1.0)
 
+    def _build_refurbished_classification_targets(
+        self,
+        classification_labels: torch.Tensor,
+        target_dtype: torch.dtype,
+    ) -> torch.Tensor:
+        hard_labels = classification_labels.long()
+        target_probabilities = F.one_hot(
+            hard_labels,
+            num_classes=self.num_classes,
+        ).to(dtype=target_dtype)
+
+        if self.classification_label_mode == "binary":
+            if self.num_classes != 2:
+                raise ValueError("Binary label refurbishment requires num_classes == 2")
+            target_probabilities[:, 0] = torch.where(
+                hard_labels == 0,
+                1.0 - self.refurbishment_beta,
+                self.refurbishment_alpha,
+            )
+            target_probabilities[:, 1] = torch.where(
+                hard_labels == 0,
+                self.refurbishment_beta,
+                1.0 - self.refurbishment_alpha,
+            )
+            return target_probabilities
+
+        target_probabilities = torch.where(
+            target_probabilities > 0.0,
+            1.0
+            - (
+                self.refurbishment_alpha
+                + self.refurbishment_beta * self.num_classes
+                - self.refurbishment_beta
+            ),
+            self.refurbishment_beta,
+        )
+        target_probabilities[:, 0] = target_probabilities[:, 0] + (
+            self.refurbishment_alpha
+        )
+        return target_probabilities / target_probabilities.sum(
+            dim=-1,
+            keepdim=True,
+        ).clamp_min(self.epsilon)
+
     def _build_refurbished_binary_targets(
         self,
         classification_labels: torch.Tensor,
         target_dtype: torch.dtype,
     ) -> torch.Tensor:
-        if self.num_classes != 2:
-            raise ValueError("Binary label refurbishment requires num_classes == 2")
-
-        hard_labels = classification_labels.long()
-        target_probabilities = torch.zeros(
-            hard_labels.shape[0],
-            self.num_classes,
-            device=hard_labels.device,
-            dtype=target_dtype,
+        return self._build_refurbished_classification_targets(
+            classification_labels=classification_labels,
+            target_dtype=target_dtype,
         )
-        target_probabilities[:, 0] = torch.where(
-            hard_labels == 0,
-            1.0 - self.refurbishment_beta,
-            self.refurbishment_alpha,
-        )
-        target_probabilities[:, 1] = torch.where(
-            hard_labels == 0,
-            self.refurbishment_beta,
-            1.0 - self.refurbishment_alpha,
-        )
-        return target_probabilities
 
     def _compute_cross_branch_diversity_loss(
         self, outputs: dict[str, Any]

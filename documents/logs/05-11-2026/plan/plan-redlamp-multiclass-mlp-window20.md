@@ -1,8 +1,8 @@
-# RedLamp Multiclass MLP Window-10 Implementation Plan
+# RedLamp Multiclass MLP Window-20 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a fair RedLamp-aligned experiment path where the proposed thesis model and a new RedLamp-style MLP baseline both inject the same RedLamp synthetic anomaly classes, classify the same twelve labels, and run with window size 10.
+**Goal:** Build a fair RedLamp-aligned experiment path where the proposed thesis model and a new RedLamp-style MLP baseline both inject the same RedLamp synthetic anomaly classes, classify the same twelve labels, and run with window size 20.
 
 **Architecture:** Keep `src/data/augment.py` as the single synthetic-anomaly source shared by both models. Extend `src/models/thesis_multitask.py` in place so its classification head can run RedLamp-style multi-class anomaly-type classification while preserving the existing binary configs. Add one self-contained model file, `src/models/redlamp_mlp_baseline.py`, because `codebase_preferences.md` requires one model per file and colocated training/inference logic.
 
@@ -16,13 +16,13 @@
 - The current thesis model is binary by default. `SyntheticAnomalyInjector.augment_batch` assigns `classification_labels = 0` for clean windows and `classification_labels = 1` for every injected window, regardless of anomaly family.
 - RedLamp uses a multi-class label dictionary. Its default label space is twelve classes: `normal`, `spike`, `flip`, `speedup`, `noise`, `cutoff`, `average`, `scale`, `wander`, `contextual`, `upsidedown`, and `mixture`.
 - The current thesis model already has a configurable MLP depth through `mlp_num_linear_layers`, and `configs/model/thesis_multitask.yaml` sets it to `3`.
-- CANDI uses `WIN_SIZE = 10`, and this repository already has `configs/data/smd_rtx3090_machine_2_1_10.yaml` with `window_size: 10` and `stride: 10`.
+- CANDI establishes the small-window comparison regime with `WIN_SIZE = 10`. The user has now selected a slightly larger but still short window of twenty time steps, so this plan creates a dedicated `configs/data/smd_rtx3090_machine_2_1_20.yaml` with `window_size: 20` and `stride: 20`.
 
 ## Design Options
 
 - **Option A: Upgrade only the proposed method to multi-class and keep RedLamp reference code external.** This is insufficient because the user explicitly asked to create a RedLamp baseline using MLP inside this repo.
 - **Option B: Modify `bsc-thesis-ref-codebases/RedLamp` directly.** This makes comparison code harder to track in the thesis repo and risks mixing external reference code with active experiment code.
-- **Option C: Add an active `redlamp_mlp_baseline` model in `src/models/`, sharing the active injector and config system.** This is the recommended option because it keeps one model per file, uses the same data and logging stack as the proposed method, and lets both models run under the same window-10 SMD configs.
+- **Option C: Add an active `redlamp_mlp_baseline` model in `src/models/`, sharing the active injector and config system.** This is the recommended option because it keeps one model per file, uses the same data and logging stack as the proposed method, and lets both models run under the same window-20 SMD configs.
 
 ## Risk and Mitigation
 
@@ -30,7 +30,7 @@
 - **Risk: RedLamp label smoothing is incorrectly applied to logits.** Mitigation: build smoothed target probabilities explicitly and compute `-target * log_softmax(logits)` for both the thesis model and the RedLamp MLP baseline.
 - **Risk: Metrics remain binary and silently misreport multi-class runs.** Mitigation: add `compute_multiclass_classification_metrics` and make the trainer dispatch metrics by `num_classes`.
 - **Risk: The baseline is not fair because MLP layer counts differ.** Mitigation: give `redlamp_mlp_baseline` the same `mlp_num_linear_layers: 3` contract and add tests that count encoder, decoder, and classifier linear layers.
-- **Risk: Window length is accidentally inherited from a non-window-10 config.** Mitigation: add dedicated window-10 model/task/experiment configs and config-loading tests that assert `window_size == 10`.
+- **Risk: Window length is accidentally inherited from a non-window-20 config.** Mitigation: add dedicated window-20 model/task/experiment configs and config-loading tests that assert `window_size == 20`.
 - **Risk: Label order drifts between proposed method and baseline.** Mitigation: define one exported class-name tuple in `src/data/augment.py` and use it in both models and tests.
 
 ## Open Questions
@@ -47,11 +47,12 @@
 - Modify `src/core/config.py`: validate new model names and new task/model fields.
 - Create `src/models/redlamp_mlp_baseline.py`: self-contained RedLamp-style MLP autoencoder baseline with reconstruction and multi-class classification.
 - Modify `scripts/train.py`, `scripts/evaluate.py`, and `scripts/run_online_adaptation.py`: register `redlamp_mlp_baseline` where offline models are registered.
+- Create `configs/data/smd_rtx3090_machine_2_1_20.yaml`.
 - Create `configs/model/thesis_multitask_redlamp_multiclass.yaml`.
 - Create `configs/model/redlamp_mlp_baseline.yaml`.
-- Create `configs/task/multitask_tsad_redlamp_multiclass_window10.yaml`.
-- Create `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window10.yaml`.
-- Create `configs/experiment/smd_redlamp_mlp_baseline_window10.yaml`.
+- Create `configs/task/multitask_tsad_redlamp_multiclass_window20.yaml`.
+- Create `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`.
+- Create `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`.
 - Modify or add tests under `tests/` for injector labels, thesis model multi-class loss, baseline shapes, metrics, config loading, and one train step.
 
 ## Contract Decisions
@@ -578,7 +579,7 @@ from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
 from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 
 
-def _build_batch(batch_size: int = 3, window_size: int = 10, input_dim: int = 4) -> dict[str, object]:
+def _build_batch(batch_size: int = 3, window_size: int = 20, input_dim: int = 4) -> dict[str, object]:
     return {
         "x": torch.randn(batch_size, window_size, input_dim),
         "point_labels": torch.zeros(batch_size, window_size, dtype=torch.long),
@@ -591,7 +592,7 @@ def _build_batch(batch_size: int = 3, window_size: int = 10, input_dim: int = 4)
 def test_redlamp_mlp_baseline_forward_contract_and_probabilities() -> None:
     model = RedLampMLPBaseline(
         input_dim=4,
-        window_size=10,
+        window_size=20,
         latent_dim=16,
         mlp_num_linear_layers=3,
         classifier_dim=8,
@@ -617,7 +618,7 @@ def test_redlamp_mlp_baseline_forward_contract_and_probabilities() -> None:
 def test_redlamp_mlp_baseline_uses_three_linear_layers_per_mlp_stack() -> None:
     model = RedLampMLPBaseline(
         input_dim=4,
-        window_size=10,
+        window_size=20,
         latent_dim=16,
         mlp_num_linear_layers=3,
         classifier_dim=8,
@@ -886,18 +887,19 @@ git commit -m "Add RedLamp MLP baseline"
 
 ---
 
-### Task 5: Add Configs And Registry Support For Window-10 RedLamp Runs
+### Task 5: Add Configs And Registry Support For Window-20 RedLamp Runs
 
 **Files:**
 - Modify: `src/core/config.py`
 - Modify: `scripts/train.py`
 - Modify: `scripts/evaluate.py`
 - Modify: `scripts/run_online_adaptation.py`
+- Create: `configs/data/smd_rtx3090_machine_2_1_20.yaml`
 - Create: `configs/model/thesis_multitask_redlamp_multiclass.yaml`
 - Create: `configs/model/redlamp_mlp_baseline.yaml`
-- Create: `configs/task/multitask_tsad_redlamp_multiclass_window10.yaml`
-- Create: `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window10.yaml`
-- Create: `configs/experiment/smd_redlamp_mlp_baseline_window10.yaml`
+- Create: `configs/task/multitask_tsad_redlamp_multiclass_window20.yaml`
+- Create: `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`
+- Create: `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`
 - Test: `tests/test_config_loading.py`
 
 - [ ] **Step 1: Write failing config-loading tests**
@@ -905,12 +907,12 @@ git commit -m "Add RedLamp MLP baseline"
 Add to `tests/test_config_loading.py`:
 
 ```python
-def test_load_thesis_redlamp_multiclass_window10_config() -> None:
+def test_load_thesis_redlamp_multiclass_window20_config() -> None:
     config = load_experiment_config(
-        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window10.yaml"
+        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml"
     )
 
-    assert config["data"]["window_size"] == 10
+    assert config["data"]["window_size"] == 20
     assert config["model"]["model_name"] == "thesis_multitask"
     assert config["model"]["num_classes"] == 12
     assert config["task"]["classification_label_mode"] == "redlamp_multiclass"
@@ -929,12 +931,12 @@ def test_load_thesis_redlamp_multiclass_window10_config() -> None:
     ]
 
 
-def test_load_redlamp_mlp_baseline_window10_config() -> None:
+def test_load_redlamp_mlp_baseline_window20_config() -> None:
     config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_window10.yaml"
+        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
     )
 
-    assert config["data"]["window_size"] == 10
+    assert config["data"]["window_size"] == 20
     assert config["model"]["model_name"] == "redlamp_mlp_baseline"
     assert config["model"]["mlp_num_linear_layers"] == 3
     assert config["model"]["num_classes"] == 12
@@ -946,7 +948,7 @@ def test_load_redlamp_mlp_baseline_window10_config() -> None:
 Run:
 
 ```bash
-pytest -q tests/test_config_loading.py::test_load_thesis_redlamp_multiclass_window10_config tests/test_config_loading.py::test_load_redlamp_mlp_baseline_window10_config
+pytest -q tests/test_config_loading.py::test_load_thesis_redlamp_multiclass_window20_config tests/test_config_loading.py::test_load_redlamp_mlp_baseline_window20_config
 ```
 
 Expected result: config files and `redlamp_mlp_baseline` validation support are missing.
@@ -1018,7 +1020,22 @@ if model_name == "redlamp_mlp_baseline":
     model_kwargs["window_size"] = experiment_config["data"]["window_size"]
 ```
 
-- [ ] **Step 5: Create model and task configs**
+- [ ] **Step 5: Create data, model, and task configs**
+
+Create `configs/data/smd_rtx3090_machine_2_1_20.yaml`:
+
+```yaml
+dataset_name: smd
+root_dir: data/ServerMachineDataset
+entity_ids:
+  - machine-2-1
+window_size: 20
+stride: 20
+batch_size: 256
+num_workers: 8
+validation_split_ratio: 0.2
+shuffle_train: true
+```
 
 Create `configs/model/thesis_multitask_redlamp_multiclass.yaml`:
 
@@ -1068,7 +1085,7 @@ Create `configs/model/redlamp_mlp_baseline.yaml`:
 ```yaml
 model_name: redlamp_mlp_baseline
 input_dim: 38
-window_size: 10
+window_size: 20
 latent_dim: 128
 mlp_num_linear_layers: 3
 classifier_dim: 32
@@ -1080,7 +1097,7 @@ refurbishment_alpha: 0.1
 refurbishment_beta: 0.01
 ```
 
-Create `configs/task/multitask_tsad_redlamp_multiclass_window10.yaml`:
+Create `configs/task/multitask_tsad_redlamp_multiclass_window20.yaml`:
 
 ```yaml
 task_name: multitask_tsad
@@ -1112,17 +1129,17 @@ anomaly_families:
 
 - [ ] **Step 6: Create experiment configs**
 
-Create `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window10.yaml`:
+Create `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`:
 
 ```yaml
-experiment_name: smd_thesis_multitask_redlamp_multiclass_window10
+experiment_name: smd_thesis_multitask_redlamp_multiclass_window20
 seed: 11
 device: cpu
-output_dir: outputs/smd_thesis_multitask_redlamp_multiclass_window10
-checkpoint_dir: outputs/smd_thesis_multitask_redlamp_multiclass_window10/checkpoints
-data_config_path: configs/data/smd_rtx3090_machine_2_1_10.yaml
+output_dir: outputs/smd_thesis_multitask_redlamp_multiclass_window20
+checkpoint_dir: outputs/smd_thesis_multitask_redlamp_multiclass_window20/checkpoints
+data_config_path: configs/data/smd_rtx3090_machine_2_1_20.yaml
 model_config_path: configs/model/thesis_multitask_redlamp_multiclass.yaml
-task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window10.yaml
+task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20.yaml
 optimizer:
   learning_rate: 0.0001
   weight_decay: 0.0
@@ -1135,21 +1152,21 @@ logging:
     - smd
     - thesis_multitask
     - redlamp_multiclass
-    - window10
+    - window20
     - mlp-depth-3
 ```
 
-Create `configs/experiment/smd_redlamp_mlp_baseline_window10.yaml`:
+Create `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`:
 
 ```yaml
-experiment_name: smd_redlamp_mlp_baseline_window10
+experiment_name: smd_redlamp_mlp_baseline_window20
 seed: 11
 device: cpu
-output_dir: outputs/smd_redlamp_mlp_baseline_window10
-checkpoint_dir: outputs/smd_redlamp_mlp_baseline_window10/checkpoints
-data_config_path: configs/data/smd_rtx3090_machine_2_1_10.yaml
+output_dir: outputs/smd_redlamp_mlp_baseline_window20
+checkpoint_dir: outputs/smd_redlamp_mlp_baseline_window20/checkpoints
+data_config_path: configs/data/smd_rtx3090_machine_2_1_20.yaml
 model_config_path: configs/model/redlamp_mlp_baseline.yaml
-task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window10.yaml
+task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20.yaml
 optimizer:
   learning_rate: 0.0001
   weight_decay: 0.0
@@ -1162,7 +1179,7 @@ logging:
     - smd
     - redlamp_mlp_baseline
     - redlamp_multiclass
-    - window10
+    - window20
     - mlp-depth-3
 ```
 
@@ -1179,8 +1196,8 @@ Expected result: config loading tests pass.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/core/config.py scripts/train.py scripts/evaluate.py scripts/run_online_adaptation.py configs/model/thesis_multitask_redlamp_multiclass.yaml configs/model/redlamp_mlp_baseline.yaml configs/task/multitask_tsad_redlamp_multiclass_window10.yaml configs/experiment/smd_thesis_multitask_redlamp_multiclass_window10.yaml configs/experiment/smd_redlamp_mlp_baseline_window10.yaml tests/test_config_loading.py
-git commit -m "Add window10 RedLamp multiclass configs"
+git add src/core/config.py scripts/train.py scripts/evaluate.py scripts/run_online_adaptation.py configs/data/smd_rtx3090_machine_2_1_20.yaml configs/model/thesis_multitask_redlamp_multiclass.yaml configs/model/redlamp_mlp_baseline.yaml configs/task/multitask_tsad_redlamp_multiclass_window20.yaml configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml configs/experiment/smd_redlamp_mlp_baseline_window20.yaml tests/test_config_loading.py
+git commit -m "Add window20 RedLamp multiclass configs"
 ```
 
 ---
@@ -1205,7 +1222,7 @@ from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 def test_one_redlamp_mlp_train_step_runs_backward() -> None:
     model = RedLampMLPBaseline(
         input_dim=4,
-        window_size=10,
+        window_size=20,
         latent_dim=16,
         mlp_num_linear_layers=3,
         classifier_dim=8,
@@ -1213,8 +1230,8 @@ def test_one_redlamp_mlp_train_step_runs_backward() -> None:
         anomaly_probability=1.0,
     )
     batch = {
-        "x": torch.randn(2, 10, 4),
-        "point_labels": torch.zeros(2, 10, dtype=torch.long),
+        "x": torch.randn(2, 20, 4),
+        "point_labels": torch.zeros(2, 20, dtype=torch.long),
         "mask": None,
         "timestamps": None,
         "meta": [{"entity_id": "unit-test"}, {"entity_id": "unit-test"}],
@@ -1305,6 +1322,6 @@ pytest -q tests/test_synthetic_anomaly_injection.py tests/test_multitask_shapes.
 
 ## Self-Review
 
-- **Spec coverage:** Task 1 aligns anomaly labels across both methods. Task 2 changes the proposed method to multi-class classification and adds RedLamp-style label smoothing. Task 4 creates the RedLamp MLP baseline. Task 5 creates window-10 configs following CANDI. Task 6 verifies one-step training.
+- **Spec coverage:** Task 1 aligns anomaly labels across both methods. Task 2 changes the proposed method to multi-class classification and adds RedLamp-style label smoothing. Task 4 creates the RedLamp MLP baseline. Task 5 creates window-20 configs following CANDI. Task 6 verifies one-step training.
 - **Placeholder scan:** This plan does not use placeholder implementation steps. Each task includes concrete files, code snippets, commands, and expected results.
 - **Type consistency:** `classification_label_mode`, `classification_labels`, `classification_class_names`, `REDLAMP_MULTICLASS_CLASS_NAMES`, `class_probabilities`, and `num_classes` are used consistently across injector, models, metrics, trainer, configs, and tests.

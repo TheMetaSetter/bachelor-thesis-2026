@@ -31,6 +31,7 @@ from src.data.loaders import build_smd_dataset_bundle
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
 from src.engine.trainer import Trainer
+from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 from src.models.thesis_multitask import ThesisMultitaskModel
 
@@ -41,6 +42,7 @@ def register_runtime_components() -> None:
     register_dataset("smd", build_smd_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
+    register_model("redlamp_mlp_baseline", RedLampMLPBaseline)
     console_print("REGISTRY", "Registered offline training runtime components")
 
 
@@ -60,6 +62,8 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
             if key != "task_name"
         }
     )
+    if model_name == "redlamp_mlp_baseline":
+        model_kwargs["window_size"] = experiment_config["data"]["window_size"]
     console_print(
         "MODEL",
         "Building model from resolved experiment config",

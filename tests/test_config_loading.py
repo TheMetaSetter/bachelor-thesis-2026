@@ -10,6 +10,7 @@ from src.core.config import (
     validate_experiment_config,
 )
 from src.data.augment import REDLAMP_ANOMALY_FAMILIES
+from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 
 
 def test_load_experiment_config_reads_valid_yaml() -> None:
@@ -164,6 +165,58 @@ def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
     assert loaded_config["task"]["min_segment_fraction"] == 0.3
     assert loaded_config["task"]["max_segment_fraction"] == 0.6
     assert loaded_config["task"]["balance_binary_classes_within_batch"] is True
+
+
+@pytest.mark.parametrize(
+    "experiment_config_path,expected_model_name",
+    [
+        (
+            "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml",
+            "thesis_multitask",
+        ),
+        (
+            "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml",
+            "redlamp_mlp_baseline",
+        ),
+    ],
+)
+def test_load_redlamp_multiclass_window20_configs(
+    experiment_config_path: str,
+    expected_model_name: str,
+) -> None:
+    loaded_config = load_experiment_config(experiment_config_path)
+
+    assert loaded_config["data_config_path"] == (
+        "configs/data/smd_rtx3090_machine_2_1_20.yaml"
+    )
+    assert loaded_config["task_config_path"] == (
+        "configs/task/multitask_tsad_redlamp_multiclass_window20.yaml"
+    )
+    assert loaded_config["model"]["model_name"] == expected_model_name
+    assert loaded_config["data"]["window_size"] == 20
+    assert loaded_config["data"]["stride"] == 20
+    assert loaded_config["model"]["num_classes"] == 12
+    assert loaded_config["model"]["mlp_num_linear_layers"] == 3
+    assert loaded_config["task"]["classification_label_mode"] == "redlamp_multiclass"
+    assert loaded_config["task"]["anomaly_families"] == list(REDLAMP_ANOMALY_FAMILIES)
+
+
+def test_redlamp_mlp_baseline_constructs_from_training_registry_path() -> None:
+    from scripts.train import (
+        build_model_from_experiment_config,
+        register_runtime_components,
+    )
+
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+    )
+    register_runtime_components()
+
+    model = build_model_from_experiment_config(loaded_config)
+
+    assert isinstance(model, RedLampMLPBaseline)
+    assert model.window_size == 20
+    assert model.num_classes == 12
 
 
 def test_load_multitask_experiment_config_rejects_invalid_mlp_num_linear_layers(

@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 import torch
 from sklearn.metrics import (
+    accuracy_score,
     average_precision_score,
     confusion_matrix,
     f1_score,
@@ -82,6 +83,34 @@ def compute_binary_classification_metrics(
             recall_score, label_array, binary_predictions, zero_division=0
         ),
         "fpr": _compute_false_positive_rate(label_array, binary_predictions),
+    }
+
+
+def compute_multiclass_classification_metrics(
+    logits: torch.Tensor,
+    labels: torch.Tensor,
+) -> dict[str, float]:
+    label_array = labels.detach().cpu().numpy().astype(np.int64)
+    prediction_array = torch.argmax(logits.detach().cpu(), dim=-1).numpy().astype(
+        np.int64
+    )
+    return {
+        "accuracy": _safe_metric(accuracy_score, label_array, prediction_array),
+        "macro_f1": _safe_metric(
+            f1_score,
+            label_array,
+            prediction_array,
+            average="macro",
+            zero_division=0,
+        ),
+        "weighted_f1": _safe_metric(
+            f1_score,
+            label_array,
+            prediction_array,
+            average="weighted",
+            zero_division=0,
+        ),
+        "num_classes_observed": float(len(np.unique(label_array))),
     }
 
 

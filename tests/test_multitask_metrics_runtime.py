@@ -9,6 +9,8 @@ import torch
 
 from scripts.evaluate import run_evaluation_experiment
 from scripts.train import run_training_experiment
+from src.engine.trainer import Trainer
+from src.metrics.pointwise import compute_multiclass_classification_metrics
 from src.models.thesis_multitask import ThesisMultitaskModel
 
 
@@ -39,6 +41,45 @@ def test_multitask_forward_outputs_include_forward_pass_timing() -> None:
 
     assert "forward_pass_seconds" in outputs["aux"]
     assert outputs["aux"]["forward_pass_seconds"] >= 0.0
+
+
+def test_compute_multiclass_classification_metrics_reports_classification_scores() -> None:
+    logits = torch.tensor(
+        [
+            [4.0, 1.0, 0.0],
+            [0.0, 3.0, 1.0],
+            [0.0, 2.0, 3.0],
+            [2.0, 3.0, 0.0],
+        ]
+    )
+    labels = torch.tensor([0, 1, 2, 2])
+
+    metrics = compute_multiclass_classification_metrics(logits=logits, labels=labels)
+
+    assert metrics["accuracy"] == 0.75
+    assert metrics["macro_f1"] > 0.0
+    assert metrics["weighted_f1"] > 0.0
+    assert metrics["num_classes_observed"] == 3.0
+
+
+def test_trainer_dispatches_twelve_class_logits_to_multiclass_metrics() -> None:
+    trainer = Trainer.__new__(Trainer)
+    logits = torch.eye(12)
+    labels = torch.arange(12)
+
+    metrics = trainer._aggregate_multitask_classification_metrics(
+        logits_history=[logits],
+        label_history=[labels],
+        forward_pass_seconds_history=[],
+        stage_name="val_synth",
+    )
+
+    assert metrics["val_synth_accuracy"] == 1.0
+    assert metrics["val_synth_macro_f1"] == 1.0
+    assert metrics["val_synth_weighted_f1"] == 1.0
+    assert metrics["val_synth_num_classes_observed"] == 12.0
+    assert "val_synth_roc_auc" not in metrics
+    assert "val_synth_pr_auc" not in metrics
 
 
 def test_run_training_experiment_logs_multitask_epoch_metrics(tmp_path: Path) -> None:

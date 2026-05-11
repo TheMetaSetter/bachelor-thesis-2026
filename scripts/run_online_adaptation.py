@@ -32,6 +32,7 @@ from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
 from src.engine.online_loop import OnlineLoop
 from src.models.online_adaptation import OnlineAdaptationModel
+from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 from src.models.thesis_multitask import ThesisMultitaskModel
 
@@ -40,6 +41,7 @@ def register_runtime_components() -> None:
     register_dataset("smd", build_smd_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
+    register_model("redlamp_mlp_baseline", RedLampMLPBaseline)
     register_model("online_adaptation", OnlineAdaptationModel)
     console_print("REGISTRY", "Registered online adaptation runtime components")
 
