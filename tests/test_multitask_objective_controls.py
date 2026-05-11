@@ -121,9 +121,16 @@ def test_training_step_runs_with_refurbishment_and_normal_only_masking_enabled()
     step_output["loss"].backward()
     optimizer.step()
 
-    full_reconstruction_mean_squared_error = torch.mean(
-        (step_output["outputs"]["recon"] - step_output["batch"]["x"]) ** 2
+    squared_reconstruction_error = (
+        step_output["outputs"]["recon"] - step_output["batch"]["x"]
+    ) ** 2
+    normal_time_step_mask = step_output["batch"]["synthetic_anomaly_mask"] == 0
+    expanded_normal_mask = normal_time_step_mask.unsqueeze(-1).expand_as(
+        squared_reconstruction_error
     )
+    expected_normal_only_reconstruction_loss = torch.sum(
+        squared_reconstruction_error * expanded_normal_mask
+    ) / expanded_normal_mask.sum()
     assert step_output["loss"].item() >= 0.0
     assert step_output["loss_terms"]["classification_loss"].item() >= 0.0
     assert step_output["loss_terms"]["reconstruction_loss"].item() >= 0.0
@@ -132,7 +139,7 @@ def test_training_step_runs_with_refurbishment_and_normal_only_masking_enabled()
     assert torch.all(
         step_output["batch"]["classification_labels"] == torch.tensor([1, 1])
     )
-    assert (
-        step_output["loss_terms"]["reconstruction_loss"]
-        <= full_reconstruction_mean_squared_error + 1.0e-6
+    assert torch.allclose(
+        step_output["loss_terms"]["reconstruction_loss"],
+        expected_normal_only_reconstruction_loss,
     )

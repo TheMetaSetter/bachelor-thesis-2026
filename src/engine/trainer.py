@@ -225,7 +225,6 @@ class Trainer:
                 if (
                     step_output["outputs"].get("logits") is not None
                     and "classification_labels" in step_output["batch"]
-                    and f"{stage_name}_classification_loss" in step_output["log"]
                 ):
                     logits_history.append(
                         step_output["outputs"]["logits"].detach().cpu()
@@ -332,7 +331,12 @@ class Trainer:
                     )
 
             self.model.eval()
-            val_logs, _, _, val_forward_pass_seconds_history = (
+            (
+                val_logs,
+                val_logits_history,
+                val_label_history,
+                val_forward_pass_seconds_history,
+            ) = (
                 self._run_validation_epoch(
                     val_loader=val_loader,
                     epoch_index=epoch_index,
@@ -369,6 +373,14 @@ class Trainer:
                     label_history=train_label_history,
                     forward_pass_seconds_history=train_forward_pass_seconds_history,
                     stage_name="train",
+                )
+            )
+            epoch_metrics.update(
+                self._aggregate_multitask_classification_metrics(
+                    logits_history=val_logits_history,
+                    label_history=val_label_history,
+                    forward_pass_seconds_history=val_forward_pass_seconds_history,
+                    stage_name="val",
                 )
             )
             epoch_metrics.update(

@@ -10,6 +10,7 @@ stage step that assembles the training objective.
 
 import math
 import time
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 import torch
@@ -96,126 +97,317 @@ class MultitaskWindowEncoder(nn.Module):
         }
 
 
+@dataclass(frozen=True)
+class MultitaskArchitectureConfig:
+    input_dim: int
+    encoder_dim: int
+    hidden_dim: int
+    mlp_num_linear_layers: int = 3
+    num_classes: int = 2
+    dropout: float = 0.0
+
+
+@dataclass(frozen=True)
+class PrototypeBranchConfig:
+    continuous_enabled: bool = True
+    continuous_num_prototypes: int = 8
+    discrete_enabled: bool = True
+    discrete_codebook_size: int = 16
+    gumbel_temperature: float = 1.0
+    discrete_ema_decay: float = 0.99
+
+
+@dataclass(frozen=True)
+class ScheduleAndWarmupConfig:
+    temperature_start: float = 1.0
+    temperature_end: float = 1.0
+    temperature_anneal_fraction: float = 1.0
+    temperature_hold_fraction: float = 0.0
+    usage_lambda_start: float | None = None
+    usage_lambda_end: float | None = None
+    usage_lambda_schedule_fraction: float = 1.0
+    freeze_fusion_for_epochs: int = 0
+    warmup_alpha_value: float = 0.5
+    warmup_beta_value: float = 0.5
+
+
+@dataclass(frozen=True)
+class ObjectiveConfig:
+    alpha_logit_init: float = 0.0
+    beta_logit_init: float = 0.0
+    use_label_refurbishment: bool = False
+    refurbishment_alpha: float = 0.0
+    refurbishment_beta: float = 0.0
+    reconstruction_normal_only: bool = False
+    lambda_cls: float = 1.0
+    enable_diversity_loss: bool = False
+    enable_variance_loss: bool = False
+    enable_covariance_loss: bool = False
+    enable_usage_loss: bool = False
+    enable_gate_loss: bool = False
+    lambda_div: float = 0.0
+    lambda_var: float = 0.0
+    lambda_cov: float = 0.0
+    lambda_use: float = 0.0
+    lambda_gate: float = 0.0
+    variance_floor_gamma: float = 1.0
+    gate_barrier_margin: float = 0.25
+
+
+@dataclass(frozen=True)
+class MemoryInitializationConfig:
+    bootstrap_encoder_epochs: int = 0
+    memory_norm_epsilon: float = 1.0e-6
+    memory_initialization_batches: int = 16
+    memory_initialization_with_synthetic_windows: bool = True
+
+
+@dataclass(frozen=True)
+class SyntheticAnomalyConfig:
+    use_synthetic_augmentation: bool = True
+    use_synthetic_validation: bool = True
+    synthetic_validation_seed: int = 7
+    anomaly_probability: float = 0.5
+    min_segment_fraction: float = 0.1
+    max_segment_fraction: float = 0.2
+    spike_scale: float = 3.0
+    balance_binary_classes_within_batch: bool = False
+    anomaly_families: tuple[str, ...] = REDLAMP_ANOMALY_FAMILIES
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "anomaly_families", tuple(self.anomaly_families))
+
+
+@dataclass(frozen=True)
+class ThesisMultitaskModelConfig:
+    architecture: MultitaskArchitectureConfig
+    prototypes: PrototypeBranchConfig = field(default_factory=PrototypeBranchConfig)
+    schedule: ScheduleAndWarmupConfig = field(default_factory=ScheduleAndWarmupConfig)
+    objective: ObjectiveConfig = field(default_factory=ObjectiveConfig)
+    memory: MemoryInitializationConfig = field(
+        default_factory=MemoryInitializationConfig
+    )
+    synthetic: SyntheticAnomalyConfig = field(default_factory=SyntheticAnomalyConfig)
+
+    @classmethod
+    def from_flat_kwargs(
+        cls, flat_kwargs: dict[str, Any]
+    ) -> "ThesisMultitaskModelConfig":
+        remaining_kwargs = dict(flat_kwargs)
+
+        def take_group(group_keys: set[str]) -> dict[str, Any]:
+            group_values: dict[str, Any] = {}
+            for key in group_keys:
+                if key in remaining_kwargs:
+                    group_values[key] = remaining_kwargs.pop(key)
+            return group_values
+
+        architecture_keys = {
+            "input_dim",
+            "encoder_dim",
+            "hidden_dim",
+            "mlp_num_linear_layers",
+            "num_classes",
+            "dropout",
+        }
+        prototype_keys = {
+            "continuous_enabled",
+            "continuous_num_prototypes",
+            "discrete_enabled",
+            "discrete_codebook_size",
+            "gumbel_temperature",
+            "discrete_ema_decay",
+        }
+        schedule_keys = {
+            "temperature_start",
+            "temperature_end",
+            "temperature_anneal_fraction",
+            "temperature_hold_fraction",
+            "usage_lambda_start",
+            "usage_lambda_end",
+            "usage_lambda_schedule_fraction",
+            "freeze_fusion_for_epochs",
+            "warmup_alpha_value",
+            "warmup_beta_value",
+        }
+        objective_keys = {
+            "alpha_logit_init",
+            "beta_logit_init",
+            "use_label_refurbishment",
+            "refurbishment_alpha",
+            "refurbishment_beta",
+            "reconstruction_normal_only",
+            "lambda_cls",
+            "enable_diversity_loss",
+            "enable_variance_loss",
+            "enable_covariance_loss",
+            "enable_usage_loss",
+            "enable_gate_loss",
+            "lambda_div",
+            "lambda_var",
+            "lambda_cov",
+            "lambda_use",
+            "lambda_gate",
+            "variance_floor_gamma",
+            "gate_barrier_margin",
+        }
+        memory_keys = {
+            "bootstrap_encoder_epochs",
+            "memory_norm_epsilon",
+            "memory_initialization_batches",
+            "memory_initialization_with_synthetic_windows",
+        }
+        synthetic_keys = {
+            "use_synthetic_augmentation",
+            "use_synthetic_validation",
+            "synthetic_validation_seed",
+            "anomaly_probability",
+            "min_segment_fraction",
+            "max_segment_fraction",
+            "spike_scale",
+            "balance_binary_classes_within_batch",
+            "anomaly_families",
+        }
+
+        architecture_values = take_group(architecture_keys)
+        missing_required_architecture_keys = sorted(
+            {"input_dim", "encoder_dim", "hidden_dim"} - set(architecture_values)
+        )
+        if missing_required_architecture_keys:
+            raise ValueError(
+                "Missing required ThesisMultitaskModel architecture kwargs: "
+                f"{missing_required_architecture_keys}"
+            )
+
+        prototype_values = take_group(prototype_keys)
+        schedule_values = take_group(schedule_keys)
+        objective_values = take_group(objective_keys)
+        memory_values = take_group(memory_keys)
+        synthetic_values = take_group(synthetic_keys)
+        if "anomaly_families" in synthetic_values:
+            synthetic_values["anomaly_families"] = tuple(
+                synthetic_values["anomaly_families"]
+            )
+
+        if remaining_kwargs:
+            raise ValueError(
+                "Unknown ThesisMultitaskModel flat kwargs: "
+                f"{sorted(remaining_kwargs)}"
+            )
+
+        return cls(
+            architecture=MultitaskArchitectureConfig(**architecture_values),
+            prototypes=PrototypeBranchConfig(**prototype_values),
+            schedule=ScheduleAndWarmupConfig(**schedule_values),
+            objective=ObjectiveConfig(**objective_values),
+            memory=MemoryInitializationConfig(**memory_values),
+            synthetic=SyntheticAnomalyConfig(**synthetic_values),
+        )
+
+
 class ThesisMultitaskModel(BaseModel):
     def __init__(
         self,
-        input_dim: int,
-        encoder_dim: int,
-        hidden_dim: int,
-        mlp_num_linear_layers: int = 3,
-        num_classes: int = 2,
-        dropout: float = 0.0,
-        continuous_enabled: bool = True,
-        continuous_num_prototypes: int = 8,
-        discrete_enabled: bool = True,
-        discrete_codebook_size: int = 16,
-        gumbel_temperature: float = 1.0,
-        temperature_start: float = 1.0,
-        temperature_end: float = 1.0,
-        temperature_anneal_fraction: float = 1.0,
-        temperature_hold_fraction: float = 0.0,
-        alpha_logit_init: float = 0.0,
-        beta_logit_init: float = 0.0,
-        use_label_refurbishment: bool = False,
-        refurbishment_alpha: float = 0.0,
-        refurbishment_beta: float = 0.0,
-        reconstruction_normal_only: bool = False,
-        lambda_cls: float = 1.0,
-        enable_diversity_loss: bool = False,
-        enable_variance_loss: bool = False,
-        enable_covariance_loss: bool = False,
-        enable_usage_loss: bool = False,
-        enable_gate_loss: bool = False,
-        lambda_div: float = 0.0,
-        lambda_var: float = 0.0,
-        lambda_cov: float = 0.0,
-        lambda_use: float = 0.0,
-        lambda_gate: float = 0.0,
-        usage_lambda_start: float | None = None,
-        usage_lambda_end: float | None = None,
-        usage_lambda_schedule_fraction: float = 1.0,
-        variance_floor_gamma: float = 1.0,
-        gate_barrier_margin: float = 0.25,
-        bootstrap_encoder_epochs: int = 0,
-        discrete_ema_decay: float = 0.99,
-        memory_norm_epsilon: float = 1.0e-6,
-        memory_initialization_batches: int = 16,
-        memory_initialization_with_synthetic_windows: bool = True,
-        use_synthetic_augmentation: bool = True,
-        use_synthetic_validation: bool = True,
-        synthetic_validation_seed: int = 7,
-        freeze_fusion_for_epochs: int = 0,
-        warmup_alpha_value: float = 0.5,
-        warmup_beta_value: float = 0.5,
-        anomaly_probability: float = 0.5,
-        min_segment_fraction: float = 0.1,
-        max_segment_fraction: float = 0.2,
-        spike_scale: float = 3.0,
-        balance_binary_classes_within_batch: bool = False,
-        anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
+        config: ThesisMultitaskModelConfig | None = None,
+        **flat_kwargs: Any,
     ) -> None:
         super().__init__()
+        if config is not None and flat_kwargs:
+            raise ValueError("Pass either config or flat keyword arguments, not both")
+        if config is None:
+            config = ThesisMultitaskModelConfig.from_flat_kwargs(flat_kwargs)
+        if not isinstance(config, ThesisMultitaskModelConfig):
+            raise TypeError("config must be a ThesisMultitaskModelConfig instance")
+
+        self._store_config_values(config)
+        self._build_encoder(config)
+        self._build_prototype_memory(config)
+        self._build_fusion_parameters(config)
+        self._build_task_heads(config)
+        self._build_synthetic_injectors(config)
+        self._build_optional_loss_configs()
+        self.set_epoch_context(epoch_index=0, total_epochs=1)
+        self._print_model_summary(config)
+
+    def _store_config_values(self, config: ThesisMultitaskModelConfig) -> None:
         # This constructor stores both the architecture and the experiment
         # switches because the repository follows the one-model-one-file rule.
-        self.hidden_dim = hidden_dim
-        self.mlp_num_linear_layers = mlp_num_linear_layers
-        self.num_classes = num_classes
-        self.continuous_num_prototypes = continuous_num_prototypes
-        self.discrete_codebook_size = discrete_codebook_size
-        self.default_gumbel_temperature = gumbel_temperature
-        self.gumbel_temperature = gumbel_temperature
-        self.temperature_start = temperature_start
-        self.temperature_end = temperature_end
-        self.temperature_anneal_fraction = temperature_anneal_fraction
-        self.temperature_hold_fraction = temperature_hold_fraction
-        self.use_label_refurbishment = use_label_refurbishment
-        self.refurbishment_alpha = refurbishment_alpha
-        self.refurbishment_beta = refurbishment_beta
-        self.reconstruction_normal_only = reconstruction_normal_only
-        self.lambda_cls = lambda_cls
-        self.lambda_div = lambda_div
-        self.lambda_var = lambda_var
-        self.lambda_cov = lambda_cov
-        self.lambda_use = lambda_use
-        self.lambda_gate = lambda_gate
+        architecture = config.architecture
+        prototypes = config.prototypes
+        schedule = config.schedule
+        objective = config.objective
+        memory = config.memory
+        synthetic = config.synthetic
+
+        self.model_config = config
+        self.hidden_dim = architecture.hidden_dim
+        self.mlp_num_linear_layers = architecture.mlp_num_linear_layers
+        self.num_classes = architecture.num_classes
+        self.continuous_num_prototypes = prototypes.continuous_num_prototypes
+        self.discrete_codebook_size = prototypes.discrete_codebook_size
+        self.default_gumbel_temperature = prototypes.gumbel_temperature
+        self.gumbel_temperature = prototypes.gumbel_temperature
+        self.temperature_start = schedule.temperature_start
+        self.temperature_end = schedule.temperature_end
+        self.temperature_anneal_fraction = schedule.temperature_anneal_fraction
+        self.temperature_hold_fraction = schedule.temperature_hold_fraction
+        self.use_label_refurbishment = objective.use_label_refurbishment
+        self.refurbishment_alpha = objective.refurbishment_alpha
+        self.refurbishment_beta = objective.refurbishment_beta
+        self.reconstruction_normal_only = objective.reconstruction_normal_only
+        self.lambda_cls = objective.lambda_cls
+        self.lambda_div = objective.lambda_div
+        self.lambda_var = objective.lambda_var
+        self.lambda_cov = objective.lambda_cov
+        self.lambda_use = objective.lambda_use
+        self.lambda_gate = objective.lambda_gate
         self.usage_lambda_start = (
-            lambda_use if usage_lambda_start is None else usage_lambda_start
+            objective.lambda_use
+            if schedule.usage_lambda_start is None
+            else schedule.usage_lambda_start
         )
         self.usage_lambda_end = (
-            lambda_use if usage_lambda_end is None else usage_lambda_end
+            objective.lambda_use
+            if schedule.usage_lambda_end is None
+            else schedule.usage_lambda_end
         )
-        self.usage_lambda_schedule_fraction = usage_lambda_schedule_fraction
+        self.usage_lambda_schedule_fraction = (
+            schedule.usage_lambda_schedule_fraction
+        )
         self.current_usage_lambda = self.usage_lambda_start
-        self.enable_diversity_loss = enable_diversity_loss
-        self.enable_variance_loss = enable_variance_loss
-        self.enable_covariance_loss = enable_covariance_loss
-        self.enable_usage_loss = enable_usage_loss
-        self.enable_gate_loss = enable_gate_loss
-        self.variance_floor_gamma = variance_floor_gamma
-        self.gate_barrier_margin = gate_barrier_margin
-        self.bootstrap_encoder_epochs = bootstrap_encoder_epochs
-        self.discrete_ema_decay = discrete_ema_decay
-        self.memory_norm_epsilon = memory_norm_epsilon
-        self.memory_initialization_batches = memory_initialization_batches
+        self.enable_diversity_loss = objective.enable_diversity_loss
+        self.enable_variance_loss = objective.enable_variance_loss
+        self.enable_covariance_loss = objective.enable_covariance_loss
+        self.enable_usage_loss = objective.enable_usage_loss
+        self.enable_gate_loss = objective.enable_gate_loss
+        self.variance_floor_gamma = objective.variance_floor_gamma
+        self.gate_barrier_margin = objective.gate_barrier_margin
+        self.bootstrap_encoder_epochs = memory.bootstrap_encoder_epochs
+        self.discrete_ema_decay = prototypes.discrete_ema_decay
+        self.memory_norm_epsilon = memory.memory_norm_epsilon
+        self.memory_initialization_batches = memory.memory_initialization_batches
         self.memory_initialization_with_synthetic_windows = (
-            memory_initialization_with_synthetic_windows
+            memory.memory_initialization_with_synthetic_windows
         )
-        self.use_synthetic_augmentation = use_synthetic_augmentation
-        self.use_synthetic_validation = use_synthetic_validation
-        self.synthetic_validation_seed = synthetic_validation_seed
-        self.freeze_fusion_for_epochs = freeze_fusion_for_epochs
-        self.warmup_alpha_value = warmup_alpha_value
-        self.warmup_beta_value = warmup_beta_value
+        self.use_synthetic_augmentation = synthetic.use_synthetic_augmentation
+        self.use_synthetic_validation = synthetic.use_synthetic_validation
+        self.synthetic_validation_seed = synthetic.synthetic_validation_seed
+        self.freeze_fusion_for_epochs = schedule.freeze_fusion_for_epochs
+        self.warmup_alpha_value = schedule.warmup_alpha_value
+        self.warmup_beta_value = schedule.warmup_beta_value
         self.epsilon = 1e-6
         self.current_epoch_index = 0
         self.current_total_epochs = 1
         self.active_alpha_override: float | None = None
         self.active_beta_override: float | None = None
         self.continuous_memory_enabled = (
-            continuous_enabled and continuous_num_prototypes > 0
+            prototypes.continuous_enabled
+            and prototypes.continuous_num_prototypes > 0
         )
-        self.discrete_memory_enabled = discrete_enabled and discrete_codebook_size > 0
-        self.memory_initialized = bootstrap_encoder_epochs <= 0
+        self.discrete_memory_enabled = (
+            prototypes.discrete_enabled and prototypes.discrete_codebook_size > 0
+        )
+        self.memory_initialized = memory.bootstrap_encoder_epochs <= 0
         self.memory_training_enabled = self.memory_initialized
         self.memory_ready_for_initialization = False
         self.memory_initialization_epoch: int | None = None
@@ -231,22 +423,30 @@ class ThesisMultitaskModel(BaseModel):
                 "label refurbishment currently supports only binary classification"
             )
 
+    def _build_encoder(self, config: ThesisMultitaskModelConfig) -> None:
+        architecture = config.architecture
         # Encoder block.
         # This produces the common hidden state that both prototype branches see.
         self.encoder = MultitaskWindowEncoder(
-            input_dim=input_dim,
-            encoder_dim=encoder_dim,
-            hidden_dim=hidden_dim,
-            num_linear_layers=mlp_num_linear_layers,
-            dropout=dropout,
+            input_dim=architecture.input_dim,
+            encoder_dim=architecture.encoder_dim,
+            hidden_dim=architecture.hidden_dim,
+            num_linear_layers=architecture.mlp_num_linear_layers,
+            dropout=architecture.dropout,
         )
 
+    def _build_prototype_memory(self, config: ThesisMultitaskModelConfig) -> None:
+        architecture = config.architecture
+        prototypes = config.prototypes
         # Continuous branch.
         # This branch retrieves a soft prototype context from a learned bank.
         if self.continuous_memory_enabled:
             self.register_buffer(
                 "continuous_prototype_bank",
-                torch.randn(continuous_num_prototypes, hidden_dim),
+                torch.randn(
+                    prototypes.continuous_num_prototypes,
+                    architecture.hidden_dim,
+                ),
             )
         else:
             self.register_buffer("continuous_prototype_bank", None)
@@ -254,18 +454,27 @@ class ThesisMultitaskModel(BaseModel):
         # Discrete branch.
         # This branch assigns tokens to a codebook through Gumbel-Softmax.
         if self.discrete_memory_enabled:
-            self.discrete_assignment = nn.Linear(hidden_dim, discrete_codebook_size)
+            self.discrete_assignment = nn.Linear(
+                architecture.hidden_dim,
+                prototypes.discrete_codebook_size,
+            )
             self.register_buffer(
                 "discrete_codebook",
-                torch.randn(discrete_codebook_size, hidden_dim),
+                torch.randn(
+                    prototypes.discrete_codebook_size,
+                    architecture.hidden_dim,
+                ),
             )
             self.register_buffer(
                 "discrete_ema_counts",
-                torch.zeros(discrete_codebook_size),
+                torch.zeros(prototypes.discrete_codebook_size),
             )
             self.register_buffer(
                 "discrete_ema_sums",
-                torch.zeros(discrete_codebook_size, hidden_dim),
+                torch.zeros(
+                    prototypes.discrete_codebook_size,
+                    architecture.hidden_dim,
+                ),
             )
         else:
             self.discrete_assignment = None
@@ -280,57 +489,69 @@ class ThesisMultitaskModel(BaseModel):
             nn.Sigmoid(),
         )
 
+    def _build_fusion_parameters(self, config: ThesisMultitaskModelConfig) -> None:
+        objective = config.objective
         # Fusion scalars.
         # `alpha` controls the classification mix and `beta` controls the
         # reconstruction mix so the two tasks can prefer different geometry.
-        self.alpha_logit = nn.Parameter(torch.tensor(float(alpha_logit_init)))
-        self.beta_logit = nn.Parameter(torch.tensor(float(beta_logit_init)))
+        self.alpha_logit = nn.Parameter(torch.tensor(float(objective.alpha_logit_init)))
+        self.beta_logit = nn.Parameter(torch.tensor(float(objective.beta_logit_init)))
 
+    def _build_task_heads(self, config: ThesisMultitaskModelConfig) -> None:
+        architecture = config.architecture
         # Task heads.
         # Supervision lives on the fused task-specific hidden states, not on the
         # branch-local states. That keeps the branches observable but not separate predictors.
         self.reconstruction_head = build_multilayer_perceptron(
-            input_dim=hidden_dim,
-            intermediate_dim=encoder_dim,
-            output_dim=input_dim,
-            num_linear_layers=mlp_num_linear_layers,
-            dropout=dropout,
+            input_dim=architecture.hidden_dim,
+            intermediate_dim=architecture.encoder_dim,
+            output_dim=architecture.input_dim,
+            num_linear_layers=architecture.mlp_num_linear_layers,
+            dropout=architecture.dropout,
             apply_output_activation=False,
         )
 
         self.classification_head = build_multilayer_perceptron(
-            input_dim=hidden_dim,
-            intermediate_dim=hidden_dim,
-            output_dim=num_classes,
-            num_linear_layers=mlp_num_linear_layers,
-            dropout=dropout,
+            input_dim=architecture.hidden_dim,
+            intermediate_dim=architecture.hidden_dim,
+            output_dim=architecture.num_classes,
+            num_linear_layers=architecture.mlp_num_linear_layers,
+            dropout=architecture.dropout,
             apply_output_activation=False,
         )
 
+    def _build_synthetic_injectors(self, config: ThesisMultitaskModelConfig) -> None:
+        architecture = config.architecture
+        synthetic = config.synthetic
         # Offline objective helpers.
         # Optional losses are activated by `lambda_*` so ablations can stay on
         # one codepath instead of branching into separate model variants. The
         # intended starting point is still only reconstruction plus
         # classification loss until observed failure modes justify more terms.
-        self.branch_layer_norm = nn.LayerNorm(hidden_dim)
+        self.branch_layer_norm = nn.LayerNorm(architecture.hidden_dim)
         self.synthetic_anomaly_injector = SyntheticAnomalyInjector(
-            anomaly_probability=anomaly_probability,
-            min_segment_fraction=min_segment_fraction,
-            max_segment_fraction=max_segment_fraction,
-            spike_scale=spike_scale,
-            anomaly_families=anomaly_families,
-            balance_binary_classes_within_batch=balance_binary_classes_within_batch,
+            anomaly_probability=synthetic.anomaly_probability,
+            min_segment_fraction=synthetic.min_segment_fraction,
+            max_segment_fraction=synthetic.max_segment_fraction,
+            spike_scale=synthetic.spike_scale,
+            anomaly_families=synthetic.anomaly_families,
+            balance_binary_classes_within_batch=(
+                synthetic.balance_binary_classes_within_batch
+            ),
         )
         self.synthetic_validation_injector = SyntheticAnomalyInjector(
-            anomaly_probability=anomaly_probability,
-            min_segment_fraction=min_segment_fraction,
-            max_segment_fraction=max_segment_fraction,
-            spike_scale=spike_scale,
-            anomaly_families=anomaly_families,
-            balance_binary_classes_within_batch=balance_binary_classes_within_batch,
-            deterministic_seed=synthetic_validation_seed,
+            anomaly_probability=synthetic.anomaly_probability,
+            min_segment_fraction=synthetic.min_segment_fraction,
+            max_segment_fraction=synthetic.max_segment_fraction,
+            spike_scale=synthetic.spike_scale,
+            anomaly_families=synthetic.anomaly_families,
+            balance_binary_classes_within_batch=(
+                synthetic.balance_binary_classes_within_batch
+            ),
+            deterministic_seed=synthetic.synthetic_validation_seed,
         )
 
+    def _build_optional_loss_configs(self) -> None:
         self.optional_loss_configs: dict[str, dict[str, Any]] = {
             "diversity_loss": {
                 "enabled": self.lambda_div > 0.0,
@@ -358,7 +579,14 @@ class ThesisMultitaskModel(BaseModel):
                 "compute_fn": self._compute_gate_regularization_loss,
             },
         }
-        self.set_epoch_context(epoch_index=0, total_epochs=1)
+
+    def _print_model_summary(self, config: ThesisMultitaskModelConfig) -> None:
+        architecture = config.architecture
+        prototypes = config.prototypes
+        schedule = config.schedule
+        objective = config.objective
+        memory = config.memory
+        synthetic = config.synthetic
         print_parameter_summary(
             "MODEL",
             "ThesisMultitaskModel",
@@ -374,34 +602,36 @@ class ThesisMultitaskModel(BaseModel):
                 "alpha_logit": self.alpha_logit,
                 "beta_logit": self.beta_logit,
             },
-            input_dim=input_dim,
-            encoder_dim=encoder_dim,
-            hidden_dim=hidden_dim,
-            mlp_num_linear_layers=mlp_num_linear_layers,
-            num_classes=num_classes,
-            use_label_refurbishment=use_label_refurbishment,
-            refurbishment_alpha=refurbishment_alpha,
-            refurbishment_beta=refurbishment_beta,
-            reconstruction_normal_only=reconstruction_normal_only,
-            lambda_cls=lambda_cls,
-            lambda_div=lambda_div,
-            lambda_var=lambda_var,
-            lambda_cov=lambda_cov,
-            lambda_use=lambda_use,
-            lambda_gate=lambda_gate,
-            temperature_start=temperature_start,
-            temperature_end=temperature_end,
-            temperature_hold_fraction=temperature_hold_fraction,
+            input_dim=architecture.input_dim,
+            encoder_dim=architecture.encoder_dim,
+            hidden_dim=architecture.hidden_dim,
+            mlp_num_linear_layers=architecture.mlp_num_linear_layers,
+            num_classes=architecture.num_classes,
+            use_label_refurbishment=objective.use_label_refurbishment,
+            refurbishment_alpha=objective.refurbishment_alpha,
+            refurbishment_beta=objective.refurbishment_beta,
+            reconstruction_normal_only=objective.reconstruction_normal_only,
+            lambda_cls=objective.lambda_cls,
+            lambda_div=objective.lambda_div,
+            lambda_var=objective.lambda_var,
+            lambda_cov=objective.lambda_cov,
+            lambda_use=objective.lambda_use,
+            lambda_gate=objective.lambda_gate,
+            temperature_start=schedule.temperature_start,
+            temperature_end=schedule.temperature_end,
+            temperature_hold_fraction=schedule.temperature_hold_fraction,
             usage_lambda_start=self.usage_lambda_start,
             usage_lambda_end=self.usage_lambda_end,
-            usage_lambda_schedule_fraction=usage_lambda_schedule_fraction,
-            bootstrap_encoder_epochs=bootstrap_encoder_epochs,
-            discrete_ema_decay=discrete_ema_decay,
-            memory_norm_epsilon=memory_norm_epsilon,
-            memory_initialization_batches=memory_initialization_batches,
-            memory_initialization_with_synthetic_windows=memory_initialization_with_synthetic_windows,
-            use_synthetic_validation=use_synthetic_validation,
-            synthetic_validation_seed=synthetic_validation_seed,
+            usage_lambda_schedule_fraction=schedule.usage_lambda_schedule_fraction,
+            bootstrap_encoder_epochs=memory.bootstrap_encoder_epochs,
+            discrete_ema_decay=prototypes.discrete_ema_decay,
+            memory_norm_epsilon=memory.memory_norm_epsilon,
+            memory_initialization_batches=memory.memory_initialization_batches,
+            memory_initialization_with_synthetic_windows=(
+                memory.memory_initialization_with_synthetic_windows
+            ),
+            use_synthetic_validation=synthetic.use_synthetic_validation,
+            synthetic_validation_seed=synthetic.synthetic_validation_seed,
         )
 
     def _zero_loss(self, reference_tensor: torch.Tensor) -> torch.Tensor:
