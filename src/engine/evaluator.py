@@ -42,8 +42,15 @@ def select_point_score_threshold(
 
 
 class Evaluator:
-    def __init__(self, device: str = "cpu") -> None:
+    def __init__(
+        self,
+        device: str = "cpu",
+        vus_max_buffer_size: int | None = None,
+        vus_num_thresholds: int = 200,
+    ) -> None:
         self.device = device
+        self.vus_max_buffer_size = vus_max_buffer_size
+        self.vus_num_thresholds = vus_num_thresholds
 
     def _move_batch_to_device(self, batch: dict[str, Any]) -> dict[str, Any]:
         # Only tensors need device placement; metadata stays as plain Python
@@ -230,6 +237,8 @@ class Evaluator:
             point_labels=concatenated_labels,
             point_scores=concatenated_scores,
             threshold=threshold,
+            vus_max_buffer_size=self.vus_max_buffer_size,
+            vus_num_thresholds=self.vus_num_thresholds,
         )
 
         metrics["threshold"] = threshold

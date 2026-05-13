@@ -116,7 +116,17 @@ def run_evaluation_experiment(
 
     # Gọi evaluator từ file src/engine/evaluator.py
     # Gọi phương thức evaluate của class Evaluator
-    evaluator = Evaluator(device=experiment_config["device"])
+    evaluation_config = dict(experiment_config.get("evaluation", {}))
+    vus_max_buffer_size = evaluation_config.get(
+        "vus_max_buffer_size",
+        experiment_config["data"].get("window_size"),
+    )
+    vus_num_thresholds = int(evaluation_config.get("vus_num_thresholds", 200))
+    evaluator = Evaluator(
+        device=experiment_config["device"],
+        vus_max_buffer_size=vus_max_buffer_size,
+        vus_num_thresholds=vus_num_thresholds,
+    )
     evaluation_outputs = evaluator.evaluate(model, data_bundle["loaders"]["test"])
 
     logging_config = dict(experiment_config.get("logging", {}))

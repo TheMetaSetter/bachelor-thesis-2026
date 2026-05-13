@@ -28,8 +28,10 @@ def test_run_ablation_suite_writes_compact_summary_artifacts(
     ) -> dict[str, object]:
         return {
             "metrics": {
-                "auroc": 0.75,
-                "f1_at_threshold": 0.5,
+                "roc_auc": 0.75,
+                "pr_auc": 0.65,
+                "vus_pr": 0.61,
+                "f1": 0.5,
                 "threshold": 0.12,
             }
         }
@@ -45,4 +47,6 @@ def test_run_ablation_suite_writes_compact_summary_artifacts(
     assert outputs["summary_json_path"].exists()
     assert outputs["summary_csv_path"].exists()
     assert outputs["summary_rows"][0]["experiment_name"] == "smd_multitask_smoke"
+    assert outputs["summary_rows"][0]["pr_auc"] == 0.65
+    assert outputs["summary_rows"][0]["vus_pr"] == 0.61
     assert outputs["summary_rows"][0]["anomaly_families"]

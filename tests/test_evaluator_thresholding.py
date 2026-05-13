@@ -138,6 +138,34 @@ def test_compute_pointwise_metrics_uses_strict_threshold_comparison() -> None:
     assert metrics["fpr"] == 0.0
 
 
+def test_compute_pointwise_metrics_includes_vus_pr() -> None:
+    point_labels = np.array([0, 1, 1, 0, 0, 1], dtype=np.int64)
+    point_scores = np.array([0.0, 0.9, 0.8, 0.1, 0.2, 0.95], dtype=np.float32)
+
+    metrics = compute_pointwise_metrics(
+        point_labels=point_labels,
+        point_scores=point_scores,
+        threshold=0.5,
+        vus_max_buffer_size=2,
+        vus_num_thresholds=20,
+    )
+
+    assert "vus_pr" in metrics
+    assert metrics["vus_pr"] >= 0.0
+    assert metrics["vus_pr"] <= 1.0
+
+
+def test_evaluator_accepts_vus_configuration() -> None:
+    evaluator = Evaluator(
+        device="cpu",
+        vus_max_buffer_size=20,
+        vus_num_thresholds=50,
+    )
+
+    assert evaluator.vus_max_buffer_size == 20
+    assert evaluator.vus_num_thresholds == 50
+
+
 def test_compute_binary_classification_metrics_reports_expected_values() -> None:
     logits = torch.tensor(
         [

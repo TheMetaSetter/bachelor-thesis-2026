@@ -19,6 +19,9 @@ optimizer:
     cooldown: 3
     min_lr: 1.0e-7
 epochs: 300
+evaluation:
+  vus_max_buffer_size: 20
+  vus_num_thresholds: 200
 logging:
   use_wandb: false
   wandb_project: bachelor-thesis-2026

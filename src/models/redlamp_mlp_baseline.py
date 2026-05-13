@@ -2,9 +2,10 @@ from __future__ import annotations
 
 """Self-contained RedLamp-inspired MLP baseline.
 
-The baseline keeps the repository batch and output contracts while matching the
-RedLamp comparison setting: flattened windows, an MLP autoencoder, and a
-multi-class synthetic anomaly classifier over the shared RedLamp taxonomy.
+The baseline keeps the repository batch and output contracts while using a
+timestep encoder for a controlled comparison against the thesis model. It
+remains an MLP autoencoder and multi-class synthetic anomaly classifier without
+prototype memory, fusion gates, or online adaptation state.
 """
 
 from typing import Any
@@ -80,9 +81,8 @@ class RedLampMLPBaseline(BaseModel):
         self.use_synthetic_validation = use_synthetic_validation
         self.epsilon = 1.0e-6
 
-        flattened_dim = window_size * input_dim
         self.encoder = build_multilayer_perceptron(
-            input_dim=flattened_dim,
+            input_dim=input_dim,
             intermediate_dim=latent_dim,
             output_dim=latent_dim,
             num_linear_layers=mlp_num_linear_layers,
@@ -92,7 +92,7 @@ class RedLampMLPBaseline(BaseModel):
         self.decoder = build_multilayer_perceptron(
             input_dim=latent_dim,
             intermediate_dim=latent_dim,
-            output_dim=flattened_dim,
+            output_dim=input_dim,
             num_linear_layers=mlp_num_linear_layers,
             dropout=dropout,
             apply_output_activation=False,
@@ -188,25 +188,23 @@ class RedLampMLPBaseline(BaseModel):
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
         validate_batch(batch)
         x_tensor = batch["x"]
-        batch_size, window_size, input_dim = x_tensor.shape
+        _batch_size, window_size, input_dim = x_tensor.shape
         if window_size != self.window_size or input_dim != self.input_dim:
             raise ValueError(
                 "batch['x'] must have shape [B, "
                 f"{self.window_size}, {self.input_dim}]"
             )
 
-        flattened_x = x_tensor.reshape(batch_size, self.window_size * self.input_dim)
-        latent = self.encoder(flattened_x)
-        reconstructed_flat = self.decoder(latent)
-        recon = reconstructed_flat.reshape(batch_size, self.window_size, self.input_dim)
-        logits = self.classification_head(latent)
+        hidden = self.encoder(x_tensor)
+        pooled_hidden = hidden.mean(dim=1)
+        recon = self.decoder(hidden)
+        logits = self.classification_head(pooled_hidden)
         class_probabilities = torch.softmax(logits, dim=-1)
         point_scores = torch.mean((recon - x_tensor) ** 2, dim=-1)
-        hidden = latent.unsqueeze(1).expand(batch_size, self.window_size, self.latent_dim)
 
         outputs = {
             "hidden": hidden,
-            "pooled": latent,
+            "pooled": pooled_hidden,
             "recon": recon,
             "logits": logits,
             "point_scores": point_scores,
