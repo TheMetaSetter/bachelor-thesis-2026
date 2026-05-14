@@ -52,6 +52,20 @@ def _merge_config_section(
     return merged_config
 
 
+def _resolve_thesis_model_window_size(experiment_config: dict[str, Any]) -> None:
+    model_config = experiment_config["model"]
+    data_config = experiment_config["data"]
+    if model_config.get("model_name") != "thesis_multitask":
+        return
+
+    data_window_size = data_config.get("window_size")
+    model_window_size = model_config.get("window_size")
+    if model_window_size is None:
+        model_config["window_size"] = data_window_size
+    elif model_window_size != data_window_size:
+        raise ValueError("model.window_size must match data.window_size")
+
+
 def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     # Validation is intentionally centralized here so the rest of the runtime
     # can assume a decision-complete experiment config.
@@ -83,6 +97,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     model_config = experiment_config["model"]
     task_config = experiment_config["task"]
     optimizer_config = experiment_config["optimizer"]
+
+    _resolve_thesis_model_window_size(experiment_config)
 
     supported_dataset_names = {"smd"}
     supported_model_names = {
@@ -116,6 +132,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         integer_fields["encoder_dim"] = model_config.get("encoder_dim")
         integer_fields["hidden_dim"] = model_config.get("hidden_dim")
     if model_config.get("model_name") == "thesis_multitask":
+        integer_fields["window_size"] = model_config.get("window_size")
         integer_fields["mlp_num_linear_layers"] = model_config.get(
             "mlp_num_linear_layers", 3
         )
@@ -389,7 +406,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("refurbishment_alpha must be in [0, 1]")
         if not 0.0 <= float(model_config.get("refurbishment_beta", 0.0)) <= 1.0:
             raise ValueError("refurbishment_beta must be in [0, 1]")
-        classification_label_mode = task_config.get("classification_label_mode", "binary")
+        classification_label_mode = task_config.get(
+            "classification_label_mode", "binary"
+        )
         if classification_label_mode not in {"binary", "redlamp_multiclass"}:
             raise ValueError(
                 "classification_label_mode must be one of: binary, redlamp_multiclass"
@@ -645,6 +664,7 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
         root_config.get("task_overrides"),
     )
 
+    _resolve_thesis_model_window_size(resolved_experiment_config)
     validate_experiment_config(resolved_experiment_config)
     console_print(
         "CONFIG",

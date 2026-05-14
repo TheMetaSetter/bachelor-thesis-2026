@@ -8,6 +8,7 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 def _build_model(**overrides: object) -> ThesisMultitaskModel:
     model_kwargs: dict[str, object] = {
         "input_dim": 38,
+        "window_size": 100,
         "encoder_dim": 64,
         "hidden_dim": 16,
         "mlp_num_linear_layers": 3,
@@ -128,9 +129,10 @@ def test_training_step_runs_with_refurbishment_and_normal_only_masking_enabled()
     expanded_normal_mask = normal_time_step_mask.unsqueeze(-1).expand_as(
         squared_reconstruction_error
     )
-    expected_normal_only_reconstruction_loss = torch.sum(
-        squared_reconstruction_error * expanded_normal_mask
-    ) / expanded_normal_mask.sum()
+    expected_normal_only_reconstruction_loss = (
+        torch.sum(squared_reconstruction_error * expanded_normal_mask)
+        / expanded_normal_mask.sum()
+    )
     assert step_output["loss"].item() >= 0.0
     assert step_output["loss_terms"]["classification_loss"].item() >= 0.0
     assert step_output["loss_terms"]["reconstruction_loss"].item() >= 0.0

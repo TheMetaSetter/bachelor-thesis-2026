@@ -44,6 +44,7 @@ def _build_batch(batch_size: int = 2) -> dict[str, object]:
 def _build_model(*, bootstrap_encoder_epochs: int) -> ThesisMultitaskModel:
     return ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=32,
         hidden_dim=16,
         mlp_num_linear_layers=3,

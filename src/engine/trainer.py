@@ -346,13 +346,11 @@ class Trainer:
                 val_logits_history,
                 val_label_history,
                 val_forward_pass_seconds_history,
-            ) = (
-                self._run_validation_epoch(
-                    val_loader=val_loader,
-                    epoch_index=epoch_index,
-                    stage_name="val",
-                    step_method_name="validation_step",
-                )
+            ) = self._run_validation_epoch(
+                val_loader=val_loader,
+                epoch_index=epoch_index,
+                stage_name="val",
+                step_method_name="validation_step",
             )
             val_synth_logs: list[dict[str, float]] = []
             val_synth_logits_history: list[torch.Tensor] = []

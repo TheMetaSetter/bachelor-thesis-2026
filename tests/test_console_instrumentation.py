@@ -45,6 +45,7 @@ def test_smd_builder_emits_console_dataset_summary(capsys) -> None:
 def test_model_construction_emits_parameter_summary(capsys) -> None:
     ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=16,
         hidden_dim=8,
         num_classes=2,

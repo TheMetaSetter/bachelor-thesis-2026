@@ -18,6 +18,7 @@ def _build_batch() -> dict[str, object]:
 def _build_initialized_model() -> ThesisMultitaskModel:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         num_classes=2,

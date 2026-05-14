@@ -10,6 +10,7 @@ def test_one_multitask_forward_and_backward_step_runs_with_optional_losses_enabl
 ):
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         mlp_num_linear_layers=3,
@@ -63,6 +64,7 @@ def test_one_multitask_forward_and_backward_step_runs_with_optional_losses_enabl
 def test_one_multitask_train_step_runs_with_optional_losses_disabled() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         mlp_num_linear_layers=3,
@@ -124,6 +126,7 @@ def test_one_multitask_train_step_runs_with_optional_losses_disabled() -> None:
 def test_usage_loss_schedule_weight_contributes_to_total_loss() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         mlp_num_linear_layers=3,

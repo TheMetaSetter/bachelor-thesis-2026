@@ -132,7 +132,9 @@ def build_threshold_aware_range_labels(
     return range_labels
 
 
-def _build_score_thresholds(point_scores: np.ndarray, num_thresholds: int) -> np.ndarray:
+def _build_score_thresholds(
+    point_scores: np.ndarray, num_thresholds: int
+) -> np.ndarray:
     score_array = np.asarray(point_scores).astype(np.float64).reshape(-1)
     if num_thresholds <= 0:
         raise ValueError("num_thresholds must be positive")
@@ -190,7 +192,9 @@ def _compute_range_precision_recall(
     predicted_positive = true_positive + false_positive
     precision = 1.0 if predicted_positive == 0.0 else true_positive / predicted_positive
 
-    positive_mass = float(np.sum((point_labels.astype(np.float64) + range_labels) / 2.0))
+    positive_mass = float(
+        np.sum((point_labels.astype(np.float64) + range_labels) / 2.0)
+    )
     if positive_mass == 0.0:
         recall = float("nan")
     else:
@@ -307,8 +311,8 @@ def compute_multiclass_classification_metrics(
     labels: torch.Tensor,
 ) -> dict[str, float]:
     label_array = labels.detach().cpu().numpy().astype(np.int64)
-    prediction_array = torch.argmax(logits.detach().cpu(), dim=-1).numpy().astype(
-        np.int64
+    prediction_array = (
+        torch.argmax(logits.detach().cpu(), dim=-1).numpy().astype(np.int64)
     )
     return {
         "accuracy": _safe_metric(accuracy_score, label_array, prediction_array),

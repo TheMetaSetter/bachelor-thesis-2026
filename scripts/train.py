@@ -62,7 +62,10 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
             if key != "task_name"
         }
     )
-    if model_name == "redlamp_mlp_baseline":
+    if (
+        model_name in {"redlamp_mlp_baseline", "thesis_multitask"}
+        and "window_size" not in model_kwargs
+    ):
         model_kwargs["window_size"] = experiment_config["data"]["window_size"]
     console_print(
         "MODEL",

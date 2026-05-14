@@ -760,8 +760,8 @@ class SyntheticAnomalyInjector:
             )
             augmented_batch["x"][batch_index] = augmented_window
             anomaly_masks[batch_index] = anomaly_mask
-            classification_labels[batch_index] = self._classification_label_from_metadata(
-                window_metadata
+            classification_labels[batch_index] = (
+                self._classification_label_from_metadata(window_metadata)
             )
             augmentation_metadata.append(window_metadata)
 
@@ -774,7 +774,9 @@ class SyntheticAnomalyInjector:
             )
 
         augmented_batch["classification_labels"] = classification_labels
-        augmented_batch["classification_class_names"] = self._classification_class_names()
+        augmented_batch["classification_class_names"] = (
+            self._classification_class_names()
+        )
         augmented_batch["synthetic_anomaly_mask"] = anomaly_masks
         augmented_batch["augmentation_metadata"] = augmentation_metadata
         anomalous_windows = int(classification_labels.sum().detach().cpu())

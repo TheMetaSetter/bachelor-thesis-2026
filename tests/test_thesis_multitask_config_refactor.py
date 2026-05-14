@@ -7,7 +7,10 @@ from typing import Any
 import pytest
 import torch
 
-from scripts.train import build_model_from_experiment_config, register_runtime_components
+from scripts.train import (
+    build_model_from_experiment_config,
+    register_runtime_components,
+)
 from src.core.registry import clear_registry
 from src.engine.checkpoint import CheckpointManager
 from src.models.thesis_multitask import ThesisMultitaskModel
@@ -20,8 +23,7 @@ def _get_config_class() -> type:
 
     config_class = getattr(thesis_multitask, "ThesisMultitaskModelConfig", None)
     assert config_class is not None, (
-        "ThesisMultitaskModelConfig must be defined in "
-        "src/models/thesis_multitask.py"
+        "ThesisMultitaskModelConfig must be defined in src/models/thesis_multitask.py"
     )
     return config_class
 
@@ -29,6 +31,7 @@ def _get_config_class() -> type:
 def _flat_model_kwargs(**overrides: object) -> dict[str, object]:
     model_kwargs: dict[str, object] = {
         "input_dim": 38,
+        "window_size": 100,
         "encoder_dim": 64,
         "hidden_dim": 16,
         "mlp_num_linear_layers": 3,
@@ -99,6 +102,7 @@ def _assert_common_model_contract(model: ThesisMultitaskModel) -> None:
     outputs = model(_build_batch())
 
     assert outputs["hidden"].shape == (2, 100, 16)
+    assert outputs["pooled"].shape == (2, 100 * 16)
     assert outputs["recon"].shape == (2, 100, 38)
     assert outputs["logits"].shape == (2, 2)
     assert outputs["point_scores"].shape == (2, 100)
@@ -115,6 +119,7 @@ def test_flat_kwargs_are_grouped_into_readable_config_sections() -> None:
 
     assert is_dataclass(config)
     assert config.architecture.input_dim == 38
+    assert config.architecture.window_size == 100
     assert config.architecture.encoder_dim == 64
     assert config.architecture.hidden_dim == 16
     assert config.architecture.mlp_num_linear_layers == 3
@@ -172,7 +177,9 @@ def test_config_object_and_flat_kwargs_build_equivalent_runtime_contracts() -> N
 
     assert flat_model.hidden_dim == config_model.hidden_dim == 16
     assert flat_model.mlp_num_linear_layers == config_model.mlp_num_linear_layers == 3
-    assert flat_model.continuous_num_prototypes == config_model.continuous_num_prototypes
+    assert (
+        flat_model.continuous_num_prototypes == config_model.continuous_num_prototypes
+    )
     assert flat_model.discrete_codebook_size == config_model.discrete_codebook_size
     assert flat_model.use_synthetic_augmentation is False
     assert tuple(config_model.synthetic_anomaly_injector.anomaly_families) == (
@@ -180,7 +187,9 @@ def test_config_object_and_flat_kwargs_build_equivalent_runtime_contracts() -> N
         "noise",
         "scale",
     )
-    assert list(flat_model.state_dict().keys()) == list(config_model.state_dict().keys())
+    assert list(flat_model.state_dict().keys()) == list(
+        config_model.state_dict().keys()
+    )
 
     _assert_common_model_contract(flat_model)
     _assert_common_model_contract(config_model)
@@ -275,7 +284,9 @@ def test_checkpoint_style_flat_config_reconstructs_same_state_dict_keys() -> Non
         config_class.from_flat_kwargs(checkpoint_kwargs)
     )
 
-    assert list(flat_model.state_dict().keys()) == list(config_model.state_dict().keys())
+    assert list(flat_model.state_dict().keys()) == list(
+        config_model.state_dict().keys()
+    )
     assert (
         flat_model.get_memory_lifecycle_state()
         == config_model.get_memory_lifecycle_state()

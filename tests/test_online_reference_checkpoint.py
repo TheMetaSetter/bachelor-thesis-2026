@@ -66,6 +66,7 @@ def test_online_model_accepts_multitask_reference_checkpoint_with_memory_extra_s
 ) -> None:
     reference_model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=32,
         num_classes=2,
@@ -86,6 +87,7 @@ def test_online_model_accepts_multitask_reference_checkpoint_with_memory_extra_s
             "model": {
                 "model_name": "thesis_multitask",
                 "input_dim": 38,
+                "window_size": 100,
                 "encoder_dim": 64,
                 "hidden_dim": 32,
                 "num_classes": 2,

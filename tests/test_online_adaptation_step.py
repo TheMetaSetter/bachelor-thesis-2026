@@ -13,6 +13,7 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 def _build_reference_checkpoint(tmp_path: Path) -> Path:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=32,
         num_classes=2,
@@ -25,6 +26,7 @@ def _build_reference_checkpoint(tmp_path: Path) -> Path:
         "model": {
             "model_name": "thesis_multitask",
             "input_dim": 38,
+            "window_size": 100,
             "encoder_dim": 64,
             "hidden_dim": 32,
             "num_classes": 2,

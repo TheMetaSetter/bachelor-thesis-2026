@@ -219,6 +219,236 @@ def test_redlamp_mlp_baseline_constructs_from_training_registry_path() -> None:
     assert model.num_classes == 12
 
 
+def test_load_experiment_config_injects_window_size_into_thesis_model(
+    tmp_path: Path,
+) -> None:
+    data_path = tmp_path / "data.yaml"
+    model_path = tmp_path / "model.yaml"
+    task_path = tmp_path / "task.yaml"
+    experiment_path = tmp_path / "experiment.yaml"
+
+    data_path.write_text(
+        "\n".join(
+            [
+                "dataset_name: smd",
+                "root_dir: data/ServerMachineDataset",
+                "entity_ids: [machine-2-1]",
+                "window_size: 20",
+                "stride: 20",
+                "batch_size: 8",
+                "num_workers: 0",
+                "validation_split_ratio: 0.2",
+                "shuffle_train: true",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model_path.write_text(
+        "\n".join(
+            [
+                "model_name: thesis_multitask",
+                "input_dim: 38",
+                "encoder_dim: 64",
+                "hidden_dim: 32",
+                "mlp_num_linear_layers: 3",
+                "num_classes: 2",
+                "dropout: 0.1",
+                "continuous_enabled: true",
+                "continuous_num_prototypes: 8",
+                "discrete_enabled: true",
+                "discrete_codebook_size: 16",
+                "gumbel_temperature: 1.5",
+                "temperature_start: 1.5",
+                "temperature_end: 0.7",
+                "temperature_anneal_fraction: 0.8",
+                "temperature_hold_fraction: 0.0",
+                "alpha_logit_init: 0.0",
+                "beta_logit_init: 0.0",
+                "use_label_refurbishment: false",
+                "refurbishment_alpha: 0.0",
+                "refurbishment_beta: 0.0",
+                "reconstruction_normal_only: false",
+                "lambda_cls: 1.0",
+                "lambda_div: 0.0",
+                "lambda_var: 0.0",
+                "lambda_cov: 0.0",
+                "lambda_use: 0.0",
+                "lambda_gate: 0.0",
+                "usage_lambda_start: 0.0",
+                "usage_lambda_end: 0.0",
+                "usage_lambda_schedule_fraction: 1.0",
+                "variance_floor_gamma: 1.0",
+                "gate_barrier_margin: 0.25",
+                "bootstrap_encoder_epochs: 0",
+                "discrete_ema_decay: 0.99",
+                "memory_norm_epsilon: 1.0e-6",
+                "memory_initialization_batches: 1",
+                "memory_initialization_with_synthetic_windows: false",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    task_path.write_text(
+        "\n".join(
+            [
+                "task_name: multitask_tsad",
+                "classification_label_mode: binary",
+                "freeze_fusion_for_epochs: 0",
+                "warmup_alpha_value: 0.5",
+                "warmup_beta_value: 0.5",
+                "use_synthetic_augmentation: true",
+                "use_synthetic_validation: true",
+                "synthetic_validation_seed: 7",
+                "anomaly_probability: 0.5",
+                "min_segment_fraction: 0.1",
+                "max_segment_fraction: 0.2",
+                "spike_scale: 3.0",
+                "balance_binary_classes_within_batch: false",
+                "anomaly_families: [spike, flip]",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    experiment_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: unit_test_window_size_injection",
+                "seed: 11",
+                "device: cpu",
+                "output_dir: outputs/unit_test_window_size_injection",
+                "checkpoint_dir: outputs/unit_test_window_size_injection/checkpoints",
+                f"data_config_path: {data_path}",
+                f"model_config_path: {model_path}",
+                f"task_config_path: {task_path}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "epochs: 1",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loaded_config = load_experiment_config(experiment_path)
+
+    assert loaded_config["model"]["window_size"] == 20
+
+
+def test_load_experiment_config_rejects_thesis_model_window_size_mismatch(
+    tmp_path: Path,
+) -> None:
+    data_path = tmp_path / "data.yaml"
+    model_path = tmp_path / "model.yaml"
+    task_path = tmp_path / "task.yaml"
+    experiment_path = tmp_path / "experiment.yaml"
+
+    data_path.write_text(
+        "\n".join(
+            [
+                "dataset_name: smd",
+                "root_dir: data/ServerMachineDataset",
+                "entity_ids: [machine-2-1]",
+                "window_size: 20",
+                "stride: 20",
+                "batch_size: 8",
+                "num_workers: 0",
+                "validation_split_ratio: 0.2",
+                "shuffle_train: true",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    model_path.write_text(
+        "\n".join(
+            [
+                "model_name: thesis_multitask",
+                "input_dim: 38",
+                "window_size: 10",
+                "encoder_dim: 64",
+                "hidden_dim: 32",
+                "mlp_num_linear_layers: 3",
+                "num_classes: 2",
+                "dropout: 0.1",
+                "continuous_enabled: true",
+                "continuous_num_prototypes: 8",
+                "discrete_enabled: true",
+                "discrete_codebook_size: 16",
+                "gumbel_temperature: 1.5",
+                "temperature_start: 1.5",
+                "temperature_end: 0.7",
+                "temperature_anneal_fraction: 0.8",
+                "temperature_hold_fraction: 0.0",
+                "alpha_logit_init: 0.0",
+                "beta_logit_init: 0.0",
+                "use_label_refurbishment: false",
+                "refurbishment_alpha: 0.0",
+                "refurbishment_beta: 0.0",
+                "reconstruction_normal_only: false",
+                "lambda_cls: 1.0",
+                "lambda_div: 0.0",
+                "lambda_var: 0.0",
+                "lambda_cov: 0.0",
+                "lambda_use: 0.0",
+                "lambda_gate: 0.0",
+                "usage_lambda_start: 0.0",
+                "usage_lambda_end: 0.0",
+                "usage_lambda_schedule_fraction: 1.0",
+                "variance_floor_gamma: 1.0",
+                "gate_barrier_margin: 0.25",
+                "bootstrap_encoder_epochs: 0",
+                "discrete_ema_decay: 0.99",
+                "memory_norm_epsilon: 1.0e-6",
+                "memory_initialization_batches: 1",
+                "memory_initialization_with_synthetic_windows: false",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    task_path.write_text(
+        "\n".join(
+            [
+                "task_name: multitask_tsad",
+                "classification_label_mode: binary",
+                "freeze_fusion_for_epochs: 0",
+                "warmup_alpha_value: 0.5",
+                "warmup_beta_value: 0.5",
+                "use_synthetic_augmentation: true",
+                "use_synthetic_validation: true",
+                "synthetic_validation_seed: 7",
+                "anomaly_probability: 0.5",
+                "min_segment_fraction: 0.1",
+                "max_segment_fraction: 0.2",
+                "spike_scale: 3.0",
+                "balance_binary_classes_within_batch: false",
+                "anomaly_families: [spike, flip]",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    experiment_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: unit_test_window_size_mismatch",
+                "seed: 11",
+                "device: cpu",
+                "output_dir: outputs/unit_test_window_size_mismatch",
+                "checkpoint_dir: outputs/unit_test_window_size_mismatch/checkpoints",
+                f"data_config_path: {data_path}",
+                f"model_config_path: {model_path}",
+                f"task_config_path: {task_path}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "epochs: 1",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="model.window_size must match data.window_size"):
+        load_experiment_config(experiment_path)
+
+
 def test_load_multitask_experiment_config_rejects_invalid_mlp_num_linear_layers(
     tmp_path: Path,
 ) -> None:

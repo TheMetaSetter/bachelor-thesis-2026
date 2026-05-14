@@ -98,7 +98,7 @@ class RedLampMLPBaseline(BaseModel):
             apply_output_activation=False,
         )
         self.classification_head = build_multilayer_perceptron(
-            input_dim=latent_dim,
+            input_dim=window_size * latent_dim,
             intermediate_dim=classifier_dim,
             output_dim=num_classes,
             num_linear_layers=mlp_num_linear_layers,
@@ -191,20 +191,22 @@ class RedLampMLPBaseline(BaseModel):
         _batch_size, window_size, input_dim = x_tensor.shape
         if window_size != self.window_size or input_dim != self.input_dim:
             raise ValueError(
-                "batch['x'] must have shape [B, "
-                f"{self.window_size}, {self.input_dim}]"
+                f"batch['x'] must have shape [B, {self.window_size}, {self.input_dim}]"
             )
 
         hidden = self.encoder(x_tensor)
-        pooled_hidden = hidden.mean(dim=1)
+        flattened_classification_hidden = hidden.reshape(
+            hidden.shape[0],
+            self.window_size * self.latent_dim,
+        )
         recon = self.decoder(hidden)
-        logits = self.classification_head(pooled_hidden)
+        logits = self.classification_head(flattened_classification_hidden)
         class_probabilities = torch.softmax(logits, dim=-1)
         point_scores = torch.mean((recon - x_tensor) ** 2, dim=-1)
 
         outputs = {
             "hidden": hidden,
-            "pooled": pooled_hidden,
+            "pooled": flattened_classification_hidden,
             "recon": recon,
             "logits": logits,
             "point_scores": point_scores,
@@ -269,9 +271,7 @@ class RedLampMLPBaseline(BaseModel):
         total_loss = reconstruction_loss + self.lambda_cls * classification_loss
         predicted_labels = torch.argmax(outputs["logits"], dim=-1)
         classification_accuracy = (
-            (predicted_labels == prepared_batch["classification_labels"])
-            .float()
-            .mean()
+            (predicted_labels == prepared_batch["classification_labels"]).float().mean()
         )
         log = {
             f"{stage_name}_loss": float(total_loss.detach().cpu()),

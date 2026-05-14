@@ -24,6 +24,7 @@ def _build_batch() -> dict[str, object]:
 def test_temperature_schedule_is_monotonic() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         use_synthetic_augmentation=False,
@@ -45,6 +46,7 @@ def test_temperature_schedule_is_monotonic() -> None:
 def test_temperature_schedule_holds_before_annealing() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         use_synthetic_augmentation=False,
@@ -65,6 +67,7 @@ def test_temperature_schedule_holds_before_annealing() -> None:
 def test_usage_lambda_schedule_is_exposed_through_epoch_context() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         use_synthetic_augmentation=False,
@@ -93,6 +96,7 @@ def test_trainer_keeps_warmup_alpha_and_beta_fixed_for_configured_epochs(
 ) -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         use_synthetic_augmentation=False,

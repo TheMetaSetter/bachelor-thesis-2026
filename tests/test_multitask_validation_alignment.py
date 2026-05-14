@@ -23,6 +23,7 @@ def _build_batch(batch_size: int = 4) -> dict[str, object]:
 def _build_model(**overrides: object) -> ThesisMultitaskModel:
     model_kwargs: dict[str, object] = {
         "input_dim": 38,
+        "window_size": 100,
         "encoder_dim": 64,
         "hidden_dim": 16,
         "num_classes": 2,

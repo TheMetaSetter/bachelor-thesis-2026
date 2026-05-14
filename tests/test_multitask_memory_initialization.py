@@ -8,6 +8,7 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 def _build_initialization_model() -> ThesisMultitaskModel:
     model = ThesisMultitaskModel(
         input_dim=4,
+        window_size=3,
         encoder_dim=4,
         hidden_dim=4,
         mlp_num_linear_layers=3,

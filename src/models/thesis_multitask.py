@@ -100,6 +100,7 @@ class MultitaskWindowEncoder(nn.Module):
 @dataclass(frozen=True)
 class MultitaskArchitectureConfig:
     input_dim: int
+    window_size: int
     encoder_dim: int
     hidden_dim: int
     mlp_num_linear_layers: int = 3
@@ -209,6 +210,7 @@ class ThesisMultitaskModelConfig:
 
         architecture_keys = {
             "input_dim",
+            "window_size",
             "encoder_dim",
             "hidden_dim",
             "mlp_num_linear_layers",
@@ -277,7 +279,8 @@ class ThesisMultitaskModelConfig:
 
         architecture_values = take_group(architecture_keys)
         missing_required_architecture_keys = sorted(
-            {"input_dim", "encoder_dim", "hidden_dim"} - set(architecture_values)
+            {"input_dim", "window_size", "encoder_dim", "hidden_dim"}
+            - set(architecture_values)
         )
         if missing_required_architecture_keys:
             raise ValueError(
@@ -297,8 +300,7 @@ class ThesisMultitaskModelConfig:
 
         if remaining_kwargs:
             raise ValueError(
-                "Unknown ThesisMultitaskModel flat kwargs: "
-                f"{sorted(remaining_kwargs)}"
+                f"Unknown ThesisMultitaskModel flat kwargs: {sorted(remaining_kwargs)}"
             )
 
         return cls(
@@ -346,6 +348,7 @@ class ThesisMultitaskModel(BaseModel):
         synthetic = config.synthetic
 
         self.model_config = config
+        self.window_size = architecture.window_size
         self.hidden_dim = architecture.hidden_dim
         self.mlp_num_linear_layers = architecture.mlp_num_linear_layers
         self.num_classes = architecture.num_classes
@@ -377,9 +380,7 @@ class ThesisMultitaskModel(BaseModel):
             if schedule.usage_lambda_end is None
             else schedule.usage_lambda_end
         )
-        self.usage_lambda_schedule_fraction = (
-            schedule.usage_lambda_schedule_fraction
-        )
+        self.usage_lambda_schedule_fraction = schedule.usage_lambda_schedule_fraction
         self.current_usage_lambda = self.usage_lambda_start
         self.enable_diversity_loss = objective.enable_diversity_loss
         self.enable_variance_loss = objective.enable_variance_loss
@@ -408,8 +409,7 @@ class ThesisMultitaskModel(BaseModel):
         self.active_alpha_override: float | None = None
         self.active_beta_override: float | None = None
         self.continuous_memory_enabled = (
-            prototypes.continuous_enabled
-            and prototypes.continuous_num_prototypes > 0
+            prototypes.continuous_enabled and prototypes.continuous_num_prototypes > 0
         )
         self.discrete_memory_enabled = (
             prototypes.discrete_enabled and prototypes.discrete_codebook_size > 0
@@ -523,7 +523,7 @@ class ThesisMultitaskModel(BaseModel):
         )
 
         self.classification_head = build_multilayer_perceptron(
-            input_dim=architecture.hidden_dim,
+            input_dim=architecture.window_size * architecture.hidden_dim,
             intermediate_dim=architecture.hidden_dim,
             output_dim=architecture.num_classes,
             num_linear_layers=architecture.mlp_num_linear_layers,
@@ -616,6 +616,7 @@ class ThesisMultitaskModel(BaseModel):
                 "beta_logit": self.beta_logit,
             },
             input_dim=architecture.input_dim,
+            window_size=architecture.window_size,
             encoder_dim=architecture.encoder_dim,
             hidden_dim=architecture.hidden_dim,
             mlp_num_linear_layers=architecture.mlp_num_linear_layers,
@@ -1044,8 +1045,9 @@ class ThesisMultitaskModel(BaseModel):
             "kh,blh->kbl",
             normalized_memory,  # (n_continuous_prototypes, d_model)
             normalized_hidden,  # (batch_size, n_timesteps, d_model)
-        ) / math.sqrt(self.hidden_dim)  # (n_continuous_prototypes, batch_size, n_timesteps)
-        
+        ) / math.sqrt(
+            self.hidden_dim
+        )  # (n_continuous_prototypes, batch_size, n_timesteps)
 
         # n_continuous_prototypes là self.continuous_num_prototypes
         # d_model là h
@@ -1054,7 +1056,9 @@ class ThesisMultitaskModel(BaseModel):
             prototype_to_token_logits.reshape(self.continuous_num_prototypes, -1),
             # (n_continuous_prototypes, batch_size * n_timesteps)
             dim=-1,
-        ).reshape_as(prototype_to_token_logits) # (n_continuous_prototypes, batch_size, n_timesteps)
+        ).reshape_as(
+            prototype_to_token_logits
+        )  # (n_continuous_prototypes, batch_size, n_timesteps)
 
         weighted_hidden_summary = torch.einsum(
             "kbl,blh->kh",
@@ -1072,7 +1076,7 @@ class ThesisMultitaskModel(BaseModel):
         )
 
         update_gate = self.continuous_update_gate(gate_input)
-        
+
         updated_memory = (
             1.0 - update_gate
         ) * normalized_memory + update_gate * weighted_hidden_summary
@@ -1439,13 +1443,19 @@ class ThesisMultitaskModel(BaseModel):
         # tác vụ tái tạo qua mạng tái tạo (reconstruction head)
         recon = self.reconstruction_head(hidden_reconstruction)
 
-        # Xét vec-tơ kết hợp dùng cho tác vụ phân loại,
-        # cộng tất cả các vec-tơ ở từng bước thời gian lại với nhau.
-        # Xong, chia cho số bước thời gian để lấy vec-tơ trung bình.
-        # dim=1 nghĩa là xem mỗi bước thời gian là một hạng tử.
-        # Rồi, lấy trung bình.
-        pooled_classification_hidden = hidden_classification.mean(dim=1)
-        logits = self.classification_head(pooled_classification_hidden)
+        # Xét vec-tơ kết hợp dùng cho tác vụ phân loại.
+        # RedLamp dùng toàn bộ các vec-tơ ẩn theo thời gian bằng cách trải phẳng
+        # cửa sổ thành một biểu diễn cấp-window trước classifier head.
+        if hidden_classification.shape[1] != self.window_size:
+            raise ValueError(
+                "hidden_classification must have window dimension "
+                f"{self.window_size}, but received {hidden_classification.shape[1]}"
+            )
+        flattened_classification_hidden = hidden_classification.reshape(
+            hidden_classification.shape[0],
+            self.window_size * self.hidden_dim,
+        )
+        logits = self.classification_head(flattened_classification_hidden)
         class_probabilities = torch.softmax(logits, dim=-1)
 
         # Độ bất thường được tính bằng cách
@@ -1458,7 +1468,7 @@ class ThesisMultitaskModel(BaseModel):
         # Xem: src/core/contracts.py
         outputs = {
             "hidden": hidden,
-            "pooled": pooled_classification_hidden,
+            "pooled": flattened_classification_hidden,
             "recon": recon,
             "logits": logits,
             "point_scores": point_scores,

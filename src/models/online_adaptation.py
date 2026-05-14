@@ -59,11 +59,20 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
         hidden_reconstruction = fusion_outputs["hidden_reconstruction"]
         hidden_classification = fusion_outputs["hidden_classification"]
         recon = self.model.reconstruction_head(hidden_reconstruction)
-        pooled_hidden = hidden_classification.mean(dim=1)
-        logits = self.model.classification_head(pooled_hidden)
+        if hidden_classification.shape[1] != self.model.window_size:
+            raise ValueError(
+                "hidden_classification must have window dimension "
+                f"{self.model.window_size}, but received "
+                f"{hidden_classification.shape[1]}"
+            )
+        flattened_classification_hidden = hidden_classification.reshape(
+            hidden_classification.shape[0],
+            self.model.window_size * self.model.hidden_dim,
+        )
+        logits = self.model.classification_head(flattened_classification_hidden)
         point_scores = torch.mean((recon - x_tensor) ** 2, dim=-1)
         return {
-            "pooled": pooled_hidden,
+            "pooled": flattened_classification_hidden,
             "recon": recon,
             "logits": logits,
             "point_scores": point_scores,

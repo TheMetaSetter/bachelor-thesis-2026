@@ -29,7 +29,7 @@ def test_redlamp_mlp_baseline_forward_contract_and_mlp_depth() -> None:
 
     assert outputs["recon"].shape == (2, 20, 4)
     assert outputs["hidden"].shape == (2, 20, 16)
-    assert outputs["pooled"].shape == (2, 16)
+    assert outputs["pooled"].shape == (2, 20 * 16)
     assert outputs["logits"].shape == (2, len(REDLAMP_MULTICLASS_CLASS_NAMES))
     assert outputs["point_scores"].shape == (2, 20)
     assert torch.allclose(
@@ -48,6 +48,10 @@ def test_redlamp_mlp_baseline_forward_contract_and_mlp_depth() -> None:
     assert model.encoder[0].out_features == 16
     assert model.decoder[0].in_features == 16
     assert model.decoder[-1].out_features == 4
+    assert model.classification_head[0].in_features == 20 * 16
+    assert model.classification_head[-1].out_features == len(
+        REDLAMP_MULTICLASS_CLASS_NAMES
+    )
 
 
 def test_redlamp_mlp_baseline_hidden_is_not_broadcast_window_latent() -> None:
@@ -83,3 +87,42 @@ def test_redlamp_mlp_baseline_hidden_is_not_broadcast_window_latent() -> None:
 
     assert outputs["hidden"].shape == (1, 3, 8)
     assert not torch.allclose(outputs["hidden"][:, 0, :], outputs["hidden"][:, 1, :])
+
+
+def test_redlamp_mlp_baseline_flattens_hidden_before_classifier() -> None:
+    model = RedLampMLPBaseline(
+        input_dim=4,
+        window_size=3,
+        latent_dim=8,
+        mlp_num_linear_layers=3,
+        classifier_dim=8,
+        num_classes=len(REDLAMP_MULTICLASS_CLASS_NAMES),
+        dropout=0.0,
+        anomaly_probability=1.0,
+    )
+    model.eval()
+    batch = {
+        "x": torch.tensor(
+            [
+                [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                ]
+            ],
+            dtype=torch.float32,
+        ),
+        "point_labels": torch.zeros(1, 3, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": "unit-test"}],
+    }
+
+    outputs = model(batch)
+
+    assert outputs["hidden"].shape == (1, 3, 8)
+    assert outputs["pooled"].shape == (1, 3 * 8)
+    assert torch.allclose(
+        outputs["pooled"],
+        outputs["hidden"].reshape(1, 3 * 8),
+    )

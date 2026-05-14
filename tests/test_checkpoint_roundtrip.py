@@ -163,6 +163,7 @@ def test_checkpoint_roundtrip_restores_extra_memory_state(tmp_path: Path) -> Non
 def test_multitask_checkpoint_roundtrip_restores_memory_buffers(tmp_path: Path) -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         use_synthetic_augmentation=False,
@@ -194,6 +195,7 @@ def test_multitask_checkpoint_roundtrip_restores_memory_buffers(tmp_path: Path) 
 
     reloaded_model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         use_synthetic_augmentation=False,

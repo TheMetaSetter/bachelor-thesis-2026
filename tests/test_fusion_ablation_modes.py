@@ -18,6 +18,7 @@ def _build_batch() -> dict[str, object]:
 def test_continuous_only_fusion_is_exact_limiting_case() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         use_synthetic_augmentation=False,
@@ -41,6 +42,7 @@ def test_continuous_only_fusion_is_exact_limiting_case() -> None:
 def test_discrete_only_fusion_is_exact_limiting_case() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         use_synthetic_augmentation=False,

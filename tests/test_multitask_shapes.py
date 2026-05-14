@@ -8,6 +8,7 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 def test_multitask_model_returns_documented_shapes() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         mlp_num_linear_layers=3,
@@ -32,6 +33,7 @@ def test_multitask_model_returns_documented_shapes() -> None:
     outputs = model(batch)
 
     assert outputs["hidden"].shape == (4, 100, 16)
+    assert outputs["pooled"].shape == (4, 100 * 16)
     assert outputs["recon"].shape == (4, 100, 38)
     assert outputs["logits"].shape == (4, 2)
     assert outputs["aux"]["class_probabilities"].shape == (4, 2)
@@ -49,11 +51,13 @@ def test_multitask_model_returns_documented_shapes() -> None:
     assert "beta" in outputs["aux"]
     assert outputs["aux"]["fusion"]["fusion_mode"] == "learnable_sigmoid_scalars"
     assert outputs["aux"]["fusion"]["fusion_mode"] not in {"identity", "average"}
+    assert model.classification_head[0].in_features == 100 * 16
 
 
 def test_multitask_model_uses_shared_three_layer_mlp_depth() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=20,
         encoder_dim=64,
         hidden_dim=16,
         mlp_num_linear_layers=3,
@@ -90,6 +94,7 @@ def test_multitask_model_uses_shared_three_layer_mlp_depth() -> None:
 def test_multitask_model_supports_redlamp_multiclass_logits_and_probabilities() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=20,
         encoder_dim=64,
         hidden_dim=16,
         mlp_num_linear_layers=3,
@@ -130,3 +135,59 @@ def test_multitask_model_supports_redlamp_multiclass_logits_and_probabilities() 
     )
     assert refurbished_targets.shape == (3, 12)
     assert torch.allclose(refurbished_targets.sum(dim=-1), torch.ones(3), atol=1e-6)
+
+
+def test_multitask_model_flattens_hidden_classification_before_classifier() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=4,
+        window_size=3,
+        encoder_dim=8,
+        hidden_dim=6,
+        mlp_num_linear_layers=3,
+        num_classes=2,
+        dropout=0.0,
+        continuous_enabled=True,
+        continuous_num_prototypes=2,
+        discrete_enabled=True,
+        discrete_codebook_size=3,
+        gumbel_temperature=1.0,
+        use_synthetic_augmentation=False,
+        use_synthetic_validation=False,
+        anomaly_probability=0.0,
+        min_segment_fraction=0.1,
+        max_segment_fraction=0.2,
+        spike_scale=3.0,
+        lambda_cls=1.0,
+        lambda_div=0.0,
+        lambda_var=0.0,
+        lambda_cov=0.0,
+        lambda_use=0.0,
+        lambda_gate=0.0,
+        usage_lambda_start=0.0,
+        usage_lambda_end=0.0,
+        usage_lambda_schedule_fraction=1.0,
+        variance_floor_gamma=1.0,
+        gate_barrier_margin=0.25,
+        bootstrap_encoder_epochs=0,
+        discrete_ema_decay=0.99,
+        memory_norm_epsilon=1.0e-6,
+        memory_initialization_batches=1,
+        memory_initialization_with_synthetic_windows=False,
+        classification_label_mode="binary",
+    )
+    batch = {
+        "x": torch.randn(2, 3, 4),
+        "point_labels": torch.zeros(2, 3, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": "unit-test"}, {"entity_id": "unit-test"}],
+    }
+
+    outputs = model(batch, stage_name="test")
+
+    assert outputs["hidden"].shape == (2, 3, 6)
+    assert outputs["pooled"].shape == (2, 3 * 6)
+    assert torch.allclose(
+        outputs["pooled"],
+        outputs["aux"]["hidden_classification"].reshape(2, 3 * 6),
+    )

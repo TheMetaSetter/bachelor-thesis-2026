@@ -17,6 +17,7 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 def test_multitask_forward_outputs_include_forward_pass_timing() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
+        window_size=100,
         encoder_dim=64,
         hidden_dim=16,
         num_classes=2,
@@ -43,7 +44,9 @@ def test_multitask_forward_outputs_include_forward_pass_timing() -> None:
     assert outputs["aux"]["forward_pass_seconds"] >= 0.0
 
 
-def test_compute_multiclass_classification_metrics_reports_classification_scores() -> None:
+def test_compute_multiclass_classification_metrics_reports_classification_scores() -> (
+    None
+):
     logits = torch.tensor(
         [
             [4.0, 1.0, 0.0],
