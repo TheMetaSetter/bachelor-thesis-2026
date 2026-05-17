@@ -7,7 +7,7 @@ data_config_path: configs/data/smd_rtx3090_machine_2_1_20.yaml
 model_config_path: configs/model/redlamp_mlp_baseline.yaml
 task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20.yaml
 optimizer:
-  learning_rate: 0.0001
+  learning_rate: 0.001
   weight_decay: 0.0
   scheduler:
     scheduler_name: reduce_on_plateau
@@ -23,12 +23,12 @@ evaluation:
   vus_max_buffer_size: 20
   vus_num_thresholds: 200
 logging:
-  use_wandb: false
+  use_wandb: true
   wandb_project: bachelor-thesis-2026
-  wandb_mode: disabled
+  wandb_mode: online
   wandb_tags:
     - smd
     - redlamp_multiclass
     - window20
     - mlp-depth-3
-  wandb_run_name: smd_redlamp_mlp_baseline_window20
+  wandb_run_name: smd_redlamp_mlp_baseline_window20_05172026_lr1e-3_adamw_cosine
