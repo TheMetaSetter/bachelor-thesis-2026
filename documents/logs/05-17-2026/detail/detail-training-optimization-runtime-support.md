@@ -15,8 +15,10 @@ Implement a readable and configuration-driven training-runtime extension that su
 1. `optimizer_name: adamw` and `optimizer_name: adam` in both offline training and online adaptation entrypoints;
 2. `scheduler_name: cosine` using the CANDI reference mechanism of **iteration-level** learning-rate updates from fractional epoch progress;
 3. `gradient_clip_norm` as an explicit YAML-controlled training parameter;
-4. two reproducible RedLamp MLP baseline experiment configurations for SMD machine `2-1`, one with learning rate `1.0e-3` and one with learning rate `1.0e-4`;
-5. batch-level learning-rate records for traceability while keeping user-facing progress summaries at the epoch level.
+4. `val_vus_pr` as a validation metric computed on every epoch;
+5. explicit best-checkpoint selection from `val_vus_pr`;
+6. two reproducible RedLamp MLP baseline experiment configurations for SMD machine `2-1`, one with learning rate `1.0e-3` and one with learning rate `1.0e-4`;
+7. batch-level learning-rate records for traceability while keeping user-facing progress summaries at the epoch level.
 
 The implementation must preserve the repository's existing contracts, especially the standardized batch schema, model output schema, and one-model-per-file organization.
 
@@ -28,6 +30,8 @@ The implementation must preserve the repository's existing contracts, especially
 - Online adaptation optimizer configurability.
 - Cosine learning-rate policy for offline training only.
 - Configurable offline gradient clipping.
+- Per-epoch validation `VUS-PR`.
+- `VUS-PR`-based best-checkpoint selection.
 - Epoch-summary learning-rate logging plus retained batch-level learning-rate history.
 - New SMD `2-1` experiment configurations.
 - Tests for config validation, optimizer construction, cosine behavior, gradient clipping, and regression preservation.
@@ -49,6 +53,12 @@ The implementation must preserve the repository's existing contracts, especially
 | Encoder contract | Models continue to expose the thesis-facing hidden representation with shape `[B, L, H]`. |
 | Model output contract | Existing keys such as `hidden`, `pooled`, `recon`, `logits`, `point_scores`, `window_scores`, and `aux` remain unchanged. |
 | Training-step contract | Model `training_step()` methods continue to return a scalar `loss`, a `log` dictionary, and model outputs. |
+
+### Metric policy
+
+- `VUS-PR` is the primary thesis-facing anomaly-detection performance metric.
+- Cosine scheduling is schedule-based and therefore does not require any monitored metric to update learning rate.
+- Checkpoint selection is separate from scheduler stepping. Metric-driven schedulers may still use a scheduler monitor, but cosine experiments must be able to select checkpoints independently from `val_vus_pr`.
 
 ### Design pattern use
 
@@ -85,6 +95,26 @@ if gradient_clip_norm is not None:
         or float(gradient_clip_norm) <= 0.0
     ):
         raise ValueError("optimizer.gradient_clip_norm must be positive when provided")
+```
+
+Add checkpoint-monitor validation:
+
+```python
+checkpoint_monitor_metric = experiment_config.get(
+    "checkpoint_monitor_metric",
+    "val_loss",
+)
+if checkpoint_monitor_metric not in {
+    "val_loss",
+    "val_synth_loss",
+    "val_synth_roc_auc",
+    "val_synth_pr_auc",
+    "val_vus_pr",
+}:
+    raise ValueError(
+        "checkpoint_monitor_metric must be one of: val_loss, val_synth_loss, "
+        "val_synth_roc_auc, val_synth_pr_auc, val_vus_pr"
+    )
 ```
 
 Extend scheduler validation into two explicit branches:
@@ -124,11 +154,13 @@ Add tests that:
 - reject `gradient_clip_norm <= 0`;
 - accept a valid cosine scheduler block;
 - reject malformed cosine blocks;
+- accept `checkpoint_monitor_metric: val_vus_pr`;
 - continue accepting valid `reduce_on_plateau` blocks.
 
 ### Acceptance criteria
 
 - A config with `optimizer_name: adamw`, `gradient_clip_norm: 1.0`, and a valid cosine scheduler loads successfully.
+- A config with `checkpoint_monitor_metric: val_vus_pr` loads successfully.
 - A config with an invalid optimizer name fails before runtime construction.
 - Existing scheduler tests for `reduce_on_plateau` still pass unchanged.
 - No dataset, model, or task contract changes are required to load the new config fields.
@@ -291,7 +323,50 @@ Add deterministic tests for:
 - User-facing console output remains epoch-oriented rather than batch-spam oriented.
 - Existing plateau scheduler tests remain green.
 
-## Phase 4: Add Configurable Gradient Clipping
+## Phase 4: Add Per-Epoch Validation VUS-PR
+
+### Phase summary
+
+This phase promotes `VUS-PR` from a final evaluation-only metric into a validation metric available after every epoch. This is required because `VUS-PR` is the primary thesis-facing anomaly-detection metric and will determine best-checkpoint selection for the new cosine experiments.
+
+### File-level edits
+
+#### `src/engine/trainer.py`
+
+Extend the validation flow so that after ordinary validation aggregation, the trainer computes validation pointwise metrics on the full validation timeline and adds:
+
+```python
+epoch_metrics["val_vus_pr"] = validation_evaluation_outputs["metrics"]["vus_pr"]
+```
+
+The trainer must reuse the overlap-aware point-score reconstruction already implemented in `src/engine/evaluator.py`; it must not duplicate that timeline-merging logic locally.
+
+Recommended structure:
+
+- construct or receive a validation evaluator configured with `vus_max_buffer_size` and `vus_num_thresholds`;
+- run it on `val_loader` once per epoch while the model is in evaluation mode;
+- prefix returned evaluation metrics with `val_`;
+- include `val_vus_pr` in epoch metric history and logger payloads before checkpoint selection.
+
+#### `src/engine/evaluator.py`
+
+If needed for reuse, add a small helper that exposes the existing evaluation payload cleanly without changing the public evaluator contract or duplicating logic in the trainer.
+
+#### Tests
+
+Add trainer/evaluator tests proving:
+
+- `val_vus_pr` is present in every epoch metric record when VUS evaluation is configured;
+- `val_vus_pr` is computed from validation point scores and point labels, not from synthetic classification logits;
+- existing validation metrics remain present alongside `val_vus_pr`.
+
+### Acceptance criteria
+
+- Every epoch exposes `val_vus_pr` when the experiment enables VUS evaluation.
+- `VUS-PR` is available before checkpoint selection runs.
+- The implementation reuses the evaluator's existing overlap-aware metric path.
+
+## Phase 5: Add Configurable Gradient Clipping
 
 ### Phase summary
 
@@ -334,7 +409,7 @@ Add tests proving:
 - The implementation uses the YAML value rather than a hard-coded threshold.
 - The returned epoch metrics expose enough evidence to verify clipping without flooding normal console output.
 
-## Phase 5: Reconcile Scheduler and Checkpoint Semantics
+## Phase 6: Reconcile Scheduler and Checkpoint Semantics
 
 ### Phase summary
 
@@ -346,8 +421,10 @@ This phase keeps experiment selection behavior understandable after the new non-
 
 Update checkpoint-monitor resolution so that:
 
-- with `ReduceLROnPlateau`, the current `scheduler_monitor_metric` behavior is preserved;
-- with cosine or no metric-driven scheduler, the default checkpoint monitor remains `val_loss`.
+- checkpoint selection uses explicit `checkpoint_monitor_metric` when configured;
+- `val_vus_pr` is supported with monitor mode `"max"`;
+- `ReduceLROnPlateau` keeps its own scheduler monitor independently;
+- cosine requires no scheduler monitor, but may still use `checkpoint_monitor_metric: val_vus_pr`.
 
 Document this distinction in helper names and comments.
 
@@ -359,17 +436,19 @@ No functional change is required if cosine remains a deterministic arithmetic po
 
 Add/adjust tests proving:
 
-- cosine training still tracks the best checkpoint from `val_loss`;
-- plateau training still tracks the best checkpoint from the plateau monitor metric;
+- cosine training tracks the best checkpoint from `val_vus_pr` when configured;
+- plateau training still tracks the best checkpoint from its configured checkpoint monitor;
+- scheduler monitor and checkpoint monitor can differ without conflict;
 - checkpoint roundtrip tests for plateau remain unchanged.
 
 ### Acceptance criteria
 
-- Adding cosine does not silently change which checkpoint is considered best.
+- Adding cosine does not require a scheduler monitor metric.
+- Best-checkpoint selection follows the explicit configured checkpoint metric.
 - Existing scheduler-state persistence remains intact.
 - Test names make the distinction between metric-driven and non-metric scheduling explicit.
 
-## Phase 6: Add SMD 2-1 Experiment Configurations
+## Phase 7: Add SMD 2-1 Experiment Configurations
 
 ### Phase summary
 
@@ -400,6 +479,7 @@ optimizer:
     warmup_start_lr: 0.0001
     cosine_end_lr: 0.0
     cosine_after_warmup: true
+checkpoint_monitor_metric: val_vus_pr
 epochs: 300
 ```
 
@@ -419,15 +499,17 @@ Extend config-loading coverage so both new configs load successfully and resolve
 - `optimizer_name == "adamw"`
 - `scheduler_name == "cosine"`
 - `gradient_clip_norm == 1.0`
+- `checkpoint_monitor_metric == "val_vus_pr"`
 - `epochs == 300`
 
 ### Acceptance criteria
 
 - There are exactly two explicit AdamW-cosine experiment configs for SMD `2-1`.
+- Both configs select the best checkpoint from `val_vus_pr`.
 - The older baseline file no longer advertises behavior it does not execute.
 - A future researcher can infer the full optimization setup from filename plus YAML contents without opening source code.
 
-## Phase 7: Validation and Regression Pass
+## Phase 8: Validation and Regression Pass
 
 ### Phase summary
 
@@ -441,6 +523,7 @@ Run at minimum:
 pytest -q tests/test_config_loading.py tests/test_learning_rate_scheduler.py tests/test_checkpoint_roundtrip.py
 pytest -q tests/test_online_entrypoint.py
 pytest -q tests/test_one_train_step.py tests/test_one_multitask_train_step.py
+pytest -q tests/test_vus_pr_metric.py tests/test_evaluator_thresholding.py
 ```
 
 If any affected smoke tests exist for the RedLamp MLP baseline, run those as well.
@@ -451,16 +534,17 @@ Perform one short smoke experiment or reduced-epoch local run using the new `lr1
 
 - optimizer log reports `AdamW`;
 - epoch summary reports LR start/end values;
+- epoch summary includes `val_vus_pr`;
 - no per-batch LR spam appears in standard console output;
 - batch-level LR history is still available through the intended internal or metric path;
-- checkpoints are saved and best checkpoint selection uses `val_loss` for cosine.
+- checkpoints are saved and best checkpoint selection uses `val_vus_pr` for cosine.
 
 ### Acceptance criteria
 
 - Focused tests pass.
 - Existing plateau-scheduler behavior remains intact.
 - Both new SMD configs load.
-- The first smoke run demonstrates `AdamW + cosine + gradient_clip_norm=1.0`.
+- The first smoke run demonstrates `AdamW + cosine + gradient_clip_norm=1.0 + val_vus_pr`.
 
 ## Cross-Cutting Risk Mitigation
 
@@ -472,6 +556,7 @@ Perform one short smoke experiment or reduced-epoch local run using the new `lr1
 | Projector drift | Not directly changed | Keep online optimizer extension narrow and avoid changing projector logic. |
 | High-variance updates | Directly relevant | Add config-driven gradient clipping for offline training. |
 | Evaluation metric inflation | Not directly changed | Preserve evaluator and checkpoint-monitor semantics; do not mix scheduler behavior with evaluation policy. |
+| Primary metric unavailable during training | Directly relevant | Compute `val_vus_pr` every epoch and use it for checkpoint selection. |
 
 ## Detailed Test Inventory
 
@@ -484,6 +569,7 @@ Perform one short smoke experiment or reduced-epoch local run using the new `lr1
 | Gradient clipping behavior | `tests/test_learning_rate_scheduler.py` or dedicated trainer test |
 | Plateau regression | `tests/test_learning_rate_scheduler.py` |
 | Checkpoint monitor and state behavior | `tests/test_checkpoint_roundtrip.py` |
+| Per-epoch validation `VUS-PR` | trainer/evaluator regression tests plus `tests/test_vus_pr_metric.py` |
 | Online optimizer configurability | `tests/test_online_entrypoint.py` |
 | One-step offline regression | `tests/test_one_train_step.py`, `tests/test_one_multitask_train_step.py` |
 
@@ -495,8 +581,11 @@ The feature is complete when all of the following are true:
 2. The same `optimizer_name` mechanism works in online adaptation.
 3. A YAML file can request `scheduler_name: cosine` with warmup fields and the runtime updates LR on every training iteration using fractional epoch progress.
 4. A YAML file can set `gradient_clip_norm: 1.0`, and the trainer applies clipping between backward pass and optimizer step.
-5. Batch-level LR values are retained for traceability, but ordinary console output remains summarized by epoch.
-6. Existing `reduce_on_plateau` configurations remain valid and behaviorally unchanged.
-7. Two explicit AdamW-cosine SMD `2-1` experiment configs exist for `1e-3` and `1e-4`.
-8. The older RedLamp baseline config no longer contains a misleading `adamw_cosine` run name.
-9. The focused regression suite passes without changing dataset, model, evaluator, or batch contracts.
+5. Every epoch records `val_vus_pr` when VUS evaluation is configured.
+6. Best-checkpoint selection can be driven by `checkpoint_monitor_metric: val_vus_pr`.
+7. Cosine scheduling updates learning rate without requiring any scheduler monitor metric.
+8. Batch-level LR values are retained for traceability, but ordinary console output remains summarized by epoch.
+9. Existing `reduce_on_plateau` configurations remain valid and behaviorally unchanged.
+10. Two explicit AdamW-cosine SMD `2-1` experiment configs exist for `1e-3` and `1e-4`.
+11. The older RedLamp baseline config no longer contains a misleading `adamw_cosine` run name.
+12. The focused regression suite passes without changing dataset, model, evaluator, or batch contracts.
