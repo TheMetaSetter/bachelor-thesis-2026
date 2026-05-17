@@ -1,0 +1,102 @@
+{
+  "checkpoint_dir": "outputs/smoke_val_synth_vus_pr_runtime/checkpoints",
+  "checkpoint_monitor_metric": "val_synth_vus_pr",
+  "data": {
+    "batch_size": 32,
+    "dataset_name": "smd",
+    "entity_ids": [
+      "machine-2-1"
+    ],
+    "max_test_windows": 32,
+    "max_train_windows": 64,
+    "max_val_windows": 32,
+    "num_workers": 0,
+    "root_dir": "data/ServerMachineDataset",
+    "shuffle_train": true,
+    "stride": 20,
+    "validation_split_ratio": 0.2,
+    "window_size": 20
+  },
+  "data_config_path": "configs/data/smd_rtx3090_machine_2_1_20.yaml",
+  "device": "cpu",
+  "epochs": 1,
+  "evaluation": {
+    "vus_max_buffer_size": 20,
+    "vus_num_thresholds": 200
+  },
+  "experiment_name": "smoke_val_synth_vus_pr_runtime",
+  "logging": {
+    "use_wandb": false,
+    "wandb_mode": "disabled",
+    "wandb_project": "bachelor-thesis-2026",
+    "wandb_run_name": "smoke_val_synth_vus_pr_runtime",
+    "wandb_tags": [
+      "smd",
+      "redlamp_multiclass",
+      "window20",
+      "mlp-depth-3",
+      "adamw",
+      "cosine",
+      "val_synth_vus_pr"
+    ]
+  },
+  "model": {
+    "classifier_dim": 32,
+    "dropout": 0.1,
+    "input_dim": 38,
+    "lambda_cls": 0.1,
+    "latent_dim": 128,
+    "mlp_num_linear_layers": 3,
+    "model_name": "redlamp_mlp_baseline",
+    "num_classes": 12,
+    "refurbishment_alpha": 0.1,
+    "refurbishment_beta": 0.01,
+    "use_label_refurbishment": true,
+    "window_size": 20
+  },
+  "model_config_path": "configs/model/redlamp_mlp_baseline.yaml",
+  "optimizer": {
+    "gradient_clip_norm": 1.0,
+    "learning_rate": 0.001,
+    "optimizer_name": "adamw",
+    "scheduler": {
+      "cosine_after_warmup": true,
+      "cosine_end_lr": 0.0,
+      "scheduler_name": "cosine",
+      "warmup_epochs": 5,
+      "warmup_start_lr": 0.0001
+    },
+    "weight_decay": 0.0
+  },
+  "output_dir": "outputs/smoke_val_synth_vus_pr_runtime",
+  "seed": 11,
+  "task": {
+    "anomaly_families": [
+      "spike",
+      "flip",
+      "speedup",
+      "noise",
+      "cutoff",
+      "average",
+      "scale",
+      "wander",
+      "contextual",
+      "upsidedown",
+      "mixture"
+    ],
+    "anomaly_probability": 0.5,
+    "balance_binary_classes_within_batch": false,
+    "classification_label_mode": "redlamp_multiclass",
+    "freeze_fusion_for_epochs": 0,
+    "max_segment_fraction": 0.2,
+    "min_segment_fraction": 0.1,
+    "spike_scale": 3.0,
+    "synthetic_validation_seed": 7,
+    "task_name": "multitask_tsad",
+    "use_synthetic_augmentation": true,
+    "use_synthetic_validation": true,
+    "warmup_alpha_value": 0.5,
+    "warmup_beta_value": 0.5
+  },
+  "task_config_path": "configs/task/multitask_tsad_redlamp_multiclass_window20.yaml"
+}

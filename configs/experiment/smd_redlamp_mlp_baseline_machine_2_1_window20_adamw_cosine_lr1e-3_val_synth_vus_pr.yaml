@@ -1,0 +1,37 @@
+experiment_name: smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3_val_synth_vus_pr
+seed: 11
+device: cuda
+output_dir: outputs/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3_val_synth_vus_pr
+checkpoint_dir: outputs/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3_val_synth_vus_pr/checkpoints
+data_config_path: configs/data/smd_rtx3090_machine_2_1_20.yaml
+model_config_path: configs/model/redlamp_mlp_baseline.yaml
+task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20.yaml
+optimizer:
+  optimizer_name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0
+  gradient_clip_norm: 1.0
+  scheduler:
+    scheduler_name: cosine
+    warmup_epochs: 5
+    warmup_start_lr: 0.0001
+    cosine_end_lr: 0.0
+    cosine_after_warmup: true
+checkpoint_monitor_metric: val_synth_vus_pr
+epochs: 300
+evaluation:
+  vus_max_buffer_size: 20
+  vus_num_thresholds: 200
+logging:
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_tags:
+    - smd
+    - redlamp_multiclass
+    - window20
+    - mlp-depth-3
+    - adamw
+    - cosine
+    - val_synth_vus_pr
+  wandb_run_name: smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3_val_synth_vus_pr

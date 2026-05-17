@@ -187,6 +187,15 @@ def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor(
     validate_experiment_config(loaded_config)
 
 
+def test_validate_config_accepts_val_synth_vus_pr_checkpoint_monitor() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+    )
+    loaded_config["checkpoint_monitor_metric"] = "val_synth_vus_pr"
+
+    validate_experiment_config(loaded_config)
+
+
 def test_validate_config_rejects_invalid_optimizer_name() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
@@ -219,6 +228,31 @@ def test_load_explicit_redlamp_adamw_cosine_configs() -> None:
         assert loaded_config["optimizer"]["gradient_clip_norm"] == 1.0
         assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
         assert loaded_config["epochs"] == 300
+
+
+def test_load_explicit_redlamp_cosine_val_synth_vus_pr_config() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3_val_synth_vus_pr.yaml"
+    )
+
+    assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
+    assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["epochs"] == 300
+
+
+def test_load_explicit_redlamp_cosine_val_synth_vus_pr_smoke_config() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3_val_synth_vus_pr_smoke.yaml"
+    )
+
+    assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
+    assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["epochs"] == 1
+    assert loaded_config["data"]["max_train_windows"] == 64
+    assert loaded_config["data"]["max_val_windows"] == 32
+    assert loaded_config["logging"]["use_wandb"] is False
 
 
 @pytest.mark.parametrize(

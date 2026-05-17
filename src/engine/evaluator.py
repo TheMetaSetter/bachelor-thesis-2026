@@ -41,6 +41,91 @@ def select_point_score_threshold(
     return threshold
 
 
+def accumulate_pointwise_window_payload(
+    *,
+    sequences_by_entity: dict[str, dict[str, Any]],
+    batch_payload: dict[str, Any],
+    entity_score_sums: dict[str, torch.Tensor],
+    entity_score_counts: dict[str, torch.Tensor],
+    entity_point_labels: dict[str, torch.Tensor],
+) -> None:
+    batch_meta = batch_payload["meta"]
+    point_scores = batch_payload["point_scores"]
+    point_labels = batch_payload["point_labels"]
+
+    if point_scores.ndim != 2:
+        raise ValueError("batch_payload['point_scores'] must have shape [B, L]")
+    if point_labels.ndim != 2:
+        raise ValueError("batch_payload['point_labels'] must have shape [B, L]")
+    if point_scores.shape != point_labels.shape:
+        raise ValueError(
+            "batch_payload['point_scores'] and batch_payload['point_labels'] must share the same shape"
+        )
+    if len(batch_meta) != point_scores.shape[0]:
+        raise ValueError("batch_payload['meta'] length must match batch size")
+
+    for window_index, meta in enumerate(batch_meta):
+        entity_id = meta["entity_id"]
+        start_index = int(meta["start_index"])
+        end_index = int(meta["end_index"])
+        sequence_length = int(sequences_by_entity[entity_id]["x"].shape[0])
+
+        if entity_id not in entity_score_sums:
+            entity_score_sums[entity_id] = torch.zeros(
+                sequence_length,
+                dtype=torch.float32,
+            )
+            entity_score_counts[entity_id] = torch.zeros(
+                sequence_length,
+                dtype=torch.float32,
+            )
+            entity_point_labels[entity_id] = torch.zeros(
+                sequence_length,
+                dtype=point_labels.dtype,
+            )
+
+        entity_score_sums[entity_id][start_index:end_index] += point_scores[window_index]
+        entity_score_counts[entity_id][start_index:end_index] += 1.0
+        entity_point_labels[entity_id][start_index:end_index] = torch.maximum(
+            entity_point_labels[entity_id][start_index:end_index],
+            point_labels[window_index].to(entity_point_labels[entity_id].dtype),
+        )
+
+
+def reconstruct_pointwise_records_from_window_payload(
+    *,
+    sequences_by_entity: dict[str, dict[str, Any]],
+    batch_payloads: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    entity_score_sums: dict[str, torch.Tensor] = {}
+    entity_score_counts: dict[str, torch.Tensor] = {}
+    entity_point_labels: dict[str, torch.Tensor] = {}
+
+    for batch_payload in batch_payloads:
+        accumulate_pointwise_window_payload(
+            sequences_by_entity=sequences_by_entity,
+            batch_payload=batch_payload,
+            entity_score_sums=entity_score_sums,
+            entity_score_counts=entity_score_counts,
+            entity_point_labels=entity_point_labels,
+        )
+
+    evaluation_records: list[dict[str, Any]] = []
+    for entity_id, score_sum in entity_score_sums.items():
+        counts = torch.clamp(entity_score_counts[entity_id], min=1.0)
+        averaged_scores = score_sum / counts
+        evaluation_record = {
+            "entity_id": entity_id,
+            "point_scores": averaged_scores,
+            "point_labels": entity_point_labels[entity_id],
+            "num_points": int(averaged_scores.shape[0]),
+        }
+        validate_evaluation_record(evaluation_record)
+        evaluation_records.append(evaluation_record)
+
+    return evaluation_records
+
+
 class Evaluator:
     def __init__(
         self,
@@ -109,52 +194,6 @@ class Evaluator:
             for sequence in data_loader.dataset.sequences
         }
 
-    @staticmethod
-    def _initialize_entity_storage_if_needed(
-        entity_id: str,
-        sequences_by_entity: dict[str, dict[str, Any]],
-        entity_score_sums: dict[str, torch.Tensor],
-        entity_score_counts: dict[str, torch.Tensor],
-        entity_labels: dict[str, torch.Tensor],
-    ) -> None:
-        if entity_id in entity_score_sums:
-            return
-
-        sequence = sequences_by_entity[entity_id]
-        sequence_length = sequence["x"].shape[0]
-        entity_score_sums[entity_id] = torch.zeros(sequence_length, dtype=torch.float32)
-        entity_score_counts[entity_id] = torch.zeros(
-            sequence_length, dtype=torch.float32
-        )
-        entity_labels[entity_id] = sequence["point_labels"].clone()
-
-    def _accumulate_batch_point_scores(
-        self,
-        batch: dict[str, Any],
-        point_scores: torch.Tensor,
-        sequences_by_entity: dict[str, dict[str, Any]],
-        entity_score_sums: dict[str, torch.Tensor],
-        entity_score_counts: dict[str, torch.Tensor],
-        entity_labels: dict[str, torch.Tensor],
-    ) -> None:
-        for window_index, meta in enumerate(batch["meta"]):
-            entity_id = meta["entity_id"]
-            start_index = int(meta["start_index"])
-            end_index = int(meta["end_index"])
-
-            self._initialize_entity_storage_if_needed(
-                entity_id=entity_id,
-                sequences_by_entity=sequences_by_entity,
-                entity_score_sums=entity_score_sums,
-                entity_score_counts=entity_score_counts,
-                entity_labels=entity_labels,
-            )
-
-            entity_score_sums[entity_id][start_index:end_index] += point_scores[
-                window_index
-            ]
-            entity_score_counts[entity_id][start_index:end_index] += 1.0
-
     def evaluate(self, model: BaseModel, data_loader: Any) -> dict[str, Any]:
         # Window-level scores are accumulated back onto each entity because the
         # downstream metrics should be interpreted on the original timeline.
@@ -166,11 +205,9 @@ class Evaluator:
             device=self.device,
             num_batches=len(data_loader),
         )
-        entity_score_sums: dict[str, torch.Tensor] = {}
-        entity_score_counts: dict[str, torch.Tensor] = {}
-        entity_labels: dict[str, torch.Tensor] = {}
         forward_pass_seconds_history: list[float] = []
         sequences_by_entity = self._build_sequences_by_entity(data_loader)
+        pointwise_batch_payloads: list[dict[str, Any]] = []
 
         with torch.no_grad():
             # Với mỗi batch dữ liệu đọc được từ data_loader,
@@ -191,36 +228,23 @@ class Evaluator:
                     step_output=step_output,
                     point_scores=point_scores,
                 )
-                self._accumulate_batch_point_scores(
-                    batch=batch,
-                    point_scores=point_scores,
-                    sequences_by_entity=sequences_by_entity,
-                    entity_score_sums=entity_score_sums,
-                    entity_score_counts=entity_score_counts,
-                    entity_labels=entity_labels,
+                pointwise_batch_payloads.append(
+                    {
+                        "meta": batch["meta"],
+                        "point_scores": point_scores,
+                        "point_labels": batch["point_labels"].detach().cpu(),
+                    }
                 )
 
-        evaluation_records: list[dict[str, Any]] = []
+        evaluation_records = reconstruct_pointwise_records_from_window_payload(
+            sequences_by_entity=sequences_by_entity,
+            batch_payloads=pointwise_batch_payloads,
+        )
         all_point_scores: list[np.ndarray] = []
         all_point_labels: list[np.ndarray] = []
-
-        # TODO: Liệu có thể tối ưu đoạn code này hơn cho trường hợp non-overlapping sliding window
-        # có được hay không?
-        for entity_id, score_sum in entity_score_sums.items():
-            # Overlap-aware averaging is the bridge from sliding-window outputs
-            # back to a per-entity anomaly score sequence.
-            counts = torch.clamp(entity_score_counts[entity_id], min=1.0)
-            averaged_scores = score_sum / counts
-            evaluation_record = {
-                "entity_id": entity_id,
-                "point_scores": averaged_scores,
-                "point_labels": entity_labels[entity_id],
-                "num_points": int(averaged_scores.shape[0]),
-            }
-            validate_evaluation_record(evaluation_record)
-            evaluation_records.append(evaluation_record)
-            all_point_scores.append(averaged_scores.numpy())
-            all_point_labels.append(entity_labels[entity_id].numpy())
+        for evaluation_record in evaluation_records:
+            all_point_scores.append(evaluation_record["point_scores"].numpy())
+            all_point_labels.append(evaluation_record["point_labels"].numpy())
 
         # Nối tất cả các điểm anomaly score từ từng timestep lại thành một danh sách
         concatenated_scores = np.concatenate(all_point_scores, axis=0)

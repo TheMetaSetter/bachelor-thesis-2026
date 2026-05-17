@@ -9,15 +9,21 @@ logs metrics, and saves checkpoints.
 
 from typing import Any
 
+import numpy as np
 import torch
 
 from src.core.console import console_print, summarize_batch
 from src.engine.checkpoint import CheckpointManager
-from src.engine.evaluator import Evaluator
+from src.engine.evaluator import (
+    Evaluator,
+    reconstruct_pointwise_records_from_window_payload,
+    select_point_score_threshold,
+)
 from src.engine.logger import ExperimentLogger
 from src.metrics.pointwise import (
     compute_binary_classification_metrics,
     compute_multiclass_classification_metrics,
+    compute_pointwise_metrics,
 )
 from src.models.base_model import BaseModel
 
@@ -213,6 +219,7 @@ class Trainer:
             "val_synth_loss": "min",
             "val_synth_roc_auc": "max",
             "val_synth_pr_auc": "max",
+            "val_synth_vus_pr": "max",
             "val_vus_pr": "max",
         }
         if checkpoint_monitor_metric not in checkpoint_monitor_modes:
@@ -250,13 +257,19 @@ class Trainer:
         epoch_index: int,
         stage_name: str,
         step_method_name: str,
+        pointwise_label_batch_key: str | None = None,
     ) -> tuple[
-        list[dict[str, float]], list[torch.Tensor], list[torch.Tensor], list[float]
+        list[dict[str, float]],
+        list[torch.Tensor],
+        list[torch.Tensor],
+        list[float],
+        list[dict[str, Any]],
     ]:
         stage_logs: list[dict[str, float]] = []
         logits_history: list[torch.Tensor] = []
         label_history: list[torch.Tensor] = []
         forward_pass_seconds_history: list[float] = []
+        pointwise_payloads: list[dict[str, Any]] = []
         step_method = getattr(self.model, step_method_name)
 
         with torch.no_grad():
@@ -291,8 +304,85 @@ class Trainer:
                     forward_pass_seconds_history.append(
                         float(step_output["outputs"]["aux"]["forward_pass_seconds"])
                     )
+                if (
+                    pointwise_label_batch_key is not None
+                    and step_output["outputs"].get("point_scores") is not None
+                    and pointwise_label_batch_key in step_output["batch"]
+                ):
+                    pointwise_payloads.append(
+                        {
+                            "meta": step_output["batch"]["meta"],
+                            "point_scores": step_output["outputs"][
+                                "point_scores"
+                            ].detach().cpu(),
+                            "point_labels": step_output["batch"][
+                                pointwise_label_batch_key
+                            ].detach().cpu(),
+                        }
+                    )
 
-        return stage_logs, logits_history, label_history, forward_pass_seconds_history
+        return (
+            stage_logs,
+            logits_history,
+            label_history,
+            forward_pass_seconds_history,
+            pointwise_payloads,
+        )
+
+    def _aggregate_reconstructed_pointwise_metrics(
+        self,
+        *,
+        data_loader: Any,
+        batch_payloads: list[dict[str, Any]],
+        stage_name: str,
+    ) -> dict[str, float]:
+        if not batch_payloads:
+            return {}
+        if not hasattr(data_loader, "dataset") or not hasattr(
+            data_loader.dataset, "sequences"
+        ):
+            return {}
+
+        sequences_by_entity = Evaluator._build_sequences_by_entity(data_loader)
+        reconstructed_records = reconstruct_pointwise_records_from_window_payload(
+            sequences_by_entity=sequences_by_entity,
+            batch_payloads=batch_payloads,
+        )
+        concatenated_scores = np.concatenate(
+            [record["point_scores"].numpy() for record in reconstructed_records],
+            axis=0,
+        )
+        concatenated_labels = np.concatenate(
+            [record["point_labels"].numpy() for record in reconstructed_records],
+            axis=0,
+        )
+        threshold = select_point_score_threshold(concatenated_scores, quantile=0.95)
+        pointwise_metrics = compute_pointwise_metrics(
+            point_labels=concatenated_labels,
+            point_scores=concatenated_scores,
+            threshold=threshold,
+            vus_max_buffer_size=(
+                0
+                if self.validation_evaluator_config is None
+                else self.validation_evaluator_config.get("vus_max_buffer_size")
+            ),
+            vus_num_thresholds=(
+                200
+                if self.validation_evaluator_config is None
+                else int(self.validation_evaluator_config.get("vus_num_thresholds", 200))
+            ),
+        )
+        pointwise_metrics["threshold"] = threshold
+        return {
+            f"{stage_name}_{metric_name}_pointwise": metric_value
+            if metric_name not in {"vus_pr", "threshold"}
+            else metric_value
+            for metric_name, metric_value in pointwise_metrics.items()
+            if metric_name not in {"vus_pr", "threshold"}
+        } | {
+            f"{stage_name}_vus_pr": pointwise_metrics["vus_pr"],
+            f"{stage_name}_threshold": pointwise_metrics["threshold"],
+        }
 
     def train(
         self,
@@ -411,6 +501,7 @@ class Trainer:
                 val_logits_history,
                 val_label_history,
                 val_forward_pass_seconds_history,
+                _val_pointwise_payloads,
             ) = self._run_validation_epoch(
                 val_loader=val_loader,
                 epoch_index=epoch_index,
@@ -421,6 +512,7 @@ class Trainer:
             val_synth_logits_history: list[torch.Tensor] = []
             val_synth_label_history: list[torch.Tensor] = []
             val_synth_forward_pass_seconds_history: list[float] = []
+            val_synth_pointwise_payloads: list[dict[str, Any]] = []
             if hasattr(self.model, "synthetic_validation_step"):
                 if hasattr(self.model, "prepare_synthetic_validation_epoch"):
                     self.model.prepare_synthetic_validation_epoch()
@@ -429,11 +521,13 @@ class Trainer:
                     val_synth_logits_history,
                     val_synth_label_history,
                     val_synth_forward_pass_seconds_history,
+                    val_synth_pointwise_payloads,
                 ) = self._run_validation_epoch(
                     val_loader=val_loader,
                     epoch_index=epoch_index,
                     stage_name="val_synth",
                     step_method_name="synthetic_validation_step",
+                    pointwise_label_batch_key="synthetic_anomaly_mask",
                 )
 
             epoch_metrics = {"epoch": epoch_index + 1}
@@ -461,6 +555,13 @@ class Trainer:
                     logits_history=val_synth_logits_history,
                     label_history=val_synth_label_history,
                     forward_pass_seconds_history=val_synth_forward_pass_seconds_history,
+                    stage_name="val_synth",
+                )
+            )
+            epoch_metrics.update(
+                self._aggregate_reconstructed_pointwise_metrics(
+                    data_loader=val_loader,
+                    batch_payloads=val_synth_pointwise_payloads,
                     stage_name="val_synth",
                 )
             )

@@ -5,7 +5,11 @@ from typing import Any
 import numpy as np
 import torch
 
-from src.engine.evaluator import Evaluator, select_point_score_threshold
+from src.engine.evaluator import (
+    Evaluator,
+    reconstruct_pointwise_records_from_window_payload,
+    select_point_score_threshold,
+)
 from src.metrics.pointwise import (
     compute_binary_classification_metrics,
     compute_pointwise_curve_payload,
@@ -121,6 +125,57 @@ def test_evaluator_averages_overlapping_window_point_scores() -> None:
     assert record["entity_id"] == "machine-1"
     assert torch.allclose(record["point_scores"], expected_scores)
     assert evaluation_outputs["metrics"]["forward_pass_seconds_mean"] == 0.1
+
+
+def test_reconstruct_pointwise_records_from_window_payload_averages_overlaps() -> None:
+    sequences_by_entity = {
+        "machine-1": {
+            "x": torch.zeros(4, 1, dtype=torch.float32),
+            "point_labels": torch.tensor([0, 1, 0, 1], dtype=torch.long),
+            "meta": {"entity_id": "machine-1"},
+        }
+    }
+    batch_payloads = [
+        {
+            "meta": [
+                {
+                    "entity_id": "machine-1",
+                    "start_index": 0,
+                    "end_index": 3,
+                }
+            ],
+            "point_scores": torch.tensor([[1.0, 2.0, 3.0]], dtype=torch.float32),
+            "point_labels": torch.tensor([[0, 1, 0]], dtype=torch.long),
+        },
+        {
+            "meta": [
+                {
+                    "entity_id": "machine-1",
+                    "start_index": 1,
+                    "end_index": 4,
+                }
+            ],
+            "point_scores": torch.tensor([[3.0, 5.0, 7.0]], dtype=torch.float32),
+            "point_labels": torch.tensor([[1, 0, 1]], dtype=torch.long),
+        },
+    ]
+
+    reconstructed_records = reconstruct_pointwise_records_from_window_payload(
+        sequences_by_entity=sequences_by_entity,
+        batch_payloads=batch_payloads,
+    )
+
+    assert len(reconstructed_records) == 1
+    assert reconstructed_records[0]["entity_id"] == "machine-1"
+    assert torch.allclose(
+        reconstructed_records[0]["point_scores"],
+        torch.tensor([1.0, 2.5, 4.0, 7.0], dtype=torch.float32),
+    )
+    assert torch.equal(
+        reconstructed_records[0]["point_labels"],
+        torch.tensor([0, 1, 0, 1], dtype=torch.long),
+    )
+    assert reconstructed_records[0]["num_points"] == 4
 
 
 def test_compute_pointwise_metrics_uses_strict_threshold_comparison() -> None:

@@ -20,6 +20,41 @@ def _build_batch(batch_size: int = 4) -> dict[str, object]:
     }
 
 
+class _SingleEntityValidationDataset:
+    def __init__(self) -> None:
+        self.sequences = [
+            {
+                "x": torch.zeros(100, 38),
+                "point_labels": torch.zeros(100, dtype=torch.long),
+                "meta": {"entity_id": "machine-0"},
+            }
+        ]
+
+
+class _SingleEntityValidationDataLoader:
+    def __init__(self) -> None:
+        self.dataset = _SingleEntityValidationDataset()
+        self.batch = {
+            "x": torch.randn(1, 100, 38),
+            "point_labels": torch.zeros(1, 100, dtype=torch.long),
+            "mask": None,
+            "timestamps": None,
+            "meta": [
+                {
+                    "entity_id": "machine-0",
+                    "start_index": 0,
+                    "end_index": 100,
+                }
+            ],
+        }
+
+    def __len__(self) -> int:
+        return 1
+
+    def __iter__(self):
+        return iter([self.batch])
+
+
 def _build_model(**overrides: object) -> ThesisMultitaskModel:
     model_kwargs: dict[str, object] = {
         "input_dim": 38,
@@ -98,6 +133,10 @@ def test_synthetic_validation_is_deterministic_after_rng_reset() -> None:
     )
     assert "val_synth_classification_loss" in first_step["log"]
     assert "val_synth_classification_accuracy" in first_step["log"]
+    assert "synthetic_anomaly_mask" in first_step["batch"]
+    assert first_step["batch"]["synthetic_anomaly_mask"].shape == first_step["batch"][
+        "x"
+    ].shape[:2]
 
 
 def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(
@@ -116,11 +155,12 @@ def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(
         device="cpu",
     )
     batch = _build_batch()
+    val_loader = _SingleEntityValidationDataLoader()
 
     try:
         outputs = trainer.train(
             train_loader=[batch],
-            val_loader=[batch],
+            val_loader=val_loader,
             scaler_state={
                 "feature_mean": torch.zeros(38),
                 "feature_std": torch.ones(38),
@@ -144,6 +184,8 @@ def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(
     assert "val_synth_classification_accuracy" in epoch_metrics
     assert "val_synth_roc_auc" in epoch_metrics
     assert "val_synth_pr_auc" in epoch_metrics
+    assert "val_synth_pr_auc_pointwise" in epoch_metrics
+    assert "val_synth_vus_pr" in epoch_metrics
     assert epoch_metrics["train_usage_lambda"] == 0.2
     assert epoch_metrics["val_usage_lambda"] == 0.2
     assert epoch_metrics["val_synth_usage_lambda"] == 0.2
