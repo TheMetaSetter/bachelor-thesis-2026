@@ -232,7 +232,7 @@ class Evaluator:
         # Một timestep có anomaly score vượt ngưỡng threshold này thì tính là anomaly
         threshold = select_point_score_threshold(concatenated_scores, quantile=0.95)
 
-        # Tính toán các pointwise metric
+        # Tính toán các độ đo pointwise (pointwise metric)
         metrics = compute_pointwise_metrics(
             point_labels=concatenated_labels,
             point_scores=concatenated_scores,

@@ -445,7 +445,9 @@ def test_load_experiment_config_rejects_thesis_model_window_size_mismatch(
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="model.window_size must match data.window_size"):
+    with pytest.raises(
+        ValueError, match="model.window_size must match data.window_size"
+    ):
         load_experiment_config(experiment_path)
 
 

@@ -364,6 +364,8 @@ def compute_pointwise_metrics(
         "f1": _safe_metric(f1_score, point_labels, binary_predictions, zero_division=0),
         "fpr": _compute_false_positive_rate(point_labels, binary_predictions),
     }
+
+    # Gọi hàm để tính toán độ đo VUS-PR
     if vus_max_buffer_size is not None:
         metrics["vus_pr"] = compute_vus_pr_exact_naive(
             point_labels=point_labels,
@@ -371,6 +373,7 @@ def compute_pointwise_metrics(
             max_buffer_size=vus_max_buffer_size,
             num_thresholds=vus_num_thresholds,
         )
+
     return metrics
 
 
