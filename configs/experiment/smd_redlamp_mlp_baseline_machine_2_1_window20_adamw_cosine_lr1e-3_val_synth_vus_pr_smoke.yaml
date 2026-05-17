@@ -29,9 +29,9 @@ evaluation:
   vus_max_buffer_size: 20
   vus_num_thresholds: 200
 logging:
-  use_wandb: false
+  use_wandb: true
   wandb_project: bachelor-thesis-2026
-  wandb_mode: disabled
+  wandb_mode: online
   wandb_tags:
     - smd
     - redlamp_multiclass

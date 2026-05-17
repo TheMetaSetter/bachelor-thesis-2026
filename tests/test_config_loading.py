@@ -252,7 +252,8 @@ def test_load_explicit_redlamp_cosine_val_synth_vus_pr_smoke_config() -> None:
     assert loaded_config["epochs"] == 1
     assert loaded_config["data"]["max_train_windows"] == 64
     assert loaded_config["data"]["max_val_windows"] == 32
-    assert loaded_config["logging"]["use_wandb"] is False
+    assert loaded_config["logging"]["use_wandb"] is True
+    assert loaded_config["logging"]["wandb_mode"] == "online"
 
 
 @pytest.mark.parametrize(
