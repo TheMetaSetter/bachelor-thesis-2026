@@ -167,7 +167,9 @@ def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
     assert loaded_config["task"]["balance_binary_classes_within_batch"] is True
 
 
-def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor() -> None:
+def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor() -> (
+    None
+):
     loaded_config = load_experiment_config(
         "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
     )

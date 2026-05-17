@@ -128,9 +128,7 @@ def compute_candi_style_cosine_learning_rate(
             cosine_end_lr=cosine_end_lr,
             cosine_offset_epochs=cosine_offset_epochs,
         )
-        warmup_alpha = (
-            cosine_warmup_end_lr - warmup_start_lr
-        ) / float(warmup_epochs)
+        warmup_alpha = (cosine_warmup_end_lr - warmup_start_lr) / float(warmup_epochs)
         return current_progress * warmup_alpha + warmup_start_lr
     return _compute_cosine_learning_rate_without_warmup(
         base_learning_rate=base_learning_rate,
