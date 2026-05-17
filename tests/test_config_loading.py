@@ -167,6 +167,58 @@ def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
     assert loaded_config["task"]["balance_binary_classes_within_batch"] is True
 
 
+def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+    )
+    loaded_config["optimizer"]["optimizer_name"] = "adamw"
+    loaded_config["optimizer"]["gradient_clip_norm"] = 1.0
+    loaded_config["optimizer"]["scheduler"] = {
+        "scheduler_name": "cosine",
+        "warmup_epochs": 5,
+        "warmup_start_lr": 1.0e-4,
+        "cosine_end_lr": 0.0,
+        "cosine_after_warmup": True,
+    }
+    loaded_config["checkpoint_monitor_metric"] = "val_vus_pr"
+
+    validate_experiment_config(loaded_config)
+
+
+def test_validate_config_rejects_invalid_optimizer_name() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+    )
+    loaded_config["optimizer"]["optimizer_name"] = "sgd"
+
+    with pytest.raises(ValueError, match="optimizer.optimizer_name"):
+        validate_experiment_config(loaded_config)
+
+
+def test_validate_config_rejects_non_positive_gradient_clip_norm() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+    )
+    loaded_config["optimizer"]["gradient_clip_norm"] = 0.0
+
+    with pytest.raises(ValueError, match="optimizer.gradient_clip_norm"):
+        validate_experiment_config(loaded_config)
+
+
+def test_load_explicit_redlamp_adamw_cosine_configs() -> None:
+    for config_path in [
+        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3.yaml",
+        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-4.yaml",
+    ]:
+        loaded_config = load_experiment_config(config_path)
+
+        assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
+        assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
+        assert loaded_config["optimizer"]["gradient_clip_norm"] == 1.0
+        assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
+        assert loaded_config["epochs"] == 300
+
+
 @pytest.mark.parametrize(
     "experiment_config_path,expected_model_name",
     [

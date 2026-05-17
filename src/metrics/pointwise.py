@@ -238,7 +238,8 @@ def _compute_pr_area_from_points(
             sorted_precisions[index],
             sorted_precisions[index + 1],
         )
-    pr_area = float(np.trapezoid(sorted_precisions, sorted_recalls))
+    trapezoid_function = getattr(np, "trapezoid", np.trapz)
+    pr_area = float(trapezoid_function(sorted_precisions, sorted_recalls))
     return min(1.0, max(0.0, pr_area))
 
 

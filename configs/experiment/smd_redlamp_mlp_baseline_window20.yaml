@@ -31,4 +31,4 @@ logging:
     - redlamp_multiclass
     - window20
     - mlp-depth-3
-  wandb_run_name: smd_redlamp_mlp_baseline_window20_05172026_lr1e-3_adamw_cosine
+  wandb_run_name: smd_redlamp_mlp_baseline_window20_05172026_lr1e-3_plateau

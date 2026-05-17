@@ -8,6 +8,7 @@ objects, then hand everything to the trainer.
 """
 
 import argparse
+import math
 from typing import Any
 
 import torch
@@ -76,6 +77,70 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
     return build_model(model_name, **model_kwargs)
 
 
+def build_optimizer_from_experiment_config(
+    model: torch.nn.Module,
+    experiment_config: dict[str, object],
+) -> torch.optim.Optimizer:
+    optimizer_config = experiment_config["optimizer"]
+    optimizer_name = str(optimizer_config.get("optimizer_name", "adam"))
+    optimizer_kwargs = {
+        "lr": float(optimizer_config["learning_rate"]),
+        "weight_decay": float(optimizer_config["weight_decay"]),
+    }
+    if optimizer_name == "adam":
+        return torch.optim.Adam(model.parameters(), **optimizer_kwargs)
+    if optimizer_name == "adamw":
+        return torch.optim.AdamW(model.parameters(), **optimizer_kwargs)
+    raise ValueError(f"Unsupported optimizer_name: {optimizer_name}")
+
+
+def _compute_cosine_learning_rate_without_warmup(
+    *,
+    base_learning_rate: float,
+    current_progress: float,
+    total_epochs: int,
+    cosine_end_lr: float,
+    cosine_offset_epochs: float,
+) -> float:
+    cosine_progress = max(current_progress - cosine_offset_epochs, 0.0)
+    cosine_duration = max(float(total_epochs) - cosine_offset_epochs, 1.0e-12)
+    clamped_progress = min(cosine_progress / cosine_duration, 1.0)
+    cosine_weight = 0.5 * (1.0 + math.cos(math.pi * clamped_progress))
+    return cosine_end_lr + (base_learning_rate - cosine_end_lr) * cosine_weight
+
+
+def compute_candi_style_cosine_learning_rate(
+    *,
+    base_learning_rate: float,
+    current_progress: float,
+    total_epochs: int,
+    warmup_epochs: int,
+    warmup_start_lr: float,
+    cosine_end_lr: float,
+    cosine_after_warmup: bool,
+) -> float:
+    cosine_offset_epochs = float(warmup_epochs) if cosine_after_warmup else 0.0
+    if warmup_epochs > 0 and current_progress < warmup_epochs:
+        cosine_warmup_end_lr = _compute_cosine_learning_rate_without_warmup(
+            base_learning_rate=base_learning_rate,
+            current_progress=float(warmup_epochs),
+            total_epochs=total_epochs,
+            cosine_end_lr=cosine_end_lr,
+            cosine_offset_epochs=cosine_offset_epochs,
+        )
+        warmup_alpha = (
+            cosine_warmup_end_lr - warmup_start_lr
+        ) / float(warmup_epochs)
+        return current_progress * warmup_alpha + warmup_start_lr
+    return _compute_cosine_learning_rate_without_warmup(
+        base_learning_rate=base_learning_rate,
+        current_progress=current_progress,
+        total_epochs=total_epochs,
+        cosine_end_lr=cosine_end_lr,
+        cosine_offset_epochs=cosine_offset_epochs,
+    )
+
+
 def build_scheduler_from_experiment_config(
     optimizer: torch.optim.Optimizer,
     experiment_config: dict[str, object],
@@ -87,6 +152,13 @@ def build_scheduler_from_experiment_config(
         return None, None
 
     scheduler_name = scheduler_config["scheduler_name"]
+    if scheduler_name == "cosine":
+        console_print(
+            "TRAIN",
+            "Using arithmetic cosine learning rate policy",
+            scheduler_name=scheduler_name,
+        )
+        return None, None
     if scheduler_name != "reduce_on_plateau":
         raise ValueError(f"Unsupported scheduler_name: {scheduler_name}")
     monitor_metric = str(scheduler_config["monitor_metric"])
@@ -173,23 +245,32 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
     # (loss weights, multitask heads, etc.) into a single PyTorch module.
     model = build_model_from_experiment_config(experiment_config)
 
-    # Create the Adam optimizer with learning rate and weight decay from config.
-    # Adam is chosen for its adaptive learning rate and stable convergence properties.
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=float(experiment_config["optimizer"]["learning_rate"]),
-        weight_decay=float(experiment_config["optimizer"]["weight_decay"]),
-    )
+    optimizer = build_optimizer_from_experiment_config(model, experiment_config)
+    optimizer_name = str(experiment_config["optimizer"].get("optimizer_name", "adam"))
     console_print(
         "TRAIN",
         "Initialized optimizer",
-        optimizer_type="Adam",
+        optimizer_type=type(optimizer).__name__,
+        optimizer_name=optimizer_name,
         learning_rate=experiment_config["optimizer"]["learning_rate"],
         weight_decay=experiment_config["optimizer"]["weight_decay"],
     )
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer, experiment_config
     )
+    cosine_scheduler_config = None
+    scheduler_config = experiment_config["optimizer"].get("scheduler")
+    if scheduler_config is not None and scheduler_config["scheduler_name"] == "cosine":
+        cosine_scheduler_config = {
+            "base_learning_rate": float(
+                experiment_config["optimizer"]["learning_rate"]
+            ),
+            "total_epochs": int(experiment_config["epochs"]),
+            "warmup_epochs": int(scheduler_config["warmup_epochs"]),
+            "warmup_start_lr": float(scheduler_config["warmup_start_lr"]),
+            "cosine_end_lr": float(scheduler_config["cosine_end_lr"]),
+            "cosine_after_warmup": bool(scheduler_config["cosine_after_warmup"]),
+        }
 
     # Initialize experiment logger for tracking metrics, hyperparameters, and
     # artifacts. Logs are written to output_dir; config validates logging format.
@@ -233,6 +314,10 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         checkpoint_manager=checkpoint_manager,
         experiment_logger=experiment_logger,
         device=experiment_config["device"],
+        cosine_scheduler_config=cosine_scheduler_config,
+        gradient_clip_norm=experiment_config["optimizer"].get("gradient_clip_norm"),
+        validation_evaluator_config=experiment_config.get("evaluation"),
+        checkpoint_monitor_metric=experiment_config.get("checkpoint_monitor_metric"),
     )
 
     # Execute training with try-finally to ensure graceful logger shutdown even

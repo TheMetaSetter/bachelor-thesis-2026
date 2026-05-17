@@ -4,7 +4,10 @@ from pathlib import Path
 
 import torch
 
-from scripts.run_online_adaptation import run_online_adaptation_experiment
+from scripts.run_online_adaptation import (
+    build_optimizer_from_experiment_config,
+    run_online_adaptation_experiment,
+)
 
 
 class _FakeOnlineModel(torch.nn.Module):
@@ -38,6 +41,24 @@ class _FakeOnlineLoop:
             "metric_history": [{"online/step": 1, "online/alignment_loss": 0.1}],
             "records": [{"step": 1, "entity_ids": ["machine-1"]}],
         }
+
+
+def test_build_online_optimizer_supports_adamw() -> None:
+    model = _FakeOnlineModel()
+
+    optimizer = build_optimizer_from_experiment_config(
+        model,
+        {
+            "task": {"target_param_group": "projector_params"},
+            "optimizer": {
+                "optimizer_name": "adamw",
+                "learning_rate": 0.001,
+                "weight_decay": 0.0,
+            },
+        },
+    )
+
+    assert isinstance(optimizer, torch.optim.AdamW)
 
 
 def test_run_online_adaptation_experiment_writes_summary_artifacts(

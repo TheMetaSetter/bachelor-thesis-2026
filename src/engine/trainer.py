@@ -13,6 +13,7 @@ import torch
 
 from src.core.console import console_print, summarize_batch
 from src.engine.checkpoint import CheckpointManager
+from src.engine.evaluator import Evaluator
 from src.engine.logger import ExperimentLogger
 from src.metrics.pointwise import (
     compute_binary_classification_metrics,
@@ -31,6 +32,10 @@ class Trainer:
         checkpoint_manager: CheckpointManager,
         experiment_logger: ExperimentLogger,
         device: str = "cpu",
+        cosine_scheduler_config: dict[str, Any] | None = None,
+        gradient_clip_norm: float | None = None,
+        validation_evaluator_config: dict[str, Any] | None = None,
+        checkpoint_monitor_metric: str | None = None,
     ) -> None:
         self.model = model
         self.optimizer = optimizer
@@ -39,6 +44,10 @@ class Trainer:
         self.checkpoint_manager = checkpoint_manager
         self.experiment_logger = experiment_logger
         self.device = device
+        self.cosine_scheduler_config = cosine_scheduler_config
+        self.gradient_clip_norm = gradient_clip_norm
+        self.validation_evaluator_config = validation_evaluator_config
+        self.checkpoint_monitor_metric = checkpoint_monitor_metric
         self.metric_history: list[dict[str, Any]] = []
 
     def _move_batch_to_device(self, batch: dict[str, Any]) -> dict[str, Any]:
@@ -107,6 +116,39 @@ class Trainer:
             for parameter_group in self.optimizer.param_groups
         ]
 
+    def _set_optimizer_learning_rate(self, new_learning_rate: float) -> None:
+        for parameter_group in self.optimizer.param_groups:
+            parameter_group["lr"] = new_learning_rate
+
+    def _step_cosine_learning_rate_scheduler(
+        self,
+        *,
+        epoch_index: int,
+        train_batch_index: int,
+        num_training_batches: int,
+    ) -> float:
+        if self.cosine_scheduler_config is None:
+            raise ValueError("cosine_scheduler_config must be set for cosine stepping")
+
+        from scripts.train import compute_candi_style_cosine_learning_rate
+
+        current_progress = epoch_index + float(train_batch_index) / num_training_batches
+        updated_learning_rate = compute_candi_style_cosine_learning_rate(
+            base_learning_rate=float(
+                self.cosine_scheduler_config["base_learning_rate"]
+            ),
+            current_progress=current_progress,
+            total_epochs=int(self.cosine_scheduler_config["total_epochs"]),
+            warmup_epochs=int(self.cosine_scheduler_config["warmup_epochs"]),
+            warmup_start_lr=float(self.cosine_scheduler_config["warmup_start_lr"]),
+            cosine_end_lr=float(self.cosine_scheduler_config["cosine_end_lr"]),
+            cosine_after_warmup=bool(
+                self.cosine_scheduler_config["cosine_after_warmup"]
+            ),
+        )
+        self._set_optimizer_learning_rate(updated_learning_rate)
+        return updated_learning_rate
+
     def _step_learning_rate_scheduler(
         self, epoch_metrics: dict[str, Any]
     ) -> dict[str, float]:
@@ -159,16 +201,19 @@ class Trainer:
         return learning_rate_metrics
 
     def _resolve_best_checkpoint_monitor(self) -> tuple[str, str]:
-        checkpoint_monitor_metric = (
-            "val_loss"
-            if self.scheduler_monitor_metric is None
-            else self.scheduler_monitor_metric
-        )
+        checkpoint_monitor_metric = self.checkpoint_monitor_metric
+        if checkpoint_monitor_metric is None:
+            checkpoint_monitor_metric = (
+                "val_loss"
+                if self.scheduler_monitor_metric is None
+                else self.scheduler_monitor_metric
+            )
         checkpoint_monitor_modes = {
             "val_loss": "min",
             "val_synth_loss": "min",
             "val_synth_roc_auc": "max",
             "val_synth_pr_auc": "max",
+            "val_vus_pr": "max",
         }
         if checkpoint_monitor_metric not in checkpoint_monitor_modes:
             raise ValueError(
@@ -302,8 +347,19 @@ class Trainer:
             train_logits_history: list[torch.Tensor] = []
             train_label_history: list[torch.Tensor] = []
             train_forward_pass_seconds_history: list[float] = []
+            batch_learning_rates: list[float] = []
+            gradient_norm_history: list[float] = []
+            clipped_step_count = 0
             console_print("TRAIN", "Starting epoch", epoch=epoch_index + 1)
             for train_batch_index, train_batch in enumerate(train_loader, start=1):
+                if self.cosine_scheduler_config is not None:
+                    batch_learning_rates.append(
+                        self._step_cosine_learning_rate_scheduler(
+                            epoch_index=epoch_index,
+                            train_batch_index=train_batch_index - 1,
+                            num_training_batches=len(train_loader),
+                        )
+                    )
                 batch_on_device = self._move_batch_to_device(train_batch)
                 console_print(
                     "TRAIN",
@@ -315,6 +371,15 @@ class Trainer:
                 loss = step_output["loss"]
                 self.optimizer.zero_grad()
                 loss.backward()
+                if self.gradient_clip_norm is not None:
+                    gradient_norm = torch.nn.utils.clip_grad_norm_(
+                        self.model.parameters(),
+                        max_norm=self.gradient_clip_norm,
+                    )
+                    gradient_norm_value = float(gradient_norm.detach().cpu())
+                    gradient_norm_history.append(gradient_norm_value)
+                    if gradient_norm_value > self.gradient_clip_norm:
+                        clipped_step_count += 1
                 self.optimizer.step()
                 console_print(
                     "TRAIN",
@@ -399,6 +464,33 @@ class Trainer:
                     stage_name="val_synth",
                 )
             )
+            if self.validation_evaluator_config is not None:
+                validation_evaluation_outputs = Evaluator(
+                    device=self.device,
+                    vus_max_buffer_size=self.validation_evaluator_config.get(
+                        "vus_max_buffer_size"
+                    ),
+                    vus_num_thresholds=int(
+                        self.validation_evaluator_config.get("vus_num_thresholds", 200)
+                    ),
+                ).evaluate(model=self.model, data_loader=val_loader)
+                epoch_metrics.update(
+                    {
+                        f"val_{metric_name}": metric_value
+                        for metric_name, metric_value in validation_evaluation_outputs[
+                            "metrics"
+                        ].items()
+                    }
+                )
+            if batch_learning_rates:
+                epoch_metrics["optimizer_lr_start"] = batch_learning_rates[0]
+                epoch_metrics["optimizer_lr_end"] = batch_learning_rates[-1]
+                epoch_metrics["optimizer_lr_min"] = min(batch_learning_rates)
+                epoch_metrics["optimizer_lr_max"] = max(batch_learning_rates)
+            if gradient_norm_history:
+                epoch_metrics["gradient_norm_max"] = max(gradient_norm_history)
+                epoch_metrics["gradient_norm_last"] = gradient_norm_history[-1]
+                epoch_metrics["gradient_clipped_steps"] = float(clipped_step_count)
             epoch_metrics.update(self._step_learning_rate_scheduler(epoch_metrics))
             self.metric_history.append(epoch_metrics)
             self.experiment_logger.log_metrics(epoch_metrics)

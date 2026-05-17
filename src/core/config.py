@@ -239,61 +239,143 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         if not isinstance(field_value, (int, float)):
             raise ValueError(f"{field_name} must be numeric")
 
+    optimizer_name = optimizer_config.get("optimizer_name", "adam")
+    if optimizer_name not in {"adam", "adamw"}:
+        raise ValueError("optimizer.optimizer_name must be one of: adam, adamw")
+
+    gradient_clip_norm = optimizer_config.get("gradient_clip_norm")
+    if gradient_clip_norm is not None:
+        if (
+            not isinstance(gradient_clip_norm, (int, float))
+            or float(gradient_clip_norm) <= 0.0
+        ):
+            raise ValueError(
+                "optimizer.gradient_clip_norm must be positive when provided"
+            )
+
+    checkpoint_monitor_metric = experiment_config.get(
+        "checkpoint_monitor_metric",
+        "val_loss",
+    )
+    if checkpoint_monitor_metric not in {
+        "val_loss",
+        "val_synth_loss",
+        "val_synth_roc_auc",
+        "val_synth_pr_auc",
+        "val_vus_pr",
+    }:
+        raise ValueError(
+            "checkpoint_monitor_metric must be one of: val_loss, val_synth_loss, "
+            "val_synth_roc_auc, val_synth_pr_auc, val_vus_pr"
+        )
+
     scheduler_config = optimizer_config.get("scheduler")
     if scheduler_config is not None:
         if not isinstance(scheduler_config, dict):
             raise ValueError("optimizer.scheduler must be a mapping when provided")
         scheduler_name = scheduler_config.get("scheduler_name")
-        if scheduler_name != "reduce_on_plateau":
+        if scheduler_name == "reduce_on_plateau":
+            incompatible_cosine_fields = {
+                "warmup_epochs",
+                "warmup_start_lr",
+                "cosine_end_lr",
+                "cosine_after_warmup",
+            }
+            if incompatible_cosine_fields.intersection(scheduler_config):
+                raise ValueError(
+                    "Cosine-only scheduler fields are not valid for reduce_on_plateau"
+                )
+            monitor_metric = scheduler_config.get("monitor_metric")
+            if monitor_metric not in {
+                "val_loss",
+                "val_synth_loss",
+                "val_synth_roc_auc",
+                "val_synth_pr_auc",
+            }:
+                raise ValueError(
+                    "optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_loss, val_synth_roc_auc, val_synth_pr_auc"
+                )
+            scheduler_factor = scheduler_config.get("factor")
+            if (
+                not isinstance(scheduler_factor, (int, float))
+                or not 0.0 < float(scheduler_factor) < 1.0
+            ):
+                raise ValueError("optimizer.scheduler.factor must be in (0, 1)")
+            scheduler_patience = scheduler_config.get("patience")
+            if not isinstance(scheduler_patience, int) or scheduler_patience < 0:
+                raise ValueError(
+                    "optimizer.scheduler.patience must be a non-negative integer"
+                )
+            scheduler_threshold = scheduler_config.get("threshold")
+            if (
+                not isinstance(scheduler_threshold, (int, float))
+                or float(scheduler_threshold) < 0.0
+            ):
+                raise ValueError("optimizer.scheduler.threshold must be non-negative")
+            scheduler_threshold_mode = scheduler_config.get("threshold_mode")
+            if scheduler_threshold_mode not in {"rel", "abs"}:
+                raise ValueError(
+                    "optimizer.scheduler.threshold_mode must be one of: rel, abs"
+                )
+            scheduler_cooldown = scheduler_config.get("cooldown")
+            if not isinstance(scheduler_cooldown, int) or scheduler_cooldown < 0:
+                raise ValueError(
+                    "optimizer.scheduler.cooldown must be a non-negative integer"
+                )
+            scheduler_min_lr = scheduler_config.get("min_lr")
+            if (
+                not isinstance(scheduler_min_lr, (int, float))
+                or float(scheduler_min_lr) <= 0.0
+            ):
+                raise ValueError("optimizer.scheduler.min_lr must be positive")
+            if float(scheduler_min_lr) > float(optimizer_config["learning_rate"]):
+                raise ValueError(
+                    "optimizer.scheduler.min_lr must not exceed optimizer.learning_rate"
+                )
+        elif scheduler_name == "cosine":
+            incompatible_plateau_fields = {
+                "monitor_metric",
+                "factor",
+                "patience",
+                "threshold",
+                "threshold_mode",
+                "cooldown",
+                "min_lr",
+            }
+            if incompatible_plateau_fields.intersection(scheduler_config):
+                raise ValueError(
+                    "Plateau-only scheduler fields are not valid for cosine"
+                )
+            warmup_epochs = scheduler_config.get("warmup_epochs")
+            if not isinstance(warmup_epochs, int) or warmup_epochs < 0:
+                raise ValueError(
+                    "optimizer.scheduler.warmup_epochs must be a non-negative integer"
+                )
+            warmup_start_lr = scheduler_config.get("warmup_start_lr")
+            if (
+                not isinstance(warmup_start_lr, (int, float))
+                or float(warmup_start_lr) <= 0.0
+                or float(warmup_start_lr) > float(optimizer_config["learning_rate"])
+            ):
+                raise ValueError(
+                    "optimizer.scheduler.warmup_start_lr must be positive and not exceed optimizer.learning_rate"
+                )
+            cosine_end_lr = scheduler_config.get("cosine_end_lr")
+            if (
+                not isinstance(cosine_end_lr, (int, float))
+                or float(cosine_end_lr) < 0.0
+                or float(cosine_end_lr) >= float(optimizer_config["learning_rate"])
+            ):
+                raise ValueError(
+                    "optimizer.scheduler.cosine_end_lr must be non-negative and lower than optimizer.learning_rate"
+                )
+            if not isinstance(scheduler_config.get("cosine_after_warmup"), bool):
+                raise ValueError(
+                    "optimizer.scheduler.cosine_after_warmup must be a boolean"
+                )
+        else:
             raise ValueError(
-                "optimizer.scheduler.scheduler_name must be: reduce_on_plateau"
-            )
-        monitor_metric = scheduler_config.get("monitor_metric")
-        if monitor_metric not in {
-            "val_loss",
-            "val_synth_loss",
-            "val_synth_roc_auc",
-            "val_synth_pr_auc",
-        }:
-            raise ValueError(
-                "optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_loss, val_synth_roc_auc, val_synth_pr_auc"
-            )
-        scheduler_factor = scheduler_config.get("factor")
-        if (
-            not isinstance(scheduler_factor, (int, float))
-            or not 0.0 < float(scheduler_factor) < 1.0
-        ):
-            raise ValueError("optimizer.scheduler.factor must be in (0, 1)")
-        scheduler_patience = scheduler_config.get("patience")
-        if not isinstance(scheduler_patience, int) or scheduler_patience < 0:
-            raise ValueError(
-                "optimizer.scheduler.patience must be a non-negative integer"
-            )
-        scheduler_threshold = scheduler_config.get("threshold")
-        if (
-            not isinstance(scheduler_threshold, (int, float))
-            or float(scheduler_threshold) < 0.0
-        ):
-            raise ValueError("optimizer.scheduler.threshold must be non-negative")
-        scheduler_threshold_mode = scheduler_config.get("threshold_mode")
-        if scheduler_threshold_mode not in {"rel", "abs"}:
-            raise ValueError(
-                "optimizer.scheduler.threshold_mode must be one of: rel, abs"
-            )
-        scheduler_cooldown = scheduler_config.get("cooldown")
-        if not isinstance(scheduler_cooldown, int) or scheduler_cooldown < 0:
-            raise ValueError(
-                "optimizer.scheduler.cooldown must be a non-negative integer"
-            )
-        scheduler_min_lr = scheduler_config.get("min_lr")
-        if (
-            not isinstance(scheduler_min_lr, (int, float))
-            or float(scheduler_min_lr) <= 0.0
-        ):
-            raise ValueError("optimizer.scheduler.min_lr must be positive")
-        if float(scheduler_min_lr) > float(optimizer_config["learning_rate"]):
-            raise ValueError(
-                "optimizer.scheduler.min_lr must not exceed optimizer.learning_rate"
+                "optimizer.scheduler.scheduler_name must be one of: reduce_on_plateau, cosine"
             )
 
     if task_config.get("task_name") == "multitask_tsad":

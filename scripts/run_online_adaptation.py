@@ -81,6 +81,26 @@ def build_model_from_experiment_config(
     return build_model(model_name, **model_kwargs)
 
 
+def build_optimizer_from_experiment_config(
+    model: torch.nn.Module,
+    experiment_config: dict[str, Any],
+) -> torch.optim.Optimizer:
+    optimizer_config = experiment_config["optimizer"]
+    optimizer_name = str(optimizer_config.get("optimizer_name", "adam"))
+    optimizer_parameters = model.get_parameter_group(
+        experiment_config["task"]["target_param_group"]
+    )
+    optimizer_kwargs = {
+        "lr": float(optimizer_config["learning_rate"]),
+        "weight_decay": float(optimizer_config["weight_decay"]),
+    }
+    if optimizer_name == "adam":
+        return torch.optim.Adam(optimizer_parameters, **optimizer_kwargs)
+    if optimizer_name == "adamw":
+        return torch.optim.AdamW(optimizer_parameters, **optimizer_kwargs)
+    raise ValueError(f"Unsupported optimizer_name: {optimizer_name}")
+
+
 def run_online_adaptation_experiment(
     experiment_config: dict[str, Any],
 ) -> dict[str, Any]:
@@ -108,15 +128,13 @@ def run_online_adaptation_experiment(
         test_sequences=len(data_bundle["scaled_sequences"]["test"]),
     )
     model = build_model_from_experiment_config(experiment_config)
-    optimizer = torch.optim.Adam(
-        model.get_parameter_group(experiment_config["task"]["target_param_group"]),
-        lr=float(experiment_config["optimizer"]["learning_rate"]),
-        weight_decay=float(experiment_config["optimizer"]["weight_decay"]),
-    )
+    optimizer = build_optimizer_from_experiment_config(model, experiment_config)
+    optimizer_name = str(experiment_config["optimizer"].get("optimizer_name", "adam"))
     console_print(
         "ONLINE",
         "Initialized online optimizer",
-        optimizer_type="Adam",
+        optimizer_type=type(optimizer).__name__,
+        optimizer_name=optimizer_name,
         target_param_group=experiment_config["task"]["target_param_group"],
         learning_rate=experiment_config["optimizer"]["learning_rate"],
         weight_decay=experiment_config["optimizer"]["weight_decay"],
