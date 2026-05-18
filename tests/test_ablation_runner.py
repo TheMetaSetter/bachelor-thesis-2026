@@ -49,4 +49,5 @@ def test_run_ablation_suite_writes_compact_summary_artifacts(
     assert outputs["summary_rows"][0]["experiment_name"] == "smd_multitask_smoke"
     assert outputs["summary_rows"][0]["pr_auc"] == 0.65
     assert outputs["summary_rows"][0]["vus_pr"] == 0.61
+    assert outputs["summary_rows"][0]["bootstrap_encoder_epochs"] == 10
     assert outputs["summary_rows"][0]["anomaly_families"]

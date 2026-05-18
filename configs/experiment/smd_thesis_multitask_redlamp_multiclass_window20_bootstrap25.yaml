@@ -1,11 +1,13 @@
-experiment_name: smd_thesis_multitask_redlamp_multiclass_window20
+experiment_name: smd_thesis_multitask_redlamp_multiclass_window20_bootstrap25
 seed: 11
 device: cuda
-output_dir: outputs/smd_thesis_multitask_redlamp_multiclass_window20
-checkpoint_dir: outputs/smd_thesis_multitask_redlamp_multiclass_window20/checkpoints
+output_dir: outputs/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap25
+checkpoint_dir: outputs/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap25/checkpoints
 data_config_path: configs/data/smd_rtx3090_machine_2_1_20.yaml
 model_config_path: configs/model/thesis_multitask_redlamp_multiclass.yaml
 task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20.yaml
+model_overrides:
+  bootstrap_encoder_epochs: 25
 optimizer:
   learning_rate: 0.0001
   weight_decay: 0.0
@@ -31,4 +33,5 @@ logging:
     - redlamp_multiclass
     - window20
     - mlp-depth-3
-  wandb_run_name: smd_thesis_multitask_redlamp_multiclass_window20
+    - bootstrap-25
+  wandb_run_name: smd_thesis_multitask_redlamp_multiclass_window20_bootstrap25

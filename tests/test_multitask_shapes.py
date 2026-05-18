@@ -2,7 +2,20 @@ from __future__ import annotations
 
 import torch
 
+from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
 from src.models.thesis_multitask import ThesisMultitaskModel
+
+
+def test_multitask_model_defaults_to_redlamp_multiclass_configuration() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+    )
+
+    assert model.num_classes == len(REDLAMP_MULTICLASS_CLASS_NAMES)
+    assert model.classification_label_mode == "redlamp_multiclass"
 
 
 def test_multitask_model_returns_documented_shapes() -> None:

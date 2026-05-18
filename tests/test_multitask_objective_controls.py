@@ -13,6 +13,7 @@ def _build_model(**overrides: object) -> ThesisMultitaskModel:
         "hidden_dim": 16,
         "mlp_num_linear_layers": 3,
         "num_classes": 2,
+        "classification_label_mode": "binary",
         "dropout": 0.0,
         "continuous_enabled": True,
         "continuous_num_prototypes": 4,

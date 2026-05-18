@@ -39,6 +39,7 @@ def test_one_multitask_forward_and_backward_step_runs_with_optional_losses_enabl
         min_segment_fraction=0.1,
         max_segment_fraction=0.2,
         spike_scale=3.0,
+        classification_label_mode="binary",
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     batch = {
@@ -93,6 +94,7 @@ def test_one_multitask_train_step_runs_with_optional_losses_disabled() -> None:
         min_segment_fraction=0.1,
         max_segment_fraction=0.2,
         spike_scale=3.0,
+        classification_label_mode="binary",
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     batch = {
@@ -158,6 +160,7 @@ def test_usage_loss_schedule_weight_contributes_to_total_loss() -> None:
         min_segment_fraction=0.1,
         max_segment_fraction=0.2,
         spike_scale=3.0,
+        classification_label_mode="binary",
     )
     model.set_epoch_context(epoch_index=0, total_epochs=1)
     batch = {

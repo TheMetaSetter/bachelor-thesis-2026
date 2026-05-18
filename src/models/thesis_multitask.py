@@ -25,7 +25,11 @@ from src.core.console import (
     summarize_tensor,
 )
 from src.core.contracts import validate_batch, validate_model_outputs
-from src.data.augment import REDLAMP_ANOMALY_FAMILIES, SyntheticAnomalyInjector
+from src.data.augment import (
+    REDLAMP_ANOMALY_FAMILIES,
+    REDLAMP_MULTICLASS_CLASS_NAMES,
+    SyntheticAnomalyInjector,
+)
 from src.models.base_model import BaseModel
 
 
@@ -104,7 +108,7 @@ class MultitaskArchitectureConfig:
     encoder_dim: int
     hidden_dim: int
     mlp_num_linear_layers: int = 3
-    num_classes: int = 2
+    num_classes: int = len(REDLAMP_MULTICLASS_CLASS_NAMES)
     dropout: float = 0.0
 
 
@@ -174,7 +178,7 @@ class SyntheticAnomalyConfig:
     spike_scale: float = 3.0
     balance_binary_classes_within_batch: bool = False
     anomaly_families: tuple[str, ...] = REDLAMP_ANOMALY_FAMILIES
-    classification_label_mode: str = "binary"
+    classification_label_mode: str = "redlamp_multiclass"
 
     def __post_init__(self) -> None:
         if self.classification_label_mode not in {"binary", "redlamp_multiclass"}:
@@ -433,6 +437,11 @@ class ThesisMultitaskModel(BaseModel):
             raise ValueError(
                 "label refurbishment currently supports only binary classification"
             )
+
+    def _classification_class_names(self) -> tuple[str, ...]:
+        if self.classification_label_mode == "binary":
+            return ("normal", "anomaly")
+        return REDLAMP_MULTICLASS_CLASS_NAMES
 
     def _build_encoder(self, config: ThesisMultitaskModelConfig) -> None:
         architecture = config.architecture
@@ -1329,6 +1338,7 @@ class ThesisMultitaskModel(BaseModel):
             dtype=torch.long,
             device=prepared_batch["x"].device,
         )
+        prepared_batch["classification_class_names"] = self._classification_class_names()
         prepared_batch["synthetic_anomaly_mask"] = torch.zeros(
             batch_size,
             window_size,
@@ -1371,6 +1381,11 @@ class ThesisMultitaskModel(BaseModel):
         batch: dict[str, Any],
         stage_name: str = "train",
     ) -> dict[str, Any]:
+        """
+        Hàm forward này là hàm tính toán quan trọng nhất của mô hình
+        trong giai đoạn offline pre-training theo proposal của phương pháp.
+        """
+
         # The forward pass is the main representation story of the thesis model:
         # encode once, build two branch views, fuse per task, then score.
         validate_batch(batch)
@@ -1485,6 +1500,7 @@ class ThesisMultitaskModel(BaseModel):
                 "alpha": fusion_outputs["alpha"],
                 "beta": fusion_outputs["beta"],
                 "class_probabilities": class_probabilities,
+                "classification_class_names": self._classification_class_names(),
                 "memory": self.get_memory_lifecycle_state(),
                 "forward_pass_seconds": time.perf_counter() - forward_start_time,
             },

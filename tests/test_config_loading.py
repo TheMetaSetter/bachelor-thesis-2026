@@ -133,6 +133,8 @@ def test_load_seed_specific_rtx3090_config_reads_valid_yaml() -> None:
     assert loaded_config["seed"] == 11
     assert loaded_config["model"]["mlp_num_linear_layers"] == 3
     assert loaded_config["output_dir"] == "outputs/smd_multitask_rtx3090_seed11"
+    assert loaded_config["model"]["num_classes"] == 12
+    assert loaded_config["task"]["classification_label_mode"] == "redlamp_multiclass"
 
 
 def test_load_single_entity_rtx3090_config_reads_valid_yaml() -> None:
@@ -288,6 +290,32 @@ def test_load_redlamp_multiclass_window20_configs(
     assert loaded_config["model"]["mlp_num_linear_layers"] == 3
     assert loaded_config["task"]["classification_label_mode"] == "redlamp_multiclass"
     assert loaded_config["task"]["anomaly_families"] == list(REDLAMP_ANOMALY_FAMILIES)
+    assert loaded_config["logging"]["use_wandb"] is True
+    assert loaded_config["logging"]["wandb_mode"] == "online"
+
+
+@pytest.mark.parametrize(
+    "experiment_config_path",
+    [
+        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap25.yaml",
+        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap50.yaml",
+        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap75.yaml",
+    ],
+)
+def test_load_thesis_multiclass_bootstrap_train_configs_enable_wandb(
+    experiment_config_path: str,
+) -> None:
+    loaded_config = load_experiment_config(experiment_config_path)
+
+    assert loaded_config["logging"]["use_wandb"] is True
+    assert loaded_config["logging"]["wandb_mode"] == "online"
+
+
+def test_load_multitask_smoke_config_keeps_wandb_disabled() -> None:
+    loaded_config = load_experiment_config("configs/experiment/smd_multitask_smoke.yaml")
+
+    assert loaded_config["logging"]["use_wandb"] is False
+    assert loaded_config["logging"]["wandb_mode"] == "online"
 
 
 def test_redlamp_mlp_baseline_constructs_from_training_registry_path() -> None:
@@ -1142,6 +1170,8 @@ def test_load_experiment_config_accepts_label_refurbishment_and_masking_fields(
                 f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
                 f"model_config_path: {model_config_path}",
                 f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
+                "task_overrides:",
+                "  classification_label_mode: binary",
                 "optimizer:",
                 "  learning_rate: 0.001",
                 "  weight_decay: 0.0",

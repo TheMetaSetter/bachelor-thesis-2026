@@ -7,6 +7,7 @@ data_config_path: configs/data/smd_rtx3090_machine_2_1_10.yaml
 model_config_path: configs/model/thesis_multitask.yaml
 task_config_path: configs/task/multitask_tsad_window10_binary.yaml
 model_overrides:
+  num_classes: 2
   temperature_hold_fraction: 0.15
   usage_lambda_start: 0.06
   usage_lambda_end: 0.03

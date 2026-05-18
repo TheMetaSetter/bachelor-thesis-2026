@@ -60,6 +60,7 @@ def _build_summary_row(
             "f1", evaluation_outputs["metrics"].get("f1_at_threshold")
         ),
         "threshold": evaluation_outputs["metrics"]["threshold"],
+        "bootstrap_encoder_epochs": model_config["bootstrap_encoder_epochs"],
         "lambda_cls": model_config["lambda_cls"],
         "lambda_div": model_config["lambda_div"],
         "lambda_var": model_config["lambda_var"],
