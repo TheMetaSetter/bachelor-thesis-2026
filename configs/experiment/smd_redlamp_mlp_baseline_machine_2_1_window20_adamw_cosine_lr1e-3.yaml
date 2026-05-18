@@ -10,7 +10,6 @@ optimizer:
   optimizer_name: adamw
   learning_rate: 0.001
   weight_decay: 0.0
-  gradient_clip_norm: 1.0
   scheduler:
     scheduler_name: cosine
     warmup_epochs: 5

@@ -13,6 +13,46 @@ from src.data.augment import REDLAMP_ANOMALY_FAMILIES
 from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 
 
+TRAINING_POLICY_EXPERIMENT_CONFIGS = [
+    "configs/experiment/smd_multitask.yaml",
+    "configs/experiment/smd_multitask_100ep.yaml",
+    "configs/experiment/smd_multitask_100ep_usage_kaggle.yaml",
+    "configs/experiment/smd_multitask_continuous_only.yaml",
+    "configs/experiment/smd_multitask_discrete_only.yaml",
+    "configs/experiment/smd_multitask_fused.yaml",
+    "configs/experiment/smd_multitask_no_augmentation.yaml",
+    "configs/experiment/smd_multitask_no_covariance.yaml",
+    "configs/experiment/smd_multitask_no_diversity.yaml",
+    "configs/experiment/smd_multitask_no_gate.yaml",
+    "configs/experiment/smd_multitask_no_usage.yaml",
+    "configs/experiment/smd_multitask_no_variance.yaml",
+    "configs/experiment/smd_multitask_rtx3090_full.yaml",
+    "configs/experiment/smd_multitask_rtx3090_seed11.yaml",
+    "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_100ep.yaml",
+    "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_300ep.yaml",
+    "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_window10_binary.yaml",
+    "configs/experiment/smd_multitask_rtx3090_seed11_full_vus_pr_a.yaml",
+    "configs/experiment/smd_multitask_rtx3090_seed11_full_vus_pr_b.yaml",
+    "configs/experiment/smd_multitask_rtx3090_seed23.yaml",
+    "configs/experiment/smd_multitask_rtx3090_seed47.yaml",
+    "configs/experiment/smd_multitask_rtx3090_smoke.yaml",
+    "configs/experiment/smd_multitask_rtx3090_smoke_seed11.yaml",
+    "configs/experiment/smd_multitask_rtx3090_smoke_seed23.yaml",
+    "configs/experiment/smd_multitask_rtx3090_smoke_seed47.yaml",
+    "configs/experiment/smd_multitask_smoke.yaml",
+    "configs/experiment/smd_multitask_usage_kaggle_smoke.yaml",
+    "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3.yaml",
+    "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr.yaml",
+    "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+    "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_alt.yaml",
+    "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml",
+    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml",
+    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap25.yaml",
+    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap50.yaml",
+    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap75.yaml",
+]
+
+
 def test_load_experiment_config_reads_valid_yaml() -> None:
     loaded_config = load_experiment_config("configs/experiment/smd_vertical_slice.yaml")
     assert loaded_config["data"]["window_size"] == 100
@@ -29,6 +69,26 @@ def test_load_online_experiment_config_reads_valid_yaml() -> None:
         loaded_config["task"]["reference_checkpoint_path"]
         == "outputs/smd_multitask/checkpoints/best.pt"
     )
+
+
+@pytest.mark.parametrize(
+    "experiment_config_path",
+    TRAINING_POLICY_EXPERIMENT_CONFIGS,
+)
+def test_target_training_configs_use_shared_adamw_cosine_vus_pr_policy(
+    experiment_config_path: str,
+) -> None:
+    loaded_config = load_experiment_config(experiment_config_path)
+    scheduler_config = loaded_config["optimizer"]["scheduler"]
+
+    assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
+    assert loaded_config["optimizer"]["learning_rate"] == 0.001
+    assert scheduler_config["scheduler_name"] == "cosine"
+    assert scheduler_config["warmup_epochs"] == 5
+    assert scheduler_config["warmup_start_lr"] == 1.0e-4
+    assert scheduler_config["cosine_end_lr"] == 0.0
+    assert scheduler_config["cosine_after_warmup"] is True
+    assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
 
 
 def test_multitask_config_accepts_memory_bootstrap_fields(tmp_path: Path) -> None:
@@ -139,12 +199,11 @@ def test_load_seed_specific_rtx3090_config_reads_valid_yaml() -> None:
 
 def test_load_single_entity_rtx3090_config_reads_valid_yaml() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_val_synth_pr_auc.yaml"
+        "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_100ep.yaml"
     )
     assert loaded_config["data"]["entity_ids"] == ["machine-2-1"]
-    assert (
-        loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_pr_auc"
-    )
+    assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
 
 
 def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
@@ -221,36 +280,36 @@ def test_validate_config_rejects_non_positive_gradient_clip_norm() -> None:
 def test_load_explicit_redlamp_adamw_cosine_configs() -> None:
     for config_path in [
         "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3.yaml",
-        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-4.yaml",
+        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_alt.yaml",
     ]:
         loaded_config = load_experiment_config(config_path)
 
         assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
         assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
-        assert loaded_config["optimizer"]["gradient_clip_norm"] == 1.0
+        assert loaded_config["optimizer"]["learning_rate"] == 0.001
         assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
         assert loaded_config["epochs"] == 300
 
 
 def test_load_explicit_redlamp_cosine_val_synth_vus_pr_config() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3_val_synth_vus_pr.yaml"
+        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr.yaml"
     )
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
     assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
     assert loaded_config["epochs"] == 300
 
 
 def test_load_explicit_redlamp_cosine_val_synth_vus_pr_smoke_config() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3_val_synth_vus_pr_smoke.yaml"
+        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml"
     )
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
     assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
     assert loaded_config["epochs"] == 1
     assert loaded_config["data"]["max_train_windows"] == 64
     assert loaded_config["data"]["max_val_windows"] == 32
@@ -1025,15 +1084,20 @@ def test_load_multitask_experiment_config_rejects_invalid_temperature_hold_fract
         load_experiment_config(experiment_config_path)
 
 
-def test_load_experiment_config_accepts_valid_reduce_on_plateau_scheduler() -> None:
+def test_load_experiment_config_accepts_valid_cosine_scheduler_policy() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/smd_multitask_rtx3090_full.yaml"
     )
     scheduler_config = loaded_config["optimizer"]["scheduler"]
 
-    assert scheduler_config["scheduler_name"] == "reduce_on_plateau"
-    assert scheduler_config["monitor_metric"] == "val_loss"
-    assert scheduler_config["patience"] == 20
+    assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
+    assert loaded_config["optimizer"]["learning_rate"] == 0.001
+    assert scheduler_config["scheduler_name"] == "cosine"
+    assert scheduler_config["warmup_epochs"] == 5
+    assert scheduler_config["warmup_start_lr"] == 1.0e-4
+    assert scheduler_config["cosine_end_lr"] == 0.0
+    assert scheduler_config["cosine_after_warmup"] is True
+    assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
 
 
 def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(

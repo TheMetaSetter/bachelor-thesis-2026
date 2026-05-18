@@ -7,17 +7,16 @@ data_config_path: configs/data/smd_rtx3090_machine_2_1_20.yaml
 model_config_path: configs/model/thesis_multitask_redlamp_multiclass.yaml
 task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20.yaml
 optimizer:
-  learning_rate: 0.0001
+  optimizer_name: adamw
+  learning_rate: 0.001
   weight_decay: 0.0
   scheduler:
-    scheduler_name: reduce_on_plateau
-    monitor_metric: val_synth_loss
-    factor: 0.5
-    patience: 10
-    threshold: 0.001
-    threshold_mode: rel
-    cooldown: 3
-    min_lr: 1.0e-7
+    scheduler_name: cosine
+    warmup_epochs: 5
+    warmup_start_lr: 0.0001
+    cosine_end_lr: 0.0
+    cosine_after_warmup: true
+checkpoint_monitor_metric: val_vus_pr
 epochs: 300
 evaluation:
   vus_max_buffer_size: 20

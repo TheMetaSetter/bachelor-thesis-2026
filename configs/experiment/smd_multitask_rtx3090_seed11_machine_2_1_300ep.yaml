@@ -1,8 +1,8 @@
-experiment_name: smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc_2
+experiment_name: smd_multitask_rtx3090_seed11_machine_2_1_300ep
 seed: 11
 device: cuda
-output_dir: outputs/smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc_2
-checkpoint_dir: outputs/smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc/checkpoints
+output_dir: outputs/smd_multitask_rtx3090_seed11_machine_2_1_300ep
+checkpoint_dir: outputs/smd_multitask_rtx3090_seed11_machine_2_1_300ep/checkpoints
 data_config_path: configs/data/smd_rtx3090_machine_2_1_64.yaml
 model_config_path: configs/model/thesis_multitask.yaml
 task_config_path: configs/task/multitask_tsad.yaml
@@ -12,17 +12,16 @@ model_overrides:
   usage_lambda_end: 0.03
   usage_lambda_schedule_fraction: 0.3
 optimizer:
+  optimizer_name: adamw
   learning_rate: 0.001
   weight_decay: 0.0
   scheduler:
-    scheduler_name: reduce_on_plateau
-    monitor_metric: val_synth_roc_auc
-    factor: 0.5
-    patience: 20
-    threshold: 0.0001
-    threshold_mode: rel
-    cooldown: 3
-    min_lr: 1.0e-5
+    scheduler_name: cosine
+    warmup_epochs: 5
+    warmup_start_lr: 0.0001
+    cosine_end_lr: 0.0
+    cosine_after_warmup: true
+checkpoint_monitor_metric: val_vus_pr
 epochs: 300
 logging:
   use_wandb: true
@@ -37,8 +36,7 @@ logging:
     - usage-stabilized
     - 300ep
     - lr-scheduler
-    - scheduler-val-synth-roc-auc
     - mlp-depth-3
     - seed-11
     - machine-2-1
-  wandb_run_name: smd_multitask_rtx3090_seed11_machine_2_1_val_synth_roc_auc_300ep_2
+  wandb_run_name: smd_multitask_rtx3090_seed11_machine_2_1_300ep
