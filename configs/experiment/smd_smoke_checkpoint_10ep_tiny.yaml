@@ -9,6 +9,7 @@ task_config_path: configs/task/reconstruction.yaml
 optimizer:
   learning_rate: 0.001
   weight_decay: 0.0
+  gradient_clip_norm: 0.5
 epochs: 10
 logging:
   use_wandb: false
