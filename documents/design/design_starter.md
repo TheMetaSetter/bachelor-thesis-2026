@@ -7,6 +7,20 @@ $$
 
 so datasets, models, and the trainer stay decoupled while each model file stays self-contained. The current offline objective should also follow the same philosophy: keep the default objective small, keep optional loss terms modular, and only enable extra regularizers when diagnostics justify them.
 
+## SSOT synchronization note
+
+This design starter is synchronized with `documents/design/` as the single source of truth.
+
+Active window length for current thesis experiments is:
+
+$$
+L = 20
+$$
+
+For the detailed offline pre-training phase two-view contrastive specification, see:
+
+- `documents/design/offline_pretraining_phase_two_view_contrastive_design.md`
+
 **Reasoning:**
 Let us start from the real design question. What usually makes a research codebase impossible to reuse?
 
@@ -169,12 +183,12 @@ Your **data layer** should be split into two different concerns:
 * **dataset parsing**
 * **window construction**
 
-This separation matters a lot. SMD, MSL, SWaT, and other datasets differ in raw storage format, split conventions, and label formats. But the operation “turn a long multivariate series into windows of length $100$” is common. So do not embed windowing inside each dataset parser.
+This separation matters a lot. SMD, MSL, SWaT, and other datasets differ in raw storage format, split conventions, and label formats. But the operation “turn a long multivariate series into windows of length $20$” is common. So do not embed windowing inside each dataset parser.
 
 A good design is:
 
 * `datasets/smd.py` reads raw SMD files and returns full sequences
-* `window.py` converts full sequences into windows with size $L=100$, stride $s$
+* `window.py` converts full sequences into windows with size $L=20$, stride $s$
 * `scalers.py` normalizes data
 * `loaders.py` builds PyTorch `Dataset` and `DataLoader`
 

@@ -1,12 +1,25 @@
 **Summary:**
 Your thesis idea is coherent and modular enough to start implementation now. The main design choices are now fixed more tightly: keep the thesis-facing hidden-state contract $H \in \mathbb{R}^{B \times L \times d_h}$, keep the real prediction heads only on the two fused task-specialized representations, use an objective-modular offline design with a small default objective and optional failure-mode-triggered regularizers, and treat NGD-style adaptation as an optional geometry-aware method mainly for the small online projector or adapter rather than for the whole model.
 
+## SSOT synchronization note
+
+This file is synchronized with the active design source of truth under `documents/design/`.
+
+For the offline pre-training phase two-view contrastive design, use this companion specification as authoritative:
+
+- `documents/design/offline_pretraining_phase_two_view_contrastive_design.md`
+
+Contrastive learning now appears in both phases but with different roles:
+
+- offline pre-training phase: two-view InfoNCE between normal and injected views.
+- online adaptation phase: contrastive alignment for adaptation with frozen-reference semantics.
+
 ## Detailed description of the thesis idea
 
 You want to build a **multi-task time series anomaly detection** system for multivariate windows of length
 
 $$
-L = 100
+L = 20
 $$
 
 using a **TSLib-style** input and data-loading pipeline, starting with **SMD** as the first benchmark. TSLib is a reasonable base because it already provides a unified time-series code structure and includes anomaly-detection workflows. ([GitHub][1])
@@ -17,7 +30,7 @@ $$
 X \in \mathbb{R}^{B \times L \times D}
 $$
 
-where (B) is batch size, (L=100), and (D) is the number of variates.
+where (B) is batch size, (L=20), and (D) is the number of variates.
 Your encoder should expose a thesis-facing hidden representation
 
 $$
@@ -104,7 +117,7 @@ That gives you a stable base for later prototype modules and online adaptation.
 
 For this repository specifically, that vertical slice should also obey the strict rule in `codebase_preferences.md` that one model stays in one file. So the reconstruction baseline, the offline multitask thesis model, and the online adaptation model should each keep their forward path, scoring path, and stage-specific losses in the same model file rather than splitting them across separate task or loss files.
 
-There should also be an explicit pre-Phase-4 gate in the implementation plan. Before attempting the online adaptation stage, phases 1 to 3 need to close the earlier debt around registry-only script construction, explicit RedLamp-default synthetic anomaly injection with CARLA-informed subsequence mechanics, and user-visible inspection of injected anomalies.
+There should also be an explicit pre-Phase-4 gate in the implementation plan. Before attempting the online adaptation phase, phases 1 to 3 need to close the earlier debt around registry-only script construction, explicit RedLamp-default synthetic anomaly injection with CARLA-informed subsequence mechanics, and user-visible inspection of injected anomalies.
 
 ---
 
@@ -856,7 +869,7 @@ $$
 
 You can paste this into a new chat:
 
-I am building a bachelor-thesis codebase for multivariate time-series anomaly detection on SMD with window length 100. The stable contract is $X \in \mathbb{R}^{B \times L \times D}$ and every encoder must expose $H \in \mathbb{R}^{B \times L \times d_h}$. The intended offline model has a continuous prototype branch with soft retrieval and a discrete prototype branch with Gumbel-Softmax-style assignment. Their outputs are fused into two task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and the real prediction heads stay only on those fused states. The offline objective is designed as a modular weighted-sum surface, but the default starting point is only $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}}$. Additional terms such as $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ are added only when diagnostics reveal concrete failure modes, and each extra term must be justified by ablation. The main ablations are continuous-only, discrete-only, and fused. Later, an online adaptation stage uses two augmentations per incoming sample, a frozen reference encoder, a partially trainable online encoder, and a lightweight near-identity projector that is warm-started offline and aligned to the frozen reference and prototype geometry. NGD-style preconditioning is attractive mainly for that small adapted subset, not for the whole model. Current codebase decisions: freeze the encoder output contract first, build a minimal vertical slice first, keep one model per file, and keep the loss design ablation-friendly with explicit YAML-controlled objective modularity.
+I am building a bachelor-thesis codebase for multivariate time-series anomaly detection on SMD with window length 20. The stable contract is $X \in \mathbb{R}^{B \times L \times D}$ and every encoder must expose $H \in \mathbb{R}^{B \times L \times d_h}$. The intended offline model has a continuous prototype branch with soft retrieval and a discrete prototype branch with Gumbel-Softmax-style assignment. Their outputs are fused into two task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and the real prediction heads stay only on those fused states. The offline objective is designed as a modular weighted-sum surface, but the default starting point is only $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}}$. Additional terms such as $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ are added only when diagnostics reveal concrete failure modes, and each extra term must be justified by ablation. The main ablations are continuous-only, discrete-only, and fused. Later, an online adaptation phase uses two augmentations per incoming sample, a frozen reference encoder, a partially trainable online encoder, and a lightweight near-identity projector that is warm-started offline and aligned to the frozen reference and prototype geometry. NGD-style preconditioning is attractive mainly for that small adapted subset, not for the whole model. Current codebase decisions: freeze the encoder output contract first, build a minimal vertical slice first, keep one model per file, and keep the loss design ablation-friendly with explicit YAML-controlled objective modularity.
 
 ## Check
 
