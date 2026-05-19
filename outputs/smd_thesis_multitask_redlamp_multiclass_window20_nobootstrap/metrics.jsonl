@@ -1,0 +1,2 @@
+{"anomaly_families": ["spike", "flip", "speedup", "noise", "cutoff", "average", "scale", "wander", "contextual", "upsidedown", "mixture"], "event": "run_start", "experiment_name": "smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap", "task_name": "multitask_tsad"}
+{"anomaly_families": ["spike", "flip", "speedup", "noise", "cutoff", "average", "scale", "wander", "contextual", "upsidedown", "mixture"], "event": "run_start", "experiment_name": "smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap", "task_name": "multitask_tsad"}
