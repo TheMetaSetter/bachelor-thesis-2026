@@ -34,7 +34,7 @@ usage_lambda_end: 0.0
 usage_lambda_schedule_fraction: 1.0
 variance_floor_gamma: 1.0
 gate_barrier_margin: 0.25
-bootstrap_encoder_epochs: 10
+bootstrap_encoder_epochs: 0
 discrete_ema_decay: 0.99
 memory_norm_epsilon: 1.0e-6
 memory_initialization_batches: 16
