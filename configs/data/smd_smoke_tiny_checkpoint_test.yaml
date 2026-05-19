@@ -1,0 +1,11 @@
+dataset_name: smd
+root_dir: data/ServerMachineDataset
+window_size: 100
+stride: 10
+batch_size: 8
+num_workers: 0
+validation_split_ratio: 0.2
+shuffle_train: true
+max_train_windows: 16
+max_val_windows: 8
+max_test_windows: 8

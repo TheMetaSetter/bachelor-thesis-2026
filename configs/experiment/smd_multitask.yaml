@@ -16,7 +16,7 @@ optimizer:
     warmup_start_lr: 0.0001
     cosine_end_lr: 0.0
     cosine_after_warmup: true
-checkpoint_monitor_metric: val_vus_pr
+checkpoint_monitor_metric: val_synth_vus_pr
 epochs: 3
 logging:
   use_wandb: true
