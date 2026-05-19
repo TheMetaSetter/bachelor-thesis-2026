@@ -292,9 +292,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 "val_synth_loss",
                 "val_synth_roc_auc",
                 "val_synth_pr_auc",
+                "val_synth_vus_pr",
             }:
                 raise ValueError(
-                    "optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_loss, val_synth_roc_auc, val_synth_pr_auc"
+                    "optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_loss, val_synth_roc_auc, val_synth_pr_auc, val_synth_vus_pr"
                 )
             scheduler_factor = scheduler_config.get("factor")
             if (
