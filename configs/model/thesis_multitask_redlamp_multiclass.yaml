@@ -6,9 +6,9 @@ mlp_num_linear_layers: 3
 num_classes: 12
 dropout: 0.1
 continuous_enabled: true
-continuous_num_prototypes: 8
+continuous_num_prototypes: 16
 discrete_enabled: true
-discrete_codebook_size: 16
+discrete_codebook_size: 16 # > 12 là tổng số lượng class.
 gumbel_temperature: 1.5
 temperature_start: 1.5
 temperature_end: 0.7
