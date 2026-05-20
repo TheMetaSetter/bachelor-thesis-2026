@@ -106,3 +106,26 @@ def test_test_step_does_not_update_discrete_memory_or_ema_state() -> None:
     assert torch.allclose(model.discrete_codebook, codebook_before)
     assert torch.allclose(model.discrete_ema_counts, counts_before)
     assert torch.allclose(model.discrete_ema_sums, sums_before)
+
+
+def test_exp2_partitioned_memory_updates_respect_synthetic_mask() -> None:
+    model = _build_initialized_model()
+    model.enable_two_view_contrastive = True
+
+    all_anomaly_batch = _build_batch()
+    all_anomaly_batch["classification_labels"] = torch.ones(2, dtype=torch.long)
+    all_anomaly_batch["synthetic_anomaly_mask"] = torch.ones(2, 100, dtype=torch.long)
+    all_anomaly_batch["augmentation_metadata"] = [{}, {}]
+    continuous_before = model.continuous_prototype_bank.clone()
+    model.training_step(all_anomaly_batch)
+    assert torch.allclose(model.continuous_prototype_bank, continuous_before)
+
+    all_normal_batch = _build_batch()
+    all_normal_batch["classification_labels"] = torch.zeros(2, dtype=torch.long)
+    all_normal_batch["synthetic_anomaly_mask"] = torch.zeros(2, 100, dtype=torch.long)
+    all_normal_batch["augmentation_metadata"] = [{}, {}]
+    counts_before = model.discrete_ema_counts.clone()
+    sums_before = model.discrete_ema_sums.clone()
+    model.training_step(all_normal_batch)
+    assert torch.allclose(model.discrete_ema_counts, counts_before)
+    assert torch.allclose(model.discrete_ema_sums, sums_before)

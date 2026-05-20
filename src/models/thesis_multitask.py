@@ -180,6 +180,11 @@ class ObjectiveConfig:
     lambda_gate: float = 0.0
     variance_floor_gamma: float = 1.0
     gate_barrier_margin: float = 0.25
+    enable_two_view_contrastive: bool = False
+    contrastive_temperature: float = 0.1
+    lambda_contrastive: float = 1.0
+    enable_cka_gated_fusion: bool = False
+    cka_eps: float = 1.0e-6
 
 
 @dataclass(frozen=True)
@@ -284,6 +289,11 @@ class ThesisMultitaskModelConfig:
             "lambda_gate",
             "variance_floor_gamma",
             "gate_barrier_margin",
+            "enable_two_view_contrastive",
+            "contrastive_temperature",
+            "lambda_contrastive",
+            "enable_cka_gated_fusion",
+            "cka_eps",
         }
         memory_keys = {
             "bootstrap_encoder_epochs",
@@ -416,6 +426,11 @@ class ThesisMultitaskModel(BaseModel):
         self.enable_gate_loss = objective.enable_gate_loss
         self.variance_floor_gamma = objective.variance_floor_gamma
         self.gate_barrier_margin = objective.gate_barrier_margin
+        self.enable_two_view_contrastive = objective.enable_two_view_contrastive
+        self.contrastive_temperature = objective.contrastive_temperature
+        self.lambda_contrastive = objective.lambda_contrastive
+        self.enable_cka_gated_fusion = objective.enable_cka_gated_fusion
+        self.cka_eps = objective.cka_eps
         self.bootstrap_encoder_epochs = memory.bootstrap_encoder_epochs
         self.discrete_ema_decay = prototypes.discrete_ema_decay
         self.memory_norm_epsilon = memory.memory_norm_epsilon
@@ -561,6 +576,16 @@ class ThesisMultitaskModel(BaseModel):
             num_linear_layers=architecture.mlp_num_linear_layers,
             dropout=architecture.dropout,
             apply_output_activation=False,
+        )
+        self.classification_fusion_gate = nn.Sequential(
+            nn.Linear(2, architecture.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(architecture.hidden_dim, 1),
+        )
+        self.reconstruction_fusion_gate = nn.Sequential(
+            nn.Linear(2, architecture.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(architecture.hidden_dim, 1),
         )
 
     def _build_synthetic_injectors(self, config: ThesisMultitaskModelConfig) -> None:
@@ -1059,11 +1084,17 @@ class ThesisMultitaskModel(BaseModel):
     def _update_continuous_memory_bank(
         self,
         hidden: torch.Tensor,
+        token_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if self.continuous_prototype_bank is None:
             raise ValueError("continuous_prototype_bank is not available")
 
         normalized_hidden = self._normalize_hidden_for_memory(hidden)
+        if token_mask is not None:
+            selected_hidden = normalized_hidden[token_mask]
+            if selected_hidden.numel() == 0:
+                return self._normalize_memory_vectors(self.continuous_prototype_bank)
+            normalized_hidden = selected_hidden.reshape(1, -1, self.hidden_dim)
         normalized_memory = self._normalize_memory_vectors(
             self.continuous_prototype_bank
         )
@@ -1122,6 +1153,7 @@ class ThesisMultitaskModel(BaseModel):
     def _update_discrete_codebook_memory(
         self,
         hidden: torch.Tensor,
+        token_mask: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         if (
             self.discrete_assignment is None
@@ -1132,6 +1164,21 @@ class ThesisMultitaskModel(BaseModel):
             raise ValueError("discrete memory state is not available")
 
         normalized_hidden = self._normalize_hidden_for_memory(hidden)
+        if token_mask is not None:
+            selected_hidden = normalized_hidden[token_mask]
+            if selected_hidden.numel() == 0:
+                assignment_logits = hidden.new_zeros(
+                    hidden.shape[0],
+                    hidden.shape[1],
+                    self.discrete_codebook_size,
+                )
+                assignment_probabilities = torch.softmax(assignment_logits, dim=-1)
+                return (
+                    assignment_logits,
+                    assignment_probabilities,
+                    self._normalize_memory_vectors(self.discrete_codebook),
+                )
+            normalized_hidden = selected_hidden.reshape(1, -1, self.hidden_dim)
         assignment_logits = self.discrete_assignment(normalized_hidden)
         assignment_probabilities = F.gumbel_softmax(
             assignment_logits,
@@ -1276,30 +1323,62 @@ class ThesisMultitaskModel(BaseModel):
         self,
         continuous_hidden: torch.Tensor,
         discrete_hidden: torch.Tensor,
+        *,
+        base_hidden: torch.Tensor | None = None,
+        paired_hidden: torch.Tensor | None = None,
     ) -> dict[str, Any]:
         # Fusion is expressed as exact limiting cases of the same equations.
         # That is why continuous-only and discrete-only ablations need no second model.
         if self.active_alpha_override is None:
-            alpha = torch.sigmoid(self.alpha_logit)
+            alpha_scalar = torch.sigmoid(self.alpha_logit)
         else:
-            alpha = continuous_hidden.new_tensor(float(self.active_alpha_override))
+            alpha_scalar = continuous_hidden.new_tensor(float(self.active_alpha_override))
         if self.active_beta_override is None:
-            beta = torch.sigmoid(self.beta_logit)
+            beta_scalar = torch.sigmoid(self.beta_logit)
         else:
-            beta = continuous_hidden.new_tensor(float(self.active_beta_override))
+            beta_scalar = continuous_hidden.new_tensor(float(self.active_beta_override))
+
+        alpha = alpha_scalar.expand(continuous_hidden.shape[0])
+        beta = beta_scalar.expand(continuous_hidden.shape[0])
+        if (
+            self.enable_cka_gated_fusion
+            and base_hidden is not None
+            and paired_hidden is not None
+        ):
+            cka_reconstruction = self._compute_batch_linear_cka_scores(
+                base_hidden,
+                continuous_hidden,
+            )
+            cka_classification = self._compute_batch_linear_cka_scores(
+                paired_hidden,
+                discrete_hidden,
+            )
+            cka_features = torch.stack(
+                [cka_reconstruction, cka_classification],
+                dim=-1,
+            )
+            alpha = torch.sigmoid(self.classification_fusion_gate(cka_features)).squeeze(
+                -1
+            )
+            beta = torch.sigmoid(self.reconstruction_fusion_gate(cka_features)).squeeze(
+                -1
+            )
+        alpha_expanded = alpha.view(-1, 1, 1)
+        beta_expanded = beta.view(-1, 1, 1)
 
         # Beta là mức độ mà tác vụ tái tạo chuỗi (reconstruction) sử dụng
         # nhánh các vec-tơ nguyên mẫu rời rạc (discrete prototype).
         # Mình kì vọng giá trị này sẽ nhỏ hơn alpha.
         hidden_reconstruction = (
-            beta * discrete_hidden + (1.0 - beta) * continuous_hidden
+            beta_expanded * discrete_hidden + (1.0 - beta_expanded) * continuous_hidden
         )
 
         # Alpha là mức độ mà tác vụ phân loại (classification) sử dụng nhánh các
         # vec-tơ nguyên mẫu rời rạc.
         # Mình kì vọng giá trị này sẽ lớn hơn beta.
         hidden_classification = (
-            alpha * discrete_hidden + (1.0 - alpha) * continuous_hidden
+            alpha_expanded * discrete_hidden
+            + (1.0 - alpha_expanded) * continuous_hidden
         )
 
         return {
@@ -1309,14 +1388,72 @@ class ThesisMultitaskModel(BaseModel):
             "beta": beta,
             "aux": {
                 "fusion_mode": "learnable_sigmoid_scalars",
-                "alpha": float(alpha.detach().cpu()),
-                "beta": float(beta.detach().cpu()),
-                "alpha_logit": float(self.alpha_logit.detach().cpu()),
-                "beta_logit": float(self.beta_logit.detach().cpu()),
+                "alpha": float(alpha.mean().detach().cpu()),
+                "beta": float(beta.mean().detach().cpu()),
+                "alpha_std": float(alpha.std(unbiased=False).detach().cpu()),
+                "beta_std": float(beta.std(unbiased=False).detach().cpu()),
+                "alpha_logit": float(alpha_scalar.detach().cpu()),
+                "beta_logit": float(beta_scalar.detach().cpu()),
                 "warmup_active": self.schedule_state["warmup_active"],
                 "temperature": self.gumbel_temperature,
             },
         }
+
+    def _compute_linear_cka_score(
+        self,
+        lhs_tokens: torch.Tensor,
+        rhs_tokens: torch.Tensor,
+    ) -> torch.Tensor:
+        if lhs_tokens.shape[0] <= 1:
+            return lhs_tokens.new_zeros(())
+        centered_lhs = lhs_tokens - lhs_tokens.mean(dim=0, keepdim=True)
+        centered_rhs = rhs_tokens - rhs_tokens.mean(dim=0, keepdim=True)
+        lhs_gram = centered_lhs @ centered_lhs.T
+        rhs_gram = centered_rhs @ centered_rhs.T
+        hsic_lhs_rhs = torch.sum(lhs_gram * rhs_gram)
+        hsic_lhs_lhs = torch.sum(lhs_gram * lhs_gram)
+        hsic_rhs_rhs = torch.sum(rhs_gram * rhs_gram)
+        return hsic_lhs_rhs / torch.sqrt(
+            hsic_lhs_lhs * hsic_rhs_rhs + self.cka_eps
+        ).clamp_min(self.cka_eps)
+
+    def _compute_batch_linear_cka_scores(
+        self,
+        lhs_hidden: torch.Tensor,
+        rhs_hidden: torch.Tensor,
+    ) -> torch.Tensor:
+        sample_scores: list[torch.Tensor] = []
+        for sample_index in range(lhs_hidden.shape[0]):
+            sample_scores.append(
+                self._compute_linear_cka_score(
+                    lhs_hidden[sample_index],
+                    rhs_hidden[sample_index],
+                )
+            )
+        return torch.stack(sample_scores)
+
+    def _compute_two_view_contrastive_loss(
+        self,
+        anchor_hidden: torch.Tensor,
+        positive_hidden: torch.Tensor,
+        synthetic_anomaly_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        normal_token_mask = (synthetic_anomaly_mask == 0).reshape(-1)
+        if int(normal_token_mask.sum().item()) == 0:
+            return self._zero_loss(anchor_hidden)
+        anchor_tokens = anchor_hidden.reshape(-1, self.hidden_dim)[normal_token_mask]
+        positive_tokens = positive_hidden.reshape(-1, self.hidden_dim)[normal_token_mask]
+        normalized_anchors = F.normalize(anchor_tokens, dim=-1, eps=self.epsilon)
+        normalized_positives = F.normalize(positive_tokens, dim=-1, eps=self.epsilon)
+        logits = (
+            normalized_anchors @ normalized_positives.T
+        ) / max(self.contrastive_temperature, self.epsilon)
+        targets = torch.arange(
+            logits.shape[0],
+            device=logits.device,
+            dtype=torch.long,
+        )
+        return F.cross_entropy(logits, targets)
 
     def _clone_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         cloned_batch: dict[str, Any] = {}
@@ -1399,6 +1536,19 @@ class ThesisMultitaskModel(BaseModel):
             return self.synthetic_validation_injector.augment_batch(batch)
         return self._prepare_clean_batch(batch, stage_name)
 
+    def _prepare_contrastive_pair_batches(
+        self,
+        batch: dict[str, Any],
+        stage_name: str,
+    ) -> tuple[dict[str, Any], dict[str, Any]] | None:
+        if not self.enable_two_view_contrastive:
+            return None
+        if stage_name not in {"train", "val_synth"}:
+            return None
+        clean_batch = self._prepare_clean_batch(self._clone_batch(batch), stage_name="val")
+        augmented_batch = self._prepare_batch(self._clone_batch(batch), stage_name)
+        return clean_batch, augmented_batch
+
     def forward(
         self,
         batch: dict[str, Any],
@@ -1422,10 +1572,19 @@ class ThesisMultitaskModel(BaseModel):
         # Một vec-tơ ẩn cho mỗi bước thời gian (timestep)
         encoder_outputs = self.encoder(batch)
         hidden = encoder_outputs["hidden"]
+        anomaly_mask = batch.get("synthetic_anomaly_mask")
+        normal_token_mask = None
+        anomaly_token_mask = None
+        if anomaly_mask is not None and self.enable_two_view_contrastive:
+            normal_token_mask = anomaly_mask == 0
+            anomaly_token_mask = anomaly_mask == 1
         if self.continuous_prototype_bank is not None and self._should_update_memory(
             stage_name
         ):
-            active_continuous_memory_bank = self._update_continuous_memory_bank(hidden)
+            active_continuous_memory_bank = self._update_continuous_memory_bank(
+                hidden,
+                token_mask=normal_token_mask,
+            )
         elif self.continuous_prototype_bank is not None:
             active_continuous_memory_bank = self._normalize_memory_vectors(
                 self.continuous_prototype_bank
@@ -1435,11 +1594,15 @@ class ThesisMultitaskModel(BaseModel):
         if self.discrete_codebook is not None and self._should_update_memory(
             stage_name
         ):
-            (
-                active_assignment_logits,
-                active_assignment_probabilities,
-                active_discrete_codebook,
-            ) = self._update_discrete_codebook_memory(hidden)
+            self._update_discrete_codebook_memory(
+                hidden,
+                token_mask=anomaly_token_mask,
+            )
+            active_assignment_logits = None
+            active_assignment_probabilities = None
+            active_discrete_codebook = self._normalize_memory_vectors(
+                self.discrete_codebook
+            )
         elif self.discrete_codebook is not None:
             active_assignment_logits = None
             active_assignment_probabilities = None
@@ -1471,6 +1634,8 @@ class ThesisMultitaskModel(BaseModel):
         fusion_outputs = self._compute_fusion_outputs(
             continuous_hidden=continuous_outputs["prototype_context"],
             discrete_hidden=discrete_outputs["quantized_hidden"],
+            base_hidden=hidden,
+            paired_hidden=batch.get("paired_hidden_for_fusion"),
         )
 
         # Lấy ra vec-tơ kết hợp dùng cho từng tác vụ
@@ -1765,7 +1930,7 @@ class ThesisMultitaskModel(BaseModel):
         )
         alpha_penalty = 1.0 - alpha_entropy / max_entropy
         beta_penalty = 1.0 - beta_entropy / max_entropy
-        return 0.5 * (alpha_penalty + beta_penalty)
+        return 0.5 * (alpha_penalty + beta_penalty).mean()
 
     def _compute_optional_loss_terms(
         self, outputs: dict[str, Any]
@@ -1860,8 +2025,17 @@ class ThesisMultitaskModel(BaseModel):
             ),
             f"{stage_name}_usage_loss": float(loss_terms["usage_loss"].detach().cpu()),
             f"{stage_name}_gate_loss": float(loss_terms["gate_loss"].detach().cpu()),
-            f"{stage_name}_alpha": float(outputs["aux"]["alpha"].detach().cpu()),
-            f"{stage_name}_beta": float(outputs["aux"]["beta"].detach().cpu()),
+            f"{stage_name}_contrastive_loss": float(
+                loss_terms["contrastive_loss"].detach().cpu()
+            ),
+            f"{stage_name}_alpha": float(outputs["aux"]["alpha"].mean().detach().cpu()),
+            f"{stage_name}_beta": float(outputs["aux"]["beta"].mean().detach().cpu()),
+            f"{stage_name}_alpha_std": float(
+                outputs["aux"]["alpha"].std(unbiased=False).detach().cpu()
+            ),
+            f"{stage_name}_beta_std": float(
+                outputs["aux"]["beta"].std(unbiased=False).detach().cpu()
+            ),
             f"{stage_name}_continuous_norm": float(
                 outputs["aux"]["continuous_branch"]["prototype_context"]
                 .norm(dim=-1)
@@ -1923,7 +2097,20 @@ class ThesisMultitaskModel(BaseModel):
 
         # Chuẩn bị batch dữ liệu nghĩa là tải các mẫu dữ liệu lên từ
         # dataset và tiêm bất thường nhân tạo vào nếu cần.
-        prepared_batch = self._prepare_batch(batch, stage_name)
+        contrastive_pair = self._prepare_contrastive_pair_batches(batch, stage_name)
+        if contrastive_pair is None:
+            prepared_batch = self._prepare_batch(batch, stage_name)
+            contrastive_loss = self._zero_loss(prepared_batch["x"])
+        else:
+            clean_batch, augmented_batch = contrastive_pair
+            clean_outputs = self.forward(clean_batch, stage_name="val")
+            prepared_batch = augmented_batch
+            prepared_batch["paired_hidden_for_fusion"] = clean_outputs["hidden"].detach()
+            contrastive_loss = self._compute_two_view_contrastive_loss(
+                anchor_hidden=clean_outputs["hidden"],
+                positive_hidden=self.encoder(prepared_batch)["hidden"],
+                synthetic_anomaly_mask=prepared_batch["synthetic_anomaly_mask"],
+            )
 
         # Đưa các mẫu dữ liệu qua mạng để tính toán ra kết quả
         outputs = self.forward(prepared_batch, stage_name=stage_name)
@@ -1940,11 +2127,13 @@ class ThesisMultitaskModel(BaseModel):
             optional_loss_values=optional_loss_values,
             classification_weight=classification_weight,
         )
+        total_loss = total_loss + self.lambda_contrastive * contrastive_loss
 
         loss_terms = {
             "total_loss": total_loss,
             "reconstruction_loss": reconstruction_loss,
             "classification_loss": classification_loss,
+            "contrastive_loss": contrastive_loss,
             **optional_loss_values,
         }
         console_print(
@@ -1961,11 +2150,12 @@ class ThesisMultitaskModel(BaseModel):
             ),
             usage_loss=float(optional_loss_values["usage_loss"].detach().cpu()),
             gate_loss=float(optional_loss_values["gate_loss"].detach().cpu()),
+            contrastive_loss=float(contrastive_loss.detach().cpu()),
             classification_label_distribution=summarize_label_distribution(
                 prepared_batch["classification_labels"]
             ),
-            alpha=float(outputs["aux"]["alpha"].detach().cpu()),
-            beta=float(outputs["aux"]["beta"].detach().cpu()),
+            alpha=float(outputs["aux"]["alpha"].mean().detach().cpu()),
+            beta=float(outputs["aux"]["beta"].mean().detach().cpu()),
             forward_pass_seconds=outputs["aux"]["forward_pass_seconds"],
         )
         return {

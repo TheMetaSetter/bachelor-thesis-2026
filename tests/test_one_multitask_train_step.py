@@ -180,3 +180,46 @@ def test_usage_loss_schedule_weight_contributes_to_total_loss() -> None:
 
     assert step_output["loss_terms"]["usage_loss"].item() > 0.0
     assert torch.isclose(step_output["loss"], expected_loss)
+
+
+def test_one_multitask_train_step_with_exp2_logs_contrastive_and_gate_stats() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        mlp_num_linear_layers=3,
+        num_classes=2,
+        dropout=0.0,
+        continuous_enabled=True,
+        continuous_num_prototypes=4,
+        discrete_enabled=True,
+        discrete_codebook_size=8,
+        gumbel_temperature=1.5,
+        alpha_logit_init=0.0,
+        beta_logit_init=0.0,
+        lambda_cls=1.0,
+        lambda_contrastive=1.0,
+        enable_two_view_contrastive=True,
+        enable_cka_gated_fusion=True,
+        use_synthetic_augmentation=True,
+        anomaly_probability=1.0,
+        min_segment_fraction=0.1,
+        max_segment_fraction=0.2,
+        spike_scale=3.0,
+        classification_label_mode="binary",
+    )
+    batch = {
+        "x": torch.randn(2, 20, 38),
+        "point_labels": torch.zeros(2, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": "machine-a"}, {"entity_id": "machine-b"}],
+    }
+
+    step_output = model.training_step(batch)
+
+    assert "contrastive_loss" in step_output["loss_terms"]
+    assert step_output["log"]["train_contrastive_loss"] >= 0.0
+    assert "train_alpha_std" in step_output["log"]
+    assert "train_beta_std" in step_output["log"]
