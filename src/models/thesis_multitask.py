@@ -66,7 +66,30 @@ def build_multilayer_perceptron(
         elif apply_output_activation:
             network_layers.append(nn.ReLU())
 
-    return nn.Sequential(*network_layers)
+    mlp = nn.Sequential(*network_layers)
+    _initialize_mlp_linear_layers(mlp)
+    return mlp
+
+
+def _initialize_mlp_linear_layers(mlp: nn.Sequential) -> None:
+    """Apply the repository-wide MLP initialization policy.
+
+    Policy:
+    - Linear immediately followed by ReLU: Kaiming-uniform initialization.
+    - Final/output linear (not followed by ReLU): Xavier-uniform initialization.
+    - All linear biases: zero.
+    """
+    for layer_index, layer in enumerate(mlp):
+        if not isinstance(layer, nn.Linear):
+            continue
+        next_layer = mlp[layer_index + 1] if layer_index + 1 < len(mlp) else None
+        followed_by_relu = isinstance(next_layer, nn.ReLU)
+        if followed_by_relu:
+            nn.init.kaiming_uniform_(layer.weight, a=0.0, nonlinearity="relu")
+        else:
+            nn.init.xavier_uniform_(layer.weight)
+        if layer.bias is not None:
+            nn.init.zeros_(layer.bias)
 
 
 class MultitaskWindowEncoder(nn.Module):
