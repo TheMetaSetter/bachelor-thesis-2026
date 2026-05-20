@@ -1340,6 +1340,8 @@ class ThesisMultitaskModel(BaseModel):
 
         alpha = alpha_scalar.expand(continuous_hidden.shape[0])
         beta = beta_scalar.expand(continuous_hidden.shape[0])
+        cka_reconstruction = continuous_hidden.new_zeros(continuous_hidden.shape[0])
+        cka_classification = continuous_hidden.new_zeros(continuous_hidden.shape[0])
         if (
             self.enable_cka_gated_fusion
             and base_hidden is not None
@@ -1394,6 +1396,18 @@ class ThesisMultitaskModel(BaseModel):
                 "beta_std": float(beta.std(unbiased=False).detach().cpu()),
                 "alpha_logit": float(alpha_scalar.detach().cpu()),
                 "beta_logit": float(beta_scalar.detach().cpu()),
+                "cka_reconstruction_mean": float(
+                    cka_reconstruction.mean().detach().cpu()
+                ),
+                "cka_reconstruction_std": float(
+                    cka_reconstruction.std(unbiased=False).detach().cpu()
+                ),
+                "cka_classification_mean": float(
+                    cka_classification.mean().detach().cpu()
+                ),
+                "cka_classification_std": float(
+                    cka_classification.std(unbiased=False).detach().cpu()
+                ),
                 "warmup_active": self.schedule_state["warmup_active"],
                 "temperature": self.gumbel_temperature,
             },
@@ -2070,6 +2084,19 @@ class ThesisMultitaskModel(BaseModel):
                 outputs["aux"]["memory"]["train_memory_mode"]
             ),
         }
+        if stage_name in {"train", "val_synth"}:
+            stage_log[f"{stage_name}_cka_reconstruction_mean"] = float(
+                outputs["aux"]["fusion"]["cka_reconstruction_mean"]
+            )
+            stage_log[f"{stage_name}_cka_reconstruction_std"] = float(
+                outputs["aux"]["fusion"]["cka_reconstruction_std"]
+            )
+            stage_log[f"{stage_name}_cka_classification_mean"] = float(
+                outputs["aux"]["fusion"]["cka_classification_mean"]
+            )
+            stage_log[f"{stage_name}_cka_classification_std"] = float(
+                outputs["aux"]["fusion"]["cka_classification_std"]
+            )
         if include_classification_metrics:
             predicted_labels = torch.argmax(outputs["logits"], dim=-1)
             classification_accuracy = float(
