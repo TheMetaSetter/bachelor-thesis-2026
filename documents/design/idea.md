@@ -8,6 +8,9 @@ This file is synchronized with the active design source of truth under `document
 For the offline pre-training phase two-view contrastive design, use this companion specification as authoritative:
 
 - `documents/design/offline_pretraining_phase_two_view_contrastive_design.md`
+- In that document, treat these sections as the active implementation contract:
+  - `CKA-Gated Per-Sample Fusion`
+  - `Experiment Protocol v2`
 
 Contrastive learning now appears in both phases but with different roles:
 

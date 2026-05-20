@@ -1,30 +1,30 @@
-# Offline Pre-Training Phase Two-View Contrastive Design (Window Size 20)
+# Offline Pre-Training Phase Two-View Contrastive + CKA-Gated Fusion Design (Window Size 20)
 
 ## 1. Scope and Terminology
 
-This document defines a new contrastive-learning design inside the **offline pre-training phase**.
+This document specifies the offline pre-training phase design for two-view learning with contrastive objective and CKA-gated per-sample fusion.
 
-Terminology must remain consistent:
+Terminology is fixed:
 
-- `offline pre-training phase`: offline training phase before deployment.
-- `online adaptation phase`: online adaptation phase during streaming/inference-time adaptation.
-- `computational stage`: a smaller computational step inside a phase.
+- `offline pre-training phase`: offline training before deployment.
+- `online adaptation phase`: adaptation after deployment during streaming.
+- `computational stage`: a sub-step inside a phase.
 
-This design is only for the offline pre-training phase. Contrastive logic in the online adaptation phase remains a separate mechanism.
+This document only covers the offline pre-training phase. The online adaptation phase has its own contrastive logic and remains separate.
 
 ## 2. Confirmed Experimental Plan
 
-### Experiment 1: Quick-Win (Run First)
+### Experiment 1 (Quick-Win)
 
-- Keep the current computational flow unchanged.
-- Keep the existing loss surface unchanged: reconstruction, classification, and optional regularizers controlled by current configs.
+- Keep current computation graph unchanged.
+- Keep current loss surface unchanged.
 - Disable bootstrapping only:
 
 $$
 \texttt{bootstrap\_encoder\_epochs} = 0
 $$
 
-### Experiment 2: New Two-View Contrastive Design
+### Experiment 2 (New Design)
 
 - Also disable bootstrapping:
 
@@ -32,119 +32,102 @@ $$
 \texttt{bootstrap\_encoder\_epochs} = 0
 $$
 
-- Add two-view contrastive learning in the offline pre-training phase.
-- Use InfoNCE.
-- Add explicit config parameter:
+- Add two-view InfoNCE in offline pre-training phase.
+- Add CKA-gated per-sample fusion with two separate gating MLPs.
+- Use:
 
 $$
 \tau_c = \texttt{contrastive\_temperature} = 0.1
 $$
 
-- First run policy: keep this value fixed, no tuning.
+without tuning in the first integration run.
 
-## 3. Window Length Contract
+## 3. Window and Batch Contract
 
-The active input window size for this design is:
+Active window length:
 
 $$
 L = 20
 $$
 
-All design references in this document use 20 time-steps.
+Per train or synthetic-validation batch:
 
-## 4. Offline Two-View Batch Contract (Model-Side Construction)
-
-This design uses model-side two-view construction (current preferred path for maintainability and quick integration).
-
-For each train batch:
-
-- `x_normal`: original normal window batch.
-- `x_anomalous`: synthetic anomalous version created from `x_normal` by model-side injector.
-- `synthetic_anomaly_mask`: timestep-level mask indicating injected positions.
-
-Define:
-
-$$
-M \in \{0,1\}^{B \times L}
-$$
+- normal view window: $$x$$
+- injected anomalous view window: $$x'$$
+- synthetic anomaly mask: $$M \in \{0,1\}^{B \times L}$$
 
 with:
 
 $$
-M_{b,t}=1 \iff t \in A_b
+M_{b,t}=1 \iff t \in A_b,
+\qquad
+A_b^c = \{0,\dots,L-1\}\setminus A_b
 $$
 
-where:
+## 4. Representation and Branch Routing
 
-- $$A_b$$ is the injected-position set for sample $$b$$.
-- $$A_b^c$$ is the complement (non-injected positions).
-
-## 5. Shared Encoder and Hidden Representations
-
-Two views pass through the same encoder:
+Shared encoder:
 
 $$
-H^{(n)} = f_\theta(x_{\text{normal}}), \quad
-H^{(a)} = f_\theta(x_{\text{anomalous}})
+H = f_\theta(x),
+\qquad
+H' = f_\theta(x')
 $$
 
-with shape:
-
 $$
-H^{(n)}, H^{(a)} \in \mathbb{R}^{B \times L \times d_h}
+H, H' \in \mathbb{R}^{B \times L \times d_h}
 $$
 
-Per-token vectors:
+Per sample $$b$$ and timestep $$t$$:
 
 $$
-h^{(n)}_{b,t},\ h^{(a)}_{b,t} \in \mathbb{R}^{d_h}
+h_{b,t}, h'_{b,t} \in \mathbb{R}^{d_h}
 $$
 
-## 6. InfoNCE Design for Offline Pre-Training
+Hard routing in offline pre-training phase:
 
-### 6.1 Positive-anchor index set
+- $$h$$ queries only the continuous branch.
+- $$h'$$ queries only the discrete branch.
 
-Use only non-injected positions as positive anchors:
+Denote branch outputs:
+
+$$
+\hat{H}_c \in \mathbb{R}^{B \times L \times d_h}
+\quad\text{(continuous output from }h\text{)}
+$$
+
+$$
+\hat{H}'_d \in \mathbb{R}^{B \times L \times d_h}
+\quad\text{(discrete output from }h'\text{)}
+$$
+
+## 5. InfoNCE in Offline Pre-Training Phase
+
+Positive anchors use non-injected timesteps only:
 
 $$
 \mathcal{I}_+ = \{(b,t)\mid M_{b,t}=0\}
 $$
 
-For each anchor $$ (b,t) \in \mathcal{I}_+ $$:
+For each anchor:
 
 $$
-q_{b,t} = \operatorname{norm}(h^{(n)}_{b,t}), \quad
-k^+_{b,t} = \operatorname{norm}(h^{(a)}_{b,t})
+q_{b,t}=\operatorname{norm}(h_{b,t}),
+\qquad
+k^+_{b,t}=\operatorname{norm}(h'_{b,t})
 $$
 
-### 6.2 Negative candidates
-
-Use in-batch negatives from all other tokens except the positive itself.
+All other in-batch tokens are candidate negatives:
 
 $$
-\mathcal{C} = \{(b',t')\ \forall b',t'\}
+\mathcal{N}_{b,t}=\mathcal{C}\setminus\{(b,t)\},
+\qquad
+\mathcal{C}=\{(b',t')\ \forall b',t'\}
 $$
 
-$$
-\mathcal{N}_{b,t}=\mathcal{C}\setminus\{(b,t)\}
-$$
+Tokens at $$t\in A$$ do not form positives and participate only as negatives.
 
-Important rule:
-
-- Tokens at injected positions $$t\in A$$ do not form positives.
-- They can appear in the negative pool.
-
-### 6.3 Similarity and InfoNCE objective
-
-Similarity:
-
-$$
-\operatorname{sim}(u,v)=u^\top v
-$$
-
-With normalized vectors, this equals cosine similarity.
-
-InfoNCE loss:
+InfoNCE:
 
 $$
 \mathcal{L}_{\text{ctr}}
@@ -165,18 +148,114 @@ $$
 where:
 
 $$
-\tilde{k}_{b',t'}=\operatorname{norm}(h^{(a)}_{b',t'})
+\tilde{k}_{b',t'}=\operatorname{norm}(h'_{b',t'})
 $$
 
 and:
 
 $$
-\tau_c = 0.1
+\operatorname{sim}(u,v)=u^\top v
 $$
 
-## 7. Total Objective for Experiment 2
+## 6. CKA-Gated Per-Sample Fusion
 
-Keep existing objective and add contrastive term:
+### 6.1 Linear CKA with Time-Axis Centering
+
+For any sample-level matrices $$X, Y \in \mathbb{R}^{L \times d_h}$$:
+
+$$
+\tilde{X}=JX,
+\qquad
+\tilde{Y}=JY,
+\qquad
+J=I_L-\frac{1}{L}\mathbf{1}\mathbf{1}^\top
+$$
+
+Linear CKA:
+
+$$
+\operatorname{CKA}(X,Y)=
+\frac{\left\|\tilde{X}^\top\tilde{Y}\right\|_F^2}
+{\left\|\tilde{X}^\top\tilde{X}\right\|_F\cdot\left\|\tilde{Y}^\top\tilde{Y}\right\|_F}
+$$
+
+### 6.2 Two CKA Scalars per Sample
+
+Per sample $$b$$:
+
+$$
+s_b^{\text{rec}} = \operatorname{CKA}(H_b,\hat{H}_{c,b})
+$$
+
+$$
+s_b^{\text{cls}} = \operatorname{CKA}(H'_b,\hat{H}'_{d,b})
+$$
+
+Gate feature vector:
+
+$$
+u_b = [s_b^{\text{rec}},\ s_b^{\text{cls}}] \in \mathbb{R}^{2}
+$$
+
+### 6.3 Two Separate Gating MLPs
+
+$$
+\alpha_b=\sigma(\mathrm{MLP}_{\text{cls}}(u_b)),
+\qquad
+\beta_b=\sigma(\mathrm{MLP}_{\text{rec}}(u_b))
+$$
+
+Definitions:
+
+- $$\alpha_b$$: classification fusion weight on discrete branch.
+- $$\beta_b$$: reconstruction fusion weight on discrete branch.
+
+### 6.4 Per-Head Fusion (Per Sample)
+
+Broadcast $$\alpha_b$$ and $$\beta_b$$ over time and hidden dimensions:
+
+$$
+\alpha_b,\beta_b \in (0,1),
+\qquad
+\alpha_b,\beta_b \to \mathbb{R}^{L \times d_h}\ \text{by broadcast}
+$$
+
+Classification fusion:
+
+$$
+H^{\text{cls}}_b = \alpha_b\,\hat{H}'_{d,b} + (1-\alpha_b)\,\hat{H}_{c,b}
+$$
+
+Reconstruction fusion:
+
+$$
+H^{\text{rec}}_b = \beta_b\,\hat{H}'_{d,b} + (1-\beta_b)\,\hat{H}_{c,b}
+$$
+
+Then:
+
+- classification head consumes $$H^{\text{cls}}_b$$
+- reconstruction head consumes $$H^{\text{rec}}_b$$
+
+## 7. Train Computational Stages and Memory Update Policy
+
+For each train step in Experiment 2:
+
+1. Build pair $$x, x'$$ and mask $$M$$.
+2. Encode to $$H, H'$$.
+3. Query branches with hard routing: $$h \to \text{continuous}$$, $$h' \to \text{discrete}$$.
+4. Compute $$\mathcal{L}_{\text{ctr}}$$.
+5. Compute CKA features, then $$\alpha_b,\beta_b$$, then fused per-head representations.
+6. Compute task losses and total objective.
+7. Backpropagation and optimizer update.
+
+Memory update policy is token-level and train-only:
+
+- Continuous memory update uses only tokens with $$M_{b,t}=0$$.
+- Discrete memory update uses only tokens with $$M_{b,t}=1$$.
+- Validation/test keep memory read-only.
+
+## 8. Total Objective
 
 $$
 \mathcal{L}_{\text{total}}
@@ -184,53 +263,45 @@ $$
 \mathcal{L}_{\text{existing}} + \lambda_{\text{ctr}}\mathcal{L}_{\text{ctr}}
 $$
 
-Initial default for first integration run:
+Default first-run value:
 
 $$
 \lambda_{\text{ctr}} = 1.0
 $$
 
-Policy: expose via config, but do not tune in first run.
+## 9. Experiment Protocol v2
 
-## 8. Memory Updating Mechanism Integration
+### Exp1: No-Bootstrap Quick-Win
 
-The new contrastive component must coexist with current memory updates. Keep current mechanism unchanged:
+- Keep current model/loss behavior.
+- Set:
 
-- continuous memory update gate
-- discrete codebook EMA update
-- updates only in train computational stage
-- validation and test are read-only for memory
+$$
+\texttt{bootstrap\_encoder\_epochs}=0
+$$
 
-This avoids introducing unnecessary codepath divergence and keeps behavior aligned with maintainability goals.
+### Exp2: No-Bootstrap + Two-View InfoNCE + CKA-Gated Fusion
 
-## 9. Training Computational Stages (Experiment 2)
+- Add two-view InfoNCE and CKA-gated per-sample fusion.
+- Compute contrastive loss on:
+  - train pairs
+  - synthetic validation pairs (original window + injected window)
 
-For each train step:
+Monitor/checkpoint defaults for Exp2:
 
-1. Build `x_normal`, `x_anomalous`, and `synthetic_anomaly_mask`.
-2. Run shared encoder on two views to obtain $$H^{(n)}$$ and $$H^{(a)}$$.
-3. Compute $$\mathcal{L}_{\text{ctr}}$$ from mask-based anchor selection.
-4. Run existing prototype/fusion/head flow and compute existing losses.
-5. Combine losses and backpropagate.
+- scheduler monitor: `val_synth_vus_pr`
+- checkpoint monitor: `val_synth_vus_pr`
 
-## 10. Design-Implementation Mapping (Files)
+## 10. Design-Implementation Mapping
 
-Primary implementation context:
+Primary implementation file:
 
 - `/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/models/thesis_multitask.py`
 
-Likely config surfaces:
+Primary model config family:
 
 - `/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/configs/model/thesis_multitask_redlamp_multiclass.yaml`
-- experiment configs under `/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/configs/experiment/`
 
-## 11. Clarification About Checkpoint Monitoring Metric
+Primary experiment config family:
 
-When an experiment config sets:
-
-$$
-\texttt{checkpoint\_monitor\_metric} = \texttt{val\_vus\_pr}
-$$
-
-it means the best checkpoint is selected by `val_vus_pr`, not by `val_synth_vus_pr`.
-
+- `/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/configs/experiment/`

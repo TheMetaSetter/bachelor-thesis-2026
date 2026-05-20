@@ -20,6 +20,9 @@ $$
 For the detailed offline pre-training phase two-view contrastive specification, see:
 
 - `documents/design/offline_pretraining_phase_two_view_contrastive_design.md`
+- The active implementation-facing anchors are:
+  - `CKA-Gated Per-Sample Fusion`
+  - `Experiment Protocol v2`
 
 **Reasoning:**
 Let us start from the real design question. What usually makes a research codebase impossible to reuse?
