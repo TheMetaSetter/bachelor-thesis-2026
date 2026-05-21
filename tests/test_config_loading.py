@@ -47,9 +47,8 @@ TRAINING_POLICY_EXPERIMENT_CONFIGS = [
     "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_alt.yaml",
     "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml",
     "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml",
-    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap25.yaml",
-    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap50.yaml",
-    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap75.yaml",
+    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml",
+    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2.yaml",
 ]
 
 
@@ -75,7 +74,7 @@ def test_load_online_experiment_config_reads_valid_yaml() -> None:
     "experiment_config_path",
     TRAINING_POLICY_EXPERIMENT_CONFIGS,
 )
-def test_target_training_configs_use_shared_adamw_cosine_vus_pr_policy(
+def test_target_training_configs_use_shared_adamw_scheduler_val_synth_vus_pr_policy(
     experiment_config_path: str,
 ) -> None:
     loaded_config = load_experiment_config(experiment_config_path)
@@ -83,12 +82,15 @@ def test_target_training_configs_use_shared_adamw_cosine_vus_pr_policy(
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
     assert loaded_config["optimizer"]["learning_rate"] == 0.001
-    assert scheduler_config["scheduler_name"] == "cosine"
-    assert scheduler_config["warmup_epochs"] == 5
-    assert scheduler_config["warmup_start_lr"] == 1.0e-4
-    assert scheduler_config["cosine_end_lr"] == 0.0
-    assert scheduler_config["cosine_after_warmup"] is True
-    assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
+    assert scheduler_config["scheduler_name"] in {"cosine", "reduce_on_plateau"}
+    if scheduler_config["scheduler_name"] == "cosine":
+        assert scheduler_config["warmup_epochs"] == 5
+        assert scheduler_config["warmup_start_lr"] == 0.001
+        assert scheduler_config["cosine_end_lr"] == 0.0
+        assert scheduler_config["cosine_after_warmup"] is True
+    else:
+        assert scheduler_config["monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
 
 
 def test_multitask_config_accepts_memory_bootstrap_fields(tmp_path: Path) -> None:
@@ -203,7 +205,7 @@ def test_load_single_entity_rtx3090_config_reads_valid_yaml() -> None:
     )
     assert loaded_config["data"]["entity_ids"] == ["machine-2-1"]
     assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
 
 
 def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
@@ -285,9 +287,12 @@ def test_load_explicit_redlamp_adamw_cosine_configs() -> None:
         loaded_config = load_experiment_config(config_path)
 
         assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
-        assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
+        assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] in {
+            "cosine",
+            "reduce_on_plateau",
+        }
         assert loaded_config["optimizer"]["learning_rate"] == 0.001
-        assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
+        assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
         assert loaded_config["epochs"] == 300
 
 
@@ -297,8 +302,8 @@ def test_load_explicit_redlamp_cosine_val_synth_vus_pr_config() -> None:
     )
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
-    assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
+    assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "reduce_on_plateau"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
     assert loaded_config["epochs"] == 300
 
 
@@ -309,7 +314,7 @@ def test_load_explicit_redlamp_cosine_val_synth_vus_pr_smoke_config() -> None:
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
     assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
     assert loaded_config["epochs"] == 1
     assert loaded_config["data"]["max_train_windows"] == 64
     assert loaded_config["data"]["max_val_windows"] == 32
@@ -356,9 +361,9 @@ def test_load_redlamp_multiclass_window20_configs(
 @pytest.mark.parametrize(
     "experiment_config_path",
     [
-        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap25.yaml",
-        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap50.yaml",
-        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_bootstrap75.yaml",
+        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml",
+        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml",
+        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2.yaml",
     ],
 )
 def test_load_thesis_multiclass_bootstrap_train_configs_enable_wandb(
@@ -1092,12 +1097,9 @@ def test_load_experiment_config_accepts_valid_cosine_scheduler_policy() -> None:
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
     assert loaded_config["optimizer"]["learning_rate"] == 0.001
-    assert scheduler_config["scheduler_name"] == "cosine"
-    assert scheduler_config["warmup_epochs"] == 5
-    assert scheduler_config["warmup_start_lr"] == 1.0e-4
-    assert scheduler_config["cosine_end_lr"] == 0.0
-    assert scheduler_config["cosine_after_warmup"] is True
-    assert loaded_config["checkpoint_monitor_metric"] == "val_vus_pr"
+    assert scheduler_config["scheduler_name"] == "reduce_on_plateau"
+    assert scheduler_config["monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
 
 
 def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(
