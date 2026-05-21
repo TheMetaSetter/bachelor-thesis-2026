@@ -1776,6 +1776,46 @@ class ThesisMultitaskModel(BaseModel):
             / expanded_normal_mask.sum()
         )
 
+    def _compute_reconstruction_diagnostics(
+        self,
+        outputs: dict[str, Any],
+        batch: dict[str, Any],
+    ) -> dict[str, float]:
+        squared_reconstruction_error = (outputs["recon"] - batch["x"]) ** 2
+        per_window_error = squared_reconstruction_error.mean(dim=(1, 2))
+        diagnostics = {
+            "recon_mse_mean": float(torch.mean(per_window_error).detach().cpu()),
+            "recon_mse_std": float(
+                torch.std(per_window_error, unbiased=False).detach().cpu()
+            ),
+            "active_normal_cells": float(squared_reconstruction_error.numel()),
+            "normal_cell_ratio": 1.0,
+            "synthetic_cell_ratio": 0.0,
+            "fallback_to_full_mse_flag": 0.0,
+        }
+        if "synthetic_anomaly_mask" not in batch:
+            return diagnostics
+
+        normal_time_step_mask = self._build_normal_time_step_mask(
+            batch, squared_reconstruction_error
+        )
+        expanded_normal_mask = normal_time_step_mask.unsqueeze(-1).expand_as(
+            squared_reconstruction_error
+        )
+        active_normal_cells = float(torch.count_nonzero(expanded_normal_mask).item())
+        total_cells = float(expanded_normal_mask.numel())
+        normal_cell_ratio = active_normal_cells / max(total_cells, 1.0)
+        synthetic_cell_ratio = 1.0 - normal_cell_ratio
+        fallback_to_full_mse_flag = 0.0
+        if self.reconstruction_normal_only and active_normal_cells <= 0.0:
+            fallback_to_full_mse_flag = 1.0
+
+        diagnostics["active_normal_cells"] = active_normal_cells
+        diagnostics["normal_cell_ratio"] = normal_cell_ratio
+        diagnostics["synthetic_cell_ratio"] = synthetic_cell_ratio
+        diagnostics["fallback_to_full_mse_flag"] = fallback_to_full_mse_flag
+        return diagnostics
+
     def _compute_classification_loss(
         self,
         outputs: dict[str, Any],
@@ -2088,17 +2128,33 @@ class ThesisMultitaskModel(BaseModel):
             ),
         }
         if stage_name in {"train", "val_synth"}:
-            stage_log[f"{stage_name}_cka_reconstruction_mean"] = float(
+            cka_reconstruction_mean = float(
                 outputs["aux"]["fusion"]["cka_reconstruction_mean"]
             )
-            stage_log[f"{stage_name}_cka_reconstruction_std"] = float(
+            cka_reconstruction_std = float(
                 outputs["aux"]["fusion"]["cka_reconstruction_std"]
             )
-            stage_log[f"{stage_name}_cka_classification_mean"] = float(
+            cka_classification_mean = float(
                 outputs["aux"]["fusion"]["cka_classification_mean"]
             )
-            stage_log[f"{stage_name}_cka_classification_std"] = float(
+            cka_classification_std = float(
                 outputs["aux"]["fusion"]["cka_classification_std"]
+            )
+            stage_log[f"{stage_name}_cka_reconstruction_mean"] = cka_reconstruction_mean
+            stage_log[f"{stage_name}_cka_reconstruction_std"] = cka_reconstruction_std
+            stage_log[f"{stage_name}_cka_classification_mean"] = cka_classification_mean
+            stage_log[f"{stage_name}_cka_classification_std"] = cka_classification_std
+            stage_log[f"diag/cka/{stage_name}_reconstruction_mean"] = (
+                cka_reconstruction_mean
+            )
+            stage_log[f"diag/cka/{stage_name}_reconstruction_std"] = (
+                cka_reconstruction_std
+            )
+            stage_log[f"diag/cka/{stage_name}_classification_mean"] = (
+                cka_classification_mean
+            )
+            stage_log[f"diag/cka/{stage_name}_classification_std"] = (
+                cka_classification_std
             )
         if include_classification_metrics:
             predicted_labels = torch.argmax(outputs["logits"], dim=-1)
@@ -2113,6 +2169,12 @@ class ThesisMultitaskModel(BaseModel):
                 loss_terms["classification_loss"].detach().cpu()
             )
             stage_log[f"{stage_name}_classification_accuracy"] = classification_accuracy
+        reconstruction_diagnostics = self._compute_reconstruction_diagnostics(
+            outputs=outputs,
+            batch=batch,
+        )
+        for metric_name, metric_value in reconstruction_diagnostics.items():
+            stage_log[f"diag/recon/{stage_name}_{metric_name}"] = metric_value
         return stage_log
 
     def _shared_step(

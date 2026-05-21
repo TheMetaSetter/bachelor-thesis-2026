@@ -306,3 +306,46 @@ def test_exp2_cka_log_keys_exist_with_zero_fallback_when_gate_disabled() -> None
     assert step_output["log"]["train_cka_reconstruction_std"] == 0.0
     assert step_output["log"]["train_cka_classification_mean"] == 0.0
     assert step_output["log"]["train_cka_classification_std"] == 0.0
+
+
+def test_multitask_train_step_logs_reconstruction_diagnostics_metrics() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        mlp_num_linear_layers=3,
+        num_classes=2,
+        dropout=0.0,
+        continuous_enabled=True,
+        continuous_num_prototypes=4,
+        discrete_enabled=True,
+        discrete_codebook_size=8,
+        lambda_cls=1.0,
+        use_synthetic_augmentation=True,
+        anomaly_probability=1.0,
+        min_segment_fraction=0.1,
+        max_segment_fraction=0.2,
+        spike_scale=3.0,
+        reconstruction_normal_only=True,
+        classification_label_mode="binary",
+    )
+    batch = {
+        "x": torch.randn(2, 20, 38),
+        "point_labels": torch.zeros(2, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": "machine-a"}, {"entity_id": "machine-b"}],
+    }
+
+    step_output = model.training_step(batch)
+    step_log = step_output["log"]
+
+    assert "diag/recon/train_recon_mse_mean" in step_log
+    assert "diag/recon/train_recon_mse_std" in step_log
+    assert "diag/recon/train_active_normal_cells" in step_log
+    assert "diag/recon/train_normal_cell_ratio" in step_log
+    assert "diag/recon/train_synthetic_cell_ratio" in step_log
+    assert "diag/recon/train_fallback_to_full_mse_flag" in step_log
+    assert 0.0 <= step_log["diag/recon/train_normal_cell_ratio"] <= 1.0
+    assert 0.0 <= step_log["diag/recon/train_synthetic_cell_ratio"] <= 1.0

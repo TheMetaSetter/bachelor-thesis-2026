@@ -42,6 +42,9 @@ class Trainer:
         gradient_clip_norm: float | None = None,
         validation_evaluator_config: dict[str, Any] | None = None,
         checkpoint_monitor_metric: str | None = None,
+        enable_reconstruction_diagnostics: bool = False,
+        diagnostics_log_interval_steps: int = 1,
+        diagnostics_include_grad_norm: bool = False,
     ) -> None:
         self.model = model
         self.optimizer = optimizer
@@ -54,6 +57,9 @@ class Trainer:
         self.gradient_clip_norm = gradient_clip_norm
         self.validation_evaluator_config = validation_evaluator_config
         self.checkpoint_monitor_metric = checkpoint_monitor_metric
+        self.enable_reconstruction_diagnostics = enable_reconstruction_diagnostics
+        self.diagnostics_log_interval_steps = diagnostics_log_interval_steps
+        self.diagnostics_include_grad_norm = diagnostics_include_grad_norm
         self.metric_history: list[dict[str, Any]] = []
 
     def _move_batch_to_device(self, batch: dict[str, Any]) -> dict[str, Any]:
@@ -81,6 +87,74 @@ class Trainer:
                 batch_log[key] for batch_log in batch_logs
             ) / len(batch_logs)
         return aggregated_logs
+
+    def _aggregate_reconstruction_diagnostics(
+        self, *, batch_logs: list[dict[str, float]]
+    ) -> dict[str, float]:
+        if not self.enable_reconstruction_diagnostics or not batch_logs:
+            return {}
+
+        diagnostic_metrics: dict[str, float] = {}
+        for stage_name in ("train", "val", "val_synth", "test"):
+            reconstruction_loss_key = f"{stage_name}_reconstruction_loss"
+            if reconstruction_loss_key not in batch_logs[0]:
+                continue
+            reconstruction_losses = np.asarray(
+                [
+                    float(batch_log[reconstruction_loss_key])
+                    for batch_log in batch_logs
+                    if reconstruction_loss_key in batch_log
+                ],
+                dtype=np.float64,
+            )
+            if reconstruction_losses.size == 0:
+                continue
+
+            mean_loss = float(np.mean(reconstruction_losses))
+            std_loss = float(np.std(reconstruction_losses))
+            p50_loss = float(np.percentile(reconstruction_losses, 50))
+            p95_loss = float(np.percentile(reconstruction_losses, 95))
+
+            diagnostic_metrics[f"diag/recon/{stage_name}_reconstruction_loss_std"] = (
+                std_loss
+            )
+            diagnostic_metrics[f"diag/recon/{stage_name}_reconstruction_loss_min"] = (
+                float(np.min(reconstruction_losses))
+            )
+            diagnostic_metrics[f"diag/recon/{stage_name}_reconstruction_loss_max"] = (
+                float(np.max(reconstruction_losses))
+            )
+            diagnostic_metrics[f"diag/recon/{stage_name}_reconstruction_loss_p90"] = (
+                float(np.percentile(reconstruction_losses, 90))
+            )
+            diagnostic_metrics[f"diag/recon/{stage_name}_reconstruction_loss_p95"] = (
+                p95_loss
+            )
+            diagnostic_metrics[f"diag/recon/{stage_name}_reconstruction_loss_cv"] = (
+                std_loss / (mean_loss + 1.0e-12)
+            )
+            diagnostic_metrics[
+                f"diag/recon/{stage_name}_reconstruction_loss_p95_to_p50"
+            ] = p95_loss / (p50_loss + 1.0e-12)
+        return diagnostic_metrics
+
+    def _include_reconstruction_diagnostics_for_step(
+        self, *, step_index: int
+    ) -> bool:
+        if not self.enable_reconstruction_diagnostics:
+            return False
+        return step_index % self.diagnostics_log_interval_steps == 0
+
+    def _build_filtered_step_log(
+        self, *, step_log: dict[str, float], step_index: int
+    ) -> dict[str, float]:
+        if self._include_reconstruction_diagnostics_for_step(step_index=step_index):
+            return step_log
+        return {
+            metric_name: metric_value
+            for metric_name, metric_value in step_log.items()
+            if not metric_name.startswith("diag/recon/")
+        }
 
     def _aggregate_multitask_classification_metrics(
         self,
@@ -282,14 +356,18 @@ class Trainer:
                     batch_index=val_batch_index,
                 )
                 step_output = step_method(batch_on_device)
+                filtered_step_log = self._build_filtered_step_log(
+                    step_log=step_output["log"],
+                    step_index=val_batch_index,
+                )
                 console_print(
                     stage_name.upper(),
                     "Completed validation batch",
                     epoch=epoch_index + 1,
                     batch_index=val_batch_index,
-                    step_log=step_output["log"],
+                    step_log=filtered_step_log,
                 )
-                stage_logs.append(step_output["log"])
+                stage_logs.append(filtered_step_log)
                 if (
                     step_output["outputs"].get("logits") is not None
                     and "classification_labels" in step_output["batch"]
@@ -458,6 +536,10 @@ class Trainer:
                     batch_index=train_batch_index,
                 )
                 step_output = self.model.training_step(batch_on_device)
+                filtered_step_log = self._build_filtered_step_log(
+                    step_log=step_output["log"],
+                    step_index=train_batch_index,
+                )
                 loss = step_output["loss"]
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -477,9 +559,9 @@ class Trainer:
                     epoch=epoch_index + 1,
                     batch_index=train_batch_index,
                     loss=float(loss.detach().cpu()),
-                    step_log=step_output["log"],
+                    step_log=filtered_step_log,
                 )
-                train_logs.append(step_output["log"])
+                train_logs.append(filtered_step_log)
                 if (
                     step_output["outputs"].get("logits") is not None
                     and "classification_labels" in step_output["batch"]
@@ -534,6 +616,15 @@ class Trainer:
             epoch_metrics.update(self._aggregate_logs(train_logs))
             epoch_metrics.update(self._aggregate_logs(val_logs))
             epoch_metrics.update(self._aggregate_logs(val_synth_logs))
+            epoch_metrics.update(
+                self._aggregate_reconstruction_diagnostics(batch_logs=train_logs)
+            )
+            epoch_metrics.update(
+                self._aggregate_reconstruction_diagnostics(batch_logs=val_logs)
+            )
+            epoch_metrics.update(
+                self._aggregate_reconstruction_diagnostics(batch_logs=val_synth_logs)
+            )
             epoch_metrics.update(
                 self._aggregate_multitask_classification_metrics(
                     logits_history=train_logits_history,
@@ -592,6 +683,15 @@ class Trainer:
                 epoch_metrics["gradient_norm_max"] = max(gradient_norm_history)
                 epoch_metrics["gradient_norm_last"] = gradient_norm_history[-1]
                 epoch_metrics["gradient_clipped_steps"] = float(clipped_step_count)
+                if self.enable_reconstruction_diagnostics and (
+                    self.diagnostics_include_grad_norm
+                ):
+                    epoch_metrics["diag/grad/train_gradient_norm_mean"] = float(
+                        sum(gradient_norm_history) / len(gradient_norm_history)
+                    )
+                    epoch_metrics["diag/grad/train_gradient_norm_std"] = float(
+                        np.std(np.asarray(gradient_norm_history, dtype=np.float64))
+                    )
             epoch_metrics.update(self._step_learning_rate_scheduler(epoch_metrics))
             self.metric_history.append(epoch_metrics)
             self.experiment_logger.log_metrics(epoch_metrics)

@@ -259,6 +259,31 @@ def test_validate_config_accepts_val_synth_vus_pr_checkpoint_monitor() -> None:
     validate_experiment_config(loaded_config)
 
 
+def test_validate_config_accepts_reconstruction_diagnostics_logging_fields() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2_small_100ep.yaml"
+    )
+    assert loaded_config["logging"]["enable_reconstruction_diagnostics"] is True
+    assert loaded_config["logging"]["diagnostics_log_interval_steps"] == 1
+    assert loaded_config["logging"]["diagnostics_include_grad_norm"] is False
+
+    validate_experiment_config(loaded_config)
+
+
+def test_validate_config_rejects_invalid_reconstruction_diagnostics_logging_fields() -> (
+    None
+):
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2_small_100ep.yaml"
+    )
+    loaded_config["logging"]["diagnostics_log_interval_steps"] = 0
+    with pytest.raises(
+        ValueError,
+        match="logging.diagnostics_log_interval_steps must be a positive integer when provided",
+    ):
+        validate_experiment_config(loaded_config)
+
+
 def test_validate_config_rejects_invalid_optimizer_name() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"

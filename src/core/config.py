@@ -693,6 +693,35 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError(
                 "logging.kaggle_dataset_handle must be provided when Kaggle mirroring is enabled"
             )
+        reconstruction_diagnostics_enabled = logging_config.get(
+            "enable_reconstruction_diagnostics"
+        )
+        if reconstruction_diagnostics_enabled is not None and not isinstance(
+            reconstruction_diagnostics_enabled, bool
+        ):
+            raise ValueError(
+                "logging.enable_reconstruction_diagnostics must be a boolean when provided"
+            )
+        diagnostics_log_interval_steps = logging_config.get(
+            "diagnostics_log_interval_steps"
+        )
+        if diagnostics_log_interval_steps is not None:
+            if (
+                not isinstance(diagnostics_log_interval_steps, int)
+                or diagnostics_log_interval_steps <= 0
+            ):
+                raise ValueError(
+                    "logging.diagnostics_log_interval_steps must be a positive integer when provided"
+                )
+        diagnostics_include_grad_norm = logging_config.get(
+            "diagnostics_include_grad_norm"
+        )
+        if diagnostics_include_grad_norm is not None and not isinstance(
+            diagnostics_include_grad_norm, bool
+        ):
+            raise ValueError(
+                "logging.diagnostics_include_grad_norm must be a boolean when provided"
+            )
 
 
 def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]:

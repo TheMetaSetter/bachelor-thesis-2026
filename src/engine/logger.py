@@ -59,6 +59,17 @@ class ExperimentLogger:
                 "anomaly_families": experiment_config.get("task", {}).get(
                     "anomaly_families"
                 ),
+                "window_size": experiment_config.get("data", {}).get("window_size"),
+                "stride": experiment_config.get("data", {}).get("stride"),
+                "use_synthetic_augmentation": experiment_config.get("task", {}).get(
+                    "use_synthetic_augmentation"
+                ),
+                "reconstruction_normal_only": experiment_config.get(
+                    "model", {}
+                ).get("reconstruction_normal_only"),
+                "enable_reconstruction_diagnostics": experiment_config.get(
+                    "logging", {}
+                ).get("enable_reconstruction_diagnostics", False),
             }
             with self.metrics_path.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(run_start_record, sort_keys=True) + "\n")

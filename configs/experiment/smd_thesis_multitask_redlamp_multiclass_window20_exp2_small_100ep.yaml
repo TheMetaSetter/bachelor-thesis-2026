@@ -29,6 +29,9 @@ logging:
   use_wandb: true
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
+  enable_reconstruction_diagnostics: true
+  diagnostics_log_interval_steps: 1
+  diagnostics_include_grad_norm: false
   wandb_tags:
     - smd
     - redlamp_multiclass

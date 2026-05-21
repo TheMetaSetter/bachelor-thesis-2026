@@ -316,6 +316,15 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         gradient_clip_norm=experiment_config["optimizer"].get("gradient_clip_norm"),
         validation_evaluator_config=experiment_config.get("evaluation"),
         checkpoint_monitor_metric=experiment_config.get("checkpoint_monitor_metric"),
+        enable_reconstruction_diagnostics=logging_config.get(
+            "enable_reconstruction_diagnostics", False
+        ),
+        diagnostics_log_interval_steps=logging_config.get(
+            "diagnostics_log_interval_steps", 1
+        ),
+        diagnostics_include_grad_norm=logging_config.get(
+            "diagnostics_include_grad_norm", False
+        ),
     )
 
     # Execute training with try-finally to ensure graceful logger shutdown even
