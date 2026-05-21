@@ -546,6 +546,7 @@ class ThesisMultitaskModel(BaseModel):
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.Sigmoid(),
         )
+        _initialize_mlp_linear_layers(self.continuous_update_gate)
 
     def _build_fusion_parameters(self, config: ThesisMultitaskModelConfig) -> None:
         objective = config.objective
@@ -582,11 +583,13 @@ class ThesisMultitaskModel(BaseModel):
             nn.ReLU(),
             nn.Linear(architecture.hidden_dim, 1),
         )
+        _initialize_mlp_linear_layers(self.classification_fusion_gate)
         self.reconstruction_fusion_gate = nn.Sequential(
             nn.Linear(2, architecture.hidden_dim),
             nn.ReLU(),
             nn.Linear(architecture.hidden_dim, 1),
         )
+        _initialize_mlp_linear_layers(self.reconstruction_fusion_gate)
 
     def _build_synthetic_injectors(self, config: ThesisMultitaskModelConfig) -> None:
         architecture = config.architecture

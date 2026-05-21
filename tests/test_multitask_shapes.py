@@ -204,3 +204,32 @@ def test_multitask_model_flattens_hidden_classification_before_classifier() -> N
         outputs["pooled"],
         outputs["aux"]["hidden_classification"].reshape(2, 3 * 6),
     )
+
+
+def test_multitask_gate_mlps_use_shared_bias_zero_initialization_policy() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        mlp_num_linear_layers=3,
+        num_classes=12,
+        dropout=0.0,
+    )
+
+    gate_modules = [
+        model.continuous_update_gate,
+        model.classification_fusion_gate,
+        model.reconstruction_fusion_gate,
+    ]
+    for gate_module in gate_modules:
+        gate_linear_layers = [
+            layer for layer in gate_module if isinstance(layer, torch.nn.Linear)
+        ]
+        assert gate_linear_layers
+        for linear_layer in gate_linear_layers:
+            assert linear_layer.bias is not None
+            assert torch.allclose(
+                linear_layer.bias.detach(),
+                torch.zeros_like(linear_layer.bias.detach()),
+            )
