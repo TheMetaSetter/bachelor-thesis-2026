@@ -325,6 +325,16 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
         diagnostics_include_grad_norm=logging_config.get(
             "diagnostics_include_grad_norm", False
         ),
+        diagnostics_stages_for_classification=logging_config.get(
+            "diagnostics_stages_for_classification", []
+        ),
+        log_hard_prediction_ratio=logging_config.get(
+            "log_hard_prediction_ratio", False
+        ),
+        log_row_normalized_confusion_matrix=logging_config.get(
+            "log_row_normalized_confusion_matrix", False
+        ),
+        focus_metrics=logging_config.get("focus_metrics", []),
     )
 
     # Execute training with try-finally to ensure graceful logger shutdown even

@@ -382,6 +382,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
 
     if task_config.get("task_name") == "multitask_tsad":
         boolean_fields = {
+            "enable_classification_path": model_config.get(
+                "enable_classification_path", True
+            ),
             "enable_diversity_loss": model_config.get("enable_diversity_loss", False),
             "enable_variance_loss": model_config.get("enable_variance_loss", False),
             "enable_covariance_loss": model_config.get("enable_covariance_loss", False),
@@ -721,6 +724,48 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         ):
             raise ValueError(
                 "logging.diagnostics_include_grad_norm must be a boolean when provided"
+            )
+        for field_name in [
+            "log_hard_prediction_ratio",
+            "log_row_normalized_confusion_matrix",
+            "log_focused_metrics_jsonl",
+        ]:
+            field_value = logging_config.get(field_name)
+            if field_value is not None and not isinstance(field_value, bool):
+                raise ValueError(f"logging.{field_name} must be a boolean when provided")
+        diagnostics_stages_for_classification = logging_config.get(
+            "diagnostics_stages_for_classification"
+        )
+        if diagnostics_stages_for_classification is not None:
+            if not isinstance(diagnostics_stages_for_classification, list) or not all(
+                isinstance(stage_name, str) for stage_name in diagnostics_stages_for_classification
+            ):
+                raise ValueError(
+                    "logging.diagnostics_stages_for_classification must be a list of strings when provided"
+                )
+            allowed_stages = {"train", "val", "val_synth", "test"}
+            invalid_stage_names = sorted(
+                set(diagnostics_stages_for_classification) - allowed_stages
+            )
+            if invalid_stage_names:
+                raise ValueError(
+                    "logging.diagnostics_stages_for_classification contains unsupported stages: "
+                    f"{invalid_stage_names}"
+                )
+        focus_metrics = logging_config.get("focus_metrics")
+        if focus_metrics is not None:
+            if not isinstance(focus_metrics, list) or not all(
+                isinstance(metric_name, str) and metric_name for metric_name in focus_metrics
+            ):
+                raise ValueError(
+                    "logging.focus_metrics must be a list of non-empty strings when provided"
+                )
+        focused_metrics_filename = logging_config.get("focused_metrics_filename")
+        if focused_metrics_filename is not None and not isinstance(
+            focused_metrics_filename, str
+        ):
+            raise ValueError(
+                "logging.focused_metrics_filename must be a string when provided"
             )
 
 

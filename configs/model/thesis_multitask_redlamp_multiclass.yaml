@@ -1,4 +1,5 @@
 model_name: thesis_multitask
+enable_classification_path: true
 input_dim: 38
 encoder_dim: 64
 hidden_dim: 32

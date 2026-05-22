@@ -30,6 +30,7 @@ class ExperimentLogger:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.metrics_path = self.output_dir / "metrics.jsonl"
+        self.focused_metrics_path: Path | None = None
         self.resolved_config_path = self.output_dir / "resolved_experiment_config.json"
         self._wandb_run = None
         console_print(
@@ -126,6 +127,12 @@ class ExperimentLogger:
                         ),
                     }
                 )
+        if logging_config and logging_config.get("log_focused_metrics_jsonl", False):
+            focused_metrics_filename = logging_config.get(
+                "focused_metrics_filename", "focused_metrics.jsonl"
+            )
+            self.focused_metrics_path = self.output_dir / focused_metrics_filename
+
 
     def log_metrics(self, metrics: dict[str, Any]) -> None:
         serializable_metrics = json.dumps(metrics, sort_keys=True)
@@ -140,6 +147,24 @@ class ExperimentLogger:
         if self._wandb_run is not None:
             self._wandb_run.log(metrics)
             console_print("WANDB", "Logged metrics to W&B", metrics=metrics)
+
+    def log_focused_metrics(
+        self, metrics: dict[str, Any], focus_metric_names: list[str]
+    ) -> dict[str, Any]:
+        focused_metrics: dict[str, Any] = {
+            metric_name: metrics[metric_name]
+            for metric_name in focus_metric_names
+            if metric_name in metrics
+        }
+        if "epoch" in metrics and "epoch" not in focused_metrics:
+            focused_metrics["epoch"] = metrics["epoch"]
+        if self.focused_metrics_path is not None:
+            serializable_metrics = json.dumps(focused_metrics, sort_keys=True)
+            with self.focused_metrics_path.open("a", encoding="utf-8") as handle:
+                handle.write(serializable_metrics + "\n")
+        if self._wandb_run is not None and focused_metrics:
+            self._wandb_run.log(focused_metrics)
+        return focused_metrics
 
     def log_summary(self, summary: dict[str, Any]) -> None:
         if self._wandb_run is None:

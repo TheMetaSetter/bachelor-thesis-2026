@@ -29,6 +29,26 @@ logging:
   use_wandb: true
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
+  diagnostics_stages_for_classification: [train, val_synth]
+  log_hard_prediction_ratio: true
+  log_row_normalized_confusion_matrix: true
+  focus_metrics:
+    - epoch
+    - train_loss
+    - train_reconstruction_loss
+    - train_classification_loss
+    - train_weighted_f1
+    - train_forward_pass_seconds_mean
+    - val_loss
+    - val_reconstruction_loss
+    - val_synth_loss
+    - val_synth_reconstruction_loss
+    - val_synth_classification_loss
+    - val_synth_vus_pr
+    - val_synth_weighted_f1
+    - val_synth_forward_pass_seconds_mean
+  log_focused_metrics_jsonl: true
+  focused_metrics_filename: focused_metrics.jsonl
   enable_reconstruction_diagnostics: true
   diagnostics_log_interval_steps: 1
   diagnostics_include_grad_norm: true

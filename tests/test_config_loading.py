@@ -1425,3 +1425,63 @@ def test_load_experiment_config_rejects_scheduler_min_lr_above_learning_rate(
 
     with pytest.raises(ValueError, match="min_lr"):
         load_experiment_config(experiment_config_path)
+
+
+def test_load_experiment_config_rejects_invalid_diagnostics_stage_name(
+    tmp_path: Path,
+) -> None:
+    experiment_config_path = tmp_path / "experiment.yaml"
+    experiment_config_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: invalid_diagnostics_stage_name",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/invalid_diagnostics_stage_name",
+                "checkpoint_dir: outputs/invalid_diagnostics_stage_name/checkpoints",
+                f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
+                f"model_config_path: {Path('configs/model/thesis_multitask.yaml').resolve()}",
+                f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "epochs: 1",
+                "logging:",
+                "  diagnostics_stages_for_classification: [train, invalid_stage]",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="diagnostics_stages_for_classification"):
+        load_experiment_config(experiment_config_path)
+
+
+def test_load_experiment_config_rejects_non_string_focus_metrics(
+    tmp_path: Path,
+) -> None:
+    experiment_config_path = tmp_path / "experiment.yaml"
+    experiment_config_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: invalid_focus_metrics",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/invalid_focus_metrics",
+                "checkpoint_dir: outputs/invalid_focus_metrics/checkpoints",
+                f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
+                f"model_config_path: {Path('configs/model/thesis_multitask.yaml').resolve()}",
+                f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
+                "optimizer:",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "epochs: 1",
+                "logging:",
+                "  focus_metrics: [train_loss, 10]",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="logging.focus_metrics"):
+        load_experiment_config(experiment_config_path)

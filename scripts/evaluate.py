@@ -122,11 +122,14 @@ def run_evaluation_experiment(
         experiment_config["data"].get("window_size"),
     )
     vus_num_thresholds = int(evaluation_config.get("vus_num_thresholds", 200))
-    evaluator = Evaluator(
-        device=experiment_config["device"],
-        vus_max_buffer_size=vus_max_buffer_size,
-        vus_num_thresholds=vus_num_thresholds,
-    )
+    try:
+        evaluator = Evaluator(
+            device=experiment_config["device"],
+            vus_max_buffer_size=vus_max_buffer_size,
+            vus_num_thresholds=vus_num_thresholds,
+        )
+    except TypeError:
+        evaluator = Evaluator(device=experiment_config["device"])
     evaluation_outputs = evaluator.evaluate(model, data_bundle["loaders"]["test"])
 
     logging_config = dict(experiment_config.get("logging", {}))

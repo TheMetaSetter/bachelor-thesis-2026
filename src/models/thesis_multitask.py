@@ -161,6 +161,7 @@ class ScheduleAndWarmupConfig:
 
 @dataclass(frozen=True)
 class ObjectiveConfig:
+    enable_classification_path: bool = True
     alpha_logit_init: float = 0.0
     beta_logit_init: float = 0.0
     use_label_refurbishment: bool = False
@@ -270,6 +271,7 @@ class ThesisMultitaskModelConfig:
             "warmup_beta_value",
         }
         objective_keys = {
+            "enable_classification_path",
             "alpha_logit_init",
             "beta_logit_init",
             "use_label_refurbishment",
@@ -330,6 +332,11 @@ class ThesisMultitaskModelConfig:
         objective_values = take_group(objective_keys)
         memory_values = take_group(memory_keys)
         synthetic_values = take_group(synthetic_keys)
+        if (
+            "classification_label_mode" not in synthetic_values
+            and architecture_values.get("num_classes") == 2
+        ):
+            synthetic_values["classification_label_mode"] = "binary"
         if "anomaly_families" in synthetic_values:
             synthetic_values["anomaly_families"] = tuple(
                 synthetic_values["anomaly_families"]
@@ -402,6 +409,7 @@ class ThesisMultitaskModel(BaseModel):
         self.refurbishment_beta = objective.refurbishment_beta
         self.reconstruction_normal_only = objective.reconstruction_normal_only
         self.lambda_cls = objective.lambda_cls
+        self.enable_classification_path = objective.enable_classification_path
         self.lambda_div = objective.lambda_div
         self.lambda_var = objective.lambda_var
         self.lambda_cov = objective.lambda_cov
@@ -1683,8 +1691,11 @@ class ThesisMultitaskModel(BaseModel):
             hidden_classification.shape[0],
             self.window_size * self.hidden_dim,
         )
-        logits = self.classification_head(flattened_classification_hidden)
-        class_probabilities = torch.softmax(logits, dim=-1)
+        logits = None
+        class_probabilities = None
+        if self.enable_classification_path:
+            logits = self.classification_head(flattened_classification_hidden)
+            class_probabilities = torch.softmax(logits, dim=-1)
 
         # Độ bất thường được tính bằng cách
         # Tính toán độ lỗi (error) giữa bản gốc và bản tái tạo
@@ -1829,6 +1840,8 @@ class ThesisMultitaskModel(BaseModel):
         outputs: dict[str, Any],
         batch: dict[str, Any],
     ) -> torch.Tensor:
+        if outputs.get("logits") is None:
+            return self._zero_loss(outputs["recon"])
         if self.use_label_refurbishment:
             target_probabilities = self._build_refurbished_classification_targets(
                 batch["classification_labels"],
@@ -2142,29 +2155,34 @@ class ThesisMultitaskModel(BaseModel):
             cka_reconstruction_std = float(
                 outputs["aux"]["fusion"]["cka_reconstruction_std"]
             )
-            cka_classification_mean = float(
-                outputs["aux"]["fusion"]["cka_classification_mean"]
-            )
-            cka_classification_std = float(
-                outputs["aux"]["fusion"]["cka_classification_std"]
-            )
             stage_log[f"{stage_name}_cka_reconstruction_mean"] = cka_reconstruction_mean
             stage_log[f"{stage_name}_cka_reconstruction_std"] = cka_reconstruction_std
-            stage_log[f"{stage_name}_cka_classification_mean"] = cka_classification_mean
-            stage_log[f"{stage_name}_cka_classification_std"] = cka_classification_std
             stage_log[f"diag/cka/{stage_name}_reconstruction_mean"] = (
                 cka_reconstruction_mean
             )
             stage_log[f"diag/cka/{stage_name}_reconstruction_std"] = (
                 cka_reconstruction_std
             )
-            stage_log[f"diag/cka/{stage_name}_classification_mean"] = (
-                cka_classification_mean
-            )
-            stage_log[f"diag/cka/{stage_name}_classification_std"] = (
-                cka_classification_std
-            )
-        if include_classification_metrics:
+            if self.enable_classification_path:
+                cka_classification_mean = float(
+                    outputs["aux"]["fusion"]["cka_classification_mean"]
+                )
+                cka_classification_std = float(
+                    outputs["aux"]["fusion"]["cka_classification_std"]
+                )
+                stage_log[f"{stage_name}_cka_classification_mean"] = (
+                    cka_classification_mean
+                )
+                stage_log[f"{stage_name}_cka_classification_std"] = (
+                    cka_classification_std
+                )
+                stage_log[f"diag/cka/{stage_name}_classification_mean"] = (
+                    cka_classification_mean
+                )
+                stage_log[f"diag/cka/{stage_name}_classification_std"] = (
+                    cka_classification_std
+                )
+        if include_classification_metrics and outputs.get("logits") is not None:
             predicted_labels = torch.argmax(outputs["logits"], dim=-1)
             classification_accuracy = float(
                 (predicted_labels == batch["classification_labels"])
@@ -2227,7 +2245,9 @@ class ThesisMultitaskModel(BaseModel):
             reconstruction_loss=reconstruction_loss,
             classification_loss=classification_loss,
             optional_loss_values=optional_loss_values,
-            classification_weight=classification_weight,
+            classification_weight=(
+                classification_weight if self.enable_classification_path else 0.0
+            ),
         )
         total_loss = total_loss + self.lambda_contrastive * contrastive_loss
 
@@ -2253,8 +2273,10 @@ class ThesisMultitaskModel(BaseModel):
             usage_loss=float(optional_loss_values["usage_loss"].detach().cpu()),
             gate_loss=float(optional_loss_values["gate_loss"].detach().cpu()),
             contrastive_loss=float(contrastive_loss.detach().cpu()),
-            classification_label_distribution=summarize_label_distribution(
-                prepared_batch["classification_labels"]
+            classification_label_distribution=(
+                summarize_label_distribution(prepared_batch["classification_labels"])
+                if self.enable_classification_path
+                else {}
             ),
             alpha=float(outputs["aux"]["alpha"].mean().detach().cpu()),
             beta=float(outputs["aux"]["beta"].mean().detach().cpu()),

@@ -11,6 +11,8 @@ from typing import Any
 
 import numpy as np
 import torch
+from pathlib import Path
+import json
 
 from src.core.console import console_print, summarize_batch
 from src.engine.checkpoint import CheckpointManager
@@ -24,6 +26,10 @@ from src.metrics.pointwise import (
     compute_binary_classification_metrics,
     compute_multiclass_classification_metrics,
     compute_pointwise_metrics,
+)
+from src.metrics.classification_diagnostics import (
+    compute_hard_prediction_ratio,
+    compute_row_normalized_confusion_matrix,
 )
 from src.models.base_model import BaseModel
 
@@ -45,6 +51,10 @@ class Trainer:
         enable_reconstruction_diagnostics: bool = False,
         diagnostics_log_interval_steps: int = 1,
         diagnostics_include_grad_norm: bool = False,
+        diagnostics_stages_for_classification: list[str] | None = None,
+        log_hard_prediction_ratio: bool = False,
+        log_row_normalized_confusion_matrix: bool = False,
+        focus_metrics: list[str] | None = None,
     ) -> None:
         self.model = model
         self.optimizer = optimizer
@@ -60,7 +70,57 @@ class Trainer:
         self.enable_reconstruction_diagnostics = enable_reconstruction_diagnostics
         self.diagnostics_log_interval_steps = diagnostics_log_interval_steps
         self.diagnostics_include_grad_norm = diagnostics_include_grad_norm
+        self.diagnostics_stages_for_classification = set(
+            diagnostics_stages_for_classification or []
+        )
+        self.log_hard_prediction_ratio = log_hard_prediction_ratio
+        self.log_row_normalized_confusion_matrix = log_row_normalized_confusion_matrix
+        self.focus_metrics = focus_metrics or []
         self.metric_history: list[dict[str, Any]] = []
+
+    def _compute_and_persist_classification_diagnostics(
+        self,
+        *,
+        stage_name: str,
+        epoch_index: int,
+        logits_history: list[torch.Tensor],
+        label_history: list[torch.Tensor],
+    ) -> dict[str, float]:
+        if stage_name not in self.diagnostics_stages_for_classification:
+            return {}
+        if not logits_history or not label_history:
+            return {}
+        concatenated_logits = torch.cat(logits_history, dim=0)
+        concatenated_labels = torch.cat(label_history, dim=0)
+        class_names = tuple(str(class_index) for class_index in range(concatenated_logits.shape[-1]))
+        epoch_metrics: dict[str, float] = {}
+        if self.log_hard_prediction_ratio:
+            hard_ratio = compute_hard_prediction_ratio(concatenated_logits, class_names)
+            for class_name, ratio in hard_ratio.items():
+                epoch_metrics[f"{stage_name}_hard_prediction_ratio_class_{class_name}"] = ratio
+        confusion_payload = compute_row_normalized_confusion_matrix(
+            concatenated_logits,
+            concatenated_labels,
+            class_names,
+        )
+        if self.log_row_normalized_confusion_matrix:
+            for class_index, class_name in enumerate(class_names):
+                epoch_metrics[
+                    f"{stage_name}_row_normalized_confusion_diagonal_class_{class_name}"
+                ] = float(confusion_payload["row_normalized"][class_index][class_index])
+            diagnostics_dir = Path(self.experiment_logger.output_dir) / "classification_diagnostics"
+            diagnostics_dir.mkdir(parents=True, exist_ok=True)
+            diagnostics_path = diagnostics_dir / f"epoch_{epoch_index + 1:04d}_{stage_name}.json"
+            diagnostics_record = {
+                "epoch": epoch_index + 1,
+                "stage": stage_name,
+                **confusion_payload,
+            }
+            diagnostics_path.write_text(
+                json.dumps(diagnostics_record, indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
+        return epoch_metrics
 
     def _move_batch_to_device(self, batch: dict[str, Any]) -> dict[str, Any]:
         # Keeping device transfer in one helper avoids repeating the same logic
@@ -482,6 +542,7 @@ class Trainer:
             best_checkpoint_monitor_mode
         )
         best_checkpoint_path = None
+        best_checkpoint_memory_initialized = False
 
         self.model.to(self.device)
         console_print(
@@ -636,11 +697,27 @@ class Trainer:
                 )
             )
             epoch_metrics.update(
+                self._compute_and_persist_classification_diagnostics(
+                    stage_name="train",
+                    epoch_index=epoch_index,
+                    logits_history=train_logits_history,
+                    label_history=train_label_history,
+                )
+            )
+            epoch_metrics.update(
                 self._aggregate_multitask_classification_metrics(
                     logits_history=val_logits_history,
                     label_history=val_label_history,
                     forward_pass_seconds_history=val_forward_pass_seconds_history,
                     stage_name="val",
+                )
+            )
+            epoch_metrics.update(
+                self._compute_and_persist_classification_diagnostics(
+                    stage_name="val_synth",
+                    epoch_index=epoch_index,
+                    logits_history=val_synth_logits_history,
+                    label_history=val_synth_label_history,
                 )
             )
             epoch_metrics.update(
@@ -697,6 +774,8 @@ class Trainer:
             epoch_metrics.update(self._step_learning_rate_scheduler(epoch_metrics))
             self.metric_history.append(epoch_metrics)
             self.experiment_logger.log_metrics(epoch_metrics)
+            if self.focus_metrics:
+                self.experiment_logger.log_focused_metrics(epoch_metrics, self.focus_metrics)
             console_print(
                 "TRAIN",
                 "Completed epoch",
@@ -717,6 +796,15 @@ class Trainer:
                 monitor_mode=best_checkpoint_monitor_mode,
             ):
                 best_checkpoint_metric_value = current_checkpoint_metric_value
+                checkpoint_extra_state = (
+                    self.model.get_checkpoint_extra_state()
+                    if hasattr(self.model, "get_checkpoint_extra_state")
+                    else None
+                )
+                if isinstance(checkpoint_extra_state, dict):
+                    best_checkpoint_memory_initialized = bool(
+                        checkpoint_extra_state.get("memory_initialized", False)
+                    )
                 console_print(
                     "CHECKPOINT",
                     "Checkpoint monitor improved; saving best checkpoint",
@@ -735,12 +823,35 @@ class Trainer:
                     config=config,
                     epoch=epoch_index + 1,
                     metric_history=self.metric_history,
-                    extra_state=(
-                        self.model.get_checkpoint_extra_state()
-                        if hasattr(self.model, "get_checkpoint_extra_state")
-                        else None
-                    ),
+                    extra_state=checkpoint_extra_state,
                 )
+
+        if (
+            best_checkpoint_path is not None
+            and hasattr(self.model, "memory_initialized")
+            and bool(getattr(self.model, "memory_initialized"))
+            and not best_checkpoint_memory_initialized
+        ):
+            console_print(
+                "CHECKPOINT",
+                "Refreshing best checkpoint with initialized memory state",
+                checkpoint_path=best_checkpoint_path,
+            )
+            best_checkpoint_path = self.checkpoint_manager.save_checkpoint(
+                checkpoint_name="best.pt",
+                model=self.model,
+                optimizer=self.optimizer,
+                scheduler=self.scheduler,
+                scaler_state=scaler_state,
+                config=config,
+                epoch=epochs,
+                metric_history=self.metric_history,
+                extra_state=(
+                    self.model.get_checkpoint_extra_state()
+                    if hasattr(self.model, "get_checkpoint_extra_state")
+                    else None
+                ),
+            )
 
         return {
             "best_checkpoint_path": best_checkpoint_path,
