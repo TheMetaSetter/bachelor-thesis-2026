@@ -62,9 +62,7 @@ class DummyPlateauModel(nn.Module):
 
     def synthetic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
         current_step_index = self.synthetic_validation_step_index
-        val_synth_loss = float(
-            self.val_synth_loss_sequence[current_step_index]
-        )
+        val_synth_loss = float(self.val_synth_loss_sequence[current_step_index])
         self.synthetic_validation_step_index += 1
         loss = self.scalar * 0.0 + val_synth_loss
         synthetic_batch = dict(batch)
@@ -622,9 +620,10 @@ def test_trainer_tracks_best_checkpoint_from_val_synth_vus_pr(tmp_path: Path) ->
     best_checkpoint = torch.load(outputs["best_checkpoint_path"], map_location="cpu")
 
     assert best_checkpoint["epoch"] == 2
-    assert best_checkpoint["metric_history"][-1]["val_synth_vus_pr"] >= best_checkpoint[
-        "metric_history"
-    ][0]["val_synth_vus_pr"]
+    assert (
+        best_checkpoint["metric_history"][-1]["val_synth_vus_pr"]
+        >= best_checkpoint["metric_history"][0]["val_synth_vus_pr"]
+    )
 
 
 def test_trainer_supports_cosine_runtime_with_val_synth_vus_pr_checkpoint_monitor(

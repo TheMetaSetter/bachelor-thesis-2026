@@ -30,7 +30,9 @@ def _load_metrics_jsonl(metrics_path: str | Path) -> list[dict[str, float]]:
     return parsed_rows
 
 
-def _extract_series(rows: list[dict[str, float]], metric_name: str) -> tuple[list[int], list[float]]:
+def _extract_series(
+    rows: list[dict[str, float]], metric_name: str
+) -> tuple[list[int], list[float]]:
     epochs: list[int] = []
     values: list[float] = []
     for row in rows:

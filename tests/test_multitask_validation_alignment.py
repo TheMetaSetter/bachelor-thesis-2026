@@ -134,9 +134,10 @@ def test_synthetic_validation_is_deterministic_after_rng_reset() -> None:
     assert "val_synth_classification_loss" in first_step["log"]
     assert "val_synth_classification_accuracy" in first_step["log"]
     assert "synthetic_anomaly_mask" in first_step["batch"]
-    assert first_step["batch"]["synthetic_anomaly_mask"].shape == first_step["batch"][
-        "x"
-    ].shape[:2]
+    assert (
+        first_step["batch"]["synthetic_anomaly_mask"].shape
+        == first_step["batch"]["x"].shape[:2]
+    )
 
 
 def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(

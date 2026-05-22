@@ -327,7 +327,9 @@ def test_load_explicit_redlamp_cosine_val_synth_vus_pr_config() -> None:
     )
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
-    assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "reduce_on_plateau"
+    assert (
+        loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "reduce_on_plateau"
+    )
     assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
     assert loaded_config["epochs"] == 300
 
@@ -401,7 +403,9 @@ def test_load_thesis_multiclass_bootstrap_train_configs_enable_wandb(
 
 
 def test_load_multitask_smoke_config_keeps_wandb_disabled() -> None:
-    loaded_config = load_experiment_config("configs/experiment/smd_multitask_smoke.yaml")
+    loaded_config = load_experiment_config(
+        "configs/experiment/smd_multitask_smoke.yaml"
+    )
 
     assert loaded_config["logging"]["use_wandb"] is False
     assert loaded_config["logging"]["wandb_mode"] == "online"

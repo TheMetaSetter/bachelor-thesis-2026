@@ -56,6 +56,7 @@ def test_redlamp_synthetic_validation_step_exposes_synthetic_anomaly_mask() -> N
     step_output = model.synthetic_validation_step(batch)
 
     assert "synthetic_anomaly_mask" in step_output["batch"]
-    assert step_output["batch"]["synthetic_anomaly_mask"].shape == step_output[
-        "batch"
-    ]["x"].shape[:2]
+    assert (
+        step_output["batch"]["synthetic_anomaly_mask"].shape
+        == step_output["batch"]["x"].shape[:2]
+    )

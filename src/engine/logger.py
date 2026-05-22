@@ -64,9 +64,9 @@ class ExperimentLogger:
                 "use_synthetic_augmentation": experiment_config.get("task", {}).get(
                     "use_synthetic_augmentation"
                 ),
-                "reconstruction_normal_only": experiment_config.get(
-                    "model", {}
-                ).get("reconstruction_normal_only"),
+                "reconstruction_normal_only": experiment_config.get("model", {}).get(
+                    "reconstruction_normal_only"
+                ),
                 "enable_reconstruction_diagnostics": experiment_config.get(
                     "logging", {}
                 ).get("enable_reconstruction_diagnostics", False),

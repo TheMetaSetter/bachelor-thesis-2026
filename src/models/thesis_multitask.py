@@ -1335,7 +1335,9 @@ class ThesisMultitaskModel(BaseModel):
         if self.active_alpha_override is None:
             alpha_scalar = torch.sigmoid(self.alpha_logit)
         else:
-            alpha_scalar = continuous_hidden.new_tensor(float(self.active_alpha_override))
+            alpha_scalar = continuous_hidden.new_tensor(
+                float(self.active_alpha_override)
+            )
         if self.active_beta_override is None:
             beta_scalar = torch.sigmoid(self.beta_logit)
         else:
@@ -1362,9 +1364,9 @@ class ThesisMultitaskModel(BaseModel):
                 [cka_reconstruction, cka_classification],
                 dim=-1,
             )
-            alpha = torch.sigmoid(self.classification_fusion_gate(cka_features)).squeeze(
-                -1
-            )
+            alpha = torch.sigmoid(
+                self.classification_fusion_gate(cka_features)
+            ).squeeze(-1)
             beta = torch.sigmoid(self.reconstruction_fusion_gate(cka_features)).squeeze(
                 -1
             )
@@ -1459,12 +1461,14 @@ class ThesisMultitaskModel(BaseModel):
         if int(normal_token_mask.sum().item()) == 0:
             return self._zero_loss(anchor_hidden)
         anchor_tokens = anchor_hidden.reshape(-1, self.hidden_dim)[normal_token_mask]
-        positive_tokens = positive_hidden.reshape(-1, self.hidden_dim)[normal_token_mask]
+        positive_tokens = positive_hidden.reshape(-1, self.hidden_dim)[
+            normal_token_mask
+        ]
         normalized_anchors = F.normalize(anchor_tokens, dim=-1, eps=self.epsilon)
         normalized_positives = F.normalize(positive_tokens, dim=-1, eps=self.epsilon)
-        logits = (
-            normalized_anchors @ normalized_positives.T
-        ) / max(self.contrastive_temperature, self.epsilon)
+        logits = (normalized_anchors @ normalized_positives.T) / max(
+            self.contrastive_temperature, self.epsilon
+        )
         targets = torch.arange(
             logits.shape[0],
             device=logits.device,
@@ -1515,7 +1519,9 @@ class ThesisMultitaskModel(BaseModel):
             dtype=torch.long,
             device=prepared_batch["x"].device,
         )
-        prepared_batch["classification_class_names"] = self._classification_class_names()
+        prepared_batch["classification_class_names"] = (
+            self._classification_class_names()
+        )
         prepared_batch["synthetic_anomaly_mask"] = torch.zeros(
             batch_size,
             window_size,
@@ -1562,7 +1568,9 @@ class ThesisMultitaskModel(BaseModel):
             return None
         if stage_name not in {"train", "val_synth"}:
             return None
-        clean_batch = self._prepare_clean_batch(self._clone_batch(batch), stage_name="val")
+        clean_batch = self._prepare_clean_batch(
+            self._clone_batch(batch), stage_name="val"
+        )
         augmented_batch = self._prepare_batch(self._clone_batch(batch), stage_name)
         return clean_batch, augmented_batch
 
@@ -2197,7 +2205,9 @@ class ThesisMultitaskModel(BaseModel):
             clean_batch, augmented_batch = contrastive_pair
             clean_outputs = self.forward(clean_batch, stage_name="val")
             prepared_batch = augmented_batch
-            prepared_batch["paired_hidden_for_fusion"] = clean_outputs["hidden"].detach()
+            prepared_batch["paired_hidden_for_fusion"] = clean_outputs[
+                "hidden"
+            ].detach()
             contrastive_loss = self._compute_two_view_contrastive_loss(
                 anchor_hidden=clean_outputs["hidden"],
                 positive_hidden=self.encoder(prepared_batch)["hidden"],

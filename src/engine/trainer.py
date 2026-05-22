@@ -138,9 +138,7 @@ class Trainer:
             ] = p95_loss / (p50_loss + 1.0e-12)
         return diagnostic_metrics
 
-    def _include_reconstruction_diagnostics_for_step(
-        self, *, step_index: int
-    ) -> bool:
+    def _include_reconstruction_diagnostics_for_step(self, *, step_index: int) -> bool:
         if not self.enable_reconstruction_diagnostics:
             return False
         return step_index % self.diagnostics_log_interval_steps == 0
@@ -390,12 +388,14 @@ class Trainer:
                     pointwise_payloads.append(
                         {
                             "meta": step_output["batch"]["meta"],
-                            "point_scores": step_output["outputs"][
-                                "point_scores"
-                            ].detach().cpu(),
+                            "point_scores": step_output["outputs"]["point_scores"]
+                            .detach()
+                            .cpu(),
                             "point_labels": step_output["batch"][
                                 pointwise_label_batch_key
-                            ].detach().cpu(),
+                            ]
+                            .detach()
+                            .cpu(),
                         }
                     )
 
@@ -447,7 +447,9 @@ class Trainer:
             vus_num_thresholds=(
                 200
                 if self.validation_evaluator_config is None
-                else int(self.validation_evaluator_config.get("vus_num_thresholds", 200))
+                else int(
+                    self.validation_evaluator_config.get("vus_num_thresholds", 200)
+                )
             ),
         )
         pointwise_metrics["threshold"] = threshold

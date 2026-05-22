@@ -84,7 +84,9 @@ def accumulate_pointwise_window_payload(
                 dtype=point_labels.dtype,
             )
 
-        entity_score_sums[entity_id][start_index:end_index] += point_scores[window_index]
+        entity_score_sums[entity_id][start_index:end_index] += point_scores[
+            window_index
+        ]
         entity_score_counts[entity_id][start_index:end_index] += 1.0
         entity_point_labels[entity_id][start_index:end_index] = torch.maximum(
             entity_point_labels[entity_id][start_index:end_index],
