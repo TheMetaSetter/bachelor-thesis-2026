@@ -92,12 +92,16 @@ class Trainer:
             return {}
         concatenated_logits = torch.cat(logits_history, dim=0)
         concatenated_labels = torch.cat(label_history, dim=0)
-        class_names = tuple(str(class_index) for class_index in range(concatenated_logits.shape[-1]))
+        class_names = tuple(
+            str(class_index) for class_index in range(concatenated_logits.shape[-1])
+        )
         epoch_metrics: dict[str, float] = {}
         if self.log_hard_prediction_ratio:
             hard_ratio = compute_hard_prediction_ratio(concatenated_logits, class_names)
             for class_name, ratio in hard_ratio.items():
-                epoch_metrics[f"{stage_name}_hard_prediction_ratio_class_{class_name}"] = ratio
+                epoch_metrics[
+                    f"{stage_name}_hard_prediction_ratio_class_{class_name}"
+                ] = ratio
         confusion_payload = compute_row_normalized_confusion_matrix(
             concatenated_logits,
             concatenated_labels,
@@ -108,9 +112,13 @@ class Trainer:
                 epoch_metrics[
                     f"{stage_name}_row_normalized_confusion_diagonal_class_{class_name}"
                 ] = float(confusion_payload["row_normalized"][class_index][class_index])
-            diagnostics_dir = Path(self.experiment_logger.output_dir) / "classification_diagnostics"
+            diagnostics_dir = (
+                Path(self.experiment_logger.output_dir) / "classification_diagnostics"
+            )
             diagnostics_dir.mkdir(parents=True, exist_ok=True)
-            diagnostics_path = diagnostics_dir / f"epoch_{epoch_index + 1:04d}_{stage_name}.json"
+            diagnostics_path = (
+                diagnostics_dir / f"epoch_{epoch_index + 1:04d}_{stage_name}.json"
+            )
             diagnostics_record = {
                 "epoch": epoch_index + 1,
                 "stage": stage_name,
@@ -775,7 +783,9 @@ class Trainer:
             self.metric_history.append(epoch_metrics)
             self.experiment_logger.log_metrics(epoch_metrics)
             if self.focus_metrics:
-                self.experiment_logger.log_focused_metrics(epoch_metrics, self.focus_metrics)
+                self.experiment_logger.log_focused_metrics(
+                    epoch_metrics, self.focus_metrics
+                )
             console_print(
                 "TRAIN",
                 "Completed epoch",

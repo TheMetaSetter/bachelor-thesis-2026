@@ -732,13 +732,16 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         ]:
             field_value = logging_config.get(field_name)
             if field_value is not None and not isinstance(field_value, bool):
-                raise ValueError(f"logging.{field_name} must be a boolean when provided")
+                raise ValueError(
+                    f"logging.{field_name} must be a boolean when provided"
+                )
         diagnostics_stages_for_classification = logging_config.get(
             "diagnostics_stages_for_classification"
         )
         if diagnostics_stages_for_classification is not None:
             if not isinstance(diagnostics_stages_for_classification, list) or not all(
-                isinstance(stage_name, str) for stage_name in diagnostics_stages_for_classification
+                isinstance(stage_name, str)
+                for stage_name in diagnostics_stages_for_classification
             ):
                 raise ValueError(
                     "logging.diagnostics_stages_for_classification must be a list of strings when provided"
@@ -755,7 +758,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         focus_metrics = logging_config.get("focus_metrics")
         if focus_metrics is not None:
             if not isinstance(focus_metrics, list) or not all(
-                isinstance(metric_name, str) and metric_name for metric_name in focus_metrics
+                isinstance(metric_name, str) and metric_name
+                for metric_name in focus_metrics
             ):
                 raise ValueError(
                     "logging.focus_metrics must be a list of non-empty strings when provided"

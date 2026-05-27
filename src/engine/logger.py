@@ -133,7 +133,6 @@ class ExperimentLogger:
             )
             self.focused_metrics_path = self.output_dir / focused_metrics_filename
 
-
     def log_metrics(self, metrics: dict[str, Any]) -> None:
         serializable_metrics = json.dumps(metrics, sort_keys=True)
         with self.metrics_path.open("a", encoding="utf-8") as handle:

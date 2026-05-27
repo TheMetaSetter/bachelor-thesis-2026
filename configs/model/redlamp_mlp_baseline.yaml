@@ -10,3 +10,10 @@ lambda_cls: 0.1
 use_label_refurbishment: true
 refurbishment_alpha: 0.1
 refurbishment_beta: 0.01
+enable_gradient_conflict_profiling: false
+gradient_profiling_scope: encoder_all
+gradient_focus_layer_name: encoder_last_linear
+gradient_log_every_n_steps: 1
+gradient_ema_alpha: 0.1
+gradient_sma_window: 50
+gradient_profile_include_bias: false

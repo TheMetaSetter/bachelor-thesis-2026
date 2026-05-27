@@ -29,4 +29,6 @@ def test_classification_path_disabled_removes_logits_and_classification_logs() -
     assert step_output["outputs"]["logits"] is None
     assert step_output["loss_terms"]["reconstruction_loss"].item() >= 0.0
     assert step_output["loss_terms"]["classification_loss"].item() == 0.0
-    assert not any("classification_" in metric_name for metric_name in step_output["log"])
+    assert not any(
+        "classification_" in metric_name for metric_name in step_output["log"]
+    )

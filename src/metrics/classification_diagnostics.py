@@ -14,9 +14,9 @@ def compute_hard_prediction_ratio(
     num_predictions = max(int(predicted_labels.shape[0]), 1)
     ratios: dict[str, float] = {}
     for class_index, class_name in enumerate(class_names):
-        ratios[class_name] = float((predicted_labels == class_index).sum().item()) / float(
-            num_predictions
-        )
+        ratios[class_name] = float(
+            (predicted_labels == class_index).sum().item()
+        ) / float(num_predictions)
     return ratios
 
 
@@ -35,7 +35,10 @@ def compute_row_normalized_confusion_matrix(
 
     confusion_counts = torch.zeros((num_classes, num_classes), dtype=torch.long)
     for true_label, predicted_label in zip(labels, predicted_labels):
-        if 0 <= int(true_label) < num_classes and 0 <= int(predicted_label) < num_classes:
+        if (
+            0 <= int(true_label) < num_classes
+            and 0 <= int(predicted_label) < num_classes
+        ):
             confusion_counts[int(true_label), int(predicted_label)] += 1
 
     row_sums = confusion_counts.sum(dim=1, keepdim=True).to(dtype=torch.float32)

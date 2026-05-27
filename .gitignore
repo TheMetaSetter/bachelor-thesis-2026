@@ -206,7 +206,7 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-/data
+
 Time-Series-Library/
 
 data.zip
@@ -214,3 +214,9 @@ data.zip
 .codex-test-deps/
 
 /.qodo
+
+/data
+
+outputs.zip
+
+/outputs
