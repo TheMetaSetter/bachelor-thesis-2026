@@ -180,13 +180,13 @@ def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(
     assert "val_usage_lambda" in epoch_metrics
     assert "val_classification_loss" not in epoch_metrics
     assert "val_classification_accuracy" not in epoch_metrics
-    assert "val_synth_loss" in epoch_metrics
-    assert "val_synth_classification_loss" in epoch_metrics
-    assert "val_synth_classification_accuracy" in epoch_metrics
-    assert "val_synth_roc_auc" in epoch_metrics
-    assert "val_synth_pr_auc" in epoch_metrics
-    assert "val_synth_pr_auc_pointwise" in epoch_metrics
-    assert "val_synth_vus_pr" in epoch_metrics
+    assert "val_realistic_loss" in epoch_metrics
+    assert "val_realistic_classification_loss" in epoch_metrics
+    assert "val_realistic_classification_accuracy" in epoch_metrics
+    assert "val_realistic_roc_auc" in epoch_metrics
+    assert "val_realistic_pr_auc" in epoch_metrics
+    assert "val_realistic_pr_auc_pointwise" in epoch_metrics
+    assert "val_realistic_vus_pr" in epoch_metrics
     assert epoch_metrics["train_usage_lambda"] == 0.2
     assert epoch_metrics["val_usage_lambda"] == 0.2
-    assert epoch_metrics["val_synth_usage_lambda"] == 0.2
+    assert epoch_metrics["val_realistic_usage_lambda"] == 0.2

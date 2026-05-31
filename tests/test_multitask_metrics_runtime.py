@@ -74,15 +74,15 @@ def test_trainer_dispatches_twelve_class_logits_to_multiclass_metrics() -> None:
         logits_history=[logits],
         label_history=[labels],
         forward_pass_seconds_history=[],
-        stage_name="val_synth",
+        stage_name="val_realistic",
     )
 
-    assert metrics["val_synth_accuracy"] == 1.0
-    assert metrics["val_synth_macro_f1"] == 1.0
-    assert metrics["val_synth_weighted_f1"] == 1.0
-    assert metrics["val_synth_num_classes_observed"] == 12.0
-    assert "val_synth_roc_auc" not in metrics
-    assert "val_synth_pr_auc" not in metrics
+    assert metrics["val_realistic_accuracy"] == 1.0
+    assert metrics["val_realistic_macro_f1"] == 1.0
+    assert metrics["val_realistic_weighted_f1"] == 1.0
+    assert metrics["val_realistic_num_classes_observed"] == 12.0
+    assert "val_realistic_roc_auc" not in metrics
+    assert "val_realistic_pr_auc" not in metrics
 
 
 def test_run_training_experiment_logs_multitask_epoch_metrics(tmp_path: Path) -> None:

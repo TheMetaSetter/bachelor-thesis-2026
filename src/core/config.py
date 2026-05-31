@@ -302,7 +302,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "warmup_alpha_value",
             "warmup_beta_value",
             "anomaly_probability",
-            "balance_binary_classes_within_batch",
+            "train_balance_classes",
+            "val_realistic",
+            "val_realistic_source",
+            "val_anomaly_rate_override",
             "min_segment_fraction",
             "max_segment_fraction",
             "spike_scale",
@@ -488,15 +491,16 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     )
     if checkpoint_monitor_metric not in {
         "val_loss",
-        "val_synth_loss",
-        "val_synth_roc_auc",
-        "val_synth_pr_auc",
-        "val_synth_vus_pr",
+        "val_realistic_loss",
+        "val_realistic_roc_auc",
+        "val_realistic_pr_auc",
+        "val_realistic_vus_pr",
         "val_vus_pr",
     }:
         raise ValueError(
-            "checkpoint_monitor_metric must be one of: val_loss, val_synth_loss, "
-            "val_synth_roc_auc, val_synth_pr_auc, val_synth_vus_pr, val_vus_pr"
+            "checkpoint_monitor_metric must be one of: val_loss, "
+            "val_realistic_loss, val_realistic_roc_auc, val_realistic_pr_auc, "
+            "val_realistic_vus_pr, val_vus_pr"
         )
 
     scheduler_config = optimizer_config.get("scheduler")
@@ -536,13 +540,15 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             monitor_metric = scheduler_config.get("monitor_metric")
             if monitor_metric not in {
                 "val_loss",
-                "val_synth_loss",
-                "val_synth_roc_auc",
-                "val_synth_pr_auc",
-                "val_synth_vus_pr",
+                "val_realistic_loss",
+                "val_realistic_roc_auc",
+                "val_realistic_pr_auc",
+                "val_realistic_vus_pr",
             }:
                 raise ValueError(
-                    "optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_loss, val_synth_roc_auc, val_synth_pr_auc, val_synth_vus_pr"
+                    "optimizer.scheduler.monitor_metric must be one of: val_loss, "
+                    "val_realistic_loss, val_realistic_roc_auc, val_realistic_pr_auc, "
+                    "val_realistic_vus_pr"
                 )
             scheduler_factor = scheduler_config.get("factor")
             if (
@@ -674,9 +680,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "use_synthetic_validation": task_config.get(
                 "use_synthetic_validation", True
             ),
-            "balance_binary_classes_within_batch": task_config.get(
-                "balance_binary_classes_within_batch", False
-            ),
+            "train_balance_classes": task_config.get("train_balance_classes", False),
+            "val_realistic": task_config.get("val_realistic", True),
         }
         if model_config.get("model_name") == "redlamp_mlp_baseline":
             for model_only_field in [
@@ -824,6 +829,24 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("warmup_beta_value must be between 0 and 1")
         if not 0.0 <= float(task_config["anomaly_probability"]) <= 1.0:
             raise ValueError("anomaly_probability must be between 0 and 1")
+        val_realistic_source = task_config.get(
+            "val_realistic_source", "test_same_scope"
+        )
+        if val_realistic_source not in {"test_same_scope", "test_smd_all"}:
+            raise ValueError(
+                "val_realistic_source must be one of: test_same_scope, test_smd_all"
+            )
+        val_anomaly_rate_override = task_config.get("val_anomaly_rate_override")
+        if val_anomaly_rate_override is not None and not isinstance(
+            val_anomaly_rate_override, (int, float)
+        ):
+            raise ValueError(
+                "val_anomaly_rate_override must be a float in [0, 1] or null"
+            )
+        if val_anomaly_rate_override is not None and not 0.0 <= float(
+            val_anomaly_rate_override
+        ) <= 1.0:
+            raise ValueError("val_anomaly_rate_override must be between 0 and 1")
         if not 0.0 < float(task_config["min_segment_fraction"]) <= 1.0:
             raise ValueError("min_segment_fraction must be between 0 and 1")
         if not 0.0 < float(task_config["max_segment_fraction"]) <= 1.0:
@@ -1061,7 +1084,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 raise ValueError(
                     "logging.diagnostics_stages_for_classification must be a list of strings when provided"
                 )
-            allowed_stages = {"train", "val", "val_synth", "test"}
+            allowed_stages = {"train", "val", "val_realistic", "test"}
             invalid_stage_names = sorted(
                 set(diagnostics_stages_for_classification) - allowed_stages
             )

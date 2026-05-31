@@ -177,3 +177,61 @@ class SMDDatasetParser(BaseSequenceParser):
             test_sequences=len(test_sequences),
         )
         return parsed_splits
+
+
+def compute_smd_test_window_anomaly_rate(
+    *,
+    root_dir: str | Path,
+    window_size: int,
+    stride: int,
+    entity_ids: list[str] | None,
+    use_all_entities: bool,
+) -> float:
+    if use_all_entities:
+        resolved_test_dir = Path(root_dir) / "test"
+        resolved_entity_ids = sorted(file_path.stem for file_path in resolved_test_dir.glob("*.txt"))
+    else:
+        resolved_entity_ids = entity_ids
+    parser = SMDDatasetParser(
+        root_dir=root_dir,
+        validation_split_ratio=0.2,
+        entity_ids=resolved_entity_ids,
+    )
+    parsed_splits = parser.parse()
+    test_sequences = parsed_splits["test"]
+    total_windows = 0
+    anomalous_windows = 0
+
+    for sequence in test_sequences:
+        point_labels = sequence["point_labels"]
+        if point_labels is None:
+            continue
+        sequence_length = int(point_labels.shape[0])
+        if sequence_length < window_size:
+            continue
+        for start_index in range(0, sequence_length - window_size + 1, stride):
+            end_index = start_index + window_size
+            total_windows += 1
+            window_has_anomaly = bool(
+                torch.count_nonzero(point_labels[start_index:end_index]).item() > 0
+            )
+            if window_has_anomaly:
+                anomalous_windows += 1
+
+    if total_windows == 0:
+        raise ValueError(
+            "Cannot derive SMD test window anomaly rate because zero windows were generated"
+        )
+    anomaly_rate = anomalous_windows / total_windows
+    console_print(
+        "DATA",
+        "Computed SMD test window anomaly rate",
+        window_size=window_size,
+        stride=stride,
+        use_all_entities=use_all_entities,
+        selected_entity_ids=resolved_entity_ids,
+        total_windows=total_windows,
+        anomalous_windows=anomalous_windows,
+        anomaly_rate=anomaly_rate,
+    )
+    return float(anomaly_rate)

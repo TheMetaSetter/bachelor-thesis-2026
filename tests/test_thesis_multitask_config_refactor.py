@@ -81,7 +81,7 @@ def _flat_model_kwargs(**overrides: object) -> dict[str, object]:
         "min_segment_fraction": 0.15,
         "max_segment_fraction": 0.25,
         "spike_scale": 4.0,
-        "balance_binary_classes_within_batch": True,
+        "train_balance_classes": True,
         "anomaly_families": ["spike", "noise", "scale"],
     }
     model_kwargs.update(overrides)
@@ -230,7 +230,7 @@ def test_registry_runtime_still_accepts_flat_resolved_experiment_config() -> Non
             "min_segment_fraction": 0.15,
             "max_segment_fraction": 0.25,
             "spike_scale": 4.0,
-            "balance_binary_classes_within_batch": True,
+            "train_balance_classes": True,
             "anomaly_families": ["spike", "noise", "scale"],
         },
     }
@@ -262,7 +262,7 @@ def test_checkpoint_style_flat_config_reconstructs_same_state_dict_keys() -> Non
             "min_segment_fraction": 0.15,
             "max_segment_fraction": 0.25,
             "spike_scale": 4.0,
-            "balance_binary_classes_within_batch": True,
+            "train_balance_classes": True,
             "anomaly_families": ["spike", "noise", "scale"],
         },
     }

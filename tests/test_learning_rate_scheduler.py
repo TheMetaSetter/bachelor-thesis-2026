@@ -21,18 +21,18 @@ class DummyPlateauModel(nn.Module):
         self,
         *,
         val_loss_sequence: list[float],
-        val_synth_loss_sequence: list[float] | None = None,
-        val_synth_point_scores_sequence: list[torch.Tensor] | None = None,
+        val_realistic_loss_sequence: list[float] | None = None,
+        val_realistic_point_scores_sequence: list[torch.Tensor] | None = None,
     ) -> None:
         super().__init__()
         self.scalar = nn.Parameter(torch.tensor(1.0))
         self.val_loss_sequence = val_loss_sequence
-        self.val_synth_loss_sequence = val_synth_loss_sequence or list(
+        self.val_realistic_loss_sequence = val_realistic_loss_sequence or list(
             val_loss_sequence
         )
-        self.val_synth_point_scores_sequence = val_synth_point_scores_sequence or [
+        self.val_realistic_point_scores_sequence = val_realistic_point_scores_sequence or [
             torch.tensor([[0.1, 0.9]], dtype=torch.float32)
-            for _ in self.val_synth_loss_sequence
+            for _ in self.val_realistic_loss_sequence
         ]
         self.validation_step_index = 0
         self.synthetic_validation_step_index = 0
@@ -62,9 +62,9 @@ class DummyPlateauModel(nn.Module):
 
     def synthetic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
         current_step_index = self.synthetic_validation_step_index
-        val_synth_loss = float(self.val_synth_loss_sequence[current_step_index])
+        val_realistic_loss = float(self.val_realistic_loss_sequence[current_step_index])
         self.synthetic_validation_step_index += 1
-        loss = self.scalar * 0.0 + val_synth_loss
+        loss = self.scalar * 0.0 + val_realistic_loss
         synthetic_batch = dict(batch)
         synthetic_batch["classification_labels"] = torch.tensor(
             [0, 1], dtype=torch.long
@@ -76,13 +76,13 @@ class DummyPlateauModel(nn.Module):
         return {
             "loss": loss,
             "log": {
-                "val_synth_loss": val_synth_loss,
-                "val_synth_classification_loss": val_synth_loss,
-                "val_synth_classification_accuracy": 0.5,
+                "val_realistic_loss": val_realistic_loss,
+                "val_realistic_classification_loss": val_realistic_loss,
+                "val_realistic_classification_accuracy": 0.5,
             },
             "outputs": {
                 "logits": torch.tensor([[0.1, 0.9], [0.9, 0.1]], dtype=torch.float32),
-                "point_scores": self.val_synth_point_scores_sequence[
+                "point_scores": self.val_realistic_point_scores_sequence[
                     current_step_index
                 ],
                 "aux": {},
@@ -218,43 +218,43 @@ def test_compute_candi_style_cosine_learning_rate_uses_fractional_progress() -> 
     assert late_learning_rate < 0.01
 
 
-def test_scheduler_builder_supports_val_synth_roc_auc_monitor() -> None:
+def test_scheduler_builder_supports_val_realistic_roc_auc_monitor() -> None:
     model = nn.Linear(2, 2)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
-        _build_scheduler_experiment_config(monitor_metric="val_synth_roc_auc"),
+        _build_scheduler_experiment_config(monitor_metric="val_realistic_roc_auc"),
     )
 
     assert isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau)
     assert scheduler.mode == "max"
-    assert scheduler_monitor_metric == "val_synth_roc_auc"
+    assert scheduler_monitor_metric == "val_realistic_roc_auc"
 
 
-def test_scheduler_builder_supports_val_synth_pr_auc_monitor() -> None:
+def test_scheduler_builder_supports_val_realistic_pr_auc_monitor() -> None:
     model = nn.Linear(2, 2)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
-        _build_scheduler_experiment_config(monitor_metric="val_synth_pr_auc"),
+        _build_scheduler_experiment_config(monitor_metric="val_realistic_pr_auc"),
     )
 
     assert isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau)
     assert scheduler.mode == "max"
-    assert scheduler_monitor_metric == "val_synth_pr_auc"
+    assert scheduler_monitor_metric == "val_realistic_pr_auc"
 
 
-def test_scheduler_builder_supports_val_synth_loss_monitor() -> None:
+def test_scheduler_builder_supports_val_realistic_loss_monitor() -> None:
     model = nn.Linear(2, 2)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
-        _build_scheduler_experiment_config(monitor_metric="val_synth_loss"),
+        _build_scheduler_experiment_config(monitor_metric="val_realistic_loss"),
     )
 
     assert isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau)
     assert scheduler.mode == "min"
-    assert scheduler_monitor_metric == "val_synth_loss"
+    assert scheduler_monitor_metric == "val_realistic_loss"
 
 
 def test_scheduler_respects_min_lr_floor() -> None:
@@ -486,10 +486,10 @@ def test_trainer_adds_val_vus_pr_before_checkpoint_selection(tmp_path: Path) -> 
     assert outputs["best_checkpoint_path"] is not None
 
 
-def test_trainer_logs_val_synth_vus_pr_alongside_synthetic_classification_metrics(
+def test_trainer_logs_val_realistic_vus_pr_alongside_synthetic_classification_metrics(
     tmp_path: Path,
 ) -> None:
-    model = DummyPlateauModel(val_loss_sequence=[1.0], val_synth_loss_sequence=[1.0])
+    model = DummyPlateauModel(val_loss_sequence=[1.0], val_realistic_loss_sequence=[1.0])
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     experiment_logger = ExperimentLogger(tmp_path / "logs")
     validation_batch = {
@@ -534,17 +534,17 @@ def test_trainer_logs_val_synth_vus_pr_alongside_synthetic_classification_metric
         experiment_logger.close()
 
     epoch_metrics = outputs["metric_history"][0]
-    assert "val_synth_pr_auc" in epoch_metrics
-    assert "val_synth_pr_auc_pointwise" in epoch_metrics
-    assert "val_synth_vus_pr" in epoch_metrics
-    assert "val_synth_threshold" in epoch_metrics
+    assert "val_realistic_pr_auc" in epoch_metrics
+    assert "val_realistic_pr_auc_pointwise" in epoch_metrics
+    assert "val_realistic_vus_pr" in epoch_metrics
+    assert "val_realistic_threshold" in epoch_metrics
 
 
-def test_trainer_tracks_best_checkpoint_from_val_synth_vus_pr(tmp_path: Path) -> None:
+def test_trainer_tracks_best_checkpoint_from_val_realistic_vus_pr(tmp_path: Path) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[0.8, 0.7, 0.6],
-        val_synth_loss_sequence=[1.0, 1.0, 1.0],
-        val_synth_point_scores_sequence=[
+        val_realistic_loss_sequence=[1.0, 1.0, 1.0],
+        val_realistic_point_scores_sequence=[
             torch.tensor([[0.9, 0.1]], dtype=torch.float32),
             torch.tensor([[0.1, 0.9]], dtype=torch.float32),
             torch.tensor([[0.3, 0.7]], dtype=torch.float32),
@@ -577,9 +577,9 @@ def test_trainer_tracks_best_checkpoint_from_val_synth_vus_pr(tmp_path: Path) ->
             "vus_max_buffer_size": 1,
             "vus_num_thresholds": 10,
         },
-        checkpoint_monitor_metric="val_synth_vus_pr",
+        checkpoint_monitor_metric="val_realistic_vus_pr",
     )
-    val_synth_vus_pr_sequence = iter([0.20, 0.90, 0.50])
+    val_realistic_vus_pr_sequence = iter([0.20, 0.90, 0.50])
 
     def fake_aggregate_reconstructed_pointwise_metrics(
         self,
@@ -589,13 +589,13 @@ def test_trainer_tracks_best_checkpoint_from_val_synth_vus_pr(tmp_path: Path) ->
         stage_name: str,
     ) -> dict[str, float]:
         del data_loader, batch_payloads
-        if stage_name != "val_synth":
+        if stage_name != "val_realistic":
             return {}
-        metric_value = next(val_synth_vus_pr_sequence)
+        metric_value = next(val_realistic_vus_pr_sequence)
         return {
-            "val_synth_pr_auc_pointwise": metric_value,
-            "val_synth_vus_pr": metric_value,
-            "val_synth_threshold": 0.5,
+            "val_realistic_pr_auc_pointwise": metric_value,
+            "val_realistic_vus_pr": metric_value,
+            "val_realistic_threshold": 0.5,
         }
 
     trainer._aggregate_reconstructed_pointwise_metrics = MethodType(
@@ -621,17 +621,17 @@ def test_trainer_tracks_best_checkpoint_from_val_synth_vus_pr(tmp_path: Path) ->
 
     assert best_checkpoint["epoch"] == 2
     assert (
-        best_checkpoint["metric_history"][-1]["val_synth_vus_pr"]
-        >= best_checkpoint["metric_history"][0]["val_synth_vus_pr"]
+        best_checkpoint["metric_history"][-1]["val_realistic_vus_pr"]
+        >= best_checkpoint["metric_history"][0]["val_realistic_vus_pr"]
     )
 
 
-def test_trainer_supports_cosine_runtime_with_val_synth_vus_pr_checkpoint_monitor(
+def test_trainer_supports_cosine_runtime_with_val_realistic_vus_pr_checkpoint_monitor(
     tmp_path: Path,
 ) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[1.0, 1.0],
-        val_synth_loss_sequence=[1.0, 1.0],
+        val_realistic_loss_sequence=[1.0, 1.0],
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     experiment_logger = ExperimentLogger(tmp_path / "logs")
@@ -668,7 +668,7 @@ def test_trainer_supports_cosine_runtime_with_val_synth_vus_pr_checkpoint_monito
             "vus_max_buffer_size": 1,
             "vus_num_thresholds": 10,
         },
-        checkpoint_monitor_metric="val_synth_vus_pr",
+        checkpoint_monitor_metric="val_realistic_vus_pr",
     )
 
     try:
@@ -686,17 +686,17 @@ def test_trainer_supports_cosine_runtime_with_val_synth_vus_pr_checkpoint_monito
         experiment_logger.close()
 
     metric_history = outputs["metric_history"]
-    assert "val_synth_vus_pr" in metric_history[-1]
+    assert "val_realistic_vus_pr" in metric_history[-1]
     assert metric_history[-1]["optimizer_lr"] < 0.1
     assert outputs["best_checkpoint_path"] is not None
 
 
-def test_trainer_ignores_val_synth_metrics_for_scheduler_stepping(
+def test_trainer_ignores_val_realistic_metrics_for_scheduler_stepping(
     tmp_path: Path,
 ) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[1.0, 0.9, 0.8],
-        val_synth_loss_sequence=[1.0, 5.0, 10.0],
+        val_realistic_loss_sequence=[1.0, 5.0, 10.0],
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
@@ -738,21 +738,21 @@ def test_trainer_ignores_val_synth_metrics_for_scheduler_stepping(
     assert [
         epoch_metrics["scheduler_lr_reduced"] for epoch_metrics in metric_history
     ] == [0.0, 0.0, 0.0]
-    assert metric_history[-1]["val_synth_loss"] == 10.0
+    assert metric_history[-1]["val_realistic_loss"] == 10.0
     assert metric_history[-1]["scheduler_monitor_val_loss"] == 0.8
 
 
-def test_trainer_can_step_scheduler_from_val_synth_roc_auc(tmp_path: Path) -> None:
+def test_trainer_can_step_scheduler_from_val_realistic_roc_auc(tmp_path: Path) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[1.0, 1.0, 1.0],
-        val_synth_loss_sequence=[1.0, 1.0, 1.0],
+        val_realistic_loss_sequence=[1.0, 1.0, 1.0],
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
         _build_scheduler_experiment_config(
             patience=1,
-            monitor_metric="val_synth_roc_auc",
+            monitor_metric="val_realistic_roc_auc",
         ),
     )
     experiment_logger = ExperimentLogger(tmp_path / "logs")
@@ -782,24 +782,24 @@ def test_trainer_can_step_scheduler_from_val_synth_roc_auc(tmp_path: Path) -> No
         experiment_logger.close()
 
     metric_history = outputs["metric_history"]
-    assert "val_synth_roc_auc" in metric_history[-1]
+    assert "val_realistic_roc_auc" in metric_history[-1]
     assert (
-        metric_history[-1]["scheduler_monitor_val_synth_roc_auc"]
-        == metric_history[-1]["val_synth_roc_auc"]
+        metric_history[-1]["scheduler_monitor_val_realistic_roc_auc"]
+        == metric_history[-1]["val_realistic_roc_auc"]
     )
 
 
-def test_trainer_can_step_scheduler_from_val_synth_pr_auc(tmp_path: Path) -> None:
+def test_trainer_can_step_scheduler_from_val_realistic_pr_auc(tmp_path: Path) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[1.0, 1.0, 1.0],
-        val_synth_loss_sequence=[1.0, 1.0, 1.0],
+        val_realistic_loss_sequence=[1.0, 1.0, 1.0],
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
         _build_scheduler_experiment_config(
             patience=1,
-            monitor_metric="val_synth_pr_auc",
+            monitor_metric="val_realistic_pr_auc",
         ),
     )
     experiment_logger = ExperimentLogger(tmp_path / "logs")
@@ -829,24 +829,24 @@ def test_trainer_can_step_scheduler_from_val_synth_pr_auc(tmp_path: Path) -> Non
         experiment_logger.close()
 
     metric_history = outputs["metric_history"]
-    assert "val_synth_pr_auc" in metric_history[-1]
+    assert "val_realistic_pr_auc" in metric_history[-1]
     assert (
-        metric_history[-1]["scheduler_monitor_val_synth_pr_auc"]
-        == metric_history[-1]["val_synth_pr_auc"]
+        metric_history[-1]["scheduler_monitor_val_realistic_pr_auc"]
+        == metric_history[-1]["val_realistic_pr_auc"]
     )
 
 
-def test_trainer_can_step_scheduler_from_val_synth_loss(tmp_path: Path) -> None:
+def test_trainer_can_step_scheduler_from_val_realistic_loss(tmp_path: Path) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[0.5, 0.4, 0.3],
-        val_synth_loss_sequence=[1.0, 1.0, 1.0],
+        val_realistic_loss_sequence=[1.0, 1.0, 1.0],
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
         _build_scheduler_experiment_config(
             patience=1,
-            monitor_metric="val_synth_loss",
+            monitor_metric="val_realistic_loss",
         ),
     )
     experiment_logger = ExperimentLogger(tmp_path / "logs")
@@ -881,8 +881,8 @@ def test_trainer_can_step_scheduler_from_val_synth_loss(tmp_path: Path) -> None:
     assert metric_history[2]["optimizer_lr"] == 0.05
     assert metric_history[2]["scheduler_lr_reduced"] == 1.0
     assert (
-        metric_history[2]["scheduler_monitor_val_synth_loss"]
-        == metric_history[2]["val_synth_loss"]
+        metric_history[2]["scheduler_monitor_val_realistic_loss"]
+        == metric_history[2]["val_realistic_loss"]
     )
 
 
@@ -891,14 +891,14 @@ def test_trainer_tracks_best_checkpoint_from_scheduler_monitor_metric(
 ) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[0.8, 0.7, 0.6],
-        val_synth_loss_sequence=[1.0, 1.0, 1.0],
+        val_realistic_loss_sequence=[1.0, 1.0, 1.0],
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
         _build_scheduler_experiment_config(
             patience=1,
-            monitor_metric="val_synth_pr_auc",
+            monitor_metric="val_realistic_pr_auc",
         ),
     )
     experiment_logger = ExperimentLogger(tmp_path / "logs")
@@ -911,7 +911,7 @@ def test_trainer_tracks_best_checkpoint_from_scheduler_monitor_metric(
         experiment_logger=experiment_logger,
         device="cpu",
     )
-    val_synth_pr_auc_sequence = iter([0.20, 0.90, 0.50])
+    val_realistic_pr_auc_sequence = iter([0.20, 0.90, 0.50])
 
     def fake_aggregate_multitask_classification_metrics(
         self,
@@ -922,8 +922,8 @@ def test_trainer_tracks_best_checkpoint_from_scheduler_monitor_metric(
         stage_name: str,
     ) -> dict[str, float]:
         del logits_history, label_history, forward_pass_seconds_history
-        if stage_name == "val_synth":
-            return {"val_synth_pr_auc": next(val_synth_pr_auc_sequence)}
+        if stage_name == "val_realistic":
+            return {"val_realistic_pr_auc": next(val_realistic_pr_auc_sequence)}
         return {}
 
     trainer._aggregate_multitask_classification_metrics = MethodType(
@@ -949,23 +949,23 @@ def test_trainer_tracks_best_checkpoint_from_scheduler_monitor_metric(
     best_checkpoint = torch.load(outputs["best_checkpoint_path"], map_location="cpu")
 
     assert best_checkpoint["epoch"] == 2
-    assert best_checkpoint["metric_history"][-1]["val_synth_pr_auc"] == 0.90
+    assert best_checkpoint["metric_history"][-1]["val_realistic_pr_auc"] == 0.90
     assert best_checkpoint["metric_history"][-1]["val_loss"] == 0.7
 
 
-def test_trainer_tracks_best_checkpoint_from_val_synth_loss(
+def test_trainer_tracks_best_checkpoint_from_val_realistic_loss(
     tmp_path: Path,
 ) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[0.8, 0.7, 0.6],
-        val_synth_loss_sequence=[0.9, 0.2, 0.5],
+        val_realistic_loss_sequence=[0.9, 0.2, 0.5],
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer,
         _build_scheduler_experiment_config(
             patience=1,
-            monitor_metric="val_synth_loss",
+            monitor_metric="val_realistic_loss",
         ),
     )
     experiment_logger = ExperimentLogger(tmp_path / "logs")
@@ -997,7 +997,7 @@ def test_trainer_tracks_best_checkpoint_from_val_synth_loss(
     best_checkpoint = torch.load(outputs["best_checkpoint_path"], map_location="cpu")
 
     assert best_checkpoint["epoch"] == 2
-    assert best_checkpoint["metric_history"][-1]["val_synth_loss"] == 0.2
+    assert best_checkpoint["metric_history"][-1]["val_realistic_loss"] == 0.2
     assert best_checkpoint["metric_history"][-1]["val_loss"] == 0.7
 
 
@@ -1006,7 +1006,7 @@ def test_trainer_tracks_best_checkpoint_from_val_loss_without_scheduler(
 ) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[0.8, 0.5, 0.6],
-        val_synth_loss_sequence=[1.0, 1.0, 1.0],
+        val_realistic_loss_sequence=[1.0, 1.0, 1.0],
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     experiment_logger = ExperimentLogger(tmp_path / "logs")

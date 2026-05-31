@@ -74,7 +74,7 @@ def test_load_online_experiment_config_reads_valid_yaml() -> None:
     "experiment_config_path",
     TRAINING_POLICY_EXPERIMENT_CONFIGS,
 )
-def test_target_training_configs_use_shared_adamw_scheduler_val_synth_vus_pr_policy(
+def test_target_training_configs_use_shared_adamw_scheduler_val_realistic_vus_pr_policy(
     experiment_config_path: str,
 ) -> None:
     loaded_config = load_experiment_config(experiment_config_path)
@@ -89,8 +89,8 @@ def test_target_training_configs_use_shared_adamw_scheduler_val_synth_vus_pr_pol
         assert scheduler_config["cosine_end_lr"] == 0.0
         assert scheduler_config["cosine_after_warmup"] is True
     else:
-        assert scheduler_config["monitor_metric"] == "val_synth_vus_pr"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+        assert scheduler_config["monitor_metric"] == "val_realistic_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
 
 
 def test_multitask_config_accepts_memory_bootstrap_fields(tmp_path: Path) -> None:
@@ -205,7 +205,7 @@ def test_load_single_entity_rtx3090_config_reads_valid_yaml() -> None:
     )
     assert loaded_config["data"]["entity_ids"] == ["machine-2-1"]
     assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
 
 
 def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
@@ -227,7 +227,7 @@ def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
     ]
     assert loaded_config["task"]["min_segment_fraction"] == 0.3
     assert loaded_config["task"]["max_segment_fraction"] == 0.6
-    assert loaded_config["task"]["balance_binary_classes_within_batch"] is True
+    assert loaded_config["task"]["train_balance_classes"] is True
 
 
 def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor() -> (
@@ -250,11 +250,11 @@ def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor(
     validate_experiment_config(loaded_config)
 
 
-def test_validate_config_accepts_val_synth_vus_pr_checkpoint_monitor() -> None:
+def test_validate_config_accepts_val_realistic_vus_pr_checkpoint_monitor() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
     )
-    loaded_config["checkpoint_monitor_metric"] = "val_synth_vus_pr"
+    loaded_config["checkpoint_monitor_metric"] = "val_realistic_vus_pr"
 
     validate_experiment_config(loaded_config)
 
@@ -317,11 +317,11 @@ def test_load_explicit_redlamp_adamw_cosine_configs() -> None:
             "reduce_on_plateau",
         }
         assert loaded_config["optimizer"]["learning_rate"] == 0.001
-        assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+        assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
         assert loaded_config["epochs"] == 300
 
 
-def test_load_explicit_redlamp_cosine_val_synth_vus_pr_config() -> None:
+def test_load_explicit_redlamp_cosine_val_realistic_vus_pr_config() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr.yaml"
     )
@@ -330,18 +330,18 @@ def test_load_explicit_redlamp_cosine_val_synth_vus_pr_config() -> None:
     assert (
         loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "reduce_on_plateau"
     )
-    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
     assert loaded_config["epochs"] == 300
 
 
-def test_load_explicit_redlamp_cosine_val_synth_vus_pr_smoke_config() -> None:
+def test_load_explicit_redlamp_cosine_val_realistic_vus_pr_smoke_config() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml"
     )
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
     assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
     assert loaded_config["epochs"] == 1
     assert loaded_config["data"]["max_train_windows"] == 64
     assert loaded_config["data"]["max_val_windows"] == 32
@@ -513,7 +513,10 @@ def test_load_experiment_config_injects_window_size_into_thesis_model(
                 "min_segment_fraction: 0.1",
                 "max_segment_fraction: 0.2",
                 "spike_scale: 3.0",
-                "balance_binary_classes_within_batch: false",
+                "train_balance_classes: false",
+                "val_realistic: true",
+                "val_realistic_source: test_same_scope",
+                "val_anomaly_rate_override: null",
                 "anomaly_families: [spike, flip]",
             ]
         ),
@@ -629,7 +632,10 @@ def test_load_experiment_config_rejects_thesis_model_window_size_mismatch(
                 "min_segment_fraction: 0.1",
                 "max_segment_fraction: 0.2",
                 "spike_scale: 3.0",
-                "balance_binary_classes_within_batch: false",
+                "train_balance_classes: false",
+                "val_realistic: true",
+                "val_realistic_source: test_same_scope",
+                "val_anomaly_rate_override: null",
                 "anomaly_families: [spike, flip]",
             ]
         ),
@@ -1127,22 +1133,22 @@ def test_load_experiment_config_accepts_valid_cosine_scheduler_policy() -> None:
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
     assert loaded_config["optimizer"]["learning_rate"] == 0.001
     assert scheduler_config["scheduler_name"] == "reduce_on_plateau"
-    assert scheduler_config["monitor_metric"] == "val_synth_vus_pr"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert scheduler_config["monitor_metric"] == "val_realistic_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
 
 
-def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(
+def test_load_experiment_config_accepts_valid_val_realistic_pr_auc_scheduler(
     tmp_path: Path,
 ) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     experiment_config_path.write_text(
         "\n".join(
             [
-                "experiment_name: valid_scheduler_monitor_val_synth_pr_auc",
+                "experiment_name: valid_scheduler_monitor_val_realistic_pr_auc",
                 "seed: 7",
                 "device: cpu",
-                "output_dir: outputs/valid_scheduler_monitor_val_synth_pr_auc",
-                "checkpoint_dir: outputs/valid_scheduler_monitor_val_synth_pr_auc/checkpoints",
+                "output_dir: outputs/valid_scheduler_monitor_val_realistic_pr_auc",
+                "checkpoint_dir: outputs/valid_scheduler_monitor_val_realistic_pr_auc/checkpoints",
                 f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
                 f"model_config_path: {Path('configs/model/thesis_multitask.yaml').resolve()}",
                 f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
@@ -1151,14 +1157,14 @@ def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(
                 "  weight_decay: 0.0",
                 "  scheduler:",
                 "    scheduler_name: reduce_on_plateau",
-                "    monitor_metric: val_synth_pr_auc",
+                "    monitor_metric: val_realistic_pr_auc",
                 "    factor: 0.5",
                 "    patience: 2",
                 "    threshold: 0.0001",
                 "    threshold_mode: rel",
                 "    cooldown: 0",
                 "    min_lr: 1.0e-5",
-                "checkpoint_monitor_metric: val_synth_pr_auc",
+                "checkpoint_monitor_metric: val_realistic_pr_auc",
                 "epochs: 3",
             ]
         ),
@@ -1168,22 +1174,22 @@ def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(
     loaded_config = load_experiment_config(experiment_config_path)
 
     assert (
-        loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_pr_auc"
+        loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_realistic_pr_auc"
     )
 
 
-def test_load_experiment_config_accepts_valid_val_synth_loss_scheduler(
+def test_load_experiment_config_accepts_valid_val_realistic_loss_scheduler(
     tmp_path: Path,
 ) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     experiment_config_path.write_text(
         "\n".join(
             [
-                "experiment_name: valid_scheduler_monitor_val_synth_loss",
+                "experiment_name: valid_scheduler_monitor_val_realistic_loss",
                 "seed: 7",
                 "device: cpu",
-                "output_dir: outputs/valid_scheduler_monitor_val_synth_loss",
-                "checkpoint_dir: outputs/valid_scheduler_monitor_val_synth_loss/checkpoints",
+                "output_dir: outputs/valid_scheduler_monitor_val_realistic_loss",
+                "checkpoint_dir: outputs/valid_scheduler_monitor_val_realistic_loss/checkpoints",
                 f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
                 f"model_config_path: {Path('configs/model/thesis_multitask.yaml').resolve()}",
                 f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
@@ -1192,14 +1198,14 @@ def test_load_experiment_config_accepts_valid_val_synth_loss_scheduler(
                 "  weight_decay: 0.0",
                 "  scheduler:",
                 "    scheduler_name: reduce_on_plateau",
-                "    monitor_metric: val_synth_loss",
+                "    monitor_metric: val_realistic_loss",
                 "    factor: 0.5",
                 "    patience: 2",
                 "    threshold: 0.0001",
                 "    threshold_mode: rel",
                 "    cooldown: 0",
                 "    min_lr: 1.0e-5",
-                "checkpoint_monitor_metric: val_synth_loss",
+                "checkpoint_monitor_metric: val_realistic_loss",
                 "epochs: 3",
             ]
         ),
@@ -1208,7 +1214,7 @@ def test_load_experiment_config_accepts_valid_val_synth_loss_scheduler(
 
     loaded_config = load_experiment_config(experiment_config_path)
 
-    assert loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_loss"
+    assert loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_realistic_loss"
 
 
 def test_load_experiment_config_accepts_label_refurbishment_and_masking_fields(
@@ -1306,7 +1312,7 @@ def test_load_experiment_config_rejects_invalid_scheduler_monitor_metric(
                 "  weight_decay: 0.0",
                 "  scheduler:",
                 "    scheduler_name: reduce_on_plateau",
-                "    monitor_metric: val_synth_precision",
+                "    monitor_metric: val_realistic_precision",
                 "    factor: 0.5",
                 "    patience: 2",
                 "    threshold: 0.0001",

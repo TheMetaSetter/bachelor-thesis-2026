@@ -77,7 +77,7 @@ def test_all_repo_config_files_have_no_duplicate_root_keys() -> None:
         (
             "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml",
             lambda cfg: cfg["optimizer"]["scheduler"].update(
-                {"monitor_metric": "val_synth_pr_auc"}
+                {"monitor_metric": "val_realistic_pr_auc"}
             ),
             "must match for reduce_on_plateau",
         ),

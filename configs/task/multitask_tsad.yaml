@@ -7,6 +7,10 @@ freeze_fusion_for_epochs: 0
 warmup_alpha_value: 0.5
 warmup_beta_value: 0.5
 anomaly_probability: 0.5
+train_balance_classes: false
+val_realistic: true
+val_realistic_source: test_same_scope
+val_anomaly_rate_override: null
 min_segment_fraction: 0.1
 max_segment_fraction: 0.2
 spike_scale: 3.0

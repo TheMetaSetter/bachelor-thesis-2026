@@ -94,7 +94,7 @@ def test_balanced_binary_injection_uses_fixed_positive_quota() -> None:
         min_segment_fraction=0.3,
         max_segment_fraction=0.6,
         anomaly_families=("spike", "noise"),
-        balance_binary_classes_within_batch=True,
+        train_balance_classes=True,
         deterministic_seed=7,
     )
     batch = {
@@ -143,3 +143,52 @@ def test_each_redlamp_family_is_reachable_and_records_metadata(
             "mixture_components"
             in metadata["family_parameters_by_channel"][first_channel]
         )
+
+
+def test_balanced_multiclass_remainder_uses_round_robin_class_allocation() -> None:
+    injector = SyntheticAnomalyInjector(
+        train_balance_classes=True,
+        classification_label_mode="redlamp_multiclass",
+        deterministic_seed=23,
+    )
+    batch = {
+        "x": torch.randn(14, 20, 3),
+        "point_labels": torch.zeros(14, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": f"machine-{index}"} for index in range(14)],
+    }
+
+    augmented_batch = injector.augment_batch(batch)
+    class_counts = torch.bincount(
+        augmented_batch["classification_labels"],
+        minlength=len(REDLAMP_MULTICLASS_CLASS_NAMES),
+    )
+
+    assert class_counts.sum().item() == 14
+    assert torch.count_nonzero(class_counts == 2).item() == 2
+    assert torch.count_nonzero(class_counts == 1).item() == 10
+
+
+def test_balanced_multiclass_small_batch_rotates_class_coverage() -> None:
+    injector = SyntheticAnomalyInjector(
+        train_balance_classes=True,
+        classification_label_mode="redlamp_multiclass",
+        deterministic_seed=31,
+    )
+    batch = {
+        "x": torch.randn(5, 20, 3),
+        "point_labels": torch.zeros(5, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": f"machine-{index}"} for index in range(5)],
+    }
+
+    first_batch = injector.augment_batch(batch)
+    second_batch = injector.augment_batch(batch)
+    first_labels = set(first_batch["classification_labels"].tolist())
+    second_labels = set(second_batch["classification_labels"].tolist())
+
+    assert len(first_labels) == 5
+    assert len(second_labels) == 5
+    assert first_labels != second_labels

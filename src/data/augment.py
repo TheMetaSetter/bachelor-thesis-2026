@@ -43,7 +43,8 @@ class SyntheticAnomalyInjector:
         max_segment_fraction: float = 0.2,
         spike_scale: float = 3.0,
         anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
-        balance_binary_classes_within_batch: bool = False,
+        train_balance_classes: bool = False,
+        balance_binary_classes_within_batch: bool | None = None,
         deterministic_seed: int | None = None,
         classification_label_mode: str = "binary",
     ) -> None:
@@ -72,11 +73,15 @@ class SyntheticAnomalyInjector:
         self.min_segment_fraction = min_segment_fraction
         self.max_segment_fraction = max_segment_fraction
         self.spike_scale = spike_scale
-        self.balance_binary_classes_within_batch = balance_binary_classes_within_batch
+        if balance_binary_classes_within_batch is not None:
+            self.train_balance_classes = bool(balance_binary_classes_within_batch)
+        else:
+            self.train_balance_classes = train_balance_classes
         self.classification_label_mode = classification_label_mode
         self.epsilon = 1e-6
         self.deterministic_seed = deterministic_seed
         self._rng: torch.Generator | None = None
+        self._class_rotation_offset = 0
 
         # A new reader should notice that the taxonomy is visible in one place.
         # The rest of the file only dispatches through this registry.
@@ -705,25 +710,68 @@ class SyntheticAnomalyInjector:
             "family_parameters_by_channel": {},
         }
 
-    def _sample_injection_decisions(
+    def _classification_class_indices(self) -> list[int]:
+        if self.classification_label_mode == "binary":
+            return [0, 1]
+        anomaly_class_indices = [
+            REDLAMP_MULTICLASS_CLASS_NAMES.index(anomaly_family)
+            for anomaly_family in self.anomaly_families
+        ]
+        return [0, *anomaly_class_indices]
+
+    def _balanced_class_quota(self, batch_size: int) -> dict[int, int]:
+        class_indices = self._classification_class_indices()
+        num_classes = len(class_indices)
+        base_count_per_class = batch_size // num_classes
+        remainder_count = batch_size % num_classes
+
+        quota = {class_index: base_count_per_class for class_index in class_indices}
+        for remainder_index in range(remainder_count):
+            rotated_index = (self._class_rotation_offset + remainder_index) % num_classes
+            class_index = class_indices[rotated_index]
+            quota[class_index] += 1
+
+        self._class_rotation_offset = (
+            self._class_rotation_offset + remainder_count
+        ) % num_classes
+        return quota
+
+    def _sample_class_labels(
         self,
+        *,
         batch_size: int,
         device: torch.device,
     ) -> torch.Tensor:
-        if not self.balance_binary_classes_within_batch:
-            return self._rand(batch_size, device=device) < self.anomaly_probability
+        if not self.train_balance_classes:
+            injection_decisions = self._rand(batch_size, device=device) < self.anomaly_probability
+            if self.classification_label_mode == "binary":
+                return injection_decisions.long()
 
-        num_anomalous_windows = int(batch_size * self.anomaly_probability + 0.5)
-        num_anomalous_windows = max(0, min(batch_size, num_anomalous_windows))
-        injection_decisions = torch.zeros(batch_size, dtype=torch.bool, device=device)
-        if num_anomalous_windows == 0:
-            return injection_decisions
+            sampled_labels = torch.zeros(batch_size, dtype=torch.long, device=device)
+            anomaly_indices = torch.nonzero(injection_decisions, as_tuple=False).flatten()
+            if anomaly_indices.numel() > 0:
+                sampled_family_indices = self._randint(
+                    0,
+                    len(self.anomaly_families),
+                    (int(anomaly_indices.numel()),),
+                    device=device,
+                )
+                for anomaly_position, family_index in zip(
+                    anomaly_indices.tolist(), sampled_family_indices.tolist()
+                ):
+                    family_name = self.anomaly_families[int(family_index)]
+                    sampled_labels[int(anomaly_position)] = (
+                        REDLAMP_MULTICLASS_CLASS_NAMES.index(family_name)
+                    )
+            return sampled_labels
 
-        anomalous_indices = self._randperm(batch_size, device=device)[
-            :num_anomalous_windows
-        ]
-        injection_decisions[anomalous_indices] = True
-        return injection_decisions
+        class_quota = self._balanced_class_quota(batch_size)
+        ordered_labels: list[int] = []
+        for class_index, count in class_quota.items():
+            ordered_labels.extend([class_index] * count)
+        ordered_label_tensor = torch.tensor(ordered_labels, dtype=torch.long, device=device)
+        shuffled_positions = self._randperm(batch_size, device=device)
+        return ordered_label_tensor[shuffled_positions]
 
     def augment_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         # The output batch keeps the original keys and only adds multitask
@@ -744,25 +792,37 @@ class SyntheticAnomalyInjector:
             batch_size, dtype=torch.long, device=clean_windows.device
         )
         augmentation_metadata: list[dict[str, Any]] = []
-        injection_decisions = self._sample_injection_decisions(
+        target_class_labels = self._sample_class_labels(
             batch_size=batch_size,
             device=clean_windows.device,
         )
 
         for batch_index in range(batch_size):
-            should_inject = bool(injection_decisions[batch_index].item())
+            target_class_label = int(target_class_labels[batch_index].item())
+            should_inject = target_class_label != 0
             if not should_inject:
                 augmentation_metadata.append(self._build_clean_metadata())
                 continue
 
-            augmented_window, anomaly_mask, window_metadata = (
-                self._inject_single_window(clean_windows[batch_index])
-            )
+            if self.classification_label_mode == "redlamp_multiclass":
+                target_family = REDLAMP_MULTICLASS_CLASS_NAMES[target_class_label]
+                if target_family == "normal":
+                    raise ValueError("target_class_label must not map to normal")
+                previous_families = self.anomaly_families
+                self.anomaly_families = (target_family,)
+                try:
+                    augmented_window, anomaly_mask, window_metadata = (
+                        self._inject_single_window(clean_windows[batch_index])
+                    )
+                finally:
+                    self.anomaly_families = previous_families
+            else:
+                augmented_window, anomaly_mask, window_metadata = (
+                    self._inject_single_window(clean_windows[batch_index])
+                )
             augmented_batch["x"][batch_index] = augmented_window
             anomaly_masks[batch_index] = anomaly_mask
-            classification_labels[batch_index] = (
-                self._classification_label_from_metadata(window_metadata)
-            )
+            classification_labels[batch_index] = target_class_label
             augmentation_metadata.append(window_metadata)
 
         original_point_labels = batch.get("point_labels")
