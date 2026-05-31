@@ -57,7 +57,7 @@ Establish deterministic baseline references so subsequent ablation and diagnosti
 
 ### Actions
 1. Resolve and snapshot baseline config from:
-   - `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_recon_diag_quick_100ep.yaml`
+   - `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-recon-diag-quick-100ep__w20__seed11__default.yaml`
 2. Record pre-change behavior expectations:
    - classification scalar metrics exist in epoch logs for `train` and `val_synth`.
    - confusion matrix and class-ratio artifacts do not exist yet.
@@ -72,7 +72,7 @@ Add explicit, ablation-friendly switches and diagnostic controls while preservin
 
 ### File-level edits
 - `configs/model/thesis_multitask_redlamp_multiclass.yaml`
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_recon_diag_quick_100ep.yaml`
+- `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-recon-diag-quick-100ep__w20__seed11__default.yaml`
 - `src/core/config.py`
 
 ### Explicit edit content

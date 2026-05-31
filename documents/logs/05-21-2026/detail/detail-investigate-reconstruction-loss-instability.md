@@ -75,7 +75,7 @@ Thêm configuration contract để bật/tắt diagnostics mà không tăng số
 
 ### File-Level Edits
 - `src/core/config.py`
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2_small_100ep.yaml` (hoặc một config diagnosis riêng trong cùng thư mục)
+- `configs/experiment/thesis/exp2/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-exp2-small-100ep__w20__seed11__default.yaml` (hoặc một config diagnosis riêng trong cùng thư mục)
 
 ### Explicit Edit Content
 1. Thêm nhóm config diagnostics (ví dụ trong `logging` hoặc `task` block, theo kiến trúc hiện tại):

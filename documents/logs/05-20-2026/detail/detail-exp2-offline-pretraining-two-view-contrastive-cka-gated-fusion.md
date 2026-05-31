@@ -182,7 +182,7 @@ This phase ensures engine-level compatibility and makes Experiment Protocol v2 o
 - No interface change; only ensure new log keys are aggregated and persisted.
 - Confirm scheduler/checkpoint monitor keys (`val_synth_vus_pr`) continue to exist in epoch metrics when Exp2 is enabled.
 
-2. `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2.yaml`
+2. `configs/experiment/thesis/exp2/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-exp2__w20__seed11__default.yaml`
 - Enable Exp2 options and protocol defaults.
 
 3. `documents/design/offline_pretraining_phase_two_view_contrastive_design.md`

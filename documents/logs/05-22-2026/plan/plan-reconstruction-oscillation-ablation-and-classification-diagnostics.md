@@ -62,7 +62,7 @@ Option A is selected.
 ### 1) Configuration Surface
 #### Files to modify
 - `configs/model/thesis_multitask_redlamp_multiclass.yaml`
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_recon_diag_quick_100ep.yaml`
+- `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-recon-diag-quick-100ep__w20__seed11__default.yaml`
 - `src/core/config.py`
 
 #### Planned additions

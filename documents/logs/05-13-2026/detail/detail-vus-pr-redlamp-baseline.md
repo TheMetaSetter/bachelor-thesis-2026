@@ -553,7 +553,7 @@ with:
     )
 ```
 
-Modify `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`.
+Modify `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`.
 
 Add:
 
@@ -563,7 +563,7 @@ evaluation:
   vus_num_thresholds: 200
 ```
 
-Modify `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`.
+Modify `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml`.
 
 Add:
 
@@ -706,7 +706,7 @@ Run RedLamp preflight:
 
 ```bash
 python scripts/run_multiseed_experiments.py \
-  --config-paths configs/experiment/smd_redlamp_mlp_baseline_window20.yaml \
+  --config-paths configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml \
   --preflight-only
 ```
 
@@ -714,7 +714,7 @@ Run thesis preflight:
 
 ```bash
 python scripts/run_multiseed_experiments.py \
-  --config-paths configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml \
+  --config-paths configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml \
   --preflight-only
 ```
 
@@ -728,14 +728,14 @@ Train RedLamp:
 
 ```bash
 python scripts/train.py \
-  --experiment-config configs/experiment/smd_redlamp_mlp_baseline_window20.yaml
+  --experiment-config configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml
 ```
 
 Evaluate RedLamp:
 
 ```bash
 python scripts/evaluate.py \
-  --experiment-config configs/experiment/smd_redlamp_mlp_baseline_window20.yaml \
+  --experiment-config configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml \
   --checkpoint-path outputs/smd_redlamp_mlp_baseline_window20/checkpoints/best.pt
 ```
 
@@ -743,14 +743,14 @@ Train thesis multi-task:
 
 ```bash
 python scripts/train.py \
-  --experiment-config configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml
+  --experiment-config configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml
 ```
 
 Evaluate thesis multi-task:
 
 ```bash
 python scripts/evaluate.py \
-  --experiment-config configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml \
+  --experiment-config configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml \
   --checkpoint-path outputs/smd_thesis_multitask_redlamp_multiclass_window20/checkpoints/best.pt
 ```
 
@@ -758,8 +758,8 @@ Produce comparison summary:
 
 ```bash
 python scripts/run_ablation.py \
-  --experiment-config configs/experiment/smd_redlamp_mlp_baseline_window20.yaml \
-  --experiment-config configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml \
+  --experiment-config configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml \
+  --experiment-config configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml \
   --summary-output-dir outputs/redlamp_vs_thesis_vus_pr_summary
 ```
 
@@ -815,8 +815,8 @@ Run:
 ```bash
 python scripts/run_multiseed_experiments.py \
   --config-paths \
-  configs/experiment/smd_redlamp_mlp_baseline_window20.yaml \
-  configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml \
+  configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml \
+  configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml \
   --preflight-only
 ```
 

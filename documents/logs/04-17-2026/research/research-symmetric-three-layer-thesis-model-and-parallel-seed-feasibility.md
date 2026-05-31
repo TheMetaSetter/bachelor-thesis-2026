@@ -182,7 +182,7 @@ As a result, the repository as it exists today does not document or validate tha
 - `scripts/train.py:153` - one-model build from one experiment configuration
 - `scripts/train.py:157` - one optimizer per experiment process
 - `scripts/train.py:201` - one trainer per experiment process
-- `configs/experiment/smd_multitask_rtx3090_full.yaml:1` - active full single-run server experiment configuration
+- `configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-full__w100__seed7__rtx3090.yaml:1` - active full single-run server experiment configuration
 - `configs/data/smd_rtx3090_512.yaml:1` - active full-run SMD batch and worker configuration
 
 ## Pipeline Documentation

@@ -5,7 +5,7 @@ from src.data.loaders import build_smd_dataloaders
 
 
 def test_smoke_data_config_applies_split_window_limits() -> None:
-    experiment_config = load_experiment_config("configs/experiment/smd_smoke_test.yaml")
+    experiment_config = load_experiment_config("configs/experiment/smoke/smd__thesis_multitask__smoke-test__w100__seed7__smoke.yaml")
     data_bundle = build_smd_dataloaders(experiment_config["data"])
 
     assert len(data_bundle["datasets"]["train"]) == 256

@@ -98,7 +98,7 @@ Add the following configuration files:
 ```text
 configs/model/online_adaptation.yaml
 configs/task/online_adaptation.yaml
-configs/experiment/smd_online_adaptation.yaml
+configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml
 ```
 
 Use the existing `data/model/task` experiment shape so that the online experiment family remains readable beside the offline family.
@@ -132,7 +132,7 @@ Use the existing `data/model/task` experiment shape so that the online experimen
 - `reset_policy`
 - `reset_alignment_threshold`
 
-`configs/experiment/smd_online_adaptation.yaml` should mirror the current experiment pattern, reference the new data/model/task configs, and keep optimizer settings explicit for the online loop.
+`configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml` should mirror the current experiment pattern, reference the new data/model/task configs, and keep optimizer settings explicit for the online loop.
 
 Modify `src/core/config.py` so that:
 
@@ -287,7 +287,7 @@ Add `scripts/run_online_adaptation.py`.
 
 This script should:
 
-1. load `configs/experiment/smd_online_adaptation.yaml`;
+1. load `configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml`;
 2. register the SMD dataset builder, the offline multitask model, and the new online adaptation model;
 3. build the SMD data bundle and online stream surface;
 4. load the offline multitask checkpoint referenced by `reference_checkpoint_path`;

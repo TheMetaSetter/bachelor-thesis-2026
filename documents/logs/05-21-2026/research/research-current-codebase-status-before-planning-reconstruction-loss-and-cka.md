@@ -82,7 +82,7 @@ Theo trạng thái config hiện tại cho thí nghiệm nhỏ vừa tạo, opti
 - `src/engine/evaluator.py:187` - evaluate loop và pointwise metric computation.
 - `src/core/config.py:55` - inject/validate `model.window_size` theo `data.window_size`.
 - `src/core/config.py:256` - validate `checkpoint_monitor_metric` whitelist.
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2_small_100ep.yaml:1` - experiment mới cho thí nghiệm nhỏ.
+- `configs/experiment/thesis/exp2/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-exp2-small-100ep__w20__seed11__default.yaml:1` - experiment mới cho thí nghiệm nhỏ.
 
 ## Pipeline Documentation
 1. Load experiment YAML -> resolve `data/model/task` references -> apply overrides -> validate config contracts (`src/core/config.py`).

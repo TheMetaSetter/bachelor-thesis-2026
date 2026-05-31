@@ -20,7 +20,7 @@ last_updated_by: Artificial Intelligence Agent
 
 ## Research Question
 For the baseline command:
-`python scripts/train.py --experiment-config configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_recon_diag_quick_100ep.yaml`,
+`python scripts/train.py --experiment-config configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-recon-diag-quick-100ep__w20__seed11__default.yaml`,
 document the current implementation status for:
 1. An ablation that disables the classification learning objective to test whether reconstruction can learn stably on its own.
 2. A full-model run that logs classification prediction ratios and epoch-level confusion matrices to inspect class confusion and class bias.
@@ -38,7 +38,7 @@ The current pipeline is configuration-driven and already logs epoch-level scalar
 - Classification labels are generated from augmentation metadata; in multiclass mode, labels map to `("normal", *REDLAMP_ANOMALY_FAMILIES)`.
 
 ### Modeling and Training
-- Baseline experiment config: `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_recon_diag_quick_100ep.yaml`.
+- Baseline experiment config: `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-recon-diag-quick-100ep__w20__seed11__default.yaml`.
 - The model is built from merged `model` and `task` sections in `scripts/train.py` (`build_model_from_experiment_config`).
 - `ThesisMultitaskModel.forward(...)` produces:
   - `recon` for reconstruction,

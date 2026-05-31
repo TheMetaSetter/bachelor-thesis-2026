@@ -292,7 +292,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--experiment-config",
-        default="configs/experiment/smd_online_adaptation.yaml",
+        default="configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml",
     )
     args = parser.parse_args()
 

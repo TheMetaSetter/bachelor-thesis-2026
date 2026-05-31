@@ -150,7 +150,7 @@ tests/test_model_shapes.py
 tests/test_one_train_step.py
 tests/test_checkpoint_roundtrip.py
 tests/test_registry.py
-configs/experiment/smd_vertical_slice.yaml
+configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml
 ```
 
 ### Explicit edit content

@@ -193,7 +193,7 @@ The following files should be added or modified:
 ```text
 configs/model/online_adaptation.yaml
 configs/task/online_adaptation.yaml
-configs/experiment/smd_online_adaptation.yaml
+configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml
 src/core/config.py
 src/core/registry.py
 src/core/contracts.py
@@ -236,7 +236,7 @@ tests/test_registry.py
   - `reset_policy`
   - `reset_alignment_threshold`
 
-`configs/experiment/smd_online_adaptation.yaml`
+`configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml`
 
 - Keep the current experiment-config shape with:
   - `data_config_path`
@@ -488,7 +488,7 @@ tests/test_online_adaptation_step.py
 
 `scripts/run_online_adaptation.py`
 
-- Load `configs/experiment/smd_online_adaptation.yaml`.
+- Load `configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml`.
 - Register the SMD dataset builder, `thesis_multitask`, and `online_adaptation`.
 - Build the data bundle, stream surface, and online model.
 - Load the offline checkpoint defined by `reference_checkpoint_path`.
@@ -563,7 +563,7 @@ This phase is mostly validation-oriented and may touch:
 tests/test_online_stream.py
 tests/test_online_adaptation_step.py
 tests/test_online_state_roundtrip.py
-configs/experiment/smd_online_adaptation.yaml
+configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml
 documents/logs/04-02-2026/
 ```
 

@@ -51,8 +51,8 @@
 - Create `configs/model/thesis_multitask_redlamp_multiclass.yaml`.
 - Create `configs/model/redlamp_mlp_baseline.yaml`.
 - Create `configs/task/multitask_tsad_redlamp_multiclass_window20.yaml`.
-- Create `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`.
-- Create `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`.
+- Create `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml`.
+- Create `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`.
 - Modify or add tests under `tests/` for injector labels, thesis model multi-class loss, baseline shapes, metrics, config loading, and one train step.
 
 ## Contract Decisions
@@ -898,8 +898,8 @@ git commit -m "Add RedLamp MLP baseline"
 - Create: `configs/model/thesis_multitask_redlamp_multiclass.yaml`
 - Create: `configs/model/redlamp_mlp_baseline.yaml`
 - Create: `configs/task/multitask_tsad_redlamp_multiclass_window20.yaml`
-- Create: `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`
-- Create: `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`
+- Create: `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml`
+- Create: `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`
 - Test: `tests/test_config_loading.py`
 
 - [ ] **Step 1: Write failing config-loading tests**
@@ -909,7 +909,7 @@ Add to `tests/test_config_loading.py`:
 ```python
 def test_load_thesis_redlamp_multiclass_window20_config() -> None:
     config = load_experiment_config(
-        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml"
+        "configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml"
     )
 
     assert config["data"]["window_size"] == 20
@@ -933,7 +933,7 @@ def test_load_thesis_redlamp_multiclass_window20_config() -> None:
 
 def test_load_redlamp_mlp_baseline_window20_config() -> None:
     config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
     )
 
     assert config["data"]["window_size"] == 20
@@ -1129,7 +1129,7 @@ anomaly_families:
 
 - [ ] **Step 6: Create experiment configs**
 
-Create `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`:
+Create `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml`:
 
 ```yaml
 experiment_name: smd_thesis_multitask_redlamp_multiclass_window20
@@ -1156,7 +1156,7 @@ logging:
     - mlp-depth-3
 ```
 
-Create `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`:
+Create `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`:
 
 ```yaml
 experiment_name: smd_redlamp_mlp_baseline_window20
@@ -1196,7 +1196,7 @@ Expected result: config loading tests pass.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/core/config.py scripts/train.py scripts/evaluate.py scripts/run_online_adaptation.py configs/data/smd_rtx3090_machine_2_1_20.yaml configs/model/thesis_multitask_redlamp_multiclass.yaml configs/model/redlamp_mlp_baseline.yaml configs/task/multitask_tsad_redlamp_multiclass_window20.yaml configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml configs/experiment/smd_redlamp_mlp_baseline_window20.yaml tests/test_config_loading.py
+git add src/core/config.py scripts/train.py scripts/evaluate.py scripts/run_online_adaptation.py configs/data/smd_rtx3090_machine_2_1_20.yaml configs/model/thesis_multitask_redlamp_multiclass.yaml configs/model/redlamp_mlp_baseline.yaml configs/task/multitask_tsad_redlamp_multiclass_window20.yaml configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml tests/test_config_loading.py
 git commit -m "Add window20 RedLamp multiclass configs"
 ```
 

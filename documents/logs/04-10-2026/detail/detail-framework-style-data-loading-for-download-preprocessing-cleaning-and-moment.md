@@ -482,8 +482,8 @@ src/engine/checkpoint.py
 src/engine/logger.py
 src/engine/artifact_sinks.py
 src/core/config.py
-configs/experiment/smd_multitask.yaml
-configs/experiment/smd_online_adaptation.yaml
+configs/experiment/baseline/smd__thesis_multitask__multitask__w100__seed7__default.yaml
+configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml
 requirements.txt
 environment.yml
 tests/test_kaggle_config_validation.py

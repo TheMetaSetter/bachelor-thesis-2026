@@ -96,7 +96,7 @@ Deliverable:
 ## Phase 1: Add Diagnostics Config Contract
 ### Files
 - `src/core/config.py`
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2_small_100ep.yaml` (hoặc config diagnosis mới nếu tách riêng)
+- `configs/experiment/thesis/exp2/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-exp2-small-100ep__w20__seed11__default.yaml` (hoặc config diagnosis mới nếu tách riêng)
 
 ### Changes
 1. Mở rộng schema `logging` hoặc `task/model` bằng một nhóm cờ diagnostics rõ ràng, ví dụ:

@@ -327,14 +327,14 @@ Create the following YAML files:
 - `configs/data/smd.yaml`
 - `configs/model/reconstruction_mlp_ae.yaml`
 - `configs/task/reconstruction.yaml`
-- `configs/experiment/smd_vertical_slice.yaml`
+- `configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml`
 
 Recommended contents:
 
 - `configs/data/smd.yaml`: data root, validation ratio, window size, stride, batch size, and number of workers;
 - `configs/model/reconstruction_mlp_ae.yaml`: `window_size`, `num_channels`, hidden width, bottleneck width, dropout if used;
 - `configs/task/reconstruction.yaml`: learning rate, weight decay, epoch count, threshold rule, and checkpoint metric;
-- `configs/experiment/smd_vertical_slice.yaml`: references to the data, model, and task configs, plus seed and output directory.
+- `configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml`: references to the data, model, and task configs, plus seed and output directory.
 
 Create `src/core/config.py` with:
 

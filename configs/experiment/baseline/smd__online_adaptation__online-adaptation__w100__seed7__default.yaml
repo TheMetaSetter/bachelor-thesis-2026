@@ -1,0 +1,28 @@
+# group: baseline
+# stage: general
+# status: active
+# owner: online_adaptation
+# tags: [smd, w100, seed7, default, val_realistic]
+
+experiment_name: smd_online_adaptation
+seed: 7
+device: cpu
+output_dir: outputs/smd_online_adaptation
+checkpoint_dir: outputs/smd_online_adaptation/checkpoints
+data_config_path: configs/data/smd_smoke.yaml
+model_config_path: configs/model/online_adaptation.yaml
+task_config_path: configs/task/online_adaptation.yaml
+optimizer:
+  learning_rate: 0.0005
+  weight_decay: 0.0
+  gradient_clip_norm: 0.5
+epochs: 1
+logging:
+  use_wandb: false
+  wandb_project: bachelor-thesis-2026
+  wandb_entity: null
+  wandb_mode: disabled
+  wandb_tags:
+    - smd
+    - online-adaptation
+  wandb_run_name: smd_online_adaptation

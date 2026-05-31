@@ -458,7 +458,7 @@ This phase creates the first concrete experiment pair needed for the RedLamp bas
 
 #### Create
 
-- `configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3.yaml`
+- `configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-lr1e-3__w20__seed11__default.yaml`
 - `configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-4.yaml`
 
 #### Shared values
@@ -490,7 +490,7 @@ epochs: 300
 
 #### Existing file handling
 
-Keep `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml` as the historical plateau config, but correct its `wandb_run_name` so it no longer implies `adamw_cosine`.
+Keep `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml` as the historical plateau config, but correct its `wandb_run_name` so it no longer implies `adamw_cosine`.
 
 #### Tests
 

@@ -30,7 +30,7 @@ The active offline training path currently supports a narrow training runtime su
 
 ### Data Preparation
 
-- The directly referenced experiment configuration is `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`. It targets SMD machine `2-1` through `configs/data/smd_rtx3090_machine_2_1_20.yaml`, uses the `redlamp_mlp_baseline` model, and runs for `300` epochs.
+- The directly referenced experiment configuration is `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`. It targets SMD machine `2-1` through `configs/data/smd_rtx3090_machine_2_1_20.yaml`, uses the `redlamp_mlp_baseline` model, and runs for `300` epochs.
 - The experiment file already names a run as `..._adamw_cosine`, but the live configuration still specifies only `learning_rate`, `weight_decay`, and a `reduce_on_plateau` scheduler. The optimizer family and cosine scheduler are not represented in the active configuration schema.
 - The design documents continue to require explicit YAML-controlled experiment behavior and ablation-friendly switches. The current optimization runtime is more limited than that intended control surface.
 
@@ -80,7 +80,7 @@ The active offline training path currently supports a narrow training runtime su
 
 ## Code References
 
-- `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml:1` - referenced experiment configuration using SMD machine `2-1`, `300` epochs, and a plateau scheduler despite an `adamw_cosine` run name.
+- `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml:1` - referenced experiment configuration using SMD machine `2-1`, `300` epochs, and a plateau scheduler despite an `adamw_cosine` run name.
 - `src/core/config.py:164` - optimizer validation currently includes only numeric `learning_rate` and `weight_decay`.
 - `src/core/config.py:242` - scheduler validation accepts only `reduce_on_plateau`.
 - `scripts/train.py:79` - scheduler builder supports only `ReduceLROnPlateau`.

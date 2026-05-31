@@ -51,7 +51,7 @@ The repository currently provides a complete offline pipeline for SMD with fixed
 - Scheduler/checkpoint control:
   - Trainer supports explicit `scheduler_monitor_metric` and `checkpoint_monitor_metric` with accepted monitor keys including `val_synth_vus_pr` and `val_vus_pr`.
 - Experiment configuration state:
-  - `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml` sets `bootstrap_encoder_epochs: 0`, scheduler monitor `val_synth_vus_pr`, and checkpoint monitor `val_synth_vus_pr`.
+  - `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml` sets `bootstrap_encoder_epochs: 0`, scheduler monitor `val_synth_vus_pr`, and checkpoint monitor `val_synth_vus_pr`.
 
 ### Evaluation
 - Evaluation entrypoint:
@@ -79,8 +79,8 @@ The repository currently provides a complete offline pipeline for SMD with fixed
 - `src/engine/evaluator.py:197` - test evaluation loop.
 - `configs/model/thesis_multitask_redlamp_multiclass.yaml:9` - continuous prototype count.
 - `configs/model/thesis_multitask_redlamp_multiclass.yaml:11` - discrete codebook size.
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml:18` - scheduler monitor metric.
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml:25` - checkpoint monitor metric.
+- `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml:18` - scheduler monitor metric.
+- `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml:25` - checkpoint monitor metric.
 
 ## Pipeline Documentation
 - Offline training pipeline:

@@ -1139,9 +1139,15 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
     ]:
         config_reference = Path(root_config[reference_field])
         if not config_reference.is_absolute():
-            config_reference = (
-                experiment_path.parent.parent / config_reference.relative_to("configs")
-            )
+            if config_reference.parts and config_reference.parts[0] == "configs":
+                repository_root = experiment_path.parent
+                while repository_root != repository_root.parent and not (
+                    repository_root / "configs"
+                ).exists():
+                    repository_root = repository_root.parent
+                config_reference = repository_root / config_reference
+            else:
+                config_reference = experiment_path.parent / config_reference
         console_print(
             "CONFIG",
             "Resolving referenced config",

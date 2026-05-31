@@ -28,7 +28,7 @@ The active repository does not currently implement VUS-PR. The only direct VUS r
 
 The most compatible implementation location is `src/metrics/pointwise.py`, because the evaluator already supplies one-dimensional point labels and point scores after timeline reconstruction. `src/engine/evaluator.py` should call the VUS-PR helper after `concatenated_labels` and `concatenated_scores` are built. The metric should be stored in `evaluation_metrics.json`, logged to Weights and Biases through the existing evaluation logger, and included in ablation summaries.
 
-The active repository already contains a RedLamp-inspired MLP baseline in `src/models/redlamp_mlp_baseline.py`, with a window-20 experiment config at `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`. A matching thesis multi-task RedLamp multi-class config exists at `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`.
+The active repository already contains a RedLamp-inspired MLP baseline in `src/models/redlamp_mlp_baseline.py`, with a window-20 experiment config at `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`. A matching thesis multi-task RedLamp multi-class config exists at `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml`.
 
 ## Detailed Findings
 
@@ -97,8 +97,8 @@ For each buffer length, the algorithm builds modified labels, computes range pre
 - `src/engine/evaluator.py:220` concatenates all point scores and point labels.
 - `src/engine/evaluator.py:229` calls `compute_pointwise_metrics`.
 - `src/models/redlamp_mlp_baseline.py:1` defines the self-contained RedLamp-inspired MLP baseline.
-- `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml:1` defines the active RedLamp MLP baseline experiment.
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml:1` defines the matching thesis multi-task RedLamp multi-class experiment.
+- `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml:1` defines the active RedLamp MLP baseline experiment.
+- `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml:1` defines the matching thesis multi-task RedLamp multi-class experiment.
 - `documents/logs/05-11-2026/research/research-redlamp-baseline-synthetic-anomaly-alignment.md:1` documents the RedLamp multi-class alignment research.
 - `documents/logs/04-29-2026/detail/detail-threshold-calibration-design-alignment.md:1` documents the unresolved threshold calibration issue.
 

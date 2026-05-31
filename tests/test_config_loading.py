@@ -14,53 +14,53 @@ from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 
 
 TRAINING_POLICY_EXPERIMENT_CONFIGS = [
-    "configs/experiment/smd_multitask.yaml",
-    "configs/experiment/smd_multitask_100ep.yaml",
-    "configs/experiment/smd_multitask_100ep_usage_kaggle.yaml",
-    "configs/experiment/smd_multitask_continuous_only.yaml",
-    "configs/experiment/smd_multitask_discrete_only.yaml",
-    "configs/experiment/smd_multitask_fused.yaml",
-    "configs/experiment/smd_multitask_no_augmentation.yaml",
-    "configs/experiment/smd_multitask_no_covariance.yaml",
-    "configs/experiment/smd_multitask_no_diversity.yaml",
-    "configs/experiment/smd_multitask_no_gate.yaml",
-    "configs/experiment/smd_multitask_no_usage.yaml",
-    "configs/experiment/smd_multitask_no_variance.yaml",
-    "configs/experiment/smd_multitask_rtx3090_full.yaml",
-    "configs/experiment/smd_multitask_rtx3090_seed11.yaml",
-    "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_100ep.yaml",
-    "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_300ep.yaml",
-    "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_window10_binary.yaml",
-    "configs/experiment/smd_multitask_rtx3090_seed11_full_vus_pr_a.yaml",
-    "configs/experiment/smd_multitask_rtx3090_seed11_full_vus_pr_b.yaml",
-    "configs/experiment/smd_multitask_rtx3090_seed23.yaml",
-    "configs/experiment/smd_multitask_rtx3090_seed47.yaml",
-    "configs/experiment/smd_multitask_rtx3090_smoke.yaml",
-    "configs/experiment/smd_multitask_rtx3090_smoke_seed11.yaml",
-    "configs/experiment/smd_multitask_rtx3090_smoke_seed23.yaml",
-    "configs/experiment/smd_multitask_rtx3090_smoke_seed47.yaml",
-    "configs/experiment/smd_multitask_smoke.yaml",
-    "configs/experiment/smd_multitask_usage_kaggle_smoke.yaml",
-    "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3.yaml",
-    "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr.yaml",
-    "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
-    "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_alt.yaml",
-    "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml",
-    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml",
-    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml",
-    "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2.yaml",
+    "configs/experiment/baseline/smd__thesis_multitask__multitask__w100__seed7__default.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-100ep__w100__seed7__default.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-100ep-usage-kaggle__w100__seed7__kaggle.yaml",
+    "configs/experiment/ablation/smd__thesis_multitask__multitask-continuous-only__w100__seed7__default.yaml",
+    "configs/experiment/ablation/smd__thesis_multitask__multitask-discrete-only__w100__seed7__default.yaml",
+    "configs/experiment/ablation/smd__thesis_multitask__multitask-fused__w100__seed7__default.yaml",
+    "configs/experiment/ablation/smd__thesis_multitask__multitask-no-augmentation__w100__seed7__default.yaml",
+    "configs/experiment/ablation/smd__thesis_multitask__multitask-no-covariance__w100__seed7__default.yaml",
+    "configs/experiment/ablation/smd__thesis_multitask__multitask-no-diversity__w100__seed7__default.yaml",
+    "configs/experiment/ablation/smd__thesis_multitask__multitask-no-gate__w100__seed7__default.yaml",
+    "configs/experiment/ablation/smd__thesis_multitask__multitask-no-usage__w100__seed7__default.yaml",
+    "configs/experiment/ablation/smd__thesis_multitask__multitask-no-variance__w100__seed7__default.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-full__w100__seed7__rtx3090.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed11__w100__seed11__rtx3090.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed11-machine-2-1-100ep__w100__seed11__rtx3090.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed11-machine-2-1-300ep__w100__seed11__rtx3090.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed11-machine-2-1-window10-binary__w10__seed11__rtx3090.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed11-full-vus-pr-a__w100__seed11__rtx3090.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed11-full-vus-pr-b__w100__seed11__rtx3090.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed23__w100__seed23__rtx3090.yaml",
+    "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed47__w100__seed47__rtx3090.yaml",
+    "configs/experiment/smoke/smd__thesis_multitask__multitask-rtx3090-smoke__w100__seed7__smoke.yaml",
+    "configs/experiment/smoke/smd__thesis_multitask__multitask-rtx3090-smoke-seed11__w100__seed11__smoke.yaml",
+    "configs/experiment/smoke/smd__thesis_multitask__multitask-rtx3090-smoke-seed23__w100__seed23__smoke.yaml",
+    "configs/experiment/smoke/smd__thesis_multitask__multitask-rtx3090-smoke-seed47__w100__seed47__smoke.yaml",
+    "configs/experiment/smoke/smd__thesis_multitask__multitask-smoke__w100__seed7__smoke.yaml",
+    "configs/experiment/smoke/smd__thesis_multitask__multitask-usage-kaggle-smoke__w100__seed7__smoke.yaml",
+    "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-lr1e-3__w20__seed11__default.yaml",
+    "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr__w20__seed68__default.yaml",
+    "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
+    "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-alt__w20__seed11__default.yaml",
+    "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml",
+    "configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml",
+    "configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml",
+    "configs/experiment/thesis/exp2/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-exp2__w20__seed11__default.yaml",
 ]
 
 
 def test_load_experiment_config_reads_valid_yaml() -> None:
-    loaded_config = load_experiment_config("configs/experiment/smd_vertical_slice.yaml")
+    loaded_config = load_experiment_config("configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml")
     assert loaded_config["data"]["window_size"] == 100
     assert loaded_config["model"]["model_name"] == "reconstruction_mlp_ae"
 
 
 def test_load_online_experiment_config_reads_valid_yaml() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_online_adaptation.yaml"
+        "configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml"
     )
     assert loaded_config["model"]["model_name"] == "online_adaptation"
     assert loaded_config["task"]["target_param_group"] == "projector_params"
@@ -179,7 +179,7 @@ def test_multitask_config_accepts_memory_bootstrap_fields(tmp_path: Path) -> Non
 
 def test_load_multitask_ablation_config_applies_overrides() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_multitask_continuous_only.yaml"
+        "configs/experiment/ablation/smd__thesis_multitask__multitask-continuous-only__w100__seed7__default.yaml"
     )
     assert loaded_config["model"]["lambda_gate"] == 0.01
     assert loaded_config["task"]["freeze_fusion_for_epochs"] == 3
@@ -190,7 +190,7 @@ def test_load_multitask_ablation_config_applies_overrides() -> None:
 
 def test_load_seed_specific_rtx3090_config_reads_valid_yaml() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_multitask_rtx3090_seed11.yaml"
+        "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed11__w100__seed11__rtx3090.yaml"
     )
     assert loaded_config["seed"] == 11
     assert loaded_config["model"]["mlp_num_linear_layers"] == 3
@@ -201,7 +201,7 @@ def test_load_seed_specific_rtx3090_config_reads_valid_yaml() -> None:
 
 def test_load_single_entity_rtx3090_config_reads_valid_yaml() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_100ep.yaml"
+        "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed11-machine-2-1-100ep__w100__seed11__rtx3090.yaml"
     )
     assert loaded_config["data"]["entity_ids"] == ["machine-2-1"]
     assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
@@ -210,7 +210,7 @@ def test_load_single_entity_rtx3090_config_reads_valid_yaml() -> None:
 
 def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_multitask_rtx3090_seed11_machine_2_1_window10_binary.yaml"
+        "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed11-machine-2-1-window10-binary__w10__seed11__rtx3090.yaml"
     )
 
     assert loaded_config["data"]["entity_ids"] == ["machine-2-1"]
@@ -234,7 +234,7 @@ def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor(
     None
 ):
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
     )
     loaded_config["optimizer"]["optimizer_name"] = "adamw"
     loaded_config["optimizer"]["gradient_clip_norm"] = 1.0
@@ -252,7 +252,7 @@ def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor(
 
 def test_validate_config_accepts_val_realistic_vus_pr_checkpoint_monitor() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
     )
     loaded_config["checkpoint_monitor_metric"] = "val_realistic_vus_pr"
 
@@ -261,7 +261,7 @@ def test_validate_config_accepts_val_realistic_vus_pr_checkpoint_monitor() -> No
 
 def test_validate_config_accepts_reconstruction_diagnostics_logging_fields() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2_small_100ep.yaml"
+        "configs/experiment/thesis/exp2/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-exp2-small-100ep__w20__seed11__default.yaml"
     )
     assert loaded_config["logging"]["enable_reconstruction_diagnostics"] is True
     assert loaded_config["logging"]["diagnostics_log_interval_steps"] == 1
@@ -274,7 +274,7 @@ def test_validate_config_rejects_invalid_reconstruction_diagnostics_logging_fiel
     None
 ):
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2_small_100ep.yaml"
+        "configs/experiment/thesis/exp2/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-exp2-small-100ep__w20__seed11__default.yaml"
     )
     loaded_config["logging"]["diagnostics_log_interval_steps"] = 0
     with pytest.raises(
@@ -286,7 +286,7 @@ def test_validate_config_rejects_invalid_reconstruction_diagnostics_logging_fiel
 
 def test_validate_config_rejects_invalid_optimizer_name() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
     )
     loaded_config["optimizer"]["optimizer_name"] = "sgd"
 
@@ -296,7 +296,7 @@ def test_validate_config_rejects_invalid_optimizer_name() -> None:
 
 def test_validate_config_rejects_non_positive_gradient_clip_norm() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
     )
     loaded_config["optimizer"]["gradient_clip_norm"] = 0.0
 
@@ -306,8 +306,8 @@ def test_validate_config_rejects_non_positive_gradient_clip_norm() -> None:
 
 def test_load_explicit_redlamp_adamw_cosine_configs() -> None:
     for config_path in [
-        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3.yaml",
-        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_alt.yaml",
+        "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-lr1e-3__w20__seed11__default.yaml",
+        "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-alt__w20__seed11__default.yaml",
     ]:
         loaded_config = load_experiment_config(config_path)
 
@@ -323,7 +323,7 @@ def test_load_explicit_redlamp_adamw_cosine_configs() -> None:
 
 def test_load_explicit_redlamp_cosine_val_realistic_vus_pr_config() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr.yaml"
+        "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr__w20__seed68__default.yaml"
     )
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
@@ -336,7 +336,7 @@ def test_load_explicit_redlamp_cosine_val_realistic_vus_pr_config() -> None:
 
 def test_load_explicit_redlamp_cosine_val_realistic_vus_pr_smoke_config() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml"
+        "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml"
     )
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
@@ -353,11 +353,11 @@ def test_load_explicit_redlamp_cosine_val_realistic_vus_pr_smoke_config() -> Non
     "experiment_config_path,expected_model_name",
     [
         (
-            "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml",
+            "configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml",
             "thesis_multitask",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml",
+            "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml",
             "redlamp_mlp_baseline",
         ),
     ],
@@ -388,9 +388,9 @@ def test_load_redlamp_multiclass_window20_configs(
 @pytest.mark.parametrize(
     "experiment_config_path",
     [
-        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml",
-        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml",
-        "configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_exp2.yaml",
+        "configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml",
+        "configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml",
+        "configs/experiment/thesis/exp2/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-exp2__w20__seed11__default.yaml",
     ],
 )
 def test_load_thesis_multiclass_bootstrap_train_configs_enable_wandb(
@@ -404,7 +404,7 @@ def test_load_thesis_multiclass_bootstrap_train_configs_enable_wandb(
 
 def test_load_multitask_smoke_config_keeps_wandb_disabled() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_multitask_smoke.yaml"
+        "configs/experiment/smoke/smd__thesis_multitask__multitask-smoke__w100__seed7__smoke.yaml"
     )
 
     assert loaded_config["logging"]["use_wandb"] is False
@@ -418,7 +418,7 @@ def test_redlamp_mlp_baseline_constructs_from_training_registry_path() -> None:
     )
 
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml"
+        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
     )
     register_runtime_components()
 
@@ -1126,7 +1126,7 @@ def test_load_multitask_experiment_config_rejects_invalid_temperature_hold_fract
 
 def test_load_experiment_config_accepts_valid_cosine_scheduler_policy() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smd_multitask_rtx3090_full.yaml"
+        "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-full__w100__seed7__rtx3090.yaml"
     )
     scheduler_config = loaded_config["optimizer"]["scheduler"]
 

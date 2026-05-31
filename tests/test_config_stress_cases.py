@@ -38,12 +38,12 @@ def test_all_repo_config_files_have_no_duplicate_root_keys() -> None:
     "experiment_config_path,mutator,expected_error",
     [
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+            "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
             lambda cfg: cfg["optimizer"]["scheduler"].update({"factor": 0.5}),
             "Unknown optimizer.scheduler keys for cosine",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+            "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
             lambda cfg: cfg["task"].update(
                 {"classification_label_mode": "redlamp_multiclass"}
             )
@@ -51,53 +51,53 @@ def test_all_repo_config_files_have_no_duplicate_root_keys() -> None:
             "requires num_classes == 12",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+            "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
             lambda cfg: cfg["data"].update({"num_workers": "many"}),
             "data.num_workers must be a non-negative integer or 'auto'",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+            "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
             lambda cfg: cfg["task"].update({"anomaly_probability": 1.5}),
             "anomaly_probability must be between 0 and 1",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+            "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
             lambda cfg: cfg["logging"].update(
                 {"use_wandb": False, "wandb_mode": "online"}
             ),
             "logging.use_wandb is false",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+            "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
             lambda cfg: cfg["logging"].update(
                 {"use_wandb": True, "wandb_mode": "disabled"}
             ),
             "logging.use_wandb is true",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_window20.yaml",
+            "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml",
             lambda cfg: cfg["optimizer"]["scheduler"].update(
                 {"monitor_metric": "val_realistic_pr_auc"}
             ),
             "must match for reduce_on_plateau",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+            "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
             lambda cfg: cfg["task"].update({"unknown_task_flag": True}),
             "Unknown task config keys",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+            "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
             lambda cfg: cfg["optimizer"].update({"unexpected_optimizer_key": 1}),
             "Unknown optimizer config keys",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+            "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
             lambda cfg: cfg["logging"].update({"unexpected_logging_key": True}),
             "Unknown logging config keys",
         ),
         (
-            "configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_val_vus_pr_smoke.yaml",
+            "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
             lambda cfg: cfg["optimizer"]["scheduler"].update(
                 {"mystery_scheduler_flag": 42}
             ),

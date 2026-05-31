@@ -18,7 +18,7 @@ Extend the active offline training path so that thesis experiments can explicitl
 - The active trainer in `src/engine/trainer.py` only supports metric-driven scheduler stepping at the end of each epoch through `scheduler.step(monitor_value)`.
 - No offline training path currently reads or applies a gradient clipping norm from configuration.
 - Checkpoint persistence in `src/engine/checkpoint.py` already saves arbitrary scheduler state dictionaries when a scheduler object is present.
-- The directly referenced experiment file `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml` already uses a run name that implies `adamw_cosine`, but the executable config still describes `Adam + ReduceLROnPlateau`.
+- The directly referenced experiment file `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml` already uses a run name that implies `adamw_cosine`, but the executable config still describes `Adam + ReduceLROnPlateau`.
 - The batch contract, model-output contract, and one-model-per-file structure are already established and do not need to change for this work.
 
 ## Design Decision
@@ -158,7 +158,7 @@ When clipping is disabled by config, the loop should preserve current behavior.
 
 Create two explicit experiment configs for SMD machine `2-1`:
 
-- `configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-3.yaml`
+- `configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-lr1e-3__w20__seed11__default.yaml`
 - `configs/experiment/smd_redlamp_mlp_baseline_machine_2_1_window20_adamw_cosine_lr1e-4.yaml`
 
 Both should share:
@@ -177,7 +177,7 @@ They should differ only in:
 - `learning_rate`
 - `wandb_run_name`
 
-The existing `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml` should either be renamed, superseded, or corrected so its name no longer claims `adamw_cosine` while encoding plateau scheduling.
+The existing `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml` should either be renamed, superseded, or corrected so its name no longer claims `adamw_cosine` while encoding plateau scheduling.
 
 ## File Plan
 

@@ -7,9 +7,9 @@ related_detail: documents/logs/05-22-2026/detail/detail-reconstruction-oscillati
 
 # Phase 0 Baseline Checklist
 
-- Baseline experiment config fixed at `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_recon_diag_quick_100ep.yaml`.
+- Baseline experiment config fixed at `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-recon-diag-quick-100ep__w20__seed11__default.yaml`.
 - Canonical train command fixed at:
-  - `python scripts/train.py --experiment-config configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_recon_diag_quick_100ep.yaml`
+  - `python scripts/train.py --experiment-config configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-recon-diag-quick-100ep__w20__seed11__default.yaml`
 - Pre-change expectation captured:
   - Classification scalar metrics are present in epoch logs for `train` and `val_synth`.
   - Classification diagnostics artifacts (hard-ratio and confusion-matrix JSON outputs) are not present yet.

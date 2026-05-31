@@ -204,7 +204,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--experiment-config",
-        default="configs/experiment/smd_multitask_smoke.yaml",
+        default="configs/experiment/smoke/smd__thesis_multitask__multitask-smoke__w100__seed7__smoke.yaml",
     )
     parser.add_argument("--evaluation-records", default=None)
     parser.add_argument("--evaluation-metrics", default=None)

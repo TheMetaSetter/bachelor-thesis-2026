@@ -1,0 +1,36 @@
+# group: ablation
+# stage: general
+# status: active
+# owner: thesis_multitask
+# tags: [smd, w100, seed7, default, val_realistic]
+
+# Advanced-loss ablation config, not the default thesis starting point.
+# Use this only after the simple reconstruction-plus-classification objective
+# has been validated and you want to remove one regularizer from the ablation set.
+experiment_name: smd_multitask_no_variance
+seed: 7
+device: cpu
+output_dir: outputs/smd_multitask_no_variance
+checkpoint_dir: outputs/smd_multitask_no_variance/checkpoints
+data_config_path: configs/data/smd.yaml
+model_config_path: configs/model/thesis_multitask.yaml
+task_config_path: configs/task/multitask_tsad.yaml
+# The remaining regularizers are intentionally enabled for the ablation suite.
+model_overrides:
+  lambda_div: 0.01
+  lambda_cov: 0.01
+  lambda_use: 0.01
+  lambda_gate: 0.01
+optimizer:
+  optimizer_name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0
+  gradient_clip_norm: 0.5
+  scheduler:
+    scheduler_name: cosine
+    warmup_epochs: 5
+    warmup_start_lr: 0.001
+    cosine_end_lr: 0.0
+    cosine_after_warmup: true
+checkpoint_monitor_metric: val_realistic_vus_pr
+epochs: 3

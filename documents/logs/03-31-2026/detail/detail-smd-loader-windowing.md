@@ -88,8 +88,8 @@ The current offline Phase 1 to Phase 3 path is centered on the following files:
 ```text
 configs/data/smd.yaml
 configs/data/smd_smoke.yaml
-configs/experiment/smd_vertical_slice.yaml
-configs/experiment/smd_smoke_test.yaml
+configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml
+configs/experiment/smoke/smd__thesis_multitask__smoke-test__w100__seed7__smoke.yaml
 configs/model/reconstruction_mlp_ae.yaml
 configs/model/thesis_multitask.yaml
 configs/task/reconstruction.yaml
@@ -127,17 +127,17 @@ tests/test_multitask_shapes.py
 tests/test_one_multitask_train_step.py
 tests/test_synthetic_anomaly_injection.py
 tests/test_synthetic_anomaly_visualization.py
-configs/experiment/smd_multitask.yaml
-configs/experiment/smd_multitask_smoke.yaml
-configs/experiment/smd_multitask_continuous_only.yaml
-configs/experiment/smd_multitask_discrete_only.yaml
-configs/experiment/smd_multitask_fused.yaml
-configs/experiment/smd_multitask_no_diversity.yaml
-configs/experiment/smd_multitask_no_variance.yaml
-configs/experiment/smd_multitask_no_covariance.yaml
-configs/experiment/smd_multitask_no_usage.yaml
-configs/experiment/smd_multitask_no_gate.yaml
-configs/experiment/smd_multitask_no_augmentation.yaml
+configs/experiment/baseline/smd__thesis_multitask__multitask__w100__seed7__default.yaml
+configs/experiment/smoke/smd__thesis_multitask__multitask-smoke__w100__seed7__smoke.yaml
+configs/experiment/ablation/smd__thesis_multitask__multitask-continuous-only__w100__seed7__default.yaml
+configs/experiment/ablation/smd__thesis_multitask__multitask-discrete-only__w100__seed7__default.yaml
+configs/experiment/ablation/smd__thesis_multitask__multitask-fused__w100__seed7__default.yaml
+configs/experiment/ablation/smd__thesis_multitask__multitask-no-diversity__w100__seed7__default.yaml
+configs/experiment/ablation/smd__thesis_multitask__multitask-no-variance__w100__seed7__default.yaml
+configs/experiment/ablation/smd__thesis_multitask__multitask-no-covariance__w100__seed7__default.yaml
+configs/experiment/ablation/smd__thesis_multitask__multitask-no-usage__w100__seed7__default.yaml
+configs/experiment/ablation/smd__thesis_multitask__multitask-no-gate__w100__seed7__default.yaml
+configs/experiment/ablation/smd__thesis_multitask__multitask-no-augmentation__w100__seed7__default.yaml
 scripts/run_ablation.py
 src/data/stream.py
 src/models/online_adaptation.py
@@ -153,7 +153,7 @@ tests/test_online_reference_checkpoint.py
 tests/test_online_entrypoint.py
 ```
 
-The previous expectation that `src/data/stream.py` and `configs/experiment/smd_multitask.yaml` were absent from the active path is no longer accurate for the current repository. Those files now exist together with the first conservative Phase 4 runtime scaffold, while the offline ablation-ready multitask family remains the gate that justifies that scaffold.
+The previous expectation that `src/data/stream.py` and `configs/experiment/baseline/smd__thesis_multitask__multitask__w100__seed7__default.yaml` were absent from the active path is no longer accurate for the current repository. Those files now exist together with the first conservative Phase 4 runtime scaffold, while the offline ablation-ready multitask family remains the gate that justifies that scaffold.
 
 ## Phase 1 - Current Closure State
 
@@ -278,4 +278,4 @@ This updated detail document is complete when it accurately describes the reposi
 - a conservative Phase 4 scaffold built around `src/data/stream.py`, `src/models/online_adaptation.py`, `src/engine/online_loop.py`, and `scripts/run_online_adaptation.py`
 - explicit acknowledgment that drift injection, encoder unfreezing, and NGD-style optimization remain deferred beyond the first online slice
 
-Phase 4 is no longer absent from the repository. The current state is instead a gate-respecting first Phase 4 slice: projector-first, clean-stream-only, checkpointable, and dependent on the canonical offline multitask checkpoint from `configs/experiment/smd_multitask.yaml`.
+Phase 4 is no longer absent from the repository. The current state is instead a gate-respecting first Phase 4 slice: projector-first, clean-stream-only, checkpointable, and dependent on the canonical offline multitask checkpoint from `configs/experiment/baseline/smd__thesis_multitask__multitask__w100__seed7__default.yaml`.

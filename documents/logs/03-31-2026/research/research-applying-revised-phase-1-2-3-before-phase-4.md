@@ -49,7 +49,7 @@ Terminology normalized on 2026-04-02. Current design target: gate entropy regula
 - Loss functions are further separated into `src/losses/classification.py` and `src/losses/prototype.py`. This confirms that the present repository still follows the older multi-file architecture rather than the revised one-model-one-file interpretation.
 - `src/engine/trainer.py` currently remains task-driven. It stores both `model` and `task`, moves batches to the selected device, and calls `self.task.training_step(self.model, batch_on_device)` and `self.task.validation_step(self.model, batch_on_device)`.
 - `scripts/train.py` and `scripts/evaluate.py` register datasets, models, and tasks in the registry. However, both scripts instantiate the data bundle by calling `build_smd_dataloaders(...)` directly instead of calling `build_dataset("smd", ...)`. This preserves two data-construction paths at once.
-- The experiment configuration surface still reflects the older staging. The repository contains `configs/task/reconstruction.yaml` and `configs/task/multitask_tsad.yaml`, and the default experiment file is `configs/experiment/smd_vertical_slice.yaml`, not the revised `smd_reconstruction.yaml` and `smd_multitask.yaml` structure described in the updated documents.
+- The experiment configuration surface still reflects the older staging. The repository contains `configs/task/reconstruction.yaml` and `configs/task/multitask_tsad.yaml`, and the default experiment file is `configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml`, not the revised `smd_reconstruction.yaml` and `smd_multitask.yaml` structure described in the updated documents.
 
 ### Evaluation
 

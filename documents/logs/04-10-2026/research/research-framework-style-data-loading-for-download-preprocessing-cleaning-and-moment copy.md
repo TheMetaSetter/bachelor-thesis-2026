@@ -376,7 +376,7 @@ and further that:
 - `src/engine/checkpoint.py` writes the checkpoint payload into the configured `checkpoint_dir`.
 - `scripts/train.py` then logs the resolved config, metrics file, and best checkpoint path through `ExperimentLogger`.
 - `src/engine/logger.py` supports remote artifact logging only through Weights & Biases when `logging.use_wandb` is enabled.
-- `configs/experiment/smd_multitask.yaml` currently enables Weights & Biases online mode.
+- `configs/experiment/baseline/smd__thesis_multitask__multitask__w100__seed7__default.yaml` currently enables Weights & Biases online mode.
 
 #### Current Kaggle persistence status
 
@@ -427,10 +427,10 @@ First, the notebook workflow is still template-driven rather than exposed as a s
 - `scripts/evaluate.py:63` - registry-based dataset construction in evaluation
 - `scripts/run_ablation.py:86` - repeated YAML-driven train/evaluate orchestration
 - `scripts/run_online_adaptation.py:72` - registry-based dataset construction in online adaptation
-- `configs/experiment/smd_vertical_slice.yaml:4` - experiment output directory
-- `configs/experiment/smd_vertical_slice.yaml:5` - experiment checkpoint directory
-- `configs/experiment/smd_multitask.yaml:14` - `use_wandb: true`
-- `configs/experiment/smd_multitask.yaml:17` - `wandb_mode: online`
+- `configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml:4` - experiment output directory
+- `configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml:5` - experiment checkpoint directory
+- `configs/experiment/baseline/smd__thesis_multitask__multitask__w100__seed7__default.yaml:14` - `use_wandb: true`
+- `configs/experiment/baseline/smd__thesis_multitask__multitask__w100__seed7__default.yaml:17` - `wandb_mode: online`
 - `requirements.txt:11` - `scikit-learn` dependency
 - `requirements.txt:14` - `wandb` dependency
 - `environment.yml:19` - `wandb` dependency in the conda environment

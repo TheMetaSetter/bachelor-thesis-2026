@@ -651,8 +651,8 @@ anomaly_families:
 
 Create experiment configs:
 
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`
-- `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`
+- `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml`
+- `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`
 
 Both must reference:
 

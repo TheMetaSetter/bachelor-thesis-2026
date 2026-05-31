@@ -19,7 +19,7 @@ last_updated_by: TheMetaSetter
 **Branch**: dev
 
 ## Research Question
-Why does `python3 scripts/train.py --experiment-config configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml` fail with:
+Why does `python3 scripts/train.py --experiment-config configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml` fail with:
 `ValueError: optimizer.scheduler.monitor_metric must be one of: val_loss, val_synth_loss, val_synth_roc_auc, val_synth_pr_auc`?
 
 ## Summary
@@ -28,7 +28,7 @@ The failure is caused by configuration-validation contract drift between environ
 ## Detailed Findings
 
 ### Data Preparation
-- The referenced experiment uses SMD machine-level data through `configs/data/smd_rtx3090_machine_2_1_20.yaml` as declared in `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml`.
+- The referenced experiment uses SMD machine-level data through `configs/data/smd_rtx3090_machine_2_1_20.yaml` as declared in `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml`.
 - The current task concerns configuration validation before the data loader is constructed; the process fails in config validation stage.
 
 ### Modeling and Training
@@ -45,9 +45,9 @@ The failure is caused by configuration-validation contract drift between environ
 - The remote traceback message indicates a whitelist that ends at `val_synth_pr_auc`, which is an earlier contract state.
 
 ## Code References
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml:16` - scheduler type is `reduce_on_plateau`
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml:17` - monitor metric is `val_synth_vus_pr`
-- `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20_nobootstrap.yaml:24` - checkpoint monitor metric is `val_synth_vus_pr`
+- `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml:16` - scheduler type is `reduce_on_plateau`
+- `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml:17` - monitor metric is `val_synth_vus_pr`
+- `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml:24` - checkpoint monitor metric is `val_synth_vus_pr`
 - `src/core/config.py:290` - scheduler monitor metric whitelist check begins
 - `src/core/config.py:295` - current local whitelist includes `val_synth_vus_pr`
 - `scripts/train.py:162` - monitor metric extracted from scheduler config

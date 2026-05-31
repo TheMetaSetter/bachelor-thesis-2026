@@ -19,8 +19,8 @@ source_detail: documents/logs/05-13-2026/detail/detail-vus-pr-redlamp-baseline.m
 - Added evaluator-level VUS settings in `src/engine/evaluator.py`.
 - Passed evaluation VUS settings from `scripts/evaluate.py`.
 - Added explicit VUS settings to:
-  - `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`
-  - `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`
+  - `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`
+  - `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml`
 - Added `pr_auc` and `vus_pr` fields to ablation summary rows.
 - Added focused tests for VUS range extraction, threshold-aware labels, VUS behavior, evaluator wiring, and ablation summary fields.
 
@@ -45,13 +45,13 @@ Result: `36 passed, 4 warnings`.
 Result: `8 passed`.
 
 ```bash
-./.venv/bin/python scripts/run_multiseed_experiments.py --config-paths configs/experiment/smd_redlamp_mlp_baseline_window20.yaml --preflight-only
+./.venv/bin/python scripts/run_multiseed_experiments.py --config-paths configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml --preflight-only
 ```
 
 Result: preflight passed.
 
 ```bash
-./.venv/bin/python scripts/run_multiseed_experiments.py --config-paths configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml --preflight-only
+./.venv/bin/python scripts/run_multiseed_experiments.py --config-paths configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml --preflight-only
 ```
 
 Result: preflight passed.

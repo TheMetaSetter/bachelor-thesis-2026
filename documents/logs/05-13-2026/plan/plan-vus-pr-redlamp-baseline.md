@@ -31,7 +31,7 @@ last_updated_by: TheMetaSetter
 - `src/engine/evaluator.py:218` concatenates point scores after merging overlapping windows back to entity timelines.
 - `src/engine/evaluator.py:229` calls `compute_pointwise_metrics`, so VUS-PR can be added without changing model files.
 - `src/models/redlamp_mlp_baseline.py` already defines the RedLamp-inspired MLP baseline with reconstruction and twelve-class synthetic anomaly classification.
-- `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml` and `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml` already define the two comparison experiments.
+- `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml` and `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml` already define the two comparison experiments.
 - `scripts/run_ablation.py:31` builds compact comparison rows, but it does not yet include `pr_auc` or `vus_pr`.
 
 ## Design Options
@@ -81,8 +81,8 @@ The metric function should be exact-naive in this sense:
 - Modify `scripts/run_ablation.py`: include `pr_auc` and `vus_pr` in summary rows.
 - Modify `tests/test_evaluator_thresholding.py`: add VUS-PR integration tests.
 - Create `tests/test_vus_pr_metric.py`: unit tests for exact-naive VUS-PR helpers.
-- Optionally modify `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`: add `evaluation.vus_max_buffer_size: 20` and `evaluation.vus_num_thresholds: 200`.
-- Optionally modify `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`: add the same evaluation block.
+- Optionally modify `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`: add `evaluation.vus_max_buffer_size: 20` and `evaluation.vus_num_thresholds: 200`.
+- Optionally modify `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml`: add the same evaluation block.
 
 ---
 
@@ -620,8 +620,8 @@ git commit -m "Report VUS PR in evaluation metrics"
 
 **Files:**
 - Modify: `scripts/evaluate.py`
-- Modify: `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`
-- Modify: `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`
+- Modify: `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`
+- Modify: `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml`
 - Modify: `tests/test_evaluator_thresholding.py`
 
 - [ ] **Step 1: Write failing test for evaluator config construction**
@@ -672,7 +672,7 @@ Replace the existing `Evaluator(device=experiment_config["device"])` constructio
 
 - [ ] **Step 4: Add explicit evaluation blocks to the two comparison configs**
 
-Add to `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`:
+Add to `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`:
 
 ```yaml
 evaluation:
@@ -680,7 +680,7 @@ evaluation:
   vus_num_thresholds: 200
 ```
 
-Add the same block to `configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml`.
+Add the same block to `configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml`.
 
 - [ ] **Step 5: Run focused tests**
 
@@ -697,7 +697,7 @@ Expected result: all tests pass and config loading accepts the new `evaluation` 
 Run:
 
 ```bash
-git add scripts/evaluate.py configs/experiment/smd_redlamp_mlp_baseline_window20.yaml configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml tests/test_evaluator_thresholding.py
+git add scripts/evaluate.py configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml tests/test_evaluator_thresholding.py
 git commit -m "Configure VUS PR evaluation settings"
 ```
 
@@ -788,7 +788,7 @@ Run:
 
 ```bash
 python scripts/run_multiseed_experiments.py \
-  --config-paths configs/experiment/smd_redlamp_mlp_baseline_window20.yaml \
+  --config-paths configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml \
   --preflight-only
 ```
 
@@ -800,7 +800,7 @@ Run:
 
 ```bash
 python scripts/run_multiseed_experiments.py \
-  --config-paths configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml \
+  --config-paths configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml \
   --preflight-only
 ```
 
@@ -822,7 +822,7 @@ Run:
 
 ```bash
 python scripts/train.py \
-  --experiment-config configs/experiment/smd_redlamp_mlp_baseline_window20.yaml
+  --experiment-config configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml
 ```
 
 Expected result: training completes and writes `outputs/smd_redlamp_mlp_baseline_window20/checkpoints/best.pt`.
@@ -833,7 +833,7 @@ Run:
 
 ```bash
 python scripts/evaluate.py \
-  --experiment-config configs/experiment/smd_redlamp_mlp_baseline_window20.yaml \
+  --experiment-config configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml \
   --checkpoint-path outputs/smd_redlamp_mlp_baseline_window20/checkpoints/best.pt
 ```
 
@@ -845,7 +845,7 @@ Run:
 
 ```bash
 python scripts/train.py \
-  --experiment-config configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml
+  --experiment-config configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml
 ```
 
 Expected result: training completes and writes `outputs/smd_thesis_multitask_redlamp_multiclass_window20/checkpoints/best.pt`.
@@ -856,7 +856,7 @@ Run:
 
 ```bash
 python scripts/evaluate.py \
-  --experiment-config configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml \
+  --experiment-config configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml \
   --checkpoint-path outputs/smd_thesis_multitask_redlamp_multiclass_window20/checkpoints/best.pt
 ```
 
@@ -868,8 +868,8 @@ Run:
 
 ```bash
 python scripts/run_ablation.py \
-  --experiment-config configs/experiment/smd_redlamp_mlp_baseline_window20.yaml \
-  --experiment-config configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml \
+  --experiment-config configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml \
+  --experiment-config configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml \
   --summary-output-dir outputs/redlamp_vs_thesis_vus_pr_summary
 ```
 
@@ -896,8 +896,8 @@ Run config preflight before long experiments:
 ```bash
 python scripts/run_multiseed_experiments.py \
   --config-paths \
-  configs/experiment/smd_redlamp_mlp_baseline_window20.yaml \
-  configs/experiment/smd_thesis_multitask_redlamp_multiclass_window20.yaml \
+  configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml \
+  configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml \
   --preflight-only
 ```
 

@@ -30,7 +30,7 @@ The current repository already exposes the main offline multitask objective in a
 
 The main limitation is not the existence of ablation-relevant components, but the narrowness of the surrounding experiment surface. The repository does not currently contain a dedicated ablation runner, stage scheduler, or experiment configuration family for continuous-only, discrete-only, fused, warm-up, and temperature-annealing variants. The current implementation therefore documents and computes the correct ingredients for future ablations, but does not yet present them as an extensive experiment matrix.
 
-The older detail document is now only partially aligned with the repository. Its architectural direction toward a registry-driven, one-model-one-file offline path is reflected in the current code. However, several file-level expectations from that document no longer match the active repository, such as the presence of `src/data/stream.py`, `configs/experiment/smd_multitask.yaml`, and `tests/test_model_contracts.py`. The current code instead follows the later closure-oriented interpretation more closely.
+The older detail document is now only partially aligned with the repository. Its architectural direction toward a registry-driven, one-model-one-file offline path is reflected in the current code. However, several file-level expectations from that document no longer match the active repository, such as the presence of `src/data/stream.py`, `configs/experiment/baseline/smd__thesis_multitask__multitask__w100__seed7__default.yaml`, and `tests/test_model_contracts.py`. The current code instead follows the later closure-oriented interpretation more closely.
 
 ## Detailed Findings
 
@@ -142,7 +142,7 @@ The older detail document is now only partially aligned with the repository. Its
 ### Areas that are no longer literally aligned
 
 - The older detail document still expects `src/data/stream.py`, but that file is no longer part of the active repository.
-- The older detail document expects `configs/experiment/smd_multitask.yaml`, but the active repository does not currently contain that experiment file.
+- The older detail document expects `configs/experiment/baseline/smd__thesis_multitask__multitask__w100__seed7__default.yaml`, but the active repository does not currently contain that experiment file.
 - The older detail document expects `tests/test_model_contracts.py`, while the active repository instead uses `tests/test_multitask_shapes.py` and related targeted tests.
 - The current repository has moved beyond placeholder multitask sections. The multitask file now owns real prototype, fusion, and loss logic rather than only reserving placeholders.
 

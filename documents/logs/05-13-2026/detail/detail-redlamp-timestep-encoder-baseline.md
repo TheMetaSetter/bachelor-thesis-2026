@@ -361,7 +361,7 @@ Run RedLamp preflight:
 
 ```bash
 ./.venv/bin/python scripts/run_multiseed_experiments.py \
-  --config-paths configs/experiment/smd_redlamp_mlp_baseline_window20.yaml \
+  --config-paths configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml \
   --preflight-only
 ```
 
@@ -374,7 +374,7 @@ Run a smoke-relevant metric and evaluator suite because this baseline feeds poin
 ### Interfaces and Contracts
 
 - Dataset config remains `configs/data/smd_rtx3090_machine_2_1_20.yaml` for the long baseline run.
-- Experiment config remains `configs/experiment/smd_redlamp_mlp_baseline_window20.yaml`.
+- Experiment config remains `configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml`.
 - Model config remains `configs/model/redlamp_mlp_baseline.yaml`.
 - The model parameter shapes change, so old flattened-window RedLamp checkpoints should not be loaded into the timestep baseline.
 
@@ -465,7 +465,7 @@ If no smoke config is created, run the full baseline only after all Phase 3 vali
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 PYTHONUNBUFFERED=1 ./.venv/bin/python scripts/train.py \
-  --experiment-config configs/experiment/smd_redlamp_mlp_baseline_window20.yaml
+  --experiment-config configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml
 ```
 
 ### Interfaces and Contracts
@@ -540,7 +540,7 @@ The original CANDI MLP reference uses flattened-window encoding. This repository
 ## Final Verification
 
 - `./.venv/bin/pytest -q tests/test_redlamp_mlp_baseline.py tests/test_one_redlamp_mlp_train_step.py tests/test_config_loading.py tests/test_vus_pr_metric.py tests/test_evaluator_thresholding.py` -> record the exact pass or failure output from the implementation session.
-- `./.venv/bin/python scripts/run_multiseed_experiments.py --config-paths configs/experiment/smd_redlamp_mlp_baseline_window20.yaml --preflight-only` -> record the exact preflight output from the implementation session.
+- `./.venv/bin/python scripts/run_multiseed_experiments.py --config-paths configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml --preflight-only` -> record the exact preflight output from the implementation session.
 ```
 
 ### Validation Commands
@@ -560,7 +560,7 @@ Run RedLamp preflight:
 
 ```bash
 ./.venv/bin/python scripts/run_multiseed_experiments.py \
-  --config-paths configs/experiment/smd_redlamp_mlp_baseline_window20.yaml \
+  --config-paths configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml \
   --preflight-only
 ```
 

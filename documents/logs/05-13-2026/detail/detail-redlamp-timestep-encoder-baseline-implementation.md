@@ -28,4 +28,4 @@ The original CANDI MLP reference uses flattened-window encoding. This repository
 
 - `./.venv/bin/pytest -q tests/test_redlamp_mlp_baseline.py` -> `2 passed in 1.59s`.
 - `./.venv/bin/pytest -q tests/test_redlamp_mlp_baseline.py tests/test_one_redlamp_mlp_train_step.py tests/test_config_loading.py tests/test_vus_pr_metric.py tests/test_evaluator_thresholding.py` -> `38 passed, 4 warnings in 3.83s`. The warnings are expected sklearn warnings for the existing single-class metric safety test.
-- `./.venv/bin/python scripts/run_multiseed_experiments.py --config-paths configs/experiment/smd_redlamp_mlp_baseline_window20.yaml --preflight-only` -> completed preflight validation with `total_configs=1`, `main_configs=1`, `smoke_configs=0`, `preflight_only=True`.
+- `./.venv/bin/python scripts/run_multiseed_experiments.py --config-paths configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml --preflight-only` -> completed preflight validation with `total_configs=1`, `main_configs=1`, `smoke_configs=0`, `preflight_only=True`.
