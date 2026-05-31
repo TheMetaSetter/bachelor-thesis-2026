@@ -20,6 +20,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.console import console_print
 from src.core.config import load_experiment_config
+from src.core.config_help import build_config_help_text
 from src.core.registry import (
     build_dataset,
     build_model,
@@ -243,7 +244,15 @@ def main() -> None:
         "--checkpoint-path",
         default="outputs/smd_vertical_slice/checkpoints/best.pt",
     )
+    parser.add_argument(
+        "--print-config-help",
+        action="store_true",
+        help="Print a friendly config cheat sheet and exit.",
+    )
     args = parser.parse_args()
+    if args.print_config_help:
+        print(build_config_help_text("evaluate"))
+        return
 
     experiment_config = load_experiment_config(args.experiment_config)
     console_print(

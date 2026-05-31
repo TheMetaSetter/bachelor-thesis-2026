@@ -304,7 +304,10 @@ class RedLampMLPBaseline(BaseModel):
         for layer_index in linear_layer_indices:
             weight_key = f"encoder.linear{layer_index}.weight"
             profiled_parameters[weight_key] = self.encoder[layer_index].weight
-            if self.gradient_profile_include_bias and self.encoder[layer_index].bias is not None:
+            if (
+                self.gradient_profile_include_bias
+                and self.encoder[layer_index].bias is not None
+            ):
                 bias_key = f"encoder.linear{layer_index}.bias"
                 profiled_parameters[bias_key] = self.encoder[layer_index].bias
         if len(profiled_parameters) == 0:
@@ -324,9 +327,7 @@ class RedLampMLPBaseline(BaseModel):
         dot_product = torch.dot(gradient_ce_flattened, gradient_mse_flattened)
         norm_ce = torch.linalg.vector_norm(gradient_ce_flattened)
         norm_mse = torch.linalg.vector_norm(gradient_mse_flattened)
-        cosine_similarity = dot_product / (
-            (norm_ce * norm_mse).clamp_min(1.0e-12)
-        )
+        cosine_similarity = dot_product / ((norm_ce * norm_mse).clamp_min(1.0e-12))
         return float(cosine_similarity.detach().cpu())
 
     def _compute_preservation_ratio(
@@ -335,8 +336,12 @@ class RedLampMLPBaseline(BaseModel):
         gradient_mse: torch.Tensor,
         gradient_total: torch.Tensor,
     ) -> float:
-        norm_ce = torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_ce))
-        norm_mse = torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_mse))
+        norm_ce = torch.linalg.vector_norm(
+            self._flatten_tensor_for_metrics(gradient_ce)
+        )
+        norm_mse = torch.linalg.vector_norm(
+            self._flatten_tensor_for_metrics(gradient_mse)
+        )
         norm_total = torch.linalg.vector_norm(
             self._flatten_tensor_for_metrics(gradient_total)
         )
@@ -361,9 +366,10 @@ class RedLampMLPBaseline(BaseModel):
         if previous_ema is None:
             updated_ema = metric_value
         else:
-            updated_ema = self.gradient_ema_alpha * metric_value + (
-                1.0 - self.gradient_ema_alpha
-            ) * previous_ema
+            updated_ema = (
+                self.gradient_ema_alpha * metric_value
+                + (1.0 - self.gradient_ema_alpha) * previous_ema
+            )
         self._gradient_profile_ema_state[metric_key] = updated_ema
         return updated_ema
 
@@ -384,8 +390,12 @@ class RedLampMLPBaseline(BaseModel):
         classification_loss: torch.Tensor,
     ) -> dict[str, float]:
         encoder_parameter_items = list(self._encoder_profiled_parameters.items())
-        encoder_parameter_names = [parameter_name for parameter_name, _ in encoder_parameter_items]
-        encoder_parameters = [parameter_tensor for _, parameter_tensor in encoder_parameter_items]
+        encoder_parameter_names = [
+            parameter_name for parameter_name, _ in encoder_parameter_items
+        ]
+        encoder_parameters = [
+            parameter_tensor for _, parameter_tensor in encoder_parameter_items
+        ]
         weighted_classification_loss = self.lambda_cls * classification_loss
         weighted_reconstruction_loss = reconstruction_loss
         gradients_ce = self._extract_layerwise_gradients(
@@ -402,14 +412,26 @@ class RedLampMLPBaseline(BaseModel):
             encoder_parameter_names, gradients_ce, gradients_mse
         ):
             gradient_total = gradient_ce + gradient_mse
-            norm_ce = float(torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_ce)).detach().cpu())
-            norm_mse = float(torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_mse)).detach().cpu())
+            norm_ce = float(
+                torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_ce))
+                .detach()
+                .cpu()
+            )
+            norm_mse = float(
+                torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_mse))
+                .detach()
+                .cpu()
+            )
             norm_total = float(
                 torch.linalg.vector_norm(
                     self._flatten_tensor_for_metrics(gradient_total)
-                ).detach().cpu()
+                )
+                .detach()
+                .cpu()
             )
-            cosine_similarity = self._compute_cosine_similarity(gradient_ce, gradient_mse)
+            cosine_similarity = self._compute_cosine_similarity(
+                gradient_ce, gradient_mse
+            )
             preservation_ratio = self._compute_preservation_ratio(
                 gradient_ce=gradient_ce,
                 gradient_mse=gradient_mse,

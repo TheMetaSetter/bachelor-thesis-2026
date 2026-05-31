@@ -28,7 +28,7 @@ logging:
   use_wandb: false
   wandb_project: bachelor-thesis-2026
   wandb_entity: themetasetter-i-h-c-qu-c-gia-tp-hcm
-  wandb_mode: online
+  wandb_mode: disabled
   wandb_tags:
     - smd
     - multitask

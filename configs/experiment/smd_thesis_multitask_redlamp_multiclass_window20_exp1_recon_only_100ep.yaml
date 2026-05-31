@@ -67,6 +67,4 @@ model_overrides:
   lambda_contrastive: 1.0
   enable_cka_gated_fusion: true
   cka_eps: 1.0e-6
-
-model_overrides:
   enable_classification_path: false

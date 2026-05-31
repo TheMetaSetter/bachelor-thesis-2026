@@ -408,7 +408,7 @@ def test_load_multitask_smoke_config_keeps_wandb_disabled() -> None:
     )
 
     assert loaded_config["logging"]["use_wandb"] is False
-    assert loaded_config["logging"]["wandb_mode"] == "online"
+    assert loaded_config["logging"]["wandb_mode"] == "disabled"
 
 
 def test_redlamp_mlp_baseline_constructs_from_training_registry_path() -> None:
@@ -1158,6 +1158,7 @@ def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(
                 "    threshold_mode: rel",
                 "    cooldown: 0",
                 "    min_lr: 1.0e-5",
+                "checkpoint_monitor_metric: val_synth_pr_auc",
                 "epochs: 3",
             ]
         ),
@@ -1198,6 +1199,7 @@ def test_load_experiment_config_accepts_valid_val_synth_loss_scheduler(
                 "    threshold_mode: rel",
                 "    cooldown: 0",
                 "    min_lr: 1.0e-5",
+                "checkpoint_monitor_metric: val_synth_loss",
                 "epochs: 3",
             ]
         ),

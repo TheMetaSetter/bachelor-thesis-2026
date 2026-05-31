@@ -16,6 +16,31 @@ import yaml
 from src.core.console import console_print
 
 
+class _UniqueKeyYamlLoader(yaml.SafeLoader):
+    """YAML loader that rejects duplicate mapping keys."""
+
+
+def _construct_mapping_with_unique_keys(
+    loader: yaml.SafeLoader,
+    node: yaml.nodes.MappingNode,
+    deep: bool = False,
+) -> dict[str, Any]:
+    loader.flatten_mapping(node)
+    mapping: dict[str, Any] = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            raise ValueError(f"Duplicate key in YAML mapping: {key}")
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+_UniqueKeyYamlLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    _construct_mapping_with_unique_keys,
+)
+
+
 def load_yaml_config(config_path: str | Path) -> dict[str, Any]:
     path = Path(config_path)
     console_print("CONFIG", "Loading YAML config", path=path)
@@ -23,7 +48,7 @@ def load_yaml_config(config_path: str | Path) -> dict[str, Any]:
         raise FileNotFoundError(f"Config file does not exist: {path}")
 
     with path.open("r", encoding="utf-8") as handle:
-        loaded_config = yaml.safe_load(handle) or {}
+        loaded_config = yaml.load(handle, Loader=_UniqueKeyYamlLoader) or {}
 
     if not isinstance(loaded_config, dict):
         raise ValueError(f"Config file must contain a mapping at the root: {path}")
@@ -86,6 +111,24 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError(
                 f"Experiment config is missing required section: {section_name}"
             )
+    allowed_top_level_keys = {
+        *required_sections,
+        "data_config_path",
+        "model_config_path",
+        "task_config_path",
+        "data_overrides",
+        "model_overrides",
+        "task_overrides",
+        "evaluation",
+        "logging",
+        "checkpoint_monitor_metric",
+    }
+    unknown_top_level_keys = sorted(set(experiment_config) - allowed_top_level_keys)
+    if unknown_top_level_keys:
+        raise ValueError(
+            "Unknown top-level config keys: "
+            f"{unknown_top_level_keys}. Remove these keys from the experiment YAML."
+        )
     console_print(
         "CONFIG",
         "Validated experiment config sections",
@@ -97,6 +140,31 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     model_config = experiment_config["model"]
     task_config = experiment_config["task"]
     optimizer_config = experiment_config["optimizer"]
+
+    allowed_data_keys = {
+        "dataset_name",
+        "root_dir",
+        "window_size",
+        "stride",
+        "batch_size",
+        "num_workers",
+        "min_num_workers",
+        "validation_split_ratio",
+        "download",
+        "skip_existing_download",
+        "annotate_cleaning_metadata",
+        "entity_ids",
+        "shuffle_train",
+        "max_train_windows",
+        "max_val_windows",
+        "max_test_windows",
+    }
+    unknown_data_keys = sorted(set(data_config) - allowed_data_keys)
+    if unknown_data_keys:
+        raise ValueError(
+            "Unknown data config keys: "
+            f"{unknown_data_keys}. Remove these keys from data config."
+        )
 
     _resolve_thesis_model_window_size(experiment_config)
 
@@ -115,6 +183,154 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         raise ValueError(f"Unsupported model_name: {model_config.get('model_name')}")
     if task_config.get("task_name") not in supported_task_names:
         raise ValueError(f"Unsupported task_name: {task_config.get('task_name')}")
+
+    model_name = model_config.get("model_name")
+    allowed_model_keys_by_model_name = {
+        "reconstruction_mlp_ae": {
+            "model_name",
+            "input_dim",
+            "encoder_dim",
+            "hidden_dim",
+            "dropout",
+        },
+        "redlamp_mlp_baseline": {
+            "model_name",
+            "input_dim",
+            "window_size",
+            "latent_dim",
+            "mlp_num_linear_layers",
+            "classifier_dim",
+            "num_classes",
+            "dropout",
+            "lambda_cls",
+            "use_label_refurbishment",
+            "refurbishment_alpha",
+            "refurbishment_beta",
+            "enable_gradient_conflict_profiling",
+            "gradient_profiling_scope",
+            "gradient_focus_layer_name",
+            "gradient_log_every_n_steps",
+            "gradient_ema_alpha",
+            "gradient_sma_window",
+            "gradient_profile_include_bias",
+        },
+        "thesis_multitask": {
+            "model_name",
+            "enable_classification_path",
+            "input_dim",
+            "window_size",
+            "encoder_dim",
+            "hidden_dim",
+            "mlp_num_linear_layers",
+            "num_classes",
+            "dropout",
+            "continuous_enabled",
+            "continuous_num_prototypes",
+            "discrete_enabled",
+            "discrete_codebook_size",
+            "gumbel_temperature",
+            "temperature_start",
+            "temperature_end",
+            "temperature_anneal_fraction",
+            "temperature_hold_fraction",
+            "alpha_logit_init",
+            "beta_logit_init",
+            "use_label_refurbishment",
+            "refurbishment_alpha",
+            "refurbishment_beta",
+            "reconstruction_normal_only",
+            "lambda_cls",
+            "lambda_div",
+            "lambda_var",
+            "lambda_cov",
+            "lambda_use",
+            "lambda_gate",
+            "usage_lambda_start",
+            "usage_lambda_end",
+            "usage_lambda_schedule_fraction",
+            "variance_floor_gamma",
+            "gate_barrier_margin",
+            "enable_two_view_contrastive",
+            "contrastive_temperature",
+            "lambda_contrastive",
+            "enable_cka_gated_fusion",
+            "cka_eps",
+            "bootstrap_encoder_epochs",
+            "discrete_ema_decay",
+            "memory_norm_epsilon",
+            "memory_initialization_batches",
+            "memory_initialization_with_synthetic_windows",
+            "enable_diversity_loss",
+            "enable_variance_loss",
+            "enable_covariance_loss",
+            "enable_usage_loss",
+            "enable_gate_loss",
+        },
+        "online_adaptation": {
+            "model_name",
+            "input_dim",
+            "encoder_dim",
+            "hidden_dim",
+            "projector_hidden_dim",
+            "projector_dropout",
+            "enable_prototype_alignment",
+            "lambda_align",
+            "lambda_proto",
+            "lambda_anchor",
+            "score_source",
+        },
+    }
+    unknown_model_keys = sorted(
+        set(model_config) - allowed_model_keys_by_model_name[model_name]
+    )
+    if unknown_model_keys:
+        raise ValueError(
+            f"Unknown model config keys for model_name='{model_name}': "
+            f"{unknown_model_keys}. Remove these keys from model config."
+        )
+
+    task_name = task_config.get("task_name")
+    allowed_task_keys_by_task_name = {
+        "reconstruction": {"task_name", "loss_name"},
+        "multitask_tsad": {
+            "task_name",
+            "use_synthetic_augmentation",
+            "use_synthetic_validation",
+            "synthetic_validation_seed",
+            "classification_label_mode",
+            "freeze_fusion_for_epochs",
+            "warmup_alpha_value",
+            "warmup_beta_value",
+            "anomaly_probability",
+            "balance_binary_classes_within_batch",
+            "min_segment_fraction",
+            "max_segment_fraction",
+            "spike_scale",
+            "anomaly_families",
+        },
+        "online_adaptation": {
+            "task_name",
+            "reference_checkpoint_path",
+            "warm_start_projector",
+            "target_param_group",
+            "clean_stream_only",
+            "max_online_steps",
+            "log_every_n_steps",
+            "checkpoint_every_n_steps",
+            "view_noise_std",
+            "view_dropout_probability",
+            "reset_policy",
+            "reset_alignment_threshold",
+        },
+    }
+    unknown_task_keys = sorted(
+        set(task_config) - allowed_task_keys_by_task_name[task_name]
+    )
+    if unknown_task_keys:
+        raise ValueError(
+            f"Unknown task config keys for task_name='{task_name}': "
+            f"{unknown_task_keys}. Remove these keys from task config."
+        )
 
     integer_fields = {
         "seed": experiment_config["seed"],
@@ -240,6 +456,19 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError(f"{field_name} must be numeric")
 
     optimizer_name = optimizer_config.get("optimizer_name", "adam")
+    allowed_optimizer_keys = {
+        "optimizer_name",
+        "learning_rate",
+        "weight_decay",
+        "gradient_clip_norm",
+        "scheduler",
+    }
+    unknown_optimizer_keys = sorted(set(optimizer_config) - allowed_optimizer_keys)
+    if unknown_optimizer_keys:
+        raise ValueError(
+            "Unknown optimizer config keys: "
+            f"{unknown_optimizer_keys}. Remove these keys from optimizer config."
+        )
     if optimizer_name not in {"adam", "adamw"}:
         raise ValueError("optimizer.optimizer_name must be one of: adam, adamw")
 
@@ -276,6 +505,24 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("optimizer.scheduler must be a mapping when provided")
         scheduler_name = scheduler_config.get("scheduler_name")
         if scheduler_name == "reduce_on_plateau":
+            allowed_scheduler_keys = {
+                "scheduler_name",
+                "monitor_metric",
+                "factor",
+                "patience",
+                "threshold",
+                "threshold_mode",
+                "cooldown",
+                "min_lr",
+            }
+            unknown_scheduler_keys = sorted(
+                set(scheduler_config) - allowed_scheduler_keys
+            )
+            if unknown_scheduler_keys:
+                raise ValueError(
+                    "Unknown optimizer.scheduler keys for reduce_on_plateau: "
+                    f"{unknown_scheduler_keys}. Remove these keys from optimizer.scheduler."
+                )
             incompatible_cosine_fields = {
                 "warmup_epochs",
                 "warmup_start_lr",
@@ -334,7 +581,31 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 raise ValueError(
                     "optimizer.scheduler.min_lr must not exceed optimizer.learning_rate"
                 )
+            if checkpoint_monitor_metric != monitor_metric:
+                raise ValueError(
+                    "Config contradiction: optimizer.scheduler.monitor_metric and "
+                    "checkpoint_monitor_metric must match for reduce_on_plateau. "
+                    f"Current values: monitor_metric='{monitor_metric}', "
+                    f"checkpoint_monitor_metric='{checkpoint_monitor_metric}'. "
+                    "Fix by setting checkpoint_monitor_metric to the same metric, "
+                    "or update optimizer.scheduler.monitor_metric accordingly."
+                )
         elif scheduler_name == "cosine":
+            allowed_scheduler_keys = {
+                "scheduler_name",
+                "warmup_epochs",
+                "warmup_start_lr",
+                "cosine_end_lr",
+                "cosine_after_warmup",
+            }
+            unknown_scheduler_keys = sorted(
+                set(scheduler_config) - allowed_scheduler_keys
+            )
+            if unknown_scheduler_keys:
+                raise ValueError(
+                    "Unknown optimizer.scheduler keys for cosine: "
+                    f"{unknown_scheduler_keys}. Remove these keys from optimizer.scheduler."
+                )
             incompatible_plateau_fields = {
                 "monitor_metric",
                 "factor",
@@ -627,6 +898,34 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     if logging_config is not None:
         if not isinstance(logging_config, dict):
             raise ValueError("logging must be a mapping when provided")
+        allowed_logging_keys = {
+            "use_wandb",
+            "wandb_project",
+            "wandb_entity",
+            "wandb_mode",
+            "wandb_run_name",
+            "wandb_job_type",
+            "wandb_tags",
+            "mirror_best_checkpoint_to_kaggle",
+            "mirror_output_dir_to_kaggle",
+            "kaggle_dataset_handle",
+            "kaggle_version_notes",
+            "enable_reconstruction_diagnostics",
+            "diagnostics_log_interval_steps",
+            "diagnostics_include_grad_norm",
+            "log_hard_prediction_ratio",
+            "log_row_normalized_confusion_matrix",
+            "log_focused_metrics_jsonl",
+            "diagnostics_stages_for_classification",
+            "focus_metrics",
+            "focused_metrics_filename",
+        }
+        unknown_logging_keys = sorted(set(logging_config) - allowed_logging_keys)
+        if unknown_logging_keys:
+            raise ValueError(
+                "Unknown logging config keys: "
+                f"{unknown_logging_keys}. Remove these keys from logging config."
+            )
         use_wandb = logging_config.get("use_wandb")
         if use_wandb is not None and not isinstance(use_wandb, bool):
             raise ValueError("logging.use_wandb must be a boolean when provided")
@@ -645,6 +944,22 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 raise ValueError(
                     "logging.wandb_mode must be one of: online, offline, disabled"
                 )
+        resolved_use_wandb = bool(logging_config.get("use_wandb", False))
+        resolved_wandb_mode = logging_config.get("wandb_mode", "disabled")
+        if not resolved_use_wandb and resolved_wandb_mode != "disabled":
+            raise ValueError(
+                "Config contradiction: logging.use_wandb is false but "
+                f"logging.wandb_mode is '{resolved_wandb_mode}'. "
+                "Fix by setting logging.wandb_mode to 'disabled', or set "
+                "logging.use_wandb to true if you want wandb logging."
+            )
+        if resolved_use_wandb and resolved_wandb_mode == "disabled":
+            raise ValueError(
+                "Config contradiction: logging.use_wandb is true but "
+                "logging.wandb_mode is 'disabled'. "
+                "Fix by setting logging.wandb_mode to 'online' or 'offline', "
+                "or set logging.use_wandb to false."
+            )
         if (
             "wandb_run_name" in logging_config
             and logging_config["wandb_run_name"] is not None
