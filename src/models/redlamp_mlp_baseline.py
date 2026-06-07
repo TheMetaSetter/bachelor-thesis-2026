@@ -25,13 +25,76 @@ from src.models.base_model import BaseModel
 from src.models.thesis_multitask import build_multilayer_perceptron
 
 
+class SimpleWindowCnnEncoder(nn.Module):
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+        hidden_channels: int,
+        kernel_size: int,
+        num_layers: int,
+        dropout: float,
+    ) -> None:
+        super().__init__()
+        if input_dim <= 0:
+            raise ValueError("input_dim must be positive")
+        if output_dim <= 0:
+            raise ValueError("output_dim must be positive")
+        if hidden_channels <= 0:
+            raise ValueError("hidden_channels must be positive")
+        if kernel_size <= 0:
+            raise ValueError("kernel_size must be positive")
+        if num_layers < 2:
+            raise ValueError("num_layers must be at least 2")
+
+        layer_dims = [input_dim] + [hidden_channels] * (num_layers - 1) + [output_dim]
+        layers: list[nn.Module] = []
+        for layer_index, (layer_input_dim, layer_output_dim) in enumerate(
+            zip(layer_dims[:-1], layer_dims[1:])
+        ):
+            is_last_layer = layer_index == num_layers - 1
+            padding_total = kernel_size - 1
+            padding_left = padding_total // 2
+            padding_right = padding_total - padding_left
+            layers.append(nn.ConstantPad1d((padding_left, padding_right), 0.0))
+            layers.append(nn.Conv1d(layer_input_dim, layer_output_dim, kernel_size))
+            if not is_last_layer:
+                layers.append(nn.ReLU())
+                layers.append(nn.Dropout(dropout))
+            else:
+                layers.append(nn.ReLU())
+
+        self.network = nn.Sequential(*layers)
+        self._initialize_conv_layers()
+
+    def _initialize_conv_layers(self) -> None:
+        for layer in self.network:
+            if not isinstance(layer, nn.Conv1d):
+                continue
+            nn.init.kaiming_uniform_(layer.weight, a=0.0, nonlinearity="relu")
+            if layer.bias is not None:
+                nn.init.zeros_(layer.bias)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.ndim != 3:
+            raise ValueError("x must have shape [B, L, D]")
+        x_channel_first = x.transpose(1, 2)
+        hidden_channel_first = self.network(x_channel_first)
+        return hidden_channel_first.transpose(1, 2)
+
+
 class RedLampMLPBaseline(BaseModel):
     def __init__(
         self,
         input_dim: int,
         window_size: int,
         latent_dim: int = 128,
+        encoder_family: str = "mlp",
         mlp_num_linear_layers: int = 3,
+        cnn_num_layers: int = 3,
+        cnn_kernel_size: int = 3,
+        cnn_hidden_channels: int = 64,
+        cnn_dropout: float | None = None,
         classifier_dim: int = 32,
         num_classes: int = len(REDLAMP_MULTICLASS_CLASS_NAMES),
         dropout: float = 0.1,
@@ -51,7 +114,7 @@ class RedLampMLPBaseline(BaseModel):
         balance_binary_classes_within_batch: bool = False,
         enable_gradient_conflict_profiling: bool = False,
         gradient_profiling_scope: str = "encoder_all",
-        gradient_focus_layer_name: str = "encoder_last_linear",
+        gradient_focus_layer_name: str = "encoder_last_affine",
         gradient_log_every_n_steps: int = 1,
         gradient_ema_alpha: float = 0.1,
         gradient_sma_window: int = 50,
@@ -68,17 +131,31 @@ class RedLampMLPBaseline(BaseModel):
             raise ValueError("latent_dim must be positive")
         if classifier_dim <= 0:
             raise ValueError("classifier_dim must be positive")
+        if encoder_family not in {"mlp", "cnn_simple"}:
+            raise ValueError("encoder_family must be one of: mlp, cnn_simple")
         if mlp_num_linear_layers < 2:
             raise ValueError("mlp_num_linear_layers must be at least 2")
+        if cnn_num_layers < 2:
+            raise ValueError("cnn_num_layers must be at least 2")
+        if cnn_kernel_size <= 0:
+            raise ValueError("cnn_kernel_size must be positive")
+        if cnn_hidden_channels <= 0:
+            raise ValueError("cnn_hidden_channels must be positive")
+        if cnn_dropout is not None and not 0.0 <= cnn_dropout <= 1.0:
+            raise ValueError("cnn_dropout must be between 0 and 1")
         if classification_label_mode != "redlamp_multiclass":
             raise ValueError(
                 "RedLampMLPBaseline supports classification_label_mode='redlamp_multiclass'"
             )
         if gradient_profiling_scope not in {"encoder_all"}:
             raise ValueError("gradient_profiling_scope must be one of {'encoder_all'}")
-        if gradient_focus_layer_name != "encoder_last_linear":
+        if gradient_focus_layer_name not in {
+            "encoder_last_linear",
+            "encoder_last_affine",
+        }:
             raise ValueError(
-                "gradient_focus_layer_name must be 'encoder_last_linear' in current implementation"
+                "gradient_focus_layer_name must be one of: "
+                "encoder_last_linear, encoder_last_affine"
             )
         if gradient_log_every_n_steps < 1:
             raise ValueError("gradient_log_every_n_steps must be >= 1")
@@ -90,7 +167,12 @@ class RedLampMLPBaseline(BaseModel):
         self.input_dim = input_dim
         self.window_size = window_size
         self.latent_dim = latent_dim
+        self.encoder_family = encoder_family
         self.mlp_num_linear_layers = mlp_num_linear_layers
+        self.cnn_num_layers = cnn_num_layers
+        self.cnn_kernel_size = cnn_kernel_size
+        self.cnn_hidden_channels = cnn_hidden_channels
+        self.cnn_dropout = dropout if cnn_dropout is None else cnn_dropout
         self.classifier_dim = classifier_dim
         self.num_classes = num_classes
         self.lambda_cls = lambda_cls
@@ -111,14 +193,26 @@ class RedLampMLPBaseline(BaseModel):
         self._gradient_profile_ema_state: dict[str, float] = {}
         self._gradient_profile_sma_buffers: dict[str, deque[float]] = {}
 
-        self.encoder = build_multilayer_perceptron(
-            input_dim=input_dim,
-            intermediate_dim=latent_dim,
-            output_dim=latent_dim,
-            num_linear_layers=mlp_num_linear_layers,
-            dropout=dropout,
-            apply_output_activation=True,
-        )
+        if encoder_family == "mlp":
+            self.encoder = build_multilayer_perceptron(
+                input_dim=input_dim,
+                intermediate_dim=latent_dim,
+                output_dim=latent_dim,
+                num_linear_layers=mlp_num_linear_layers,
+                dropout=dropout,
+                apply_output_activation=True,
+            )
+        elif encoder_family == "cnn_simple":
+            self.encoder = SimpleWindowCnnEncoder(
+                input_dim=input_dim,
+                output_dim=latent_dim,
+                hidden_channels=cnn_hidden_channels,
+                kernel_size=cnn_kernel_size,
+                num_layers=cnn_num_layers,
+                dropout=self.cnn_dropout,
+            )
+        else:
+            raise ValueError(f"Unsupported encoder_family: {encoder_family}")
         self.decoder = build_multilayer_perceptron(
             input_dim=latent_dim,
             intermediate_dim=latent_dim,
@@ -226,6 +320,11 @@ class RedLampMLPBaseline(BaseModel):
             )
 
         hidden = self.encoder(x_tensor)
+        if hidden.shape[1] != self.window_size:
+            raise ValueError(
+                f"encoder must preserve window_size={self.window_size}, "
+                f"but received hidden.shape[1]={hidden.shape[1]}"
+            )
         flattened_classification_hidden = hidden.reshape(
             hidden.shape[0],
             self.window_size * self.latent_dim,
@@ -296,20 +395,24 @@ class RedLampMLPBaseline(BaseModel):
 
     def _get_encoder_profiled_parameters(self) -> OrderedDict[str, nn.Parameter]:
         profiled_parameters: OrderedDict[str, nn.Parameter] = OrderedDict()
-        linear_layer_indices = [
+        encoder_layers = (
+            self.encoder.network
+            if hasattr(self.encoder, "network")
+            else self.encoder
+        )
+        affine_layer_indices = [
             layer_index
-            for layer_index, layer_module in enumerate(self.encoder)
-            if isinstance(layer_module, nn.Linear)
+            for layer_index, layer_module in enumerate(encoder_layers)
+            if isinstance(layer_module, (nn.Linear, nn.Conv1d))
         ]
-        for layer_index in linear_layer_indices:
-            weight_key = f"encoder.linear{layer_index}.weight"
-            profiled_parameters[weight_key] = self.encoder[layer_index].weight
-            if (
-                self.gradient_profile_include_bias
-                and self.encoder[layer_index].bias is not None
-            ):
-                bias_key = f"encoder.linear{layer_index}.bias"
-                profiled_parameters[bias_key] = self.encoder[layer_index].bias
+        for layer_index in affine_layer_indices:
+            layer_module = encoder_layers[layer_index]
+            layer_type = "linear" if isinstance(layer_module, nn.Linear) else "conv"
+            weight_key = f"encoder.{layer_type}{layer_index}.weight"
+            profiled_parameters[weight_key] = layer_module.weight
+            if self.gradient_profile_include_bias and layer_module.bias is not None:
+                bias_key = f"encoder.{layer_type}{layer_index}.bias"
+                profiled_parameters[bias_key] = layer_module.bias
         if len(profiled_parameters) == 0:
             raise ValueError("No encoder parameters available for gradient profiling")
         return profiled_parameters
@@ -453,7 +556,10 @@ class RedLampMLPBaseline(BaseModel):
         return self._build_gradient_conflict_log_dict(raw_metrics)
 
     def _resolve_focus_layer_parameter_name(self) -> str:
-        if self.gradient_focus_layer_name == "encoder_last_linear":
+        if self.gradient_focus_layer_name in {
+            "encoder_last_linear",
+            "encoder_last_affine",
+        }:
             parameter_names = list(self._encoder_profiled_parameters.keys())
             return parameter_names[-1]
         raise ValueError(

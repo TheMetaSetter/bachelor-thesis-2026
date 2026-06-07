@@ -92,31 +92,106 @@ def _initialize_mlp_linear_layers(mlp: nn.Sequential) -> None:
             nn.init.zeros_(layer.bias)
 
 
-class MultitaskWindowEncoder(nn.Module):
+class SimpleWindowCnnEncoder(nn.Module):
     def __init__(
         self,
         input_dim: int,
-        encoder_dim: int,
-        hidden_dim: int,
-        num_linear_layers: int = 3,
-        dropout: float = 0.0,
+        output_dim: int,
+        hidden_channels: int,
+        kernel_size: int,
+        num_layers: int,
+        dropout: float,
     ) -> None:
         super().__init__()
+        if input_dim <= 0:
+            raise ValueError("input_dim must be positive")
+        if output_dim <= 0:
+            raise ValueError("output_dim must be positive")
+        if hidden_channels <= 0:
+            raise ValueError("hidden_channels must be positive")
+        if kernel_size <= 0:
+            raise ValueError("kernel_size must be positive")
+        if num_layers < 2:
+            raise ValueError("num_layers must be at least 2")
 
-        # The encoder depth is shared with both task heads so the offline model
-        # can form a symmetric MLP contract from YAML instead of hard-coding
-        # different depths in different submodules.
-        self.network = build_multilayer_perceptron(
-            input_dim=input_dim,
-            intermediate_dim=encoder_dim,
-            output_dim=hidden_dim,
-            num_linear_layers=num_linear_layers,
-            dropout=dropout,
-            apply_output_activation=True,
-        )
+        layer_dims = [input_dim] + [hidden_channels] * (num_layers - 1) + [output_dim]
+        layers: list[nn.Module] = []
+        for layer_index, (layer_input_dim, layer_output_dim) in enumerate(
+            zip(layer_dims[:-1], layer_dims[1:])
+        ):
+            is_last_layer = layer_index == num_layers - 1
+            padding_total = kernel_size - 1
+            padding_left = padding_total // 2
+            padding_right = padding_total - padding_left
+            layers.append(nn.ConstantPad1d((padding_left, padding_right), 0.0))
+            layers.append(nn.Conv1d(layer_input_dim, layer_output_dim, kernel_size))
+            if not is_last_layer:
+                layers.append(nn.ReLU())
+                layers.append(nn.Dropout(dropout))
+            else:
+                layers.append(nn.ReLU())
+
+        self.network = nn.Sequential(*layers)
+        self._initialize_conv_layers()
+
+    def _initialize_conv_layers(self) -> None:
+        for layer in self.network:
+            if not isinstance(layer, nn.Conv1d):
+                continue
+            nn.init.kaiming_uniform_(layer.weight, a=0.0, nonlinearity="relu")
+            if layer.bias is not None:
+                nn.init.zeros_(layer.bias)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.ndim != 3:
+            raise ValueError("x must have shape [B, L, D]")
+        x_channel_first = x.transpose(1, 2)
+        hidden_channel_first = self.network(x_channel_first)
+        return hidden_channel_first.transpose(1, 2)
+
+
+class MultitaskWindowEncoder(nn.Module):
+    def __init__(
+        self,
+        architecture: "MultitaskArchitectureConfig",
+    ) -> None:
+        super().__init__()
+        self.architecture = architecture
+        self.encoder_family = architecture.encoder_family
+        if architecture.encoder_family == "mlp":
+            # The encoder depth is shared with both task heads so the offline model
+            # can form a symmetric MLP contract from YAML instead of hard-coding
+            # different depths in different submodules.
+            self.network = build_multilayer_perceptron(
+                input_dim=architecture.input_dim,
+                intermediate_dim=architecture.encoder_dim,
+                output_dim=architecture.hidden_dim,
+                num_linear_layers=architecture.mlp_num_linear_layers,
+                dropout=architecture.dropout,
+                apply_output_activation=True,
+            )
+        elif architecture.encoder_family == "cnn_simple":
+            self.network = SimpleWindowCnnEncoder(
+                input_dim=architecture.input_dim,
+                output_dim=architecture.hidden_dim,
+                hidden_channels=architecture.cnn_hidden_channels,
+                kernel_size=architecture.cnn_kernel_size,
+                num_layers=architecture.cnn_num_layers,
+                dropout=architecture.cnn_dropout,
+            )
+        else:
+            raise ValueError(
+                f"Unsupported encoder_family: {architecture.encoder_family}"
+            )
 
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
         hidden = self.network(batch["x"])
+        if hidden.shape[1] != self.architecture.window_size:
+            raise ValueError(
+                "encoder must preserve window_size="
+                f"{self.architecture.window_size}, but received hidden.shape[1]="
+                f"{hidden.shape[1]}"
+            )
         return {
             "hidden": hidden,
             "pooled": hidden.mean(dim=1),
@@ -130,9 +205,28 @@ class MultitaskArchitectureConfig:
     window_size: int
     encoder_dim: int
     hidden_dim: int
+    encoder_family: str = "mlp"
     mlp_num_linear_layers: int = 3
+    cnn_num_layers: int = 3
+    cnn_kernel_size: int = 3
+    cnn_hidden_channels: int = 64
+    cnn_dropout: float = 0.0
     num_classes: int = len(REDLAMP_MULTICLASS_CLASS_NAMES)
     dropout: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.encoder_family not in {"mlp", "cnn_simple"}:
+            raise ValueError("encoder_family must be one of: mlp, cnn_simple")
+        if self.mlp_num_linear_layers < 2:
+            raise ValueError("mlp_num_linear_layers must be at least 2")
+        if self.cnn_num_layers < 2:
+            raise ValueError("cnn_num_layers must be at least 2")
+        if self.cnn_kernel_size <= 0:
+            raise ValueError("cnn_kernel_size must be positive")
+        if self.cnn_hidden_channels <= 0:
+            raise ValueError("cnn_hidden_channels must be positive")
+        if not 0.0 <= self.cnn_dropout <= 1.0:
+            raise ValueError("cnn_dropout must be between 0 and 1")
 
 
 @dataclass(frozen=True)
@@ -257,7 +351,12 @@ class ThesisMultitaskModelConfig:
             "window_size",
             "encoder_dim",
             "hidden_dim",
+            "encoder_family",
             "mlp_num_linear_layers",
+            "cnn_num_layers",
+            "cnn_kernel_size",
+            "cnn_hidden_channels",
+            "cnn_dropout",
             "num_classes",
             "dropout",
         }
@@ -408,7 +507,12 @@ class ThesisMultitaskModel(BaseModel):
         self.model_config = config
         self.window_size = architecture.window_size
         self.hidden_dim = architecture.hidden_dim
+        self.encoder_family = architecture.encoder_family
         self.mlp_num_linear_layers = architecture.mlp_num_linear_layers
+        self.cnn_num_layers = architecture.cnn_num_layers
+        self.cnn_kernel_size = architecture.cnn_kernel_size
+        self.cnn_hidden_channels = architecture.cnn_hidden_channels
+        self.cnn_dropout = architecture.cnn_dropout
         self.num_classes = architecture.num_classes
         self.continuous_num_prototypes = prototypes.continuous_num_prototypes
         self.discrete_codebook_size = prototypes.discrete_codebook_size
@@ -510,13 +614,7 @@ class ThesisMultitaskModel(BaseModel):
         architecture = config.architecture
         # Encoder block.
         # This produces the common hidden state that both prototype branches see.
-        self.encoder = MultitaskWindowEncoder(
-            input_dim=architecture.input_dim,
-            encoder_dim=architecture.encoder_dim,
-            hidden_dim=architecture.hidden_dim,
-            num_linear_layers=architecture.mlp_num_linear_layers,
-            dropout=architecture.dropout,
-        )
+        self.encoder = MultitaskWindowEncoder(architecture)
 
     def _build_prototype_memory(self, config: ThesisMultitaskModelConfig) -> None:
         architecture = config.architecture
@@ -700,7 +798,11 @@ class ThesisMultitaskModel(BaseModel):
             window_size=architecture.window_size,
             encoder_dim=architecture.encoder_dim,
             hidden_dim=architecture.hidden_dim,
+            encoder_family=architecture.encoder_family,
             mlp_num_linear_layers=architecture.mlp_num_linear_layers,
+            cnn_num_layers=architecture.cnn_num_layers,
+            cnn_kernel_size=architecture.cnn_kernel_size,
+            cnn_hidden_channels=architecture.cnn_hidden_channels,
             num_classes=architecture.num_classes,
             use_label_refurbishment=objective.use_label_refurbishment,
             refurbishment_alpha=objective.refurbishment_alpha,

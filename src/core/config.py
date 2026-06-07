@@ -198,7 +198,12 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "input_dim",
             "window_size",
             "latent_dim",
+            "encoder_family",
             "mlp_num_linear_layers",
+            "cnn_num_layers",
+            "cnn_kernel_size",
+            "cnn_hidden_channels",
+            "cnn_dropout",
             "classifier_dim",
             "num_classes",
             "dropout",
@@ -221,7 +226,12 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "window_size",
             "encoder_dim",
             "hidden_dim",
+            "encoder_family",
             "mlp_num_linear_layers",
+            "cnn_num_layers",
+            "cnn_kernel_size",
+            "cnn_hidden_channels",
+            "cnn_dropout",
             "num_classes",
             "dropout",
             "continuous_enabled",
@@ -355,6 +365,11 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         integer_fields["mlp_num_linear_layers"] = model_config.get(
             "mlp_num_linear_layers", 3
         )
+        integer_fields["cnn_num_layers"] = model_config.get("cnn_num_layers", 3)
+        integer_fields["cnn_kernel_size"] = model_config.get("cnn_kernel_size", 3)
+        integer_fields["cnn_hidden_channels"] = model_config.get(
+            "cnn_hidden_channels", 64
+        )
         integer_fields["num_classes"] = model_config.get("num_classes")
         integer_fields["continuous_num_prototypes"] = model_config.get(
             "continuous_num_prototypes"
@@ -369,6 +384,11 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         integer_fields["latent_dim"] = model_config.get("latent_dim")
         integer_fields["mlp_num_linear_layers"] = model_config.get(
             "mlp_num_linear_layers", 3
+        )
+        integer_fields["cnn_num_layers"] = model_config.get("cnn_num_layers", 3)
+        integer_fields["cnn_kernel_size"] = model_config.get("cnn_kernel_size", 3)
+        integer_fields["cnn_hidden_channels"] = model_config.get(
+            "cnn_hidden_channels", 64
         )
         integer_fields["classifier_dim"] = model_config.get("classifier_dim")
         integer_fields["num_classes"] = model_config.get("num_classes")
@@ -391,6 +411,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "redlamp_mlp_baseline",
     }:
         float_fields["dropout"] = model_config.get("dropout")
+    if model_config.get("model_name") == "redlamp_mlp_baseline":
+        float_fields["cnn_dropout"] = model_config.get(
+            "cnn_dropout", model_config.get("dropout")
+        )
     if task_config.get("task_name") == "multitask_tsad":
         if model_config.get("model_name") == "thesis_multitask":
             float_fields["gumbel_temperature"] = model_config.get("gumbel_temperature")
@@ -435,6 +459,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             )
             float_fields["memory_norm_epsilon"] = model_config.get(
                 "memory_norm_epsilon", 1.0e-6
+            )
+            float_fields["cnn_dropout"] = model_config.get(
+                "cnn_dropout", model_config.get("dropout")
             )
         float_fields["warmup_alpha_value"] = task_config.get("warmup_alpha_value")
         float_fields["warmup_beta_value"] = task_config.get("warmup_beta_value")
@@ -750,6 +777,18 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     if task_config.get("task_name") == "multitask_tsad":
         if int(model_config.get("mlp_num_linear_layers", 3)) < 2:
             raise ValueError("mlp_num_linear_layers must be at least 2")
+        encoder_family = model_config.get("encoder_family", "mlp")
+        if encoder_family not in {"mlp", "cnn_simple"}:
+            raise ValueError("encoder_family must be one of: mlp, cnn_simple")
+        cnn_num_layers = model_config.get("cnn_num_layers", 3)
+        if not isinstance(cnn_num_layers, int) or cnn_num_layers < 2:
+            raise ValueError("cnn_num_layers must be a positive integer >= 2")
+        cnn_kernel_size = model_config.get("cnn_kernel_size", 3)
+        if not isinstance(cnn_kernel_size, int) or cnn_kernel_size <= 0:
+            raise ValueError("cnn_kernel_size must be a positive integer")
+        cnn_hidden_channels = model_config.get("cnn_hidden_channels", 64)
+        if not isinstance(cnn_hidden_channels, int) or cnn_hidden_channels <= 0:
+            raise ValueError("cnn_hidden_channels must be a positive integer")
         if model_config.get("model_name") == "thesis_multitask":
             if float(model_config["gumbel_temperature"]) <= 0.0:
                 raise ValueError("gumbel_temperature must be positive")

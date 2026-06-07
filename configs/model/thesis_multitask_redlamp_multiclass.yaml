@@ -3,7 +3,12 @@ enable_classification_path: true
 input_dim: 38
 encoder_dim: 64
 hidden_dim: 32
+encoder_family: mlp
 mlp_num_linear_layers: 3
+cnn_num_layers: 3
+cnn_kernel_size: 3
+cnn_hidden_channels: 64
+cnn_dropout: 0.1
 num_classes: 12
 dropout: 0.1
 continuous_enabled: true
