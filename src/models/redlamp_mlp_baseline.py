@@ -111,6 +111,7 @@ class RedLampMLPBaseline(BaseModel):
         use_synthetic_validation: bool = True,
         synthetic_validation_seed: int = 7,
         classification_label_mode: str = "redlamp_multiclass",
+        train_balance_classes: bool = False,
         balance_binary_classes_within_batch: bool = False,
         enable_gradient_conflict_profiling: bool = False,
         gradient_profiling_scope: str = "encoder_all",
@@ -181,6 +182,7 @@ class RedLampMLPBaseline(BaseModel):
         self.refurbishment_beta = refurbishment_beta
         self.use_synthetic_augmentation = use_synthetic_augmentation
         self.use_synthetic_validation = use_synthetic_validation
+        self.train_balance_classes = train_balance_classes
         self.epsilon = 1.0e-6
         self.enable_gradient_conflict_profiling = enable_gradient_conflict_profiling
         self.gradient_profiling_scope = gradient_profiling_scope
@@ -229,13 +231,18 @@ class RedLampMLPBaseline(BaseModel):
             dropout=dropout,
             apply_output_activation=False,
         )
+        effective_balance_binary_classes_within_batch = (
+            balance_binary_classes_within_batch or train_balance_classes
+        )
         self.synthetic_anomaly_injector = SyntheticAnomalyInjector(
             anomaly_probability=anomaly_probability,
             min_segment_fraction=min_segment_fraction,
             max_segment_fraction=max_segment_fraction,
             spike_scale=spike_scale,
             anomaly_families=anomaly_families,
-            balance_binary_classes_within_batch=balance_binary_classes_within_batch,
+            balance_binary_classes_within_batch=(
+                effective_balance_binary_classes_within_batch
+            ),
             classification_label_mode="redlamp_multiclass",
         )
         self.synthetic_validation_injector = SyntheticAnomalyInjector(
@@ -244,7 +251,9 @@ class RedLampMLPBaseline(BaseModel):
             max_segment_fraction=max_segment_fraction,
             spike_scale=spike_scale,
             anomaly_families=anomaly_families,
-            balance_binary_classes_within_batch=balance_binary_classes_within_batch,
+            balance_binary_classes_within_batch=(
+                effective_balance_binary_classes_within_batch
+            ),
             deterministic_seed=synthetic_validation_seed,
             classification_label_mode="redlamp_multiclass",
         )
