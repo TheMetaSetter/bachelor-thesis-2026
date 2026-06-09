@@ -4,11 +4,11 @@
 # owner: redlamp_cnn_baseline
 # tags: [smd, w20, seed68, default, val_realistic, cnn_simple, balanced_classes]
 
-experiment_name: smd_redlamp_cnn_baseline_machine_2_1_window20_adamw_cosine_warmup10_val_vus_pr
+experiment_name: run2_smd_redlamp_cnn_baseline_machine_2_1_window20_adamw_cosine_warmup10_val_vus_pr
 seed: 68
 device: cuda
-output_dir: outputs/smd_redlamp_cnn_baseline_machine_2_1_window20_adamw_cosine_warmup10_val_vus_pr
-checkpoint_dir: outputs/smd_redlamp_cnn_baseline_machine_2_1_window20_adamw_cosine_warmup10_val_vus_pr/checkpoints
+output_dir: outputs/run2_smd_redlamp_cnn_baseline_machine_2_1_window20_adamw_cosine_warmup10_val_vus_pr
+checkpoint_dir: outputs/run2_smd_redlamp_cnn_baseline_machine_2_1_window20_adamw_cosine_warmup10_val_vus_pr/checkpoints
 data_config_path: configs/data/smd_rtx3090_machine_2_1_20.yaml
 model_config_path: configs/model/redlamp_cnn_baseline.yaml
 task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20_balanced.yaml
@@ -42,5 +42,5 @@ logging:
     - cosine
     - warmup5
     - val-vus-pr
-  wandb_run_name: smd_redlamp_cnn_baseline_machine_2_1_window20_adamw_cosine_warmup10_val_vus_pr
+  wandb_run_name: run2_smd_redlamp_cnn_baseline_machine_2_1_window20_adamw_cosine_warmup10_val_vus_pr
   log_row_normalized_confusion_matrix: true
