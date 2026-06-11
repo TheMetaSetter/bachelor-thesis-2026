@@ -103,9 +103,10 @@ class RedLampMLPBaseline(BaseModel):
         refurbishment_alpha: float = 0.1,
         refurbishment_beta: float = 0.01,
         anomaly_probability: float = 0.5,
-        min_segment_fraction: float = 0.1,
-        max_segment_fraction: float = 0.2,
+        min_segment_fraction: float = 0.2,
+        max_segment_fraction: float = 0.3,
         spike_scale: float = 3.0,
+        anomaly_visibility_boost: float = 1.5,
         anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
         use_synthetic_augmentation: bool = True,
         use_synthetic_validation: bool = True,
@@ -239,6 +240,7 @@ class RedLampMLPBaseline(BaseModel):
             min_segment_fraction=min_segment_fraction,
             max_segment_fraction=max_segment_fraction,
             spike_scale=spike_scale,
+            anomaly_visibility_boost=anomaly_visibility_boost,
             anomaly_families=anomaly_families,
             balance_binary_classes_within_batch=(
                 effective_balance_binary_classes_within_batch
@@ -250,6 +252,7 @@ class RedLampMLPBaseline(BaseModel):
             min_segment_fraction=min_segment_fraction,
             max_segment_fraction=max_segment_fraction,
             spike_scale=spike_scale,
+            anomaly_visibility_boost=anomaly_visibility_boost,
             anomaly_families=anomaly_families,
             balance_binary_classes_within_batch=(
                 effective_balance_binary_classes_within_batch

@@ -121,7 +121,7 @@ def test_each_redlamp_family_is_reachable_and_records_metadata(
     injector = SyntheticAnomalyInjector(
         anomaly_probability=1.0,
         min_segment_fraction=0.2,
-        max_segment_fraction=0.2,
+        max_segment_fraction=0.3,
         anomaly_families=(anomaly_family,),
     )
     batch = _build_batch()
@@ -143,6 +143,40 @@ def test_each_redlamp_family_is_reachable_and_records_metadata(
             "mixture_components"
             in metadata["family_parameters_by_channel"][first_channel]
         )
+
+
+@pytest.mark.parametrize("anomaly_family", REDLAMP_ANOMALY_FAMILIES)
+def test_redlamp_family_uses_four_to_six_timestep_segments_and_records_positions(
+    anomaly_family: str,
+) -> None:
+    injector = SyntheticAnomalyInjector(
+        anomaly_probability=1.0,
+        min_segment_fraction=0.2,
+        max_segment_fraction=0.3,
+        anomaly_families=(anomaly_family,),
+        classification_label_mode="redlamp_multiclass",
+    )
+    batch = _build_batch()
+
+    augmented_batch = injector.augment_batch(batch)
+    metadata = augmented_batch["augmentation_metadata"][0]
+    segment_length = int(metadata["end_index"] - metadata["start_index"])
+    first_channel = str(metadata["affected_channels"][0])
+    family_parameters = metadata["family_parameters_by_channel"][first_channel]
+    changed_positions = family_parameters["changed_positions"]
+
+    assert 4 <= segment_length <= 6
+    assert metadata["segment_length"] == segment_length
+    assert metadata["visibility_boost_factor"] == pytest.approx(
+        injector.anomaly_visibility_boost
+    )
+    assert isinstance(changed_positions, list)
+    assert changed_positions
+    assert all(
+        metadata["start_index"] <= position < metadata["end_index"]
+        for position in changed_positions
+    )
+    assert family_parameters["changed_position_count"] == len(changed_positions)
 
 
 def test_balanced_multiclass_remainder_uses_round_robin_class_allocation() -> None:
@@ -192,3 +226,32 @@ def test_balanced_multiclass_small_batch_rotates_class_coverage() -> None:
     assert len(first_labels) == 5
     assert len(second_labels) == 5
     assert first_labels != second_labels
+
+
+def test_visibility_boost_increases_deviation_for_same_synthetic_sample() -> None:
+    batch = _build_batch()
+    base_injector = SyntheticAnomalyInjector(
+        anomaly_probability=1.0,
+        min_segment_fraction=0.2,
+        max_segment_fraction=0.3,
+        anomaly_visibility_boost=1.0,
+        anomaly_families=("flip",),
+        deterministic_seed=19,
+        classification_label_mode="redlamp_multiclass",
+    )
+    boosted_injector = SyntheticAnomalyInjector(
+        anomaly_probability=1.0,
+        min_segment_fraction=0.2,
+        max_segment_fraction=0.3,
+        anomaly_visibility_boost=1.5,
+        anomaly_families=("flip",),
+        deterministic_seed=19,
+        classification_label_mode="redlamp_multiclass",
+    )
+
+    base_batch = base_injector.augment_batch(batch)
+    boosted_batch = boosted_injector.augment_batch(batch)
+    base_delta = torch.mean(torch.abs(base_batch["x"] - batch["x"]))
+    boosted_delta = torch.mean(torch.abs(boosted_batch["x"] - batch["x"]))
+
+    assert boosted_delta > base_delta

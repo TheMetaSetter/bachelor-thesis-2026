@@ -299,9 +299,10 @@ class SyntheticAnomalyConfig:
     val_realistic_source: str = "test_same_scope"
     val_anomaly_rate_override: float | None = None
     anomaly_probability: float = 0.5
-    min_segment_fraction: float = 0.1
-    max_segment_fraction: float = 0.2
+    min_segment_fraction: float = 0.2
+    max_segment_fraction: float = 0.3
     spike_scale: float = 3.0
+    anomaly_visibility_boost: float = 1.5
     train_balance_classes: bool = False
     anomaly_families: tuple[str, ...] = REDLAMP_ANOMALY_FAMILIES
     classification_label_mode: str = "redlamp_multiclass"
@@ -424,6 +425,7 @@ class ThesisMultitaskModelConfig:
             "min_segment_fraction",
             "max_segment_fraction",
             "spike_scale",
+            "anomaly_visibility_boost",
             "train_balance_classes",
             "anomaly_families",
             "classification_label_mode",
@@ -728,6 +730,7 @@ class ThesisMultitaskModel(BaseModel):
             min_segment_fraction=synthetic.min_segment_fraction,
             max_segment_fraction=synthetic.max_segment_fraction,
             spike_scale=synthetic.spike_scale,
+            anomaly_visibility_boost=synthetic.anomaly_visibility_boost,
             anomaly_families=synthetic.anomaly_families,
             train_balance_classes=synthetic.train_balance_classes,
             classification_label_mode=synthetic.classification_label_mode,
@@ -737,6 +740,7 @@ class ThesisMultitaskModel(BaseModel):
             min_segment_fraction=synthetic.min_segment_fraction,
             max_segment_fraction=synthetic.max_segment_fraction,
             spike_scale=synthetic.spike_scale,
+            anomaly_visibility_boost=synthetic.anomaly_visibility_boost,
             anomaly_families=synthetic.anomaly_families,
             train_balance_classes=synthetic.train_balance_classes,
             deterministic_seed=synthetic.synthetic_validation_seed,

@@ -11,9 +11,10 @@ train_balance_classes: false
 val_realistic: true
 val_realistic_source: test_same_scope
 val_anomaly_rate_override: null
-min_segment_fraction: 0.1
-max_segment_fraction: 0.2
+min_segment_fraction: 0.2
+max_segment_fraction: 0.3
 spike_scale: 3.0
+anomaly_visibility_boost: 1.5
 anomaly_families:
   - spike
   - flip

@@ -319,6 +319,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "min_segment_fraction",
             "max_segment_fraction",
             "spike_scale",
+            "anomaly_visibility_boost",
             "anomaly_families",
         },
         "online_adaptation": {
@@ -469,6 +470,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["min_segment_fraction"] = task_config.get("min_segment_fraction")
         float_fields["max_segment_fraction"] = task_config.get("max_segment_fraction")
         float_fields["spike_scale"] = task_config.get("spike_scale")
+        float_fields["anomaly_visibility_boost"] = task_config.get(
+            "anomaly_visibility_boost", 1.5
+        )
     if task_config.get("task_name") == "online_adaptation":
         float_fields["projector_dropout"] = model_config.get("projector_dropout")
         float_fields["lambda_align"] = model_config.get("lambda_align")
@@ -896,6 +900,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError(
                 "min_segment_fraction must not exceed max_segment_fraction"
             )
+        if float(task_config.get("anomaly_visibility_boost", 1.5)) <= 0.0:
+            raise ValueError("anomaly_visibility_boost must be positive")
         anomaly_families = task_config.get("anomaly_families")
         if not isinstance(anomaly_families, list) or not anomaly_families:
             raise ValueError("anomaly_families must be a non-empty list")

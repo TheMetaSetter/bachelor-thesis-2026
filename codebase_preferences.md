@@ -67,6 +67,8 @@ This is important so I will repeat 3 times.
 
 - Write explanatory comments to support user reading code. Comments should be updated in parallel with code or implementations.
 
+- When writing, reviewing, or refactoring Python code in this repository, strictly follow `python_semantics.md` as a required semantic checklist for slicing, indexing, assignment, mutability, and function-call behavior.
+
 ---
 
 ## 6. Data versioning and reproducibility

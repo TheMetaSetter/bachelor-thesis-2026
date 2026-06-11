@@ -39,9 +39,10 @@ class SyntheticAnomalyInjector:
     def __init__(
         self,
         anomaly_probability: float = 0.5,
-        min_segment_fraction: float = 0.1,
-        max_segment_fraction: float = 0.2,
+        min_segment_fraction: float = 0.2,
+        max_segment_fraction: float = 0.3,
         spike_scale: float = 3.0,
+        anomaly_visibility_boost: float = 1.5,
         anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
         train_balance_classes: bool = False,
         balance_binary_classes_within_batch: bool | None = None,
@@ -62,6 +63,8 @@ class SyntheticAnomalyInjector:
             )
         if spike_scale <= 0.0:
             raise ValueError("spike_scale must be positive")
+        if anomaly_visibility_boost <= 0.0:
+            raise ValueError("anomaly_visibility_boost must be positive")
         if not anomaly_families:
             raise ValueError("anomaly_families must not be empty")
         if classification_label_mode not in {"binary", "redlamp_multiclass"}:
@@ -73,6 +76,7 @@ class SyntheticAnomalyInjector:
         self.min_segment_fraction = min_segment_fraction
         self.max_segment_fraction = max_segment_fraction
         self.spike_scale = spike_scale
+        self.anomaly_visibility_boost = anomaly_visibility_boost
         if balance_binary_classes_within_batch is not None:
             self.train_balance_classes = bool(balance_binary_classes_within_batch)
         else:
@@ -238,6 +242,28 @@ class SyntheticAnomalyInjector:
         fallback_scale = segment.abs().mean()
         return torch.maximum(scale, fallback_scale).clamp_min(0.1)
 
+    def _boost_visibility(
+        self, original_segment: torch.Tensor, updated_segment: torch.Tensor
+    ) -> torch.Tensor:
+        if self.anomaly_visibility_boost == 1.0:
+            return updated_segment
+        return original_segment + (
+            updated_segment - original_segment
+        ) * self.anomaly_visibility_boost
+
+    def _attach_change_metadata(
+        self,
+        family_parameters: dict[str, Any],
+        channel_mask: torch.Tensor,
+    ) -> dict[str, Any]:
+        changed_positions = [
+            int(position.item())
+            for position in torch.nonzero(channel_mask, as_tuple=False).flatten()
+        ]
+        family_parameters["changed_positions"] = changed_positions
+        family_parameters["changed_position_count"] = len(changed_positions)
+        return family_parameters
+
     def _interpolate_1d(
         self, values: torch.Tensor, positions: torch.Tensor
     ) -> torch.Tensor:
@@ -302,6 +328,7 @@ class SyntheticAnomalyInjector:
         updated_segment[spike_positions] = (
             updated_segment[spike_positions] + spike_noise
         )
+        updated_segment = self._boost_visibility(segment, updated_segment)
         local_mask = torch.zeros(
             segment_length, dtype=torch.long, device=segment.device
         )
@@ -313,10 +340,15 @@ class SyntheticAnomalyInjector:
             updated_segment=updated_segment,
             local_mask=local_mask,
         )
-        family_parameters = {
-            "spike_positions": [int(position.item()) for position in spike_positions],
-            "spike_strength": float(spike_strength.detach().cpu()),
-        }
+        family_parameters = self._attach_change_metadata(
+            {
+                "spike_positions": [
+                    int(position.item()) for position in spike_positions
+                ],
+                "spike_strength": float(spike_strength.detach().cpu()),
+            },
+            channel_mask,
+        )
         return anomalous_channel_window, channel_mask, family_parameters
 
     def _inject_flip_family(
@@ -329,6 +361,7 @@ class SyntheticAnomalyInjector:
             clean_channel_window, start_index, end_index
         )
         updated_segment = torch.flip(segment, dims=(0,))
+        updated_segment = self._boost_visibility(segment, updated_segment)
         local_mask = torch.ones(
             segment.shape[0], dtype=torch.long, device=segment.device
         )
@@ -339,7 +372,10 @@ class SyntheticAnomalyInjector:
             updated_segment,
             local_mask,
         )
-        family_parameters = {"operation": "reverse_subsequence"}
+        family_parameters = self._attach_change_metadata(
+            {"operation": "reverse_subsequence"},
+            channel_mask,
+        )
         return anomalous_channel_window, channel_mask, family_parameters
 
     def _inject_speedup_family(
@@ -368,6 +404,7 @@ class SyntheticAnomalyInjector:
         )
         source_positions = source_positions.clamp(max=segment.shape[0] - 1)
         updated_segment = self._interpolate_1d(segment, source_positions)
+        updated_segment = self._boost_visibility(segment, updated_segment)
         local_mask = torch.ones(
             segment.shape[0], dtype=torch.long, device=segment.device
         )
@@ -378,7 +415,10 @@ class SyntheticAnomalyInjector:
             updated_segment,
             local_mask,
         )
-        family_parameters = {"speed_factor": speed_factor}
+        family_parameters = self._attach_change_metadata(
+            {"speed_factor": speed_factor},
+            channel_mask,
+        )
         return anomalous_channel_window, channel_mask, family_parameters
 
     def _inject_noise_family(
@@ -396,6 +436,7 @@ class SyntheticAnomalyInjector:
             + self._randn(*segment.shape, device=segment.device, dtype=segment.dtype)
             * noise_std
         )
+        updated_segment = self._boost_visibility(segment, updated_segment)
         local_mask = torch.ones(
             segment.shape[0], dtype=torch.long, device=segment.device
         )
@@ -406,7 +447,10 @@ class SyntheticAnomalyInjector:
             updated_segment,
             local_mask,
         )
-        family_parameters = {"noise_std": noise_std}
+        family_parameters = self._attach_change_metadata(
+            {"noise_std": noise_std},
+            channel_mask,
+        )
         return anomalous_channel_window, channel_mask, family_parameters
 
     def _inject_cutoff_family(
@@ -427,6 +471,7 @@ class SyntheticAnomalyInjector:
             updated_segment = torch.zeros_like(segment)
         else:
             updated_segment = torch.full_like(segment, float(segment[0].detach().cpu()))
+        updated_segment = self._boost_visibility(segment, updated_segment)
         local_mask = torch.ones(
             segment.shape[0], dtype=torch.long, device=segment.device
         )
@@ -437,7 +482,10 @@ class SyntheticAnomalyInjector:
             updated_segment,
             local_mask,
         )
-        family_parameters = {"cutoff_mode": cutoff_mode}
+        family_parameters = self._attach_change_metadata(
+            {"cutoff_mode": cutoff_mode},
+            channel_mask,
+        )
         return anomalous_channel_window, channel_mask, family_parameters
 
     def _inject_average_family(
@@ -451,6 +499,7 @@ class SyntheticAnomalyInjector:
         )
         segment_mean = float(segment.mean().detach().cpu())
         updated_segment = torch.full_like(segment, segment_mean)
+        updated_segment = self._boost_visibility(segment, updated_segment)
         local_mask = torch.ones(
             segment.shape[0], dtype=torch.long, device=segment.device
         )
@@ -461,7 +510,10 @@ class SyntheticAnomalyInjector:
             updated_segment,
             local_mask,
         )
-        family_parameters = {"segment_mean": segment_mean}
+        family_parameters = self._attach_change_metadata(
+            {"segment_mean": segment_mean},
+            channel_mask,
+        )
         return anomalous_channel_window, channel_mask, family_parameters
 
     def _inject_scale_family(
@@ -485,6 +537,7 @@ class SyntheticAnomalyInjector:
             ].item()
         )
         updated_segment = center + (segment - center) * scale_factor
+        updated_segment = self._boost_visibility(segment, updated_segment)
         local_mask = torch.ones(
             segment.shape[0], dtype=torch.long, device=segment.device
         )
@@ -495,7 +548,10 @@ class SyntheticAnomalyInjector:
             updated_segment,
             local_mask,
         )
-        family_parameters = {"scale_factor": scale_factor}
+        family_parameters = self._attach_change_metadata(
+            {"scale_factor": scale_factor},
+            channel_mask,
+        )
         return anomalous_channel_window, channel_mask, family_parameters
 
     def _inject_wander_family(
@@ -515,6 +571,7 @@ class SyntheticAnomalyInjector:
         drift_curve = torch.cumsum(drift_noise, dim=0)
         drift_curve = drift_curve - drift_curve[0]
         updated_segment = segment + drift_curve
+        updated_segment = self._boost_visibility(segment, updated_segment)
         local_mask = torch.ones(
             segment.shape[0], dtype=torch.long, device=segment.device
         )
@@ -525,7 +582,10 @@ class SyntheticAnomalyInjector:
             updated_segment,
             local_mask,
         )
-        family_parameters = {"drift_scale": float(drift_scale.detach().cpu())}
+        family_parameters = self._attach_change_metadata(
+            {"drift_scale": float(drift_scale.detach().cpu())},
+            channel_mask,
+        )
         return anomalous_channel_window, channel_mask, family_parameters
 
     def _inject_contextual_family(
@@ -549,6 +609,7 @@ class SyntheticAnomalyInjector:
         contextual_offset = outside_context_mean - segment.mean()
         contextual_offset = contextual_offset + self._segment_scale(segment) * 0.5
         updated_segment = segment + contextual_offset
+        updated_segment = self._boost_visibility(segment, updated_segment)
         local_mask = torch.ones(
             segment.shape[0], dtype=torch.long, device=segment.device
         )
@@ -559,9 +620,10 @@ class SyntheticAnomalyInjector:
             updated_segment,
             local_mask,
         )
-        family_parameters = {
-            "contextual_offset": float(contextual_offset.detach().cpu())
-        }
+        family_parameters = self._attach_change_metadata(
+            {"contextual_offset": float(contextual_offset.detach().cpu())},
+            channel_mask,
+        )
         return anomalous_channel_window, channel_mask, family_parameters
 
     def _inject_upsidedown_family(
@@ -575,6 +637,7 @@ class SyntheticAnomalyInjector:
         )
         inversion_center = segment.mean()
         updated_segment = 2.0 * inversion_center - segment
+        updated_segment = self._boost_visibility(segment, updated_segment)
         local_mask = torch.ones(
             segment.shape[0], dtype=torch.long, device=segment.device
         )
@@ -585,7 +648,10 @@ class SyntheticAnomalyInjector:
             updated_segment,
             local_mask,
         )
-        family_parameters = {"inversion_center": float(inversion_center.detach().cpu())}
+        family_parameters = self._attach_change_metadata(
+            {"inversion_center": float(inversion_center.detach().cpu())},
+            channel_mask,
+        )
         return anomalous_channel_window, channel_mask, family_parameters
 
     def _inject_mixture_family(
@@ -648,7 +714,10 @@ class SyntheticAnomalyInjector:
                 }
             )
 
-        family_parameters = {"mixture_components": mixture_components}
+        family_parameters = self._attach_change_metadata(
+            {"mixture_components": mixture_components},
+            combined_mask,
+        )
         return working_channel_window, combined_mask, family_parameters
 
     def _inject_single_window(
@@ -694,6 +763,8 @@ class SyntheticAnomalyInjector:
             "anomaly_family_index": anomaly_family_index,
             "start_index": start_index,
             "end_index": end_index,
+            "segment_length": end_index - start_index,
+            "visibility_boost_factor": self.anomaly_visibility_boost,
             "affected_channels": affected_channels,
             "family_parameters_by_channel": family_parameters_by_channel,
         }
@@ -706,6 +777,8 @@ class SyntheticAnomalyInjector:
             "anomaly_family_index": None,
             "start_index": None,
             "end_index": None,
+            "segment_length": None,
+            "visibility_boost_factor": None,
             "affected_channels": [],
             "family_parameters_by_channel": {},
         }

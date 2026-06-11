@@ -22,6 +22,7 @@ When adding new source code, follow the guidance in `codebase_preferences.md`: o
 ## Coding Style and Naming Conventions
 - Prefer explicit, descriptive names and short, linear control flow.
 - Use four-space indentation in Python and follow PEP 8 conventions.
+- Follow `python_semantics.md` whenever writing, reviewing, or refactoring Python code, especially for slicing, indexing, assignment, and mutability.
 - Keep model logic self-contained in a single file. Avoid fragmented class hierarchies.
 - Prefer adapter-style wrappers when integrating reference codebases.
 
