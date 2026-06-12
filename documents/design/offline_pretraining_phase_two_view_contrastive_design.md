@@ -103,6 +103,28 @@ $$
 
 ## 5. InfoNCE in Offline Pre-Training Phase
 
+For each task-specific encoder, we take two views:
+
+$$
+z_{\text{normal}} = f_\theta(x_{\text{normal}}),
+\qquad
+z_{\text{synth}} = f_\theta(x_{\text{synth}})
+$$
+
+with:
+
+$$
+z_{\text{normal}}, z_{\text{synth}} \in \mathbb{R}^{B \times L \times d_h}
+$$
+
+For a batch element $b$ and a timestep $t$, define the time-step embeddings:
+
+$$
+q_{b,t} = \operatorname{norm}\!\left(z_{\text{normal}, b,t}\right),
+\qquad
+k^+_{b,t} = \operatorname{norm}\!\left(z_{\text{synth}, b,t}\right)
+$$
+
 Positive anchors use non-injected timesteps only:
 
 $$
@@ -148,13 +170,52 @@ $$
 where:
 
 $$
-\tilde{k}_{b',t'}=\operatorname{norm}(h'_{b',t'})
+\tilde{k}_{b',t'}=\operatorname{norm}(z_{\text{synth},b',t'})
 $$
 
 and:
 
 $$
 \operatorname{sim}(u,v)=u^\top v
+$$
+
+The contrastive loss is then combined with the task loss:
+
+$$
+\mathcal{L}_{\text{total}}
+=
+\mathcal{L}_{\text{task}}
++ \lambda_{\text{ctr}} \mathcal{L}_{\text{ctr}}
+$$
+
+where $\mathcal{L}_{\text{task}}$ is the reconstruction or classification objective for that task-specific encoder.
+
+The backward pass follows:
+
+$$
+\frac{\partial \mathcal{L}_{\text{ctr}}}{\partial z_{\text{normal}}}
+\neq 0,
+\qquad
+\frac{\partial \mathcal{L}_{\text{ctr}}}{\partial z_{\text{synth}}}
+\neq 0
+$$
+
+so the contrastive gradient flows into the shared task-specific encoder parameters:
+
+$$
+\frac{\partial \mathcal{L}_{\text{total}}}{\partial \theta}
+=
+\frac{\partial \mathcal{L}_{\text{task}}}{\partial \theta}
++
+\lambda_{\text{ctr}}
+\frac{\partial \mathcal{L}_{\text{ctr}}}{\partial \theta}
+$$
+
+and the optimizer update is:
+
+$$
+\theta \leftarrow
+\theta - \eta \frac{\partial \mathcal{L}_{\text{total}}}{\partial \theta}
 $$
 
 ## 6. CKA-Gated Per-Sample Fusion
