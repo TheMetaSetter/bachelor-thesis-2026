@@ -27,7 +27,10 @@ from src.core.registry import (
     register_dataset,
     register_model,
 )
-from src.data.loaders import build_smd_dataset_bundle
+from src.data.loaders import (
+    build_anomaly_archive_dataset_bundle,
+    build_smd_dataset_bundle,
+)
 from src.data.scalers import SequenceStandardScaler
 from src.engine.checkpoint import CheckpointManager
 from src.engine.evaluator import Evaluator
@@ -39,6 +42,7 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 
 def register_runtime_components() -> None:
     register_dataset("smd", build_smd_dataset_bundle)
+    register_dataset("anomaly_archive", build_anomaly_archive_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
     register_model("redlamp_mlp_baseline", RedLampMLPBaseline)

@@ -144,6 +144,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     allowed_data_keys = {
         "dataset_name",
         "root_dir",
+        "file_path",
         "window_size",
         "stride",
         "batch_size",
@@ -155,6 +156,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "annotate_cleaning_metadata",
         "entity_ids",
         "shuffle_train",
+        "comparison_mode",
+        "inclusive_anomaly_end",
         "max_train_windows",
         "max_val_windows",
         "max_test_windows",
@@ -168,7 +171,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
 
     _resolve_thesis_model_window_size(experiment_config)
 
-    supported_dataset_names = {"smd"}
+    supported_dataset_names = {"smd", "anomaly_archive"}
     supported_model_names = {
         "reconstruction_mlp_ae",
         "thesis_multitask",
@@ -179,6 +182,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
 
     if data_config.get("dataset_name") not in supported_dataset_names:
         raise ValueError(f"Unsupported dataset_name: {data_config.get('dataset_name')}")
+    if data_config.get("dataset_name") == "anomaly_archive" and not data_config.get(
+        "file_path"
+    ):
+        raise ValueError("anomaly_archive data config requires file_path")
     if model_config.get("model_name") not in supported_model_names:
         raise ValueError(f"Unsupported model_name: {model_config.get('model_name')}")
     if task_config.get("task_name") not in supported_task_names:

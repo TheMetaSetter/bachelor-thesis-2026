@@ -6,6 +6,7 @@ import numpy as np
 import torch
 
 from src.data.download import get_smd_dataset_root
+from src.data.loaders import build_anomaly_archive_dataset_bundle
 from src.data.loaders import build_smd_dataset_bundle
 from src.data.public_types import PublicDataBundle
 
@@ -63,6 +64,46 @@ def _coerce_public_bundle(bundle: dict[str, Any]) -> PublicDataBundle:
     )
 
 
+def _build_anomaly_archive_data_config(
+    *,
+    file_path: str,
+    window_size: int = 100,
+    stride: int = 10,
+    batch_size: int = 32,
+    validation_split_ratio: float = 0.2,
+    num_workers: int | str = 0,
+    min_num_workers: int = 4,
+    shuffle_train: bool = True,
+    comparison_mode: str = "pre_vs_anomaly",
+    inclusive_anomaly_end: bool = False,
+    annotate_cleaning_metadata: bool = False,
+    max_train_windows: int | None = None,
+    max_val_windows: int | None = None,
+    max_test_windows: int | None = None,
+) -> dict[str, Any]:
+    data_config: dict[str, Any] = {
+        "dataset_name": "anomaly_archive",
+        "file_path": file_path,
+        "window_size": window_size,
+        "stride": stride,
+        "batch_size": batch_size,
+        "num_workers": num_workers,
+        "min_num_workers": min_num_workers,
+        "validation_split_ratio": validation_split_ratio,
+        "shuffle_train": shuffle_train,
+        "comparison_mode": comparison_mode,
+        "inclusive_anomaly_end": inclusive_anomaly_end,
+        "annotate_cleaning_metadata": annotate_cleaning_metadata,
+    }
+    if max_train_windows is not None:
+        data_config["max_train_windows"] = max_train_windows
+    if max_val_windows is not None:
+        data_config["max_val_windows"] = max_val_windows
+    if max_test_windows is not None:
+        data_config["max_test_windows"] = max_test_windows
+    return data_config
+
+
 def load_smd_data(
     *,
     root: str = "data/ServerMachineDataset",
@@ -97,6 +138,42 @@ def load_smd_data(
         max_test_windows=max_test_windows,
     )
     return _coerce_public_bundle(build_smd_dataset_bundle(data_config))
+
+
+def load_anomaly_archive_data(
+    *,
+    file_path: str,
+    window_size: int = 100,
+    stride: int = 10,
+    batch_size: int = 32,
+    validation_split_ratio: float = 0.2,
+    num_workers: int | str = 0,
+    min_num_workers: int = 4,
+    shuffle_train: bool = True,
+    comparison_mode: str = "pre_vs_anomaly",
+    inclusive_anomaly_end: bool = False,
+    annotate_cleaning_metadata: bool = False,
+    max_train_windows: int | None = None,
+    max_val_windows: int | None = None,
+    max_test_windows: int | None = None,
+) -> PublicDataBundle:
+    data_config = _build_anomaly_archive_data_config(
+        file_path=file_path,
+        window_size=window_size,
+        stride=stride,
+        batch_size=batch_size,
+        validation_split_ratio=validation_split_ratio,
+        num_workers=num_workers,
+        min_num_workers=min_num_workers,
+        shuffle_train=shuffle_train,
+        comparison_mode=comparison_mode,
+        inclusive_anomaly_end=inclusive_anomaly_end,
+        annotate_cleaning_metadata=annotate_cleaning_metadata,
+        max_train_windows=max_train_windows,
+        max_val_windows=max_val_windows,
+        max_test_windows=max_test_windows,
+    )
+    return _coerce_public_bundle(build_anomaly_archive_dataset_bundle(data_config))
 
 
 def point_labels_to_window_labels(point_labels: torch.Tensor) -> torch.Tensor:

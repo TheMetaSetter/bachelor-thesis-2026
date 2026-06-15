@@ -16,6 +16,7 @@ from src.core.console import console_print
 from src.data.cleaning import SequenceCleaningPipeline
 from src.data.collate import collate_windows
 from src.data.base import BaseDatasetBuilder
+from src.data.datasets.anomaly_archive import AnomalyArchiveDatasetParser
 from src.data.datasets.smd import SMDDatasetParser
 from src.data.download import download_smd_dataset, get_smd_dataset_root
 from src.data.scalers import SequenceStandardScaler
@@ -59,6 +60,118 @@ def _resolve_smd_root_dir(data_config: dict[str, Any]) -> str:
         resolved_root_dir=resolved_root_dir,
     )
     return resolved_root_dir
+
+
+def _build_window_datasets(
+    *,
+    scaled_sequences: dict[str, list[dict[str, Any]]],
+    data_config: dict[str, Any],
+) -> tuple[dict[str, Dataset], int]:
+    resolved_num_workers = _resolve_data_loader_num_workers(data_config)
+    datasets = {
+        split_name: WindowDataset(
+            sequences=split_sequences,
+            window_size=int(data_config["window_size"]),
+            stride=int(data_config["stride"]),
+            max_windows=data_config.get(f"max_{split_name}_windows"),
+        )
+        for split_name, split_sequences in scaled_sequences.items()
+    }
+    console_print(
+        "DATA",
+        "Built window datasets",
+        train_windows=len(datasets["train"]),
+        val_windows=len(datasets["val"]),
+        test_windows=len(datasets["test"]),
+    )
+    return datasets, resolved_num_workers
+
+
+def _build_loaders_from_datasets(
+    *,
+    datasets: dict[str, Dataset],
+    data_config: dict[str, Any],
+    resolved_num_workers: int,
+) -> dict[str, DataLoader]:
+    batch_size = int(data_config["batch_size"])
+    loaders = {
+        "train": DataLoader(
+            datasets["train"],
+            batch_size=batch_size,
+            shuffle=bool(data_config.get("shuffle_train", True)),
+            num_workers=resolved_num_workers,
+            persistent_workers=resolved_num_workers > 0,
+            collate_fn=collate_windows,
+        ),
+        "val": DataLoader(
+            datasets["val"],
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=resolved_num_workers,
+            persistent_workers=resolved_num_workers > 0,
+            collate_fn=collate_windows,
+        ),
+        "test": DataLoader(
+            datasets["test"],
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=resolved_num_workers,
+            persistent_workers=resolved_num_workers > 0,
+            collate_fn=collate_windows,
+        ),
+    }
+    console_print(
+        "DATA",
+        "Built data loaders",
+        train_batch_size=batch_size,
+        val_batch_size=batch_size,
+        test_batch_size=batch_size,
+        resolved_num_workers=resolved_num_workers,
+        persistent_workers=resolved_num_workers > 0,
+    )
+    return loaders
+
+
+def _build_dataset_bundle_from_sequences(
+    *,
+    dataset_name: str,
+    parser: Any,
+    cleaned_sequences: dict[str, list[dict[str, Any]]],
+    data_config: dict[str, Any],
+) -> dict[str, Any]:
+    console_print(
+        "DATA",
+        "Cleaned dataset split sequences",
+        dataset_name=dataset_name,
+        train_sequences=len(cleaned_sequences["train"]),
+        val_sequences=len(cleaned_sequences["val"]),
+        test_sequences=len(cleaned_sequences["test"]),
+    )
+    scaler = SequenceStandardScaler()
+    scaler.fit(cleaned_sequences["train"])
+    scaled_sequences = {
+        split_name: scaler.transform_sequences(split_sequences)
+        for split_name, split_sequences in cleaned_sequences.items()
+    }
+
+    datasets, resolved_num_workers = _build_window_datasets(
+        scaled_sequences=scaled_sequences,
+        data_config=data_config,
+    )
+    loaders = _build_loaders_from_datasets(
+        datasets=datasets,
+        data_config=data_config,
+        resolved_num_workers=resolved_num_workers,
+    )
+    return {
+        "dataset_name": dataset_name,
+        "parser": parser,
+        "scaler": scaler,
+        "raw_sequences": cleaned_sequences,
+        "scaled_sequences": scaled_sequences,
+        "datasets": datasets,
+        "loaders": loaders,
+    }
 
 
 class WindowDataset(Dataset):
@@ -145,90 +258,53 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
             annotate_metadata=bool(data_config.get("annotate_cleaning_metadata", False))
         )
         cleaned_sequences = cleaning_pipeline.transform_splits(parsed_sequences)
-        console_print(
-            "DATA",
-            "Cleaned SMD split sequences",
-            train_sequences=len(cleaned_sequences["train"]),
-            val_sequences=len(cleaned_sequences["val"]),
-            test_sequences=len(cleaned_sequences["test"]),
+        return _build_dataset_bundle_from_sequences(
+            dataset_name="smd",
+            parser=parser,
+            cleaned_sequences=cleaned_sequences,
+            data_config=data_config,
         )
 
-        scaler = SequenceStandardScaler()
-        scaler.fit(cleaned_sequences["train"])
-        scaled_sequences = {
-            split_name: scaler.transform_sequences(split_sequences)
-            for split_name, split_sequences in cleaned_sequences.items()
-        }
 
-        resolved_num_workers = _resolve_data_loader_num_workers(data_config)
-
-        datasets = {
-            split_name: WindowDataset(
-                sequences=split_sequences,
-                window_size=int(data_config["window_size"]),
-                stride=int(data_config["stride"]),
-                max_windows=data_config.get(f"max_{split_name}_windows"),
-            )
-            for split_name, split_sequences in scaled_sequences.items()
-        }
+class AnomalyArchiveDatasetBuilder(BaseDatasetBuilder):
+    def build(self, data_config: dict[str, Any]) -> dict[str, Any]:
+        file_path = data_config.get("file_path")
+        if file_path is None:
+            raise ValueError("anomaly_archive data config requires file_path")
         console_print(
             "DATA",
-            "Built window datasets",
-            train_windows=len(datasets["train"]),
-            val_windows=len(datasets["val"]),
-            test_windows=len(datasets["test"]),
+            "Building AnomalyArchive dataset bundle",
+            file_path=file_path,
+            window_size=data_config["window_size"],
+            stride=data_config["stride"],
+            batch_size=data_config["batch_size"],
         )
-
-        loaders = {
-            "train": DataLoader(
-                datasets["train"],
-                batch_size=int(data_config["batch_size"]),
-                shuffle=bool(data_config.get("shuffle_train", True)),
-                num_workers=resolved_num_workers,
-                persistent_workers=resolved_num_workers > 0,
-                collate_fn=collate_windows,
-            ),
-            "val": DataLoader(
-                datasets["val"],
-                batch_size=int(data_config["batch_size"]),
-                shuffle=False,
-                num_workers=resolved_num_workers,
-                persistent_workers=resolved_num_workers > 0,
-                collate_fn=collate_windows,
-            ),
-            "test": DataLoader(
-                datasets["test"],
-                batch_size=int(data_config["batch_size"]),
-                shuffle=False,
-                num_workers=resolved_num_workers,
-                persistent_workers=resolved_num_workers > 0,
-                collate_fn=collate_windows,
-            ),
-        }
-        console_print(
-            "DATA",
-            "Built data loaders",
-            train_batch_size=data_config["batch_size"],
-            val_batch_size=data_config["batch_size"],
-            test_batch_size=data_config["batch_size"],
-            resolved_num_workers=resolved_num_workers,
-            persistent_workers=resolved_num_workers > 0,
+        parser = AnomalyArchiveDatasetParser(
+            file_path=file_path,
+            validation_split_ratio=float(data_config["validation_split_ratio"]),
+            comparison_mode=str(data_config.get("comparison_mode", "pre_vs_anomaly")),
+            inclusive_anomaly_end=bool(data_config.get("inclusive_anomaly_end", False)),
         )
-
-        return {
-            "dataset_name": "smd",
-            "parser": parser,
-            "scaler": scaler,
-            "raw_sequences": cleaned_sequences,
-            "scaled_sequences": scaled_sequences,
-            "datasets": datasets,
-            "loaders": loaders,
-        }
+        parsed_sequences = parser.parse()
+        cleaning_pipeline = SequenceCleaningPipeline(
+            annotate_metadata=bool(data_config.get("annotate_cleaning_metadata", False))
+        )
+        cleaned_sequences = cleaning_pipeline.transform_splits(parsed_sequences)
+        return _build_dataset_bundle_from_sequences(
+            dataset_name="anomaly_archive",
+            parser=parser,
+            cleaned_sequences=cleaned_sequences,
+            data_config=data_config,
+        )
 
 
 def build_smd_dataset_bundle(data_config: dict[str, Any]) -> dict[str, Any]:
     # This is the registry-facing entrypoint used by the active scripts.
     return SMDDatasetBuilder().build(data_config)
+
+
+def build_anomaly_archive_dataset_bundle(data_config: dict[str, Any]) -> dict[str, Any]:
+    return AnomalyArchiveDatasetBuilder().build(data_config)
 
 
 def build_smd_dataloaders(data_config: dict[str, Any]) -> dict[str, Any]:

@@ -17,7 +17,10 @@ from src.core.config import load_experiment_config
 from src.core.registry import build_dataset, register_dataset
 from src.data.collate import collate_windows
 from src.data.augment import REDLAMP_ANOMALY_FAMILIES, SyntheticAnomalyInjector
-from src.data.loaders import build_smd_dataset_bundle
+from src.data.loaders import (
+    build_anomaly_archive_dataset_bundle,
+    build_smd_dataset_bundle,
+)
 
 
 def select_channels_to_plot(
@@ -196,6 +199,7 @@ def build_demo_batch(experiment_config_path: str | None = None) -> dict:
 
     experiment_config = load_experiment_config(experiment_config_path)
     register_dataset("smd", build_smd_dataset_bundle)
+    register_dataset("anomaly_archive", build_anomaly_archive_dataset_bundle)
     data_bundle = build_dataset(
         experiment_config["data"]["dataset_name"], experiment_config["data"]
     )
