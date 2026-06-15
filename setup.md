@@ -31,6 +31,7 @@ TORCH_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cu124" bash setup.sh
 after the script finishes, activate the virtual environment if you want to work in the shell:
 
 ```bash
+source $HOME/.local/bin/env
 source .venv/bin/activate
 ```
 
