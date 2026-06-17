@@ -1,3 +1,0 @@
-{"epoch": 1, "train_loss": 0.21259048860520124, "val_loss": 0.22317775525152683}
-{"anomaly_families": null, "event": "run_start", "experiment_name": "smd_smoke_test", "task_name": "reconstruction"}
-{"epoch": 1, "train_loss": 0.2757157748565078, "train_mean_point_score": 0.27571577578783035, "val_loss": 0.2594252685084939, "val_mean_point_score": 0.2594252657145262}
