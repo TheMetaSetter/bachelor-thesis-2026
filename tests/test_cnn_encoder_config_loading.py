@@ -59,7 +59,9 @@ def _write_cnn_model_config(
 ) -> Path:
     model_path = tmp_path / f"{source_path.stem}_{encoder_family}.yaml"
     model_text = source_path.read_text(encoding="utf-8")
-    model_text = model_text.replace("encoder_family: mlp", f"encoder_family: {encoder_family}")
+    model_text = model_text.replace(
+        "encoder_family: mlp", f"encoder_family: {encoder_family}"
+    )
     model_path.write_text(model_text, encoding="utf-8")
     return model_path
 
@@ -74,7 +76,8 @@ def test_mlp_and_cnn_model_configs_load_and_surface_encoder_family(
     )
     cnn_model_config_path = _write_cnn_model_config(
         tmp_path,
-        source_path=REPO_ROOT / "configs/model/thesis_multitask_redlamp_multiclass.yaml",
+        source_path=REPO_ROOT
+        / "configs/model/thesis_multitask_redlamp_multiclass.yaml",
         encoder_family="cnn_simple",
     )
     thesis_experiment_path = _write_experiment_config(

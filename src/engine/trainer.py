@@ -542,7 +542,9 @@ class Trainer:
             return float(override_value)
         if "data" not in config:
             if hasattr(self.model, "synthetic_validation_injector"):
-                return float(self.model.synthetic_validation_injector.anomaly_probability)
+                return float(
+                    self.model.synthetic_validation_injector.anomaly_probability
+                )
             return 0.5
 
         source_name = str(task_config.get("val_realistic_source", "test_same_scope"))
@@ -694,8 +696,8 @@ class Trainer:
             validation_aux_pointwise_payloads: list[dict[str, Any]] = []
             if use_val_realistic and hasattr(self.model, "realistic_validation_step"):
                 validation_aux_stage_name = "val_realistic"
-                realistic_anomaly_rate = self._resolve_realistic_validation_anomaly_rate(
-                    config=config
+                realistic_anomaly_rate = (
+                    self._resolve_realistic_validation_anomaly_rate(config=config)
                 )
                 if hasattr(self.model, "prepare_realistic_validation_epoch"):
                     self.model.prepare_realistic_validation_epoch(

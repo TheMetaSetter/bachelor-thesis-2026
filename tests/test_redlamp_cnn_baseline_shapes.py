@@ -43,9 +43,5 @@ def test_redlamp_cnn_baseline_forward_backward_and_gradient_profiling() -> None:
     assert outputs["logits"].shape == (2, len(REDLAMP_MULTICLASS_CLASS_NAMES))
     assert outputs["point_scores"].shape == (2, 20)
     assert outputs["window_scores"].shape == (2,)
-    assert any(
-        parameter.grad is not None for parameter in model.encoder.parameters()
-    )
-    assert any(
-        key.startswith("train_gradconf_raw/") for key in step_output["log"]
-    )
+    assert any(parameter.grad is not None for parameter in model.encoder.parameters())
+    assert any(key.startswith("train_gradconf_raw/") for key in step_output["log"])

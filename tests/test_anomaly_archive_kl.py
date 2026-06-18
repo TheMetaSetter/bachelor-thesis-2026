@@ -67,7 +67,10 @@ def test_rank_anomaly_archive_by_kl_orders_larger_shift_first(tmp_path) -> None:
     ranking_entries = rank_anomaly_archive_by_kl(tmp_path)
 
     assert ranking_entries[0].report.file_path.name == first_file.name
-    assert ranking_entries[0].report.kl_train_to_test >= ranking_entries[1].report.kl_train_to_test
+    assert (
+        ranking_entries[0].report.kl_train_to_test
+        >= ranking_entries[1].report.kl_train_to_test
+    )
 
 
 def test_ks_drift_report_flags_identical_segments_as_not_significant(tmp_path) -> None:
@@ -90,4 +93,6 @@ def test_rank_anomaly_archive_by_ks_applies_bh_correction(tmp_path) -> None:
     ranking_reports = rank_anomaly_archive_by_ks(tmp_path, alpha=0.05)
 
     assert ranking_reports[0].file_path.name == shifted_file.name
-    assert ranking_reports[0].bh_adjusted_p_value <= ranking_reports[1].bh_adjusted_p_value
+    assert (
+        ranking_reports[0].bh_adjusted_p_value <= ranking_reports[1].bh_adjusted_p_value
+    )

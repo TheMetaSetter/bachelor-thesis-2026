@@ -12,7 +12,9 @@ from src.data.loaders import build_anomaly_archive_dataset_bundle
 
 def test_anomaly_archive_parser_splits_staffiii_file_into_three_sequences() -> None:
     parser = AnomalyArchiveDatasetParser(
-        file_path=Path("data/AnomalyArchive/219_UCR_Anomaly_STAFFIIIDatabase_41612_64632_64852.txt"),
+        file_path=Path(
+            "data/AnomalyArchive/219_UCR_Anomaly_STAFFIIIDatabase_41612_64632_64852.txt"
+        ),
         validation_split_ratio=0.2,
         comparison_mode="pre_vs_anomaly",
     )
@@ -124,19 +126,19 @@ def test_validate_experiment_config_allows_anomaly_archive_dataset() -> None:
             "use_synthetic_validation": True,
             "synthetic_validation_seed": 7,
             "classification_label_mode": "redlamp_multiclass",
-                "freeze_fusion_for_epochs": 0,
-                "warmup_alpha_value": 0.0,
-                "warmup_beta_value": 0.0,
-                "anomaly_probability": 0.5,
-                "train_balance_classes": False,
-                "val_realistic": True,
-                "val_realistic_source": "test_same_scope",
-                "val_anomaly_rate_override": None,
-                "min_segment_fraction": 0.2,
-                "max_segment_fraction": 0.3,
+            "freeze_fusion_for_epochs": 0,
+            "warmup_alpha_value": 0.0,
+            "warmup_beta_value": 0.0,
+            "anomaly_probability": 0.5,
+            "train_balance_classes": False,
+            "val_realistic": True,
+            "val_realistic_source": "test_same_scope",
+            "val_anomaly_rate_override": None,
+            "min_segment_fraction": 0.2,
+            "max_segment_fraction": 0.3,
             "spike_scale": 3.0,
             "anomaly_visibility_boost": 1.5,
-                "anomaly_families": ["spike"],
+            "anomaly_families": ["spike"],
         },
         "optimizer": {
             "optimizer_name": "adam",

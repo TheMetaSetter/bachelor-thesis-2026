@@ -30,10 +30,13 @@ class DummyPlateauModel(nn.Module):
         self.val_realistic_loss_sequence = val_realistic_loss_sequence or list(
             val_loss_sequence
         )
-        self.val_realistic_point_scores_sequence = val_realistic_point_scores_sequence or [
-            torch.tensor([[0.1, 0.9]], dtype=torch.float32)
-            for _ in self.val_realistic_loss_sequence
-        ]
+        self.val_realistic_point_scores_sequence = (
+            val_realistic_point_scores_sequence
+            or [
+                torch.tensor([[0.1, 0.9]], dtype=torch.float32)
+                for _ in self.val_realistic_loss_sequence
+            ]
+        )
         self.validation_step_index = 0
         self.synthetic_validation_step_index = 0
 
@@ -489,7 +492,9 @@ def test_trainer_adds_val_vus_pr_before_checkpoint_selection(tmp_path: Path) -> 
 def test_trainer_logs_val_realistic_vus_pr_alongside_synthetic_classification_metrics(
     tmp_path: Path,
 ) -> None:
-    model = DummyPlateauModel(val_loss_sequence=[1.0], val_realistic_loss_sequence=[1.0])
+    model = DummyPlateauModel(
+        val_loss_sequence=[1.0], val_realistic_loss_sequence=[1.0]
+    )
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     experiment_logger = ExperimentLogger(tmp_path / "logs")
     validation_batch = {
@@ -540,7 +545,9 @@ def test_trainer_logs_val_realistic_vus_pr_alongside_synthetic_classification_me
     assert "val_realistic_threshold" in epoch_metrics
 
 
-def test_trainer_tracks_best_checkpoint_from_val_realistic_vus_pr(tmp_path: Path) -> None:
+def test_trainer_tracks_best_checkpoint_from_val_realistic_vus_pr(
+    tmp_path: Path,
+) -> None:
     model = DummyPlateauModel(
         val_loss_sequence=[0.8, 0.7, 0.6],
         val_realistic_loss_sequence=[1.0, 1.0, 1.0],

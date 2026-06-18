@@ -223,16 +223,24 @@ def build_visualization_injector(
 
     experiment_config = load_experiment_config(experiment_config_path)
     task_config = experiment_config["task"]
-    configured_families = tuple(task_config.get("anomaly_families", REDLAMP_ANOMALY_FAMILIES))
-    selected_families = configured_families if anomaly_family is None else (anomaly_family,)
+    configured_families = tuple(
+        task_config.get("anomaly_families", REDLAMP_ANOMALY_FAMILIES)
+    )
+    selected_families = (
+        configured_families if anomaly_family is None else (anomaly_family,)
+    )
     return SyntheticAnomalyInjector(
         anomaly_probability=1.0,
         min_segment_fraction=float(task_config["min_segment_fraction"]),
         max_segment_fraction=float(task_config["max_segment_fraction"]),
         spike_scale=float(task_config["spike_scale"]),
-        anomaly_visibility_boost=float(task_config.get("anomaly_visibility_boost", 1.5)),
+        anomaly_visibility_boost=float(
+            task_config.get("anomaly_visibility_boost", 1.5)
+        ),
         anomaly_families=selected_families,
-        classification_label_mode=str(task_config.get("classification_label_mode", "redlamp_multiclass")),
+        classification_label_mode=str(
+            task_config.get("classification_label_mode", "redlamp_multiclass")
+        ),
     )
 
 

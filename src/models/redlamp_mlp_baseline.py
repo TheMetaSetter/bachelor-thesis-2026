@@ -408,9 +408,7 @@ class RedLampMLPBaseline(BaseModel):
     def _get_encoder_profiled_parameters(self) -> OrderedDict[str, nn.Parameter]:
         profiled_parameters: OrderedDict[str, nn.Parameter] = OrderedDict()
         encoder_layers = (
-            self.encoder.network
-            if hasattr(self.encoder, "network")
-            else self.encoder
+            self.encoder.network if hasattr(self.encoder, "network") else self.encoder
         )
         affine_layer_indices = [
             layer_index

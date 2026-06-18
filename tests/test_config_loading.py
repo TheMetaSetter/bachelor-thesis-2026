@@ -53,7 +53,9 @@ TRAINING_POLICY_EXPERIMENT_CONFIGS = [
 
 
 def test_load_experiment_config_reads_valid_yaml() -> None:
-    loaded_config = load_experiment_config("configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml")
+    loaded_config = load_experiment_config(
+        "configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml"
+    )
     assert loaded_config["data"]["window_size"] == 100
     assert loaded_config["model"]["model_name"] == "reconstruction_mlp_ae"
 
@@ -1174,7 +1176,8 @@ def test_load_experiment_config_accepts_valid_val_realistic_pr_auc_scheduler(
     loaded_config = load_experiment_config(experiment_config_path)
 
     assert (
-        loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_realistic_pr_auc"
+        loaded_config["optimizer"]["scheduler"]["monitor_metric"]
+        == "val_realistic_pr_auc"
     )
 
 
@@ -1214,7 +1217,10 @@ def test_load_experiment_config_accepts_valid_val_realistic_loss_scheduler(
 
     loaded_config = load_experiment_config(experiment_config_path)
 
-    assert loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_realistic_loss"
+    assert (
+        loaded_config["optimizer"]["scheduler"]["monitor_metric"]
+        == "val_realistic_loss"
+    )
 
 
 def test_load_experiment_config_accepts_label_refurbishment_and_masking_fields(

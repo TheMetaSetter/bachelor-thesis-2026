@@ -40,7 +40,9 @@ def test_run_ablation_suite_writes_compact_summary_artifacts(
     monkeypatch.setattr("scripts.run_ablation.run_evaluation_experiment", fake_evaluate)
 
     outputs = run_ablation_suite(
-        experiment_config_paths=["configs/experiment/smoke/smd__thesis_multitask__multitask-smoke__w100__seed7__smoke.yaml"],
+        experiment_config_paths=[
+            "configs/experiment/smoke/smd__thesis_multitask__multitask-smoke__w100__seed7__smoke.yaml"
+        ],
         summary_output_dir=tmp_path / "summary",
     )
 

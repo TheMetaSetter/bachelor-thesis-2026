@@ -4,11 +4,17 @@ from src.core.config import load_experiment_config, validate_experiment_config
 from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 
 
-def _build_model_from_experiment_config(experiment_config: dict[str, object]) -> RedLampMLPBaseline:
+def _build_model_from_experiment_config(
+    experiment_config: dict[str, object],
+) -> RedLampMLPBaseline:
     model_kwargs = dict(experiment_config["model"])
     model_kwargs.pop("model_name", None)
     model_kwargs.update(
-        {key: value for key, value in experiment_config["task"].items() if key != "task_name"}
+        {
+            key: value
+            for key, value in experiment_config["task"].items()
+            if key != "task_name"
+        }
     )
     return RedLampMLPBaseline(**model_kwargs)
 

@@ -247,9 +247,10 @@ class SyntheticAnomalyInjector:
     ) -> torch.Tensor:
         if self.anomaly_visibility_boost == 1.0:
             return updated_segment
-        return original_segment + (
-            updated_segment - original_segment
-        ) * self.anomaly_visibility_boost
+        return (
+            original_segment
+            + (updated_segment - original_segment) * self.anomaly_visibility_boost
+        )
 
     def _attach_change_metadata(
         self,
@@ -800,7 +801,9 @@ class SyntheticAnomalyInjector:
 
         quota = {class_index: base_count_per_class for class_index in class_indices}
         for remainder_index in range(remainder_count):
-            rotated_index = (self._class_rotation_offset + remainder_index) % num_classes
+            rotated_index = (
+                self._class_rotation_offset + remainder_index
+            ) % num_classes
             class_index = class_indices[rotated_index]
             quota[class_index] += 1
 
@@ -816,12 +819,16 @@ class SyntheticAnomalyInjector:
         device: torch.device,
     ) -> torch.Tensor:
         if not self.train_balance_classes:
-            injection_decisions = self._rand(batch_size, device=device) < self.anomaly_probability
+            injection_decisions = (
+                self._rand(batch_size, device=device) < self.anomaly_probability
+            )
             if self.classification_label_mode == "binary":
                 return injection_decisions.long()
 
             sampled_labels = torch.zeros(batch_size, dtype=torch.long, device=device)
-            anomaly_indices = torch.nonzero(injection_decisions, as_tuple=False).flatten()
+            anomaly_indices = torch.nonzero(
+                injection_decisions, as_tuple=False
+            ).flatten()
             if anomaly_indices.numel() > 0:
                 sampled_family_indices = self._randint(
                     0,
@@ -842,7 +849,9 @@ class SyntheticAnomalyInjector:
         ordered_labels: list[int] = []
         for class_index, count in class_quota.items():
             ordered_labels.extend([class_index] * count)
-        ordered_label_tensor = torch.tensor(ordered_labels, dtype=torch.long, device=device)
+        ordered_label_tensor = torch.tensor(
+            ordered_labels, dtype=torch.long, device=device
+        )
         shuffled_positions = self._randperm(batch_size, device=device)
         return ordered_label_tensor[shuffled_positions]
 

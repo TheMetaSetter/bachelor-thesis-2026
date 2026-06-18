@@ -6,7 +6,10 @@ from src.data.datasets.smd import compute_smd_test_window_anomaly_rate
 
 
 def _write_series(path: Path, values: list[list[float]]) -> None:
-    path.write_text("\n".join(",".join(str(value) for value in row) for row in values), encoding="utf-8")
+    path.write_text(
+        "\n".join(",".join(str(value) for value in row) for row in values),
+        encoding="utf-8",
+    )
 
 
 def _write_labels(path: Path, labels: list[int]) -> None:

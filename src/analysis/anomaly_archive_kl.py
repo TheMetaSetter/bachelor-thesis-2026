@@ -25,7 +25,9 @@ class AnomalyArchiveMetadata:
     anomaly_end_index: int
 
 
-def parse_anomaly_archive_filename(file_path: str | Path) -> AnomalyArchiveMetadata | None:
+def parse_anomaly_archive_filename(
+    file_path: str | Path,
+) -> AnomalyArchiveMetadata | None:
     file_name = Path(file_path).name
     match = _ANOMALY_ARCHIVE_FILENAME_PATTERN.match(file_name)
     if match is None:
@@ -60,7 +62,9 @@ def split_series_by_annotation(
         train_values = values[:anomaly_start_index]
         test_values = values[anomaly_end_index:]
     elif comparison_mode == "pre_vs_anomaly":
-        anomaly_stop_index = anomaly_end_index + 1 if inclusive_anomaly_end else anomaly_end_index
+        anomaly_stop_index = (
+            anomaly_end_index + 1 if inclusive_anomaly_end else anomaly_end_index
+        )
         train_values = values[:anomaly_start_index]
         test_values = values[anomaly_start_index:anomaly_stop_index]
     else:
@@ -103,7 +107,9 @@ def estimate_histogram_kl_divergence(
     left_probabilities /= left_probabilities.sum()
     right_probabilities /= right_probabilities.sum()
 
-    return float(np.sum(left_probabilities * np.log(left_probabilities / right_probabilities)))
+    return float(
+        np.sum(left_probabilities * np.log(left_probabilities / right_probabilities))
+    )
 
 
 @dataclass(frozen=True)
@@ -252,7 +258,9 @@ def compute_ks_drift_report(
         )
         series_name = metadata.series_name
 
-    ks_result = stats.ks_2samp(train_values, test_values, alternative="two-sided", mode="auto")
+    ks_result = stats.ks_2samp(
+        train_values, test_values, alternative="two-sided", mode="auto"
+    )
     return DriftSignificanceReport(
         file_path=path,
         series_name=series_name,
@@ -284,14 +292,18 @@ def rank_anomaly_archive_by_ks(
     if not reports:
         return []
 
-    sorted_indices = sorted(range(len(reports)), key=lambda index: reports[index].p_value)
+    sorted_indices = sorted(
+        range(len(reports)), key=lambda index: reports[index].p_value
+    )
     total_reports = len(reports)
     adjusted_p_values = [0.0] * total_reports
     running_min = 1.0
 
     for reverse_rank, report_index in enumerate(reversed(sorted_indices), start=1):
         raw_p_value = reports[report_index].p_value
-        bh_value = min(raw_p_value * total_reports / (total_reports - reverse_rank + 1), 1.0)
+        bh_value = min(
+            raw_p_value * total_reports / (total_reports - reverse_rank + 1), 1.0
+        )
         running_min = min(running_min, bh_value)
         adjusted_p_values[report_index] = running_min
 

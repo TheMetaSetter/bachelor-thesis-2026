@@ -48,7 +48,9 @@ class AnomalyArchiveDatasetParser(BaseSequenceParser):
 
     def _load_values(self) -> np.ndarray:
         if not self.file_path.exists():
-            raise FileNotFoundError(f"AnomalyArchive file does not exist: {self.file_path}")
+            raise FileNotFoundError(
+                f"AnomalyArchive file does not exist: {self.file_path}"
+            )
         loaded_values = np.fromstring(
             self.file_path.read_text(encoding="utf-8"),
             sep=" ",
@@ -66,7 +68,9 @@ class AnomalyArchiveDatasetParser(BaseSequenceParser):
         entity_id: str,
         point_labels: torch.Tensor | None,
     ) -> dict[str, Any]:
-        value_tensor = torch.from_numpy(values.astype(np.float32, copy=False)).unsqueeze(1)
+        value_tensor = torch.from_numpy(
+            values.astype(np.float32, copy=False)
+        ).unsqueeze(1)
         raw_sequence = {
             "x": value_tensor,
             "point_labels": point_labels,
@@ -95,12 +99,16 @@ class AnomalyArchiveDatasetParser(BaseSequenceParser):
         if anomaly_start_index <= 0 or anomaly_start_index >= values.size:
             raise ValueError("anomaly_start_index must lie within the loaded series")
         if anomaly_end_index <= anomaly_start_index:
-            raise ValueError("anomaly_end_index must be greater than anomaly_start_index")
+            raise ValueError(
+                "anomaly_end_index must be greater than anomaly_start_index"
+            )
 
         if self.comparison_mode == "pre_vs_anomaly":
             train_region_values = values[:anomaly_start_index]
             anomaly_stop_index = (
-                anomaly_end_index + 1 if self.inclusive_anomaly_end else anomaly_end_index
+                anomaly_end_index + 1
+                if self.inclusive_anomaly_end
+                else anomaly_end_index
             )
             test_values = values[anomaly_start_index:anomaly_stop_index]
         elif self.comparison_mode == "pre_vs_post":
@@ -112,9 +120,13 @@ class AnomalyArchiveDatasetParser(BaseSequenceParser):
             )
 
         if train_region_values.size == 0:
-            raise ValueError("Training region is empty after applying the annotation split")
+            raise ValueError(
+                "Training region is empty after applying the annotation split"
+            )
         if test_values.size == 0:
-            raise ValueError("Testing region is empty after applying the annotation split")
+            raise ValueError(
+                "Testing region is empty after applying the annotation split"
+            )
 
         validation_length = max(
             1, int(train_region_values.size * self.validation_split_ratio)
@@ -165,4 +177,3 @@ class AnomalyArchiveDatasetParser(BaseSequenceParser):
             comparison_mode=self.comparison_mode,
         )
         return {"train": train_sequences, "val": val_sequences, "test": test_sequences}
-

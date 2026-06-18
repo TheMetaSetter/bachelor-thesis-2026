@@ -893,9 +893,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError(
                 "val_anomaly_rate_override must be a float in [0, 1] or null"
             )
-        if val_anomaly_rate_override is not None and not 0.0 <= float(
-            val_anomaly_rate_override
-        ) <= 1.0:
+        if (
+            val_anomaly_rate_override is not None
+            and not 0.0 <= float(val_anomaly_rate_override) <= 1.0
+        ):
             raise ValueError("val_anomaly_rate_override must be between 0 and 1")
         if not 0.0 < float(task_config["min_segment_fraction"]) <= 1.0:
             raise ValueError("min_segment_fraction must be between 0 and 1")
@@ -1193,9 +1194,10 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
         if not config_reference.is_absolute():
             if config_reference.parts and config_reference.parts[0] == "configs":
                 repository_root = experiment_path.parent
-                while repository_root != repository_root.parent and not (
-                    repository_root / "configs"
-                ).exists():
+                while (
+                    repository_root != repository_root.parent
+                    and not (repository_root / "configs").exists()
+                ):
                     repository_root = repository_root.parent
                 config_reference = repository_root / config_reference
             else:

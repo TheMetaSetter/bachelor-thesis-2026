@@ -7,8 +7,8 @@ repository: bachelor-thesis-2026
 topic: "Continuation context for offline pre-training three-stage discussion"
 tags: [detail, offline-pretraining, multitask, contrastive, prototypes, zipping]
 status: in_progress
-last_updated: 2026-06-17
-last_updated_by: TheMetaSetter
+last_updated: 2026-06-18
+last_updated_by: Codex
 ---
 
 # Detail: Offline Pre-Training Three-Stage Discussion Context
@@ -797,6 +797,289 @@ For the first version of the new method, the current recommendation is:
 
 This aligns with the current codebase's existing `_select_covering_vectors` style while extending it to respect class balance for the discrete codebook.
 
+## Clarified Discrete Codebook Query Proposal
+
+The later discussion added a more concrete preference for how the discrete branch should query the codebook.
+
+The current best interpretation of that preference is:
+
+- for each latent token \(z_{b,t}\), query the discrete codebook by nearest-neighbor distance in latent space,
+- do not treat the codebook query primarily as a learned logits head over code indices,
+- allow sparse multi-codeword aggregation with top-\(k\) nearest codewords, with \(k=2\) and \(k=3\) as the first planned experiments,
+- keep \(k=1\) as the hard nearest-codeword baseline.
+
+This means the discrete branch is currently being conceptualized as a **metric-based retrieval module** over a codebook of real-valued vectors, not merely as a categorical assignment head.
+
+### Mathematical Form of the Proposed Query
+
+Let the encoder output:
+
+\[
+Z \in \mathbb{R}^{B \times L \times d_h}
+\]
+
+and let the discrete codebook be:
+
+\[
+E \in \mathbb{R}^{K_d \times d_h}
+\]
+
+where each codeword:
+
+\[
+e_i \in \mathbb{R}^{d_h}
+\]
+
+is a real-valued latent prototype vector.
+
+For one token \(z_{b,t}\), compute its squared Euclidean distance to every codeword:
+
+\[
+d_{b,t,i} = \|z_{b,t} - e_i\|_2^2
+\]
+
+This yields a distance tensor:
+
+\[
+D \in \mathbb{R}^{B \times L \times K_d}
+\]
+
+The selected codeword-index set is:
+
+\[
+S_k(z_{b,t}) = \operatorname{TopK}_{i}(-d_{b,t,i})
+\]
+
+where \(S_k(z_{b,t})\) contains the indices of the \(k\) nearest codewords.
+
+Soft weights are then computed only over the selected set:
+
+\[
+\alpha_{b,t,i}
+=
+\frac{\exp(-d_{b,t,i}/\tau)}
+{\sum_{j \in S_k(z_{b,t})}\exp(-d_{b,t,j}/\tau)}
+\qquad \text{for } i \in S_k(z_{b,t})
+\]
+
+The queried discrete prototype vector is:
+
+\[
+z^q_{b,t}
+=
+\sum_{i \in S_k(z_{b,t})}\alpha_{b,t,i} e_i
+\]
+
+At sequence level:
+
+\[
+Z^q \in \mathbb{R}^{B \times L \times d_h}
+\]
+
+The current preferred residualized branch output is:
+
+\[
+H^{(d)}
+=
+\operatorname{LayerNorm}(Z + \lambda Z^q)
+\]
+
+where \(\lambda\) controls how strongly the queried codebook representation perturbs the raw latent token.
+
+This is the currently preferred conceptual query. It is not the same as the current repository implementation.
+
+### Role of \(W_d\) and \(b_d\) Under the Two Competing Interpretations
+
+The discussion earlier also referenced:
+
+\[
+z^{logit}_{b,t} = W_d \tilde{h}_{b,t} + b_d \in \mathbb{R}^{K_d}
+\]
+
+Under a **learned-assignment interpretation**, \(W_d \in \mathbb{R}^{K_d \times d_h}\) and \(b_d \in \mathbb{R}^{K_d}\) are the parameters of a linear scoring map from latent space into a \(K_d\)-dimensional assignment-logit space. In that interpretation:
+
+- each output coordinate corresponds to one codeword slot,
+- the output entries are affinity-like scores or logits,
+- and the codebook query is mediated by a learned projection rather than by direct distance to the codebook vectors themselves.
+
+Under the **currently preferred nearest-neighbor interpretation**, those two parameters are no longer the core query operator. The decisive object becomes the discrete codebook \(E\) itself, and assignment is produced directly from distances between \(z_{b,t}\) and the codewords \(e_i\).
+
+So the current best semantic distinction is:
+
+- \(E\) is the set of real-valued codeword vectors in latent space,
+- \(W_d, b_d\) are only needed if the branch is implemented as a learned logits head,
+- if the branch is implemented as top-\(k\) nearest-neighbor retrieval, \(W_d, b_d\) are optional at most and are not the primary mathematical object.
+
+### Clarified Backpropagation Semantics for the Proposed Top-\(k\) Query
+
+The later discussion also narrowed the intended backprop interpretation.
+
+The current best interpretation is:
+
+- in one forward pass, compute distances to all codewords,
+- choose the top-\(k\) nearest codewords,
+- treat that selected index set as fixed during that pass,
+- and backpropagate through the differentiable computations inside that fixed selection: distance values, softmax weights, codeword aggregation, residual addition, and layer normalization.
+
+This means the top-\(k\) operator is not treated as fully differentiable with respect to ranking changes.
+
+Let:
+
+\[
+s_{b,t,i} = -d_{b,t,i}/\tau
+\]
+
+for \(i \in S_k(z_{b,t})\), and let:
+
+\[
+g_{b,t} = \frac{\partial \mathcal{L}}{\partial z^q_{b,t}} \in \mathbb{R}^{d_h}
+\]
+
+denote the gradient that reaches the queried discrete vector after the downstream losses and residual path.
+
+Because:
+
+\[
+z^q_{b,t}
+=
+\sum_{i \in S_k(z_{b,t})}\alpha_{b,t,i} e_i
+\]
+
+the gradient with respect to one selected score \(s_{b,t,j}\) takes the standard softmax-mixture form:
+
+\[
+\frac{\partial \mathcal{L}}{\partial s_{b,t,j}}
+=
+\alpha_{b,t,j}\,
+g_{b,t}^{\top}(e_j - z^q_{b,t})
+\qquad \text{for } j \in S_k(z_{b,t})
+\]
+
+and the score derivatives are:
+
+\[
+\frac{\partial s_{b,t,j}}{\partial z_{b,t}}
+=
+-\frac{2}{\tau}(z_{b,t} - e_j)
+\]
+
+\[
+\frac{\partial s_{b,t,j}}{\partial e_j}
+=
+\frac{2}{\tau}(z_{b,t} - e_j)
+\]
+
+Therefore the query-path gradient into the latent token is:
+
+\[
+\frac{\partial \mathcal{L}}{\partial z_{b,t}}\Big|_{query}
+=
+\sum_{j \in S_k(z_{b,t})}
+\frac{\partial \mathcal{L}}{\partial s_{b,t,j}}
+\left[-\frac{2}{\tau}(z_{b,t} - e_j)\right]
+\]
+
+and the full gradient into \(z_{b,t}\) also includes the direct residual path from:
+
+\[
+H^{(d)} = \operatorname{LayerNorm}(Z + \lambda Z^q)
+\]
+
+so the latent token receives:
+
+- a direct identity-like residual contribution through \(Z\),
+- plus the indirect codebook-query contribution through \(Z^q\).
+
+For one selected codeword \(e_j\), the gradient has two components:
+
+\[
+\frac{\partial \mathcal{L}}{\partial e_j}
+=
+\alpha_{b,t,j} g_{b,t}
++
+\frac{\partial \mathcal{L}}{\partial s_{b,t,j}}
+\frac{2}{\tau}(z_{b,t} - e_j)
+\qquad \text{for } j \in S_k(z_{b,t})
+\]
+
+The first term is the direct contribution because \(e_j\) appears explicitly in the weighted sum \(z^q_{b,t}\). The second term is the indirect contribution because the soft weight \(\alpha_{b,t,j}\) depends on the distance, and the distance depends on \(e_j\).
+
+For any codeword not selected in the top-\(k\) set of that token:
+
+\[
+\frac{\partial \mathcal{L}}{\partial e_i} = 0
+\qquad \text{for } i \notin S_k(z_{b,t})
+\]
+
+for that particular token and forward pass.
+
+So the intended differentiability picture is:
+
+- piecewise differentiable inside a region where the top-\(k\) identity set does not change,
+- discontinuous when ranking changes cause different codewords to enter or leave the selected set,
+- but still practical to optimize in PyTorch because gather/index operations propagate gradients to the selected tensors.
+
+### Special Cases: \(k=1\), \(k=2\), and \(k=3\)
+
+The current intended experiments are:
+
+- \(k=1\): hard nearest-codeword assignment baseline,
+- \(k=2\): sparse two-codeword aggregation,
+- \(k=3\): sparse three-codeword aggregation.
+
+For \(k=1\), the forward pass becomes:
+
+\[
+z^q_{b,t} = e_{i^\star},
+\qquad
+i^\star = \arg\min_i d_{b,t,i}
+\]
+
+if the implementation uses a truly hard nearest-neighbor selection without soft weighting.
+
+That is simple, but the routing decision is maximally discontinuous.
+
+For \(k=2\) and \(k=3\), the routing remains sparse while still allowing a differentiable soft combination among the selected codewords. The current discussion favors these settings as the more stable first experiments for the discrete branch.
+
+### Programming-Level Consequences That Still Need Explicit Closure
+
+The semantic idea is now much clearer than before, but several implementation details remain open and should be closed explicitly before code changes:
+
+- **Distance metric**: whether to use squared Euclidean distance exactly as currently preferred, cosine distance, or squared Euclidean on normalized vectors. This matters because the current code normalizes hidden states and codebook vectors before lookup.
+- **Codebook update policy**: whether the discrete codebook \(E\) should be updated by ordinary backprop as trainable parameters, by EMA-style memory updates, or by a hybrid rule. The current repository uses EMA-style update buffers for the discrete codebook, which is not the same as pure gradient-trained nearest-neighbor codewords.
+- **Status of `discrete_assignment`**: whether the current linear head should be removed entirely, kept only for ablation, or reused as an auxiliary scorer or regularizer. Under the new nearest-neighbor interpretation it is no longer the primary query path.
+- **Exact tensor implementation**: whether distances are computed with `torch.cdist`, manual broadcasting, or a normalized inner-product equivalent. This affects memory cost because the full distance tensor has shape \([B, L, K_d]\).
+- **Top-\(k\) gradient handling**: whether the implementation relies on standard gather-based autograd only, or introduces a straight-through estimator for the hard \(k=1\) case.
+- **Residual design**: whether the discrete branch should use \(H^{(d)} = \operatorname{LayerNorm}(Z + \lambda Z^q)\) exactly, another normalization rule, or no residual mixing during some warm-up phases.
+- **Initialization-to-query consistency**: whether Stage 3 discrete prototype initialization seeds codewords in the same geometry and normalization regime later used by top-\(k\) querying.
+- **Class-to-codeword allocation**: if discrete initialization is class-balanced but \(K_d\) is not divisible by 12, the slot-allocation rule needs to be stated exactly.
+- **Collapse prevention**: sparse top-\(k\) routing can still collapse onto a few codewords, so it must be decided whether to retain a usage regularizer, entropy regularizer, or codebook-balancing loss.
+- **Diagnostics**: logs should include at least top-1 code index histogram, top-\(k\) usage frequency, selected-weight entropy, number of inactive codewords, and gradient norms for encoder and codebook.
+
+### Immediate Difference from the Current Repository Implementation
+
+At the time of this note update, the current code in `src/models/thesis_multitask.py` still implements the discrete branch in a different way:
+
+- a linear map `self.discrete_assignment = nn.Linear(hidden_dim, discrete_codebook_size)` produces assignment logits,
+- `F.gumbel_softmax(..., hard=False)` converts those logits into soft assignment probabilities,
+- the discrete hidden is then the weighted sum of the codebook via `torch.einsum("blk,kh->blh", assignment_probabilities, normalized_codebook)`,
+- and the codebook memory is updated by EMA-style statistics in `_update_discrete_codebook_memory`.
+
+So the current codebase should still be described as:
+
+- **learned-assignment + Gumbel-Softmax + EMA-updated codebook**
+
+not yet as:
+
+- **distance-based top-\(k\) nearest-neighbor discrete query**
+
+If the new proposal is adopted, the most decisive implementation touchpoints are:
+
+- `_discrete_prototype_lookup`,
+- `_update_discrete_codebook_memory`,
+- the parameter definition around `self.discrete_assignment`,
+- and any loss terms that currently assume dense assignment probabilities over all \(K_d\) codewords.
+
 ## Contrastive Learning Placement Across Stages
 
 The user proposed that contrastive learning may happen in all 3 stages.
@@ -1086,6 +1369,63 @@ where:
 
 Stage 2 zipping and Stage 3 prototype initialization themselves use 0 epochs because they are parameter/statistical procedures rather than optimizer training loops.
 
+### 17. Exact Discrete Codebook Query Operator
+
+Status: **mostly closed at the semantic level, still open at the implementation level**.
+
+The current intended discrete query is:
+
+- compute token-to-codeword distances directly in latent space,
+- choose top-\(k\) nearest codewords,
+- compute a soft weighting only within the selected set,
+- aggregate those selected codewords into one queried discrete vector,
+- inject it back into the token stream through a residualized branch output.
+
+This is now semantically clearer than the older "learned logits over codebook slots" interpretation.
+
+Residual implementation choices still open:
+
+- exact distance metric,
+- normalized versus unnormalized lookup,
+- exact residual and normalization rule,
+- and whether \(k=1\) should use hard routing only or a soft one-element weighting.
+
+### 18. Backpropagation Through the Discrete Query
+
+Status: **closed at the conceptual level, open at the autograd-policy level**.
+
+The current intended backprop semantics are:
+
+- do not differentiate through changes of the top-\(k\) index set itself,
+- do differentiate through distances, softmax weights on the selected set, codeword aggregation, residual addition, and normalization,
+- only selected codewords receive direct gradient from a given token in a given forward pass.
+
+Residual implementation choices still open:
+
+- whether \(k=1\) should use standard gather-based autograd only,
+- whether a straight-through estimator is needed for hard routing experiments,
+- and how this interacts with any EMA-based memory update policy.
+
+### 19. Relationship Between the New Query Idea and the Current Code
+
+Status: **closed as a discrepancy note, open as a migration plan**.
+
+The current repository implementation is still:
+
+- learned assignment logits from a linear head,
+- Gumbel-Softmax over all codebook slots,
+- dense soft aggregation over the full codebook,
+- EMA-based codebook updates.
+
+The newer preferred idea is:
+
+- nearest-neighbor distance to codewords,
+- sparse top-\(k\) selection,
+- soft aggregation only over the selected neighbors,
+- and a backprop path that follows the selected codewords only.
+
+So this note should not be read as saying the codebase already implements the new nearest-neighbor top-\(k\) branch. It records the newer intended direction only.
+
 ## Relationship to Current Codebase
 
 At the time of writing this note, the current implementation in:
@@ -1107,6 +1447,8 @@ In particular, the current code already contains:
 
 but it does not yet encode the newly stated three-stage training process as a formal implementation contract.
 
+It also does not yet encode the newly preferred discrete-branch query semantics recorded above. The current implementation remains assignment-logit-driven rather than distance-top-\(k\)-driven.
+
 ## Recommended Next Continuation Point
 
 When resuming this topic in a later chat, the next useful step is:
@@ -1116,9 +1458,13 @@ When resuming this topic in a later chat, the next useful step is:
 3. define the exact batch metadata contract for overlap-aware multi-positive contrastive learning,
 4. decide whether Stage 1 batching is opportunistic or custom overlap-aware,
 5. formalize the exact definition of "normal" for continuous prototype initialization,
-6. restate the complete three-stage computational specification with the 300-epoch allocation,
-7. decide which parts replace the older `offline_pretraining_phase_two_view_contrastive_design.md` contract and which parts extend it,
-8. only then map the design into config surfaces and code changes.
+6. choose the discrete query metric and normalization regime,
+7. choose whether the discrete codebook update rule is gradient-based, EMA-based, or hybrid,
+8. decide whether `discrete_assignment` is removed, retained for ablation, or reused only as an auxiliary scorer,
+9. define the hard-routing policy for \(k=1\): pure gather autograd or straight-through estimator,
+10. restate the complete three-stage computational specification with the 300-epoch allocation,
+11. decide which parts replace the older `offline_pretraining_phase_two_view_contrastive_design.md` contract and which parts extend it,
+12. only then map the design into config surfaces and code changes.
 
 ## Primary References Mentioned in the Discussion
 

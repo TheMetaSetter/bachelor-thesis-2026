@@ -28,7 +28,9 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--file",
         type=Path,
-        default=Path("data/AnomalyArchive/053_UCR_Anomaly_DISTORTEDWalkingAceleration1_1500_2764_2995.txt"),
+        default=Path(
+            "data/AnomalyArchive/053_UCR_Anomaly_DISTORTEDWalkingAceleration1_1500_2764_2995.txt"
+        ),
         help="Path to one AnomalyArchive time-series file.",
     )
     parser.add_argument(
@@ -83,7 +85,9 @@ def parse_arguments() -> argparse.Namespace:
 
 def _plot_ecdf(axis: plt.Axes, values: np.ndarray, label: str) -> None:
     sorted_values = np.sort(values)
-    cumulative = np.arange(1, sorted_values.size + 1, dtype=np.float64) / sorted_values.size
+    cumulative = (
+        np.arange(1, sorted_values.size + 1, dtype=np.float64) / sorted_values.size
+    )
     axis.step(sorted_values, cumulative, where="post", label=label)
 
 
@@ -267,7 +271,9 @@ def main() -> None:
                 arguments.output_dir / "anomaly_archive_ks_significance.csv",
                 significance_reports,
             )
-            significant_reports = [report for report in significance_reports if report.is_significant]
+            significant_reports = [
+                report for report in significance_reports if report.is_significant
+            ]
 
             print(f"ranked_files: {len(significance_reports)}")
             print(f"significance_csv: {significance_csv_path}")

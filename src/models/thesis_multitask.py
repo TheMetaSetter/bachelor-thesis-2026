@@ -316,9 +316,10 @@ class SyntheticAnomalyConfig:
             raise ValueError(
                 "val_realistic_source must be one of: test_same_scope, test_smd_all"
             )
-        if self.val_anomaly_rate_override is not None and not 0.0 <= float(
-            self.val_anomaly_rate_override
-        ) <= 1.0:
+        if (
+            self.val_anomaly_rate_override is not None
+            and not 0.0 <= float(self.val_anomaly_rate_override) <= 1.0
+        ):
             raise ValueError("val_anomaly_rate_override must be between 0 and 1")
         object.__setattr__(self, "anomaly_families", tuple(self.anomaly_families))
 
@@ -1348,8 +1349,12 @@ class ThesisMultitaskModel(BaseModel):
 
     def prepare_realistic_validation_epoch(self, anomaly_probability: float) -> None:
         if not 0.0 <= float(anomaly_probability) <= 1.0:
-            raise ValueError("realistic validation anomaly_probability must be in [0, 1]")
-        self.synthetic_validation_injector.anomaly_probability = float(anomaly_probability)
+            raise ValueError(
+                "realistic validation anomaly_probability must be in [0, 1]"
+            )
+        self.synthetic_validation_injector.anomaly_probability = float(
+            anomaly_probability
+        )
         self.synthetic_validation_injector.reset_rng()
 
     def prepare_synthetic_validation_epoch(self) -> None:
@@ -1689,7 +1694,10 @@ class ThesisMultitaskModel(BaseModel):
         return prepared_batch
 
     def _prepare_batch(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
-        if stage_name in {"val_synth", "val_realistic"} and self.use_synthetic_validation:
+        if (
+            stage_name in {"val_synth", "val_realistic"}
+            and self.use_synthetic_validation
+        ):
             return self.synthetic_validation_injector.augment_batch(batch)
         return self._prepare_clean_batch(batch, stage_name)
 

@@ -189,7 +189,9 @@ def compute_smd_test_window_anomaly_rate(
 ) -> float:
     if use_all_entities:
         resolved_test_dir = Path(root_dir) / "test"
-        resolved_entity_ids = sorted(file_path.stem for file_path in resolved_test_dir.glob("*.txt"))
+        resolved_entity_ids = sorted(
+            file_path.stem for file_path in resolved_test_dir.glob("*.txt")
+        )
     else:
         resolved_entity_ids = entity_ids
     parser = SMDDatasetParser(
