@@ -7,7 +7,7 @@ repository: bachelor-thesis-2026
 topic: "Continuation context for offline pre-training three-stage discussion"
 tags: [detail, offline-pretraining, multitask, contrastive, prototypes, zipping]
 status: in_progress
-last_updated: 2026-06-18
+last_updated: 2026-06-21
 last_updated_by: Codex
 ---
 
@@ -40,6 +40,37 @@ The user then added a third clarification block on the same day covering:
 - the ordering `zip encoder -> initialize prototypes -> start multitask training`,
 - the exact 300-epoch offline pre-training budget,
 - and the decision to freeze the encoder during Stage 3 prototype warm-up so the prototypical branches and CKA-gated fusion heads can stabilize.
+
+## Continuation Update on 2026-06-21
+
+The user later saved a separate design note focused specifically on the contrastive-loss design refinement:
+
+- `documents/design/design-contrastive-loss-21-jun-2026.md`
+
+That later note materially sharpens the contrastive part of this continuation context.
+
+The most important new clarifications are:
+
+- the core contrastive objective should stay **low-compute** and should not introduce unnecessary tuning burden,
+- the first practical weighting preference is no longer "free Gaussian with tunable \(\sigma\)",
+- the first practical weighting preference is either:
+  - a **uniform theoretical receptive-field clean ratio** \(\rho^{RF}\), or
+  - a **fixed architecture-derived Gaussian receptive-field prior** with \(\sigma_{arch}\) computed once from the encoder config,
+- if a Gaussian weighting is used, it must be described as a **fixed receptive-field prior / surrogate**, not as the true trained effective receptive field,
+- \(\sigma_{arch}\) should be computed **once before training**, not re-estimated every epoch,
+- Jacobian-based ERF estimation should **not** be part of the training loop,
+- contrastive loss placement across stages is now sharper:
+  - Stage 1 classification: yes,
+  - Stage 1 reconstruction: yes,
+  - Stage 2 zipping: no,
+  - Stage 2 recovery: no in the first implementation, optional later as an ablation,
+  - Stage 3 prototype initialization: no,
+  - Stage 3 prototype warm-up: no in the first implementation,
+  - main multitask pre-training: yes, but only when the multi-positive metadata contract is implemented cleanly,
+- the naming should avoid calling this **standard SupCon**, because positives are defined by metadata and masks rather than by simple class-label equivalence,
+- and the injected-position case is now narrower than before:
+  - the first implementation can let injected aligned tokens act as negatives in the denominator,
+  - while a separate explicit repulsion term remains an optional later design choice rather than a first-pass requirement.
 
 ## Immediate Context
 
@@ -522,7 +553,7 @@ This can be summarized informally as:
 
 That high-level intention is now clear.
 
-What is **not** yet mathematically closed is whether both effects are supposed to be implemented:
+What was **not** yet mathematically closed in the earlier discussion was whether both effects should be implemented:
 
 - inside one single InfoNCE loss,
 - or as one InfoNCE term plus one separate repulsion term,
@@ -535,6 +566,183 @@ For a normal anchor, the intended design is now:
 - use the aligned token in the paired augmented view as one positive,
 - use same-source-timestep tokens from other overlapping windows in the batch as additional positives when available,
 - therefore implement the contrastive term as a multi-positive objective rather than a one-positive objective.
+
+The later 2026-06-21 design note narrows the first implementation further:
+
+- keep the multi-positive construction for normal anchors,
+- let injected aligned tokens default to **negative-only roles in the denominator**,
+- do **not** add a separate explicit repulsion term in the first implementation,
+- and keep any later repulsion-term variant as an ablation or second-step extension.
+
+So the current best first-pass interpretation is:
+
+1. normal anchors use a multi-positive InfoNCE-style objective,
+2. injected aligned tokens are available as negatives,
+3. explicit repulsion for injected aligned pairs remains optional rather than mandatory.
+
+## Clarified Receptive-Field Weighting for Weak Positives
+
+The later 2026-06-21 design note also sharpened how weak positives should be weighted.
+
+The intent remains:
+
+- if a positive token is fully clean in the local receptive-field sense, it should pull more strongly,
+- if a positive token is center-clean but its surrounding receptive field is partially contaminated, it can still be used,
+- but it should exert a weaker attractive force.
+
+The clean/anomalous binary mask is:
+
+\[
+C = 1 - M
+\]
+
+where:
+
+- \(M_{b,t}=1\) means the timestep is injected/anomalous in the augmented view,
+- \(C_{b,t}=1\) means the timestep is clean.
+
+### First Low-Compute Preference: Uniform Theoretical RF Clean Ratio
+
+The current most conservative low-compute choice is:
+
+\[
+\rho^{RF}_{b,t}
+=
+\frac{1}{2R+1}
+\sum_{r=-R}^{R} C_{b,t+r}
+\]
+
+where:
+
+- \(R\) is the theoretical receptive-field radius implied by the 1D-CNN architecture,
+- \(r\in[-R,R]\) is an offset around the central timestep \(t\),
+- and \(\rho^{RF}_{b,t}\) measures how much of the token's theoretical receptive field remains clean.
+
+Under this first preference, the positive weight is:
+
+\[
+w_{i,p} = \rho^{RF}_{p}
+\]
+
+rather than introducing an extra exponent \(\gamma\) in the first implementation.
+
+The practical rationale is:
+
+- no extra tuning for \(\sigma\),
+- no extra tuning for \(\gamma\),
+- no Jacobian estimation,
+- and a more defensible low-compute method for the thesis setting.
+
+### Optional Smoother Alternative: Fixed Architecture-Derived Gaussian RF Prior
+
+The later note does **not** forbid Gaussian weighting entirely. It only restricts how it should be interpreted.
+
+If a Gaussian smoothing prior is used, it should be defined through an architecture-derived scale:
+
+\[
+g_r=
+\frac{
+\exp\left(-\frac{r^2}{2\sigma^2_{arch}}\right)
+}{
+\sum_{q=-R}^{R}\exp\left(-\frac{q^2}{2\sigma^2_{arch}}\right)
+}
+\]
+
+and:
+
+\[
+\rho^{arch}_{b,t}
+=
+\sum_{r=-R}^{R} g_r C_{b,t+r}
+\]
+
+with:
+
+\[
+w_{i,p} = \rho^{arch}_{p}
+\]
+
+The key interpretive rule is now explicit:
+
+- \(\sigma_{arch}\) is **not** the true trained ERF variance,
+- it is a **fixed Gaussian receptive-field prior** derived from architecture,
+- and it should be computed once from the model config before training, not re-estimated during training.
+
+For a simple 1D-CNN with odd kernel size \(K\), stride \(1\), dilation \(1\), and \(L_{conv}\) convolutional layers, the later note records the approximate initialization prior:
+
+\[
+\sigma^2_{arch}
+=
+L_{conv}\frac{K^2-1}{12}
+\]
+
+and:
+
+\[
+R
+=
+L_{conv}\frac{K-1}{2}
+\]
+
+For heterogeneous layers, the note records the more general stride/dilation-aware idea:
+
+\[
+\sigma^2_{arch}
+=
+\sum_{l=1}^{L_{conv}}
+\left(
+d_l\prod_{m<l}s_m
+\right)^2
+\frac{K_l^2-1}{12}
+\]
+
+and:
+
+\[
+R
+=
+\sum_{l=1}^{L_{conv}}
+d_l\prod_{m<l}s_m
+\frac{K_l-1}{2}
+\]
+
+The role of this formula is intentionally narrow:
+
+- it gives a fixed prior scale from architecture,
+- it avoids extra hyperparameter search,
+- but it must **not** be described as measuring the trained ERF exactly.
+
+### What Should Not Be Done in the Main Training Loop
+
+The later note is explicit that the following should **not** be part of the first implementation:
+
+- re-computing \(\sigma\) every epoch,
+- estimating ERF dynamically inside training,
+- or using Jacobian-based influence estimation as part of the loss computation.
+
+If Jacobian-based ERF diagnostics are ever used, they should be treated as:
+
+- analysis-only,
+- optional after-training diagnostics,
+- not as part of the core loss path.
+
+### Loss Naming and Terminology
+
+The current safest naming is now:
+
+- `RF-mask weighted multi-positive InfoNCE`, or
+- `receptive-field-mask weighted multi-positive contrastive loss`.
+
+If the Gaussian prior version is used instead, the naming should stay careful, for example:
+
+- `architecture-derived RF-mask weighted multi-positive contrastive loss`, or
+- `fixed Gaussian RF-prior weighting`.
+
+The note explicitly advises against calling the method:
+
+- `standard SupCon`,
+- `learned ERF weighting`,
+- or `true ERF weighting`.
 
 ## Clarified Classification Task Statement
 
@@ -1098,10 +1306,16 @@ The current recommended contrastive placement is:
 - Stage 1 classification: contrastive enabled,
 - Stage 1 reconstruction: contrastive enabled,
 - Stage 2 zipping: contrastive disabled because this is not a training epoch phase,
-- Stage 2 recovery: contrastive optional, but should be logged as an ablation choice,
+- Stage 2 recovery: contrastive disabled in the first implementation; optional later as an ablation choice,
 - Stage 3 prototype initialization: contrastive disabled,
-- Stage 3 prototype warm-up: contrastive disabled or very low-weight by default, because encoder is frozen,
-- main multitask pre-training: contrastive can be enabled if the multi-positive batch metadata contract is implemented.
+- Stage 3 prototype warm-up: contrastive disabled in the first implementation because the encoder is frozen and the warm-up target should stay narrow,
+- main multitask pre-training: contrastive can be enabled if the multi-positive batch metadata contract is implemented cleanly.
+
+The later 2026-06-21 note makes the Stage 3 warm-up recommendation stronger than before:
+
+- not merely "very low weight by default",
+- but preferably **off** in the first implementation,
+- so prototype branches and CKA-gated fusion heads adapt to a fixed latent geometry without extra contrastive complexity.
 
 ## Updated Ambiguities and Current Resolution Status
 
@@ -1174,7 +1388,19 @@ This means the contrastive loss must support multiple positives per anchor.
 Implementation requirement:
 
 - standard one-positive InfoNCE is not enough unless extended,
-- a supervised-contrastive or multi-positive InfoNCE form is the more natural match.
+- a supervised-contrastive or multi-positive InfoNCE form is the more natural match,
+- and the first implementation should treat this as an **InfoNCE-like metadata-defined multi-positive objective**, not as standard class-label SupCon.
+
+The later 2026-06-21 note adds another now-closed semantic point:
+
+- positives may be **weakly weighted** according to local receptive-field cleanliness,
+- so a positive can remain valid even if its receptive field is partially contaminated,
+- but it should pull less strongly than a cleaner positive.
+
+What remains open here is not whether weighting exists, but which first implementation is used:
+
+- uniform theoretical-RF weighting \(\rho^{RF}\),
+- or fixed architecture-derived Gaussian-RF weighting \(\rho^{arch}\).
 
 ### 5. Negative Pool for Normal Anchors
 
@@ -1187,6 +1413,11 @@ The negative pool should come from both:
 
 The negative pool is within-batch.
 
+The later 2026-06-21 note also narrows one practical first-pass decision:
+
+- injected aligned tokens can safely act as negatives in the denominator,
+- even if a separate explicit repulsion term is not added yet.
+
 Residual implementation choices:
 
 - exclude all positives from the denominator,
@@ -1195,20 +1426,25 @@ Residual implementation choices:
 
 ### 6. Role of Injected Positions in Contrastive Learning
 
-Status: **still open**.
+Status: **narrowed, but not fully closed**.
 
 The desired geometry is clear:
 
 - normal latent vectors should move away from anomalous latent vectors,
 - class-A anomaly latent vectors should move away from class-B anomaly latent vectors when \(A \neq B\).
 
-The unresolved mathematical point is how to handle a raw clean token whose paired augmented token is injected/anomalous:
+The earlier unresolved mathematical point was how to handle a raw clean token whose paired augmented token is injected/anomalous.
 
-- it can be used only as a negative in other anchors' denominators,
-- or it can participate in a separate repulsion term,
-- or the whole objective can be written as a supervised contrastive objective over token labels.
+The later 2026-06-21 note now gives the following first-pass preference:
 
-This should be solved before implementation because the choice changes the loss, the masks, and the batch metadata contract.
+- in the first implementation, injected aligned tokens should default to **negative-only roles in denominators**,
+- no explicit repulsion term is required in the first pass,
+- and a more aggressive repulsion-term variant can be deferred to a later ablation if needed.
+
+So the remaining open point is narrower than before:
+
+- whether to keep the first-pass negative-only treatment permanently,
+- or later add a dedicated repulsion term for injected aligned pairs.
 
 ### 7. Batch Metadata Required for Overlap-Aware Positives
 
@@ -1219,6 +1455,7 @@ Because positives can come from different overlapping windows that correspond to
 Required metadata should include at least:
 
 - `entity_id`,
+- `series_id` when that identity is not already implied by `entity_id`,
 - `window_start`,
 - `source_timestep_index` or enough information to compute it for every local timestep,
 - local timestep index \(t\) inside the window.
@@ -1243,6 +1480,11 @@ Two implementation options remain:
    - but changes sampling behavior and may reduce stochastic diversity.
 
 The first implementation can start with opportunistic batching if it is simpler, but the metric logs should report how many overlap positives were actually found.
+
+The later 2026-06-21 note is slightly more opinionated here:
+
+- the first implementation can still start with opportunistic batching,
+- but only if the logs explicitly report overlap-positive availability and false-negative filtering behavior.
 
 ### 9. Exact Zipping Metric
 
@@ -1321,7 +1563,58 @@ Candidate definitions:
 
 The first implementation should choose a simple definition and log it explicitly.
 
-### 14. Ordering of Zipping, Prototype Initialization, and Multitask Training
+### 14. Weak-Positive RF Weighting Semantics
+
+Status: **closed at the conceptual level, open at the formula-selection level**.
+
+The later 2026-06-21 note closes the need for weak-positive weighting conceptually:
+
+- positive strength should depend on how clean the positive token's receptive field is,
+- fully clean contexts should pull more strongly,
+- partially contaminated-but-still-valid contexts should pull more weakly.
+
+The first implementation should avoid unnecessary extra hyperparameters.
+
+So the open formula choice is now bounded to:
+
+- **uniform theoretical RF weighting**
+  - \(\rho^{RF}_{b,t} = \frac{1}{2R+1}\sum_{r=-R}^{R} C_{b,t+r}\),
+  - preferred for maximum simplicity,
+- or **fixed architecture-derived Gaussian RF weighting**
+  - \(\rho^{arch}_{b,t} = \sum_{r=-R}^{R} g_r C_{b,t+r}\),
+  - acceptable if described strictly as a fixed prior, not as the true trained ERF.
+
+The first implementation should not add an extra exponent \(\gamma\) unless there is a strong ablation reason.
+
+### 15. Meaning and Lifecycle of \(\sigma_{arch}\)
+
+Status: **closed at the semantic level, open only for exact config parsing in complex CNNs**.
+
+If the Gaussian-RF variant is used:
+
+- \(\sigma_{arch}\) is computed from architecture/config,
+- \(\sigma_{arch}\) is computed once before training,
+- \(\sigma_{arch}\) remains fixed throughout training,
+- and \(\sigma_{arch}\) must be described as a fixed architectural prior rather than as the trained ERF variance.
+
+What remains open is only the exact implementation detail for architectures with:
+
+- mixed kernel sizes,
+- non-unit stride,
+- non-unit dilation,
+- or other encoder details that make the config-to-\(\sigma_{arch}\) mapping less trivial.
+
+### 16. Jacobian-Based ERF Estimation Inside Training
+
+Status: **closed for the first implementation**.
+
+The later 2026-06-21 note is explicit:
+
+- Jacobian-based ERF estimation should not be used inside the main training loop,
+- \(\sigma\) should not be recomputed every epoch,
+- and any Jacobian-based study, if ever done, should be diagnostic-only rather than part of the core method.
+
+### 17. Ordering of Zipping, Prototype Initialization, and Multitask Training
 
 Status: **closed**.
 
@@ -1335,7 +1628,7 @@ The intended order is:
 6. run Stage 3 prototype warm-up with encoder frozen,
 7. run main multitask pre-training with prototypes.
 
-### 15. Stage 3 Prototype Warm-Up Freezing
+### 18. Stage 3 Prototype Warm-Up Freezing
 
 Status: **closed**.
 
@@ -1349,7 +1642,12 @@ During Stage 3 prototype warm-up:
 
 The purpose is to let the two prototypical branches and CKA-gated fusion heads adapt to the latent geometry without the encoder moving underneath them.
 
-### 16. Exact 300-Epoch Budget
+The later 2026-06-21 note adds a stronger first-pass contrastive rule for this stage:
+
+- keep the encoder frozen,
+- and keep contrastive loss off in the first implementation.
+
+### 19. Exact 300-Epoch Budget
 
 Status: **closed as the current recommended allocation**.
 
@@ -1369,7 +1667,7 @@ where:
 
 Stage 2 zipping and Stage 3 prototype initialization themselves use 0 epochs because they are parameter/statistical procedures rather than optimizer training loops.
 
-### 17. Exact Discrete Codebook Query Operator
+### 20. Exact Discrete Codebook Query Operator
 
 Status: **mostly closed at the semantic level, still open at the implementation level**.
 
@@ -1390,7 +1688,7 @@ Residual implementation choices still open:
 - exact residual and normalization rule,
 - and whether \(k=1\) should use hard routing only or a soft one-element weighting.
 
-### 18. Backpropagation Through the Discrete Query
+### 21. Backpropagation Through the Discrete Query
 
 Status: **closed at the conceptual level, open at the autograd-policy level**.
 
@@ -1406,7 +1704,7 @@ Residual implementation choices still open:
 - whether a straight-through estimator is needed for hard routing experiments,
 - and how this interacts with any EMA-based memory update policy.
 
-### 19. Relationship Between the New Query Idea and the Current Code
+### 22. Relationship Between the New Query Idea and the Current Code
 
 Status: **closed as a discrepancy note, open as a migration plan**.
 
@@ -1453,18 +1751,23 @@ It also does not yet encode the newly preferred discrete-branch query semantics 
 
 When resuming this topic in a later chat, the next useful step is:
 
-1. mathematically close the injected-position/anomalous-anchor contrastive case,
-2. choose the first zipping metric implementation: faithful Hessian MTZ or an explicitly named approximation,
-3. define the exact batch metadata contract for overlap-aware multi-positive contrastive learning,
-4. decide whether Stage 1 batching is opportunistic or custom overlap-aware,
-5. formalize the exact definition of "normal" for continuous prototype initialization,
-6. choose the discrete query metric and normalization regime,
-7. choose whether the discrete codebook update rule is gradient-based, EMA-based, or hybrid,
-8. decide whether `discrete_assignment` is removed, retained for ablation, or reused only as an auxiliary scorer,
-9. define the hard-routing policy for \(k=1\): pure gather autograd or straight-through estimator,
-10. restate the complete three-stage computational specification with the 300-epoch allocation,
-11. decide which parts replace the older `offline_pretraining_phase_two_view_contrastive_design.md` contract and which parts extend it,
-12. only then map the design into config surfaces and code changes.
+1. choose the first weak-positive weighting implementation:
+   - uniform \(\rho^{RF}\),
+   - or fixed architecture-derived Gaussian \(\rho^{arch}\),
+2. if the Gaussian variant is used, specify the exact config-to-\(\sigma_{arch}\) mapping for the actual 1D-CNN encoder,
+3. define boundary handling for \(t+r\) when the receptive-field window crosses the local window boundary,
+4. define the exact batch metadata contract for overlap-aware multi-positive contrastive learning,
+5. decide whether Stage 1 batching is opportunistic or custom overlap-aware,
+6. decide whether the injected-position case remains negative-only permanently or later gains an explicit repulsion ablation,
+7. formalize the exact definition of "normal" for continuous prototype initialization,
+8. choose the first zipping metric implementation: faithful Hessian MTZ or an explicitly named approximation,
+9. choose the discrete query metric and normalization regime,
+10. choose whether the discrete codebook update rule is gradient-based, EMA-based, or hybrid,
+11. decide whether `discrete_assignment` is removed, retained for ablation, or reused only as an auxiliary scorer,
+12. define the hard-routing policy for \(k=1\): pure gather autograd or straight-through estimator,
+13. restate the complete three-stage computational specification with the 300-epoch allocation and updated contrastive placement,
+14. decide which parts replace the older `offline_pretraining_phase_two_view_contrastive_design.md` contract and which parts extend it,
+15. only then map the design into config surfaces and code changes.
 
 ## Primary References Mentioned in the Discussion
 
