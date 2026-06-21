@@ -98,6 +98,7 @@ class RedLampMLPBaseline(BaseModel):
         classifier_dim: int = 32,
         num_classes: int = len(REDLAMP_MULTICLASS_CLASS_NAMES),
         dropout: float = 0.1,
+        lambda_recon: float = 1.0,
         lambda_cls: float = 0.1,
         use_label_refurbishment: bool = True,
         refurbishment_alpha: float = 0.1,
@@ -165,6 +166,10 @@ class RedLampMLPBaseline(BaseModel):
             raise ValueError("gradient_sma_window must be >= 1")
         if not (0.0 < gradient_ema_alpha <= 1.0):
             raise ValueError("gradient_ema_alpha must satisfy 0 < alpha <= 1")
+        if lambda_recon < 0.0:
+            raise ValueError("lambda_recon must be non-negative")
+        if lambda_cls < 0.0:
+            raise ValueError("lambda_cls must be non-negative")
 
         self.input_dim = input_dim
         self.window_size = window_size
@@ -177,6 +182,7 @@ class RedLampMLPBaseline(BaseModel):
         self.cnn_dropout = dropout if cnn_dropout is None else cnn_dropout
         self.classifier_dim = classifier_dim
         self.num_classes = num_classes
+        self.lambda_recon = lambda_recon
         self.lambda_cls = lambda_cls
         self.use_label_refurbishment = use_label_refurbishment
         self.refurbishment_alpha = refurbishment_alpha
@@ -510,7 +516,7 @@ class RedLampMLPBaseline(BaseModel):
             parameter_tensor for _, parameter_tensor in encoder_parameter_items
         ]
         weighted_classification_loss = self.lambda_cls * classification_loss
-        weighted_reconstruction_loss = reconstruction_loss
+        weighted_reconstruction_loss = self.lambda_recon * reconstruction_loss
         gradients_ce = self._extract_layerwise_gradients(
             weighted_classification_loss,
             encoder_parameters,
@@ -595,7 +601,10 @@ class RedLampMLPBaseline(BaseModel):
         outputs = self.forward(prepared_batch)
         reconstruction_loss = F.mse_loss(outputs["recon"], prepared_batch["x"])
         classification_loss = self._compute_classification_loss(outputs, prepared_batch)
-        total_loss = reconstruction_loss + self.lambda_cls * classification_loss
+        total_loss = (
+            self.lambda_recon * reconstruction_loss
+            + self.lambda_cls * classification_loss
+        )
         predicted_labels = torch.argmax(outputs["logits"], dim=-1)
         classification_accuracy = (
             (predicted_labels == prepared_batch["classification_labels"]).float().mean()

@@ -668,7 +668,7 @@ The key interpretive rule is now explicit:
 - it is a **fixed Gaussian receptive-field prior** derived from architecture,
 - and it should be computed once from the model config before training, not re-estimated during training.
 
-For a simple 1D-CNN with odd kernel size \(K\), stride \(1\), dilation \(1\), and \(L_{conv}\) convolutional layers, the later note records the approximate initialization prior:
+For the current simple 1D-CNN implementation with odd kernel size \(K\) and \(L_{conv}\) convolutional layers, the later note records the approximate initialization prior:
 
 \[
 \sigma^2_{arch}
@@ -710,7 +710,8 @@ The role of this formula is intentionally narrow:
 
 - it gives a fixed prior scale from architecture,
 - it avoids extra hyperparameter search,
-- but it must **not** be described as measuring the trained ERF exactly.
+- but it must **not** be described as measuring the trained ERF exactly,
+- and after training it should still be treated as an approximation rather than a rigidly exact mathematical description of the learned effective receptive field.
 
 ### What Should Not Be Done in the Main Training Loop
 
@@ -1426,7 +1427,7 @@ Residual implementation choices:
 
 ### 6. Role of Injected Positions in Contrastive Learning
 
-Status: **narrowed, but not fully closed**.
+Status: **closed for the first implementation**.
 
 The desired geometry is clear:
 
@@ -1441,10 +1442,9 @@ The later 2026-06-21 note now gives the following first-pass preference:
 - no explicit repulsion term is required in the first pass,
 - and a more aggressive repulsion-term variant can be deferred to a later ablation if needed.
 
-So the remaining open point is narrower than before:
+The first implementation uses the negative-only treatment.
 
-- whether to keep the first-pass negative-only treatment permanently,
-- or later add a dedicated repulsion term for injected aligned pairs.
+Later repulsion-based variants can remain as ablations, but they are not part of the first implementation.
 
 ### 7. Batch Metadata Required for Overlap-Aware Positives
 
@@ -1464,43 +1464,27 @@ Without this metadata, same-source-timestep positives cannot be implemented reli
 
 ### 8. Whether Batching Must Guarantee Overlap-Based Positives
 
-Status: **open**.
+Status: **closed for the first implementation**.
 
 Stride 1 means one source timestep can appear in multiple windows in the full dataset, but not necessarily inside the same batch.
 
-Two implementation options remain:
+The first implementation uses opportunistic batching:
 
-1. Opportunistic batching:
-   - use same-source-timestep positives when they appear naturally in a batch,
-   - fall back to aligned-view positives when no overlap positive exists.
+- use same-source-timestep positives when they appear naturally in a batch,
+- fall back to aligned-view positives when no overlap positive exists,
+- log overlap-positive availability and false-negative filtering behavior explicitly.
 
-2. Custom overlap-aware batching:
-   - deliberately place nearby overlapping windows from the same entity into the same batch,
-   - increases positive availability,
-   - but changes sampling behavior and may reduce stochastic diversity.
-
-The first implementation can start with opportunistic batching if it is simpler, but the metric logs should report how many overlap positives were actually found.
-
-The later 2026-06-21 note is slightly more opinionated here:
-
-- the first implementation can still start with opportunistic batching,
-- but only if the logs explicitly report overlap-positive availability and false-negative filtering behavior.
+Custom overlap-aware batching remains a later optimization candidate, not a prerequisite for the 3 initialization experiments.
 
 ### 9. Exact Zipping Metric
 
-Status: **open, but bounded**.
+Status: **closed for the first implementation**.
 
-The faithful MTZ functional difference is Hessian-based.
+The first implementation uses an MTZ-inspired activation-based channel matching approximation.
 
-The implementation still needs to decide whether to use:
-
-- faithful Hessian-based functional difference,
-- activation-distance approximation,
-- weight-distance approximation,
-- cosine-distance approximation,
-- or a staged implementation where a simple approximation is implemented first and the Hessian metric is added later.
-
-Any approximation should be named explicitly as an approximation rather than presented as exact MTZ.
+- do not call it exact Hessian MTZ,
+- keep the matching stage explicit and deterministic,
+- and treat the output as a practical zipping approximation for the 3 experiment comparison.
 
 ### 10. Zipping Scope and Sharing Ratio
 
@@ -1546,26 +1530,26 @@ Discrete prototype initialization:
 Continuous prototype initialization:
 
 - uses only normal windows/tokens from the training part,
-- "normal" currently means likely-normal training data or synthetic-normal positions, but this still requires one final implementation definition.
+- the exact normal-token definition is given below.
 
 ### 13. Definition of "Normal" for Continuous Prototypes
 
-Status: **partly open**.
+Status: **closed for the first implementation**.
 
-The user noted that "normal timesteps" may mean timesteps/windows with synthetic normal labels, but this is not fully settled.
+For the first implementation, "normal" means:
 
-Candidate definitions:
+\[
+\{(b,t)\mid y_b = \text{normal},\ M_{b,t}=0\}
+\]
 
-- raw training windows from the original training split, treated as likely normal,
-- positions where `synthetic_anomaly_mask == 0`,
-- intersection of likely-normal raw training data and synthetic-normal positions,
-- heuristic-filtered normal tokens after excluding high reconstruction-error or high anomaly-score tokens.
+This keeps the prototype-seeding rule simple and explicit:
 
-The first implementation should choose a simple definition and log it explicitly.
+- use only training windows labeled normal at the window level,
+- and within those windows keep only positions where the synthetic injection mask is clean.
 
 ### 14. Weak-Positive RF Weighting Semantics
 
-Status: **closed at the conceptual level, open at the formula-selection level**.
+Status: **closed for the first implementation**.
 
 The later 2026-06-21 note closes the need for weak-positive weighting conceptually:
 
@@ -1573,22 +1557,52 @@ The later 2026-06-21 note closes the need for weak-positive weighting conceptual
 - fully clean contexts should pull more strongly,
 - partially contaminated-but-still-valid contexts should pull more weakly.
 
-The first implementation should avoid unnecessary extra hyperparameters.
+The first implementation uses a fixed architecture-derived Gaussian RF weighting.
 
-So the open formula choice is now bounded to:
+- no explicit `stride` or `dilation` config fields are needed for either `redlamp_mlp_baseline` or `thesis_multitask`,
+- both 1D-CNN encoders use the same fixed `stride = 1` and `dilation = 1` contract inside `SimpleWindowCnnEncoder`,
+- `sigma_arch` is computed once from architecture before training,
+- no extra exponent \(\gamma\) is added in the first implementation.
 
-- **uniform theoretical RF weighting**
-  - \(\rho^{RF}_{b,t} = \frac{1}{2R+1}\sum_{r=-R}^{R} C_{b,t+r}\),
-  - preferred for maximum simplicity,
-- or **fixed architecture-derived Gaussian RF weighting**
-  - \(\rho^{arch}_{b,t} = \sum_{r=-R}^{R} g_r C_{b,t+r}\),
-  - acceptable if described strictly as a fixed prior, not as the true trained ERF.
+For the current simple 1D-CNN implementation with odd kernel size \(K\) and \(L_{conv}\) convolutional layers, the fixed prior is:
 
-The first implementation should not add an extra exponent \(\gamma\) unless there is a strong ablation reason.
+\[
+\sigma^2_{arch}
+=
+L_{conv}\frac{K^2-1}{12}
+\]
+
+with:
+
+\[
+R
+=
+L_{conv}\frac{K-1}{2}
+\]
+
+Boundary handling uses valid-position renormalization:
+
+\[
+\rho^{arch}_{b,t}
+=
+\frac{
+\sum_{r\in \mathcal{V}_t} g_r C_{b,t+r}
+}{
+\sum_{r\in \mathcal{V}_t} g_r
+}
+\]
+
+where:
+
+\[
+\mathcal{V}_t=\{r\in[-R,R]\mid 0\le t+r < L\}
+\]
+
+This avoids treating out-of-window positions as if they were contaminated content.
 
 ### 15. Meaning and Lifecycle of \(\sigma_{arch}\)
 
-Status: **closed at the semantic level, open only for exact config parsing in complex CNNs**.
+Status: **closed at the semantic level**.
 
 If the Gaussian-RF variant is used:
 
@@ -1597,12 +1611,7 @@ If the Gaussian-RF variant is used:
 - \(\sigma_{arch}\) remains fixed throughout training,
 - and \(\sigma_{arch}\) must be described as a fixed architectural prior rather than as the trained ERF variance.
 
-What remains open is only the exact implementation detail for architectures with:
-
-- mixed kernel sizes,
-- non-unit stride,
-- non-unit dilation,
-- or other encoder details that make the config-to-\(\sigma_{arch}\) mapping less trivial.
+No extra stride or dilation config is needed for the current `SimpleWindowCnnEncoder` path in either model; the only remaining mapping concern would be a future CNN variant with a different architectural contract.
 
 ### 16. Jacobian-Based ERF Estimation Inside Training
 
@@ -1751,23 +1760,12 @@ It also does not yet encode the newly preferred discrete-branch query semantics 
 
 When resuming this topic in a later chat, the next useful step is:
 
-1. choose the first weak-positive weighting implementation:
-   - uniform \(\rho^{RF}\),
-   - or fixed architecture-derived Gaussian \(\rho^{arch}\),
-2. if the Gaussian variant is used, specify the exact config-to-\(\sigma_{arch}\) mapping for the actual 1D-CNN encoder,
-3. define boundary handling for \(t+r\) when the receptive-field window crosses the local window boundary,
-4. define the exact batch metadata contract for overlap-aware multi-positive contrastive learning,
-5. decide whether Stage 1 batching is opportunistic or custom overlap-aware,
-6. decide whether the injected-position case remains negative-only permanently or later gains an explicit repulsion ablation,
-7. formalize the exact definition of "normal" for continuous prototype initialization,
-8. choose the first zipping metric implementation: faithful Hessian MTZ or an explicitly named approximation,
-9. choose the discrete query metric and normalization regime,
-10. choose whether the discrete codebook update rule is gradient-based, EMA-based, or hybrid,
-11. decide whether `discrete_assignment` is removed, retained for ablation, or reused only as an auxiliary scorer,
-12. define the hard-routing policy for \(k=1\): pure gather autograd or straight-through estimator,
-13. restate the complete three-stage computational specification with the 300-epoch allocation and updated contrastive placement,
-14. decide which parts replace the older `offline_pretraining_phase_two_view_contrastive_design.md` contract and which parts extend it,
-15. only then map the design into config surfaces and code changes.
+1. choose the discrete query metric and normalization regime,
+2. choose whether the discrete codebook update rule is gradient-based, EMA-based, or hybrid,
+3. decide whether `discrete_assignment` is removed, retained for ablation, or reused only as an auxiliary scorer,
+4. define the hard-routing policy for \(k=1\): pure gather autograd or straight-through estimator,
+5. decide which parts replace the older `offline_pretraining_phase_two_view_contrastive_design.md` contract and which parts extend it,
+6. only then map the design into config surfaces and code changes.
 
 ## Primary References Mentioned in the Discussion
 

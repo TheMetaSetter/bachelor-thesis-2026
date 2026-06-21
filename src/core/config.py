@@ -214,6 +214,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "classifier_dim",
             "num_classes",
             "dropout",
+            "lambda_recon",
             "lambda_cls",
             "use_label_refurbishment",
             "refurbishment_alpha",
@@ -256,6 +257,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "refurbishment_alpha",
             "refurbishment_beta",
             "reconstruction_normal_only",
+            "lambda_recon",
             "lambda_cls",
             "lambda_div",
             "lambda_var",
@@ -277,6 +279,13 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "memory_norm_epsilon",
             "memory_initialization_batches",
             "memory_initialization_with_synthetic_windows",
+            "enable_gradient_conflict_profiling",
+            "gradient_profiling_scope",
+            "gradient_focus_layer_name",
+            "gradient_log_every_n_steps",
+            "gradient_ema_alpha",
+            "gradient_sma_window",
+            "gradient_profile_include_bias",
             "enable_diversity_loss",
             "enable_variance_loss",
             "enable_covariance_loss",
@@ -388,6 +397,12 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         integer_fields["memory_initialization_batches"] = model_config.get(
             "memory_initialization_batches", 16
         )
+        integer_fields["gradient_log_every_n_steps"] = model_config.get(
+            "gradient_log_every_n_steps", 1
+        )
+        integer_fields["gradient_sma_window"] = model_config.get(
+            "gradient_sma_window", 50
+        )
     if model_config.get("model_name") == "redlamp_mlp_baseline":
         integer_fields["latent_dim"] = model_config.get("latent_dim")
         integer_fields["mlp_num_linear_layers"] = model_config.get(
@@ -400,6 +415,12 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         )
         integer_fields["classifier_dim"] = model_config.get("classifier_dim")
         integer_fields["num_classes"] = model_config.get("num_classes")
+        integer_fields["gradient_log_every_n_steps"] = model_config.get(
+            "gradient_log_every_n_steps", 1
+        )
+        integer_fields["gradient_sma_window"] = model_config.get(
+            "gradient_sma_window", 50
+        )
     if model_config.get("model_name") == "online_adaptation":
         integer_fields["projector_hidden_dim"] = model_config.get(
             "projector_hidden_dim"
@@ -423,6 +444,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["cnn_dropout"] = model_config.get(
             "cnn_dropout", model_config.get("dropout")
         )
+        float_fields["gradient_ema_alpha"] = model_config.get(
+            "gradient_ema_alpha", 0.1
+        )
     if task_config.get("task_name") == "multitask_tsad":
         if model_config.get("model_name") == "thesis_multitask":
             float_fields["gumbel_temperature"] = model_config.get("gumbel_temperature")
@@ -440,6 +464,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "refurbishment_alpha", 0.0
         )
         float_fields["refurbishment_beta"] = model_config.get("refurbishment_beta", 0.0)
+        float_fields["lambda_recon"] = model_config.get("lambda_recon", 1.0)
         float_fields["lambda_cls"] = model_config.get("lambda_cls")
         if model_config.get("model_name") == "thesis_multitask":
             float_fields["lambda_div"] = model_config.get("lambda_div")
@@ -467,6 +492,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             )
             float_fields["memory_norm_epsilon"] = model_config.get(
                 "memory_norm_epsilon", 1.0e-6
+            )
+            float_fields["gradient_ema_alpha"] = model_config.get(
+                "gradient_ema_alpha", 0.1
             )
             float_fields["cnn_dropout"] = model_config.get(
                 "cnn_dropout", model_config.get("dropout")
@@ -819,6 +847,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("refurbishment_alpha must be in [0, 1]")
         if not 0.0 <= float(model_config.get("refurbishment_beta", 0.0)) <= 1.0:
             raise ValueError("refurbishment_beta must be in [0, 1]")
+        if float(model_config.get("lambda_recon", 1.0)) < 0.0:
+            raise ValueError("lambda_recon must be non-negative")
+        if float(model_config.get("lambda_cls", 0.0)) < 0.0:
+            raise ValueError("lambda_cls must be non-negative")
         classification_label_mode = task_config.get(
             "classification_label_mode", "binary"
         )
@@ -847,6 +879,27 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 raise ValueError("discrete_ema_decay must be in (0, 1)")
             if float(model_config.get("memory_norm_epsilon", 1.0e-6)) <= 0.0:
                 raise ValueError("memory_norm_epsilon must be positive")
+            if model_config.get("gradient_profiling_scope", "encoder_all") not in {
+                "encoder_all"
+            }:
+                raise ValueError(
+                    "gradient_profiling_scope must be one of {'encoder_all'}"
+                )
+            if model_config.get(
+                "gradient_focus_layer_name", "encoder_last_affine"
+            ) not in {"encoder_last_linear", "encoder_last_affine"}:
+                raise ValueError(
+                    "gradient_focus_layer_name must be one of: "
+                    "encoder_last_linear, encoder_last_affine"
+                )
+            if int(model_config.get("gradient_log_every_n_steps", 1)) < 1:
+                raise ValueError("gradient_log_every_n_steps must be >= 1")
+            if int(model_config.get("gradient_sma_window", 50)) < 1:
+                raise ValueError("gradient_sma_window must be >= 1")
+            if not (
+                0.0 < float(model_config.get("gradient_ema_alpha", 0.1)) <= 1.0
+            ):
+                raise ValueError("gradient_ema_alpha must satisfy 0 < alpha <= 1")
             if (
                 float(
                     model_config.get("usage_lambda_start", model_config["lambda_use"])

@@ -52,6 +52,7 @@ def _flat_model_kwargs(**overrides: object) -> dict[str, object]:
         "refurbishment_alpha": 0.2,
         "refurbishment_beta": 0.1,
         "reconstruction_normal_only": True,
+        "lambda_recon": 0.9,
         "lambda_cls": 1.25,
         "enable_diversity_loss": False,
         "enable_variance_loss": False,
@@ -131,6 +132,7 @@ def test_flat_kwargs_are_grouped_into_readable_config_sections() -> None:
     assert config.schedule.freeze_fusion_for_epochs == 1
     assert config.objective.use_label_refurbishment is True
     assert config.objective.reconstruction_normal_only is True
+    assert config.objective.lambda_recon == 0.9
     assert config.objective.lambda_cls == 1.25
     assert config.memory.bootstrap_encoder_epochs == 2
     assert config.memory.memory_initialization_batches == 3

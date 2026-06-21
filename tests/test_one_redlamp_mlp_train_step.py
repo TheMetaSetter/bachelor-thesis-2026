@@ -60,3 +60,33 @@ def test_redlamp_synthetic_validation_step_exposes_synthetic_anomaly_mask() -> N
         step_output["batch"]["synthetic_anomaly_mask"].shape
         == step_output["batch"]["x"].shape[:2]
     )
+
+
+def test_redlamp_total_loss_supports_explicit_reconstruction_weight() -> None:
+    model = RedLampMLPBaseline(
+        input_dim=4,
+        window_size=20,
+        latent_dim=16,
+        mlp_num_linear_layers=3,
+        classifier_dim=8,
+        num_classes=len(REDLAMP_MULTICLASS_CLASS_NAMES),
+        anomaly_probability=1.0,
+        lambda_recon=0.9,
+        lambda_cls=0.1,
+    )
+    batch = {
+        "x": torch.randn(2, 20, 4),
+        "point_labels": torch.zeros(2, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": "unit-test"}, {"entity_id": "unit-test"}],
+    }
+
+    step_output = model.training_step(batch)
+
+    expected_loss = (
+        0.9 * step_output["loss_terms"]["reconstruction_loss"]
+        + 0.1 * step_output["loss_terms"]["classification_loss"]
+    )
+
+    assert torch.isclose(step_output["loss"], expected_loss)

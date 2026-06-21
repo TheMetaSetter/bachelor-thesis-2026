@@ -10,6 +10,7 @@ stage step that assembles the training objective.
 
 import math
 import time
+from collections import OrderedDict, deque
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -262,6 +263,7 @@ class ObjectiveConfig:
     refurbishment_alpha: float = 0.0
     refurbishment_beta: float = 0.0
     reconstruction_normal_only: bool = False
+    lambda_recon: float = 1.0
     lambda_cls: float = 1.0
     enable_diversity_loss: bool = False
     enable_variance_loss: bool = False
@@ -281,6 +283,12 @@ class ObjectiveConfig:
     enable_cka_gated_fusion: bool = False
     cka_eps: float = 1.0e-6
 
+    def __post_init__(self) -> None:
+        if self.lambda_recon < 0.0:
+            raise ValueError("lambda_recon must be non-negative")
+        if self.lambda_cls < 0.0:
+            raise ValueError("lambda_cls must be non-negative")
+
 
 @dataclass(frozen=True)
 class MemoryInitializationConfig:
@@ -288,6 +296,35 @@ class MemoryInitializationConfig:
     memory_norm_epsilon: float = 1.0e-6
     memory_initialization_batches: int = 16
     memory_initialization_with_synthetic_windows: bool = True
+
+
+@dataclass(frozen=True)
+class GradientProfilingConfig:
+    enable_gradient_conflict_profiling: bool = False
+    gradient_profiling_scope: str = "encoder_all"
+    gradient_focus_layer_name: str = "encoder_last_affine"
+    gradient_log_every_n_steps: int = 1
+    gradient_ema_alpha: float = 0.1
+    gradient_sma_window: int = 50
+    gradient_profile_include_bias: bool = False
+
+    def __post_init__(self) -> None:
+        if self.gradient_profiling_scope not in {"encoder_all"}:
+            raise ValueError("gradient_profiling_scope must be one of {'encoder_all'}")
+        if self.gradient_focus_layer_name not in {
+            "encoder_last_linear",
+            "encoder_last_affine",
+        }:
+            raise ValueError(
+                "gradient_focus_layer_name must be one of: "
+                "encoder_last_linear, encoder_last_affine"
+            )
+        if self.gradient_log_every_n_steps < 1:
+            raise ValueError("gradient_log_every_n_steps must be >= 1")
+        if self.gradient_sma_window < 1:
+            raise ValueError("gradient_sma_window must be >= 1")
+        if not (0.0 < self.gradient_ema_alpha <= 1.0):
+            raise ValueError("gradient_ema_alpha must satisfy 0 < alpha <= 1")
 
 
 @dataclass(frozen=True)
@@ -333,6 +370,7 @@ class ThesisMultitaskModelConfig:
     memory: MemoryInitializationConfig = field(
         default_factory=MemoryInitializationConfig
     )
+    profiling: GradientProfilingConfig = field(default_factory=GradientProfilingConfig)
     synthetic: SyntheticAnomalyConfig = field(default_factory=SyntheticAnomalyConfig)
 
     @classmethod
@@ -390,6 +428,7 @@ class ThesisMultitaskModelConfig:
             "refurbishment_alpha",
             "refurbishment_beta",
             "reconstruction_normal_only",
+            "lambda_recon",
             "lambda_cls",
             "enable_diversity_loss",
             "enable_variance_loss",
@@ -414,6 +453,15 @@ class ThesisMultitaskModelConfig:
             "memory_norm_epsilon",
             "memory_initialization_batches",
             "memory_initialization_with_synthetic_windows",
+        }
+        profiling_keys = {
+            "enable_gradient_conflict_profiling",
+            "gradient_profiling_scope",
+            "gradient_focus_layer_name",
+            "gradient_log_every_n_steps",
+            "gradient_ema_alpha",
+            "gradient_sma_window",
+            "gradient_profile_include_bias",
         }
         synthetic_keys = {
             "use_synthetic_augmentation",
@@ -447,6 +495,7 @@ class ThesisMultitaskModelConfig:
         schedule_values = take_group(schedule_keys)
         objective_values = take_group(objective_keys)
         memory_values = take_group(memory_keys)
+        profiling_values = take_group(profiling_keys)
         synthetic_values = take_group(synthetic_keys)
         if (
             "classification_label_mode" not in synthetic_values
@@ -469,6 +518,7 @@ class ThesisMultitaskModelConfig:
             schedule=ScheduleAndWarmupConfig(**schedule_values),
             objective=ObjectiveConfig(**objective_values),
             memory=MemoryInitializationConfig(**memory_values),
+            profiling=GradientProfilingConfig(**profiling_values),
             synthetic=SyntheticAnomalyConfig(**synthetic_values),
         )
 
@@ -493,6 +543,7 @@ class ThesisMultitaskModel(BaseModel):
         self._build_fusion_parameters(config)
         self._build_task_heads(config)
         self._build_synthetic_injectors(config)
+        self._encoder_profiled_parameters = self._get_encoder_profiled_parameters()
         self._build_optional_loss_configs()
         self.set_epoch_context(epoch_index=0, total_epochs=1)
         self._print_model_summary(config)
@@ -505,6 +556,7 @@ class ThesisMultitaskModel(BaseModel):
         schedule = config.schedule
         objective = config.objective
         memory = config.memory
+        profiling = config.profiling
         synthetic = config.synthetic
 
         self.model_config = config
@@ -529,6 +581,7 @@ class ThesisMultitaskModel(BaseModel):
         self.refurbishment_alpha = objective.refurbishment_alpha
         self.refurbishment_beta = objective.refurbishment_beta
         self.reconstruction_normal_only = objective.reconstruction_normal_only
+        self.lambda_recon = objective.lambda_recon
         self.lambda_cls = objective.lambda_cls
         self.enable_classification_path = objective.enable_classification_path
         self.lambda_div = objective.lambda_div
@@ -561,6 +614,18 @@ class ThesisMultitaskModel(BaseModel):
         self.enable_cka_gated_fusion = objective.enable_cka_gated_fusion
         self.cka_eps = objective.cka_eps
         self.bootstrap_encoder_epochs = memory.bootstrap_encoder_epochs
+        self.enable_gradient_conflict_profiling = (
+            profiling.enable_gradient_conflict_profiling
+        )
+        self.gradient_profiling_scope = profiling.gradient_profiling_scope
+        self.gradient_focus_layer_name = profiling.gradient_focus_layer_name
+        self.gradient_log_every_n_steps = profiling.gradient_log_every_n_steps
+        self.gradient_ema_alpha = profiling.gradient_ema_alpha
+        self.gradient_sma_window = profiling.gradient_sma_window
+        self.gradient_profile_include_bias = profiling.gradient_profile_include_bias
+        self._gradient_profile_train_step_count = 0
+        self._gradient_profile_ema_state: dict[str, float] = {}
+        self._gradient_profile_sma_buffers: dict[str, deque[float]] = {}
         self.discrete_ema_decay = prototypes.discrete_ema_decay
         self.memory_norm_epsilon = memory.memory_norm_epsilon
         self.memory_initialization_batches = memory.memory_initialization_batches
@@ -783,6 +848,7 @@ class ThesisMultitaskModel(BaseModel):
         schedule = config.schedule
         objective = config.objective
         memory = config.memory
+        profiling = config.profiling
         synthetic = config.synthetic
         print_parameter_summary(
             "MODEL",
@@ -813,6 +879,7 @@ class ThesisMultitaskModel(BaseModel):
             refurbishment_alpha=objective.refurbishment_alpha,
             refurbishment_beta=objective.refurbishment_beta,
             reconstruction_normal_only=objective.reconstruction_normal_only,
+            lambda_recon=objective.lambda_recon,
             lambda_cls=objective.lambda_cls,
             lambda_div=objective.lambda_div,
             lambda_var=objective.lambda_var,
@@ -826,6 +893,15 @@ class ThesisMultitaskModel(BaseModel):
             usage_lambda_end=self.usage_lambda_end,
             usage_lambda_schedule_fraction=schedule.usage_lambda_schedule_fraction,
             bootstrap_encoder_epochs=memory.bootstrap_encoder_epochs,
+            enable_gradient_conflict_profiling=(
+                profiling.enable_gradient_conflict_profiling
+            ),
+            gradient_profiling_scope=profiling.gradient_profiling_scope,
+            gradient_focus_layer_name=profiling.gradient_focus_layer_name,
+            gradient_log_every_n_steps=profiling.gradient_log_every_n_steps,
+            gradient_ema_alpha=profiling.gradient_ema_alpha,
+            gradient_sma_window=profiling.gradient_sma_window,
+            gradient_profile_include_bias=profiling.gradient_profile_include_bias,
             discrete_ema_decay=prototypes.discrete_ema_decay,
             memory_norm_epsilon=memory.memory_norm_epsilon,
             memory_initialization_batches=memory.memory_initialization_batches,
@@ -2163,19 +2239,208 @@ class ThesisMultitaskModel(BaseModel):
         reconstruction_loss: torch.Tensor,
         classification_loss: torch.Tensor,
         optional_loss_values: dict[str, torch.Tensor],
+        reconstruction_weight: float,
         classification_weight: float,
     ) -> torch.Tensor:
         # The weighted sum is intentionally explicit so readers can map each
         # `lambda_*` config field directly to one line of the objective. The
         # default beginning of training is still the small objective
-        # `L_recon + lambda_cls * L_cls`.
-        total_loss = reconstruction_loss + classification_weight * classification_loss
+        # `lambda_recon * L_recon + lambda_cls * L_cls`.
+        total_loss = (
+            reconstruction_weight * reconstruction_loss
+            + classification_weight * classification_loss
+        )
         for loss_name, loss_value in optional_loss_values.items():
             loss_weight = self.optional_loss_configs[loss_name]["weight"]
             if loss_name == "usage_loss":
                 loss_weight = self.current_usage_lambda
             total_loss = total_loss + loss_weight * loss_value
         return total_loss
+
+    def _get_encoder_profiled_parameters(self) -> OrderedDict[str, nn.Parameter]:
+        profiled_parameters: OrderedDict[str, nn.Parameter] = OrderedDict()
+        encoder_layers = (
+            self.encoder.network if hasattr(self.encoder, "network") else self.encoder
+        )
+        affine_layer_indices = [
+            layer_index
+            for layer_index, layer_module in enumerate(encoder_layers)
+            if isinstance(layer_module, (nn.Linear, nn.Conv1d))
+        ]
+        for layer_index in affine_layer_indices:
+            layer_module = encoder_layers[layer_index]
+            layer_type = "linear" if isinstance(layer_module, nn.Linear) else "conv"
+            weight_key = f"encoder.{layer_type}{layer_index}.weight"
+            profiled_parameters[weight_key] = layer_module.weight
+            if self.gradient_profile_include_bias and layer_module.bias is not None:
+                bias_key = f"encoder.{layer_type}{layer_index}.bias"
+                profiled_parameters[bias_key] = layer_module.bias
+        if len(profiled_parameters) == 0:
+            raise ValueError("No encoder parameters available for gradient profiling")
+        return profiled_parameters
+
+    def _flatten_tensor_for_metrics(self, tensor: torch.Tensor) -> torch.Tensor:
+        return tensor.reshape(-1)
+
+    def _compute_cosine_similarity(
+        self,
+        gradient_ce: torch.Tensor,
+        gradient_mse: torch.Tensor,
+    ) -> float:
+        gradient_ce_flattened = self._flatten_tensor_for_metrics(gradient_ce)
+        gradient_mse_flattened = self._flatten_tensor_for_metrics(gradient_mse)
+        dot_product = torch.dot(gradient_ce_flattened, gradient_mse_flattened)
+        norm_ce = torch.linalg.vector_norm(gradient_ce_flattened)
+        norm_mse = torch.linalg.vector_norm(gradient_mse_flattened)
+        cosine_similarity = dot_product / ((norm_ce * norm_mse).clamp_min(1.0e-12))
+        return float(cosine_similarity.detach().cpu())
+
+    def _compute_preservation_ratio(
+        self,
+        gradient_ce: torch.Tensor,
+        gradient_mse: torch.Tensor,
+        gradient_total: torch.Tensor,
+    ) -> float:
+        norm_ce = torch.linalg.vector_norm(
+            self._flatten_tensor_for_metrics(gradient_ce)
+        )
+        norm_mse = torch.linalg.vector_norm(
+            self._flatten_tensor_for_metrics(gradient_mse)
+        )
+        norm_total = torch.linalg.vector_norm(
+            self._flatten_tensor_for_metrics(gradient_total)
+        )
+        preservation_ratio = norm_total / (norm_ce + norm_mse).clamp_min(1.0e-12)
+        return float(preservation_ratio.detach().cpu())
+
+    def _extract_layerwise_gradients(
+        self,
+        loss: torch.Tensor,
+        encoder_parameters: list[nn.Parameter],
+    ) -> list[torch.Tensor]:
+        gradients = torch.autograd.grad(
+            loss,
+            encoder_parameters,
+            retain_graph=True,
+            allow_unused=False,
+        )
+        return [gradient.detach().clone() for gradient in gradients]
+
+    def _update_ema(self, metric_key: str, metric_value: float) -> float:
+        previous_ema = self._gradient_profile_ema_state.get(metric_key)
+        if previous_ema is None:
+            updated_ema = metric_value
+        else:
+            updated_ema = (
+                self.gradient_ema_alpha * metric_value
+                + (1.0 - self.gradient_ema_alpha) * previous_ema
+            )
+        self._gradient_profile_ema_state[metric_key] = updated_ema
+        return updated_ema
+
+    def _update_sma(self, metric_key: str, metric_value: float) -> float:
+        if metric_key not in self._gradient_profile_sma_buffers:
+            self._gradient_profile_sma_buffers[metric_key] = deque(
+                maxlen=self.gradient_sma_window
+            )
+        self._gradient_profile_sma_buffers[metric_key].append(metric_value)
+        sma_value = sum(self._gradient_profile_sma_buffers[metric_key]) / len(
+            self._gradient_profile_sma_buffers[metric_key]
+        )
+        return float(sma_value)
+
+    def _resolve_focus_layer_parameter_name(self) -> str:
+        if self.gradient_focus_layer_name in {
+            "encoder_last_linear",
+            "encoder_last_affine",
+        }:
+            parameter_names = list(self._encoder_profiled_parameters.keys())
+            return parameter_names[-1]
+        raise ValueError(
+            f"Unsupported gradient_focus_layer_name: {self.gradient_focus_layer_name}"
+        )
+
+    def _build_gradient_conflict_log_dict(
+        self,
+        raw_metrics: dict[str, float],
+    ) -> dict[str, float]:
+        gradient_conflict_logs: dict[str, float] = {}
+        for raw_key, raw_value in raw_metrics.items():
+            gradient_conflict_logs[raw_key] = raw_value
+            metric_suffix = raw_key.split("train_gradconf_raw/", 1)[1]
+            ema_key = f"train_gradconf_ema/{metric_suffix}"
+            sma_key = f"train_gradconf_sma/{metric_suffix}"
+            gradient_conflict_logs[ema_key] = self._update_ema(raw_key, raw_value)
+            gradient_conflict_logs[sma_key] = self._update_sma(raw_key, raw_value)
+        return gradient_conflict_logs
+
+    def _profile_encoder_gradient_conflict(
+        self,
+        reconstruction_loss: torch.Tensor,
+        classification_loss: torch.Tensor,
+    ) -> dict[str, float]:
+        encoder_parameter_items = list(self._encoder_profiled_parameters.items())
+        encoder_parameter_names = [
+            parameter_name for parameter_name, _ in encoder_parameter_items
+        ]
+        encoder_parameters = [
+            parameter_tensor for _, parameter_tensor in encoder_parameter_items
+        ]
+        weighted_classification_loss = self.lambda_cls * classification_loss
+        weighted_reconstruction_loss = self.lambda_recon * reconstruction_loss
+        gradients_ce = self._extract_layerwise_gradients(
+            weighted_classification_loss,
+            encoder_parameters,
+        )
+        gradients_mse = self._extract_layerwise_gradients(
+            weighted_reconstruction_loss,
+            encoder_parameters,
+        )
+
+        raw_metrics: dict[str, float] = {}
+        for layer_name, gradient_ce, gradient_mse in zip(
+            encoder_parameter_names, gradients_ce, gradients_mse
+        ):
+            gradient_total = gradient_ce + gradient_mse
+            norm_ce = float(
+                torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_ce))
+                .detach()
+                .cpu()
+            )
+            norm_mse = float(
+                torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_mse))
+                .detach()
+                .cpu()
+            )
+            norm_total = float(
+                torch.linalg.vector_norm(
+                    self._flatten_tensor_for_metrics(gradient_total)
+                )
+                .detach()
+                .cpu()
+            )
+            cosine_similarity = self._compute_cosine_similarity(
+                gradient_ce, gradient_mse
+            )
+            preservation_ratio = self._compute_preservation_ratio(
+                gradient_ce=gradient_ce,
+                gradient_mse=gradient_mse,
+                gradient_total=gradient_total,
+            )
+            metric_prefix = f"train_gradconf_raw/{layer_name}"
+            raw_metrics[f"{metric_prefix}/cosine_sim"] = cosine_similarity
+            raw_metrics[f"{metric_prefix}/r_ratio"] = preservation_ratio
+            raw_metrics[f"{metric_prefix}/norm_ce"] = norm_ce
+            raw_metrics[f"{metric_prefix}/norm_mse"] = norm_mse
+            raw_metrics[f"{metric_prefix}/norm_total"] = norm_total
+            if layer_name == self._resolve_focus_layer_parameter_name():
+                focus_prefix = "train_gradconf_raw/focus"
+                raw_metrics[f"{focus_prefix}/cosine_sim"] = cosine_similarity
+                raw_metrics[f"{focus_prefix}/r_ratio"] = preservation_ratio
+                raw_metrics[f"{focus_prefix}/norm_ce"] = norm_ce
+                raw_metrics[f"{focus_prefix}/norm_mse"] = norm_mse
+                raw_metrics[f"{focus_prefix}/norm_total"] = norm_total
+        return self._build_gradient_conflict_log_dict(raw_metrics)
 
     def _build_stage_log(
         self,
@@ -2379,6 +2644,7 @@ class ThesisMultitaskModel(BaseModel):
             reconstruction_loss=reconstruction_loss,
             classification_loss=classification_loss,
             optional_loss_values=optional_loss_values,
+            reconstruction_weight=self.lambda_recon,
             classification_weight=(
                 classification_weight if self.enable_classification_path else 0.0
             ),
@@ -2416,15 +2682,30 @@ class ThesisMultitaskModel(BaseModel):
             beta=float(outputs["aux"]["beta"].mean().detach().cpu()),
             forward_pass_seconds=outputs["aux"]["forward_pass_seconds"],
         )
+        stage_log = self._build_stage_log(
+            stage_name,
+            outputs,
+            loss_terms,
+            prepared_batch,
+            include_classification_metrics=include_classification_metrics,
+        )
+        if stage_name == "train":
+            self._gradient_profile_train_step_count += 1
+            should_log_gradient_conflict = (
+                self.enable_gradient_conflict_profiling
+                and self._gradient_profile_train_step_count
+                % self.gradient_log_every_n_steps
+                == 0
+            )
+            if should_log_gradient_conflict:
+                gradient_conflict_logs = self._profile_encoder_gradient_conflict(
+                    reconstruction_loss=reconstruction_loss,
+                    classification_loss=classification_loss,
+                )
+                stage_log.update(gradient_conflict_logs)
         return {
             "loss": total_loss,
-            "log": self._build_stage_log(
-                stage_name,
-                outputs,
-                loss_terms,
-                prepared_batch,
-                include_classification_metrics=include_classification_metrics,
-            ),
+            "log": stage_log,
             "outputs": outputs,
             "loss_terms": loss_terms,
             "batch": prepared_batch,

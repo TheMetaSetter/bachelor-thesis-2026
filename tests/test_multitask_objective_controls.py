@@ -146,3 +146,22 @@ def test_training_step_runs_with_refurbishment_and_normal_only_masking_enabled()
         step_output["loss_terms"]["reconstruction_loss"],
         expected_normal_only_reconstruction_loss,
     )
+
+
+def test_total_loss_supports_explicit_reconstruction_weight() -> None:
+    model = _build_model(
+        lambda_recon=0.9,
+        lambda_cls=0.1,
+        use_synthetic_augmentation=True,
+        anomaly_probability=1.0,
+    )
+    batch = _build_batch()
+
+    step_output = model.training_step(batch)
+
+    expected_loss = (
+        0.9 * step_output["loss_terms"]["reconstruction_loss"]
+        + 0.1 * step_output["loss_terms"]["classification_loss"]
+    )
+
+    assert torch.isclose(step_output["loss"], expected_loss)
