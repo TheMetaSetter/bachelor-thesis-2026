@@ -89,7 +89,7 @@ def _build_preaugmented_batch() -> dict[str, Any]:
         ("stage1_classification", True, False),
         ("stage1_reconstruction", True, False),
         ("stage2_recovery", True, False),
-        ("stage3_prototype_warmup", False, False),
+        ("stage3_memory_initialization_and_fusion_warmup", False, False),
         ("multitask_pretraining", False, False),
     ],
 )
@@ -106,7 +106,7 @@ def test_memory_lifecycle_switches_with_three_stage_phase(
 
 
 def test_stage3_warmup_freezes_encoder_but_keeps_heads_and_concat_projections_trainable() -> None:
-    model = _build_phase_model("stage3_prototype_warmup")
+    model = _build_phase_model("stage3_memory_initialization_and_fusion_warmup")
 
     assert all(not parameter.requires_grad for parameter in model.encoder.parameters())
     assert all(
@@ -125,13 +125,53 @@ def test_stage3_warmup_freezes_encoder_but_keeps_heads_and_concat_projections_tr
     )
 
 
+def test_stage3_warmup_disables_non_target_trainable_modules() -> None:
+    model = _build_phase_model("stage3_memory_initialization_and_fusion_warmup")
+
+    assert all(
+        not parameter.requires_grad
+        for parameter in model.classification_fusion_gate.parameters()
+    )
+    assert all(
+        not parameter.requires_grad
+        for parameter in model.reconstruction_fusion_gate.parameters()
+    )
+    assert all(
+        not parameter.requires_grad
+        for parameter in model.continuous_update_gate.parameters()
+    )
+    assert all(
+        not parameter.requires_grad
+        for parameter in model.discrete_assignment.parameters()
+    )
+
+
+def test_stage3_lifecycle_state_exposes_semantic_label_and_trainable_modules() -> None:
+    model = _build_phase_model("stage3_memory_initialization_and_fusion_warmup")
+    lifecycle_state = model.get_memory_lifecycle_state()
+
+    assert (
+        lifecycle_state["semantic_stage_label"]
+        == "Stage 3: Memory Initialization and Fusion Warm-Up"
+    )
+    assert lifecycle_state["memory_initialization_substep"] is True
+    assert lifecycle_state["fusion_warmup_substep"] is True
+    assert lifecycle_state["recovered_zipped_encoder_frozen_during_warmup"] is True
+    assert lifecycle_state["trainable_module_names"] == [
+        "classification_concat_projection",
+        "classification_head",
+        "reconstruction_concat_projection",
+        "reconstruction_head",
+    ]
+
+
 @pytest.mark.parametrize(
     ("training_phase", "expected_reconstruction_weight", "expected_classification_weight"),
     [
         ("stage1_classification", 0.0, 1.1),
         ("stage1_reconstruction", 0.9, 0.0),
         ("stage2_recovery", 0.9, 1.1),
-        ("stage3_prototype_warmup", 0.9, 1.1),
+        ("stage3_memory_initialization_and_fusion_warmup", 0.9, 1.1),
     ],
 )
 def test_loss_weighting_changes_with_three_stage_phase(
@@ -160,7 +200,7 @@ def test_loss_weighting_changes_with_three_stage_phase(
         ("stage1_classification", True),
         ("stage1_reconstruction", True),
         ("stage2_recovery", False),
-        ("stage3_prototype_warmup", False),
+        ("stage3_memory_initialization_and_fusion_warmup", False),
         ("multitask_pretraining", True),
     ],
 )
@@ -175,3 +215,9 @@ def test_contrastive_pairing_is_phase_aware(
     )
 
     assert (contrastive_pair is not None) is should_build_pair
+
+
+def test_legacy_stage3_phase_alias_still_loads_for_model_compatibility() -> None:
+    model = _build_phase_model("stage3_prototype_warmup")
+
+    assert model.training_phase == "stage3_memory_initialization_and_fusion_warmup"

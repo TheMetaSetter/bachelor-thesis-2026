@@ -26,6 +26,9 @@ def test_tmux_launcher_dry_run_prints_exact_server_command() -> None:
     assert "run_three_stage_offline_pretraining.py" in completed.stdout
     assert "verify_three_stage_run.py" in completed.stdout
     assert "server_preflight_summary.json" in completed.stdout
+    assert "optimizer training phases:" in completed.stdout
+    assert "stage3_memory_initialization_and_fusion_warmup" in completed.stdout
+    assert "statistical procedures:" in completed.stdout
     assert "tmux inner command: (" in completed.stdout
     assert ") > " in completed.stdout
 

@@ -30,6 +30,10 @@ def _materialize_completed_run(tmp_path: Path) -> Path:
         {
             "experiment_name": "completed-run",
             "evaluation": {"checkpoint_path": str(checkpoint_path)},
+            "statistical_procedure_names": [
+                "stage2_mtz_parameter_zipping",
+                "stage3_memory_initialization",
+            ],
         },
     )
     _write_json(
@@ -41,11 +45,22 @@ def _materialize_completed_run(tmp_path: Path) -> Path:
                 "stage1_classification",
                 "stage1_reconstruction",
                 "stage2_recovery",
-                "stage3_prototype_warmup",
+                "stage3_memory_initialization_and_fusion_warmup",
                 "multitask_pretraining",
                 "evaluation",
             ],
             "evaluation_checkpoint_path": str(checkpoint_path),
+            "optimizer_training_phase_names": [
+                "stage1_classification",
+                "stage1_reconstruction",
+                "stage2_recovery",
+                "stage3_memory_initialization_and_fusion_warmup",
+                "multitask_pretraining",
+            ],
+            "statistical_procedure_names": [
+                "stage2_mtz_parameter_zipping",
+                "stage3_memory_initialization",
+            ],
             "started_at_utc": "2026-06-23T01:02:03Z",
             "finished_at_utc": "2026-06-23T03:04:05Z",
         },
@@ -100,6 +115,17 @@ def test_three_stage_run_verifier_recognizes_completed_verified_run(tmp_path: Pa
     assert summary["missing_artifacts"] == []
     assert summary["has_evaluation_metrics"] is True
     assert summary["launch_readiness_status"] == "ready_for_rtx3090_tmux_launch"
+    assert summary["optimizer_training_phase_names"] == [
+        "stage1_classification",
+        "stage1_reconstruction",
+        "stage2_recovery",
+        "stage3_memory_initialization_and_fusion_warmup",
+        "multitask_pretraining",
+    ]
+    assert summary["statistical_procedure_names"] == [
+        "stage2_mtz_parameter_zipping",
+        "stage3_memory_initialization",
+    ]
 
 
 def test_three_stage_run_verifier_can_infer_success_from_legacy_execution_report(
@@ -114,7 +140,7 @@ def test_three_stage_run_verifier_can_infer_success_from_legacy_execution_report
         "stage1_classification",
         "stage1_reconstruction",
         "stage2_recovery",
-        "stage3_prototype_warmup",
+        "stage3_memory_initialization_and_fusion_warmup",
         "multitask_pretraining",
         "evaluation",
     ]
@@ -124,6 +150,41 @@ def test_three_stage_run_verifier_can_infer_success_from_legacy_execution_report
 
     assert summary["status"] == "verified_success"
     assert summary["execution_status"] == "completed_legacy"
+
+
+def test_three_stage_run_verifier_falls_back_to_manifest_metadata_for_legacy_report(
+    tmp_path: Path,
+) -> None:
+    output_dir = _materialize_completed_run(tmp_path)
+    legacy_report_path = output_dir / "three_stage" / "three_stage_execution_report.json"
+    legacy_report = json.loads(legacy_report_path.read_text(encoding="utf-8"))
+    legacy_report.pop("optimizer_training_phase_names")
+    legacy_report.pop("statistical_procedure_names")
+    legacy_report_path.write_text(json.dumps(legacy_report, indent=2), encoding="utf-8")
+    manifest_path = output_dir / "three_stage" / "three_stage_manifest.json"
+    manifest_payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_payload["optimizer_training_phase_names"] = [
+        "stage1_classification",
+        "stage1_reconstruction",
+        "stage2_recovery",
+        "stage3_memory_initialization_and_fusion_warmup",
+        "multitask_pretraining",
+    ]
+    manifest_path.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
+
+    summary = build_three_stage_run_verification_summary(str(output_dir))
+
+    assert summary["optimizer_training_phase_names"] == [
+        "stage1_classification",
+        "stage1_reconstruction",
+        "stage2_recovery",
+        "stage3_memory_initialization_and_fusion_warmup",
+        "multitask_pretraining",
+    ]
+    assert summary["statistical_procedure_names"] == [
+        "stage2_mtz_parameter_zipping",
+        "stage3_memory_initialization",
+    ]
 
 
 def test_three_stage_run_verifier_recognizes_failed_run_and_preserves_failure_context(

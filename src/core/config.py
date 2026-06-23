@@ -16,6 +16,12 @@ import yaml
 from src.core.console import console_print
 
 
+STAGE3_WARMUP_EPOCHS_LEGACY_KEY = "stage3_prototype_warmup_epochs"
+STAGE3_WARMUP_EPOCHS_CANONICAL_KEY = (
+    "stage3_memory_initialization_and_fusion_warmup_epochs"
+)
+
+
 class _UniqueKeyYamlLoader(yaml.SafeLoader):
     """YAML loader that rejects duplicate mapping keys."""
 
@@ -91,13 +97,45 @@ def _resolve_thesis_model_window_size(experiment_config: dict[str, Any]) -> None
         raise ValueError("model.window_size must match data.window_size")
 
 
+def _normalize_three_stage_config_keys(three_stage_config: dict[str, Any]) -> None:
+    has_legacy_key = STAGE3_WARMUP_EPOCHS_LEGACY_KEY in three_stage_config
+    has_canonical_key = STAGE3_WARMUP_EPOCHS_CANONICAL_KEY in three_stage_config
+    if has_legacy_key and has_canonical_key:
+        if (
+            three_stage_config[STAGE3_WARMUP_EPOCHS_LEGACY_KEY]
+            != three_stage_config[STAGE3_WARMUP_EPOCHS_CANONICAL_KEY]
+        ):
+            raise ValueError(
+                "three_stage stage3 warm-up epoch keys disagree: "
+                f"{STAGE3_WARMUP_EPOCHS_LEGACY_KEY} vs "
+                f"{STAGE3_WARMUP_EPOCHS_CANONICAL_KEY}"
+            )
+    if has_canonical_key:
+        three_stage_config[STAGE3_WARMUP_EPOCHS_LEGACY_KEY] = three_stage_config[
+            STAGE3_WARMUP_EPOCHS_CANONICAL_KEY
+        ]
+        return
+    if has_legacy_key:
+        three_stage_config[STAGE3_WARMUP_EPOCHS_CANONICAL_KEY] = three_stage_config[
+            STAGE3_WARMUP_EPOCHS_LEGACY_KEY
+        ]
+        return
+    raise ValueError(
+        "three_stage config must define "
+        f"{STAGE3_WARMUP_EPOCHS_CANONICAL_KEY} "
+        f"(legacy alias: {STAGE3_WARMUP_EPOCHS_LEGACY_KEY})"
+    )
+
+
 def _validate_three_stage_config(three_stage_config: dict[str, Any]) -> None:
+    _normalize_three_stage_config_keys(three_stage_config)
     allowed_three_stage_keys = {
         "expected_total_training_epochs",
         "stage1_classification_epochs",
         "stage1_reconstruction_epochs",
         "stage2_recovery_epochs",
         "stage3_prototype_warmup_epochs",
+        "stage3_memory_initialization_and_fusion_warmup_epochs",
         "multitask_pretraining_epochs",
         "discrete_memory_label_source",
         "freeze_memories_after_initialization",
@@ -117,7 +155,7 @@ def _validate_three_stage_config(three_stage_config: dict[str, Any]) -> None:
         "stage1_classification_epochs",
         "stage1_reconstruction_epochs",
         "stage2_recovery_epochs",
-        "stage3_prototype_warmup_epochs",
+        STAGE3_WARMUP_EPOCHS_CANONICAL_KEY,
         "multitask_pretraining_epochs",
     ]
     for field_name in integer_fields:
@@ -143,7 +181,7 @@ def _validate_three_stage_config(three_stage_config: dict[str, Any]) -> None:
         three_stage_config["stage1_classification_epochs"]
         + three_stage_config["stage1_reconstruction_epochs"]
         + three_stage_config["stage2_recovery_epochs"]
-        + three_stage_config["stage3_prototype_warmup_epochs"]
+        + three_stage_config[STAGE3_WARMUP_EPOCHS_CANONICAL_KEY]
         + three_stage_config["multitask_pretraining_epochs"]
     )
     if computed_total_training_epochs != three_stage_config["expected_total_training_epochs"]:

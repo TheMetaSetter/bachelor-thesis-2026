@@ -187,6 +187,8 @@ if [[ "${DRY_RUN}" == true ]]; then
   printf 'preflight summary path: %s\n' "${PREFLIGHT_SUMMARY_PATH}"
   printf 'run verification summary path: %s\n' "${RUN_VERIFICATION_SUMMARY_PATH}"
   printf 'attach command: tmux attach -t %s\n' "${SESSION_NAME}"
+  printf 'optimizer training phases: %s\n' "stage1_classification, stage1_reconstruction, stage2_recovery, stage3_memory_initialization_and_fusion_warmup, multitask_pretraining"
+  printf 'statistical procedures: %s\n' "stage2_mtz_parameter_zipping, stage3_memory_initialization"
   printf 'preflight command: %s\n' "${PREFLIGHT_COMMAND_DISPLAY}"
   printf 'training command: CUDA_VISIBLE_DEVICES=%s %s\n' "${GPU_INDEX}" "${TRAIN_COMMAND_DISPLAY}"
   printf 'verification command: %s\n' "${VERIFY_COMMAND_DISPLAY}"

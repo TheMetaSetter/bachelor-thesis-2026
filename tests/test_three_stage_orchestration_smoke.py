@@ -29,7 +29,7 @@ def test_three_stage_epoch_budget_helpers_resolve_exact_300_training_epochs() ->
         "stage1_classification",
         "stage1_reconstruction",
         "stage2_recovery",
-        "stage3_prototype_warmup",
+        "stage3_memory_initialization_and_fusion_warmup",
         "multitask_pretraining",
     ]
     assert [phase["epochs"] for phase in training_plan] == [50, 70, 20, 20, 140]
@@ -65,6 +65,14 @@ def test_materialize_three_stage_run_manifest_writes_stage_configs_with_contiguo
     assert manifest["training_stages"][0]["global_epoch_end"] == 1
     assert manifest["training_stages"][-1]["phase_name"] == "multitask_pretraining"
     assert manifest["training_stages"][-1]["global_epoch_end"] == 5
+    stage3_record = manifest["training_stages"][3]
+    assert stage3_record["phase_name"] == "stage3_memory_initialization_and_fusion_warmup"
+    assert (
+        stage3_record["semantic_stage_label"]
+        == "Stage 3: Memory Initialization and Fusion Warm-Up"
+    )
+    assert stage3_record["memory_initialization_substep"] is True
+    assert stage3_record["fusion_warmup_substep"] is True
 
     manifest_path = tmp_path / "outputs" / "three_stage" / "three_stage_manifest.json"
     assert manifest_path.exists()
@@ -80,14 +88,33 @@ def test_materialize_three_stage_run_manifest_writes_stage_configs_with_contiguo
             assert loaded_stage_config["initialization_checkpoint_path"].endswith(
                 "stage2_recovery_init.pt"
             )
-        if stage_record["phase_name"] == "stage3_prototype_warmup":
+        if stage_record["phase_name"] == "stage3_memory_initialization_and_fusion_warmup":
             assert loaded_stage_config["initialization_checkpoint_path"].endswith(
                 "stage2_recovery/checkpoints/best.pt"
             )
         if stage_record["phase_name"] == "multitask_pretraining":
             assert loaded_stage_config["initialization_checkpoint_path"].endswith(
-                "stage3_prototype_warmup/checkpoints/best.pt"
+                "stage3_memory_initialization_and_fusion_warmup/checkpoints/best.pt"
             )
+
+
+def test_generated_stage_yaml_is_self_consistent_before_loader_resolution(tmp_path) -> None:
+    experiment_config = load_experiment_config(
+        "configs/experiment/thesis/exp4/smd__thesis_multitask__offline-pretraining-three-stage-machine-3-4-window20-smoke__w20__seed11__smoke.yaml"
+    )
+    experiment_config["output_dir"] = str(tmp_path / "outputs")
+    experiment_config["checkpoint_dir"] = str(tmp_path / "outputs" / "checkpoints")
+
+    manifest = materialize_three_stage_run_manifest(experiment_config)
+    stage3_record = manifest["training_stages"][3]
+    raw_stage3_yaml = Path(stage3_record["config_path"]).read_text(encoding="utf-8")
+
+    assert (
+        "stage3_memory_initialization_and_fusion_warmup_epochs" in raw_stage3_yaml
+    )
+    assert "stage3_prototype_warmup_epochs" not in raw_stage3_yaml
+    assert "training_phase: stage3_memory_initialization_and_fusion_warmup" in raw_stage3_yaml
+    assert "training_phase: multitask_pretraining" not in raw_stage3_yaml
 
 
 def test_three_stage_execution_commands_follow_stage_manifest_order(tmp_path) -> None:
@@ -143,7 +170,7 @@ def test_execute_three_stage_plan_dry_run_writes_report_without_spawning_process
         "stage1_classification",
         "stage1_reconstruction",
         "stage2_recovery",
-        "stage3_prototype_warmup",
+        "stage3_memory_initialization_and_fusion_warmup",
         "multitask_pretraining",
         "evaluation",
     ]
@@ -162,6 +189,18 @@ def test_execute_three_stage_plan_dry_run_writes_report_without_spawning_process
     assert execution_report["server_preflight_summary_path"].endswith(
         "three_stage/server_preflight_summary.json"
     )
+    assert execution_report["optimizer_training_phase_names"] == [
+        "stage1_classification",
+        "stage1_reconstruction",
+        "stage2_recovery",
+        "stage3_memory_initialization_and_fusion_warmup",
+        "multitask_pretraining",
+    ]
+    assert execution_report["optimizer_training_total_epochs"] == 5
+    assert execution_report["statistical_procedure_names"] == [
+        "stage2_mtz_parameter_zipping",
+        "stage3_memory_initialization",
+    ]
     assert (
         tmp_path / "outputs" / "three_stage" / "three_stage_execution_report.json"
     ).exists()

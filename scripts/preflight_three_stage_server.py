@@ -17,6 +17,7 @@ sys.path.append(str(REPOSITORY_ROOT))
 from scripts.run_three_stage_offline_pretraining import (  # noqa: E402
     build_three_stage_training_plan,
     compute_three_stage_total_training_epochs,
+    STATISTICAL_PROCEDURE_NAMES,
 )
 from src.core.config import load_experiment_config  # noqa: E402
 from src.core.console import console_print  # noqa: E402
@@ -258,6 +259,10 @@ def build_server_preflight_summary(
         "python_executable": sys.executable,
         "total_training_epochs": total_training_epochs,
         "phases": [phase_record["phase_name"] for phase_record in training_plan],
+        "optimizer_training_phase_names": [
+            phase_record["phase_name"] for phase_record in training_plan
+        ],
+        "statistical_procedure_names": list(STATISTICAL_PROCEDURE_NAMES),
         "phase_epoch_ranges": training_plan,
         "data_readiness": data_readiness,
         "gpu_validation": gpu_validation,

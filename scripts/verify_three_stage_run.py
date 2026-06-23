@@ -69,6 +69,15 @@ def build_three_stage_run_verification_summary(output_dir: str) -> dict[str, Any
     elif execution_status in {"completed", "completed_legacy"} and not missing_success_artifacts:
         verification_status = "verified_success"
 
+    optimizer_training_phase_names = execution_report.get(
+        "optimizer_training_phase_names",
+        manifest.get("optimizer_training_phase_names", []),
+    )
+    statistical_procedure_names = execution_report.get(
+        "statistical_procedure_names",
+        manifest.get("statistical_procedure_names", []),
+    )
+
     return {
         "output_dir": str(resolved_output_dir),
         "status": verification_status,
@@ -80,6 +89,8 @@ def build_three_stage_run_verification_summary(output_dir: str) -> dict[str, Any
         "has_evaluation_metrics": metrics_path.exists(),
         "evaluation_metrics_path": str(metrics_path),
         "evaluation_checkpoint_path": str(evaluation_checkpoint_path),
+        "optimizer_training_phase_names": optimizer_training_phase_names,
+        "statistical_procedure_names": statistical_procedure_names,
         "completed_stage_names": execution_report.get("completed_stage_names", []),
         "failed_stage_name": execution_report.get("failed_stage_name"),
         "failed_returncode": execution_report.get("failed_returncode"),

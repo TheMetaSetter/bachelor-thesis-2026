@@ -165,3 +165,29 @@ def test_memory_initialization_marks_model_initialized_and_freezes_memory_update
         torch.ones(60),
         atol=1.0e-5,
     )
+
+
+def test_memory_initialization_state_exposes_recovered_training_feature_sources() -> None:
+    model = _build_initialization_model()
+    raw_batch = _build_raw_batch()
+
+    model.synthetic_anomaly_injector.augment_batch = (  # type: ignore[method-assign]
+        lambda batch: _build_synthetic_batch(batch)
+    )
+    model.set_epoch_context(epoch_index=1, total_epochs=2)
+    model.maybe_initialize_memories_from_loader(
+        [raw_batch],
+        device="cpu",
+    )
+
+    lifecycle_state = model.get_memory_lifecycle_state()
+
+    assert (
+        lifecycle_state["continuous_memory_source_label"]
+        == "normal_only_recovered_training_features"
+    )
+    assert (
+        lifecycle_state["discrete_memory_source_label"]
+        == "class_stratified_recovered_training_features"
+    )
+    assert lifecycle_state["discrete_memory_label_source"] == "synthetic_train_labels"

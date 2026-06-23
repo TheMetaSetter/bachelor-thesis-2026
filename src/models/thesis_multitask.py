@@ -33,6 +33,9 @@ from src.data.augment import (
 )
 from src.models.base_model import BaseModel
 
+STAGE3_PHASE_LEGACY_NAME = "stage3_prototype_warmup"
+STAGE3_PHASE_CANONICAL_NAME = "stage3_memory_initialization_and_fusion_warmup"
+
 
 def build_multilayer_perceptron(
     *,
@@ -310,17 +313,23 @@ class ThreeStageRuntimeConfig:
     discrete_memory_label_source: str = "synthetic_train_labels"
 
     def __post_init__(self) -> None:
+        normalized_training_phase = (
+            STAGE3_PHASE_CANONICAL_NAME
+            if self.training_phase == STAGE3_PHASE_LEGACY_NAME
+            else self.training_phase
+        )
+        object.__setattr__(self, "training_phase", normalized_training_phase)
         if self.training_phase not in {
             "stage1_classification",
             "stage1_reconstruction",
             "stage2_recovery",
-            "stage3_prototype_warmup",
+            STAGE3_PHASE_CANONICAL_NAME,
             "multitask_pretraining",
         }:
             raise ValueError(
                 "training_phase must be one of: stage1_classification, "
                 "stage1_reconstruction, stage2_recovery, "
-                "stage3_prototype_warmup, multitask_pretraining"
+                f"{STAGE3_PHASE_CANONICAL_NAME}, multitask_pretraining"
             )
         if self.fusion_mode not in {
             "task_specific_concat_projection",
@@ -748,7 +757,7 @@ class ThesisMultitaskModel(BaseModel):
 
     def _phase_uses_prototype_path(self) -> bool:
         return self.training_phase in {
-            "stage3_prototype_warmup",
+            STAGE3_PHASE_CANONICAL_NAME,
             "multitask_pretraining",
         }
 
@@ -773,7 +782,7 @@ class ThesisMultitaskModel(BaseModel):
 
     def _phase_freezes_encoder(self) -> bool:
         return (
-            self.training_phase == "stage3_prototype_warmup"
+            self.training_phase == STAGE3_PHASE_CANONICAL_NAME
             and self.freeze_recovered_zipped_encoder_during_warmup
         )
 
@@ -842,6 +851,23 @@ class ThesisMultitaskModel(BaseModel):
                 self.classification_concat_projection,
                 requires_grad=False,
             )
+            self._set_module_requires_grad(
+                self.classification_fusion_gate,
+                requires_grad=False,
+            )
+            self._set_module_requires_grad(
+                self.reconstruction_fusion_gate,
+                requires_grad=False,
+            )
+            self._set_module_requires_grad(
+                self.continuous_update_gate,
+                requires_grad=False,
+            )
+            self._set_module_requires_grad(
+                self.discrete_assignment,
+                requires_grad=False,
+            )
+        if self.training_phase == STAGE3_PHASE_CANONICAL_NAME:
             self._set_module_requires_grad(
                 self.classification_fusion_gate,
                 requires_grad=False,
@@ -1228,14 +1254,61 @@ class ThesisMultitaskModel(BaseModel):
             and not self.freeze_memories_after_initialization
         )
 
+    def _semantic_stage_label(self) -> str:
+        if self.training_phase == STAGE3_PHASE_CANONICAL_NAME:
+            return "Stage 3: Memory Initialization and Fusion Warm-Up"
+        return self.training_phase
+
+    def _memory_initialization_substep_active(self) -> bool:
+        return self.training_phase == STAGE3_PHASE_CANONICAL_NAME
+
+    def _fusion_warmup_substep_active(self) -> bool:
+        return self.training_phase == STAGE3_PHASE_CANONICAL_NAME
+
+    def _trainable_module_names(self) -> list[str]:
+        trainable_module_names: list[str] = []
+        trainable_modules = {
+            "classification_concat_projection": self.classification_concat_projection,
+            "classification_fusion_gate": self.classification_fusion_gate,
+            "classification_head": self.classification_head,
+            "continuous_update_gate": self.continuous_update_gate,
+            "discrete_assignment": self.discrete_assignment,
+            "encoder": self.encoder,
+            "reconstruction_concat_projection": self.reconstruction_concat_projection,
+            "reconstruction_fusion_gate": self.reconstruction_fusion_gate,
+            "reconstruction_head": self.reconstruction_head,
+        }
+        for module_name, module in trainable_modules.items():
+            if module is None:
+                continue
+            if any(parameter.requires_grad for parameter in module.parameters()):
+                trainable_module_names.append(module_name)
+        return sorted(trainable_module_names)
+
     def get_memory_lifecycle_state(self) -> dict[str, Any]:
         return {
             "bootstrap_encoder_epochs": self.bootstrap_encoder_epochs,
             "current_epoch": self.current_epoch_index + 1,
+            "semantic_stage_label": self._semantic_stage_label(),
+            "memory_initialization_substep": (
+                self._memory_initialization_substep_active()
+            ),
+            "fusion_warmup_substep": self._fusion_warmup_substep_active(),
+            "recovered_zipped_encoder_frozen_during_warmup": (
+                self._phase_freezes_encoder()
+            ),
+            "trainable_module_names": self._trainable_module_names(),
             "memory_initialized": self.memory_initialized,
             "memory_training_enabled": self.memory_training_enabled,
             "memory_ready_for_initialization": self.memory_ready_for_initialization,
             "memory_initialization_epoch": self.memory_initialization_epoch,
+            "continuous_memory_source_label": (
+                "normal_only_recovered_training_features"
+            ),
+            "discrete_memory_source_label": (
+                "class_stratified_recovered_training_features"
+            ),
+            "discrete_memory_label_source": self.discrete_memory_label_source,
             "memory_mode": float(not self._should_bypass_memory_for_stage("train")),
             "train_memory_mode": float(
                 not self._should_bypass_memory_for_stage("train")
@@ -1317,7 +1390,7 @@ class ThesisMultitaskModel(BaseModel):
         )
         console_print(
             "MODEL",
-            "Initialized prototype memories from normal hidden tokens",
+            "Initialized frozen prototype memories from recovered training features",
             epoch=self.current_epoch_index + 1,
             bootstrap_encoder_epochs=self.bootstrap_encoder_epochs,
             num_batches_used=token_pool["num_batches_used"],
@@ -1325,6 +1398,13 @@ class ThesisMultitaskModel(BaseModel):
             discrete_classes_with_tokens=sorted(
                 token_pool["num_discrete_class_tokens_by_class"].keys()
             ),
+            continuous_memory_source_label=(
+                "normal_only_recovered_training_features"
+            ),
+            discrete_memory_source_label=(
+                "class_stratified_recovered_training_features"
+            ),
+            discrete_memory_label_source=self.discrete_memory_label_source,
         )
         return True
 

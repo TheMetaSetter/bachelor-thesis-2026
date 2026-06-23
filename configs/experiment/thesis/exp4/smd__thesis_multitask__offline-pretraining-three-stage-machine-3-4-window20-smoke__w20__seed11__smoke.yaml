@@ -47,7 +47,7 @@ three_stage:
   stage1_classification_epochs: 1
   stage1_reconstruction_epochs: 1
   stage2_recovery_epochs: 1
-  stage3_prototype_warmup_epochs: 1
+  stage3_memory_initialization_and_fusion_warmup_epochs: 1
   multitask_pretraining_epochs: 1
   discrete_memory_label_source: synthetic_train_labels
   freeze_memories_after_initialization: true

@@ -22,8 +22,13 @@ def test_server_preflight_summary_reads_smoke_config_and_reports_cpu_mode() -> N
         "stage1_classification",
         "stage1_reconstruction",
         "stage2_recovery",
-        "stage3_prototype_warmup",
+        "stage3_memory_initialization_and_fusion_warmup",
         "multitask_pretraining",
+    ]
+    assert summary["optimizer_training_phase_names"] == summary["phases"]
+    assert summary["statistical_procedure_names"] == [
+        "stage2_mtz_parameter_zipping",
+        "stage3_memory_initialization",
     ]
     assert summary["gpu_validation"]["status"] == "skipped_for_cpu_config"
     assert summary["launch_readiness"]["status"] == "not_ready_for_server_launch"
@@ -74,8 +79,13 @@ def test_server_preflight_summary_reads_main_300_epoch_config_without_test_windo
         "stage1_classification",
         "stage1_reconstruction",
         "stage2_recovery",
-        "stage3_prototype_warmup",
+        "stage3_memory_initialization_and_fusion_warmup",
         "multitask_pretraining",
+    ]
+    assert summary["optimizer_training_phase_names"] == summary["phases"]
+    assert summary["statistical_procedure_names"] == [
+        "stage2_mtz_parameter_zipping",
+        "stage3_memory_initialization",
     ]
     assert summary["gpu_validation"]["status"] in {
         "ok",
