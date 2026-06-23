@@ -6,8 +6,8 @@ branch: dev
 repository: bachelor-thesis-2026
 topic: "Continuation context for offline pre-training three-stage discussion"
 tags: [detail, offline-pretraining, multitask, contrastive, prototypes, zipping]
-status: in_progress
-last_updated: 2026-06-21
+status: finalized_for_first_implementation
+last_updated: 2026-06-22
 last_updated_by: Codex
 ---
 
@@ -17,7 +17,7 @@ last_updated_by: Codex
 
 This note records the latest discussion about the newest intended offline pre-training method so the conversation can continue cleanly in later chats without restating the same context.
 
-It is a continuation note, not yet a finalized design contract.
+It now records the final design choices for the first implementation under tight time and GPU-budget constraints.
 
 ## Continuation Update on 2026-06-17
 
@@ -37,9 +37,9 @@ The user then added a third clarification block on the same day covering:
 - the intended sequential layer-wise zipping interpretation for the 1D-CNN encoder,
 - the preference to try full channel sharing first during zipping,
 - the decision to initialize task-specific heads from the corresponding Stage 1 heads after zipping,
-- the ordering `zip encoder -> initialize prototypes -> start multitask training`,
+- the ordering `zip encoder -> initialize frozen memories -> start multitask training`,
 - the exact 300-epoch offline pre-training budget,
-- and the decision to freeze the encoder during Stage 3 prototype warm-up so the prototypical branches and CKA-gated fusion heads can stabilize.
+- and the decision to freeze the encoder during Stage 3 prototype warm-up so the task heads and fusion layers can stabilize against fixed memories.
 
 ## Continuation Update on 2026-06-21
 
@@ -72,6 +72,28 @@ The most important new clarifications are:
   - the first implementation can let injected aligned tokens act as negatives in the denominator,
   - while a separate explicit repulsion term remains an optional later design choice rather than a first-pass requirement.
 
+## Final Lock on 2026-06-22
+
+The user later finalized the first implementation with a strict low-compute priority.
+
+The final first-implementation contract is:
+
+- both memory banks are frozen after initialization,
+- discrete memory uses `class-stratified covering selection`, not KMeans,
+- continuous memory uses fixed normal-only covering selection,
+- both memory banks are initialized from the recovered zipped encoder space:
+  - \(E_{\text{init}} = E_{\text{zip-recovered}}\),
+- discrete querying uses only `cosine_topk`,
+- the main run uses \(k=3\) and \(\tau_q = 0.1\),
+- no `torch.cdist`; use normalized matrix multiplication,
+- fusion is `task_specific_concat_projection`,
+- CKA is diagnostic-only and is not part of the forward path in the first implementation,
+- the main multitask loss is:
+  - \(\mathcal{L}_{rec} + \mathcal{L}_{cls} + 0.1\,\mathcal{L}_{RF\text{-}InfoNCE}\),
+- and all memory initialization and synthetic anomaly generation must be derived from the training split only, with no test-derived statistics, labels, or windows.
+
+Any older mentions in this note of EMA-updated memories, KMeans-based initialization, or CKA-gated forward fusion should therefore be treated as superseded historical discussion rather than active design.
+
 ## Immediate Context
 
 Before this discussion, the active repository design context for the thesis model was still centered on:
@@ -88,6 +110,11 @@ That earlier design and code currently describe an offline phase with:
 - a multitask objective combining reconstruction and classification.
 
 During the present discussion, a newer intended method was described that restructures the offline pre-training phase into three training stages before the final multitask training proceeds.
+
+For the finalized first implementation, that older forward-path fusion should be treated as superseded:
+
+- use `task_specific_concat_projection` in the forward path,
+- keep CKA only as an optional diagnostic if time permits.
 
 ## Newest Intended Method Discussed
 
@@ -134,28 +161,28 @@ The stated motivation is:
 
 ### Stage 3: Prototype Initialization
 
-Initialize discrete prototypes using windows drawn uniformly across classes:
+Initialize discrete prototypes using class-stratified covering selection across classes:
 
 - 1 normal class
 - 11 anomaly classes
 
-Initialize continuous prototypes using only windows from the normal class.
+Initialize continuous prototypes using only normal windows/tokens from the training split via covering selection.
 
 An important nuance mentioned in the discussion:
 
 - the "normal" class here may consist of original windows that are not guaranteed to be truly clean if one does not assume perfect normality
 
-So the continuous prototype bank is intended to be initialized from nominally normal data, but contamination risk is acknowledged explicitly.
+So the continuous prototype bank is intended to be initialized from nominally normal training data, but contamination risk is acknowledged explicitly.
 
 After prototype initialization, the current preferred warm-up behavior is:
 
 - freeze the zipped shared encoder,
-- train or stabilize the continuous prototype branch,
-- train or stabilize the discrete prototype branch,
-- train or stabilize the CKA-gated fusion heads,
+- keep continuous prototypes frozen after initialization,
+- keep the discrete codebook frozen after initialization,
+- train or stabilize only the task heads and task-specific concat-projection fusion layers,
 - keep this warm-up short relative to the full 300-epoch budget.
 
-The reason for freezing the encoder in this warm-up is to avoid moving the latent space while the newly initialized prototype memories and fusion gates are still adapting to it.
+The reason for freezing the encoder in this warm-up is to avoid moving the latent space while the newly initialized fixed memories are being connected to the task heads and fusion layers.
 
 ## Working Interpretation from the Discussion
 
@@ -170,8 +197,8 @@ The working interpretation written during the chat was:
 2. Stage 2 compresses or merges those two specialized encoders into one shared encoder through multi-task zipping.
 
 3. Stage 3 seeds prototype memories after encoder zipping:
-   - discrete prototypes receive class-balanced initialization
-   - continuous prototypes receive normal-only initialization
+   - discrete prototypes receive class-stratified covering initialization
+   - continuous prototypes receive normal-only covering initialization
 
 4. The multitask training that follows uses the zipped encoder as initialization rather than learning the shared encoder fully from scratch.
 
@@ -179,9 +206,9 @@ The working interpretation written during the chat was:
    - train two task-specific Stage 1 models,
    - zip their encoders,
    - optionally run a short post-zipping recovery phase without prototypes,
-   - initialize prototypes,
-   - run a short prototype warm-up with the encoder frozen,
-   - then run the main multitask pre-training with prototype branches.
+   - initialize frozen memories from the zip-recovered encoder space,
+   - run a short prototype/fusion warm-up with the encoder frozen,
+   - then run the main multitask pre-training with frozen memories.
 
 ## Mathematical Sketch Used in the Discussion
 
@@ -257,7 +284,25 @@ and with the intended task-importance bias in later multitask use leaning toward
 \alpha_{cls}=0.1
 \]
 
-However, at the present discussion point, the above `0.9 / 0.1` ratio is conceptually attached to the task-loss balance and is not yet fully translated into a final Stage 1 and Stage 3 implementation contract, especially once optional losses are added.
+For the practical first implementation later chosen by the user, the simpler main multitask objective is:
+
+\[
+\mathcal{L}
+=
+\mathcal{L}_{rec}
++
+\mathcal{L}_{cls}
++
+\lambda_{ctr}\mathcal{L}_{RF\text{-}InfoNCE}
+\]
+
+with:
+
+\[
+\lambda_{ctr}=0.1
+\]
+
+and without adding commitment, diversity, entropy, or codebook-specific regularization losses.
 
 Stage 2 was summarized conceptually as:
 
@@ -273,13 +318,27 @@ Stage 3 was interpreted as initializing:
 P^{(d)} \in \mathbb{R}^{K_d \times d_h}
 \]
 
-from class-balanced windows and:
+from class-stratified covering selection and:
 
 \[
 P^{(c)} \in \mathbb{R}^{K_c \times d_h}
 \]
 
-from normal-only windows.
+from normal-only covering selection.
+
+The now-closed first implementation uses:
+
+\[
+K_d = 60 = 12 \times 5,
+\qquad
+K_c = 16
+\]
+
+and both memory banks are built from the recovered zipped encoder:
+
+\[
+E_{\text{init}} = E_{\text{zip-recovered}}
+\]
 
 ## Latest Consolidated Stage Schedule Under the 300-Epoch Budget
 
@@ -298,8 +357,8 @@ The current recommended allocation discussed in the chat is:
 | Stage 2: MTZ zipping | 0 | parameter transformation, not epoch training | merge the two Stage 1 encoders into one shared encoder initialization |
 | Stage 2 recovery | 20 | train zipped encoder plus reused heads, no prototypes | recover task performance after zipping |
 | Stage 3 prototype initialization | 0 | statistical initialization, not epoch training | seed continuous and discrete prototype memories from latent tokens |
-| Stage 3 prototype warm-up | 20 | freeze encoder; train/stabilize prototype branches and CKA-gated fusion heads | let new prototype branches and fusion heads adapt to fixed latent geometry |
-| Main multitask pre-training with prototypes | 140 | train full multitask model | jointly train encoder, heads, prototypes, fusion, and optional losses |
+| Stage 3 prototype warm-up | 20 | freeze encoder and frozen memories; train/stabilize task heads and task-specific concat-projection fusion layers | let heads and fusion adapt to fixed latent geometry and fixed memories |
+| Main multitask pre-training with prototypes | 140 | train encoder, heads, and fusion with frozen memories | optimize the final multitask model with minimal moving parts |
 | **Total** | **300** |  |  |
 
 This allocation treats Stage 1 classification and Stage 1 reconstruction as separate training runs and therefore counts both against the 300-epoch budget.
@@ -311,8 +370,8 @@ The rationale is:
 - Stage 2 zipping itself is not epoch training.
 - Stage 2 recovery is needed because zipping may perturb both task-specific functions.
 - Stage 3 prototype initialization is a deterministic/statistical step, not a training phase.
-- Stage 3 prototype warm-up should freeze the encoder so the prototype branches and CKA-gated fusion heads adapt to a stable latent space.
-- The main multitask pre-training receives the largest share because it is the phase where the final encoder, heads, prototype memories, fusion gates, and optional losses become consistent with each other.
+- Stage 3 prototype warm-up should freeze the encoder so the task heads and concat-projection fusion layers adapt to a stable latent space against fixed memories.
+- The main multitask pre-training receives the largest share because it is the phase where the final encoder, heads, fixed memories, fusion, and core losses become consistent with each other.
 
 The preferred logging contract is:
 
@@ -321,7 +380,7 @@ The preferred logging contract is:
 - `phase_epoch`: local epoch index inside the active phase,
 - `encoder_frozen`: especially important during `stage3_prototype_warmup`,
 - `prototypes_initialized`: whether continuous and discrete prototype memories have been seeded,
-- `memory_mode`: whether prototype branches are bypassed, initialized-only, warm-up, or fully trainable.
+- `memory_mode`: whether prototype branches are bypassed or active with frozen memories.
 
 Scheduler note:
 
@@ -476,7 +535,7 @@ This is a major conceptual constraint because it means the contrastive objective
 - overlap-aware batch bookkeeping,
 - and multiple positives per anchor rather than exactly one positive.
 
-At implementation time, a standard one-positive InfoNCE loss is therefore insufficient unless it is extended to a supervised-contrastive or multi-positive InfoNCE form.
+At implementation time, a standard one-positive InfoNCE loss is therefore insufficient unless it is extended to `RF-InfoNCE`.
 
 ### Can One Source Timestep Appear in Only One Window in a Batch?
 
@@ -576,7 +635,7 @@ The later 2026-06-21 design note narrows the first implementation further:
 
 So the current best first-pass interpretation is:
 
-1. normal anchors use a multi-positive InfoNCE-style objective,
+1. normal anchors use an `RF-InfoNCE` objective,
 2. injected aligned tokens are available as negatives,
 3. explicit repulsion for injected aligned pairs remains optional rather than mandatory.
 
@@ -731,13 +790,13 @@ If Jacobian-based ERF diagnostics are ever used, they should be treated as:
 
 The current safest naming is now:
 
-- `RF-mask weighted multi-positive InfoNCE`, or
-- `receptive-field-mask weighted multi-positive contrastive loss`.
+- full name on first definition: `Receptive-field-weighted InfoNCE`,
+- short name for code, tables, figures, and repeated discussion: `RF-InfoNCE`.
 
-If the Gaussian prior version is used instead, the naming should stay careful, for example:
+If the Gaussian prior version is used, keep the weighting description separate from the loss name:
 
-- `architecture-derived RF-mask weighted multi-positive contrastive loss`, or
-- `fixed Gaussian RF-prior weighting`.
+- fixed architecture-derived Gaussian RF prior,
+- fixed Gaussian RF-prior weighting.
 
 The note explicitly advises against calling the method:
 
@@ -999,10 +1058,13 @@ The current interpretation is:
 - **Covering-based initialization** selects tokens that spread across the latent space, for example farthest-first selection. It keeps diversity without running a full clustering algorithm.
 - **Clustering-based initialization** runs an algorithm such as KMeans and uses cluster centers. It is stronger but adds implementation cost, runtime cost, and another source of randomness.
 
-For the first version of the new method, the current recommendation is:
+For the now-closed practical first version of the new method, the initialization contract is:
 
-- discrete prototypes: class-balanced plus covering-based selection inside each class,
-- continuous prototypes: normal-only plus covering-based selection.
+- discrete prototypes: class-stratified covering selection with \(K_d = 60 = 12 \times 5\),
+- continuous prototypes: normal-only covering selection with \(K_c = 16\),
+- no KMeans in the first implementation,
+- memory vectors are seeded in the latent space produced by the recovered zipped encoder \(E_{\text{zip-recovered}}\),
+- both discrete and continuous memory vectors remain frozen after initialization.
 
 This aligns with the current codebase's existing `_select_covering_vectors` style while extending it to respect class balance for the discrete codebook.
 
@@ -1010,12 +1072,14 @@ This aligns with the current codebase's existing `_select_covering_vectors` styl
 
 The later discussion added a more concrete preference for how the discrete branch should query the codebook.
 
-The current best interpretation of that preference is:
+The now-closed first implementation is:
 
-- for each latent token \(z_{b,t}\), query the discrete codebook by nearest-neighbor distance in latent space,
-- do not treat the codebook query primarily as a learned logits head over code indices,
-- allow sparse multi-codeword aggregation with top-\(k\) nearest codewords, with \(k=2\) and \(k=3\) as the first planned experiments,
-- keep \(k=1\) as the hard nearest-codeword baseline.
+- query name: `cosine_topk`,
+- for each latent token \(z_{b,t}\), query the discrete codebook by cosine similarity in normalized latent space,
+- do not treat the codebook query as a learned logits head over code indices,
+- use sparse multi-codeword aggregation with top-\(k\),
+- in the main run use \(k=3\) and \(\tau_q=0.1\),
+- do not spend GPU on \(k=1\) in the main run; keep \(k=1\) only as a later ablation if needed.
 
 This means the discrete branch is currently being conceptualized as a **metric-based retrieval module** over a codebook of real-valued vectors, not merely as a categorical assignment head.
 
@@ -1041,22 +1105,24 @@ e_i \in \mathbb{R}^{d_h}
 
 is a real-valued latent prototype vector.
 
-For one token \(z_{b,t}\), compute its squared Euclidean distance to every codeword:
+For one token \(z_{b,t}\), normalize token and codewords:
 
 \[
-d_{b,t,i} = \|z_{b,t} - e_i\|_2^2
+\bar z_{b,t} = \frac{z_{b,t}}{\|z_{b,t}\|_2+\epsilon},
+\qquad
+\bar e_i = \frac{e_i}{\|e_i\|_2+\epsilon}
 \]
 
-This yields a distance tensor:
+then compute cosine scores:
 
 \[
-D \in \mathbb{R}^{B \times L \times K_d}
+s_{b,t,i} = \bar z_{b,t}^{\top}\bar e_i
 \]
 
 The selected codeword-index set is:
 
 \[
-S_k(z_{b,t}) = \operatorname{TopK}_{i}(-d_{b,t,i})
+S_k(z_{b,t}) = \operatorname{TopK}_{i}(s_{b,t,i})
 \]
 
 where \(S_k(z_{b,t})\) contains the indices of the \(k\) nearest codewords.
@@ -1066,8 +1132,8 @@ Soft weights are then computed only over the selected set:
 \[
 \alpha_{b,t,i}
 =
-\frac{\exp(-d_{b,t,i}/\tau)}
-{\sum_{j \in S_k(z_{b,t})}\exp(-d_{b,t,j}/\tau)}
+\frac{\exp(s_{b,t,i}/\tau_q)}
+{\sum_{j \in S_k(z_{b,t})}\exp(s_{b,t,j}/\tau_q)}
 \qquad \text{for } i \in S_k(z_{b,t})
 \]
 
@@ -1085,15 +1151,23 @@ At sequence level:
 Z^q \in \mathbb{R}^{B \times L \times d_h}
 \]
 
-The current preferred residualized branch output is:
+The closed residualized branch output is:
 
 \[
 H^{(d)}
 =
-\operatorname{LayerNorm}(Z + \lambda Z^q)
+\operatorname{LayerNorm}(Z + Z^q)
 \]
 
-where \(\lambda\) controls how strongly the queried codebook representation perturbs the raw latent token.
+The continuous branch follows the same fixed residual rule:
+
+\[
+H^{(c)}
+=
+\operatorname{LayerNorm}(Z + Z^c)
+\]
+
+No separate \(\lambda_c\) or \(\lambda_d\) is introduced in the first implementation.
 
 This is the currently preferred conceptual query. It is not the same as the current repository implementation.
 
@@ -1250,20 +1324,20 @@ That is simple, but the routing decision is maximally discontinuous.
 
 For \(k=2\) and \(k=3\), the routing remains sparse while still allowing a differentiable soft combination among the selected codewords. The current discussion favors these settings as the more stable first experiments for the discrete branch.
 
-### Programming-Level Consequences That Still Need Explicit Closure
+### Programming-Level Consequences Now Closed for the First Implementation
 
-The semantic idea is now much clearer than before, but several implementation details remain open and should be closed explicitly before code changes:
+The user later closed the low-compute implementation details as follows:
 
-- **Distance metric**: whether to use squared Euclidean distance exactly as currently preferred, cosine distance, or squared Euclidean on normalized vectors. This matters because the current code normalizes hidden states and codebook vectors before lookup.
-- **Codebook update policy**: whether the discrete codebook \(E\) should be updated by ordinary backprop as trainable parameters, by EMA-style memory updates, or by a hybrid rule. The current repository uses EMA-style update buffers for the discrete codebook, which is not the same as pure gradient-trained nearest-neighbor codewords.
-- **Status of `discrete_assignment`**: whether the current linear head should be removed entirely, kept only for ablation, or reused as an auxiliary scorer or regularizer. Under the new nearest-neighbor interpretation it is no longer the primary query path.
-- **Exact tensor implementation**: whether distances are computed with `torch.cdist`, manual broadcasting, or a normalized inner-product equivalent. This affects memory cost because the full distance tensor has shape \([B, L, K_d]\).
-- **Top-\(k\) gradient handling**: whether the implementation relies on standard gather-based autograd only, or introduces a straight-through estimator for the hard \(k=1\) case.
-- **Residual design**: whether the discrete branch should use \(H^{(d)} = \operatorname{LayerNorm}(Z + \lambda Z^q)\) exactly, another normalization rule, or no residual mixing during some warm-up phases.
-- **Initialization-to-query consistency**: whether Stage 3 discrete prototype initialization seeds codewords in the same geometry and normalization regime later used by top-\(k\) querying.
-- **Class-to-codeword allocation**: if discrete initialization is class-balanced but \(K_d\) is not divisible by 12, the slot-allocation rule needs to be stated exactly.
-- **Collapse prevention**: sparse top-\(k\) routing can still collapse onto a few codewords, so it must be decided whether to retain a usage regularizer, entropy regularizer, or codebook-balancing loss.
-- **Diagnostics**: logs should include at least top-1 code index histogram, top-\(k\) usage frequency, selected-weight entropy, number of inactive codewords, and gradient norms for encoder and codebook.
+- **Distance/query metric**: use cosine top-\(k\) query in normalized space, not Euclidean distance.
+- **Codebook update policy**: both memory banks are frozen after initialization; no EMA, no gradient updates, and no dead-codeword reset in the first implementation.
+- **Status of `discrete_assignment`**: it is no longer part of the main method semantics. If retained in code at all, it should be documented only as a legacy implementation path or ablation helper, not as the primary discrete-query operator.
+- **Exact tensor implementation**: do not use `torch.cdist`; use normalized matrix multiplication such as `scores = z_norm @ codebook_norm.T`.
+- **Top-\(k\) gradient handling**: for the main run, use the \(k=3\) sparse soft aggregation path; no straight-through estimator is added.
+- **Residual design**: use \(H^{(d)} = \operatorname{LayerNorm}(Z + Z^q)\) exactly, and analogously \(H^{(c)} = \operatorname{LayerNorm}(Z + Z^c)\).
+- **Initialization-to-query consistency**: memory vectors are initialized from \(E_{\text{zip-recovered}}\) and queried in the same normalized latent geometry.
+- **Class-to-codeword allocation**: fixed exactly as \(K_d = 60 = 12 \times 5\), so each class receives 5 discrete codewords.
+- **Collapse prevention**: do not add commitment, diversity, entropy, or codebook-balancing losses in the first implementation.
+- **Diagnostics**: log only `rec_loss`, `cls_loss`, `rf_infonce_loss`, `top1_codeword_histogram`, and `top1_top2_margin`.
 
 ### Immediate Difference from the Current Repository Implementation
 
@@ -1316,7 +1390,7 @@ The later 2026-06-21 note makes the Stage 3 warm-up recommendation stronger than
 
 - not merely "very low weight by default",
 - but preferably **off** in the first implementation,
-- so prototype branches and CKA-gated fusion heads adapt to a fixed latent geometry without extra contrastive complexity.
+- so task heads and concat-projection fusion layers adapt to a fixed latent geometry without extra contrastive complexity.
 
 ## Updated Ambiguities and Current Resolution Status
 
@@ -1331,7 +1405,7 @@ Stage 1 uses two separate training runs:
 - one classification-specific encoder and classification head,
 - one reconstruction-specific encoder and reconstruction head.
 
-Stage 1 does not use continuous prototypes, discrete prototypes, or CKA-gated fusion.
+Stage 1 does not use continuous prototypes, discrete prototypes, or the later task-specific concat-projection fusion path.
 
 ### 2. Classification Label Semantics
 
@@ -1352,7 +1426,7 @@ This matches the current RedLamp-style multiclass taxonomy in the repository.
 
 ### 3. Stage 1 Reconstruction Target
 
-Status: **mostly closed**.
+Status: **closed for the first implementation**.
 
 Both raw view and synthetic anomalous view are passed through the reconstruction encoder and reconstruction head:
 
@@ -1372,12 +1446,37 @@ Injected anomalous positions do not contribute to the MSE loss.
 
 Residual implementation choice:
 
-- whether the clean-view reconstruction term and anomalous-view denoising term have equal weights,
-- or whether they receive separate coefficients.
+- use one shared coefficient for both terms to minimize hyperparameters:
+
+\[
+\mathcal{L}_{rec} = \lambda_{rec}\left(\mathcal{L}_{clean} + \mathcal{L}_{anom}\right)
+\]
+
+where:
+
+\[
+\mathcal{L}_{clean}
+=
+\frac{1}{|\Omega_{clean}|}
+\sum_{(b,t)\in\Omega_{clean}}
+\left\| \hat{x}_{b,t} - x_{b,t} \right\|^2
+\]
+
+and:
+
+\[
+\mathcal{L}_{anom}
+=
+\frac{1}{|\Omega_{clean}|}
+\sum_{(b,t)\in\Omega_{clean}}
+\left\| \hat{x}'_{b,t} - x_{b,t} \right\|^2
+\]
+
+Both terms share the same weight because the goal is to keep the reconstruction objective simple while preserving the clean-versus-denoising intuition.
 
 ### 4. Positive Construction for Normal Anchors
 
-Status: **closed at the semantic level, open at the implementation level**.
+Status: **closed for the first implementation**.
 
 For each eligible normal anchor, the intended positive set includes both:
 
@@ -1389,8 +1488,8 @@ This means the contrastive loss must support multiple positives per anchor.
 Implementation requirement:
 
 - standard one-positive InfoNCE is not enough unless extended,
-- a supervised-contrastive or multi-positive InfoNCE form is the more natural match,
-- and the first implementation should treat this as an **InfoNCE-like metadata-defined multi-positive objective**, not as standard class-label SupCon.
+- `RF-InfoNCE` is the more natural match,
+- and the first implementation should treat this as an **RF-InfoNCE objective defined by metadata and masks**, not as standard class-label SupCon.
 
 The later 2026-06-21 note adds another now-closed semantic point:
 
@@ -1398,32 +1497,52 @@ The later 2026-06-21 note adds another now-closed semantic point:
 - so a positive can remain valid even if its receptive field is partially contaminated,
 - but it should pull less strongly than a cleaner positive.
 
-What remains open here is not whether weighting exists, but which first implementation is used:
+The first implementation uses fixed architecture-derived Gaussian-RF weighting \(\rho^{arch}\).
 
-- uniform theoretical-RF weighting \(\rho^{RF}\),
-- or fixed architecture-derived Gaussian-RF weighting \(\rho^{arch}\).
+For the first implementation, the positive set and denominator are defined so that:
+
+\[
+P(i)=P_{\text{aligned}}(i)\cup P_{\text{overlap}}(i)
+\]
+
+\[
+\mathcal{D}(i)
+=
+\left\{
+a\in \mathcal{B}_{tokens}
+\setminus P(i)
+\;\middle|\;
+\operatorname{abs\_timestep}(a)\in
+\left\{
+\operatorname{abs\_timestep}(p)\mid p\in P(i)
+\right\}
+\right\}
+\]
+
+\[
+A(i)
+=
+\mathcal{B}_{tokens}\setminus\big(P(i)\cup \mathcal{D}(i)\big)
+\]
+
+Here \(\mathcal{D}(i)\) is the set of same-absolute-source-timestep duplicates that are not selected as positives for anchor \(i\). Those duplicates are excluded from the denominator to avoid false negatives.
 
 ### 5. Negative Pool for Normal Anchors
 
-Status: **mostly closed**.
+Status: **closed for the first implementation**.
 
-The negative pool should come from both:
+The remaining denominator candidates should come from both:
 
 - raw/clean-view timestep tokens,
 - synthetic anomalous-view timestep tokens.
 
-The negative pool is within-batch.
+The denominator is within-batch, and it excludes:
 
-The later 2026-06-21 note also narrows one practical first-pass decision:
+- the anchor itself,
+- all positives in \(P(i)\),
+- and all same-source-timestep duplicates in \(\mathcal{D}(i)\).
 
-- injected aligned tokens can safely act as negatives in the denominator,
-- even if a separate explicit repulsion term is not added yet.
-
-Residual implementation choices:
-
-- exclude all positives from the denominator,
-- decide whether same-source-timestep duplicates that are not selected as positives should also be excluded to avoid false negatives,
-- decide whether same-class anomaly tokens should be excluded when the contrastive loss is class-aware.
+Injected aligned tokens can safely act as negatives in the denominator, even though no separate explicit repulsion term is used in the first implementation.
 
 ### 6. Role of Injected Positions in Contrastive Learning
 
@@ -1488,7 +1607,7 @@ The first implementation uses an MTZ-inspired activation-based channel matching 
 
 ### 10. Zipping Scope and Sharing Ratio
 
-Status: **mostly closed**.
+Status: **closed for the first implementation**.
 
 Scope:
 
@@ -1497,7 +1616,7 @@ Scope:
 
 Preferred first experiment:
 
-- full channel sharing for corresponding 1D-CNN layers.
+- full channel sharing for corresponding 1D-CNN layers after explicit channel matching.
 
 Critical requirement:
 
@@ -1517,19 +1636,22 @@ This assumes the zipped encoder preserves the same hidden dimension as the Stage
 
 ### 12. Source of Prototype Initialization Samples
 
-Status: **mostly closed**.
+Status: **closed for the first implementation**.
 
 Prototype initialization uses the training part of the selected series/entity.
 
 Discrete prototype initialization:
 
-- class-balanced across 12 classes,
-- equal number of windows or tokens per class,
-- recommended first method: covering-based selection within each class.
+- class-stratified covering selection across 12 classes,
+- fixed exactly as \(K_d = 60 = 12 \times 5\),
+- therefore 5 codewords per class,
+- use the recovered zipped encoder space \(E_{\text{zip-recovered}}\) for seeding.
 
 Continuous prototype initialization:
 
 - uses only normal windows/tokens from the training part,
+- fixed exactly as \(K_c = 16\),
+- seeded from the same recovered zipped encoder space \(E_{\text{zip-recovered}}\),
 - the exact normal-token definition is given below.
 
 ### 13. Definition of "Normal" for Continuous Prototypes
@@ -1633,9 +1755,9 @@ The intended order is:
 2. train Stage 1 reconstruction model,
 3. zip the two encoders,
 4. run short Stage 2 recovery without prototypes,
-5. initialize prototypes,
+5. initialize frozen memories,
 6. run Stage 3 prototype warm-up with encoder frozen,
-7. run main multitask pre-training with prototypes.
+7. run main multitask pre-training with frozen memories.
 
 ### 18. Stage 3 Prototype Warm-Up Freezing
 
@@ -1644,12 +1766,12 @@ Status: **closed**.
 During Stage 3 prototype warm-up:
 
 - freeze the zipped shared encoder,
-- train/stabilize continuous prototype branch,
-- train/stabilize discrete prototype branch,
-- train/stabilize CKA-gated fusion heads,
+- keep continuous prototypes frozen,
+- keep the discrete codebook frozen,
+- train/stabilize task heads and task-specific concat-projection fusion layers,
 - keep the phase short relative to the full 300-epoch budget.
 
-The purpose is to let the two prototypical branches and CKA-gated fusion heads adapt to the latent geometry without the encoder moving underneath them.
+The purpose is to let the task heads and concat-projection fusion layers adapt to the latent geometry without the encoder moving underneath them, while both memory banks remain fixed.
 
 The later 2026-06-21 note adds a stronger first-pass contrastive rule for this stage:
 
@@ -1676,46 +1798,76 @@ where:
 
 Stage 2 zipping and Stage 3 prototype initialization themselves use 0 epochs because they are parameter/statistical procedures rather than optimizer training loops.
 
+The final practical pipeline is therefore:
+
+```text
+zip -> short recovery -> initialize frozen memories -> warm-up fusion/head with frozen encoder + frozen memories -> main multitask with frozen memories
+```
+
 ### 20. Exact Discrete Codebook Query Operator
 
-Status: **mostly closed at the semantic level, still open at the implementation level**.
+Status: **closed for the first implementation**.
 
-The current intended discrete query is:
+The first implementation uses a cosine top-\(k\) query:
 
-- compute token-to-codeword distances directly in latent space,
-- choose top-\(k\) nearest codewords,
-- compute a soft weighting only within the selected set,
-- aggregate those selected codewords into one queried discrete vector,
-- inject it back into the token stream through a residualized branch output.
+- L2-normalize the latent token and codewords,
+- compute cosine similarity,
+- select \(k=3\) in the main run,
+- keep \(k=1\) only as a possible later ablation,
+- use \(\tau_q = 0.1\).
 
-This is now semantically clearer than the older "learned logits over codebook slots" interpretation.
+The supported query path is:
 
-Residual implementation choices still open:
+\[
+\bar z_{b,t} = \operatorname{Normalize}(z_{b,t}),\qquad
+\bar e_i = \operatorname{Normalize}(e_i)
+\]
 
-- exact distance metric,
-- normalized versus unnormalized lookup,
-- exact residual and normalization rule,
-- and whether \(k=1\) should use hard routing only or a soft one-element weighting.
+\[
+s_{b,t,i} = \bar z_{b,t}^{\top}\bar e_i
+\]
+
+\[
+S_k(z_{b,t}) = \operatorname{TopK}_i(s_{b,t,i})
+\]
+
+\[
+\alpha_{b,t,i}
+=
+\operatorname{Softmax}_{i\in S_k(z_{b,t})}
+\left(
+\frac{s_{b,t,i}}{\tau_q}
+\right)
+\]
+
+\[
+z^q_{b,t}
+=
+\sum_{i\in S_k(z_{b,t})}
+\alpha_{b,t,i}e_i
+\]
+
+For the first implementation:
+
+- use \(k=3\) with sparse soft aggregation in the main run,
+- keep \(\tau_q = 0.1\),
+- do not add a straight-through estimator,
+- and do not spend GPU on a separate \(k=1\) run unless it is later needed as an ablation.
 
 ### 21. Backpropagation Through the Discrete Query
 
-Status: **closed at the conceptual level, open at the autograd-policy level**.
+Status: **closed for the first implementation**.
 
-The current intended backprop semantics are:
+The first implementation uses:
 
-- do not differentiate through changes of the top-\(k\) index set itself,
-- do differentiate through distances, softmax weights on the selected set, codeword aggregation, residual addition, and normalization,
-- only selected codewords receive direct gradient from a given token in a given forward pass.
-
-Residual implementation choices still open:
-
-- whether \(k=1\) should use standard gather-based autograd only,
-- whether a straight-through estimator is needed for hard routing experiments,
-- and how this interacts with any EMA-based memory update policy.
+- gradient flow through the selected-set softmax weights for \(k=3\),
+- direct gradient only for the selected codewords in the forward pass,
+- no straight-through estimator,
+- and no gradient-based memory updates because both memory banks are frozen after initialization.
 
 ### 22. Relationship Between the New Query Idea and the Current Code
 
-Status: **closed as a discrepancy note, open as a migration plan**.
+Status: **closed as a replacement plan**.
 
 The current repository implementation is still:
 
@@ -1726,12 +1878,28 @@ The current repository implementation is still:
 
 The newer preferred idea is:
 
-- nearest-neighbor distance to codewords,
-- sparse top-\(k\) selection,
-- soft aggregation only over the selected neighbors,
-- and a backprop path that follows the selected codewords only.
+- cosine top-\(k\) query,
+- sparse top-\(k\) selection with \(k=3\) in the main run,
+- sparse soft aggregation for \(k=3\),
+- a frozen discrete codebook after initialization,
+- and frozen continuous prototypes after initialization.
 
-So this note should not be read as saying the codebase already implements the new nearest-neighbor top-\(k\) branch. It records the newer intended direction only.
+The discrete-query branch in the main method should be replaced by this newer top-\(k\) design.
+
+The assignment-logit-based query path is removed from the main method semantics. If still present in code during migration, it should be labeled explicitly as legacy behavior.
+
+The short name for this branch is:
+
+```text
+cosine_topk
+```
+
+Gumbel-Softmax is not part of the main query path; it is only a possible future tool for uncertainty estimation if needed.
+
+If uncertainty diagnostics are needed, the first choice should be deterministic:
+
+- top-1 / top-2 cosine margin,
+- small margin means the token is uncertain between the two nearest codewords.
 
 ## Relationship to Current Codebase
 
@@ -1746,7 +1914,7 @@ In particular, the current code already contains:
 - multitask forward computation,
 - continuous prototype lookup,
 - discrete prototype lookup,
-- CKA-gated fusion,
+- CKA-gated fusion from the older design,
 - two-view contrastive loss,
 - reconstruction loss,
 - classification loss,
@@ -1754,18 +1922,19 @@ In particular, the current code already contains:
 
 but it does not yet encode the newly stated three-stage training process as a formal implementation contract.
 
-It also does not yet encode the newly preferred discrete-branch query semantics recorded above. The current implementation remains assignment-logit-driven rather than distance-top-\(k\)-driven.
+It also does not yet encode the newly preferred discrete-branch query semantics recorded above. The current implementation must be replaced from assignment-logit-driven behavior to cosine-top-\(k\)-driven behavior.
+
+It also does not yet encode the now-closed fusion simplification:
+
+- replace the CKA-gated forward fusion path with `task_specific_concat_projection`,
+- keep CKA only as an optional diagnostic if time permits.
 
 ## Recommended Next Continuation Point
 
 When resuming this topic in a later chat, the next useful step is:
 
-1. choose the discrete query metric and normalization regime,
-2. choose whether the discrete codebook update rule is gradient-based, EMA-based, or hybrid,
-3. decide whether `discrete_assignment` is removed, retained for ablation, or reused only as an auxiliary scorer,
-4. define the hard-routing policy for \(k=1\): pure gather autograd or straight-through estimator,
-5. decide which parts replace the older `offline_pretraining_phase_two_view_contrastive_design.md` contract and which parts extend it,
-6. only then map the design into config surfaces and code changes.
+1. decide which parts replace the older `offline_pretraining_phase_two_view_contrastive_design.md` contract and which parts extend it,
+2. only then map the design into config surfaces and code changes.
 
 ## Primary References Mentioned in the Discussion
 

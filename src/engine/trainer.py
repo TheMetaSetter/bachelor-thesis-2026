@@ -575,6 +575,7 @@ class Trainer:
             best_checkpoint_monitor_mode
         )
         best_checkpoint_path = None
+        final_checkpoint_path = None
         best_checkpoint_memory_initialized = False
         task_config = config.get("task", {})
         use_val_realistic = bool(task_config.get("val_realistic", True))
@@ -915,7 +916,44 @@ class Trainer:
                 ),
             )
 
+        final_checkpoint_extra_state = (
+            self.model.get_checkpoint_extra_state()
+            if hasattr(self.model, "get_checkpoint_extra_state")
+            else None
+        )
+        final_checkpoint_path = self.checkpoint_manager.save_checkpoint(
+            checkpoint_name="final.pt",
+            model=self.model,
+            optimizer=self.optimizer,
+            scheduler=self.scheduler,
+            scaler_state=scaler_state,
+            config=config,
+            epoch=epochs,
+            metric_history=self.metric_history,
+            extra_state=final_checkpoint_extra_state,
+        )
+        if best_checkpoint_path is None:
+            console_print(
+                "CHECKPOINT",
+                "Best checkpoint monitor never improved; falling back to final state",
+                checkpoint_monitor_metric=best_checkpoint_monitor_metric,
+                checkpoint_monitor_mode=best_checkpoint_monitor_mode,
+                final_checkpoint_path=final_checkpoint_path,
+            )
+            best_checkpoint_path = self.checkpoint_manager.save_checkpoint(
+                checkpoint_name="best.pt",
+                model=self.model,
+                optimizer=self.optimizer,
+                scheduler=self.scheduler,
+                scaler_state=scaler_state,
+                config=config,
+                epoch=epochs,
+                metric_history=self.metric_history,
+                extra_state=final_checkpoint_extra_state,
+            )
+
         return {
             "best_checkpoint_path": best_checkpoint_path,
+            "final_checkpoint_path": final_checkpoint_path,
             "metric_history": self.metric_history,
         }

@@ -45,6 +45,22 @@ def slice_sequence_into_windows(
                 "start_index": start_index,
                 "end_index": end_index,
                 "window_size": window_size,
+                "series_id": raw_sequence["meta"].get(
+                    "series_id",
+                    (
+                        f"{raw_sequence['meta']['dataset_name']}:"
+                        f"{raw_sequence['meta']['split']}:"
+                        f"{raw_sequence['meta']['entity_id']}"
+                    ),
+                ),
+                "absolute_start_index": start_index,
+                "absolute_end_index": end_index,
+                "source_sequence_length": int(
+                    raw_sequence["meta"].get(
+                        "source_sequence_length",
+                        raw_sequence["meta"]["sequence_length"],
+                    )
+                ),
             },
         }
         validate_window(window)

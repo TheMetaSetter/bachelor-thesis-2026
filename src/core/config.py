@@ -91,6 +91,70 @@ def _resolve_thesis_model_window_size(experiment_config: dict[str, Any]) -> None
         raise ValueError("model.window_size must match data.window_size")
 
 
+def _validate_three_stage_config(three_stage_config: dict[str, Any]) -> None:
+    allowed_three_stage_keys = {
+        "expected_total_training_epochs",
+        "stage1_classification_epochs",
+        "stage1_reconstruction_epochs",
+        "stage2_recovery_epochs",
+        "stage3_prototype_warmup_epochs",
+        "multitask_pretraining_epochs",
+        "discrete_memory_label_source",
+        "freeze_memories_after_initialization",
+        "freeze_recovered_zipped_encoder_during_warmup",
+    }
+    unknown_three_stage_keys = sorted(
+        set(three_stage_config) - allowed_three_stage_keys
+    )
+    if unknown_three_stage_keys:
+        raise ValueError(
+            "Unknown three_stage config keys: "
+            f"{unknown_three_stage_keys}. Remove these keys from three_stage config."
+        )
+
+    integer_fields = [
+        "expected_total_training_epochs",
+        "stage1_classification_epochs",
+        "stage1_reconstruction_epochs",
+        "stage2_recovery_epochs",
+        "stage3_prototype_warmup_epochs",
+        "multitask_pretraining_epochs",
+    ]
+    for field_name in integer_fields:
+        field_value = three_stage_config.get(field_name)
+        if not isinstance(field_value, int) or field_value < 0:
+            raise ValueError(f"three_stage.{field_name} must be a non-negative integer")
+
+    for field_name in [
+        "freeze_memories_after_initialization",
+        "freeze_recovered_zipped_encoder_during_warmup",
+    ]:
+        field_value = three_stage_config.get(field_name)
+        if not isinstance(field_value, bool):
+            raise ValueError(f"three_stage.{field_name} must be a boolean")
+
+    discrete_memory_label_source = three_stage_config.get("discrete_memory_label_source")
+    if discrete_memory_label_source != "synthetic_train_labels":
+        raise ValueError(
+            "three_stage.discrete_memory_label_source must be 'synthetic_train_labels'"
+        )
+
+    computed_total_training_epochs = (
+        three_stage_config["stage1_classification_epochs"]
+        + three_stage_config["stage1_reconstruction_epochs"]
+        + three_stage_config["stage2_recovery_epochs"]
+        + three_stage_config["stage3_prototype_warmup_epochs"]
+        + three_stage_config["multitask_pretraining_epochs"]
+    )
+    if computed_total_training_epochs != three_stage_config["expected_total_training_epochs"]:
+        raise ValueError(
+            "three_stage training epochs must sum to expected_total_training_epochs. "
+            f"Got total={computed_total_training_epochs}, "
+            "expected_total_training_epochs="
+            f"{three_stage_config['expected_total_training_epochs']}."
+        )
+
+
 def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     # Validation is intentionally centralized here so the rest of the runtime
     # can assume a decision-complete experiment config.
@@ -122,6 +186,11 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "evaluation",
         "logging",
         "checkpoint_monitor_metric",
+        "three_stage",
+        "three_stage_phase",
+        "three_stage_global_epoch_start",
+        "three_stage_global_epoch_end",
+        "initialization_checkpoint_path",
     }
     unknown_top_level_keys = sorted(set(experiment_config) - allowed_top_level_keys)
     if unknown_top_level_keys:
@@ -140,6 +209,21 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     model_config = experiment_config["model"]
     task_config = experiment_config["task"]
     optimizer_config = experiment_config["optimizer"]
+    three_stage_config = experiment_config.get("three_stage")
+    if three_stage_config is not None:
+        if not isinstance(three_stage_config, dict):
+            raise ValueError("three_stage must be a mapping when provided")
+        _validate_three_stage_config(three_stage_config)
+    initialization_checkpoint_path = experiment_config.get(
+        "initialization_checkpoint_path"
+    )
+    if initialization_checkpoint_path is not None and (
+        not isinstance(initialization_checkpoint_path, str)
+        or not initialization_checkpoint_path
+    ):
+        raise ValueError(
+            "initialization_checkpoint_path must be a non-empty string when provided"
+        )
 
     allowed_data_keys = {
         "dataset_name",
@@ -279,6 +363,14 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "memory_norm_epsilon",
             "memory_initialization_batches",
             "memory_initialization_with_synthetic_windows",
+            "training_phase",
+            "fusion_mode",
+            "discrete_query_mode",
+            "discrete_topk",
+            "discrete_query_temperature",
+            "freeze_memories_after_initialization",
+            "freeze_recovered_zipped_encoder_during_warmup",
+            "discrete_memory_label_source",
             "enable_gradient_conflict_profiling",
             "gradient_profiling_scope",
             "gradient_focus_layer_name",

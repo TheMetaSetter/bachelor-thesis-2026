@@ -310,11 +310,12 @@ For each train step in Experiment 2:
 6. Compute task losses and total objective.
 7. Backpropagation and optimizer update.
 
-Memory update policy is token-level and train-only:
+Memory update policy is now asymmetric by design:
 
-- Continuous memory update uses only tokens with $$M_{b,t}=0$$.
-- Discrete memory update uses only tokens with $$M_{b,t}=1$$.
-- Validation/test keep memory read-only.
+- Continuous memory may use its normal-only train-time update rule if that branch remains adaptive in the experiment.
+- Discrete memory is **initialized from train-derived windows and then frozen by default** in the main method.
+- If a discrete update variant is ever revisited, it belongs only to a later ablation and should not be treated as the default protocol.
+- Validation/test keep all memories read-only.
 
 ## 8. Total Objective
 

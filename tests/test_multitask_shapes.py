@@ -67,6 +67,57 @@ def test_multitask_model_returns_documented_shapes() -> None:
     assert model.classification_head[0].in_features == 100 * 16
 
 
+def test_multitask_model_supports_task_specific_concat_projection_fusion_mode() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=12,
+        fusion_mode="task_specific_concat_projection",
+    )
+    batch = {
+        "x": torch.randn(2, 20, 38),
+        "point_labels": torch.zeros(2, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": f"machine-{index}"} for index in range(2)],
+    }
+
+    outputs = model(batch)
+
+    assert outputs["hidden"].shape == (2, 20, 16)
+    assert outputs["aux"]["fusion"]["fusion_mode"] == "task_specific_concat_projection"
+    assert outputs["aux"]["hidden_reconstruction"].shape == (2, 20, 16)
+    assert outputs["aux"]["hidden_classification"].shape == (2, 20, 16)
+
+
+def test_multitask_model_supports_cosine_topk_discrete_query_mode() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=12,
+        discrete_query_mode="cosine_topk",
+        discrete_topk=3,
+        discrete_query_temperature=0.1,
+    )
+    batch = {
+        "x": torch.randn(2, 20, 38),
+        "point_labels": torch.zeros(2, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": f"machine-{index}"} for index in range(2)],
+    }
+
+    outputs = model(batch)
+
+    assert outputs["aux"]["discrete_branch"]["aux"]["query_mode"] == "cosine_topk"
+    assert outputs["aux"]["discrete_branch"]["aux"]["topk"] == 3
+    assert outputs["aux"]["discrete_branch"]["aux"]["query_temperature"] == 0.1
+
+
 def test_multitask_model_uses_shared_three_layer_mlp_depth() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,

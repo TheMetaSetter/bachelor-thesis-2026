@@ -57,14 +57,50 @@ $$
 
 where $(p_m^{(c)})$ are continuous prototypes. This branch is meant to preserve smooth semantic structure and support reconstruction.
 
-Second, the **discrete prototype module**. The hidden representation also queries a discrete codebook using something like a Gumbel-Softmax relaxation:
+Second, the **discrete prototype module**. The current main design is a **distance-based top-$k$ codebook query** rather than a learned assignment-logit head. For one latent token $h_\ell$, let the discrete codebook be
+
+$$
+E = \{e_k\}_{k=1}^{M_d},
+\qquad
+e_k \in \mathbb{R}^{d_h}.
+$$
+
+Compute distances:
+
+$$
+d_{\ell,k} = \|h_\ell - e_k\|_2^2,
+$$
+
+select the nearest-codeword index set:
+
+$$
+S_k(h_\ell) = \operatorname{TopK}_k(-d_{\ell,\cdot}),
+$$
+
+then aggregate only over the selected codewords:
+
+$$
+\alpha_{\ell,k}
+=
+\frac{\exp(-d_{\ell,k}/\tau)}
+{\sum_{j \in S_k(h_\ell)} \exp(-d_{\ell,j}/\tau)}
+\qquad \text{for } k \in S_k(h_\ell),
+$$
+
+$$
+\hat h_\ell^{(d)} = \sum_{k \in S_k(h_\ell)} \alpha_{\ell,k} e_k.
+$$
+
+The intended first settings are sparse query variants such as $k \in \{1, 3\}$. The discrete codebook is **frozen by default** in the main method after initialization; if an update variant is ever revisited, it should be treated only as a later ablation.
+
+Historical note: an older draft design used a learned assignment-logit head with Gumbel-Softmax relaxation,
 
 $$
 \pi_\ell = \mathrm{softmax}\left(\frac{s_\ell + g}{\tau}\right), \qquad
 \hat h_\ell^{(d)} = \sum_{k=1}^{M_d} \pi_{\ell,k} p_k^{(d)}.
 $$
 
-This branch is meant to encourage quantized, more categorical structure.
+That older formulation is kept here only for design history. It is **not** the current main discrete-query design.
 
 You then want to fuse these two prototype-derived representations into **task-specific task representations**, so that reconstruction and classification do not have to use the exact same representation:
 
@@ -134,7 +170,7 @@ $$
 H = f_\theta(X) \in \mathbb{R}^{B \times L \times d_h}.
 $$
 
-The continuous prototype branch produces $\hat H^{(c)}$, and the discrete prototype branch produces $\hat H^{(d)}$ through a Gumbel-Softmax-style relaxed assignment with temperature $\tau$. The two fused task representations remain
+The continuous prototype branch produces $\hat H^{(c)}$, and the discrete prototype branch produces $\hat H^{(d)}$ through the current **distance-based top-$k$ codebook query**. The two fused task representations remain
 
 $$
 H_{\text{rec}} = \beta \hat H^{(d)} + (1-\beta)\hat H^{(c)},
@@ -238,13 +274,48 @@ E^{(d)} = \left\{ e_k^{(d)} \right\}_{k=1}^{K_d},
 e_k^{(d)} \in \mathbb{R}^{d_h},
 $$
 
-and let the branch assignment logits be
+The current main-query interpretation is distance-based rather than assignment-logit-based. For one token $h_{b,\ell}$, define
+
+$$
+d_{b\ell k} = \|h_{b,\ell} - e_k^{(d)}\|_2^2.
+$$
+
+Let the selected nearest-codeword set be
+
+$$
+S_k(h_{b,\ell}) = \operatorname{TopK}_k(-d_{b\ell\cdot}).
+$$
+
+Using a temperature $\tau > 0$, compute sparse weights only over the selected set:
+
+$$
+\alpha_{b\ell k}
+=
+\frac{\exp(-d_{b\ell k}/\tau)}
+{\sum_{j \in S_k(h_{b,\ell})}\exp(-d_{b\ell j}/\tau)}
+\qquad \text{for } k \in S_k(h_{b,\ell}).
+$$
+
+Then
+
+$$
+\hat h^{(d)}_{b,\ell}
+=
+\sum_{k \in S_k(h_{b,\ell})} \alpha_{b\ell k} e_k^{(d)}
+\in \mathbb{R}^{d_h},
+\qquad
+\hat H^{(d)} \in \mathbb{R}^{B \times L \times d_h}.
+$$
+
+The discrete codebook is initialized from class-balanced train-derived windows and is frozen by default in the main method.
+
+Historical note: an older design variant instead used branch assignment logits
 
 $$
 q_{b,\ell} = W_d h_{b,\ell} + b_d \in \mathbb{R}^{K_d}.
 $$
 
-Using Gumbel-Softmax with temperature $\tau > 0$,
+with Gumbel-Softmax relaxation
 
 $$
 \pi_{b\ell k}
@@ -264,6 +335,8 @@ $$
 \in \mathbb{R}^{d_h},
 \qquad
 \hat H^{(d)} \in \mathbb{R}^{B \times L \times d_h}.
+
+That assignment-logit formulation is retained only as a historical note and is **not** the current main design target.
 $$
 
 The fused task-specific representations are
@@ -398,7 +471,7 @@ $$
 \mathcal{L}_{\text{cov}}^{(c)} + \mathcal{L}_{\text{cov}}^{(d)}.
 $$
 
-For discrete code usage balancing, average the relaxed assignments across all tokens:
+For discrete code usage balancing under the current sparse-query design, use codeword-selection frequency or selected-weight statistics across all tokens. Historical note: the dense relaxed-assignment formula below belongs to the older Gumbel-Softmax variant and is not the main design target:
 
 $$
 \bar{\pi}_k
@@ -446,7 +519,7 @@ $$
 Current design target: gate entropy regularization.
 Current implementation status: the code still uses a barrier-style gate term and should be updated separately.
 
-So the design-facing implementation target is: task supervision is applied only through $H_{\text{rec}}$ and $H_{\text{cls}}$, while $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ remain optional pre-fusion regularizers acting on branch outputs, discrete assignments, and fusion coefficients.
+So the design-facing implementation target is: task supervision is applied only through $H_{\text{rec}}$ and $H_{\text{cls}}$, while $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ remain optional pre-fusion regularizers acting on branch outputs, sparse discrete-query statistics, and fusion coefficients. If any regularizer depends on dense assignment probabilities, that dependency belongs only to the deprecated historical variant, not the current main design.
 
 The activation policy for those optional terms should be fixed clearly.
 
@@ -872,7 +945,7 @@ $$
 
 You can paste this into a new chat:
 
-I am building a bachelor-thesis codebase for multivariate time-series anomaly detection on SMD with window length 20. The stable contract is $X \in \mathbb{R}^{B \times L \times D}$ and every encoder must expose $H \in \mathbb{R}^{B \times L \times d_h}$. The intended offline model has a continuous prototype branch with soft retrieval and a discrete prototype branch with Gumbel-Softmax-style assignment. Their outputs are fused into two task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and the real prediction heads stay only on those fused states. The offline objective is designed as a modular weighted-sum surface, but the default starting point is only $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}}$. Additional terms such as $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ are added only when diagnostics reveal concrete failure modes, and each extra term must be justified by ablation. The main ablations are continuous-only, discrete-only, and fused. Later, an online adaptation phase uses two augmentations per incoming sample, a frozen reference encoder, a partially trainable online encoder, and a lightweight near-identity projector that is warm-started offline and aligned to the frozen reference and prototype geometry. NGD-style preconditioning is attractive mainly for that small adapted subset, not for the whole model. Current codebase decisions: freeze the encoder output contract first, build a minimal vertical slice first, keep one model per file, and keep the loss design ablation-friendly with explicit YAML-controlled objective modularity.
+I am building a bachelor-thesis codebase for multivariate time-series anomaly detection on SMD with window length 20. The stable contract is $X \in \mathbb{R}^{B \times L \times D}$ and every encoder must expose $H \in \mathbb{R}^{B \times L \times d_h}$. The intended offline model has a continuous prototype branch with soft retrieval and a discrete prototype branch with distance-based top-$k$ codebook query. Their outputs are fused into two task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and the real prediction heads stay only on those fused states. The discrete codebook is initialized from class-balanced train-derived windows and frozen by default in the main method. The offline objective is designed as a modular weighted-sum surface, but the default starting point is only $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}}$. Additional terms such as $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ are added only when diagnostics reveal concrete failure modes, and each extra term must be justified by ablation. The main ablations are continuous-only, discrete-only, and fused. Later, an online adaptation phase uses two augmentations per incoming sample, a frozen reference encoder, a partially trainable online encoder, and a lightweight near-identity projector that is warm-started offline and aligned to the frozen reference and prototype geometry. NGD-style preconditioning is attractive mainly for that small adapted subset, not for the whole model. Current codebase decisions: freeze the encoder output contract first, build a minimal vertical slice first, keep one model per file, and keep the loss design ablation-friendly with explicit YAML-controlled objective modularity.
 
 ## Check
 

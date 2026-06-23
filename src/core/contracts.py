@@ -83,6 +83,10 @@ def validate_window(window: dict[str, Any]) -> None:
             "start_index",
             "end_index",
             "window_size",
+            "series_id",
+            "absolute_start_index",
+            "absolute_end_index",
+            "source_sequence_length",
         ],
         "window['meta']",
     )

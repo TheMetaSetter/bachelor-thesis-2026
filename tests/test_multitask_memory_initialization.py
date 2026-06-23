@@ -12,12 +12,12 @@ def _build_initialization_model() -> ThesisMultitaskModel:
         encoder_dim=4,
         hidden_dim=4,
         mlp_num_linear_layers=3,
-        num_classes=2,
+        num_classes=12,
         dropout=0.0,
         continuous_enabled=True,
         continuous_num_prototypes=2,
         discrete_enabled=True,
-        discrete_codebook_size=3,
+        discrete_codebook_size=60,
         gumbel_temperature=1.0,
         temperature_start=1.0,
         temperature_end=1.0,
@@ -35,6 +35,8 @@ def _build_initialization_model() -> ThesisMultitaskModel:
         memory_initialization_with_synthetic_windows=True,
         use_synthetic_augmentation=True,
         use_synthetic_validation=False,
+        classification_label_mode="redlamp_multiclass",
+        freeze_memories_after_initialization=True,
         anomaly_probability=1.0,
         min_segment_fraction=0.1,
         max_segment_fraction=0.2,
@@ -95,7 +97,7 @@ def _build_synthetic_batch(raw_batch: dict[str, object]) -> dict[str, object]:
     return synthetic_batch
 
 
-def test_initialization_pool_keeps_only_normal_synthetic_timesteps() -> None:
+def test_initialization_pool_separates_normal_only_continuous_tokens_and_class_stratified_discrete_tokens() -> None:
     model = _build_initialization_model()
     raw_batch = _build_raw_batch()
     anomaly_vector = torch.tensor([9.0, 9.0, 9.0, 9.0])
@@ -110,15 +112,22 @@ def test_initialization_pool_keeps_only_normal_synthetic_timesteps() -> None:
     )
 
     assert token_pool["num_batches_used"] == 1
-    assert token_pool["num_clean_tokens"] == 6
-    assert token_pool["num_synthetic_normal_tokens"] == 5
-    assert token_pool["hidden_tokens"].shape == (11, 4)
+    assert token_pool["num_continuous_normal_tokens"] == 3
+    assert token_pool["continuous_hidden_tokens"].shape == (3, 4)
+    assert token_pool["discrete_hidden_tokens_by_class"][0].shape == (3, 4)
+    assert token_pool["discrete_hidden_tokens_by_class"][1].shape == (3, 4)
     assert not torch.any(
-        torch.all(token_pool["hidden_tokens"] == anomaly_vector, dim=1)
+        torch.all(token_pool["continuous_hidden_tokens"] == anomaly_vector, dim=1)
+    )
+    assert torch.any(
+        torch.all(
+            token_pool["discrete_hidden_tokens_by_class"][1] == anomaly_vector,
+            dim=1,
+        )
     )
 
 
-def test_memory_initialization_marks_model_initialized_and_reseeds_buffers() -> None:
+def test_memory_initialization_marks_model_initialized_and_freezes_memory_updates() -> None:
     model = _build_initialization_model()
     raw_batch = _build_raw_batch()
     initial_memory_state = model.get_memory_tensor_state()
@@ -135,7 +144,7 @@ def test_memory_initialization_marks_model_initialized_and_reseeds_buffers() -> 
 
     assert was_initialized is True
     assert model.memory_initialized is True
-    assert model.memory_training_enabled is True
+    assert model.memory_training_enabled is False
     assert model.memory_ready_for_initialization is False
     assert model.memory_initialization_epoch == 2
     assert not torch.equal(
@@ -153,6 +162,6 @@ def test_memory_initialization_marks_model_initialized_and_reseeds_buffers() -> 
     )
     assert torch.allclose(
         model.discrete_codebook.norm(dim=-1),
-        torch.ones(3),
+        torch.ones(60),
         atol=1.0e-5,
     )

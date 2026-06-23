@@ -49,8 +49,10 @@ class SMDDatasetParser(BaseSequenceParser):
                 "dataset_name": "smd",
                 "entity_id": entity_id,
                 "split": split,
+                "series_id": f"smd:{split}:{entity_id}",
                 "num_channels": int(x_tensor.shape[1]),
                 "sequence_length": int(x_tensor.shape[0]),
+                "source_sequence_length": int(x_tensor.shape[0]),
             },
         }
         validate_raw_sequence(raw_sequence)

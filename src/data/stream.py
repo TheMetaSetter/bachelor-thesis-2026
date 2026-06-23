@@ -119,6 +119,22 @@ class SMDOnlineStream:
                 "start_index": start_index,
                 "end_index": end_index,
                 "window_size": self.window_size,
+                "series_id": sequence["meta"].get(
+                    "series_id",
+                    (
+                        f"{sequence['meta']['dataset_name']}:"
+                        f"{sequence['meta']['split']}:"
+                        f"{sequence['meta']['entity_id']}"
+                    ),
+                ),
+                "absolute_start_index": start_index,
+                "absolute_end_index": end_index,
+                "source_sequence_length": int(
+                    sequence["meta"].get(
+                        "source_sequence_length",
+                        sequence["meta"]["sequence_length"],
+                    )
+                ),
                 "stream_step": stream_step,
             },
         }

@@ -299,6 +299,52 @@ class MemoryInitializationConfig:
 
 
 @dataclass(frozen=True)
+class ThreeStageRuntimeConfig:
+    training_phase: str = "multitask_pretraining"
+    fusion_mode: str = "learnable_sigmoid_scalars"
+    discrete_query_mode: str = "gumbel_softmax"
+    discrete_topk: int = 1
+    discrete_query_temperature: float = 0.1
+    freeze_memories_after_initialization: bool = False
+    freeze_recovered_zipped_encoder_during_warmup: bool = False
+    discrete_memory_label_source: str = "synthetic_train_labels"
+
+    def __post_init__(self) -> None:
+        if self.training_phase not in {
+            "stage1_classification",
+            "stage1_reconstruction",
+            "stage2_recovery",
+            "stage3_prototype_warmup",
+            "multitask_pretraining",
+        }:
+            raise ValueError(
+                "training_phase must be one of: stage1_classification, "
+                "stage1_reconstruction, stage2_recovery, "
+                "stage3_prototype_warmup, multitask_pretraining"
+            )
+        if self.fusion_mode not in {
+            "task_specific_concat_projection",
+            "learnable_sigmoid_scalars",
+        }:
+            raise ValueError(
+                "fusion_mode must be one of: "
+                "task_specific_concat_projection, learnable_sigmoid_scalars"
+            )
+        if self.discrete_query_mode not in {"cosine_topk", "gumbel_softmax"}:
+            raise ValueError(
+                "discrete_query_mode must be one of: cosine_topk, gumbel_softmax"
+            )
+        if self.discrete_topk < 1:
+            raise ValueError("discrete_topk must be >= 1")
+        if self.discrete_query_temperature <= 0.0:
+            raise ValueError("discrete_query_temperature must be positive")
+        if self.discrete_memory_label_source != "synthetic_train_labels":
+            raise ValueError(
+                "discrete_memory_label_source must be 'synthetic_train_labels'"
+            )
+
+
+@dataclass(frozen=True)
 class GradientProfilingConfig:
     enable_gradient_conflict_profiling: bool = False
     gradient_profiling_scope: str = "encoder_all"
@@ -370,6 +416,7 @@ class ThesisMultitaskModelConfig:
     memory: MemoryInitializationConfig = field(
         default_factory=MemoryInitializationConfig
     )
+    runtime: ThreeStageRuntimeConfig = field(default_factory=ThreeStageRuntimeConfig)
     profiling: GradientProfilingConfig = field(default_factory=GradientProfilingConfig)
     synthetic: SyntheticAnomalyConfig = field(default_factory=SyntheticAnomalyConfig)
 
@@ -454,6 +501,16 @@ class ThesisMultitaskModelConfig:
             "memory_initialization_batches",
             "memory_initialization_with_synthetic_windows",
         }
+        runtime_keys = {
+            "training_phase",
+            "fusion_mode",
+            "discrete_query_mode",
+            "discrete_topk",
+            "discrete_query_temperature",
+            "freeze_memories_after_initialization",
+            "freeze_recovered_zipped_encoder_during_warmup",
+            "discrete_memory_label_source",
+        }
         profiling_keys = {
             "enable_gradient_conflict_profiling",
             "gradient_profiling_scope",
@@ -495,6 +552,7 @@ class ThesisMultitaskModelConfig:
         schedule_values = take_group(schedule_keys)
         objective_values = take_group(objective_keys)
         memory_values = take_group(memory_keys)
+        runtime_values = take_group(runtime_keys)
         profiling_values = take_group(profiling_keys)
         synthetic_values = take_group(synthetic_keys)
         if (
@@ -518,6 +576,7 @@ class ThesisMultitaskModelConfig:
             schedule=ScheduleAndWarmupConfig(**schedule_values),
             objective=ObjectiveConfig(**objective_values),
             memory=MemoryInitializationConfig(**memory_values),
+            runtime=ThreeStageRuntimeConfig(**runtime_values),
             profiling=GradientProfilingConfig(**profiling_values),
             synthetic=SyntheticAnomalyConfig(**synthetic_values),
         )
@@ -545,6 +604,7 @@ class ThesisMultitaskModel(BaseModel):
         self._build_synthetic_injectors(config)
         self._encoder_profiled_parameters = self._get_encoder_profiled_parameters()
         self._build_optional_loss_configs()
+        self._configure_trainable_parameters_for_phase()
         self.set_epoch_context(epoch_index=0, total_epochs=1)
         self._print_model_summary(config)
 
@@ -556,6 +616,7 @@ class ThesisMultitaskModel(BaseModel):
         schedule = config.schedule
         objective = config.objective
         memory = config.memory
+        runtime = config.runtime
         profiling = config.profiling
         synthetic = config.synthetic
 
@@ -632,6 +693,18 @@ class ThesisMultitaskModel(BaseModel):
         self.memory_initialization_with_synthetic_windows = (
             memory.memory_initialization_with_synthetic_windows
         )
+        self.training_phase = runtime.training_phase
+        self.fusion_mode = runtime.fusion_mode
+        self.discrete_query_mode = runtime.discrete_query_mode
+        self.discrete_topk = runtime.discrete_topk
+        self.discrete_query_temperature = runtime.discrete_query_temperature
+        self.freeze_memories_after_initialization = (
+            runtime.freeze_memories_after_initialization
+        )
+        self.freeze_recovered_zipped_encoder_during_warmup = (
+            runtime.freeze_recovered_zipped_encoder_during_warmup
+        )
+        self.discrete_memory_label_source = runtime.discrete_memory_label_source
         self.use_synthetic_augmentation = synthetic.use_synthetic_augmentation
         self.use_synthetic_validation = synthetic.use_synthetic_validation
         self.synthetic_validation_seed = synthetic.synthetic_validation_seed
@@ -672,6 +745,121 @@ class ThesisMultitaskModel(BaseModel):
             raise ValueError(
                 "label refurbishment currently supports only binary classification"
             )
+
+    def _phase_uses_prototype_path(self) -> bool:
+        return self.training_phase in {
+            "stage3_prototype_warmup",
+            "multitask_pretraining",
+        }
+
+    def _phase_uses_contrastive_objective(self) -> bool:
+        return self.training_phase in {
+            "stage1_classification",
+            "stage1_reconstruction",
+            "multitask_pretraining",
+        }
+
+    def _phase_reconstruction_weight(self) -> float:
+        if self.training_phase == "stage1_classification":
+            return 0.0
+        return float(self.lambda_recon)
+
+    def _phase_classification_weight(self) -> float:
+        if not self.enable_classification_path:
+            return 0.0
+        if self.training_phase == "stage1_reconstruction":
+            return 0.0
+        return float(self.lambda_cls)
+
+    def _phase_freezes_encoder(self) -> bool:
+        return (
+            self.training_phase == "stage3_prototype_warmup"
+            and self.freeze_recovered_zipped_encoder_during_warmup
+        )
+
+    def _set_module_requires_grad(
+        self,
+        module: nn.Module | None,
+        *,
+        requires_grad: bool,
+    ) -> None:
+        if module is None:
+            return
+        for parameter in module.parameters():
+            parameter.requires_grad = requires_grad
+
+    def _configure_trainable_parameters_for_phase(self) -> None:
+        self._set_module_requires_grad(self.encoder, requires_grad=True)
+        self._set_module_requires_grad(
+            self.reconstruction_head,
+            requires_grad=True,
+        )
+        self._set_module_requires_grad(
+            self.classification_head,
+            requires_grad=True,
+        )
+        self._set_module_requires_grad(
+            self.reconstruction_concat_projection,
+            requires_grad=True,
+        )
+        self._set_module_requires_grad(
+            self.classification_concat_projection,
+            requires_grad=True,
+        )
+        self._set_module_requires_grad(
+            self.classification_fusion_gate,
+            requires_grad=True,
+        )
+        self._set_module_requires_grad(
+            self.reconstruction_fusion_gate,
+            requires_grad=True,
+        )
+        self._set_module_requires_grad(
+            self.continuous_update_gate,
+            requires_grad=True,
+        )
+        self._set_module_requires_grad(
+            self.discrete_assignment,
+            requires_grad=True,
+        )
+
+        if self.training_phase == "stage1_classification":
+            self._set_module_requires_grad(
+                self.reconstruction_head,
+                requires_grad=False,
+            )
+        if self.training_phase == "stage1_reconstruction":
+            self._set_module_requires_grad(
+                self.classification_head,
+                requires_grad=False,
+            )
+        if not self._phase_uses_prototype_path():
+            self._set_module_requires_grad(
+                self.reconstruction_concat_projection,
+                requires_grad=False,
+            )
+            self._set_module_requires_grad(
+                self.classification_concat_projection,
+                requires_grad=False,
+            )
+            self._set_module_requires_grad(
+                self.classification_fusion_gate,
+                requires_grad=False,
+            )
+            self._set_module_requires_grad(
+                self.reconstruction_fusion_gate,
+                requires_grad=False,
+            )
+            self._set_module_requires_grad(
+                self.continuous_update_gate,
+                requires_grad=False,
+            )
+            self._set_module_requires_grad(
+                self.discrete_assignment,
+                requires_grad=False,
+            )
+        if self._phase_freezes_encoder():
+            self._set_module_requires_grad(self.encoder, requires_grad=False)
 
     def _classification_class_names(self) -> tuple[str, ...]:
         if self.classification_label_mode == "binary":
@@ -781,6 +969,22 @@ class ThesisMultitaskModel(BaseModel):
             nn.Linear(architecture.hidden_dim, 1),
         )
         _initialize_mlp_linear_layers(self.reconstruction_fusion_gate)
+        self.classification_concat_projection = build_multilayer_perceptron(
+            input_dim=2 * architecture.hidden_dim,
+            intermediate_dim=architecture.hidden_dim,
+            output_dim=architecture.hidden_dim,
+            num_linear_layers=2,
+            dropout=architecture.dropout,
+            apply_output_activation=False,
+        )
+        self.reconstruction_concat_projection = build_multilayer_perceptron(
+            input_dim=2 * architecture.hidden_dim,
+            intermediate_dim=architecture.hidden_dim,
+            output_dim=architecture.hidden_dim,
+            num_linear_layers=2,
+            dropout=architecture.dropout,
+            apply_output_activation=False,
+        )
 
     def _build_synthetic_injectors(self, config: ThesisMultitaskModelConfig) -> None:
         architecture = config.architecture
@@ -1011,6 +1215,8 @@ class ThesisMultitaskModel(BaseModel):
 
     def _should_bypass_memory_for_stage(self, stage_name: str) -> bool:
         del stage_name
+        if not self._phase_uses_prototype_path():
+            return True
         return self._is_bootstrap_active() or not self.memory_initialized
 
     def _should_update_memory(self, stage_name: str) -> bool:
@@ -1018,6 +1224,8 @@ class ThesisMultitaskModel(BaseModel):
             stage_name == "train"
             and self.memory_training_enabled
             and self.memory_initialized
+            and self._phase_uses_prototype_path()
+            and not self.freeze_memories_after_initialization
         )
 
     def get_memory_lifecycle_state(self) -> dict[str, Any]:
@@ -1065,7 +1273,7 @@ class ThesisMultitaskModel(BaseModel):
         self, initialization_epoch: int | None = None
     ) -> None:
         self.memory_initialized = True
-        self.memory_training_enabled = True
+        self.memory_training_enabled = not self.freeze_memories_after_initialization
         self.memory_ready_for_initialization = False
         self.memory_initialization_epoch = initialization_epoch
         console_print(
@@ -1080,6 +1288,8 @@ class ThesisMultitaskModel(BaseModel):
         train_loader: Any,
         device: str,
     ) -> bool:
+        if not self._phase_uses_prototype_path():
+            return False
         if self.memory_initialized:
             return False
         if self.current_epoch_index < self.bootstrap_encoder_epochs:
@@ -1089,8 +1299,8 @@ class ThesisMultitaskModel(BaseModel):
             train_loader,
             device,
         )
-        hidden_tokens = token_pool["hidden_tokens"]
-        if hidden_tokens.shape[0] == 0:
+        continuous_hidden_tokens = token_pool["continuous_hidden_tokens"]
+        if continuous_hidden_tokens.shape[0] == 0:
             console_print(
                 "MODEL",
                 "No normal hidden tokens were available for memory initialization",
@@ -1098,7 +1308,10 @@ class ThesisMultitaskModel(BaseModel):
                 num_batches_used=token_pool["num_batches_used"],
             )
             return False
-        self._initialize_memory_buffers_from_token_pool(hidden_tokens)
+        self._initialize_memory_buffers_from_token_pool(
+            continuous_hidden_tokens=continuous_hidden_tokens,
+            discrete_hidden_tokens_by_class=token_pool["discrete_hidden_tokens_by_class"],
+        )
         self.mark_memories_initialized(
             initialization_epoch=self.current_epoch_index + 1
         )
@@ -1108,8 +1321,10 @@ class ThesisMultitaskModel(BaseModel):
             epoch=self.current_epoch_index + 1,
             bootstrap_encoder_epochs=self.bootstrap_encoder_epochs,
             num_batches_used=token_pool["num_batches_used"],
-            num_clean_tokens=token_pool["num_clean_tokens"],
-            num_synthetic_normal_tokens=token_pool["num_synthetic_normal_tokens"],
+            num_continuous_normal_tokens=token_pool["num_continuous_normal_tokens"],
+            discrete_classes_with_tokens=sorted(
+                token_pool["num_discrete_class_tokens_by_class"].keys()
+            ),
         )
         return True
 
@@ -1203,8 +1418,8 @@ class ThesisMultitaskModel(BaseModel):
         train_loader: Any,
         device: str,
     ) -> dict[str, Any]:
-        clean_hidden_tokens: list[torch.Tensor] = []
-        synthetic_normal_hidden_tokens: list[torch.Tensor] = []
+        continuous_hidden_token_groups: list[torch.Tensor] = []
+        discrete_hidden_tokens_by_class: dict[int, list[torch.Tensor]] = {}
         num_batches_used = 0
         previous_training_mode = self.training
 
@@ -1226,62 +1441,118 @@ class ThesisMultitaskModel(BaseModel):
                     -1,
                     self.hidden_dim,
                 )
-                clean_hidden_tokens.append(clean_hidden)
-
-                if (
+                if not (
                     self.memory_initialization_with_synthetic_windows
                     and self.use_synthetic_augmentation
                 ):
-                    synthetic_batch = self.synthetic_anomaly_injector.augment_batch(
-                        self._clone_batch(batch_on_device)
+                    continuous_hidden_token_groups.append(clean_hidden)
+                    discrete_hidden_tokens_by_class.setdefault(0, []).append(clean_hidden)
+                    continue
+
+                synthetic_batch = self.synthetic_anomaly_injector.augment_batch(
+                    self._clone_batch(batch_on_device)
+                )
+                synthetic_hidden = self.encoder(synthetic_batch)["hidden"]
+                synthetic_labels = synthetic_batch["classification_labels"].long()
+                normal_window_mask = synthetic_labels == 0
+                normal_time_step_mask = synthetic_batch["synthetic_anomaly_mask"] == 0
+                if int(normal_window_mask.sum().item()) > 0:
+                    normal_hidden = synthetic_hidden[normal_window_mask]
+                    normal_position_mask = normal_time_step_mask[normal_window_mask]
+                    selected_normal_hidden = normal_hidden[normal_position_mask]
+                    if selected_normal_hidden.numel() > 0:
+                        continuous_hidden_token_groups.append(selected_normal_hidden)
+
+                for class_index in synthetic_labels.unique(sorted=True).tolist():
+                    class_mask = synthetic_labels == int(class_index)
+                    class_hidden = synthetic_hidden[class_mask].reshape(
+                        -1,
+                        self.hidden_dim,
                     )
-                    synthetic_hidden = self.encoder(synthetic_batch)["hidden"]
-                    normal_time_step_mask = (
-                        synthetic_batch["synthetic_anomaly_mask"] == 0
-                    )
-                    synthetic_normal_hidden = synthetic_hidden[normal_time_step_mask]
-                    if synthetic_normal_hidden.numel() > 0:
-                        synthetic_normal_hidden_tokens.append(synthetic_normal_hidden)
+                    if class_hidden.numel() == 0:
+                        continue
+                    discrete_hidden_tokens_by_class.setdefault(
+                        int(class_index), []
+                    ).append(class_hidden)
 
         self.train(previous_training_mode)
 
-        hidden_token_groups = clean_hidden_tokens + synthetic_normal_hidden_tokens
-        if hidden_token_groups:
-            hidden_tokens = torch.cat(hidden_token_groups, dim=0)
+        if continuous_hidden_token_groups:
+            continuous_hidden_tokens = torch.cat(continuous_hidden_token_groups, dim=0)
         else:
-            hidden_tokens = torch.empty(0, self.hidden_dim, device=device)
+            continuous_hidden_tokens = torch.empty(0, self.hidden_dim, device=device)
+
+        finalized_discrete_hidden_tokens_by_class: dict[int, torch.Tensor] = {}
+        for class_index, class_hidden_groups in discrete_hidden_tokens_by_class.items():
+            finalized_discrete_hidden_tokens_by_class[class_index] = torch.cat(
+                class_hidden_groups,
+                dim=0,
+            )
 
         return {
-            "hidden_tokens": hidden_tokens,
+            "continuous_hidden_tokens": continuous_hidden_tokens,
+            "discrete_hidden_tokens_by_class": finalized_discrete_hidden_tokens_by_class,
             "num_batches_used": num_batches_used,
-            "num_clean_tokens": sum(
-                int(hidden_group.shape[0]) for hidden_group in clean_hidden_tokens
-            ),
-            "num_synthetic_normal_tokens": sum(
+            "num_continuous_normal_tokens": sum(
                 int(hidden_group.shape[0])
-                for hidden_group in synthetic_normal_hidden_tokens
+                for hidden_group in continuous_hidden_token_groups
             ),
+            "num_discrete_class_tokens_by_class": {
+                class_index: int(class_hidden.shape[0])
+                for class_index, class_hidden in finalized_discrete_hidden_tokens_by_class.items()
+            },
         }
 
     def _initialize_memory_buffers_from_token_pool(
         self,
-        hidden_tokens: torch.Tensor,
+        *,
+        continuous_hidden_tokens: torch.Tensor,
+        discrete_hidden_tokens_by_class: dict[int, torch.Tensor],
     ) -> None:
-        if hidden_tokens.shape[0] == 0:
-            raise ValueError("hidden_tokens must contain at least one normal token")
+        if continuous_hidden_tokens.shape[0] == 0:
+            raise ValueError(
+                "continuous_hidden_tokens must contain at least one normal token"
+            )
 
         if self.continuous_prototype_bank is not None:
             continuous_seed_vectors = self._select_covering_vectors(
-                hidden_tokens,
+                continuous_hidden_tokens,
                 self.continuous_num_prototypes,
             )
             self.continuous_prototype_bank.copy_(continuous_seed_vectors)
 
         if self.discrete_codebook is not None:
-            discrete_seed_vectors = self._select_covering_vectors(
-                hidden_tokens.flip(0),
-                self.discrete_codebook_size,
+            available_class_indices = sorted(discrete_hidden_tokens_by_class)
+            if not available_class_indices:
+                raise ValueError(
+                    "discrete_hidden_tokens_by_class must contain at least one class"
+                )
+            codewords_per_class = max(self.discrete_codebook_size // self.num_classes, 1)
+            fallback_hidden_tokens = torch.cat(
+                [
+                    discrete_hidden_tokens_by_class[class_index]
+                    for class_index in available_class_indices
+                ],
+                dim=0,
             )
+            class_stratified_vectors: list[torch.Tensor] = []
+            for class_index in range(self.num_classes):
+                class_hidden_tokens = discrete_hidden_tokens_by_class.get(class_index)
+                if class_hidden_tokens is None or class_hidden_tokens.shape[0] == 0:
+                    class_hidden_tokens = fallback_hidden_tokens
+                class_stratified_vectors.append(
+                    self._select_covering_vectors(
+                        class_hidden_tokens,
+                        codewords_per_class,
+                    )
+                )
+            discrete_seed_vectors = torch.cat(class_stratified_vectors, dim=0)
+            if discrete_seed_vectors.shape[0] != self.discrete_codebook_size:
+                raise ValueError(
+                    "class-stratified discrete initialization must exactly fill "
+                    f"discrete_codebook_size={self.discrete_codebook_size}, "
+                    f"but produced {discrete_seed_vectors.shape[0]} vectors"
+                )
             self.discrete_codebook.copy_(discrete_seed_vectors)
             if self.discrete_ema_counts is not None:
                 self.discrete_ema_counts.fill_(1.0)
@@ -1423,6 +1694,63 @@ class ThesisMultitaskModel(BaseModel):
             self._normalize_memory_vectors(self.discrete_codebook),
         )
 
+    def _build_phase_passthrough_outputs(
+        self,
+        hidden: torch.Tensor,
+    ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+        continuous_outputs = {
+            "hidden": hidden,
+            "prototype_context": hidden,
+            "prototype_logits": None,
+            "prototype_weights": None,
+            "aux": {
+                "branch_name": "continuous",
+                "enabled": False,
+                "num_prototypes": 0,
+                "memory_bypass_active": True,
+                "memory_initialized": self.memory_initialized,
+            },
+        }
+        discrete_outputs = {
+            "hidden": hidden,
+            "quantized_hidden": hidden,
+            "assignment_logits": None,
+            "assignment_probabilities": None,
+            "code_indices": None,
+            "aux": {
+                "branch_name": "discrete",
+                "enabled": False,
+                "num_codes": 0,
+                "memory_bypass_active": True,
+                "memory_initialized": self.memory_initialized,
+                "query_mode": "phase_passthrough",
+                "topk": 0,
+                "query_temperature": 0.0,
+            },
+        }
+        fusion_outputs = {
+            "hidden_reconstruction": hidden,
+            "hidden_classification": hidden,
+            "alpha": hidden.new_zeros(hidden.shape[0]),
+            "beta": hidden.new_zeros(hidden.shape[0]),
+            "aux": {
+                "fusion_mode": "phase_direct_passthrough",
+                "alpha": 0.0,
+                "beta": 0.0,
+                "alpha_std": 0.0,
+                "beta_std": 0.0,
+                "alpha_logit": float(self.alpha_logit.detach().cpu()),
+                "beta_logit": float(self.beta_logit.detach().cpu()),
+                "cka_reconstruction_mean": 0.0,
+                "cka_reconstruction_std": 0.0,
+                "cka_classification_mean": 0.0,
+                "cka_classification_std": 0.0,
+                "warmup_active": self.schedule_state["warmup_active"],
+                "temperature": self.gumbel_temperature,
+            },
+        }
+        return continuous_outputs, discrete_outputs, fusion_outputs
+
     def prepare_realistic_validation_epoch(self, anomaly_probability: float) -> None:
         if not 0.0 <= float(anomaly_probability) <= 1.0:
             raise ValueError(
@@ -1504,15 +1832,41 @@ class ThesisMultitaskModel(BaseModel):
 
         if normalized_codebook is not None and not memory_bypass_active:
             if assignment_logits is None or assignment_probabilities is None:
-                if self.discrete_assignment is None:
-                    raise ValueError("discrete_assignment is not available")
-                assignment_logits = self.discrete_assignment(normalized_hidden)
-                assignment_probabilities = F.gumbel_softmax(
-                    assignment_logits,
-                    tau=self.gumbel_temperature,
-                    hard=False,
-                    dim=-1,
-                )
+                if self.discrete_query_mode == "cosine_topk":
+                    assignment_logits = torch.einsum(
+                        "blh,kh->blk",
+                        normalized_hidden,
+                        normalized_codebook,
+                    )
+                    topk_value_count = min(
+                        self.discrete_topk,
+                        int(normalized_codebook.shape[0]),
+                    )
+                    topk_logits, topk_indices = torch.topk(
+                        assignment_logits,
+                        k=topk_value_count,
+                        dim=-1,
+                    )
+                    topk_weights = torch.softmax(
+                        topk_logits / self.discrete_query_temperature,
+                        dim=-1,
+                    )
+                    assignment_probabilities = torch.zeros_like(assignment_logits)
+                    assignment_probabilities.scatter_(
+                        dim=-1,
+                        index=topk_indices,
+                        src=topk_weights,
+                    )
+                else:
+                    if self.discrete_assignment is None:
+                        raise ValueError("discrete_assignment is not available")
+                    assignment_logits = self.discrete_assignment(normalized_hidden)
+                    assignment_probabilities = F.gumbel_softmax(
+                        assignment_logits,
+                        tau=self.gumbel_temperature,
+                        hard=False,
+                        dim=-1,
+                    )
             discrete_hidden = torch.einsum(
                 "blk,kh->blh",
                 assignment_probabilities,
@@ -1532,6 +1886,9 @@ class ThesisMultitaskModel(BaseModel):
                 "enabled": self.discrete_memory_enabled,
                 "codebook_size": self.discrete_codebook_size,
                 "temperature": self.gumbel_temperature,
+                "query_mode": self.discrete_query_mode,
+                "topk": self.discrete_topk,
+                "query_temperature": self.discrete_query_temperature,
                 "memory_bypass_active": memory_bypass_active,
                 "memory_initialized": self.memory_initialized,
             },
@@ -1547,6 +1904,39 @@ class ThesisMultitaskModel(BaseModel):
     ) -> dict[str, Any]:
         # Fusion is expressed as exact limiting cases of the same equations.
         # That is why continuous-only and discrete-only ablations need no second model.
+        if self.fusion_mode == "task_specific_concat_projection":
+            concatenated_hidden = torch.cat([continuous_hidden, discrete_hidden], dim=-1)
+            hidden_reconstruction = self.reconstruction_concat_projection(
+                concatenated_hidden
+            )
+            hidden_classification = self.classification_concat_projection(
+                concatenated_hidden
+            )
+            alpha = continuous_hidden.new_zeros(continuous_hidden.shape[0])
+            beta = continuous_hidden.new_zeros(continuous_hidden.shape[0])
+            cka_reconstruction = continuous_hidden.new_zeros(continuous_hidden.shape[0])
+            cka_classification = continuous_hidden.new_zeros(continuous_hidden.shape[0])
+            return {
+                "hidden_reconstruction": hidden_reconstruction,
+                "hidden_classification": hidden_classification,
+                "alpha": alpha,
+                "beta": beta,
+                "aux": {
+                    "fusion_mode": "task_specific_concat_projection",
+                    "alpha": 0.0,
+                    "beta": 0.0,
+                    "alpha_std": 0.0,
+                    "beta_std": 0.0,
+                    "alpha_logit": float(self.alpha_logit.detach().cpu()),
+                    "beta_logit": float(self.beta_logit.detach().cpu()),
+                    "cka_reconstruction_mean": 0.0,
+                    "cka_reconstruction_std": 0.0,
+                    "cka_classification_mean": 0.0,
+                    "cka_classification_std": 0.0,
+                    "warmup_active": self.schedule_state["warmup_active"],
+                    "temperature": self.gumbel_temperature,
+                },
+            }
         if self.active_alpha_override is None:
             alpha_scalar = torch.sigmoid(self.alpha_logit)
         else:
@@ -1784,6 +2174,8 @@ class ThesisMultitaskModel(BaseModel):
     ) -> tuple[dict[str, Any], dict[str, Any]] | None:
         if not self.enable_two_view_contrastive:
             return None
+        if not self._phase_uses_contrastive_objective():
+            return None
         if stage_name not in {"train", "val_synth", "val_realistic"}:
             return None
         clean_batch = self._prepare_clean_batch(
@@ -1821,65 +2213,74 @@ class ThesisMultitaskModel(BaseModel):
         if anomaly_mask is not None and self.enable_two_view_contrastive:
             normal_token_mask = anomaly_mask == 0
             anomaly_token_mask = anomaly_mask == 1
-        if self.continuous_prototype_bank is not None and self._should_update_memory(
-            stage_name
-        ):
-            active_continuous_memory_bank = self._update_continuous_memory_bank(
+        if self._phase_uses_prototype_path():
+            if self.continuous_prototype_bank is not None and self._should_update_memory(
+                stage_name
+            ):
+                active_continuous_memory_bank = self._update_continuous_memory_bank(
+                    hidden,
+                    token_mask=normal_token_mask,
+                )
+            elif self.continuous_prototype_bank is not None:
+                active_continuous_memory_bank = self._normalize_memory_vectors(
+                    self.continuous_prototype_bank
+                )
+            else:
+                active_continuous_memory_bank = None
+            if self.discrete_codebook is not None and self._should_update_memory(
+                stage_name
+            ):
+                self._update_discrete_codebook_memory(
+                    hidden,
+                    token_mask=anomaly_token_mask,
+                )
+                active_assignment_logits = None
+                active_assignment_probabilities = None
+                active_discrete_codebook = self._normalize_memory_vectors(
+                    self.discrete_codebook
+                )
+            elif self.discrete_codebook is not None:
+                active_assignment_logits = None
+                active_assignment_probabilities = None
+                active_discrete_codebook = self._normalize_memory_vectors(
+                    self.discrete_codebook
+                )
+            else:
+                active_assignment_logits = None
+                active_assignment_probabilities = None
+                active_discrete_codebook = None
+
+            # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu liên tục
+            continuous_outputs = self._continuous_prototype_lookup(
                 hidden,
-                token_mask=normal_token_mask,
+                stage_name=stage_name,
+                active_memory_bank=active_continuous_memory_bank,
             )
-        elif self.continuous_prototype_bank is not None:
-            active_continuous_memory_bank = self._normalize_memory_vectors(
-                self.continuous_prototype_bank
+
+            # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu rời rạc
+            discrete_outputs = self._discrete_prototype_lookup(
+                hidden,
+                stage_name=stage_name,
+                active_codebook=active_discrete_codebook,
+                precomputed_assignment_logits=active_assignment_logits,
+                precomputed_assignment_probabilities=active_assignment_probabilities,
+            )
+
+            # Kết hợp vec-tơ ẩn từ hai nhánh lại với nhau
+            fusion_outputs = self._compute_fusion_outputs(
+                continuous_hidden=continuous_outputs["prototype_context"],
+                discrete_hidden=discrete_outputs["quantized_hidden"],
+                base_hidden=hidden,
+                paired_hidden=batch.get("paired_hidden_for_fusion"),
             )
         else:
             active_continuous_memory_bank = None
-        if self.discrete_codebook is not None and self._should_update_memory(
-            stage_name
-        ):
-            self._update_discrete_codebook_memory(
-                hidden,
-                token_mask=anomaly_token_mask,
-            )
-            active_assignment_logits = None
-            active_assignment_probabilities = None
-            active_discrete_codebook = self._normalize_memory_vectors(
-                self.discrete_codebook
-            )
-        elif self.discrete_codebook is not None:
-            active_assignment_logits = None
-            active_assignment_probabilities = None
-            active_discrete_codebook = self._normalize_memory_vectors(
-                self.discrete_codebook
-            )
-        else:
-            active_assignment_logits = None
-            active_assignment_probabilities = None
             active_discrete_codebook = None
-
-        # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu liên tục
-        continuous_outputs = self._continuous_prototype_lookup(
-            hidden,
-            stage_name=stage_name,
-            active_memory_bank=active_continuous_memory_bank,
-        )
-
-        # Tái tạo các vec-tơ ẩn sử dụng các vec-tơ nguyên mẫu rời rạc
-        discrete_outputs = self._discrete_prototype_lookup(
-            hidden,
-            stage_name=stage_name,
-            active_codebook=active_discrete_codebook,
-            precomputed_assignment_logits=active_assignment_logits,
-            precomputed_assignment_probabilities=active_assignment_probabilities,
-        )
-
-        # Kết hợp vec-tơ ẩn từ hai nhánh lại với nhau
-        fusion_outputs = self._compute_fusion_outputs(
-            continuous_hidden=continuous_outputs["prototype_context"],
-            discrete_hidden=discrete_outputs["quantized_hidden"],
-            base_hidden=hidden,
-            paired_hidden=batch.get("paired_hidden_for_fusion"),
-        )
+            (
+                continuous_outputs,
+                discrete_outputs,
+                fusion_outputs,
+            ) = self._build_phase_passthrough_outputs(hidden)
 
         # Lấy ra vec-tơ kết hợp dùng cho từng tác vụ
         hidden_reconstruction = fusion_outputs["hidden_reconstruction"]
@@ -2224,6 +2625,10 @@ class ThesisMultitaskModel(BaseModel):
         self, outputs: dict[str, Any]
     ) -> dict[str, torch.Tensor]:
         optional_loss_values: dict[str, torch.Tensor] = {}
+        if not self._phase_uses_prototype_path():
+            for loss_name in self.optional_loss_configs:
+                optional_loss_values[loss_name] = self._zero_loss(outputs["hidden"])
+            return optional_loss_values
         for loss_name, loss_config in self.optional_loss_configs.items():
             compute_fn: Callable[[dict[str, Any]], torch.Tensor] = loss_config[
                 "compute_fn"
@@ -2259,9 +2664,11 @@ class ThesisMultitaskModel(BaseModel):
 
     def _get_encoder_profiled_parameters(self) -> OrderedDict[str, nn.Parameter]:
         profiled_parameters: OrderedDict[str, nn.Parameter] = OrderedDict()
-        encoder_layers = (
+        encoder_layers: Any = (
             self.encoder.network if hasattr(self.encoder, "network") else self.encoder
         )
+        if hasattr(encoder_layers, "network"):
+            encoder_layers = encoder_layers.network
         affine_layer_indices = [
             layer_index
             for layer_index, layer_module in enumerate(encoder_layers)
@@ -2644,12 +3051,15 @@ class ThesisMultitaskModel(BaseModel):
             reconstruction_loss=reconstruction_loss,
             classification_loss=classification_loss,
             optional_loss_values=optional_loss_values,
-            reconstruction_weight=self.lambda_recon,
+            reconstruction_weight=self._phase_reconstruction_weight(),
             classification_weight=(
-                classification_weight if self.enable_classification_path else 0.0
+                min(self._phase_classification_weight(), classification_weight)
+                if self.enable_classification_path
+                else 0.0
             ),
         )
-        total_loss = total_loss + self.lambda_contrastive * contrastive_loss
+        if self._phase_uses_contrastive_objective():
+            total_loss = total_loss + self.lambda_contrastive * contrastive_loss
 
         loss_terms = {
             "total_loss": total_loss,

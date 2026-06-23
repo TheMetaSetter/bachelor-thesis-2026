@@ -1,0 +1,51 @@
+# group: thesis/exp4
+# stage: offline-pretraining-three-stage
+# status: active
+# owner: thesis_multitask
+# tags: [smd, machine-3-4, w20, stride1, seed11, rtx3090, three-stage]
+
+experiment_name: smd_offline_pretraining_three_stage_machine_3_4_window20_seed11
+seed: 11
+device: cuda
+output_dir: outputs/smd_offline_pretraining_three_stage_machine_3_4_window20_seed11
+checkpoint_dir: outputs/smd_offline_pretraining_three_stage_machine_3_4_window20_seed11/checkpoints
+data_config_path: configs/data/smd_rtx3090_machine_3_4_20_stride1.yaml
+model_config_path: configs/model/thesis_multitask_three_stage_window20.yaml
+task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20.yaml
+optimizer:
+  optimizer_name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0
+  gradient_clip_norm: 0.5
+  scheduler:
+    scheduler_name: cosine
+    warmup_epochs: 5
+    warmup_start_lr: 0.001
+    cosine_end_lr: 0.0
+    cosine_after_warmup: true
+checkpoint_monitor_metric: val_realistic_vus_pr
+epochs: 300
+evaluation:
+  vus_max_buffer_size: 20
+  vus_num_thresholds: 200
+logging:
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_tags:
+    - smd
+    - machine-3-4
+    - window20
+    - stride1
+    - three-stage
+  wandb_run_name: smd_offline_pretraining_three_stage_machine_3_4_window20_seed11
+three_stage:
+  expected_total_training_epochs: 300
+  stage1_classification_epochs: 50
+  stage1_reconstruction_epochs: 70
+  stage2_recovery_epochs: 20
+  stage3_prototype_warmup_epochs: 20
+  multitask_pretraining_epochs: 140
+  discrete_memory_label_source: synthetic_train_labels
+  freeze_memories_after_initialization: true
+  freeze_recovered_zipped_encoder_during_warmup: true

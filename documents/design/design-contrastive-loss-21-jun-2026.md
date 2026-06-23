@@ -1566,7 +1566,7 @@ Tôi chưa chốt explicit repulsion term cho injected aligned pairs. Đây vẫ
 
 Các quyết định đã chốt: $\sigma_{arch}$ compute-once; không Jacobian trong training loop; Stage 1 hai encoder riêng; Stage 2 zip encoder only; Stage 3 prototype initialization + frozen encoder warm-up; 300-epoch schedule; 12-class taxonomy; masked reconstruction loss; multi-positive contrastive construction; distance-based top-$k$ codebook query.
 
-Các điểm còn open: exact formula từ config nếu có stride/dilation phức tạp; boundary handling cho $t+r$ ngoài window; zipping metric faithful hay approximation; explicit repulsion cho injected aligned pairs; opportunistic batching hay custom overlap-aware batching; codebook update bằng gradient, EMA, hay hybrid; giữ hay bỏ `discrete_assignment`.
+Các điểm còn open: exact formula từ config nếu có stride/dilation phức tạp; boundary handling cho $t+r$ ngoài window; zipping metric faithful hay approximation; explicit repulsion cho injected aligned pairs; opportunistic batching hay custom overlap-aware batching; exact fate của `discrete_assignment` trong codebase mới nếu chỉ giữ như legacy/ablation helper.
 
 Confidence: **High** cho tổng hợp decisions theo notes và các trao đổi mới nhất; **Medium** cho phần Gaussian RF prior phản ánh trained CNN tốt tới đâu, vì đó là approximation chứ không phải ERF đo bằng gradient.
 

@@ -99,6 +99,25 @@ def build_optimizer_from_experiment_config(
     raise ValueError(f"Unsupported optimizer_name: {optimizer_name}")
 
 
+def maybe_initialize_model_from_checkpoint(
+    model: torch.nn.Module,
+    experiment_config: dict[str, object],
+) -> None:
+    initialization_checkpoint_path = experiment_config.get(
+        "initialization_checkpoint_path"
+    )
+    if initialization_checkpoint_path is None:
+        return
+    checkpoint_path = Path(str(initialization_checkpoint_path))
+    checkpoint_manager = CheckpointManager(checkpoint_path.parent)
+    checkpoint_manager.load_checkpoint(checkpoint_path, model)
+    console_print(
+        "TRAIN",
+        "Initialized model weights from checkpoint before training",
+        initialization_checkpoint_path=checkpoint_path,
+    )
+
+
 def _compute_cosine_learning_rate_without_warmup(
     *,
     base_learning_rate: float,
@@ -254,6 +273,7 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
     # model-specific parameters (layer sizes, etc.) with task-specific logic
     # (loss weights, multitask heads, etc.) into a single PyTorch module.
     model = build_model_from_experiment_config(experiment_config)
+    maybe_initialize_model_from_checkpoint(model, experiment_config)
 
     optimizer = build_optimizer_from_experiment_config(model, experiment_config)
     optimizer_name = str(experiment_config["optimizer"].get("optimizer_name", "adam"))
