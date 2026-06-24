@@ -771,14 +771,23 @@ class ThesisMultitaskModel(BaseModel):
     def _phase_reconstruction_weight(self) -> float:
         if self.training_phase == "stage1_classification":
             return 0.0
+        if self.training_phase == "stage1_reconstruction":
+            return 1.0
         return float(self.lambda_recon)
 
     def _phase_classification_weight(self) -> float:
         if not self.enable_classification_path:
             return 0.0
+        if self.training_phase == "stage1_classification":
+            return 1.0
         if self.training_phase == "stage1_reconstruction":
             return 0.0
         return float(self.lambda_cls)
+
+    def _phase_contrastive_weight(self) -> float:
+        if self.training_phase in {"stage1_classification", "stage1_reconstruction"}:
+            return 0.1
+        return float(self.lambda_contrastive)
 
     def _phase_freezes_encoder(self) -> bool:
         return (
@@ -3146,7 +3155,7 @@ class ThesisMultitaskModel(BaseModel):
             ),
         )
         if self._phase_uses_contrastive_objective():
-            total_loss = total_loss + self.lambda_contrastive * contrastive_loss
+            total_loss = total_loss + self._phase_contrastive_weight() * contrastive_loss
 
         loss_terms = {
             "total_loss": total_loss,

@@ -174,8 +174,8 @@ def test_stage3_lifecycle_state_exposes_semantic_label_and_trainable_modules() -
         "expected_classification_weight",
     ),
     [
-        ("stage1_classification", 0.0, 1.1),
-        ("stage1_reconstruction", 0.9, 0.0),
+        ("stage1_classification", 0.0, 1.0),
+        ("stage1_reconstruction", 1.0, 0.0),
         ("stage2_recovery", 0.9, 1.1),
         ("stage3_memory_initialization_and_fusion_warmup", 0.9, 1.1),
     ],
@@ -197,6 +197,68 @@ def test_loss_weighting_changes_with_three_stage_phase(
         * step_output["loss_terms"]["reconstruction_loss"]
         + expected_classification_weight
         * step_output["loss_terms"]["classification_loss"]
+    )
+    assert torch.allclose(step_output["loss"], expected_loss, atol=1.0e-6)
+
+
+@pytest.mark.parametrize(
+    ("training_phase", "expected_reconstruction_weight", "expected_classification_weight"),
+    [
+        ("stage1_classification", 0.0, 1.0),
+        ("stage1_reconstruction", 1.0, 0.0),
+    ],
+)
+def test_stage1_loss_weighting_ignores_global_lambda_values(
+    training_phase: str,
+    expected_reconstruction_weight: float,
+    expected_classification_weight: float,
+) -> None:
+    model = _build_phase_model(
+        training_phase,
+        lambda_recon=7.5,
+        lambda_cls=3.25,
+        enable_two_view_contrastive=False,
+    )
+
+    step_output = model.training_step(_build_preaugmented_batch())
+
+    expected_loss = (
+        expected_reconstruction_weight
+        * step_output["loss_terms"]["reconstruction_loss"]
+        + expected_classification_weight
+        * step_output["loss_terms"]["classification_loss"]
+    )
+    assert torch.allclose(step_output["loss"], expected_loss, atol=1.0e-6)
+
+
+@pytest.mark.parametrize(
+    ("training_phase", "expected_reconstruction_weight", "expected_classification_weight"),
+    [
+        ("stage1_classification", 0.0, 1.0),
+        ("stage1_reconstruction", 1.0, 0.0),
+    ],
+)
+def test_stage1_total_loss_uses_fixed_contrastive_weight(
+    training_phase: str,
+    expected_reconstruction_weight: float,
+    expected_classification_weight: float,
+) -> None:
+    model = _build_phase_model(
+        training_phase,
+        lambda_recon=7.5,
+        lambda_cls=3.25,
+        lambda_contrastive=4.0,
+        enable_two_view_contrastive=True,
+    )
+
+    step_output = model.training_step(_build_preaugmented_batch())
+
+    expected_loss = (
+        expected_reconstruction_weight
+        * step_output["loss_terms"]["reconstruction_loss"]
+        + expected_classification_weight
+        * step_output["loss_terms"]["classification_loss"]
+        + 0.1 * step_output["loss_terms"]["contrastive_loss"]
     )
     assert torch.allclose(step_output["loss"], expected_loss, atol=1.0e-6)
 
