@@ -44,11 +44,14 @@ class SyntheticAnomalyInjector:
         spike_scale: float = 3.0,
         anomaly_visibility_boost: float = 1.5,
         anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
-        train_balance_classes: bool = False,
+        train_balance_classes: bool = True,
         balance_binary_classes_within_batch: bool | None = None,
         deterministic_seed: int | None = None,
-        classification_label_mode: str = "binary",
+        classification_label_mode: str = "redlamp_multiclass",
     ) -> None:
+        # In the active balanced multiclass path, class quotas come from
+        # train_balance_classes and the active taxonomy. anomaly_probability
+        # only controls Bernoulli anomaly injection when balancing is disabled.
         # These checks keep augmentation behavior explicit. Research code becomes
         # very hard to trust when synthetic data is allowed to silently drift.
         if not 0.0 <= anomaly_probability <= 1.0:
@@ -819,6 +822,8 @@ class SyntheticAnomalyInjector:
         device: torch.device,
     ) -> torch.Tensor:
         if not self.train_balance_classes:
+            # This is the only branch where anomaly_probability directly
+            # decides whether each window becomes anomalous.
             injection_decisions = (
                 self._rand(batch_size, device=device) < self.anomaly_probability
             )
@@ -845,6 +850,8 @@ class SyntheticAnomalyInjector:
                     )
             return sampled_labels
 
+        # Balanced training ignores Bernoulli anomaly sampling and instead
+        # builds a near-uniform quota across the active class taxonomy.
         class_quota = self._balanced_class_quota(batch_size)
         ordered_labels: list[int] = []
         for class_index, count in class_quota.items():

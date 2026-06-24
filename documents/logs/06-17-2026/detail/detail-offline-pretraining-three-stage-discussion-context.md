@@ -376,9 +376,9 @@ The rationale is:
 The preferred logging contract is:
 
 - `global_epoch`: runs from 1 to 300 across the whole offline pre-training phase,
-- `phase_name`: one of `stage1_classification`, `stage1_reconstruction`, `stage2_recovery`, `stage3_prototype_warmup`, `multitask_pretraining`,
+- `phase_name`: one of `stage1_classification`, `stage1_reconstruction`, `stage2_recovery`, `stage3_memory_initialization_and_fusion_warmup`, `multitask_pretraining`,
 - `phase_epoch`: local epoch index inside the active phase,
-- `encoder_frozen`: especially important during `stage3_prototype_warmup`,
+- `encoder_frozen`: especially important during `stage3_memory_initialization_and_fusion_warmup`,
 - `prototypes_initialized`: whether continuous and discrete prototype memories have been seeded,
 - `memory_mode`: whether prototype branches are bypassed or active with frozen memories.
 

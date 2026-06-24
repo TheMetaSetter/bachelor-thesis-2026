@@ -697,6 +697,9 @@ class Trainer:
             validation_aux_pointwise_payloads: list[dict[str, Any]] = []
             if use_val_realistic and hasattr(self.model, "realistic_validation_step"):
                 validation_aux_stage_name = "val_realistic"
+                # The auxiliary realistic-validation pass reuses the current
+                # val_loader. "Realistic" means the synthetic anomaly prior is
+                # calibrated from test-window statistics, not a new split.
                 realistic_anomaly_rate = (
                     self._resolve_realistic_validation_anomaly_rate(config=config)
                 )

@@ -27,6 +27,8 @@ def test_synthetic_anomaly_injector_defaults_to_redlamp_taxonomy() -> None:
     assert injector.anomaly_families == REDLAMP_ANOMALY_FAMILIES
     assert tuple(injector.family_registry.keys()) == REDLAMP_ANOMALY_FAMILIES
     assert REDLAMP_MULTICLASS_CLASS_NAMES == ("normal", *REDLAMP_ANOMALY_FAMILIES)
+    assert injector.classification_label_mode == "redlamp_multiclass"
+    assert injector.train_balance_classes is True
 
 
 def test_synthetic_anomaly_injection_preserves_shapes_and_adds_labels() -> None:
@@ -35,6 +37,8 @@ def test_synthetic_anomaly_injection_preserves_shapes_and_adds_labels() -> None:
         min_segment_fraction=0.1,
         max_segment_fraction=0.25,
         spike_scale=4.0,
+        classification_label_mode="binary",
+        train_balance_classes=False,
     )
     batch = _build_batch()
 
@@ -70,6 +74,7 @@ def test_redlamp_multiclass_injection_maps_family_to_shared_class_index(
         max_segment_fraction=0.2,
         anomaly_families=(anomaly_family,),
         classification_label_mode="redlamp_multiclass",
+        train_balance_classes=False,
     )
     batch = _build_batch()
 
@@ -96,6 +101,7 @@ def test_balanced_binary_injection_uses_fixed_positive_quota() -> None:
         anomaly_families=("spike", "noise"),
         train_balance_classes=True,
         deterministic_seed=7,
+        classification_label_mode="binary",
     )
     batch = {
         "x": torch.randn(8, 10, 3),
@@ -123,6 +129,7 @@ def test_each_redlamp_family_is_reachable_and_records_metadata(
         min_segment_fraction=0.2,
         max_segment_fraction=0.3,
         anomaly_families=(anomaly_family,),
+        train_balance_classes=False,
     )
     batch = _build_batch()
 
@@ -155,6 +162,7 @@ def test_redlamp_family_uses_four_to_six_timestep_segments_and_records_positions
         max_segment_fraction=0.3,
         anomaly_families=(anomaly_family,),
         classification_label_mode="redlamp_multiclass",
+        train_balance_classes=False,
     )
     batch = _build_batch()
 
@@ -238,6 +246,7 @@ def test_visibility_boost_increases_deviation_for_same_synthetic_sample() -> Non
         anomaly_families=("flip",),
         deterministic_seed=19,
         classification_label_mode="redlamp_multiclass",
+        train_balance_classes=False,
     )
     boosted_injector = SyntheticAnomalyInjector(
         anomaly_probability=1.0,
@@ -247,6 +256,7 @@ def test_visibility_boost_increases_deviation_for_same_synthetic_sample() -> Non
         anomaly_families=("flip",),
         deterministic_seed=19,
         classification_label_mode="redlamp_multiclass",
+        train_balance_classes=False,
     )
 
     base_batch = base_injector.augment_batch(batch)

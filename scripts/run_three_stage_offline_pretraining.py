@@ -34,6 +34,7 @@ from src.core.config import load_experiment_config
 from src.core.console import console_print
 from src.core.registry import build_dataset
 
+# Legacy phase label kept only for compatibility with older artifacts.
 STAGE3_PHASE_LEGACY_NAME = "stage3_prototype_warmup"
 STAGE3_PHASE_CANONICAL_NAME = "stage3_memory_initialization_and_fusion_warmup"
 

@@ -111,9 +111,7 @@ def _normalize_three_stage_config_keys(three_stage_config: dict[str, Any]) -> No
                 f"{STAGE3_WARMUP_EPOCHS_CANONICAL_KEY}"
             )
     if has_canonical_key:
-        three_stage_config[STAGE3_WARMUP_EPOCHS_LEGACY_KEY] = three_stage_config[
-            STAGE3_WARMUP_EPOCHS_CANONICAL_KEY
-        ]
+        three_stage_config.pop(STAGE3_WARMUP_EPOCHS_LEGACY_KEY, None)
         return
     if has_legacy_key:
         three_stage_config[STAGE3_WARMUP_EPOCHS_CANONICAL_KEY] = three_stage_config[
@@ -857,6 +855,14 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             )
 
     if task_config.get("task_name") == "multitask_tsad":
+        # The active multitask path is RedLamp-aligned by default unless a
+        # config explicitly opts back into the older binary semantics.
+        task_config.setdefault("train_balance_classes", True)
+        if "classification_label_mode" not in task_config:
+            if int(model_config.get("num_classes", 12)) == 2:
+                task_config["classification_label_mode"] = "binary"
+            else:
+                task_config["classification_label_mode"] = "redlamp_multiclass"
         boolean_fields = {
             "enable_classification_path": model_config.get(
                 "enable_classification_path", True
@@ -879,7 +885,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "use_synthetic_validation": task_config.get(
                 "use_synthetic_validation", True
             ),
-            "train_balance_classes": task_config.get("train_balance_classes", False),
+            "train_balance_classes": task_config.get("train_balance_classes", True),
             "val_realistic": task_config.get("val_realistic", True),
         }
         if model_config.get("model_name") == "redlamp_mlp_baseline":
@@ -985,7 +991,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         if float(model_config.get("lambda_cls", 0.1)) < 0.0:
             raise ValueError("lambda_cls must be non-negative")
         classification_label_mode = task_config.get(
-            "classification_label_mode", "binary"
+            "classification_label_mode", "redlamp_multiclass"
         )
         if classification_label_mode not in {"binary", "redlamp_multiclass"}:
             raise ValueError(
@@ -996,7 +1002,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             and int(model_config["num_classes"]) != 12
         ):
             raise ValueError(
-                "classification_label_mode='redlamp_multiclass' requires num_classes == 12"
+                "classification_label_mode='redlamp_multiclass' requires num_classes == 12 "
+                "for the active RedLamp-aligned multitask taxonomy"
             )
         if model_config.get("model_name") == "thesis_multitask":
             bootstrap_encoder_epochs = model_config.get("bootstrap_encoder_epochs", 10)
@@ -1063,6 +1070,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("warmup_beta_value must be between 0 and 1")
         if not 0.0 <= float(task_config["anomaly_probability"]) <= 1.0:
             raise ValueError("anomaly_probability must be between 0 and 1")
+        # val_realistic_source selects where the anomaly prior is estimated
+        # from for auxiliary realistic validation. It does not swap loaders.
         val_realistic_source = task_config.get(
             "val_realistic_source", "test_same_scope"
         )

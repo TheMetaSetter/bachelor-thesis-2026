@@ -140,7 +140,7 @@ def test_synthetic_validation_is_deterministic_after_rng_reset() -> None:
     )
 
 
-def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(
+def test_trainer_logs_clean_and_auxiliary_realistic_validation_metrics_separately(
     tmp_path: Path,
 ) -> None:
     model = _build_model()
@@ -190,3 +190,4 @@ def test_trainer_logs_clean_and_synthetic_validation_metrics_separately(
     assert epoch_metrics["train_usage_lambda"] == 0.2
     assert epoch_metrics["val_usage_lambda"] == 0.2
     assert epoch_metrics["val_realistic_usage_lambda"] == 0.2
+    assert epoch_metrics["val_loss"] != epoch_metrics["val_realistic_loss"]

@@ -56,7 +56,7 @@ class _SingleEntityValidationDataLoader:
         return iter([self.batch])
 
 
-def test_trainer_logs_clean_and_realistic_validation_metrics_separately_for_baseline(
+def test_trainer_logs_clean_and_auxiliary_realistic_validation_metrics_separately_for_baseline(
     tmp_path: Path,
 ) -> None:
     model = RedLampMLPBaseline(
@@ -103,8 +103,8 @@ def test_trainer_logs_clean_and_realistic_validation_metrics_separately_for_base
     assert "train_classification_loss" in epoch_metrics
     assert "val_loss" in epoch_metrics
     assert "val_reconstruction_loss" in epoch_metrics
-    assert "val_classification_loss" in epoch_metrics
-    assert "val_classification_accuracy" in epoch_metrics
+    assert "val_classification_loss" not in epoch_metrics
+    assert "val_classification_accuracy" not in epoch_metrics
     assert "val_realistic_loss" in epoch_metrics
     assert "val_realistic_classification_loss" in epoch_metrics
     assert "val_realistic_classification_accuracy" in epoch_metrics

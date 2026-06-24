@@ -33,6 +33,7 @@ from src.data.augment import (
 )
 from src.models.base_model import BaseModel
 
+# Legacy phase label kept only so older configs and checkpoints still load.
 STAGE3_PHASE_LEGACY_NAME = "stage3_prototype_warmup"
 STAGE3_PHASE_CANONICAL_NAME = "stage3_memory_initialization_and_fusion_warmup"
 
@@ -395,7 +396,7 @@ class SyntheticAnomalyConfig:
     max_segment_fraction: float = 0.3
     spike_scale: float = 3.0
     anomaly_visibility_boost: float = 1.5
-    train_balance_classes: bool = False
+    train_balance_classes: bool = True
     anomaly_families: tuple[str, ...] = REDLAMP_ANOMALY_FAMILIES
     classification_label_mode: str = "redlamp_multiclass"
 
@@ -569,6 +570,13 @@ class ThesisMultitaskModelConfig:
             and architecture_values.get("num_classes") == 2
         ):
             synthetic_values["classification_label_mode"] = "binary"
+        if (
+            "classification_label_mode" not in synthetic_values
+            and architecture_values.get("num_classes") == 12
+        ):
+            # Keep the flat-kwargs path aligned with the active 12-class
+            # taxonomy instead of remaining implicitly binary-first.
+            synthetic_values["classification_label_mode"] = "redlamp_multiclass"
         if "anomaly_families" in synthetic_values:
             synthetic_values["anomaly_families"] = tuple(
                 synthetic_values["anomaly_families"]
@@ -1845,6 +1853,11 @@ class ThesisMultitaskModel(BaseModel):
         return continuous_outputs, discrete_outputs, fusion_outputs
 
     def prepare_realistic_validation_epoch(self, anomaly_probability: float) -> None:
+        """Configure auxiliary realistic validation on the existing val loader.
+
+        This only retunes synthetic injection to match a target anomaly prior.
+        It does not switch loaders or create a separate validation split.
+        """
         if not 0.0 <= float(anomaly_probability) <= 1.0:
             raise ValueError(
                 "realistic validation anomaly_probability must be in [0, 1]"

@@ -6,6 +6,42 @@ from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
 from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 
 
+def test_redlamp_mlp_baseline_defaults_to_balanced_redlamp_multiclass_sampling() -> None:
+    model = RedLampMLPBaseline(
+        input_dim=4,
+        window_size=20,
+    )
+
+    assert model.train_balance_classes is True
+    assert model.synthetic_anomaly_injector.train_balance_classes is True
+
+
+def test_redlamp_mlp_baseline_accepts_canonical_balance_classes_within_batch_name() -> (
+    None
+):
+    model = RedLampMLPBaseline(
+        input_dim=4,
+        window_size=20,
+        balance_classes_within_batch=True,
+        train_balance_classes=False,
+    )
+
+    assert model.synthetic_anomaly_injector.train_balance_classes is True
+    assert model.synthetic_validation_injector.train_balance_classes is True
+
+
+def test_redlamp_mlp_baseline_keeps_legacy_balance_binary_alias_compatible() -> None:
+    model = RedLampMLPBaseline(
+        input_dim=4,
+        window_size=20,
+        balance_binary_classes_within_batch=True,
+        train_balance_classes=False,
+    )
+
+    assert model.synthetic_anomaly_injector.train_balance_classes is True
+    assert model.synthetic_validation_injector.train_balance_classes is True
+
+
 def test_redlamp_mlp_baseline_forward_contract_and_mlp_depth() -> None:
     model = RedLampMLPBaseline(
         input_dim=4,

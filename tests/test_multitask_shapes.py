@@ -16,6 +16,7 @@ def test_multitask_model_defaults_to_redlamp_multiclass_configuration() -> None:
 
     assert model.num_classes == len(REDLAMP_MULTICLASS_CLASS_NAMES)
     assert model.classification_label_mode == "redlamp_multiclass"
+    assert model.synthetic_anomaly_injector.train_balance_classes is True
 
 
 def test_multitask_model_returns_documented_shapes() -> None:

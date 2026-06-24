@@ -42,7 +42,7 @@ def test_three_stage_machine_3_4_experiment_config_matches_exact_300_epoch_budge
         ]
         == 20
     )
-    assert loaded_config["three_stage"]["stage3_prototype_warmup_epochs"] == 20
+    assert "stage3_prototype_warmup_epochs" not in loaded_config["three_stage"]
     assert loaded_config["three_stage"]["multitask_pretraining_epochs"] == 140
     assert loaded_config["model"]["training_phase"] == "multitask_pretraining"
     assert loaded_config["model"]["fusion_mode"] == "task_specific_concat_projection"
@@ -66,6 +66,11 @@ def test_three_stage_config_normalizes_legacy_stage3_epoch_alias() -> None:
         "configs/experiment/thesis/exp4/smd__thesis_multitask__offline-pretraining-three-stage-machine-3-4-window20-smoke__w20__seed11__smoke.yaml"
     )
     legacy_only_config = copy.deepcopy(loaded_config)
+    legacy_only_config["three_stage"]["stage3_prototype_warmup_epochs"] = (
+        legacy_only_config["three_stage"][
+            "stage3_memory_initialization_and_fusion_warmup_epochs"
+        ]
+    )
     legacy_only_config["three_stage"].pop(
         "stage3_memory_initialization_and_fusion_warmup_epochs"
     )
@@ -77,6 +82,7 @@ def test_three_stage_config_normalizes_legacy_stage3_epoch_alias() -> None:
         ]
         == legacy_only_config["three_stage"]["stage3_prototype_warmup_epochs"]
     )
+    assert "stage3_prototype_warmup_epochs" in legacy_only_config["three_stage"]
 
 
 def test_three_stage_config_rejects_conflicting_stage3_epoch_alias_values() -> None:

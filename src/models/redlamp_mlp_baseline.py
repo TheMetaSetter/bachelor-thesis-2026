@@ -113,7 +113,8 @@ class RedLampMLPBaseline(BaseModel):
         use_synthetic_validation: bool = True,
         synthetic_validation_seed: int = 7,
         classification_label_mode: str = "redlamp_multiclass",
-        train_balance_classes: bool = False,
+        train_balance_classes: bool = True,
+        balance_classes_within_batch: bool | None = None,
         balance_binary_classes_within_batch: bool = False,
         enable_gradient_conflict_profiling: bool = False,
         gradient_profiling_scope: str = "encoder_all",
@@ -189,7 +190,6 @@ class RedLampMLPBaseline(BaseModel):
         self.refurbishment_beta = refurbishment_beta
         self.use_synthetic_augmentation = use_synthetic_augmentation
         self.use_synthetic_validation = use_synthetic_validation
-        self.train_balance_classes = train_balance_classes
         self.epsilon = 1.0e-6
         self.enable_gradient_conflict_profiling = enable_gradient_conflict_profiling
         self.gradient_profiling_scope = gradient_profiling_scope
@@ -238,9 +238,17 @@ class RedLampMLPBaseline(BaseModel):
             dropout=dropout,
             apply_output_activation=False,
         )
-        effective_balance_binary_classes_within_batch = (
-            balance_binary_classes_within_batch or train_balance_classes
-        )
+        # The older alias is preserved for compatibility with binary-era call
+        # sites, but the active contract is generic class balancing.
+        if balance_classes_within_batch is not None:
+            effective_balance_classes_within_batch = bool(
+                balance_classes_within_batch
+            )
+        else:
+            effective_balance_classes_within_batch = bool(
+                balance_binary_classes_within_batch or train_balance_classes
+            )
+        self.train_balance_classes = effective_balance_classes_within_batch
         self.synthetic_anomaly_injector = SyntheticAnomalyInjector(
             anomaly_probability=anomaly_probability,
             min_segment_fraction=min_segment_fraction,
@@ -249,7 +257,7 @@ class RedLampMLPBaseline(BaseModel):
             anomaly_visibility_boost=anomaly_visibility_boost,
             anomaly_families=anomaly_families,
             balance_binary_classes_within_batch=(
-                effective_balance_binary_classes_within_batch
+                effective_balance_classes_within_batch
             ),
             classification_label_mode="redlamp_multiclass",
         )
@@ -261,7 +269,7 @@ class RedLampMLPBaseline(BaseModel):
             anomaly_visibility_boost=anomaly_visibility_boost,
             anomaly_families=anomaly_families,
             balance_binary_classes_within_batch=(
-                effective_balance_binary_classes_within_batch
+                effective_balance_classes_within_batch
             ),
             deterministic_seed=synthetic_validation_seed,
             classification_label_mode="redlamp_multiclass",
@@ -272,6 +280,11 @@ class RedLampMLPBaseline(BaseModel):
         self.synthetic_validation_injector.reset_rng()
 
     def prepare_realistic_validation_epoch(self, anomaly_probability: float) -> None:
+        """Configure auxiliary realistic validation on the existing val loader.
+
+        This only retunes synthetic injection to match a target anomaly prior.
+        It does not switch loaders or create a separate validation split.
+        """
         if not 0.0 <= float(anomaly_probability) <= 1.0:
             raise ValueError(
                 "realistic validation anomaly_probability must be in [0, 1]"
@@ -611,6 +624,7 @@ class RedLampMLPBaseline(BaseModel):
         batch: dict[str, Any],
         stage_name: str,
         classification_weight: float | None = None,
+        include_classification_metrics: bool = True,
     ) -> dict[str, Any]:
         prepared_batch = self._prepare_batch(batch, stage_name)
         outputs = self.forward(prepared_batch)
@@ -634,13 +648,14 @@ class RedLampMLPBaseline(BaseModel):
             f"{stage_name}_reconstruction_loss": float(
                 reconstruction_loss.detach().cpu()
             ),
-            f"{stage_name}_classification_loss": float(
-                classification_loss.detach().cpu()
-            ),
-            f"{stage_name}_classification_accuracy": float(
-                classification_accuracy.detach().cpu()
-            ),
         }
+        if include_classification_metrics:
+            log[f"{stage_name}_classification_loss"] = float(
+                classification_loss.detach().cpu()
+            )
+            log[f"{stage_name}_classification_accuracy"] = float(
+                classification_accuracy.detach().cpu()
+            )
         if stage_name == "train":
             self._gradient_profile_train_step_count += 1
             should_log_gradient_conflict = (
@@ -668,16 +683,34 @@ class RedLampMLPBaseline(BaseModel):
         }
 
     def training_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(batch, "train")
+        return self._shared_step(batch, "train", include_classification_metrics=True)
 
     def validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(batch, "val", classification_weight=0.0)
+        return self._shared_step(
+            batch,
+            "val",
+            classification_weight=0.0,
+            include_classification_metrics=False,
+        )
 
     def synthetic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(batch, "val_synth")
+        return self._shared_step(
+            batch,
+            "val_synth",
+            include_classification_metrics=True,
+        )
 
     def realistic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(batch, "val_realistic")
+        return self._shared_step(
+            batch,
+            "val_realistic",
+            include_classification_metrics=True,
+        )
 
     def test_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(batch, "test")
+        return self._shared_step(
+            batch,
+            "test",
+            classification_weight=0.0,
+            include_classification_metrics=False,
+        )

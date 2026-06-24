@@ -261,6 +261,33 @@ def test_validate_config_accepts_val_realistic_vus_pr_checkpoint_monitor() -> No
     validate_experiment_config(loaded_config)
 
 
+def test_multitask_validation_defaults_to_balanced_redlamp_multiclass_when_omitted() -> (
+    None
+):
+    loaded_config = load_experiment_config(
+        "configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml"
+    )
+    loaded_config["task"].pop("classification_label_mode")
+    loaded_config["task"].pop("train_balance_classes")
+
+    validate_experiment_config(loaded_config)
+
+    assert loaded_config["task"]["classification_label_mode"] == "redlamp_multiclass"
+    assert loaded_config["task"]["train_balance_classes"] is True
+
+
+def test_multitask_validation_keeps_explicit_binary_opt_in_when_requested() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/scale/smd__thesis_multitask__multitask-rtx3090-seed11-machine-2-1-window10-binary__w10__seed11__rtx3090.yaml"
+    )
+
+    validate_experiment_config(loaded_config)
+
+    assert loaded_config["model"]["num_classes"] == 2
+    assert loaded_config["task"]["classification_label_mode"] == "binary"
+    assert loaded_config["task"]["train_balance_classes"] is True
+
+
 def test_validate_config_accepts_reconstruction_diagnostics_logging_fields() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/thesis/exp2/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-exp2-small-100ep__w20__seed11__default.yaml"
@@ -382,6 +409,7 @@ def test_load_redlamp_multiclass_window20_configs(
     assert loaded_config["model"]["num_classes"] == 12
     assert loaded_config["model"]["mlp_num_linear_layers"] == 3
     assert loaded_config["task"]["classification_label_mode"] == "redlamp_multiclass"
+    assert loaded_config["task"]["train_balance_classes"] is True
     assert loaded_config["task"]["anomaly_families"] == list(REDLAMP_ANOMALY_FAMILIES)
     assert loaded_config["logging"]["use_wandb"] is True
     assert loaded_config["logging"]["wandb_mode"] == "online"
