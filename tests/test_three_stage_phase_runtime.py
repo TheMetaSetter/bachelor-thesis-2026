@@ -105,7 +105,9 @@ def test_memory_lifecycle_switches_with_three_stage_phase(
     assert model._should_update_memory("train") is expected_update
 
 
-def test_stage3_warmup_freezes_encoder_but_keeps_heads_and_concat_projections_trainable() -> None:
+def test_stage3_warmup_freezes_encoder_but_keeps_heads_and_concat_projections_trainable() -> (
+    None
+):
     model = _build_phase_model("stage3_memory_initialization_and_fusion_warmup")
 
     assert all(not parameter.requires_grad for parameter in model.encoder.parameters())
@@ -166,7 +168,11 @@ def test_stage3_lifecycle_state_exposes_semantic_label_and_trainable_modules() -
 
 
 @pytest.mark.parametrize(
-    ("training_phase", "expected_reconstruction_weight", "expected_classification_weight"),
+    (
+        "training_phase",
+        "expected_reconstruction_weight",
+        "expected_classification_weight",
+    ),
     [
         ("stage1_classification", 0.0, 1.1),
         ("stage1_reconstruction", 0.9, 0.0),
@@ -187,7 +193,8 @@ def test_loss_weighting_changes_with_three_stage_phase(
     step_output = model.training_step(_build_preaugmented_batch())
 
     expected_loss = (
-        expected_reconstruction_weight * step_output["loss_terms"]["reconstruction_loss"]
+        expected_reconstruction_weight
+        * step_output["loss_terms"]["reconstruction_loss"]
         + expected_classification_weight
         * step_output["loss_terms"]["classification_loss"]
     )

@@ -20,10 +20,11 @@ use_label_refurbishment: true
 refurbishment_alpha: 0.0
 refurbishment_beta: 0.0
 reconstruction_normal_only: true
-# Default thesis starting objective: L_recon + lambda_cls * L_cls.
+# Default thesis starting objective: 0.9 * L_recon + 0.1 * L_cls.
 # Keep all extra regularizers off at the beginning and enable them only after
 # concrete observed failure modes justify them.
-lambda_cls: 1.0
+lambda_recon: 0.9
+lambda_cls: 0.1
 lambda_div: 0.0
 lambda_var: 0.0
 lambda_cov: 0.0

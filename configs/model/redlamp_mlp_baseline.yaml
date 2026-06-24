@@ -11,6 +11,7 @@ cnn_dropout: 0.1
 classifier_dim: 32
 num_classes: 12
 dropout: 0.1
+lambda_recon: 0.9
 lambda_cls: 0.1
 use_label_refurbishment: true
 refurbishment_alpha: 0.1

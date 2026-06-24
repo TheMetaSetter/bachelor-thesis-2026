@@ -431,6 +431,128 @@ def test_redlamp_mlp_baseline_constructs_from_training_registry_path() -> None:
     assert model.num_classes == 12
 
 
+def test_thesis_model_defaults_to_enabled_label_refurbishment_when_omitted(
+    tmp_path: Path,
+) -> None:
+    from scripts.train import (
+        build_model_from_experiment_config,
+        register_runtime_components,
+    )
+
+    data_path = tmp_path / "data.yaml"
+    model_path = tmp_path / "model.yaml"
+    task_path = tmp_path / "task.yaml"
+    experiment_path = tmp_path / "experiment.yaml"
+    data_path.write_text(
+        "\n".join(
+            [
+                "dataset_name: smd",
+                "root_dir: data/ServerMachineDataset",
+                "window_size: 20",
+                "stride: 10",
+                "batch_size: 2",
+                "num_workers: 0",
+                "validation_split_ratio: 0.2",
+            ]
+        )
+    )
+    model_path.write_text(
+        "\n".join(
+            [
+                "model_name: thesis_multitask",
+                "input_dim: 38",
+                "encoder_dim: 64",
+                "hidden_dim: 16",
+                "mlp_num_linear_layers: 3",
+                "num_classes: 12",
+                "dropout: 0.0",
+                "continuous_num_prototypes: 4",
+                "discrete_codebook_size: 8",
+                "gumbel_temperature: 1.0",
+                "temperature_start: 1.0",
+                "temperature_end: 1.0",
+                "temperature_anneal_fraction: 1.0",
+                "alpha_logit_init: 0.0",
+                "beta_logit_init: 0.0",
+                "lambda_recon: 1.0",
+                "lambda_cls: 1.0",
+                "lambda_div: 0.0",
+                "lambda_var: 0.0",
+                "lambda_cov: 0.0",
+                "lambda_use: 0.0",
+                "lambda_gate: 0.0",
+                "usage_lambda_start: 0.0",
+                "usage_lambda_end: 0.0",
+                "usage_lambda_schedule_fraction: 1.0",
+                "variance_floor_gamma: 1.0",
+                "gate_barrier_margin: 0.25",
+                "bootstrap_encoder_epochs: 0",
+                "discrete_ema_decay: 0.99",
+                "memory_norm_epsilon: 1.0e-6",
+                "memory_initialization_batches: 16",
+                "memory_initialization_with_synthetic_windows: true",
+            ]
+        )
+    )
+    task_path.write_text(
+        "\n".join(
+            [
+                "task_name: multitask_tsad",
+                "use_synthetic_augmentation: true",
+                "use_synthetic_validation: true",
+                "synthetic_validation_seed: 7",
+                "classification_label_mode: redlamp_multiclass",
+                "freeze_fusion_for_epochs: 0",
+                "warmup_alpha_value: 0.5",
+                "warmup_beta_value: 0.5",
+                "anomaly_probability: 0.5",
+                "train_balance_classes: false",
+                "val_realistic: true",
+                "val_realistic_source: test_same_scope",
+                "val_anomaly_rate_override: null",
+                "min_segment_fraction: 0.2",
+                "max_segment_fraction: 0.3",
+                "spike_scale: 3.0",
+                "anomaly_visibility_boost: 1.5",
+                "anomaly_families:",
+                "  - spike",
+                "  - noise",
+                "  - scale",
+            ]
+        )
+    )
+    experiment_path.write_text(
+        "\n".join(
+            [
+                "experiment_name: thesis-default-refurbishment",
+                "seed: 7",
+                "device: cpu",
+                "output_dir: outputs/test",
+                "checkpoint_dir: outputs/test/checkpoints",
+                "epochs: 1",
+                f"data_config_path: {data_path}",
+                f"model_config_path: {model_path}",
+                f"task_config_path: {task_path}",
+                "optimizer:",
+                "  optimizer_name: adamw",
+                "  learning_rate: 0.001",
+                "  weight_decay: 0.0",
+                "logging:",
+                "  use_wandb: false",
+                "  wandb_mode: disabled",
+            ]
+        )
+    )
+
+    loaded_config = load_experiment_config(str(experiment_path))
+    validate_experiment_config(loaded_config)
+    register_runtime_components()
+
+    model = build_model_from_experiment_config(loaded_config)
+
+    assert model.use_label_refurbishment is True
+
+
 def test_load_experiment_config_injects_window_size_into_thesis_model(
     tmp_path: Path,
 ) -> None:

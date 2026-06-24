@@ -98,7 +98,7 @@ class RedLampMLPBaseline(BaseModel):
         classifier_dim: int = 32,
         num_classes: int = len(REDLAMP_MULTICLASS_CLASS_NAMES),
         dropout: float = 0.1,
-        lambda_recon: float = 1.0,
+        lambda_recon: float = 0.9,
         lambda_cls: float = 0.1,
         use_label_refurbishment: bool = True,
         refurbishment_alpha: float = 0.1,
@@ -271,6 +271,16 @@ class RedLampMLPBaseline(BaseModel):
     def prepare_synthetic_validation_epoch(self) -> None:
         self.synthetic_validation_injector.reset_rng()
 
+    def prepare_realistic_validation_epoch(self, anomaly_probability: float) -> None:
+        if not 0.0 <= float(anomaly_probability) <= 1.0:
+            raise ValueError(
+                "realistic validation anomaly_probability must be in [0, 1]"
+            )
+        self.synthetic_validation_injector.anomaly_probability = float(
+            anomaly_probability
+        )
+        self.synthetic_validation_injector.reset_rng()
+
     def _clone_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         cloned_batch: dict[str, Any] = {}
         for key, value in batch.items():
@@ -293,7 +303,7 @@ class RedLampMLPBaseline(BaseModel):
             return self._clone_batch(batch)
         if stage_name == "train" and self.use_synthetic_augmentation:
             return self.synthetic_anomaly_injector.augment_batch(batch)
-        if stage_name == "val_synth" and self.use_synthetic_validation:
+        if stage_name in {"val_synth", "val_realistic"} and self.use_synthetic_validation:
             return self.synthetic_validation_injector.augment_batch(batch)
 
         prepared_batch = self._clone_batch(batch)
@@ -596,14 +606,24 @@ class RedLampMLPBaseline(BaseModel):
             gradient_conflict_logs[sma_key] = self._update_sma(raw_key, raw_value)
         return gradient_conflict_logs
 
-    def _shared_step(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
+    def _shared_step(
+        self,
+        batch: dict[str, Any],
+        stage_name: str,
+        classification_weight: float | None = None,
+    ) -> dict[str, Any]:
         prepared_batch = self._prepare_batch(batch, stage_name)
         outputs = self.forward(prepared_batch)
         reconstruction_loss = F.mse_loss(outputs["recon"], prepared_batch["x"])
         classification_loss = self._compute_classification_loss(outputs, prepared_batch)
+        active_classification_weight = (
+            self.lambda_cls
+            if classification_weight is None
+            else float(classification_weight)
+        )
         total_loss = (
             self.lambda_recon * reconstruction_loss
-            + self.lambda_cls * classification_loss
+            + active_classification_weight * classification_loss
         )
         predicted_labels = torch.argmax(outputs["logits"], dim=-1)
         classification_accuracy = (
@@ -651,10 +671,13 @@ class RedLampMLPBaseline(BaseModel):
         return self._shared_step(batch, "train")
 
     def validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(batch, "val")
+        return self._shared_step(batch, "val", classification_weight=0.0)
 
     def synthetic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
         return self._shared_step(batch, "val_synth")
+
+    def realistic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
+        return self._shared_step(batch, "val_realistic")
 
     def test_step(self, batch: dict[str, Any]) -> dict[str, Any]:
         return self._shared_step(batch, "test")

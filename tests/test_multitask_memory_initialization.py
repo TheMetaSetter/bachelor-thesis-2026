@@ -97,7 +97,9 @@ def _build_synthetic_batch(raw_batch: dict[str, object]) -> dict[str, object]:
     return synthetic_batch
 
 
-def test_initialization_pool_separates_normal_only_continuous_tokens_and_class_stratified_discrete_tokens() -> None:
+def test_initialization_pool_separates_normal_only_continuous_tokens_and_class_stratified_discrete_tokens() -> (
+    None
+):
     model = _build_initialization_model()
     raw_batch = _build_raw_batch()
     anomaly_vector = torch.tensor([9.0, 9.0, 9.0, 9.0])
@@ -127,7 +129,9 @@ def test_initialization_pool_separates_normal_only_continuous_tokens_and_class_s
     )
 
 
-def test_memory_initialization_marks_model_initialized_and_freezes_memory_updates() -> None:
+def test_memory_initialization_marks_model_initialized_and_freezes_memory_updates() -> (
+    None
+):
     model = _build_initialization_model()
     raw_batch = _build_raw_batch()
     initial_memory_state = model.get_memory_tensor_state()
@@ -167,7 +171,9 @@ def test_memory_initialization_marks_model_initialized_and_freezes_memory_update
     )
 
 
-def test_memory_initialization_state_exposes_recovered_training_feature_sources() -> None:
+def test_memory_initialization_state_exposes_recovered_training_feature_sources() -> (
+    None
+):
     model = _build_initialization_model()
     raw_batch = _build_raw_batch()
 

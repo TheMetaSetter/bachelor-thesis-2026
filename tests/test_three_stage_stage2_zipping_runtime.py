@@ -11,7 +11,10 @@ from scripts.run_three_stage_offline_pretraining import (
     _zip_cnn_encoder_state_dicts_with_matches,
     materialize_three_stage_run_manifest,
 )
-from scripts.train import build_model_from_experiment_config, register_runtime_components
+from scripts.train import (
+    build_model_from_experiment_config,
+    register_runtime_components,
+)
 from src.core.config import load_experiment_config
 
 
@@ -116,9 +119,13 @@ def test_prepare_stage2_checkpoint_records_mtz_activation_matching_metadata(
     register_runtime_components()
 
     for phase_name in ("stage1_classification", "stage1_reconstruction"):
-        stage_config = load_experiment_config(stage_records_by_phase[phase_name]["config_path"])
+        stage_config = load_experiment_config(
+            stage_records_by_phase[phase_name]["config_path"]
+        )
         model = build_model_from_experiment_config(stage_config)
-        checkpoint_path = Path(stage_records_by_phase[phase_name]["best_checkpoint_path"])
+        checkpoint_path = Path(
+            stage_records_by_phase[phase_name]["best_checkpoint_path"]
+        )
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(
             {
@@ -171,6 +178,4 @@ def test_prepare_stage2_checkpoint_records_mtz_activation_matching_metadata(
         "shared_scope": "encoder_only",
         "reused_head_policy": "stage1_task_specific_heads",
     }
-    assert (
-        saved_payload["extra_state"]["memory_initialized"] is False
-    )
+    assert saved_payload["extra_state"]["memory_initialized"] is False

@@ -33,7 +33,10 @@ def test_three_stage_epoch_budget_helpers_resolve_exact_300_training_epochs() ->
         "multitask_pretraining",
     ]
     assert [phase["epochs"] for phase in training_plan] == [50, 70, 20, 20, 140]
-    assert compute_three_stage_total_training_epochs(experiment_config["three_stage"]) == 300
+    assert (
+        compute_three_stage_total_training_epochs(experiment_config["three_stage"])
+        == 300
+    )
 
 
 def test_three_stage_epoch_budget_helpers_reject_budget_drift() -> None:
@@ -66,7 +69,9 @@ def test_materialize_three_stage_run_manifest_writes_stage_configs_with_contiguo
     assert manifest["training_stages"][-1]["phase_name"] == "multitask_pretraining"
     assert manifest["training_stages"][-1]["global_epoch_end"] == 5
     stage3_record = manifest["training_stages"][3]
-    assert stage3_record["phase_name"] == "stage3_memory_initialization_and_fusion_warmup"
+    assert (
+        stage3_record["phase_name"] == "stage3_memory_initialization_and_fusion_warmup"
+    )
     assert (
         stage3_record["semantic_stage_label"]
         == "Stage 3: Memory Initialization and Fusion Warm-Up"
@@ -83,12 +88,17 @@ def test_materialize_three_stage_run_manifest_writes_stage_configs_with_contiguo
         assert loaded_stage_config["data"]["entity_ids"] == ["machine-3-4"]
         assert loaded_stage_config["data"]["stride"] == 1
         assert loaded_stage_config["three_stage_phase"] == stage_record["phase_name"]
-        assert loaded_stage_config["model"]["training_phase"] == stage_record["phase_name"]
+        assert (
+            loaded_stage_config["model"]["training_phase"] == stage_record["phase_name"]
+        )
         if stage_record["phase_name"] == "stage2_recovery":
             assert loaded_stage_config["initialization_checkpoint_path"].endswith(
                 "stage2_recovery_init.pt"
             )
-        if stage_record["phase_name"] == "stage3_memory_initialization_and_fusion_warmup":
+        if (
+            stage_record["phase_name"]
+            == "stage3_memory_initialization_and_fusion_warmup"
+        ):
             assert loaded_stage_config["initialization_checkpoint_path"].endswith(
                 "stage2_recovery/checkpoints/best.pt"
             )
@@ -98,7 +108,9 @@ def test_materialize_three_stage_run_manifest_writes_stage_configs_with_contiguo
             )
 
 
-def test_generated_stage_yaml_is_self_consistent_before_loader_resolution(tmp_path) -> None:
+def test_generated_stage_yaml_is_self_consistent_before_loader_resolution(
+    tmp_path,
+) -> None:
     experiment_config = load_experiment_config(
         "configs/experiment/thesis/exp4/smd__thesis_multitask__offline-pretraining-three-stage-machine-3-4-window20-smoke__w20__seed11__smoke.yaml"
     )
@@ -109,11 +121,12 @@ def test_generated_stage_yaml_is_self_consistent_before_loader_resolution(tmp_pa
     stage3_record = manifest["training_stages"][3]
     raw_stage3_yaml = Path(stage3_record["config_path"]).read_text(encoding="utf-8")
 
-    assert (
-        "stage3_memory_initialization_and_fusion_warmup_epochs" in raw_stage3_yaml
-    )
+    assert "stage3_memory_initialization_and_fusion_warmup_epochs" in raw_stage3_yaml
     assert "stage3_prototype_warmup_epochs" not in raw_stage3_yaml
-    assert "training_phase: stage3_memory_initialization_and_fusion_warmup" in raw_stage3_yaml
+    assert (
+        "training_phase: stage3_memory_initialization_and_fusion_warmup"
+        in raw_stage3_yaml
+    )
     assert "training_phase: multitask_pretraining" not in raw_stage3_yaml
 
 
@@ -232,7 +245,11 @@ def test_execute_three_stage_plan_runs_training_stages_then_evaluation_in_order(
     )
     monkeypatch.setattr(
         "scripts.run_three_stage_offline_pretraining._prepare_stage2_recovery_initialization_checkpoint",
-        lambda manifest: tmp_path / "outputs" / "three_stage" / "initializations" / "stage2_recovery_init.pt",
+        lambda manifest: tmp_path
+        / "outputs"
+        / "three_stage"
+        / "initializations"
+        / "stage2_recovery_init.pt",
     )
 
     execution_report = execute_three_stage_plan(manifest, dry_run=False)
@@ -273,7 +290,9 @@ def test_execute_three_stage_plan_writes_failure_report_when_a_stage_subprocess_
     with pytest.raises(subprocess.CalledProcessError):
         execute_three_stage_plan(manifest, dry_run=False)
 
-    report_path = tmp_path / "outputs" / "three_stage" / "three_stage_execution_report.json"
+    report_path = (
+        tmp_path / "outputs" / "three_stage" / "three_stage_execution_report.json"
+    )
     assert report_path.exists()
     execution_report = json.loads(report_path.read_text(encoding="utf-8"))
     assert execution_report["status"] == "failed"

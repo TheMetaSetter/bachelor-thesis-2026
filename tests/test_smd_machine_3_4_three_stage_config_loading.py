@@ -7,7 +7,9 @@ from src.core.config import validate_experiment_config
 
 
 def test_machine_3_4_stride1_data_config_matches_target_contract() -> None:
-    loaded_config = load_yaml_config("configs/data/smd_rtx3090_machine_3_4_20_stride1.yaml")
+    loaded_config = load_yaml_config(
+        "configs/data/smd_rtx3090_machine_3_4_20_stride1.yaml"
+    )
 
     assert loaded_config["dataset_name"] == "smd"
     assert loaded_config["root_dir"] == "data/ServerMachineDataset"
@@ -18,7 +20,9 @@ def test_machine_3_4_stride1_data_config_matches_target_contract() -> None:
     assert loaded_config["validation_split_ratio"] == 0.2
 
 
-def test_three_stage_machine_3_4_experiment_config_matches_exact_300_epoch_budget() -> None:
+def test_three_stage_machine_3_4_experiment_config_matches_exact_300_epoch_budget() -> (
+    None
+):
     loaded_config = load_experiment_config(
         "configs/experiment/thesis/exp4/smd__thesis_multitask__offline-pretraining-three-stage-machine-3-4-window20__w20__seed11__rtx3090.yaml"
     )
@@ -50,7 +54,10 @@ def test_three_stage_machine_3_4_experiment_config_matches_exact_300_epoch_budge
     assert (
         loaded_config["model"]["freeze_recovered_zipped_encoder_during_warmup"] is True
     )
-    assert loaded_config["model"]["discrete_memory_label_source"] == "synthetic_train_labels"
+    assert (
+        loaded_config["model"]["discrete_memory_label_source"]
+        == "synthetic_train_labels"
+    )
 
 
 def test_three_stage_config_normalizes_legacy_stage3_epoch_alias() -> None:

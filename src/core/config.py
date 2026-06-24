@@ -171,7 +171,9 @@ def _validate_three_stage_config(three_stage_config: dict[str, Any]) -> None:
         if not isinstance(field_value, bool):
             raise ValueError(f"three_stage.{field_name} must be a boolean")
 
-    discrete_memory_label_source = three_stage_config.get("discrete_memory_label_source")
+    discrete_memory_label_source = three_stage_config.get(
+        "discrete_memory_label_source"
+    )
     if discrete_memory_label_source != "synthetic_train_labels":
         raise ValueError(
             "three_stage.discrete_memory_label_source must be 'synthetic_train_labels'"
@@ -184,7 +186,10 @@ def _validate_three_stage_config(three_stage_config: dict[str, Any]) -> None:
         + three_stage_config[STAGE3_WARMUP_EPOCHS_CANONICAL_KEY]
         + three_stage_config["multitask_pretraining_epochs"]
     )
-    if computed_total_training_epochs != three_stage_config["expected_total_training_epochs"]:
+    if (
+        computed_total_training_epochs
+        != three_stage_config["expected_total_training_epochs"]
+    ):
         raise ValueError(
             "three_stage training epochs must sum to expected_total_training_epochs. "
             f"Got total={computed_total_training_epochs}, "
@@ -574,9 +579,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         float_fields["cnn_dropout"] = model_config.get(
             "cnn_dropout", model_config.get("dropout")
         )
-        float_fields["gradient_ema_alpha"] = model_config.get(
-            "gradient_ema_alpha", 0.1
-        )
+        float_fields["gradient_ema_alpha"] = model_config.get("gradient_ema_alpha", 0.1)
     if task_config.get("task_name") == "multitask_tsad":
         if model_config.get("model_name") == "thesis_multitask":
             float_fields["gumbel_temperature"] = model_config.get("gumbel_temperature")
@@ -594,8 +597,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "refurbishment_alpha", 0.0
         )
         float_fields["refurbishment_beta"] = model_config.get("refurbishment_beta", 0.0)
-        float_fields["lambda_recon"] = model_config.get("lambda_recon", 1.0)
-        float_fields["lambda_cls"] = model_config.get("lambda_cls")
+        float_fields["lambda_recon"] = model_config.get("lambda_recon", 0.9)
+        float_fields["lambda_cls"] = model_config.get("lambda_cls", 0.1)
         if model_config.get("model_name") == "thesis_multitask":
             float_fields["lambda_div"] = model_config.get("lambda_div")
             float_fields["lambda_var"] = model_config.get("lambda_var")
@@ -864,7 +867,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "enable_usage_loss": model_config.get("enable_usage_loss", False),
             "enable_gate_loss": model_config.get("enable_gate_loss", False),
             "use_label_refurbishment": model_config.get(
-                "use_label_refurbishment", False
+                "use_label_refurbishment", True
             ),
             "reconstruction_normal_only": model_config.get(
                 "reconstruction_normal_only", False
@@ -977,9 +980,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("refurbishment_alpha must be in [0, 1]")
         if not 0.0 <= float(model_config.get("refurbishment_beta", 0.0)) <= 1.0:
             raise ValueError("refurbishment_beta must be in [0, 1]")
-        if float(model_config.get("lambda_recon", 1.0)) < 0.0:
+        if float(model_config.get("lambda_recon", 0.9)) < 0.0:
             raise ValueError("lambda_recon must be non-negative")
-        if float(model_config.get("lambda_cls", 0.0)) < 0.0:
+        if float(model_config.get("lambda_cls", 0.1)) < 0.0:
             raise ValueError("lambda_cls must be non-negative")
         classification_label_mode = task_config.get(
             "classification_label_mode", "binary"
@@ -1026,9 +1029,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 raise ValueError("gradient_log_every_n_steps must be >= 1")
             if int(model_config.get("gradient_sma_window", 50)) < 1:
                 raise ValueError("gradient_sma_window must be >= 1")
-            if not (
-                0.0 < float(model_config.get("gradient_ema_alpha", 0.1)) <= 1.0
-            ):
+            if not (0.0 < float(model_config.get("gradient_ema_alpha", 0.1)) <= 1.0):
                 raise ValueError("gradient_ema_alpha must satisfy 0 < alpha <= 1")
             if (
                 float(

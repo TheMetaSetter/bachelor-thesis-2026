@@ -66,7 +66,10 @@ def build_three_stage_run_verification_summary(output_dir: str) -> dict[str, Any
     verification_status = "incomplete_artifacts"
     if execution_status == "failed":
         verification_status = "failed_run_detected"
-    elif execution_status in {"completed", "completed_legacy"} and not missing_success_artifacts:
+    elif (
+        execution_status in {"completed", "completed_legacy"}
+        and not missing_success_artifacts
+    ):
         verification_status = "verified_success"
 
     optimizer_training_phase_names = execution_report.get(

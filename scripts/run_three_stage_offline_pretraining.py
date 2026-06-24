@@ -22,7 +22,10 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-from scripts.train import build_model_from_experiment_config, register_runtime_components
+from scripts.train import (
+    build_model_from_experiment_config,
+    register_runtime_components,
+)
 from src.core.config import (
     STAGE3_WARMUP_EPOCHS_CANONICAL_KEY,
     STAGE3_WARMUP_EPOCHS_LEGACY_KEY,
@@ -51,8 +54,8 @@ STATISTICAL_PROCEDURE_NAMES = [
 
 
 def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
-        "+00:00", "Z"
+    return (
+        datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     )
 
 
@@ -70,7 +73,9 @@ def _build_semantic_stage_metadata(phase_name: str) -> dict[str, Any]:
     }
 
 
-def compute_three_stage_total_training_epochs(three_stage_config: dict[str, Any]) -> int:
+def compute_three_stage_total_training_epochs(
+    three_stage_config: dict[str, Any],
+) -> int:
     return sum(
         int(three_stage_config[field_name])
         for _, field_name in THREE_STAGE_PHASE_FIELD_ORDER
@@ -95,7 +100,9 @@ def validate_three_stage_epoch_budget(experiment_config: dict[str, Any]) -> None
     if computed_total_training_epochs != expected_total_training_epochs:
         exact_budget_suffix = ""
         if expected_total_training_epochs == 300:
-            exact_budget_suffix = " The main three-stage experiment must total exactly 300 epochs."
+            exact_budget_suffix = (
+                " The main three-stage experiment must total exactly 300 epochs."
+            )
         raise ValueError(
             "Three-stage training epochs must sum to expected_total_training_epochs. "
             f"Got total={computed_total_training_epochs}, "
@@ -110,7 +117,9 @@ def validate_three_stage_epoch_budget(experiment_config: dict[str, Any]) -> None
             f"{expected_total_training_epochs}."
         )
     if expected_total_training_epochs == 300 and computed_total_training_epochs != 300:
-        raise ValueError("The main three-stage experiment must total exactly 300 epochs")
+        raise ValueError(
+            "The main three-stage experiment must total exactly 300 epochs"
+        )
 
 
 def build_three_stage_training_plan(
@@ -174,7 +183,9 @@ def _build_stage_experiment_config(
         str(experiment_config["experiment_name"]),
         phase_name,
     )
-    stage_output_dir = Path(_to_stage_output_dir(str(experiment_config["output_dir"]), phase_name))
+    stage_output_dir = Path(
+        _to_stage_output_dir(str(experiment_config["output_dir"]), phase_name)
+    )
     stage_checkpoint_dir = stage_output_dir / "checkpoints"
     stage_config["experiment_name"] = stage_experiment_name
     stage_config["output_dir"] = str(stage_output_dir)
@@ -241,7 +252,9 @@ def materialize_three_stage_run_manifest(
     for phase_index, phase_record in enumerate(training_plan, start=1):
         phase_name = str(phase_record["phase_name"])
         stage_config = _build_stage_experiment_config(experiment_config, phase_record)
-        stage_config_path = generated_configs_dir / f"{phase_index:02d}_{phase_name}.yaml"
+        stage_config_path = (
+            generated_configs_dir / f"{phase_index:02d}_{phase_name}.yaml"
+        )
         with stage_config_path.open("w", encoding="utf-8") as handle:
             yaml.safe_dump(stage_config, handle, sort_keys=False)
         training_stages.append(
@@ -350,9 +363,14 @@ def _compute_cnn_activation_signatures(
             *,
             _module_name: str = module_name,
         ) -> None:
-            flattened_output = output.detach().cpu().permute(1, 0, 2).reshape(
-                output.shape[1],
-                -1,
+            flattened_output = (
+                output.detach()
+                .cpu()
+                .permute(1, 0, 2)
+                .reshape(
+                    output.shape[1],
+                    -1,
+                )
             )
             activations_by_layer[_module_name].append(flattened_output)
 
@@ -406,7 +424,9 @@ def _match_channel_signatures_by_cosine_similarity(
                         best_similarity = similarity_value
                         best_pair = (row_index, col_index)
             if best_pair is None:
-                raise ValueError("Failed to compute deterministic Stage 2 channel match")
+                raise ValueError(
+                    "Failed to compute deterministic Stage 2 channel match"
+                )
             unmatched_rows.remove(best_pair[0])
             unmatched_cols.remove(best_pair[1])
             layer_matches.append(best_pair)
@@ -446,7 +466,10 @@ def _zip_cnn_encoder_state_dicts_with_matches(
             classification_weight[classification_indices]
             + reconstruction_weight[reconstruction_indices]
         )
-        if bias_key in classification_state_dict and bias_key in reconstruction_state_dict:
+        if (
+            bias_key in classification_state_dict
+            and bias_key in reconstruction_state_dict
+        ):
             zipped_encoder_state_dict[bias_key] = 0.5 * (
                 classification_state_dict[bias_key][classification_indices]
                 + reconstruction_state_dict[bias_key][reconstruction_indices]
@@ -612,15 +635,21 @@ def execute_three_stage_plan(
         "status": "dry_run" if dry_run else "completed",
         "started_at_utc": _utc_now_iso(),
         "optimizer_training_phase_names": list(
-            manifest.get("optimizer_training_phase_names", _optimizer_training_phase_names())
+            manifest.get(
+                "optimizer_training_phase_names", _optimizer_training_phase_names()
+            )
         ),
         "optimizer_training_total_epochs": int(manifest["total_training_epochs"]),
         "statistical_procedure_names": list(
             manifest.get("statistical_procedure_names", STATISTICAL_PROCEDURE_NAMES)
         ),
         "planned_stage_names": planned_stage_names,
-        "executed_stage_names": planned_stage_names if dry_run else executed_stage_names,
-        "completed_stage_names": planned_stage_names if dry_run else completed_stage_names,
+        "executed_stage_names": planned_stage_names
+        if dry_run
+        else executed_stage_names,
+        "completed_stage_names": planned_stage_names
+        if dry_run
+        else completed_stage_names,
         "manifest_path": str(manifest_root / "three_stage_manifest.json"),
         "execution_report_path": str(execution_report_path),
         "server_preflight_summary_path": str(
@@ -720,7 +749,8 @@ def main() -> None:
             experiment_config["three_stage"]
         ),
         phases=[phase["phase_name"] for phase in training_plan],
-        manifest_path=_stage_manifest_root(experiment_config) / "three_stage_manifest.json",
+        manifest_path=_stage_manifest_root(experiment_config)
+        / "three_stage_manifest.json",
     )
     if args.print_plan_json:
         print(json.dumps(manifest, indent=2))

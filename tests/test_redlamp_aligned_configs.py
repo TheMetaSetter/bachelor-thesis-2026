@@ -5,6 +5,42 @@ from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 from src.models.thesis_multitask import ThesisMultitaskModel
 
 
+def test_baseline_and_thesis_models_default_to_enabled_label_refurbishment() -> None:
+    baseline_model = RedLampMLPBaseline(
+        input_dim=38,
+        window_size=20,
+    )
+    thesis_model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=32,
+        num_classes=12,
+    )
+
+    assert baseline_model.use_label_refurbishment is True
+    assert thesis_model.use_label_refurbishment is True
+
+
+def test_baseline_and_thesis_models_default_to_shared_loss_weights() -> None:
+    baseline_model = RedLampMLPBaseline(
+        input_dim=38,
+        window_size=20,
+    )
+    thesis_model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=32,
+        num_classes=12,
+    )
+
+    assert baseline_model.lambda_recon == 0.9
+    assert baseline_model.lambda_cls == 0.1
+    assert thesis_model.lambda_recon == 0.9
+    assert thesis_model.lambda_cls == 0.1
+
+
 def test_redlamp_aligned_experiment_configs_preserve_shared_semantics() -> None:
     experiment_config_paths = [
         (
@@ -35,9 +71,13 @@ def test_redlamp_aligned_experiment_configs_preserve_shared_semantics() -> None:
         )
         assert experiment_config["task"]["train_balance_classes"] is True
         if expected_model_name == "redlamp_mlp_baseline":
-            assert experiment_config["model"]["enable_gradient_conflict_profiling"] is True
+            assert (
+                experiment_config["model"]["enable_gradient_conflict_profiling"] is True
+            )
         else:
-            assert experiment_config["model"]["enable_gradient_conflict_profiling"] is True
+            assert (
+                experiment_config["model"]["enable_gradient_conflict_profiling"] is True
+            )
 
 
 def test_redlamp_aligned_model_and_thesis_model_build_with_shared_task_semantics() -> (

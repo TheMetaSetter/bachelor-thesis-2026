@@ -262,12 +262,12 @@ class ObjectiveConfig:
     enable_classification_path: bool = True
     alpha_logit_init: float = 0.0
     beta_logit_init: float = 0.0
-    use_label_refurbishment: bool = False
+    use_label_refurbishment: bool = True
     refurbishment_alpha: float = 0.0
     refurbishment_beta: float = 0.0
     reconstruction_normal_only: bool = False
-    lambda_recon: float = 1.0
-    lambda_cls: float = 1.0
+    lambda_recon: float = 0.9
+    lambda_cls: float = 0.1
     enable_diversity_loss: bool = False
     enable_variance_loss: bool = False
     enable_covariance_loss: bool = False
@@ -1383,7 +1383,9 @@ class ThesisMultitaskModel(BaseModel):
             return False
         self._initialize_memory_buffers_from_token_pool(
             continuous_hidden_tokens=continuous_hidden_tokens,
-            discrete_hidden_tokens_by_class=token_pool["discrete_hidden_tokens_by_class"],
+            discrete_hidden_tokens_by_class=token_pool[
+                "discrete_hidden_tokens_by_class"
+            ],
         )
         self.mark_memories_initialized(
             initialization_epoch=self.current_epoch_index + 1
@@ -1398,9 +1400,7 @@ class ThesisMultitaskModel(BaseModel):
             discrete_classes_with_tokens=sorted(
                 token_pool["num_discrete_class_tokens_by_class"].keys()
             ),
-            continuous_memory_source_label=(
-                "normal_only_recovered_training_features"
-            ),
+            continuous_memory_source_label=("normal_only_recovered_training_features"),
             discrete_memory_source_label=(
                 "class_stratified_recovered_training_features"
             ),
@@ -1526,7 +1526,9 @@ class ThesisMultitaskModel(BaseModel):
                     and self.use_synthetic_augmentation
                 ):
                     continuous_hidden_token_groups.append(clean_hidden)
-                    discrete_hidden_tokens_by_class.setdefault(0, []).append(clean_hidden)
+                    discrete_hidden_tokens_by_class.setdefault(0, []).append(
+                        clean_hidden
+                    )
                     continue
 
                 synthetic_batch = self.synthetic_anomaly_injector.augment_batch(
@@ -1607,7 +1609,9 @@ class ThesisMultitaskModel(BaseModel):
                 raise ValueError(
                     "discrete_hidden_tokens_by_class must contain at least one class"
                 )
-            codewords_per_class = max(self.discrete_codebook_size // self.num_classes, 1)
+            codewords_per_class = max(
+                self.discrete_codebook_size // self.num_classes, 1
+            )
             fallback_hidden_tokens = torch.cat(
                 [
                     discrete_hidden_tokens_by_class[class_index]
@@ -1985,7 +1989,9 @@ class ThesisMultitaskModel(BaseModel):
         # Fusion is expressed as exact limiting cases of the same equations.
         # That is why continuous-only and discrete-only ablations need no second model.
         if self.fusion_mode == "task_specific_concat_projection":
-            concatenated_hidden = torch.cat([continuous_hidden, discrete_hidden], dim=-1)
+            concatenated_hidden = torch.cat(
+                [continuous_hidden, discrete_hidden], dim=-1
+            )
             hidden_reconstruction = self.reconstruction_concat_projection(
                 concatenated_hidden
             )
@@ -2294,8 +2300,9 @@ class ThesisMultitaskModel(BaseModel):
             normal_token_mask = anomaly_mask == 0
             anomaly_token_mask = anomaly_mask == 1
         if self._phase_uses_prototype_path():
-            if self.continuous_prototype_bank is not None and self._should_update_memory(
-                stage_name
+            if (
+                self.continuous_prototype_bank is not None
+                and self._should_update_memory(stage_name)
             ):
                 active_continuous_memory_bank = self._update_continuous_memory_bank(
                     hidden,

@@ -16,7 +16,9 @@ def _materialize_completed_run(tmp_path: Path) -> Path:
     output_dir = tmp_path / "outputs" / "completed-run"
     three_stage_dir = output_dir / "three_stage"
     metrics_path = output_dir / "evaluation_metrics.json"
-    checkpoint_path = output_dir / "three_stage" / "multitask_pretraining" / "checkpoints" / "best.pt"
+    checkpoint_path = (
+        output_dir / "three_stage" / "multitask_pretraining" / "checkpoints" / "best.pt"
+    )
 
     _write_json(
         three_stage_dir / "server_preflight_summary.json",
@@ -105,7 +107,9 @@ def _materialize_failed_run(tmp_path: Path) -> Path:
     return output_dir
 
 
-def test_three_stage_run_verifier_recognizes_completed_verified_run(tmp_path: Path) -> None:
+def test_three_stage_run_verifier_recognizes_completed_verified_run(
+    tmp_path: Path,
+) -> None:
     output_dir = _materialize_completed_run(tmp_path)
 
     summary = build_three_stage_run_verification_summary(str(output_dir))
@@ -132,7 +136,9 @@ def test_three_stage_run_verifier_can_infer_success_from_legacy_execution_report
     tmp_path: Path,
 ) -> None:
     output_dir = _materialize_completed_run(tmp_path)
-    legacy_report_path = output_dir / "three_stage" / "three_stage_execution_report.json"
+    legacy_report_path = (
+        output_dir / "three_stage" / "three_stage_execution_report.json"
+    )
     legacy_report = json.loads(legacy_report_path.read_text(encoding="utf-8"))
     legacy_report.pop("status")
     legacy_report.pop("completed_stage_names")
@@ -156,7 +162,9 @@ def test_three_stage_run_verifier_falls_back_to_manifest_metadata_for_legacy_rep
     tmp_path: Path,
 ) -> None:
     output_dir = _materialize_completed_run(tmp_path)
-    legacy_report_path = output_dir / "three_stage" / "three_stage_execution_report.json"
+    legacy_report_path = (
+        output_dir / "three_stage" / "three_stage_execution_report.json"
+    )
     legacy_report = json.loads(legacy_report_path.read_text(encoding="utf-8"))
     legacy_report.pop("optimizer_training_phase_names")
     legacy_report.pop("statistical_procedure_names")

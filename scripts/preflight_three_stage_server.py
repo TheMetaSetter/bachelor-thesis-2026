@@ -66,7 +66,10 @@ def _validate_gpu_requirements(
         }
 
     selected_gpu_name = str(torch.cuda.get_device_name(gpu_index))
-    if required_gpu_name_substring and required_gpu_name_substring not in selected_gpu_name:
+    if (
+        required_gpu_name_substring
+        and required_gpu_name_substring not in selected_gpu_name
+    ):
         return {
             "status": "gpu_name_mismatch",
             "device_count": device_count,
@@ -345,8 +348,7 @@ def main() -> None:
         summary["launch_readiness"]["status"] != "ready_for_rtx3090_tmux_launch"
     ):
         raise SystemExit(
-            "Launch readiness check failed: "
-            f"{json.dumps(summary['launch_readiness'])}"
+            f"Launch readiness check failed: {json.dumps(summary['launch_readiness'])}"
         )
 
 

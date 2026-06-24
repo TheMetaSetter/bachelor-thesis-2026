@@ -39,7 +39,9 @@ def test_server_preflight_summary_reads_smoke_config_and_reports_cpu_mode() -> N
         "three_stage/server_preflight_summary.json"
     )
     assert summary["data_readiness"]["selected_entity_ids"] == ["machine-3-4"]
-    assert summary["data_readiness"]["raw_sequence_lengths_by_split"]["train"] == [18950]
+    assert summary["data_readiness"]["raw_sequence_lengths_by_split"]["train"] == [
+        18950
+    ]
     assert summary["data_readiness"]["raw_sequence_lengths_by_split"]["val"] == [4737]
     assert summary["data_readiness"]["raw_sequence_lengths_by_split"]["test"] == [23687]
     assert summary["data_readiness"]["actual_window_counts_by_split"] == {
@@ -66,7 +68,9 @@ def test_server_preflight_summary_reads_smoke_config_and_reports_cpu_mode() -> N
     assert saved_summary["launch_readiness"] == summary["launch_readiness"]
 
 
-def test_server_preflight_summary_reads_main_300_epoch_config_without_test_window_cap() -> None:
+def test_server_preflight_summary_reads_main_300_epoch_config_without_test_window_cap() -> (
+    None
+):
     summary = build_server_preflight_summary(
         "configs/experiment/thesis/exp4/smd__thesis_multitask__offline-pretraining-three-stage-machine-3-4-window20__w20__seed11__rtx3090.yaml",
         required_gpu_name_substring="RTX 3090",
@@ -136,7 +140,9 @@ def test_server_preflight_cli_can_reject_non_launch_ready_smoke_config() -> None
     assert "Launch readiness check failed" in completed.stderr
 
 
-def test_launch_readiness_requires_tmux_when_other_conditions_are_met(monkeypatch) -> None:
+def test_launch_readiness_requires_tmux_when_other_conditions_are_met(
+    monkeypatch,
+) -> None:
     monkeypatch.setattr(
         "scripts.preflight_three_stage_server.shutil.which",
         lambda executable: None if executable == "tmux" else "/usr/bin/fake",
