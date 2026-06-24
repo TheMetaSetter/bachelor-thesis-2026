@@ -17,6 +17,7 @@ def test_machine_3_4_stride1_data_config_matches_target_contract() -> None:
     assert loaded_config["window_size"] == 20
     assert loaded_config["stride"] == 1
     assert loaded_config["batch_size"] == 256
+    assert loaded_config["num_workers"] == 16
     assert loaded_config["validation_split_ratio"] == 0.2
 
 
