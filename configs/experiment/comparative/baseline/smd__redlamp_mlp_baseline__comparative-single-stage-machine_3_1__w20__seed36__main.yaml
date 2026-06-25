@@ -1,0 +1,41 @@
+# group: comparative/baseline
+# stage: single-stage
+# status: active
+# owner: redlamp_mlp_baseline
+
+experiment_name: smd_comparative_redlamp_mlp_baseline_single_stage_machine_3_1_seed36
+seed: 36
+device: cuda
+output_dir: outputs/comparative/smd/redlamp_mlp_baseline/machine_3_1/seed36
+checkpoint_dir: outputs/comparative/smd/redlamp_mlp_baseline/machine_3_1/seed36/checkpoints
+data_config_path: configs/data/smd_rtx3090_machine_3_1_20_stride1.yaml
+model_config_path: configs/model/redlamp_mlp_baseline_comparative_smd.yaml
+task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20_comparative.yaml
+optimizer:
+  optimizer_name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0
+  gradient_clip_norm: 0.5
+  scheduler:
+    scheduler_name: cosine
+    warmup_epochs: 5
+    warmup_start_lr: 0.001
+    cosine_end_lr: 0.0
+    cosine_after_warmup: true
+checkpoint_monitor_metric: val_realistic_vus_pr
+epochs: 300
+evaluation:
+  vus_max_buffer_size: 20
+  vus_num_thresholds: 200
+logging:
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_tags:
+    - comparative
+    - baseline-single-stage
+    - smd
+    - machine-3-1
+    - window20
+    - seed36
+  wandb_run_name: smd_comparative_redlamp_mlp_baseline_single_stage_machine_3_1_seed36

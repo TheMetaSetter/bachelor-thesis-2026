@@ -206,8 +206,16 @@ def test_compute_pointwise_metrics_includes_vus_pr() -> None:
     )
 
     assert "vus_pr" in metrics
+    assert "vus_roc" in metrics
+    assert "affiliation_f1" in metrics
+    assert "threshold" in metrics
     assert metrics["vus_pr"] >= 0.0
     assert metrics["vus_pr"] <= 1.0
+    assert metrics["vus_roc"] >= 0.0
+    assert metrics["vus_roc"] <= 1.0
+    assert metrics["affiliation_f1"] >= 0.0
+    assert metrics["affiliation_f1"] <= 1.0
+    assert metrics["threshold"] == 0.5
 
 
 def test_evaluator_accepts_vus_configuration() -> None:

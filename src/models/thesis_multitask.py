@@ -814,6 +814,16 @@ class ThesisMultitaskModel(BaseModel):
         for parameter in module.parameters():
             parameter.requires_grad = requires_grad
 
+    def _set_parameter_requires_grad(
+        self,
+        parameter: nn.Parameter | None,
+        *,
+        requires_grad: bool,
+    ) -> None:
+        if parameter is None:
+            return
+        parameter.requires_grad = requires_grad
+
     def _configure_trainable_parameters_for_phase(self) -> None:
         self._set_module_requires_grad(self.encoder, requires_grad=True)
         self._set_module_requires_grad(
@@ -848,6 +858,8 @@ class ThesisMultitaskModel(BaseModel):
             self.discrete_assignment,
             requires_grad=True,
         )
+        self._set_parameter_requires_grad(self.alpha_logit, requires_grad=True)
+        self._set_parameter_requires_grad(self.beta_logit, requires_grad=True)
 
         if self.training_phase == "stage1_classification":
             self._set_module_requires_grad(
@@ -901,6 +913,8 @@ class ThesisMultitaskModel(BaseModel):
                 self.discrete_assignment,
                 requires_grad=False,
             )
+            self._set_parameter_requires_grad(self.alpha_logit, requires_grad=False)
+            self._set_parameter_requires_grad(self.beta_logit, requires_grad=False)
         if self._phase_freezes_encoder():
             self._set_module_requires_grad(self.encoder, requires_grad=False)
 

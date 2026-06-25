@@ -17,6 +17,8 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
+from src.metrics.affiliation import compute_affiliation_precision_recall
+
 
 def _safe_metric(metric_function: Any, *args: Any, **kwargs: Any) -> float:
     try:
@@ -65,6 +67,17 @@ def _compute_false_positive_rate(
     if denominator == 0:
         return float("nan")
     return float(false_positive / denominator)
+
+
+def _validate_pointwise_array_shapes(
+    point_labels: np.ndarray,
+    point_scores: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    label_array = np.asarray(point_labels).astype(np.int64).reshape(-1)
+    score_array = np.asarray(point_scores).astype(np.float64).reshape(-1)
+    if label_array.shape != score_array.shape:
+        raise ValueError("point_labels and point_scores must have the same shape")
+    return label_array, score_array
 
 
 def extract_binary_anomaly_ranges(point_labels: np.ndarray) -> list[tuple[int, int]]:
@@ -243,16 +256,103 @@ def _compute_pr_area_from_points(
     return min(1.0, max(0.0, pr_area))
 
 
+def _compute_range_roc_rates(
+    point_labels: np.ndarray,
+    point_scores: np.ndarray,
+    threshold: float,
+    buffer_size: int,
+) -> tuple[float, float]:
+    binary_predictions = (point_scores > threshold).astype(np.int64)
+    range_labels = build_threshold_aware_range_labels(
+        point_labels=point_labels,
+        binary_predictions=binary_predictions,
+        buffer_size=buffer_size,
+    )
+    positive_mass = float(np.sum(range_labels))
+    negative_mass = float(np.sum(1.0 - range_labels))
+    if positive_mass == 0.0:
+        true_positive_rate = float("nan")
+    else:
+        true_positive_rate = float(np.dot(range_labels, binary_predictions) / positive_mass)
+    if negative_mass == 0.0:
+        false_positive_rate = float("nan")
+    else:
+        false_positive_rate = float(
+            np.dot(1.0 - range_labels, binary_predictions) / negative_mass
+        )
+    if np.isfinite(true_positive_rate):
+        true_positive_rate = min(1.0, max(0.0, true_positive_rate))
+    if np.isfinite(false_positive_rate):
+        false_positive_rate = min(1.0, max(0.0, false_positive_rate))
+    return false_positive_rate, true_positive_rate
+
+
+def _compute_roc_area_from_points(
+    false_positive_rates: list[float],
+    true_positive_rates: list[float],
+) -> float:
+    best_true_positive_rate_by_false_positive_rate: dict[float, float] = {}
+    for false_positive_rate, true_positive_rate in zip(
+        false_positive_rates,
+        true_positive_rates,
+    ):
+        if not np.isfinite(false_positive_rate) or not np.isfinite(true_positive_rate):
+            continue
+        clipped_false_positive_rate = min(
+            1.0,
+            max(0.0, float(false_positive_rate)),
+        )
+        clipped_true_positive_rate = min(1.0, max(0.0, float(true_positive_rate)))
+        best_true_positive_rate_by_false_positive_rate[clipped_false_positive_rate] = max(
+            clipped_true_positive_rate,
+            best_true_positive_rate_by_false_positive_rate.get(
+                clipped_false_positive_rate,
+                0.0,
+            ),
+        )
+
+    finite_points = [
+        (false_positive_rate, true_positive_rate)
+        for false_positive_rate, true_positive_rate in (
+            best_true_positive_rate_by_false_positive_rate.items()
+        )
+        if np.isfinite(false_positive_rate) and np.isfinite(true_positive_rate)
+    ]
+    if not finite_points:
+        return float("nan")
+
+    finite_points.extend([(0.0, 0.0), (1.0, 1.0)])
+    finite_points.sort(key=lambda pair: pair[0])
+    sorted_false_positive_rates = np.array(
+        [pair[0] for pair in finite_points],
+        dtype=np.float64,
+    )
+    sorted_true_positive_rates = np.array(
+        [pair[1] for pair in finite_points],
+        dtype=np.float64,
+    )
+    for index in range(1, sorted_true_positive_rates.size):
+        sorted_true_positive_rates[index] = max(
+            sorted_true_positive_rates[index],
+            sorted_true_positive_rates[index - 1],
+        )
+    trapezoid_function = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
+    roc_area = float(
+        trapezoid_function(sorted_true_positive_rates, sorted_false_positive_rates)
+    )
+    return min(1.0, max(0.0, roc_area))
+
+
 def compute_vus_pr_exact_naive(
     point_labels: np.ndarray,
     point_scores: np.ndarray,
     max_buffer_size: int,
     num_thresholds: int = 200,
 ) -> float:
-    label_array = np.asarray(point_labels).astype(np.int64).reshape(-1)
-    score_array = np.asarray(point_scores).astype(np.float64).reshape(-1)
-    if label_array.shape != score_array.shape:
-        raise ValueError("point_labels and point_scores must have the same shape")
+    label_array, score_array = _validate_pointwise_array_shapes(
+        point_labels=point_labels,
+        point_scores=point_scores,
+    )
     if max_buffer_size < 0:
         raise ValueError("max_buffer_size must be non-negative")
     if len(np.unique(label_array)) < 2:
@@ -285,6 +385,73 @@ def compute_vus_pr_exact_naive(
     if not finite_average_precision_values:
         return float("nan")
     return float(np.mean(finite_average_precision_values))
+
+
+def compute_vus_roc_exact_naive(
+    point_labels: np.ndarray,
+    point_scores: np.ndarray,
+    max_buffer_size: int,
+    num_thresholds: int = 200,
+) -> float:
+    label_array, score_array = _validate_pointwise_array_shapes(
+        point_labels=point_labels,
+        point_scores=point_scores,
+    )
+    if max_buffer_size < 0:
+        raise ValueError("max_buffer_size must be non-negative")
+    if len(np.unique(label_array)) < 2:
+        return float("nan")
+
+    thresholds = _build_score_thresholds(score_array, num_thresholds)
+    average_roc_values: list[float] = []
+    for buffer_size in range(max_buffer_size + 1):
+        false_positive_rates: list[float] = []
+        true_positive_rates: list[float] = []
+        for threshold in thresholds:
+            false_positive_rate, true_positive_rate = _compute_range_roc_rates(
+                point_labels=label_array,
+                point_scores=score_array,
+                threshold=float(threshold),
+                buffer_size=buffer_size,
+            )
+            false_positive_rates.append(false_positive_rate)
+            true_positive_rates.append(true_positive_rate)
+        average_roc_values.append(
+            _compute_roc_area_from_points(
+                false_positive_rates=false_positive_rates,
+                true_positive_rates=true_positive_rates,
+            )
+        )
+
+    finite_average_roc_values = [value for value in average_roc_values if np.isfinite(value)]
+    if not finite_average_roc_values:
+        return float("nan")
+    return float(np.mean(finite_average_roc_values))
+
+
+def compute_affiliation_f1(
+    point_labels: np.ndarray,
+    point_scores: np.ndarray,
+    threshold: float,
+) -> float:
+    label_array, score_array = _validate_pointwise_array_shapes(
+        point_labels=point_labels,
+        point_scores=point_scores,
+    )
+    if len(np.unique(label_array)) < 2:
+        return float("nan")
+
+    binary_predictions = (score_array > threshold).astype(np.int64)
+    precision, recall = compute_affiliation_precision_recall(
+        point_labels=label_array,
+        binary_predictions=binary_predictions,
+    )
+    if not np.isfinite(precision) or not np.isfinite(recall):
+        return 0.0
+    denominator = precision + recall
+    if denominator <= 0.0:
+        return 0.0
+    return float(2.0 * precision * recall / denominator)
 
 
 def compute_binary_classification_metrics(
@@ -351,26 +518,44 @@ def compute_pointwise_metrics(
     # Dựa vào threshold đã tính toán ra dựa trên
     # anomlay score của tất cả timestep trong validation set
     # để convert score sang dự đoán nhị phân.
-    binary_predictions = (point_scores > threshold).astype(np.int64)
+    label_array, score_array = _validate_pointwise_array_shapes(
+        point_labels=point_labels,
+        point_scores=point_scores,
+    )
+    binary_predictions = (score_array > threshold).astype(np.int64)
 
     metrics = {
-        "roc_auc": _safe_metric(roc_auc_score, point_labels, point_scores),
-        "pr_auc": _safe_metric(average_precision_score, point_labels, point_scores),
+        "roc_auc": _safe_metric(roc_auc_score, label_array, score_array),
+        "pr_auc": _safe_metric(average_precision_score, label_array, score_array),
         "precision": _safe_metric(
-            precision_score, point_labels, binary_predictions, zero_division=0
+            precision_score, label_array, binary_predictions, zero_division=0
         ),
         "recall": _safe_metric(
-            recall_score, point_labels, binary_predictions, zero_division=0
+            recall_score, label_array, binary_predictions, zero_division=0
         ),
-        "f1": _safe_metric(f1_score, point_labels, binary_predictions, zero_division=0),
-        "fpr": _compute_false_positive_rate(point_labels, binary_predictions),
+        "f1": _safe_metric(f1_score, label_array, binary_predictions, zero_division=0),
+        "fpr": _compute_false_positive_rate(label_array, binary_predictions),
+        "threshold": float(threshold),
+        "affiliation_f1": compute_affiliation_f1(
+            point_labels=label_array,
+            point_scores=score_array,
+            threshold=threshold,
+        ),
+        "vus_pr": float("nan"),
+        "vus_roc": float("nan"),
     }
 
     # Gọi hàm để tính toán độ đo VUS-PR
     if vus_max_buffer_size is not None:
         metrics["vus_pr"] = compute_vus_pr_exact_naive(
-            point_labels=point_labels,
-            point_scores=point_scores,
+            point_labels=label_array,
+            point_scores=score_array,
+            max_buffer_size=vus_max_buffer_size,
+            num_thresholds=vus_num_thresholds,
+        )
+        metrics["vus_roc"] = compute_vus_roc_exact_naive(
+            point_labels=label_array,
+            point_scores=score_array,
             max_buffer_size=vus_max_buffer_size,
             num_thresholds=vus_num_thresholds,
         )

@@ -146,6 +146,8 @@ def test_stage3_warmup_disables_non_target_trainable_modules() -> None:
         not parameter.requires_grad
         for parameter in model.discrete_assignment.parameters()
     )
+    assert model.alpha_logit.requires_grad is False
+    assert model.beta_logit.requires_grad is False
 
 
 def test_stage3_lifecycle_state_exposes_semantic_label_and_trainable_modules() -> None:
