@@ -1,0 +1,234 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{fontspec}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+
+\setmainfont[
+  Path=/opt/homebrew/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/,
+  UprightFont=DejaVuSerif.ttf,
+  BoldFont=DejaVuSerif-Bold.ttf,
+  ItalicFont=DejaVuSerif-Italic.ttf,
+  BoldItalicFont=DejaVuSerif-BoldItalic.ttf
+]{DejaVu Serif}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{SWaT Drift EDA}
+\rhead{2026-06-24}
+\cfoot{\thepage}
+\setlength{\headheight}{14pt}
+\setstretch{1.08}
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{SWaT Local Data Drift EDA}}\\[8pt]
+{\large Train-Test Distribution Drift Summary}\\[12pt]
+\begin{tabular}{ll}
+\textbf{Date} & 2026-06-24 21:17:00 +07 \\
+\textbf{Researcher} & Codex \\
+\textbf{Git Commit} & \texttt{3952bad44d222bb1a0db25d41af84245d65e088e} \\
+\textbf{Branch} & \texttt{dev} \\
+\end{tabular}
+\end{center}
+
+\section*{Research Question}
+Check whether SWaT already exists under \texttt{data/} in the current workspace. If it does, run a short EDA focused on KL divergence and other distribution-drift metrics between the train sequence and the test sequence.
+
+\section*{Executive Summary}
+SWaT is already present locally under \texttt{data/SWaT/} with three CSV files:
+\texttt{normal.csv}, \texttt{attack.csv}, and \texttt{merged.csv}.
+
+For the local data that is actually present, the effective split is:
+\begin{itemize}
+\item train sequence: \texttt{data/SWaT/normal.csv}
+\item test sequence: \texttt{data/SWaT/attack.csv}
+\end{itemize}
+
+The key caveat is important: the local \texttt{attack.csv} is fully labeled \texttt{Attack}, not a mixed normal-plus-attack test stream. So the measured drift is intentionally very large because the comparison is effectively \textbf{normal-only train versus attack-only test}.
+
+To avoid relying on one metric only, the EDA computed:
+\begin{itemize}
+\item histogram-based \texttt{KL(train || test)}
+\item histogram-based \texttt{KL(test || train)}
+\item Jensen-Shannon divergence
+\item Wasserstein distance
+\item Kolmogorov-Smirnov statistic
+\item standardized absolute mean shift
+\end{itemize}
+
+The strongest drift features are concentrated around \texttt{AIT201}, \texttt{AIT402}, \texttt{PIT501}, \texttt{PIT502}, \texttt{PIT503}, \texttt{AIT501}, and \texttt{AIT504}.
+
+\section*{Local Data Presence}
+\begin{itemize}
+\item \texttt{data/SWaT/normal.csv}
+\item \texttt{data/SWaT/attack.csv}
+\item \texttt{data/SWaT/merged.csv}
+\end{itemize}
+
+Approximate local directory size: \texttt{815M}.
+
+\section*{Data Preparation}
+The EDA used the local CSV files directly.
+\begin{itemize}
+\item Column names were stripped because some SWaT columns contain leading spaces.
+\item \texttt{Timestamp} and \texttt{Normal/Attack} were excluded from feature drift calculations.
+\item The remaining \texttt{51} columns were coerced to numeric.
+\item Parse gaps were forward-filled and backward-filled.
+\end{itemize}
+
+This is broadly consistent with the reference SWaT loader in \texttt{M2N2}, which also loads SWaT from \texttt{data/SWaT} and applies numeric coercion plus forward fill.
+
+\section*{Dataset Overview}
+\begin{longtable}{@{}ll@{}}
+\toprule
+Train rows & 1,387,098 \\
+Test rows & 54,621 \\
+Merged rows & 1,441,719 \\
+Feature count & 51 \\
+Test label counts & Attack = 54,621 \\
+Merged label counts & Normal = 1,387,098; Attack = 54,621 \\
+Attack fraction in merged & 0.037886023559375995 \\
+Train time start & 28/12/2015 10:00:00 AM \\
+Train time end & 28/12/2015 9:59:59 AM \\
+Test time start & 28/12/2015 10:29:14 AM \\
+Test time end & 2/1/2016 1:41:11 PM \\
+\bottomrule
+\end{longtable}
+
+\section*{Train vs Test Attack Drift}
+For \texttt{train\_normal\_vs\_test\_attack}:
+
+\begin{longtable}{@{}ll@{}}
+\toprule
+Median KL(train || test) & 0.9119754221240752 \\
+Mean KL(train || test) & 1.7095001072426963 \\
+Median KL(test || train) & 1.1404711982143674 \\
+Mean KL(test || train) & 1.5535797693816136 \\
+Median Jensen-Shannon divergence & 0.20457869744797724 \\
+Mean Jensen-Shannon divergence & 0.18006588977272778 \\
+Median Wasserstein distance & 0.6047679787452024 \\
+Mean Wasserstein distance & 20.81701787233951 \\
+Median KS statistic & 0.5451787978701341 \\
+Mean KS statistic & 0.40667220913158286 \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Important Metric Caveat}
+The raw mean standardized mean shift is not reliable as a global summary because several actuator channels are constant in train, so division by near-zero train standard deviation explodes numerically.
+
+Near-zero-train-variance features:
+\begin{itemize}
+\item \texttt{P202}
+\item \texttt{P204}
+\item \texttt{P206}
+\item \texttt{P401}
+\item \texttt{P404}
+\item \texttt{P502}
+\item \texttt{P601}
+\item \texttt{P603}
+\end{itemize}
+
+If those constant-train features are excluded:
+\begin{itemize}
+\item filtered mean standardized mean shift: 3.5015085575606877
+\item filtered median standardized mean shift: 1.3971969600481424
+\end{itemize}
+
+\subsection*{Strongest Drift Features}
+\textbf{Top 5 by Jensen-Shannon divergence}
+
+\begin{longtable}{@{}llll@{}}
+\toprule
+Feature & JS & KL(train || test) & KS \\
+\midrule
+AIT201 & 0.5340048539 & 10.0911215422 & 0.7331484312 \\
+AIT402 & 0.4188602422 & 2.7303052156 & 0.5813978524 \\
+PIT502 & 0.3957472820 & 3.2242747465 & 0.6385688719 \\
+AIT501 & 0.3699596410 & 2.6227871986 & 0.6444240137 \\
+PIT503 & 0.3626607116 & 14.7790194401 & 0.6305090183 \\
+\bottomrule
+\end{longtable}
+
+\textbf{Top 5 by KL(train || test)}
+
+\begin{longtable}{@{}llll@{}}
+\toprule
+Feature & KL(train || test) & JS & KS \\
+\midrule
+PIT503 & 14.7790194401 & 0.3626607116 & 0.6305090183 \\
+AIT201 & 10.0911215422 & 0.5340048539 & 0.7331484312 \\
+PIT501 & 8.8319918856 & 0.3498112692 & 0.6305787789 \\
+AIT504 & 4.1594030789 & 0.2577998092 & 0.6823534949 \\
+AIT401 & 4.1422876876 & 0.0423080941 & 0.3295489740 \\
+\bottomrule
+\end{longtable}
+
+\textbf{Top 5 by KS statistic}
+
+\begin{longtable}{@{}llll@{}}
+\toprule
+Feature & KS & JS & KL(train || test) \\
+\midrule
+P201 & 0.7402253670 & 0.3509060820 & 2.6884961379 \\
+AIT201 & 0.7331484312 & 0.5340048539 & 10.0911215422 \\
+AIT504 & 0.6823534949 & 0.2577998092 & 4.1594030789 \\
+MV201 & 0.6460041581 & 0.2452556668 & 0.9415826520 \\
+AIT501 & 0.6444240137 & 0.3699596410 & 2.6227871986 \\
+\bottomrule
+\end{longtable}
+
+\section*{Train vs Merged Drift}
+For \texttt{train\_normal\_vs\_merged\_all\_rows}, drift is much smaller:
+
+\begin{longtable}{@{}ll@{}}
+\toprule
+Median KL(train || merged) & 0.0027561185712303214 \\
+Mean KL(train || merged) & 0.006210088341160504 \\
+Median Jensen-Shannon divergence & 0.0007448783128877291 \\
+Mean Jensen-Shannon divergence & 0.0019229209169445434 \\
+Median KS statistic & 0.02065465678018019 \\
+Mean KS statistic & 0.015407192896102635 \\
+\bottomrule
+\end{longtable}
+
+This is consistent with the fact that \texttt{merged.csv} is dominated by the normal portion, and only about 3.79\% of rows are labeled \texttt{Attack}.
+
+\section*{Interpretation}
+\begin{itemize}
+\item Comparing \texttt{normal.csv} against \texttt{attack.csv} produces a strong drift signal across many features. This is expected and not surprising.
+\item The strongest drift is not evenly spread across all channels. A smaller set of sensors and pressure-related channels dominates the divergence signal.
+\item Comparing \texttt{normal.csv} against \texttt{merged.csv} produces only mild drift because the merged file is mostly normal data.
+\item For future benchmark integration, the codebase should treat ``attack-only test'' and ``mixed-timeline test'' as two different evaluation semantics.
+\end{itemize}
+
+\section*{Artifacts}
+\begin{itemize}
+\item Summary JSON: \texttt{outputs/eda\_swat\_drift\_2026-06-24/swat\_drift\_summary.json}
+\item Per-feature metrics: \texttt{outputs/eda\_swat\_drift\_2026-06-24/train\_vs\_test\_attack\_feature\_metrics.csv}
+\item Per-feature metrics: \texttt{outputs/eda\_swat\_drift\_2026-06-24/train\_vs\_merged\_feature\_metrics.csv}
+\item Research note: \texttt{documents/logs/06-24-2026/research/research-swat-local-data-drift-eda.md}
+\end{itemize}
+
+\section*{Reference Loader Path}
+Reference SWaT loader used for alignment:
+\begin{itemize}
+\item \texttt{bsc-thesis-ref-codebases/M2N2-master/data/load\_data.py}
+\item It expects:
+\begin{itemize}
+\item \texttt{data/SWaT/SWaT\_Dataset\_Normal\_v0.csv}
+\item \texttt{data/SWaT/SWaT\_Dataset\_Attack\_v0.csv}
+\end{itemize}
+\end{itemize}
+
+\end{document}
