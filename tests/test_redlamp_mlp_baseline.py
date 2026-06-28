@@ -6,7 +6,9 @@ from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
 from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 
 
-def test_redlamp_mlp_baseline_defaults_to_balanced_redlamp_multiclass_sampling() -> None:
+def test_redlamp_mlp_baseline_defaults_to_balanced_redlamp_multiclass_sampling() -> (
+    None
+):
     model = RedLampMLPBaseline(
         input_dim=4,
         window_size=20,

@@ -60,7 +60,9 @@ def test_build_smd_normal_drift_ranking_returns_one_row_per_entity(
     assert [row.entity_id for row in ranking_rows] == ["machine-a", "machine-b"]
     assert ranking_rows[0].num_test_normal_points == 3
     assert ranking_rows[1].num_test_normal_points == 2
-    assert ranking_rows[0].mean_kl_test_to_train >= ranking_rows[1].mean_kl_test_to_train
+    assert (
+        ranking_rows[0].mean_kl_test_to_train >= ranking_rows[1].mean_kl_test_to_train
+    )
 
 
 def test_build_smd_normal_drift_ranking_ignores_anomalous_test_rows(
@@ -84,4 +86,3 @@ def test_build_smd_normal_drift_ranking_ignores_anomalous_test_rows(
     assert len(ranking_rows) == 1
     assert ranking_rows[0].num_test_normal_points == 2
     assert ranking_rows[0].mean_kl_test_to_train == 0.0
-

@@ -64,8 +64,7 @@ def _interval_subset(
     right_interval: tuple[float, float],
 ) -> bool:
     return bool(
-        left_interval[0] >= right_interval[0]
-        and left_interval[1] <= right_interval[1]
+        left_interval[0] >= right_interval[0] and left_interval[1] <= right_interval[1]
     )
 
 
@@ -146,15 +145,15 @@ def _integral_mini_interval_probability_precision(
     clamped_distance_integral = 0.5 * quadratic_piece + (
         max_probability_distance * linear_piece
     )
-    raw_distance_integral = 0.5 * (
-        maximum_distance**2 - minimum_distance**2
-    )
+    raw_distance_integral = 0.5 * (maximum_distance**2 - minimum_distance**2)
     overlap_mass = (truth_end - truth_start) * (interval_end - interval_start)
     interval_length = interval_end - interval_start
     zone_length = zone_end - zone_start
-    return interval_length - (
-        clamped_distance_integral + raw_distance_integral + overlap_mass
-    ) / zone_length
+    return (
+        interval_length
+        - (clamped_distance_integral + raw_distance_integral + overlap_mass)
+        / zone_length
+    )
 
 
 def _integral_interval_probability_precision(

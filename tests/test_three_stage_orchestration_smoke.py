@@ -305,3 +305,66 @@ def test_execute_three_stage_plan_writes_failure_report_when_a_stage_subprocess_
         "stage1_classification",
         "stage1_reconstruction",
     ]
+
+
+def test_execute_three_stage_plan_can_skip_completed_stages_from_prior_report(
+    tmp_path, monkeypatch
+) -> None:
+    experiment_config = load_experiment_config(
+        "configs/experiment/thesis/exp4/smd__thesis_multitask__offline-pretraining-three-stage-machine-3-4-window20-smoke__w20__seed11__smoke.yaml"
+    )
+    experiment_config["output_dir"] = str(tmp_path / "outputs")
+    experiment_config["checkpoint_dir"] = str(tmp_path / "outputs" / "checkpoints")
+    manifest = materialize_three_stage_run_manifest(experiment_config)
+
+    stage1_best_checkpoint = (
+        tmp_path
+        / "outputs"
+        / "three_stage"
+        / "stage1_classification"
+        / "checkpoints"
+        / "best.pt"
+    )
+    stage1_best_checkpoint.parent.mkdir(parents=True, exist_ok=True)
+    stage1_best_checkpoint.write_text("checkpoint", encoding="utf-8")
+
+    execution_report_path = (
+        tmp_path / "outputs" / "three_stage" / "three_stage_execution_report.json"
+    )
+    execution_report_path.write_text(
+        json.dumps(
+            {
+                "status": "failed",
+                "completed_stage_names": ["stage1_classification"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    called_commands: list[list[str]] = []
+
+    def _fake_run(*args, **kwargs):  # type: ignore[no-untyped-def]
+        called_commands.append(list(args[0]))
+        return type("_CompletedProcess", (), {"returncode": 0})()
+
+    monkeypatch.setattr(
+        "scripts.run_three_stage_offline_pretraining.subprocess.run",
+        _fake_run,
+    )
+    monkeypatch.setattr(
+        "scripts.run_three_stage_offline_pretraining._prepare_stage2_recovery_initialization_checkpoint",
+        lambda manifest: tmp_path
+        / "outputs"
+        / "three_stage"
+        / "initializations"
+        / "stage2_recovery_init.pt",
+    )
+
+    execution_report = execute_three_stage_plan(
+        manifest,
+        dry_run=False,
+        skip_completed=True,
+    )
+
+    assert called_commands[0][3].endswith("02_stage1_reconstruction.yaml")
+    assert execution_report["skipped_stage_names"] == ["stage1_classification"]

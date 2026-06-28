@@ -114,13 +114,27 @@ def reconstruct_pointwise_records_from_window_payload(
 
     evaluation_records: list[dict[str, Any]] = []
     for entity_id, score_sum in entity_score_sums.items():
-        counts = torch.clamp(entity_score_counts[entity_id], min=1.0)
+        raw_counts = entity_score_counts[entity_id]
+        counts = torch.clamp(raw_counts, min=1.0)
         averaged_scores = score_sum / counts
+        covered_indices = torch.nonzero(raw_counts > 0.0, as_tuple=False).reshape(-1)
+        if covered_indices.numel() == 0:
+            evaluated_start_index = 0
+            evaluated_end_index = 0
+            evaluated_num_points = 0
+        else:
+            evaluated_start_index = int(covered_indices[0].item())
+            evaluated_end_index = int(covered_indices[-1].item()) + 1
+            evaluated_num_points = int(covered_indices.numel())
         evaluation_record = {
             "entity_id": entity_id,
             "point_scores": averaged_scores,
             "point_labels": entity_point_labels[entity_id],
             "num_points": int(averaged_scores.shape[0]),
+            "evaluated_start_index": evaluated_start_index,
+            "evaluated_end_index": evaluated_end_index,
+            "evaluated_num_points": evaluated_num_points,
+            "raw_num_points": int(averaged_scores.shape[0]),
         }
         validate_evaluation_record(evaluation_record)
         evaluation_records.append(evaluation_record)
@@ -268,6 +282,21 @@ class Evaluator:
         )
 
         metrics["threshold"] = threshold
+        metrics["raw_num_points"] = float(
+            sum(int(record["raw_num_points"]) for record in evaluation_records)
+        )
+        metrics["evaluated_num_points"] = float(
+            sum(int(record["evaluated_num_points"]) for record in evaluation_records)
+        )
+        metrics["num_entities_evaluated"] = float(len(evaluation_records))
+        metrics["is_truncated_evaluation"] = float(
+            1.0
+            if any(
+                int(record["evaluated_num_points"]) < int(record["raw_num_points"])
+                for record in evaluation_records
+            )
+            else 0.0
+        )
         if forward_pass_seconds_history:
             metrics["forward_pass_seconds_mean"] = sum(
                 forward_pass_seconds_history

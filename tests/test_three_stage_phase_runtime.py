@@ -204,7 +204,11 @@ def test_loss_weighting_changes_with_three_stage_phase(
 
 
 @pytest.mark.parametrize(
-    ("training_phase", "expected_reconstruction_weight", "expected_classification_weight"),
+    (
+        "training_phase",
+        "expected_reconstruction_weight",
+        "expected_classification_weight",
+    ),
     [
         ("stage1_classification", 0.0, 1.0),
         ("stage1_reconstruction", 1.0, 0.0),
@@ -234,7 +238,11 @@ def test_stage1_loss_weighting_ignores_global_lambda_values(
 
 
 @pytest.mark.parametrize(
-    ("training_phase", "expected_reconstruction_weight", "expected_classification_weight"),
+    (
+        "training_phase",
+        "expected_reconstruction_weight",
+        "expected_classification_weight",
+    ),
     [
         ("stage1_classification", 0.0, 1.0),
         ("stage1_reconstruction", 1.0, 0.0),

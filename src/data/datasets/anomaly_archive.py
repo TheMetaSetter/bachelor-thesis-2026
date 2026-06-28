@@ -23,13 +23,9 @@ class AnomalyArchiveDatasetParser(BaseSequenceParser):
         self,
         file_path: str | Path,
         validation_split_ratio: float = 0.2,
-        comparison_mode: str = "pre_vs_anomaly",
-        inclusive_anomaly_end: bool = False,
     ) -> None:
         self.file_path = Path(file_path)
         self.validation_split_ratio = validation_split_ratio
-        self.comparison_mode = comparison_mode
-        self.inclusive_anomaly_end = inclusive_anomaly_end
 
     def _parse_filename(self) -> dict[str, int | str]:
         file_name = self.file_path.name
@@ -94,30 +90,20 @@ class AnomalyArchiveDatasetParser(BaseSequenceParser):
     def parse(self) -> dict[str, list[dict[str, Any]]]:
         metadata = self._parse_filename()
         values = self._load_values()
+        train_end_index = int(metadata["start_index"])
         anomaly_start_index = int(metadata["anomaly_start_index"])
         anomaly_end_index = int(metadata["anomaly_end_index"])
-        if anomaly_start_index <= 0 or anomaly_start_index >= values.size:
+        if train_end_index <= 0 or train_end_index >= values.size:
+            raise ValueError("start_index must lie within the loaded series")
+        if anomaly_start_index <= train_end_index or anomaly_start_index >= values.size:
             raise ValueError("anomaly_start_index must lie within the loaded series")
-        if anomaly_end_index <= anomaly_start_index:
+        if anomaly_end_index <= anomaly_start_index or anomaly_end_index > values.size:
             raise ValueError(
                 "anomaly_end_index must be greater than anomaly_start_index"
             )
 
-        if self.comparison_mode == "pre_vs_anomaly":
-            train_region_values = values[:anomaly_start_index]
-            anomaly_stop_index = (
-                anomaly_end_index + 1
-                if self.inclusive_anomaly_end
-                else anomaly_end_index
-            )
-            test_values = values[anomaly_start_index:anomaly_stop_index]
-        elif self.comparison_mode == "pre_vs_post":
-            train_region_values = values[:anomaly_start_index]
-            test_values = values[anomaly_end_index:]
-        else:
-            raise ValueError(
-                "comparison_mode must be either 'pre_vs_post' or 'pre_vs_anomaly'"
-            )
+        train_region_values = values[:train_end_index]
+        test_values = values[train_end_index:]
 
         if train_region_values.size == 0:
             raise ValueError(
@@ -154,11 +140,10 @@ class AnomalyArchiveDatasetParser(BaseSequenceParser):
                 point_labels=torch.zeros(val_values.size, dtype=torch.long),
             )
         ]
-        test_point_labels = (
-            torch.ones(test_values.size, dtype=torch.long)
-            if self.comparison_mode == "pre_vs_anomaly"
-            else torch.zeros(test_values.size, dtype=torch.long)
-        )
+        test_point_labels = torch.zeros(test_values.size, dtype=torch.long)
+        anomaly_start_in_test = anomaly_start_index - train_end_index
+        anomaly_end_in_test = anomaly_end_index - train_end_index
+        test_point_labels[anomaly_start_in_test:anomaly_end_in_test] = 1
         test_sequences = [
             self._build_raw_sequence(
                 values=test_values,
@@ -174,6 +159,8 @@ class AnomalyArchiveDatasetParser(BaseSequenceParser):
             train_tensor=summarize_tensor(train_sequences[0]["x"]),
             val_tensor=summarize_tensor(val_sequences[0]["x"]),
             test_tensor=summarize_tensor(test_sequences[0]["x"]),
-            comparison_mode=self.comparison_mode,
+            train_end_index=train_end_index,
+            anomaly_start_in_test=anomaly_start_in_test,
+            anomaly_end_in_test=anomaly_end_in_test,
         )
         return {"train": train_sequences, "val": val_sequences, "test": test_sequences}

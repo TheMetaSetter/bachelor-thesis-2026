@@ -3182,7 +3182,9 @@ class ThesisMultitaskModel(BaseModel):
             ),
         )
         if self._phase_uses_contrastive_objective():
-            total_loss = total_loss + self._phase_contrastive_weight() * contrastive_loss
+            total_loss = (
+                total_loss + self._phase_contrastive_weight() * contrastive_loss
+            )
 
         loss_terms = {
             "total_loss": total_loss,

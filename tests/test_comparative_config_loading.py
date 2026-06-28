@@ -103,7 +103,10 @@ def test_all_comparative_main_configs_resolve_with_exact_stage_contracts() -> No
 
         assert resolve_stage_family(loaded_config) == "thesis_three_stage"
         assert loaded_config["epochs"] == 300
-        assert compute_three_stage_total_training_epochs(loaded_config["three_stage"]) == 300
+        assert (
+            compute_three_stage_total_training_epochs(loaded_config["three_stage"])
+            == 300
+        )
         assert loaded_config["three_stage"]["expected_total_training_epochs"] == 300
         assert loaded_config["model"]["lambda_recon"] == 0.9
         assert loaded_config["model"]["lambda_cls"] == 0.1
@@ -141,4 +144,35 @@ def test_comparative_smoke_configs_disable_online_wandb_and_reduce_runtime() -> 
 
     assert baseline_smoke_config["epochs"] < 300
     assert thesis_smoke_config["epochs"] < 300
-    assert compute_three_stage_total_training_epochs(thesis_smoke_config["three_stage"]) == thesis_smoke_config["epochs"]
+    assert (
+        compute_three_stage_total_training_epochs(thesis_smoke_config["three_stage"])
+        == thesis_smoke_config["epochs"]
+    )
+
+
+def test_comparative_stress_smoke_configs_use_cuda_and_nonzero_workers() -> None:
+    stress_smoke_config_paths = [
+        "configs/experiment/comparative_stress_smoke/baseline/"
+        "smd__redlamp_mlp_baseline__comparative-single-stage-machine_1_6"
+        "__w20__seed6__stress-smoke.yaml",
+        "configs/experiment/comparative_stress_smoke/thesis/"
+        "smd__thesis_multitask__comparative-three-stage-machine_1_6"
+        "__w20__seed6__stress-smoke.yaml",
+    ]
+
+    baseline_stress_config = load_experiment_config(stress_smoke_config_paths[0])
+    thesis_stress_config = load_experiment_config(stress_smoke_config_paths[1])
+
+    for loaded_config in [baseline_stress_config, thesis_stress_config]:
+        assert loaded_config["device"] == "cuda"
+        assert loaded_config["data"]["num_workers"] > 0
+        assert loaded_config["logging"]["use_wandb"] is True
+        assert loaded_config["logging"]["wandb_mode"] == "offline"
+        assert len(loaded_config["data"]["entity_ids"]) == 1
+
+    assert baseline_stress_config["epochs"] < 300
+    assert thesis_stress_config["epochs"] < 300
+    assert (
+        compute_three_stage_total_training_epochs(thesis_stress_config["three_stage"])
+        == thesis_stress_config["epochs"]
+    )

@@ -281,8 +281,6 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "annotate_cleaning_metadata",
         "entity_ids",
         "shuffle_train",
-        "comparison_mode",
-        "inclusive_anomaly_end",
         "max_train_windows",
         "max_val_windows",
         "max_test_windows",

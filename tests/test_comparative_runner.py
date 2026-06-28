@@ -10,6 +10,7 @@ from scripts.run_comparative_smd_experiments import (
     build_comparative_run_plan,
     execute_comparative_run_plan,
 )
+from src.core.config import load_experiment_config
 
 
 def _write_placeholder_config(config_path: Path) -> None:
@@ -232,3 +233,137 @@ def test_execute_comparative_run_plan_records_failed_command_and_run(
     assert execution_report["status"] == "failed"
     assert execution_report["failed_run_id"] == "main:baseline_run"
     assert execution_report["failed_command"] == called_commands[-1]
+
+
+def test_build_comparative_run_plan_can_generate_worker_override_configs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dataset_root = tmp_path / "data" / "ServerMachineDataset"
+    (dataset_root / "train").mkdir(parents=True)
+    (dataset_root / "test").mkdir(parents=True)
+    (dataset_root / "test_label").mkdir(parents=True)
+
+    config_path = tmp_path / "configs" / "baseline.yaml"
+    _write_placeholder_config(config_path)
+    stub_config = _build_stub_config(
+        experiment_name="baseline_run",
+        dataset_root=dataset_root,
+        output_dir=tmp_path / "outputs" / "baseline",
+        checkpoint_dir=tmp_path / "outputs" / "baseline" / "checkpoints",
+        entity_id="machine-1-6",
+        seed=36,
+        model_name="redlamp_mlp_baseline",
+        include_three_stage=False,
+    )
+    stub_config["device"] = "cuda"
+    stub_config["data"]["num_workers"] = 16
+    monkeypatch.setattr(
+        "scripts.run_comparative_smd_experiments.load_experiment_config",
+        lambda config_path: stub_config,
+    )
+
+    run_plan = build_comparative_run_plan(
+        config_paths=[config_path],
+        smoke_config_paths=[],
+        report_dir=tmp_path / "reports",
+        data_num_workers_override=4,
+    )
+
+    run_record = run_plan["main_runs"][0]
+    generated_config_path = Path(run_record["config_path"])
+    assert generated_config_path.exists()
+    assert "generated_configs" in str(generated_config_path)
+
+    generated_config = json.loads(
+        Path(run_plan["manifest_path"]).read_text(encoding="utf-8")
+    )["main_runs"][0]
+    assert generated_config["data_num_workers_override"] == 4
+    assert generated_config["original_config_path"] == str(config_path.resolve())
+
+
+def test_execute_comparative_run_plan_skips_completed_runs_with_existing_artifacts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dataset_root = tmp_path / "data" / "ServerMachineDataset"
+    (dataset_root / "train").mkdir(parents=True)
+    (dataset_root / "test").mkdir(parents=True)
+    (dataset_root / "test_label").mkdir(parents=True)
+
+    config_path = tmp_path / "configs" / "baseline.yaml"
+    _write_placeholder_config(config_path)
+    output_dir = tmp_path / "outputs" / "baseline"
+    checkpoint_dir = output_dir / "checkpoints"
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    (checkpoint_dir / "best.pt").write_text("checkpoint", encoding="utf-8")
+    (output_dir / "evaluation_metrics.json").write_text("{}", encoding="utf-8")
+    (output_dir / "evaluation_records.json").write_text("{}", encoding="utf-8")
+    (output_dir / "evaluation_curves.json").write_text("{}", encoding="utf-8")
+
+    stub_config = _build_stub_config(
+        experiment_name="baseline_run",
+        dataset_root=dataset_root,
+        output_dir=output_dir,
+        checkpoint_dir=checkpoint_dir,
+        entity_id="machine-1-6",
+        seed=36,
+        model_name="redlamp_mlp_baseline",
+        include_three_stage=False,
+    )
+    monkeypatch.setattr(
+        "scripts.run_comparative_smd_experiments.load_experiment_config",
+        lambda config_path: stub_config,
+    )
+    run_plan = build_comparative_run_plan(
+        config_paths=[config_path],
+        smoke_config_paths=[],
+        report_dir=tmp_path / "reports",
+    )
+    Path(run_plan["execution_report_path"]).write_text(
+        json.dumps(
+            {
+                "status": "failed",
+                "completed_run_ids": ["main:baseline_run"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    called_commands: list[list[str]] = []
+
+    def _fake_run(command: list[str], cwd: Path, check: bool) -> None:
+        called_commands.append(command)
+
+    monkeypatch.setattr(
+        "scripts.run_comparative_smd_experiments.subprocess.run",
+        _fake_run,
+    )
+
+    execution_report = execute_comparative_run_plan(
+        run_plan,
+        dry_run=False,
+        skip_completed=True,
+    )
+
+    assert called_commands == []
+    assert execution_report["completed_run_ids"] == ["main:baseline_run"]
+    assert execution_report["skipped_run_ids"] == ["main:baseline_run"]
+
+
+def test_generated_worker_override_config_can_be_reloaded_by_real_config_loader(
+    tmp_path: Path,
+) -> None:
+    run_plan = build_comparative_run_plan(
+        config_paths=[
+            "configs/experiment/comparative/baseline/"
+            "smd__redlamp_mlp_baseline__comparative-single-stage-machine_1_6"
+            "__w20__seed6__main.yaml"
+        ],
+        smoke_config_paths=[],
+        report_dir=tmp_path / "reports",
+        data_num_workers_override=4,
+    )
+
+    generated_config = load_experiment_config(run_plan["main_runs"][0]["config_path"])
+    assert generated_config["data"]["num_workers"] == 4

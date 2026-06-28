@@ -59,7 +59,9 @@ def _compute_channelwise_kl_test_to_train(
     smoothing: float,
 ) -> list[float]:
     if train_matrix.shape[1] != test_normal_matrix.shape[1]:
-        raise ValueError("Train and test matrices must have the same number of channels")
+        raise ValueError(
+            "Train and test matrices must have the same number of channels"
+        )
 
     per_channel_scores: list[float] = []
     for channel_index in range(train_matrix.shape[1]):

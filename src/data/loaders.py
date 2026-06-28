@@ -20,6 +20,7 @@ from src.data.datasets.anomaly_archive import AnomalyArchiveDatasetParser
 from src.data.datasets.smd import SMDDatasetParser
 from src.data.download import download_smd_dataset, get_smd_dataset_root
 from src.data.scalers import SequenceStandardScaler
+from src.data.split_protocol import validate_benchmark_test_labels
 
 
 def _resolve_data_loader_num_workers(data_config: dict[str, Any]) -> int:
@@ -146,6 +147,10 @@ def _build_dataset_bundle_from_sequences(
         train_sequences=len(cleaned_sequences["train"]),
         val_sequences=len(cleaned_sequences["val"]),
         test_sequences=len(cleaned_sequences["test"]),
+    )
+    validate_benchmark_test_labels(
+        dataset_name=dataset_name,
+        split_sequences=cleaned_sequences["test"],
     )
     scaler = SequenceStandardScaler()
     scaler.fit(cleaned_sequences["train"])
@@ -298,8 +303,6 @@ class AnomalyArchiveDatasetBuilder(BaseDatasetBuilder):
         parser = AnomalyArchiveDatasetParser(
             file_path=file_path,
             validation_split_ratio=float(data_config["validation_split_ratio"]),
-            comparison_mode=str(data_config.get("comparison_mode", "pre_vs_anomaly")),
-            inclusive_anomaly_end=bool(data_config.get("inclusive_anomaly_end", False)),
         )
         parsed_sequences = parser.parse()
         cleaning_pipeline = SequenceCleaningPipeline(

@@ -80,6 +80,37 @@ def _validate_pointwise_array_shapes(
     return label_array, score_array
 
 
+def _stable_float(value: float, digits: int = 6) -> float:
+    return float(f"{float(value):.{digits}f}")
+
+
+def _compute_pointwise_diagnostics(
+    label_array: np.ndarray,
+    score_array: np.ndarray,
+    binary_predictions: np.ndarray,
+) -> dict[str, float]:
+    n_pos = int(np.count_nonzero(label_array))
+    n_total = int(label_array.shape[0])
+    n_neg = int(n_total - n_pos)
+    predicted_positive_count = int(np.count_nonzero(binary_predictions))
+    unique_label_count = int(len(np.unique(label_array)))
+    return {
+        "unique_label_count": float(unique_label_count),
+        "n_pos": float(n_pos),
+        "n_neg": float(n_neg),
+        "positive_ratio": 0.0 if n_total == 0 else _stable_float(n_pos / n_total),
+        "score_min": _stable_float(np.min(score_array)),
+        "score_max": _stable_float(np.max(score_array)),
+        "score_mean": _stable_float(np.mean(score_array)),
+        "score_std": _stable_float(np.std(score_array)),
+        "predicted_positive_count": float(predicted_positive_count),
+        "predicted_positive_ratio": 0.0
+        if n_total == 0
+        else _stable_float(predicted_positive_count / n_total),
+        "is_single_class_label_regime": float(1.0 if unique_label_count < 2 else 0.0),
+    }
+
+
 def extract_binary_anomaly_ranges(point_labels: np.ndarray) -> list[tuple[int, int]]:
     label_array = np.asarray(point_labels).astype(np.int64).reshape(-1)
     ranges: list[tuple[int, int]] = []
@@ -273,7 +304,9 @@ def _compute_range_roc_rates(
     if positive_mass == 0.0:
         true_positive_rate = float("nan")
     else:
-        true_positive_rate = float(np.dot(range_labels, binary_predictions) / positive_mass)
+        true_positive_rate = float(
+            np.dot(range_labels, binary_predictions) / positive_mass
+        )
     if negative_mass == 0.0:
         false_positive_rate = float("nan")
     else:
@@ -303,12 +336,14 @@ def _compute_roc_area_from_points(
             max(0.0, float(false_positive_rate)),
         )
         clipped_true_positive_rate = min(1.0, max(0.0, float(true_positive_rate)))
-        best_true_positive_rate_by_false_positive_rate[clipped_false_positive_rate] = max(
-            clipped_true_positive_rate,
-            best_true_positive_rate_by_false_positive_rate.get(
-                clipped_false_positive_rate,
-                0.0,
-            ),
+        best_true_positive_rate_by_false_positive_rate[clipped_false_positive_rate] = (
+            max(
+                clipped_true_positive_rate,
+                best_true_positive_rate_by_false_positive_rate.get(
+                    clipped_false_positive_rate,
+                    0.0,
+                ),
+            )
         )
 
     finite_points = [
@@ -423,7 +458,9 @@ def compute_vus_roc_exact_naive(
             )
         )
 
-    finite_average_roc_values = [value for value in average_roc_values if np.isfinite(value)]
+    finite_average_roc_values = [
+        value for value in average_roc_values if np.isfinite(value)
+    ]
     if not finite_average_roc_values:
         return float("nan")
     return float(np.mean(finite_average_roc_values))
@@ -560,6 +597,13 @@ def compute_pointwise_metrics(
             num_thresholds=vus_num_thresholds,
         )
 
+    metrics.update(
+        _compute_pointwise_diagnostics(
+            label_array=label_array,
+            score_array=score_array,
+            binary_predictions=binary_predictions,
+        )
+    )
     return metrics
 
 

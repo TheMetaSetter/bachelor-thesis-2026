@@ -620,6 +620,7 @@ def execute_three_stage_plan(
     manifest: dict[str, Any],
     *,
     dry_run: bool,
+    skip_completed: bool = False,
 ) -> dict[str, Any]:
     command_plan = build_three_stage_execution_commands(manifest)
     manifest_root = _resolve_manifest_root_from_manifest(manifest)
@@ -629,6 +630,17 @@ def execute_three_stage_plan(
     ] + ["evaluation"]
     completed_stage_names: list[str] = []
     executed_stage_names: list[str] = []
+    skipped_stage_names: list[str] = []
+    existing_execution_report: dict[str, Any] | None = None
+    existing_completed_stage_names: set[str] = set()
+
+    if skip_completed and not dry_run and execution_report_path.exists():
+        existing_execution_report = json.loads(
+            execution_report_path.read_text(encoding="utf-8")
+        )
+        existing_completed_stage_names = set(
+            existing_execution_report.get("completed_stage_names", [])
+        )
 
     execution_report: dict[str, Any] = {
         "experiment_name": manifest["experiment_name"],
@@ -651,6 +663,9 @@ def execute_three_stage_plan(
         "completed_stage_names": planned_stage_names
         if dry_run
         else completed_stage_names,
+        "skipped_stage_names": skipped_stage_names,
+        "skip_completed": skip_completed,
+        "resumed_from_existing_report": existing_execution_report is not None,
         "manifest_path": str(manifest_root / "three_stage_manifest.json"),
         "execution_report_path": str(execution_report_path),
         "server_preflight_summary_path": str(
@@ -671,15 +686,41 @@ def execute_three_stage_plan(
                 command_plan["training"],
             ):
                 phase_name = str(stage_record["phase_name"])
+                stage_best_checkpoint_path = Path(
+                    str(stage_record["best_checkpoint_path"])
+                )
+                if (
+                    skip_completed
+                    and phase_name in existing_completed_stage_names
+                    and stage_best_checkpoint_path.exists()
+                ):
+                    completed_stage_names.append(phase_name)
+                    skipped_stage_names.append(phase_name)
+                    continue
                 executed_stage_names.append(phase_name)
                 if phase_name == "stage2_recovery":
                     _prepare_stage2_recovery_initialization_checkpoint(manifest)
                 subprocess.run(training_command, cwd=REPOSITORY_ROOT, check=True)
                 completed_stage_names.append(phase_name)
 
-            executed_stage_names.append("evaluation")
-            subprocess.run(command_plan["evaluation"], cwd=REPOSITORY_ROOT, check=True)
-            completed_stage_names.append("evaluation")
+            evaluation_metrics_path = manifest_root.parent / "evaluation_metrics.json"
+            evaluation_records_path = manifest_root.parent / "evaluation_records.json"
+            evaluation_curves_path = manifest_root.parent / "evaluation_curves.json"
+            if (
+                skip_completed
+                and "evaluation" in existing_completed_stage_names
+                and evaluation_metrics_path.exists()
+                and evaluation_records_path.exists()
+                and evaluation_curves_path.exists()
+            ):
+                completed_stage_names.append("evaluation")
+                skipped_stage_names.append("evaluation")
+            else:
+                executed_stage_names.append("evaluation")
+                subprocess.run(
+                    command_plan["evaluation"], cwd=REPOSITORY_ROOT, check=True
+                )
+                completed_stage_names.append("evaluation")
 
         execution_report["executed_stage_names"] = (
             planned_stage_names if dry_run else executed_stage_names
@@ -734,6 +775,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Build manifest and command plan without running stage subprocesses",
     )
+    parser.add_argument(
+        "--skip-completed",
+        action="store_true",
+        help="Skip completed stages when a prior execution report and required artifacts exist",
+    )
     return parser.parse_args()
 
 
@@ -756,7 +802,11 @@ def main() -> None:
     if args.print_plan_json:
         print(json.dumps(manifest, indent=2))
     if not args.preflight_only:
-        execution_report = execute_three_stage_plan(manifest, dry_run=args.dry_run)
+        execution_report = execute_three_stage_plan(
+            manifest,
+            dry_run=args.dry_run,
+            skip_completed=args.skip_completed,
+        )
         console_print(
             "THREE_STAGE",
             "Completed three-stage execution orchestration",

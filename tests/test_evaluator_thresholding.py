@@ -125,6 +125,9 @@ def test_evaluator_averages_overlapping_window_point_scores() -> None:
     assert record["entity_id"] == "machine-1"
     assert torch.allclose(record["point_scores"], expected_scores)
     assert evaluation_outputs["metrics"]["forward_pass_seconds_mean"] == 0.1
+    assert evaluation_outputs["metrics"]["raw_num_points"] == 4
+    assert evaluation_outputs["metrics"]["evaluated_num_points"] == 4
+    assert evaluation_outputs["metrics"]["is_truncated_evaluation"] == 0.0
 
 
 def test_reconstruct_pointwise_records_from_window_payload_averages_overlaps() -> None:
@@ -176,6 +179,37 @@ def test_reconstruct_pointwise_records_from_window_payload_averages_overlaps() -
         torch.tensor([0, 1, 0, 1], dtype=torch.long),
     )
     assert reconstructed_records[0]["num_points"] == 4
+
+
+def test_evaluator_concatenates_entity_records_into_one_global_pointwise_vector() -> (
+    None
+):
+    reconstructed_records = [
+        {
+            "entity_id": "machine-a",
+            "point_scores": torch.tensor([0.1, 0.2], dtype=torch.float32),
+            "point_labels": torch.tensor([0, 1], dtype=torch.long),
+            "num_points": 2,
+        },
+        {
+            "entity_id": "machine-b",
+            "point_scores": torch.tensor([0.3, 0.4, 0.5], dtype=torch.float32),
+            "point_labels": torch.tensor([1, 0, 0], dtype=torch.long),
+            "num_points": 3,
+        },
+    ]
+
+    concatenated_scores = np.concatenate(
+        [record["point_scores"].numpy() for record in reconstructed_records],
+        axis=0,
+    )
+    concatenated_labels = np.concatenate(
+        [record["point_labels"].numpy() for record in reconstructed_records],
+        axis=0,
+    )
+
+    assert np.allclose(concatenated_scores, np.array([0.1, 0.2, 0.3, 0.4, 0.5]))
+    assert concatenated_labels.tolist() == [0, 1, 1, 0, 0]
 
 
 def test_compute_pointwise_metrics_uses_strict_threshold_comparison() -> None:

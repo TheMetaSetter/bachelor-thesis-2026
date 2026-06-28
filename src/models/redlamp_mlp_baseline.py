@@ -241,9 +241,7 @@ class RedLampMLPBaseline(BaseModel):
         # The older alias is preserved for compatibility with binary-era call
         # sites, but the active contract is generic class balancing.
         if balance_classes_within_batch is not None:
-            effective_balance_classes_within_batch = bool(
-                balance_classes_within_batch
-            )
+            effective_balance_classes_within_batch = bool(balance_classes_within_batch)
         else:
             effective_balance_classes_within_batch = bool(
                 balance_binary_classes_within_batch or train_balance_classes
@@ -316,7 +314,10 @@ class RedLampMLPBaseline(BaseModel):
             return self._clone_batch(batch)
         if stage_name == "train" and self.use_synthetic_augmentation:
             return self.synthetic_anomaly_injector.augment_batch(batch)
-        if stage_name in {"val_synth", "val_realistic"} and self.use_synthetic_validation:
+        if (
+            stage_name in {"val_synth", "val_realistic"}
+            and self.use_synthetic_validation
+        ):
             return self.synthetic_validation_injector.augment_batch(batch)
 
         prepared_batch = self._clone_batch(batch)

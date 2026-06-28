@@ -6,8 +6,6 @@ batch_size: 32
 num_workers: 0
 validation_split_ratio: 0.2
 shuffle_train: true
-comparison_mode: pre_vs_anomaly
-inclusive_anomaly_end: false
 max_train_windows: 64
 max_val_windows: 32
 max_test_windows: 32
