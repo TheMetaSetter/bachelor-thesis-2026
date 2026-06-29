@@ -272,6 +272,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "file_path",
         "window_size",
         "stride",
+        "train_stride",
+        "val_stride",
+        "test_stride",
         "batch_size",
         "num_workers",
         "min_num_workers",
@@ -498,6 +501,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "epochs": experiment_config["epochs"],
         "window_size": data_config.get("window_size"),
         "stride": data_config.get("stride"),
+        "train_stride": data_config.get("train_stride"),
+        "val_stride": data_config.get("val_stride"),
+        "test_stride": data_config.get("test_stride"),
         "batch_size": data_config.get("batch_size"),
         "input_dim": model_config.get("input_dim"),
     }
@@ -557,6 +563,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "projector_hidden_dim"
         )
     for field_name, field_value in integer_fields.items():
+        if field_value is None:
+            continue
         if not isinstance(field_value, int) or field_value <= 0:
             raise ValueError(f"{field_name} must be a positive integer")
 
@@ -914,8 +922,13 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
 
     if not 0.0 < float(data_config["validation_split_ratio"]) < 1.0:
         raise ValueError("validation_split_ratio must be between 0 and 1")
-    if data_config["stride"] > data_config["window_size"]:
-        raise ValueError("stride must not exceed window_size")
+    stride_field_names = ["stride", "train_stride", "val_stride", "test_stride"]
+    for field_name in stride_field_names:
+        field_value = data_config.get(field_name)
+        if field_value is None:
+            continue
+        if field_value > data_config["window_size"]:
+            raise ValueError(f"{field_name} must not exceed window_size")
     optional_data_boolean_fields = {
         "download": data_config.get("download", False),
         "skip_existing_download": data_config.get("skip_existing_download", True),

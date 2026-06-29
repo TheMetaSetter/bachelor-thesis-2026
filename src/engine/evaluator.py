@@ -13,6 +13,7 @@ import torch
 
 from src.core.console import console_print, summarize_batch, summarize_tensor
 from src.core.contracts import validate_evaluation_record
+from src.data.split_protocol import describe_label_regime
 from src.metrics.pointwise import (
     compute_pointwise_curve_payload,
     compute_pointwise_metrics,
@@ -39,6 +40,29 @@ def select_point_score_threshold(
     if threshold <= 0.0 and positive_scores.size > 0:
         threshold = float(np.min(positive_scores))
     return threshold
+
+
+def _describe_benchmark_comparability(
+    *,
+    label_regime: str,
+    is_truncated_evaluation: bool,
+) -> tuple[str, str]:
+    if is_truncated_evaluation:
+        return "non_comparable", "truncated_smoke_evaluation"
+    if label_regime != "mixed":
+        return "non_comparable", "single_class_test_labels"
+    return "benchmark_comparable", "benchmark_comparable_full_timeline"
+
+
+def _build_entity_raw_point_labels(
+    sequence_by_entity: dict[str, Any],
+    fallback_dtype: torch.dtype,
+) -> torch.Tensor:
+    raw_point_labels = sequence_by_entity.get("point_labels")
+    if raw_point_labels is None:
+        sequence_length = int(sequence_by_entity["x"].shape[0])
+        return torch.zeros(sequence_length, dtype=fallback_dtype)
+    return raw_point_labels.detach().cpu().clone().to(fallback_dtype)
 
 
 def accumulate_pointwise_window_payload(
@@ -79,9 +103,9 @@ def accumulate_pointwise_window_payload(
                 sequence_length,
                 dtype=torch.float32,
             )
-            entity_point_labels[entity_id] = torch.zeros(
-                sequence_length,
-                dtype=point_labels.dtype,
+            entity_point_labels[entity_id] = _build_entity_raw_point_labels(
+                sequences_by_entity[entity_id],
+                fallback_dtype=point_labels.dtype,
             )
 
         entity_score_sums[entity_id][start_index:end_index] += point_scores[
@@ -130,6 +154,7 @@ def reconstruct_pointwise_records_from_window_payload(
             "entity_id": entity_id,
             "point_scores": averaged_scores,
             "point_labels": entity_point_labels[entity_id],
+            "covered_point_mask": raw_counts > 0.0,
             "num_points": int(averaged_scores.shape[0]),
             "evaluated_start_index": evaluated_start_index,
             "evaluated_end_index": evaluated_end_index,
@@ -140,6 +165,38 @@ def reconstruct_pointwise_records_from_window_payload(
         evaluation_records.append(evaluation_record)
 
     return evaluation_records
+
+
+def _extract_covered_pointwise_arrays(
+    evaluation_records: list[dict[str, Any]],
+) -> tuple[np.ndarray, np.ndarray]:
+    covered_point_scores: list[np.ndarray] = []
+    covered_point_labels: list[np.ndarray] = []
+
+    for evaluation_record in evaluation_records:
+        point_scores = evaluation_record["point_scores"]
+        point_labels = evaluation_record["point_labels"]
+        covered_point_mask = evaluation_record.get("covered_point_mask")
+        if covered_point_mask is None:
+            covered_point_scores.append(point_scores.numpy())
+            covered_point_labels.append(point_labels.numpy())
+            continue
+        covered_indices = covered_point_mask.to(dtype=torch.bool)
+        covered_point_scores.append(point_scores[covered_indices].numpy())
+        covered_point_labels.append(point_labels[covered_indices].numpy())
+
+    if not covered_point_scores:
+        raise ValueError("Cannot compute metrics from zero evaluation records")
+    num_covered_points = sum(
+        int(score_array.shape[0]) for score_array in covered_point_scores
+    )
+    if num_covered_points == 0:
+        raise ValueError("Cannot compute metrics from zero covered evaluation points")
+
+    return (
+        np.concatenate(covered_point_scores, axis=0),
+        np.concatenate(covered_point_labels, axis=0),
+    )
 
 
 class Evaluator:
@@ -256,17 +313,12 @@ class Evaluator:
             sequences_by_entity=sequences_by_entity,
             batch_payloads=pointwise_batch_payloads,
         )
-        all_point_scores: list[np.ndarray] = []
-        all_point_labels: list[np.ndarray] = []
-        for evaluation_record in evaluation_records:
-            all_point_scores.append(evaluation_record["point_scores"].numpy())
-            all_point_labels.append(evaluation_record["point_labels"].numpy())
-
-        # Nối tất cả các điểm anomaly score từ từng timestep lại thành một danh sách
-        concatenated_scores = np.concatenate(all_point_scores, axis=0)
-
-        # Nối nhãn anomaly của từng timestep lại thành một danh sách
-        concatenated_labels = np.concatenate(all_point_labels, axis=0)
+        # Metric computation should use only the timesteps that were actually
+        # covered by at least one evaluation window. Full-length raw labels stay
+        # on each record for audit and visualization.
+        concatenated_scores, concatenated_labels = _extract_covered_pointwise_arrays(
+            evaluation_records
+        )
 
         # Chọn threshold cho anomaly score
         # Một timestep có anomaly score vượt ngưỡng threshold này thì tính là anomaly
@@ -297,6 +349,15 @@ class Evaluator:
             )
             else 0.0
         )
+        label_regime = describe_label_regime(concatenated_labels)
+        benchmark_comparability, protocol_status = _describe_benchmark_comparability(
+            label_regime=label_regime,
+            is_truncated_evaluation=bool(metrics["is_truncated_evaluation"]),
+        )
+        metrics["label_regime"] = label_regime
+        metrics["benchmark_comparability"] = benchmark_comparability
+        metrics["protocol_status"] = protocol_status
+        metrics["threshold_source"] = "positive_support_quantile_0.95"
         if forward_pass_seconds_history:
             metrics["forward_pass_seconds_mean"] = sum(
                 forward_pass_seconds_history

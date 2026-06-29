@@ -309,12 +309,19 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
     )
 
     curves_path = tmp_path / "outputs" / "evaluation_curves.json"
+    metrics_path = tmp_path / "outputs" / "evaluation_metrics.json"
     assert outputs["metrics"]["fpr"] == 0.25
     assert outputs["metrics"]["forward_pass_seconds_mean"] == 0.001
     assert curves_path.exists()
+    assert metrics_path.exists()
     saved_curves = json.loads(curves_path.read_text(encoding="utf-8"))
+    saved_metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     assert "roc_curve" in saved_curves
     assert "pr_curve" in saved_curves
+    assert saved_metrics["benchmark_comparability"] == "non_comparable"
+    assert saved_metrics["protocol_status"] == "fallback_unknown"
+    assert "label_regime" not in saved_metrics
+    assert saved_metrics["threshold_source"] == "positive_support_quantile_0.95"
     assert any(
         "evaluation/precision" in logged_metrics
         for logged_metrics in fake_run.logged_metrics

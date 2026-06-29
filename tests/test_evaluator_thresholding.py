@@ -128,6 +128,19 @@ def test_evaluator_averages_overlapping_window_point_scores() -> None:
     assert evaluation_outputs["metrics"]["raw_num_points"] == 4
     assert evaluation_outputs["metrics"]["evaluated_num_points"] == 4
     assert evaluation_outputs["metrics"]["is_truncated_evaluation"] == 0.0
+    assert evaluation_outputs["metrics"]["label_regime"] == "mixed"
+    assert (
+        evaluation_outputs["metrics"]["benchmark_comparability"]
+        == "benchmark_comparable"
+    )
+    assert (
+        evaluation_outputs["metrics"]["protocol_status"]
+        == "benchmark_comparable_full_timeline"
+    )
+    assert (
+        evaluation_outputs["metrics"]["threshold_source"]
+        == "positive_support_quantile_0.95"
+    )
 
 
 def test_reconstruct_pointwise_records_from_window_payload_averages_overlaps() -> None:
@@ -210,6 +223,70 @@ def test_evaluator_concatenates_entity_records_into_one_global_pointwise_vector(
 
     assert np.allclose(concatenated_scores, np.array([0.1, 0.2, 0.3, 0.4, 0.5]))
     assert concatenated_labels.tolist() == [0, 1, 1, 0, 0]
+
+
+def test_evaluator_marks_single_class_truncated_run_as_non_comparable() -> None:
+    class _TruncatedSingleClassDataset:
+        def __init__(self) -> None:
+            self.sequences = [
+                {
+                    "x": torch.zeros(6, 1, dtype=torch.float32),
+                    "point_labels": torch.tensor([1, 1, 1, 0, 0, 0], dtype=torch.long),
+                    "meta": {"entity_id": "machine-1"},
+                }
+            ]
+
+    class _TruncatedSingleClassLoader:
+        def __init__(self) -> None:
+            self.dataset = _TruncatedSingleClassDataset()
+            self.batches = [
+                {
+                    "x": torch.zeros(1, 3, 1, dtype=torch.float32),
+                    "point_labels": torch.tensor([[1, 1, 1]], dtype=torch.long),
+                    "mask": torch.ones(1, 3, 1, dtype=torch.float32),
+                    "timestamps": torch.arange(3).unsqueeze(0),
+                    "meta": [
+                        {
+                            "entity_id": "machine-1",
+                            "start_index": 0,
+                            "end_index": 3,
+                        }
+                    ],
+                }
+            ]
+
+        def __len__(self) -> int:
+            return len(self.batches)
+
+        def __iter__(self):
+            return iter(self.batches)
+
+    model = _ToyEvaluationModel(
+        batch_point_scores=[torch.tensor([[0.1, 0.2, 0.3]], dtype=torch.float32)]
+    )
+    data_loader = _TruncatedSingleClassLoader()
+
+    evaluation_outputs = Evaluator(device="cpu").evaluate(
+        model=model,
+        data_loader=data_loader,
+    )
+
+    assert evaluation_outputs["records"][0]["point_labels"].tolist() == [1, 1, 1, 0, 0, 0]
+    assert evaluation_outputs["records"][0]["covered_point_mask"].tolist() == [
+        True,
+        True,
+        True,
+        False,
+        False,
+        False,
+    ]
+    assert evaluation_outputs["metrics"]["label_regime"] == "all_one"
+    assert evaluation_outputs["metrics"]["is_truncated_evaluation"] == 1.0
+    assert evaluation_outputs["metrics"]["benchmark_comparability"] == "non_comparable"
+    assert (
+        evaluation_outputs["metrics"]["protocol_status"]
+        == "truncated_smoke_evaluation"
+    )
 
 
 def test_compute_pointwise_metrics_uses_strict_threshold_comparison() -> None:

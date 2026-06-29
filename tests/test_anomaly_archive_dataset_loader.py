@@ -154,6 +154,120 @@ def test_validate_experiment_config_allows_benchmark_anomaly_archive_dataset() -
     validate_experiment_config(experiment_config)
 
 
+def test_validate_experiment_config_accepts_split_specific_stride_overrides() -> None:
+    experiment_config = {
+        "experiment_name": "staffiii_split_stride",
+        "seed": 11,
+        "device": "cpu",
+        "output_dir": "outputs/staffiii_split_stride",
+        "checkpoint_dir": "outputs/staffiii_split_stride/checkpoints",
+        "data": {
+            "dataset_name": "anomaly_archive",
+            "file_path": str(STAFFIII_FILE),
+            "window_size": 20,
+            "stride": 10,
+            "train_stride": 10,
+            "val_stride": 1,
+            "test_stride": 1,
+            "batch_size": 8,
+            "num_workers": 0,
+            "validation_split_ratio": 0.2,
+            "shuffle_train": False,
+        },
+        "model": {
+            "model_name": "redlamp_mlp_baseline",
+            "input_dim": 1,
+            "window_size": 20,
+            "latent_dim": 16,
+            "encoder_family": "mlp",
+            "mlp_num_linear_layers": 3,
+            "cnn_num_layers": 3,
+            "cnn_kernel_size": 3,
+            "cnn_hidden_channels": 8,
+            "cnn_dropout": 0.1,
+            "classifier_dim": 8,
+            "num_classes": 12,
+            "dropout": 0.1,
+            "lambda_cls": 0.1,
+            "use_label_refurbishment": True,
+            "refurbishment_alpha": 0.1,
+            "refurbishment_beta": 0.01,
+            "enable_gradient_conflict_profiling": False,
+            "gradient_profiling_scope": "encoder_all",
+            "gradient_focus_layer_name": "encoder_last_affine",
+            "gradient_log_every_n_steps": 1,
+            "gradient_ema_alpha": 0.1,
+            "gradient_sma_window": 50,
+            "gradient_profile_include_bias": False,
+        },
+        "task": {
+            "task_name": "multitask_tsad",
+            "use_synthetic_augmentation": True,
+            "use_synthetic_validation": True,
+            "synthetic_validation_seed": 7,
+            "classification_label_mode": "redlamp_multiclass",
+            "freeze_fusion_for_epochs": 0,
+            "warmup_alpha_value": 0.0,
+            "warmup_beta_value": 0.0,
+            "anomaly_probability": 0.5,
+            "train_balance_classes": False,
+            "val_realistic": True,
+            "val_realistic_source": "test_same_scope",
+            "val_anomaly_rate_override": None,
+            "min_segment_fraction": 0.2,
+            "max_segment_fraction": 0.3,
+            "spike_scale": 3.0,
+            "anomaly_visibility_boost": 1.5,
+            "anomaly_families": ["spike"],
+        },
+        "optimizer": {
+            "optimizer_name": "adam",
+            "learning_rate": 1e-3,
+            "weight_decay": 0.0,
+            "gradient_clip_norm": 0.5,
+        },
+        "epochs": 1,
+    }
+
+    validate_experiment_config(experiment_config)
+
+
+def test_anomaly_archive_dataset_bundle_uses_split_specific_stride_overrides() -> None:
+    bundle = build_anomaly_archive_dataset_bundle(
+        {
+            "dataset_name": "anomaly_archive",
+            "file_path": str(STAFFIII_FILE),
+            "window_size": 20,
+            "stride": 10,
+            "val_stride": 1,
+            "test_stride": 1,
+            "batch_size": 8,
+            "num_workers": 0,
+            "validation_split_ratio": 0.2,
+            "shuffle_train": False,
+            "max_train_windows": 3,
+            "max_val_windows": 3,
+            "max_test_windows": 3,
+        }
+    )
+
+    assert bundle["datasets"]["train"].index_records == [
+        (0, 0, 20),
+        (0, 10, 30),
+        (0, 20, 40),
+    ]
+    assert bundle["datasets"]["val"].index_records == [
+        (0, 0, 20),
+        (0, 1, 21),
+        (0, 2, 22),
+    ]
+    assert bundle["datasets"]["test"].index_records == [
+        (0, 0, 20),
+        (0, 1, 21),
+        (0, 2, 22),
+    ]
+
+
 def test_validate_experiment_config_rejects_removed_anomaly_archive_modes() -> None:
     experiment_config = {
         "experiment_name": "staffiii_invalid_mode",

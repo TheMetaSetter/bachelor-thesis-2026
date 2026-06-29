@@ -159,3 +159,10 @@ def validate_evaluation_record(evaluation_record: dict[str, Any]) -> None:
     )
     if evaluation_record["point_scores"].shape[0] != evaluation_record["num_points"]:
         raise ValueError("point_scores length must equal num_points")
+    covered_point_mask = evaluation_record.get("covered_point_mask")
+    if covered_point_mask is not None:
+        _require_tensor_rank(
+            covered_point_mask, 1, "evaluation_record['covered_point_mask']"
+        )
+        if covered_point_mask.shape[0] != evaluation_record["num_points"]:
+            raise ValueError("covered_point_mask length must equal num_points")

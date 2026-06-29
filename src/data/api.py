@@ -16,6 +16,9 @@ def _build_smd_data_config(
     root: str = "data/ServerMachineDataset",
     window_size: int = 100,
     stride: int = 10,
+    train_stride: int | None = None,
+    val_stride: int | None = None,
+    test_stride: int | None = None,
     batch_size: int = 32,
     validation_split_ratio: float = 0.2,
     num_workers: int | str = 0,
@@ -43,6 +46,12 @@ def _build_smd_data_config(
         "skip_existing_download": skip_existing_download,
         "annotate_cleaning_metadata": annotate_cleaning_metadata,
     }
+    if train_stride is not None:
+        data_config["train_stride"] = train_stride
+    if val_stride is not None:
+        data_config["val_stride"] = val_stride
+    if test_stride is not None:
+        data_config["test_stride"] = test_stride
     if max_train_windows is not None:
         data_config["max_train_windows"] = max_train_windows
     if max_val_windows is not None:
@@ -69,6 +78,9 @@ def _build_anomaly_archive_data_config(
     file_path: str,
     window_size: int = 100,
     stride: int = 10,
+    train_stride: int | None = None,
+    val_stride: int | None = None,
+    test_stride: int | None = None,
     batch_size: int = 32,
     validation_split_ratio: float = 0.2,
     num_workers: int | str = 0,
@@ -91,6 +103,12 @@ def _build_anomaly_archive_data_config(
         "shuffle_train": shuffle_train,
         "annotate_cleaning_metadata": annotate_cleaning_metadata,
     }
+    if train_stride is not None:
+        data_config["train_stride"] = train_stride
+    if val_stride is not None:
+        data_config["val_stride"] = val_stride
+    if test_stride is not None:
+        data_config["test_stride"] = test_stride
     if max_train_windows is not None:
         data_config["max_train_windows"] = max_train_windows
     if max_val_windows is not None:
@@ -105,6 +123,9 @@ def load_smd_data(
     root: str = "data/ServerMachineDataset",
     window_size: int = 100,
     stride: int = 10,
+    train_stride: int | None = None,
+    val_stride: int | None = None,
+    test_stride: int | None = None,
     batch_size: int = 32,
     validation_split_ratio: float = 0.2,
     num_workers: int | str = 0,
@@ -121,6 +142,9 @@ def load_smd_data(
         root=root,
         window_size=window_size,
         stride=stride,
+        train_stride=train_stride,
+        val_stride=val_stride,
+        test_stride=test_stride,
         batch_size=batch_size,
         validation_split_ratio=validation_split_ratio,
         num_workers=num_workers,
@@ -141,6 +165,9 @@ def load_anomaly_archive_data(
     file_path: str,
     window_size: int = 100,
     stride: int = 10,
+    train_stride: int | None = None,
+    val_stride: int | None = None,
+    test_stride: int | None = None,
     batch_size: int = 32,
     validation_split_ratio: float = 0.2,
     num_workers: int | str = 0,
@@ -155,6 +182,9 @@ def load_anomaly_archive_data(
         file_path=file_path,
         window_size=window_size,
         stride=stride,
+        train_stride=train_stride,
+        val_stride=val_stride,
+        test_stride=test_stride,
         batch_size=batch_size,
         validation_split_ratio=validation_split_ratio,
         num_workers=num_workers,

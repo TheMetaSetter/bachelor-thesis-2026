@@ -71,7 +71,7 @@ def test_reconstructed_records_keep_evaluated_coverage_metadata() -> None:
     assert reconstructed_records[0]["raw_num_points"] == 6
 
 
-def test_reconstructed_records_keep_uncovered_suffix_as_zero_scored_points() -> None:
+def test_reconstructed_records_keep_uncovered_suffix_scores_but_preserve_raw_labels() -> None:
     sequences_by_entity = {
         "machine-1": _build_sequence(
             dataset_name="smd",
@@ -106,7 +106,11 @@ def test_reconstructed_records_keep_uncovered_suffix_as_zero_scored_points() -> 
     )
     assert torch.equal(
         reconstructed_records[0]["point_labels"],
-        torch.tensor([0, 0, 0, 0, 0, 0], dtype=torch.long),
+        torch.tensor([0, 0, 0, 1, 1, 0], dtype=torch.long),
+    )
+    assert torch.equal(
+        reconstructed_records[0]["covered_point_mask"],
+        torch.tensor([1, 1, 1, 0, 0, 0], dtype=torch.bool),
     )
     assert reconstructed_records[0]["evaluated_num_points"] == 3
     assert reconstructed_records[0]["raw_num_points"] == 6
@@ -187,6 +191,30 @@ def test_build_dataset_protocol_audit_report_flags_truncated_smd_test_coverage()
     assert entity_report["raw_num_points"] == 6
     assert "truncated" in " ".join(report["warnings"]).lower()
     assert "max_test_windows" in " ".join(report["warnings"])
+
+
+def test_window_dataset_stride_one_covers_full_sequence_without_tail_gap() -> None:
+    test_sequence = _build_sequence(
+        dataset_name="toy",
+        entity_id="series-1",
+        split="test",
+        values=[0.0] * 31,
+        labels=[0] * 31,
+    )
+    stride_one_dataset = WindowDataset(
+        [test_sequence],
+        window_size=20,
+        stride=1,
+    )
+
+    covered = [0] * 31
+    for _, start_index, end_index in stride_one_dataset.index_records:
+        for point_index in range(start_index, end_index):
+            covered[point_index] = 1
+
+    assert len(stride_one_dataset.index_records) == 12
+    assert sum(covered) == 31
+    assert covered[-1] == 1
 
 
 def test_build_dataset_protocol_audit_report_marks_benchmark_comparable_anomaly_archive() -> None:

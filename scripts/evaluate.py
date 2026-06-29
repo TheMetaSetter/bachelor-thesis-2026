@@ -67,11 +67,17 @@ def _build_fallback_protocol_audit_report(
     evaluation_outputs: dict[str, object],
 ) -> dict[str, object]:
     metrics = evaluation_outputs["metrics"]
+    benchmark_comparability = str(
+        metrics.get("benchmark_comparability", "non_comparable")
+    )
+    protocol_status = str(metrics.get("protocol_status", "fallback_unknown"))
     return {
         "dataset_name": experiment_config["data"]["dataset_name"],
         "data_config": experiment_config["data"],
         "scaler_fit_scope": "train_only_before_windowing",
         "splits": {},
+        "benchmark_comparability": benchmark_comparability,
+        "protocol_status": protocol_status,
         "warnings": [
             "Protocol audit report used fallback mode because the evaluation test "
             "stub did not expose full dataset-bundle metadata."
@@ -238,6 +244,22 @@ def run_evaluation_experiment(
             experiment_config=experiment_config,
             evaluation_outputs=evaluation_outputs,
         )
+    evaluation_outputs["metrics"].setdefault(
+        "benchmark_comparability",
+        protocol_audit_report.get("benchmark_comparability", "non_comparable"),
+    )
+    evaluation_outputs["metrics"].setdefault(
+        "protocol_status",
+        protocol_audit_report.get("protocol_status", "fallback_unknown"),
+    )
+    if "label_regime" not in evaluation_outputs["metrics"]:
+        test_split = protocol_audit_report.get("splits", {}).get("test", {})
+        if "label_regime" in test_split:
+            evaluation_outputs["metrics"]["label_regime"] = test_split["label_regime"]
+    evaluation_outputs["metrics"].setdefault(
+        "threshold_source",
+        "positive_support_quantile_0.95",
+    )
     protocol_audit_markdown = render_dataset_protocol_audit_markdown(
         protocol_audit_report,
         experiment_name=str(experiment_config["experiment_name"]),

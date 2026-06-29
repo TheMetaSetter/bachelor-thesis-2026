@@ -63,6 +63,17 @@ def _resolve_smd_root_dir(data_config: dict[str, Any]) -> str:
     return resolved_root_dir
 
 
+def _resolve_split_stride(data_config: dict[str, Any], split_name: str) -> int:
+    # Keep one shared fallback stride for backward compatibility, but allow
+    # explicit split-specific overrides where benchmark protocol needs denser
+    # coverage on validation or test timelines.
+    override_field_name = f"{split_name}_stride"
+    override_stride = data_config.get(override_field_name)
+    if override_stride is not None:
+        return int(override_stride)
+    return int(data_config["stride"])
+
+
 def _build_window_datasets(
     *,
     scaled_sequences: dict[str, list[dict[str, Any]]],
@@ -73,7 +84,7 @@ def _build_window_datasets(
         split_name: WindowDataset(
             sequences=split_sequences,
             window_size=int(data_config["window_size"]),
-            stride=int(data_config["stride"]),
+            stride=_resolve_split_stride(data_config, split_name),
             max_windows=data_config.get(f"max_{split_name}_windows"),
         )
         for split_name, split_sequences in scaled_sequences.items()
@@ -81,6 +92,9 @@ def _build_window_datasets(
     console_print(
         "DATA",
         "Built window datasets",
+        train_stride=_resolve_split_stride(data_config, "train"),
+        val_stride=_resolve_split_stride(data_config, "val"),
+        test_stride=_resolve_split_stride(data_config, "test"),
         train_windows=len(datasets["train"]),
         val_windows=len(datasets["val"]),
         test_windows=len(datasets["test"]),
@@ -259,7 +273,9 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
             "Building SMD dataset bundle",
             resolved_root_dir=resolved_root_dir,
             window_size=data_config["window_size"],
-            stride=data_config["stride"],
+            train_stride=_resolve_split_stride(data_config, "train"),
+            val_stride=_resolve_split_stride(data_config, "val"),
+            test_stride=_resolve_split_stride(data_config, "test"),
             batch_size=data_config["batch_size"],
         )
         if bool(data_config.get("download", False)):
@@ -297,7 +313,9 @@ class AnomalyArchiveDatasetBuilder(BaseDatasetBuilder):
             "Building AnomalyArchive dataset bundle",
             file_path=file_path,
             window_size=data_config["window_size"],
-            stride=data_config["stride"],
+            train_stride=_resolve_split_stride(data_config, "train"),
+            val_stride=_resolve_split_stride(data_config, "val"),
+            test_stride=_resolve_split_stride(data_config, "test"),
             batch_size=data_config["batch_size"],
         )
         parser = AnomalyArchiveDatasetParser(
