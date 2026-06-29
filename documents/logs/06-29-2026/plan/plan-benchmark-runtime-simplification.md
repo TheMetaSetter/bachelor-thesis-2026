@@ -50,6 +50,7 @@ The main problem is no longer the benchmark contract itself. The main problem is
 - The active benchmark task path is effectively `train -> val -> val_synth -> test`.
 - The trainer, config validator, model classes, scheduler monitor logic, and test suite still treat `val_realistic` as a first-class runtime branch.
 - The launcher and comparative orchestration layer already point their main configs at the new benchmark configs, but the script and artifact vocabulary still say `comparative`.
+- The active baseline already supports multiple encoder families through `encoder_family`, so the name `RedLampMLPBaseline` is now misleading and no longer matches the intended encoder-agnostic direction of the codebase.
 - The benchmark path must preserve the existing model files and the existing dataset builder architecture. The objective is simplification by subtraction, not redesign by expansion.
 
 ## Stable Contracts That Must Be Preserved
@@ -193,6 +194,7 @@ This is the most practical choice for the current thesis stage because it balanc
 - Reduce legacy balancing aliases where they are not needed anymore.
 - Simplify logging noise in hot data paths.
 - Update active documentation and config help.
+- Evaluate and likely adopt an encoder-agnostic baseline name, with `RedLampBaseline` as the simplest recommended canonical name.
 
 ### Scope Out
 
@@ -201,6 +203,30 @@ This is the most practical choice for the current thesis stage because it balanc
 - No change to scoring formulas or benchmark metrics.
 - No change to the SMD benchmark entity list, stride contract, or 100-epoch budget.
 - No addition of new dataset abstractions.
+
+## Additional Naming Simplification
+
+The active baseline naming surface should be made encoder-agnostic.
+
+Today the class name, module name, registry name, config file names, and many experiment identifiers still say `redlamp_mlp_baseline`, even though the implementation already supports at least:
+
+- `encoder_family: mlp`
+- `encoder_family: cnn_simple`
+
+This creates an avoidable source of confusion. A reader can easily think the baseline is permanently tied to MLP, while the code already allows other encoders.
+
+Recommended direction:
+
+- canonical class name: `RedLampBaseline`
+- canonical registry name: `redlamp_baseline`
+- canonical model config names should also drop `mlp` where the file is meant to describe the general baseline rather than one specific encoder instantiation
+
+Recommended migration timing:
+
+- do this after the `val_realistic` cleanup and config-surface reduction
+- do it before the final benchmark-launch surface is frozen for the thesis runs
+
+This keeps the rename auditable while avoiding a long-lived misleading public API.
 
 ## Planned File-Level Changes
 
