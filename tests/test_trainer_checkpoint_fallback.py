@@ -7,7 +7,7 @@ import torch
 
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
-from src.engine.trainer import Trainer
+from src.engine.trainer import Trainer, build_checkpoint_evaluation_metadata
 from src.models.base_model import BaseModel
 
 
@@ -119,3 +119,35 @@ def test_trainer_saves_final_and_fallback_best_checkpoint_when_monitor_is_nan(
     assert Path(outputs["best_checkpoint_path"]).exists()
     assert Path(outputs["final_checkpoint_path"]).name == "final.pt"
     assert Path(outputs["best_checkpoint_path"]).name == "best.pt"
+
+
+def test_build_checkpoint_evaluation_metadata_uses_matching_validation_threshold() -> (
+    None
+):
+    metadata = build_checkpoint_evaluation_metadata(
+        checkpoint_monitor_metric="val_synth_vus_pr",
+        epoch_metrics={
+            "val_synth_threshold": 0.125,
+            "val_synth_vus_pr": 0.8,
+        },
+        base_extra_state={"memory_initialized": True},
+    )
+
+    assert metadata == {
+        "memory_initialized": True,
+        "evaluation_threshold": 0.125,
+        "evaluation_threshold_metric_name": "val_synth_threshold",
+        "evaluation_threshold_source": "checkpoint::val_synth_threshold",
+    }
+
+
+def test_build_checkpoint_evaluation_metadata_preserves_base_state_when_threshold_missing() -> (
+    None
+):
+    metadata = build_checkpoint_evaluation_metadata(
+        checkpoint_monitor_metric="val_loss",
+        epoch_metrics={"val_loss": 1.0},
+        base_extra_state={"memory_initialized": False},
+    )
+
+    assert metadata == {"memory_initialized": False}

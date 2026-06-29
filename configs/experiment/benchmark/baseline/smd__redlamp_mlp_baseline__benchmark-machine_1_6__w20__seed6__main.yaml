@@ -1,0 +1,40 @@
+# group: benchmark/baseline
+# stage: single-stage
+
+experiment_name: smd_benchmark_redlamp_mlp_baseline_machine_1_6_seed6
+seed: 6
+device: cuda
+output_dir: outputs/benchmark/smd/redlamp_mlp_baseline/machine_1_6/seed6
+checkpoint_dir: outputs/benchmark/smd/redlamp_mlp_baseline/machine_1_6/seed6/checkpoints
+data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml
+model_config_path: configs/model/redlamp_mlp_baseline_comparative_smd.yaml
+task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20_benchmark_fixed_synth.yaml
+optimizer:
+  optimizer_name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0
+  gradient_clip_norm: 0.5
+  scheduler:
+    scheduler_name: cosine
+    warmup_epochs: 5
+    warmup_start_lr: 0.001
+    cosine_end_lr: 0.0
+    cosine_after_warmup: true
+checkpoint_monitor_metric: val_synth_vus_pr
+epochs: 100
+evaluation:
+  vus_max_buffer_size: 20
+  vus_num_thresholds: 200
+logging:
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_tags:
+    - benchmark
+    - baseline-single-stage
+    - smd
+    - machine-1-6
+    - window20
+    - seed6
+    - val-synth
+  wandb_run_name: smd_benchmark_redlamp_mlp_baseline_machine_1_6_seed6

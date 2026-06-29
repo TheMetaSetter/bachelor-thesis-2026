@@ -140,6 +140,30 @@ def test_synthetic_validation_is_deterministic_after_rng_reset() -> None:
     )
 
 
+def test_synthetic_train_is_deterministic_after_rng_reset_when_seeded() -> None:
+    model = _build_model(
+        synthetic_train_seed=17,
+        train_balance_classes=False,
+    )
+    batch = _build_batch()
+
+    model.prepare_synthetic_training_epoch()
+    first_batch = model._prepare_clean_batch(batch, stage_name="train")
+    model.prepare_synthetic_training_epoch()
+    second_batch = model._prepare_clean_batch(batch, stage_name="train")
+
+    assert torch.equal(first_batch["x"], second_batch["x"])
+    assert torch.equal(
+        first_batch["classification_labels"],
+        second_batch["classification_labels"],
+    )
+    assert torch.equal(
+        first_batch["synthetic_anomaly_mask"],
+        second_batch["synthetic_anomaly_mask"],
+    )
+    assert first_batch["augmentation_metadata"] == second_batch["augmentation_metadata"]
+
+
 def test_trainer_logs_clean_and_auxiliary_realistic_validation_metrics_separately(
     tmp_path: Path,
 ) -> None:
@@ -191,3 +215,47 @@ def test_trainer_logs_clean_and_auxiliary_realistic_validation_metrics_separatel
     assert epoch_metrics["val_usage_lambda"] == 0.2
     assert epoch_metrics["val_realistic_usage_lambda"] == 0.2
     assert epoch_metrics["val_loss"] != epoch_metrics["val_realistic_loss"]
+
+
+def test_trainer_uses_val_synth_namespace_when_realistic_validation_is_disabled(
+    tmp_path: Path,
+) -> None:
+    model = _build_model()
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    experiment_logger = ExperimentLogger(tmp_path / "logs")
+    trainer = Trainer(
+        model=model,
+        optimizer=optimizer,
+        scheduler=None,
+        scheduler_monitor_metric=None,
+        checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
+        experiment_logger=experiment_logger,
+        device="cpu",
+    )
+    batch = _build_batch()
+    val_loader = _SingleEntityValidationDataLoader()
+
+    try:
+        outputs = trainer.train(
+            train_loader=[batch],
+            val_loader=val_loader,
+            scaler_state={
+                "feature_mean": torch.zeros(38),
+                "feature_std": torch.ones(38),
+            },
+            config={
+                "experiment_name": "validation-alignment-test",
+                "task": {"val_realistic": False},
+            },
+            epochs=1,
+        )
+    finally:
+        experiment_logger.close()
+
+    epoch_metrics = outputs["metric_history"][0]
+
+    assert "val_synth_loss" in epoch_metrics
+    assert "val_synth_classification_loss" in epoch_metrics
+    assert "val_synth_vus_pr" in epoch_metrics
+    assert "val_realistic_loss" not in epoch_metrics
+    assert "val_realistic_vus_pr" not in epoch_metrics

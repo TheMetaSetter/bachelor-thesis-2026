@@ -158,5 +158,5 @@ def test_redlamp_clean_validation_loss_excludes_classification_term() -> None:
 
     assert torch.isclose(step_output["loss"], expected_loss)
     assert step_output["log"]["val_loss"] == expected_loss.item()
-    assert "val_classification_loss" in step_output["log"]
-    assert "val_classification_accuracy" in step_output["log"]
+    assert "val_classification_loss" not in step_output["log"]
+    assert "val_classification_accuracy" not in step_output["log"]

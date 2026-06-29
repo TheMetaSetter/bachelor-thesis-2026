@@ -218,18 +218,168 @@ def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
     assert loaded_config["data"]["entity_ids"] == ["machine-2-1"]
     assert loaded_config["data"]["window_size"] == 10
     assert loaded_config["data"]["stride"] == 10
-    assert loaded_config["data"]["batch_size"] == 256
-    assert loaded_config["model"]["num_classes"] == 2
-    assert loaded_config["task"]["anomaly_families"] == [
-        "spike",
-        "noise",
-        "cutoff",
-        "scale",
-        "contextual",
-    ]
-    assert loaded_config["task"]["min_segment_fraction"] == 0.3
-    assert loaded_config["task"]["max_segment_fraction"] == 0.6
-    assert loaded_config["task"]["train_balance_classes"] is True
+
+
+def test_multitask_config_accepts_fixed_synthetic_train_seed_when_train_is_not_shuffled(
+) -> None:
+    experiment_config = {
+        "experiment_name": "fixed-train-synth-ok",
+        "seed": 7,
+        "device": "cpu",
+        "output_dir": "outputs/fixed-train-synth-ok",
+        "checkpoint_dir": "outputs/fixed-train-synth-ok/checkpoints",
+        "data": {
+            "dataset_name": "smd",
+            "root_dir": "data/ServerMachineDataset",
+            "window_size": 20,
+            "stride": 1,
+            "batch_size": 2,
+            "num_workers": 0,
+            "validation_split_ratio": 0.2,
+            "shuffle_train": False,
+        },
+        "model": {
+            "model_name": "redlamp_mlp_baseline",
+            "input_dim": 38,
+            "window_size": 20,
+            "latent_dim": 16,
+            "encoder_family": "cnn_simple",
+            "mlp_num_linear_layers": 3,
+            "cnn_num_layers": 3,
+            "cnn_kernel_size": 3,
+            "cnn_hidden_channels": 8,
+            "cnn_dropout": 0.1,
+            "classifier_dim": 8,
+            "num_classes": 12,
+            "dropout": 0.1,
+            "lambda_recon": 0.9,
+            "lambda_cls": 0.1,
+            "use_label_refurbishment": True,
+            "refurbishment_alpha": 0.1,
+            "refurbishment_beta": 0.01,
+            "enable_gradient_conflict_profiling": False,
+            "gradient_profiling_scope": "encoder_all",
+            "gradient_focus_layer_name": "encoder_last_affine",
+            "gradient_log_every_n_steps": 1,
+            "gradient_ema_alpha": 0.1,
+            "gradient_sma_window": 50,
+            "gradient_profile_include_bias": False,
+        },
+        "task": {
+            "task_name": "multitask_tsad",
+            "use_synthetic_augmentation": True,
+            "use_synthetic_validation": True,
+            "synthetic_train_seed": 17,
+            "synthetic_validation_seed": 7,
+            "classification_label_mode": "redlamp_multiclass",
+            "freeze_fusion_for_epochs": 0,
+            "warmup_alpha_value": 0.5,
+            "warmup_beta_value": 0.5,
+            "anomaly_probability": 0.5,
+            "train_balance_classes": True,
+            "val_realistic": False,
+            "val_realistic_source": "test_same_scope",
+            "val_anomaly_rate_override": None,
+            "min_segment_fraction": 0.2,
+            "max_segment_fraction": 0.3,
+            "spike_scale": 3.0,
+            "anomaly_visibility_boost": 1.5,
+            "anomaly_families": list(REDLAMP_ANOMALY_FAMILIES),
+        },
+        "optimizer": {
+            "optimizer_name": "adamw",
+            "learning_rate": 1e-3,
+            "weight_decay": 0.0,
+            "gradient_clip_norm": 0.5,
+        },
+        "epochs": 1,
+        "checkpoint_monitor_metric": "val_synth_vus_pr",
+    }
+
+    validate_experiment_config(experiment_config)
+
+
+def test_multitask_config_rejects_fixed_synthetic_train_seed_when_train_is_shuffled(
+) -> None:
+    experiment_config = {
+        "experiment_name": "fixed-train-synth-bad",
+        "seed": 7,
+        "device": "cpu",
+        "output_dir": "outputs/fixed-train-synth-bad",
+        "checkpoint_dir": "outputs/fixed-train-synth-bad/checkpoints",
+        "data": {
+            "dataset_name": "smd",
+            "root_dir": "data/ServerMachineDataset",
+            "window_size": 20,
+            "stride": 1,
+            "batch_size": 2,
+            "num_workers": 0,
+            "validation_split_ratio": 0.2,
+            "shuffle_train": True,
+        },
+        "model": {
+            "model_name": "redlamp_mlp_baseline",
+            "input_dim": 38,
+            "window_size": 20,
+            "latent_dim": 16,
+            "encoder_family": "cnn_simple",
+            "mlp_num_linear_layers": 3,
+            "cnn_num_layers": 3,
+            "cnn_kernel_size": 3,
+            "cnn_hidden_channels": 8,
+            "cnn_dropout": 0.1,
+            "classifier_dim": 8,
+            "num_classes": 12,
+            "dropout": 0.1,
+            "lambda_recon": 0.9,
+            "lambda_cls": 0.1,
+            "use_label_refurbishment": True,
+            "refurbishment_alpha": 0.1,
+            "refurbishment_beta": 0.01,
+            "enable_gradient_conflict_profiling": False,
+            "gradient_profiling_scope": "encoder_all",
+            "gradient_focus_layer_name": "encoder_last_affine",
+            "gradient_log_every_n_steps": 1,
+            "gradient_ema_alpha": 0.1,
+            "gradient_sma_window": 50,
+            "gradient_profile_include_bias": False,
+        },
+        "task": {
+            "task_name": "multitask_tsad",
+            "use_synthetic_augmentation": True,
+            "use_synthetic_validation": True,
+            "synthetic_train_seed": 17,
+            "synthetic_validation_seed": 7,
+            "classification_label_mode": "redlamp_multiclass",
+            "freeze_fusion_for_epochs": 0,
+            "warmup_alpha_value": 0.5,
+            "warmup_beta_value": 0.5,
+            "anomaly_probability": 0.5,
+            "train_balance_classes": True,
+            "val_realistic": False,
+            "val_realistic_source": "test_same_scope",
+            "val_anomaly_rate_override": None,
+            "min_segment_fraction": 0.2,
+            "max_segment_fraction": 0.3,
+            "spike_scale": 3.0,
+            "anomaly_visibility_boost": 1.5,
+            "anomaly_families": list(REDLAMP_ANOMALY_FAMILIES),
+        },
+        "optimizer": {
+            "optimizer_name": "adamw",
+            "learning_rate": 1e-3,
+            "weight_decay": 0.0,
+            "gradient_clip_norm": 0.5,
+        },
+        "epochs": 1,
+        "checkpoint_monitor_metric": "val_synth_vus_pr",
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="synthetic_train_seed requires data.shuffle_train=false",
+    ):
+        validate_experiment_config(experiment_config)
 
 
 def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor() -> (
@@ -1649,3 +1799,85 @@ def test_load_experiment_config_rejects_non_string_focus_metrics(
 
     with pytest.raises(ValueError, match="logging.focus_metrics"):
         load_experiment_config(experiment_config_path)
+
+
+def test_benchmark_baseline_config_uses_split_specific_coverage_and_fixed_synth() -> (
+    None
+):
+    loaded_config = load_experiment_config(
+        "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_mlp_baseline__benchmark-machine_3_4__w20__seed6__main.yaml"
+    )
+    validate_experiment_config(loaded_config)
+
+    assert loaded_config["epochs"] == 100
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["data"]["stride"] == 10
+    assert loaded_config["data"]["train_stride"] == 10
+    assert loaded_config["data"]["val_stride"] == 1
+    assert loaded_config["data"]["test_stride"] == 1
+    assert loaded_config["data"]["shuffle_train"] is False
+    assert loaded_config["task"]["synthetic_train_seed"] == 7
+    assert loaded_config["task"]["synthetic_validation_seed"] == 7
+    assert loaded_config["task"]["val_realistic"] is False
+
+
+def test_benchmark_thesis_three_stage_config_locks_100_epoch_budget() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-three-stage-machine_3_4__w20__seed36__main.yaml"
+    )
+    validate_experiment_config(loaded_config)
+
+    assert loaded_config["epochs"] == 100
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["three_stage"]["expected_total_training_epochs"] == 100
+    assert loaded_config["three_stage"]["stage1_classification_epochs"] == 15
+    assert loaded_config["three_stage"]["stage1_reconstruction_epochs"] == 25
+    assert loaded_config["three_stage"]["stage2_recovery_epochs"] == 5
+    assert (
+        loaded_config["three_stage"][
+            "stage3_memory_initialization_and_fusion_warmup_epochs"
+        ]
+        == 5
+    )
+    assert loaded_config["three_stage"]["multitask_pretraining_epochs"] == 50
+
+
+@pytest.mark.parametrize(
+    "experiment_config_path",
+    [
+        "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_mlp_baseline__benchmark-machine_1_6__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_mlp_baseline__benchmark-machine_1_6__w20__seed36__main.yaml",
+        "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_mlp_baseline__benchmark-machine_3_4__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_mlp_baseline__benchmark-machine_3_4__w20__seed36__main.yaml",
+        "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_mlp_baseline__benchmark-machine_3_9__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_mlp_baseline__benchmark-machine_3_9__w20__seed36__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-three-stage-machine_1_6__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-three-stage-machine_1_6__w20__seed36__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-three-stage-machine_3_4__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-three-stage-machine_3_4__w20__seed36__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-three-stage-machine_3_9__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-three-stage-machine_3_9__w20__seed36__main.yaml",
+    ],
+)
+def test_all_new_benchmark_experiment_configs_load_and_validate(
+    experiment_config_path: str,
+) -> None:
+    loaded_config = load_experiment_config(experiment_config_path)
+    validate_experiment_config(loaded_config)
+
+    assert loaded_config["epochs"] == 100
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"

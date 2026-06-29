@@ -193,6 +193,75 @@ def test_build_dataset_protocol_audit_report_flags_truncated_smd_test_coverage()
     assert "max_test_windows" in " ".join(report["warnings"])
 
 
+def test_build_dataset_protocol_audit_report_flags_stride_remainder_coverage_loss() -> (
+    None
+):
+    from src.analysis.evaluation_protocol_audit import (
+        build_dataset_protocol_audit_report,
+    )
+
+    train_sequence = _build_sequence(
+        dataset_name="smd",
+        entity_id="machine-1",
+        split="train",
+        values=[1.0, 2.0, 3.0, 4.0, 5.0],
+        labels=[0, 0, 0, 0, 0],
+    )
+    val_sequence = _build_sequence(
+        dataset_name="smd",
+        entity_id="machine-1",
+        split="val",
+        values=[6.0, 7.0, 8.0, 9.0, 10.0],
+        labels=[0, 0, 0, 0, 0],
+    )
+    test_sequence = _build_sequence(
+        dataset_name="smd",
+        entity_id="machine-1",
+        split="test",
+        values=[0.0] * 9,
+        labels=[0, 0, 0, 1, 1, 0, 0, 0, 0],
+    )
+    scaler = SequenceStandardScaler()
+    scaler.fit([train_sequence])
+    scaled_sequences = {
+        "train": scaler.transform_sequences([train_sequence]),
+        "val": scaler.transform_sequences([val_sequence]),
+        "test": scaler.transform_sequences([test_sequence]),
+    }
+    datasets = {
+        "train": WindowDataset(scaled_sequences["train"], window_size=4, stride=1),
+        "val": WindowDataset(scaled_sequences["val"], window_size=4, stride=1),
+        "test": WindowDataset(scaled_sequences["test"], window_size=4, stride=3),
+    }
+    report = build_dataset_protocol_audit_report(
+        data_bundle={
+            "dataset_name": "smd",
+            "parser": object(),
+            "scaler": scaler,
+            "raw_sequences": {
+                "train": [train_sequence],
+                "val": [val_sequence],
+                "test": [test_sequence],
+            },
+            "scaled_sequences": scaled_sequences,
+            "datasets": datasets,
+            "loaders": {},
+        },
+        data_config={
+            "dataset_name": "smd",
+            "window_size": 4,
+            "stride": 3,
+        },
+    )
+
+    assert report["splits"]["test"]["is_truncated"] is True
+    assert report["splits"]["test"]["truncation_reason"] == "window_stride_remainder"
+    assert report["benchmark_comparability"] == "non_comparable"
+    warning_text = " ".join(report["warnings"]).lower()
+    assert "stride" in warning_text
+    assert "full labeled timeline" in warning_text
+
+
 def test_window_dataset_stride_one_covers_full_sequence_without_tail_gap() -> None:
     test_sequence = _build_sequence(
         dataset_name="toy",
@@ -242,7 +311,7 @@ def test_build_dataset_protocol_audit_report_marks_benchmark_comparable_anomaly_
         split_name: WindowDataset(
             scaled_sequences[split_name],
             window_size=20,
-            stride=10,
+            stride=1,
         )
         for split_name in ("train", "val", "test")
     }
@@ -261,7 +330,7 @@ def test_build_dataset_protocol_audit_report_marks_benchmark_comparable_anomaly_
             "dataset_name": "anomaly_archive",
             "file_path": str(file_path),
             "window_size": 20,
-            "stride": 10,
+            "stride": 1,
         },
     )
     markdown_report = render_dataset_protocol_audit_markdown(

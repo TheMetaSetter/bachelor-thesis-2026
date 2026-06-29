@@ -10,6 +10,20 @@ from src.data.split_protocol import describe_label_regime
 from src.data.split_protocol import summarize_split_point_labels
 
 
+def _collect_positive_spans(binary_values: np.ndarray) -> list[tuple[int, int]]:
+    spans: list[tuple[int, int]] = []
+    start_index: int | None = None
+    for index, value in enumerate(binary_values.astype(int).tolist()):
+        if value == 1 and start_index is None:
+            start_index = index
+        elif value == 0 and start_index is not None:
+            spans.append((start_index, index))
+            start_index = None
+    if start_index is not None:
+        spans.append((start_index, int(binary_values.shape[0])))
+    return spans
+
+
 def describe_metric_regime_implications(
     *,
     label_regime: str,
@@ -86,10 +100,14 @@ def _build_entity_window_coverage(
     for sequence_index, sequence in enumerate(split_sequences):
         raw_num_points = int(sequence["x"].shape[0])
         index_records = records_by_sequence_index.get(sequence_index, [])
+        coverage_mask = np.zeros(raw_num_points, dtype=np.int64)
+        for start_index, end_index in index_records:
+            coverage_mask[start_index:end_index] = 1
         if index_records:
-            evaluated_start_index = min(start_index for start_index, _ in index_records)
-            evaluated_end_index = max(end_index for _, end_index in index_records)
-            evaluated_num_points = max(0, evaluated_end_index - evaluated_start_index)
+            covered_indices = np.flatnonzero(coverage_mask)
+            evaluated_start_index = int(covered_indices[0])
+            evaluated_end_index = int(covered_indices[-1]) + 1
+            evaluated_num_points = int(coverage_mask.sum())
         else:
             evaluated_start_index = 0
             evaluated_end_index = 0
@@ -102,6 +120,7 @@ def _build_entity_window_coverage(
                 "evaluated_end_index": evaluated_end_index,
                 "evaluated_num_points": evaluated_num_points,
                 "is_truncated": evaluated_num_points < raw_num_points,
+                "coverage_spans": _collect_positive_spans(coverage_mask),
             }
         )
     return entities
@@ -136,22 +155,36 @@ def build_dataset_protocol_audit_report(
         )
         coverage_summary = _summarize_entity_coverage(entities)
         configured_limit = data_config.get(f"max_{split_name}_windows")
-        is_truncated = configured_limit is not None and any(
+        is_truncated = any(
             entity["evaluated_num_points"] < entity["raw_num_points"]
             for entity in entities
         )
+        truncation_reason = None
+        if is_truncated:
+            truncation_reason = (
+                "max_window_cap"
+                if configured_limit is not None
+                else "window_stride_remainder"
+            )
         if split_name == "test" and is_truncated:
             warnings.append(
                 "Test split window coverage is truncated relative to the raw test "
                 "timeline. Evaluation artifacts do not cover the full labeled "
                 "timeline."
             )
-            if configured_limit is not None:
+            if truncation_reason == "max_window_cap":
                 warnings.append(
                     "Configured "
                     f"max_test_windows={configured_limit} truncates the evaluated "
                     "test timeline. Treat this as a truncated smoke evaluation, "
                     "not a full-timeline test."
+                )
+            else:
+                warnings.append(
+                    "Current window size and stride leave an uncovered suffix on "
+                    "the raw test timeline. Use benchmark-comparable coverage such "
+                    "as test_stride=1 or another setting that still covers the full "
+                    "labeled timeline."
                 )
         split_reports[split_name] = {
             "num_sequences": len(split_sequences),
@@ -163,6 +196,7 @@ def build_dataset_protocol_audit_report(
             "raw_num_points": coverage_summary["raw_num_points"],
             "evaluated_num_points": coverage_summary["evaluated_num_points"],
             "is_truncated": is_truncated,
+            "truncation_reason": truncation_reason,
             "entities": entities,
         }
 
@@ -263,6 +297,7 @@ def render_dataset_protocol_audit_markdown(
                 f"- Positive ratio: {split_report['positive_ratio']:.6f}",
                 f"- Evaluated points: {split_report['evaluated_num_points']}/{split_report['raw_num_points']}",
                 f"- Truncated coverage: `{split_report['is_truncated']}`",
+                f"- Truncation reason: `{split_report['truncation_reason']}`",
                 "",
             ]
         )

@@ -186,6 +186,10 @@ def build_scheduler_from_experiment_config(
     monitor_metric = str(scheduler_config["monitor_metric"])
     scheduler_mode_by_metric = {
         "val_loss": "min",
+        "val_synth_loss": "min",
+        "val_synth_roc_auc": "max",
+        "val_synth_pr_auc": "max",
+        "val_synth_vus_pr": "max",
         "val_realistic_loss": "min",
         "val_realistic_roc_auc": "max",
         "val_realistic_pr_auc": "max",

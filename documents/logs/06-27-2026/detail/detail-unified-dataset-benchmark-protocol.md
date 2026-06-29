@@ -48,12 +48,15 @@ As of `2026-06-29`, the plan is no longer at the original starting point. The co
   - `anomaly_archive` now builds one future mixed-label `test` timeline instead of anomaly-only or post-only slices.
 - Phase 4 is partially completed:
   - evaluator metrics and audit artifacts already expose `benchmark_comparability` and `protocol_status`.
-- Phase 5 is only partially completed:
-  - suspicious reconstruction behavior is now evidenced and tested, and the evaluator now computes metrics from actually covered points only.
+- Phase 5 is now substantially completed:
+  - suspicious reconstruction behavior is now evidenced and tested,
+  - the evaluator computes metrics from actually covered points only,
+  - saved evaluation artifacts persist `covered_point_mask`,
+  - and the audit layer distinguishes capped smoke truncation from stride-remainder coverage loss.
 - The highest-priority remaining work is now:
-  - switch active benchmark configs onto `val_stride=1` and `test_stride=1` where comparability is intended,
-  - persist `covered_point_mask` into saved evaluation artifacts if downstream forensic tooling needs it,
-  - tighten audit language so any non-full-coverage evaluation is surfaced consistently.
+  - finish migrating all intended benchmark experiment configs onto the new benchmark-safe data/task settings,
+  - keep smoke configs explicitly non-comparable,
+  - and treat future dataset onboarding such as `SWaT`, `IOPS`, `NASA`, or `iccad` as separate parser/runtime work rather than assuming those families are already runnable.
 
 ## Current Code Reality
 
@@ -68,9 +71,9 @@ The detail plan is grounded in the current runtime:
 - [`src/engine/evaluator.py`](/Users/conquerormikrokosmos/Downloads/LAPTOP%20MAC/MYUNIVERSITY/%C4%90A%CC%A3I%20HO%CC%A3C%20QUO%CC%82%CC%81C%20GIA%20TPHCM/%C4%90H%20KHOA%20HO%CC%A3C%20TU%CC%9B%CC%A3%20NHIE%CC%82N/Khoa%CC%81%20luận%20to%CC%82%CC%81t%20nghiệp/bachelor-thesis-2026/src/engine/evaluator.py) now preserves raw point labels per entity and computes metric vectors from covered timesteps only.
 - [`src/analysis/evaluation_protocol_audit.py`](/Users/conquerormikrokosmos/Downloads/LAPTOP%20MAC/MYUNIVERSITY/%C4%90A%CC%A3I%20HO%CC%A3C%20QUO%CC%82%CC%81C%20GIA%20TPHCM/%C4%90H%20KHOA%20HO%CC%A3C%20TU%CC%9B%CC%A3%20NHIE%CC%82N/Khoa%CC%81%20luận%20to%CC%82%CC%81t%20nghiệp/bachelor-thesis-2026/src/analysis/evaluation_protocol_audit.py) is already benchmark-generic in its public language.
 - The main unresolved protocol bug is now narrower:
-  - active benchmark configs still need to opt into `val_stride=1` and `test_stride=1` explicitly where comparability is expected,
-  - saved evaluation JSON records do not yet persist `covered_point_mask`,
-  - audit truncation wording is still stronger for capped smoke runs than for every possible coverage-loss pattern.
+  - legacy experiment configs outside the new benchmark family still mostly point at `val_realistic` and older stride settings,
+  - benchmark-safe configs should use split-specific coverage policy explicitly,
+  - and future dataset families still need their own parser/runtime onboarding before they can join the same benchmark contract.
 - The future dataset directory [`data/ibm-cloud-console-anomaly-dataset-iccad`](/Users/conquerormikrokosmos/Downloads/LAPTOP%20MAC/MYUNIVERSITY/%C4%90A%CC%A3I%20HO%CC%A3C%20QUO%CC%82%CC%81C%20GIA%20TPHCM/%C4%90H%20KHOA%20HO%CC%A3C%20TU%CC%9B%CC%A3%20NHIE%CC%82N/Khoa%CC%81%20luận%20to%CC%82%CC%81t%20nghiệp/bachelor-thesis-2026/data/ibm-cloud-console-anomaly-dataset-iccad) already shows a realistic future onboarding shape:
   - `anomaly_windows.csv` provides anomaly intervals,
   - `location_downtime.csv` provides location downtime intervals,

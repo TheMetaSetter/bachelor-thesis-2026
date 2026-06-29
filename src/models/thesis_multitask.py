@@ -387,6 +387,7 @@ class GradientProfilingConfig:
 class SyntheticAnomalyConfig:
     use_synthetic_augmentation: bool = True
     use_synthetic_validation: bool = True
+    synthetic_train_seed: int | None = None
     synthetic_validation_seed: int = 7
     val_realistic: bool = True
     val_realistic_source: str = "test_same_scope"
@@ -401,6 +402,10 @@ class SyntheticAnomalyConfig:
     classification_label_mode: str = "redlamp_multiclass"
 
     def __post_init__(self) -> None:
+        if self.synthetic_train_seed is not None and self.synthetic_train_seed < 0:
+            raise ValueError(
+                "synthetic_train_seed must be a non-negative integer or None"
+            )
         if self.classification_label_mode not in {"binary", "redlamp_multiclass"}:
             raise ValueError(
                 "classification_label_mode must be one of: binary, redlamp_multiclass"
@@ -533,6 +538,7 @@ class ThesisMultitaskModelConfig:
         synthetic_keys = {
             "use_synthetic_augmentation",
             "use_synthetic_validation",
+            "synthetic_train_seed",
             "synthetic_validation_seed",
             "val_realistic",
             "val_realistic_source",
@@ -724,6 +730,7 @@ class ThesisMultitaskModel(BaseModel):
         self.discrete_memory_label_source = runtime.discrete_memory_label_source
         self.use_synthetic_augmentation = synthetic.use_synthetic_augmentation
         self.use_synthetic_validation = synthetic.use_synthetic_validation
+        self.synthetic_train_seed = synthetic.synthetic_train_seed
         self.synthetic_validation_seed = synthetic.synthetic_validation_seed
         self.val_realistic = synthetic.val_realistic
         self.val_realistic_source = synthetic.val_realistic_source
@@ -1060,6 +1067,7 @@ class ThesisMultitaskModel(BaseModel):
             anomaly_visibility_boost=synthetic.anomaly_visibility_boost,
             anomaly_families=synthetic.anomaly_families,
             train_balance_classes=synthetic.train_balance_classes,
+            deterministic_seed=synthetic.synthetic_train_seed,
             classification_label_mode=synthetic.classification_label_mode,
         )
         self.synthetic_validation_injector = SyntheticAnomalyInjector(
@@ -1640,9 +1648,8 @@ class ThesisMultitaskModel(BaseModel):
                 raise ValueError(
                     "discrete_hidden_tokens_by_class must contain at least one class"
                 )
-            codewords_per_class = max(
-                self.discrete_codebook_size // self.num_classes, 1
-            )
+            base_codewords_per_class = self.discrete_codebook_size // self.num_classes
+            remaining_codewords = self.discrete_codebook_size % self.num_classes
             fallback_hidden_tokens = torch.cat(
                 [
                     discrete_hidden_tokens_by_class[class_index]
@@ -1652,13 +1659,18 @@ class ThesisMultitaskModel(BaseModel):
             )
             class_stratified_vectors: list[torch.Tensor] = []
             for class_index in range(self.num_classes):
+                codewords_for_class = base_codewords_per_class
+                if class_index < remaining_codewords:
+                    codewords_for_class += 1
+                if codewords_for_class == 0:
+                    continue
                 class_hidden_tokens = discrete_hidden_tokens_by_class.get(class_index)
                 if class_hidden_tokens is None or class_hidden_tokens.shape[0] == 0:
                     class_hidden_tokens = fallback_hidden_tokens
                 class_stratified_vectors.append(
                     self._select_covering_vectors(
                         class_hidden_tokens,
-                        codewords_per_class,
+                        codewords_for_class,
                     )
                 )
             discrete_seed_vectors = torch.cat(class_stratified_vectors, dim=0)
@@ -1880,6 +1892,9 @@ class ThesisMultitaskModel(BaseModel):
             anomaly_probability
         )
         self.synthetic_validation_injector.reset_rng()
+
+    def prepare_synthetic_training_epoch(self) -> None:
+        self.synthetic_anomaly_injector.reset_rng()
 
     def prepare_synthetic_validation_epoch(self) -> None:
         # Backward-compatible wrapper for older call sites.

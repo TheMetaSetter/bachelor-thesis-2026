@@ -248,15 +248,17 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
                 },
             }
 
-    class _FakeScaler:
-        def load_state_dict(self, state_dict) -> None:
-            self.state_dict = state_dict
-
     class _FakeEvaluator:
         def __init__(self, device: str = "cpu") -> None:
             self.device = device
 
-        def evaluate(self, model, data_loader):
+        def evaluate(
+            self,
+            model,
+            data_loader,
+            point_score_threshold=None,
+            threshold_source=None,
+        ):
             return {
                 "metrics": {
                     "precision": 0.5,
@@ -272,6 +274,7 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
                         "entity_id": "machine-a",
                         "point_scores": torch.tensor([0.1, 0.9]),
                         "point_labels": torch.tensor([0, 1]),
+                        "covered_point_mask": torch.tensor([1, 0], dtype=torch.bool),
                         "num_points": 2,
                     }
                 ],
@@ -286,7 +289,6 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
             }
 
     monkeypatch.setattr("scripts.evaluate.CheckpointManager", _FakeCheckpointManager)
-    monkeypatch.setattr("scripts.evaluate.SequenceStandardScaler", _FakeScaler)
     monkeypatch.setattr("scripts.evaluate.Evaluator", _FakeEvaluator)
 
     experiment_config = {
@@ -310,18 +312,21 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
 
     curves_path = tmp_path / "outputs" / "evaluation_curves.json"
     metrics_path = tmp_path / "outputs" / "evaluation_metrics.json"
+    records_path = tmp_path / "outputs" / "evaluation_records.json"
     assert outputs["metrics"]["fpr"] == 0.25
     assert outputs["metrics"]["forward_pass_seconds_mean"] == 0.001
     assert curves_path.exists()
     assert metrics_path.exists()
     saved_curves = json.loads(curves_path.read_text(encoding="utf-8"))
     saved_metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    saved_records = json.loads(records_path.read_text(encoding="utf-8"))
     assert "roc_curve" in saved_curves
     assert "pr_curve" in saved_curves
     assert saved_metrics["benchmark_comparability"] == "non_comparable"
     assert saved_metrics["protocol_status"] == "fallback_unknown"
     assert "label_regime" not in saved_metrics
     assert saved_metrics["threshold_source"] == "positive_support_quantile_0.95"
+    assert saved_records[0]["covered_point_mask"] == [True, False]
     assert any(
         "evaluation/precision" in logged_metrics
         for logged_metrics in fake_run.logged_metrics
@@ -329,4 +334,130 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
     assert any(
         artifact.name == "evaluation-metrics-test-evaluation-curves"
         for artifact, _ in fake_run.logged_artifacts
+    )
+
+
+def test_run_evaluation_experiment_reuses_checkpoint_threshold_and_rebuilt_loader(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr("scripts.evaluate.register_runtime_components", lambda: None)
+
+    fake_bundle = {
+        "datasets": {"test": [1]},
+        "loaders": {"test": "initial-test-loader"},
+        "raw_sequences": {"train": [], "val": [], "test": []},
+        "scaled_sequences": {"train": [], "val": [], "test": []},
+        "scaler": object(),
+    }
+    monkeypatch.setattr(
+        "scripts.evaluate.build_dataset",
+        lambda dataset_name, data_config: fake_bundle,
+    )
+    monkeypatch.setattr(
+        "scripts.evaluate.build_model_from_experiment_config",
+        lambda experiment_config: torch.nn.Linear(1, 1),
+    )
+
+    class _FakeCheckpointManager:
+        def __init__(self, checkpoint_dir) -> None:
+            self.checkpoint_dir = checkpoint_dir
+
+        def load_checkpoint(self, checkpoint_path, model, optimizer):
+            return {
+                "scaler_state_dict": {
+                    "epsilon": 1.0e-6,
+                    "feature_mean": torch.zeros(1),
+                    "feature_std": torch.ones(1),
+                },
+                "extra_state": {
+                    "evaluation_threshold": 0.42,
+                    "evaluation_threshold_source": "checkpoint::val_synth_threshold",
+                },
+            }
+
+    rebuilt_bundle = dict(fake_bundle)
+    rebuilt_bundle["loaders"] = {"test": "rebuilt-test-loader"}
+    monkeypatch.setattr("scripts.evaluate.CheckpointManager", _FakeCheckpointManager)
+    monkeypatch.setattr(
+        "scripts.evaluate.rebuild_dataset_bundle_with_scaler_state",
+        lambda *, data_bundle, data_config, scaler_state_dict: rebuilt_bundle,
+    )
+    monkeypatch.setattr(
+        "scripts.evaluate.build_dataset_protocol_audit_report",
+        lambda **kwargs: {
+            "dataset_name": "smd",
+            "scaler_fit_scope": "train_only_before_windowing",
+            "benchmark_comparability": "benchmark_comparable",
+            "protocol_status": "benchmark_comparable_full_timeline",
+            "splits": {},
+            "warnings": [],
+            "evaluation": {
+                "evaluated_num_points": 0,
+                "raw_num_points": 0,
+                "is_truncated_evaluation": False,
+            },
+        },
+    )
+
+    captured_evaluator_call: dict[str, object] = {}
+
+    class _FakeEvaluator:
+        def __init__(
+            self,
+            device: str = "cpu",
+            vus_max_buffer_size: int | None = None,
+            vus_num_thresholds: int = 200,
+        ) -> None:
+            self.device = device
+            self.vus_max_buffer_size = vus_max_buffer_size
+            self.vus_num_thresholds = vus_num_thresholds
+
+        def evaluate(
+            self,
+            model,
+            data_loader,
+            point_score_threshold=None,
+            threshold_source=None,
+        ):
+            captured_evaluator_call["data_loader"] = data_loader
+            captured_evaluator_call["point_score_threshold"] = point_score_threshold
+            captured_evaluator_call["threshold_source"] = threshold_source
+            return {
+                "metrics": {
+                    "precision": 0.5,
+                    "recall": 0.75,
+                    "roc_auc": 0.8,
+                    "pr_auc": 0.7,
+                    "fpr": 0.25,
+                    "threshold": 0.42,
+                    "threshold_source": "checkpoint::val_synth_threshold",
+                    "forward_pass_seconds_mean": 0.001,
+                },
+                "records": [],
+                "curves": {"roc_curve": {"x": [], "y": [], "thresholds": []}, "pr_curve": {"x": [], "y": [], "thresholds": []}},
+            }
+
+    monkeypatch.setattr("scripts.evaluate.Evaluator", _FakeEvaluator)
+
+    experiment_config = {
+        "experiment_name": "evaluation-reuse-test",
+        "device": "cpu",
+        "output_dir": str(tmp_path / "outputs"),
+        "checkpoint_dir": str(tmp_path / "checkpoints"),
+        "data": {"dataset_name": "smd"},
+        "model": {"model_name": "thesis_multitask"},
+        "task": {"task_name": "multitask_tsad"},
+        "logging": {"use_wandb": False},
+    }
+
+    run_evaluation_experiment(
+        experiment_config, checkpoint_path=str(tmp_path / "best.pt")
+    )
+
+    assert captured_evaluator_call["data_loader"] == "rebuilt-test-loader"
+    assert captured_evaluator_call["point_score_threshold"] == 0.42
+    assert (
+        captured_evaluator_call["threshold_source"]
+        == "checkpoint::val_synth_threshold"
     )

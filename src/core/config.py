@@ -456,6 +456,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "task_name",
             "use_synthetic_augmentation",
             "use_synthetic_validation",
+            "synthetic_train_seed",
             "synthetic_validation_seed",
             "classification_label_mode",
             "freeze_fusion_for_epochs",
@@ -694,6 +695,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     )
     if checkpoint_monitor_metric not in {
         "val_loss",
+        "val_synth_loss",
+        "val_synth_roc_auc",
+        "val_synth_pr_auc",
+        "val_synth_vus_pr",
         "val_realistic_loss",
         "val_realistic_roc_auc",
         "val_realistic_pr_auc",
@@ -702,6 +707,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     }:
         raise ValueError(
             "checkpoint_monitor_metric must be one of: val_loss, "
+            "val_synth_loss, val_synth_roc_auc, val_synth_pr_auc, "
+            "val_synth_vus_pr, "
             "val_realistic_loss, val_realistic_roc_auc, val_realistic_pr_auc, "
             "val_realistic_vus_pr, val_vus_pr"
         )
@@ -743,6 +750,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             monitor_metric = scheduler_config.get("monitor_metric")
             if monitor_metric not in {
                 "val_loss",
+                "val_synth_loss",
+                "val_synth_roc_auc",
+                "val_synth_pr_auc",
+                "val_synth_vus_pr",
                 "val_realistic_loss",
                 "val_realistic_roc_auc",
                 "val_realistic_pr_auc",
@@ -750,6 +761,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             }:
                 raise ValueError(
                     "optimizer.scheduler.monitor_metric must be one of: val_loss, "
+                    "val_synth_loss, val_synth_roc_auc, val_synth_pr_auc, "
+                    "val_synth_vus_pr, "
                     "val_realistic_loss, val_realistic_roc_auc, val_realistic_pr_auc, "
                     "val_realistic_vus_pr"
                 )
@@ -1128,6 +1141,18 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             or synthetic_validation_seed < 0
         ):
             raise ValueError("synthetic_validation_seed must be a non-negative integer")
+        synthetic_train_seed = task_config.get("synthetic_train_seed")
+        if synthetic_train_seed is not None and (
+            not isinstance(synthetic_train_seed, int) or synthetic_train_seed < 0
+        ):
+            raise ValueError(
+                "synthetic_train_seed must be a non-negative integer or null"
+            )
+        if synthetic_train_seed is not None and bool(data_config.get("shuffle_train", True)):
+            raise ValueError(
+                "synthetic_train_seed requires data.shuffle_train=false so each "
+                "window keeps a stable augmentation assignment across epochs"
+            )
     if task_config.get("task_name") == "online_adaptation":
         if float(model_config["projector_dropout"]) < 0.0:
             raise ValueError("projector_dropout must be non-negative")

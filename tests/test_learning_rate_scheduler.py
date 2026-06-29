@@ -93,6 +93,9 @@ class DummyPlateauModel(nn.Module):
             "batch": synthetic_batch,
         }
 
+    def realistic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
+        return self.synthetic_validation_step(batch)
+
     def test_step(self, batch: dict[str, Any]) -> dict[str, Any]:
         point_scores = batch["point_labels"].float() + 0.1
         return {

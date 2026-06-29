@@ -19,6 +19,8 @@ def test_comparative_tmux_launcher_dry_run_prints_expected_runner_commands() -> 
             "RTX 3090",
             "--data-num-workers-override",
             "4",
+            "--smoke-profile",
+            "functional",
         ],
         check=True,
         capture_output=True,

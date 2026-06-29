@@ -111,6 +111,7 @@ class RedLampMLPBaseline(BaseModel):
         anomaly_families: tuple[str, ...] | list[str] = REDLAMP_ANOMALY_FAMILIES,
         use_synthetic_augmentation: bool = True,
         use_synthetic_validation: bool = True,
+        synthetic_train_seed: int | None = None,
         synthetic_validation_seed: int = 7,
         classification_label_mode: str = "redlamp_multiclass",
         train_balance_classes: bool = True,
@@ -257,6 +258,7 @@ class RedLampMLPBaseline(BaseModel):
             balance_binary_classes_within_batch=(
                 effective_balance_classes_within_batch
             ),
+            deterministic_seed=synthetic_train_seed,
             classification_label_mode="redlamp_multiclass",
         )
         self.synthetic_validation_injector = SyntheticAnomalyInjector(
@@ -273,6 +275,9 @@ class RedLampMLPBaseline(BaseModel):
             classification_label_mode="redlamp_multiclass",
         )
         self._encoder_profiled_parameters = self._get_encoder_profiled_parameters()
+
+    def prepare_synthetic_training_epoch(self) -> None:
+        self.synthetic_anomaly_injector.reset_rng()
 
     def prepare_synthetic_validation_epoch(self) -> None:
         self.synthetic_validation_injector.reset_rng()

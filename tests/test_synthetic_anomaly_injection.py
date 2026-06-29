@@ -9,6 +9,7 @@ from src.data.augment import (
     REDLAMP_MULTICLASS_CLASS_NAMES,
     SyntheticAnomalyInjector,
 )
+from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
 
 
 def _build_batch() -> dict[str, object]:
@@ -265,3 +266,41 @@ def test_visibility_boost_increases_deviation_for_same_synthetic_sample() -> Non
     boosted_delta = torch.mean(torch.abs(boosted_batch["x"] - batch["x"]))
 
     assert boosted_delta > base_delta
+
+
+def test_redlamp_baseline_fixed_train_seed_resets_train_synthetic_augmentation() -> (
+    None
+):
+    model = RedLampMLPBaseline(
+        input_dim=3,
+        window_size=20,
+        latent_dim=8,
+        classifier_dim=4,
+        num_classes=12,
+        dropout=0.0,
+        anomaly_probability=1.0,
+        min_segment_fraction=0.2,
+        max_segment_fraction=0.3,
+        anomaly_families=("spike", "noise"),
+        use_synthetic_augmentation=True,
+        synthetic_train_seed=29,
+        synthetic_validation_seed=31,
+        train_balance_classes=False,
+    )
+    batch = _build_batch()
+
+    model.prepare_synthetic_training_epoch()
+    first_batch = model._prepare_batch(batch, stage_name="train")
+    model.prepare_synthetic_training_epoch()
+    second_batch = model._prepare_batch(batch, stage_name="train")
+
+    assert torch.equal(first_batch["x"], second_batch["x"])
+    assert torch.equal(
+        first_batch["classification_labels"],
+        second_batch["classification_labels"],
+    )
+    assert torch.equal(
+        first_batch["synthetic_anomaly_mask"],
+        second_batch["synthetic_anomaly_mask"],
+    )
+    assert first_batch["augmentation_metadata"] == second_batch["augmentation_metadata"]

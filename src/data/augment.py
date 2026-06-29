@@ -146,6 +146,7 @@ class SyntheticAnomalyInjector:
     def reset_rng(self) -> None:
         # Validation-time synthetic augmentation needs repeatable corruption so
         # epoch-to-epoch classification curves remain comparable.
+        self._class_rotation_offset = 0
         if self.deterministic_seed is None:
             self._rng = None
             return
@@ -928,7 +929,9 @@ class SyntheticAnomalyInjector:
         )
         augmented_batch["synthetic_anomaly_mask"] = anomaly_masks
         augmented_batch["augmentation_metadata"] = augmentation_metadata
-        anomalous_windows = int(classification_labels.sum().detach().cpu())
+        anomalous_windows = int(
+            torch.count_nonzero(classification_labels != 0).detach().cpu()
+        )
         anomaly_families_present = sorted(
             {
                 metadata["anomaly_family"]

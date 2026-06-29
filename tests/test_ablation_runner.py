@@ -31,6 +31,8 @@ def test_run_ablation_suite_writes_compact_summary_artifacts(
                 "roc_auc": 0.75,
                 "pr_auc": 0.65,
                 "vus_pr": 0.61,
+                "vus_roc": 0.66,
+                "affiliation_f1": 0.57,
                 "f1": 0.5,
                 "threshold": 0.12,
             }
@@ -51,5 +53,7 @@ def test_run_ablation_suite_writes_compact_summary_artifacts(
     assert outputs["summary_rows"][0]["experiment_name"] == "smd_multitask_smoke"
     assert outputs["summary_rows"][0]["pr_auc"] == 0.65
     assert outputs["summary_rows"][0]["vus_pr"] == 0.61
+    assert outputs["summary_rows"][0]["vus_roc"] == 0.66
+    assert outputs["summary_rows"][0]["affiliation_f1"] == 0.57
     assert outputs["summary_rows"][0]["bootstrap_encoder_epochs"] == 10
     assert outputs["summary_rows"][0]["anomaly_families"]

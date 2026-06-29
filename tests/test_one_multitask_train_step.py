@@ -36,6 +36,7 @@ def test_one_multitask_forward_and_backward_step_runs_with_optional_losses_enabl
         lambda_gate=0.01,
         use_synthetic_augmentation=True,
         anomaly_probability=1.0,
+        train_balance_classes=False,
         min_segment_fraction=0.1,
         max_segment_fraction=0.2,
         spike_scale=3.0,

@@ -114,6 +114,7 @@ def test_training_step_runs_with_refurbishment_and_normal_only_masking_enabled()
         reconstruction_normal_only=True,
         use_synthetic_augmentation=True,
         anomaly_probability=1.0,
+        train_balance_classes=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1.0e-3)
     batch = _build_batch()

@@ -35,8 +35,8 @@ from src.core.registry import (
 from src.data.loaders import (
     build_anomaly_archive_dataset_bundle,
     build_smd_dataset_bundle,
+    rebuild_dataset_bundle_with_scaler_state,
 )
-from src.data.scalers import SequenceStandardScaler
 from src.engine.checkpoint import CheckpointManager
 from src.engine.evaluator import Evaluator
 from src.engine.logger import ExperimentLogger
@@ -48,8 +48,9 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 def _serialize_evaluation_record(record: dict[str, object]) -> dict[str, object]:
     point_scores = record["point_scores"]
     point_labels = record["point_labels"]
+    covered_point_mask = record.get("covered_point_mask")
     num_points = int(record["num_points"])
-    return {
+    serialized_record = {
         "entity_id": record["entity_id"],
         "point_scores": point_scores.tolist(),
         "point_labels": point_labels.tolist(),
@@ -59,6 +60,9 @@ def _serialize_evaluation_record(record: dict[str, object]) -> dict[str, object]
         "evaluated_num_points": int(record.get("evaluated_num_points", num_points)),
         "raw_num_points": int(record.get("raw_num_points", num_points)),
     }
+    if covered_point_mask is not None:
+        serialized_record["covered_point_mask"] = covered_point_mask.tolist()
+    return serialized_record
 
 
 def _build_fallback_protocol_audit_report(
@@ -164,14 +168,20 @@ def run_evaluation_experiment(
         dataset_name=experiment_config["data"]["dataset_name"],
         test_windows=len(data_bundle["datasets"]["test"]),
     )
-    scaler = SequenceStandardScaler()
     model = build_model_from_experiment_config(experiment_config)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
     loaded_checkpoint = checkpoint_manager.load_checkpoint(
         checkpoint_path, model, optimizer
     )
-    scaler.load_state_dict(loaded_checkpoint["scaler_state_dict"])
+    checkpoint_scaler_state = loaded_checkpoint["scaler_state_dict"]
+    checkpoint_extra_state = loaded_checkpoint.get("extra_state") or {}
+    if "raw_sequences" in data_bundle:
+        data_bundle = rebuild_dataset_bundle_with_scaler_state(
+            data_bundle=data_bundle,
+            data_config=experiment_config["data"],
+            scaler_state_dict=checkpoint_scaler_state,
+        )
 
     # In log
     console_print(
@@ -196,7 +206,16 @@ def run_evaluation_experiment(
         )
     except TypeError:
         evaluator = Evaluator(device=experiment_config["device"])
-    evaluation_outputs = evaluator.evaluate(model, data_bundle["loaders"]["test"])
+    evaluation_threshold = checkpoint_extra_state.get("evaluation_threshold")
+    evaluation_threshold_source = checkpoint_extra_state.get(
+        "evaluation_threshold_source"
+    )
+    evaluation_outputs = evaluator.evaluate(
+        model,
+        data_bundle["loaders"]["test"],
+        point_score_threshold=evaluation_threshold,
+        threshold_source=evaluation_threshold_source,
+    )
 
     logging_config = dict(experiment_config.get("logging", {}))
     logging_config.setdefault("wandb_job_type", "evaluate")

@@ -56,6 +56,8 @@ def _build_summary_row(
         ),
         "pr_auc": evaluation_outputs["metrics"].get("pr_auc"),
         "vus_pr": evaluation_outputs["metrics"].get("vus_pr"),
+        "vus_roc": evaluation_outputs["metrics"].get("vus_roc"),
+        "affiliation_f1": evaluation_outputs["metrics"].get("affiliation_f1"),
         "f1": evaluation_outputs["metrics"].get(
             "f1", evaluation_outputs["metrics"].get("f1_at_threshold")
         ),

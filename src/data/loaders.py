@@ -193,6 +193,41 @@ def _build_dataset_bundle_from_sequences(
     }
 
 
+def rebuild_dataset_bundle_with_scaler_state(
+    *,
+    data_bundle: dict[str, Any],
+    data_config: dict[str, Any],
+    scaler_state_dict: dict[str, Any],
+) -> dict[str, Any]:
+    raw_sequences = data_bundle.get("raw_sequences")
+    if raw_sequences is None:
+        raise ValueError(
+            "Cannot rebuild dataset bundle with checkpoint scaler state because "
+            "raw_sequences are missing"
+        )
+    scaler = SequenceStandardScaler()
+    scaler.load_state_dict(scaler_state_dict)
+    scaled_sequences = {
+        split_name: scaler.transform_sequences(split_sequences)
+        for split_name, split_sequences in raw_sequences.items()
+    }
+    datasets, resolved_num_workers = _build_window_datasets(
+        scaled_sequences=scaled_sequences,
+        data_config=data_config,
+    )
+    loaders = _build_loaders_from_datasets(
+        datasets=datasets,
+        data_config=data_config,
+        resolved_num_workers=resolved_num_workers,
+    )
+    rebuilt_bundle = dict(data_bundle)
+    rebuilt_bundle["scaler"] = scaler
+    rebuilt_bundle["scaled_sequences"] = scaled_sequences
+    rebuilt_bundle["datasets"] = datasets
+    rebuilt_bundle["loaders"] = loaders
+    return rebuilt_bundle
+
+
 class WindowDataset(Dataset):
     def __init__(
         self,

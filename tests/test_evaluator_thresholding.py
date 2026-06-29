@@ -143,6 +143,29 @@ def test_evaluator_averages_overlapping_window_point_scores() -> None:
     )
 
 
+def test_evaluator_uses_explicit_threshold_when_provided() -> None:
+    model = _ToyEvaluationModel(
+        batch_point_scores=[
+            torch.tensor([[1.0, 2.0, 3.0]], dtype=torch.float32),
+            torch.tensor([[3.0, 5.0, 7.0]], dtype=torch.float32),
+        ]
+    )
+    data_loader = _ToyEvaluationDataLoader()
+
+    evaluation_outputs = Evaluator(device="cpu").evaluate(
+        model=model,
+        data_loader=data_loader,
+        point_score_threshold=4.5,
+        threshold_source="checkpoint_val_synth_threshold",
+    )
+
+    assert evaluation_outputs["metrics"]["threshold"] == 4.5
+    assert (
+        evaluation_outputs["metrics"]["threshold_source"]
+        == "checkpoint_val_synth_threshold"
+    )
+
+
 def test_reconstruct_pointwise_records_from_window_payload_averages_overlaps() -> None:
     sequences_by_entity = {
         "machine-1": {

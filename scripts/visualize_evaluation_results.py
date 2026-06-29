@@ -93,17 +93,30 @@ def build_visualization_payload(
         evaluation_record.get("evaluated_end_index", raw_values.shape[0])
     )
     raw_num_points = int(evaluation_record.get("raw_num_points", raw_values.shape[0]))
-    evaluated_num_points = int(
-        evaluation_record.get("evaluated_num_points", raw_values.shape[0])
-    )
+    covered_point_mask = evaluation_record.get("covered_point_mask")
+    if covered_point_mask is not None:
+        covered_point_mask_tensor = torch.tensor(
+            covered_point_mask,
+            dtype=torch.bool,
+        )
+    elif "evaluated_num_points" in evaluation_record:
+        covered_point_mask_tensor = torch.zeros(raw_values.shape[0], dtype=torch.bool)
+        covered_point_mask_tensor[evaluated_start_index:evaluated_end_index] = True
+    else:
+        covered_point_mask_tensor = torch.ones(raw_values.shape[0], dtype=torch.bool)
+    evaluated_num_points = int(covered_point_mask_tensor.sum().item())
     is_truncated = evaluated_num_points < raw_num_points
     return {
         "raw_values": raw_values,
         "point_scores": point_scores,
         "ground_truth_mask": ground_truth_mask,
         "predicted_mask": predicted_mask,
+        "covered_point_mask": covered_point_mask_tensor.to(dtype=torch.int64),
         "ground_truth_spans": _collect_positive_spans(ground_truth_mask),
         "predicted_spans": _collect_positive_spans(predicted_mask),
+        "coverage_spans": _collect_positive_spans(
+            covered_point_mask_tensor.to(dtype=torch.int64).numpy()
+        ),
         "evaluated_start_index": evaluated_start_index,
         "evaluated_end_index": evaluated_end_index,
         "evaluated_num_points": evaluated_num_points,
@@ -176,14 +189,6 @@ def save_entity_evaluation_visualization(
     score_axis.axhline(
         threshold, color="black", linestyle="--", linewidth=1.0, label="threshold"
     )
-    if payload["is_truncated"]:
-        score_axis.axvspan(
-            payload["evaluated_start_index"],
-            payload["evaluated_end_index"],
-            color="gold",
-            alpha=0.10,
-            label="evaluated coverage",
-        )
     score_axis.fill_between(
         time_index,
         threshold,
@@ -204,7 +209,7 @@ def save_entity_evaluation_visualization(
         Patch(facecolor="red", alpha=0.22, label="predicted anomaly"),
         Patch(facecolor="royalblue", alpha=0.16, label="raw ground truth anomaly"),
     ]
-    if payload["is_truncated"]:
+    if payload["coverage_spans"]:
         legend_handles.append(
             Patch(facecolor="gold", alpha=0.10, label="evaluated coverage")
         )
@@ -221,6 +226,8 @@ def save_entity_evaluation_visualization(
         axis.set_ylabel(f"ch {channel_offset}")
 
     for axis in axes:
+        for start_index, end_index in payload["coverage_spans"]:
+            axis.axvspan(start_index, end_index, color="gold", alpha=0.10)
         for start_index, end_index in payload["ground_truth_spans"]:
             axis.axvspan(start_index, end_index, color="royalblue", alpha=0.16)
         for start_index, end_index in payload["predicted_spans"]:

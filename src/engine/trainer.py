@@ -18,6 +18,7 @@ from src.core.console import console_print, summarize_batch
 from src.engine.checkpoint import CheckpointManager
 from src.engine.evaluator import (
     Evaluator,
+    extract_covered_pointwise_arrays,
     reconstruct_pointwise_records_from_window_payload,
     select_point_score_threshold,
 )
@@ -33,6 +34,40 @@ from src.metrics.classification_diagnostics import (
 )
 from src.models.base_model import BaseModel
 from src.data.datasets.smd import compute_smd_test_window_anomaly_rate
+
+
+def _resolve_checkpoint_threshold_metric_name(
+    checkpoint_monitor_metric: str,
+) -> str | None:
+    if checkpoint_monitor_metric.startswith("val_synth_"):
+        return "val_synth_threshold"
+    if checkpoint_monitor_metric.startswith("val_realistic_"):
+        return "val_realistic_threshold"
+    if checkpoint_monitor_metric.startswith("val_"):
+        return "val_threshold"
+    return None
+
+
+def build_checkpoint_evaluation_metadata(
+    *,
+    checkpoint_monitor_metric: str,
+    epoch_metrics: dict[str, Any],
+    base_extra_state: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    checkpoint_metadata = dict(base_extra_state or {})
+    threshold_metric_name = _resolve_checkpoint_threshold_metric_name(
+        checkpoint_monitor_metric
+    )
+    if threshold_metric_name is None or threshold_metric_name not in epoch_metrics:
+        return checkpoint_metadata or None
+    checkpoint_metadata["evaluation_threshold"] = float(
+        epoch_metrics[threshold_metric_name]
+    )
+    checkpoint_metadata["evaluation_threshold_metric_name"] = threshold_metric_name
+    checkpoint_metadata["evaluation_threshold_source"] = (
+        f"checkpoint::{threshold_metric_name}"
+    )
+    return checkpoint_metadata
 
 
 class Trainer:
@@ -357,6 +392,10 @@ class Trainer:
             )
         checkpoint_monitor_modes = {
             "val_loss": "min",
+            "val_synth_loss": "min",
+            "val_synth_roc_auc": "max",
+            "val_synth_pr_auc": "max",
+            "val_synth_vus_pr": "max",
             "val_realistic_loss": "min",
             "val_realistic_roc_auc": "max",
             "val_realistic_pr_auc": "max",
@@ -495,13 +534,8 @@ class Trainer:
             sequences_by_entity=sequences_by_entity,
             batch_payloads=batch_payloads,
         )
-        concatenated_scores = np.concatenate(
-            [record["point_scores"].numpy() for record in reconstructed_records],
-            axis=0,
-        )
-        concatenated_labels = np.concatenate(
-            [record["point_labels"].numpy() for record in reconstructed_records],
-            axis=0,
+        concatenated_scores, concatenated_labels = extract_covered_pointwise_arrays(
+            reconstructed_records
         )
         threshold = select_point_score_threshold(concatenated_scores, quantile=0.95)
         pointwise_metrics = compute_pointwise_metrics(
@@ -577,6 +611,8 @@ class Trainer:
         best_checkpoint_path = None
         final_checkpoint_path = None
         best_checkpoint_memory_initialized = False
+        best_checkpoint_extra_state: dict[str, Any] | None = None
+        last_epoch_metrics: dict[str, Any] | None = None
         task_config = config.get("task", {})
         use_val_realistic = bool(task_config.get("val_realistic", True))
 
@@ -598,6 +634,8 @@ class Trainer:
                 self.model.set_epoch_context(
                     epoch_index=epoch_index, total_epochs=epochs
                 )
+            if hasattr(self.model, "prepare_synthetic_training_epoch"):
+                self.model.prepare_synthetic_training_epoch()
             if hasattr(self.model, "maybe_initialize_memories_from_loader"):
                 memory_initialized = self.model.maybe_initialize_memories_from_loader(
                     train_loader=train_loader,
@@ -721,6 +759,7 @@ class Trainer:
                     pointwise_label_batch_key="synthetic_anomaly_mask",
                 )
             elif hasattr(self.model, "synthetic_validation_step"):
+                validation_aux_stage_name = "val_synth"
                 if hasattr(self.model, "prepare_synthetic_validation_epoch"):
                     self.model.prepare_synthetic_validation_epoch()
                 (
@@ -848,6 +887,7 @@ class Trainer:
                 epoch=epoch_index + 1,
                 epoch_metrics=epoch_metrics,
             )
+            last_epoch_metrics = dict(epoch_metrics)
 
             if best_checkpoint_monitor_metric not in epoch_metrics:
                 raise KeyError(
@@ -867,10 +907,16 @@ class Trainer:
                     if hasattr(self.model, "get_checkpoint_extra_state")
                     else None
                 )
+                checkpoint_extra_state = build_checkpoint_evaluation_metadata(
+                    checkpoint_monitor_metric=best_checkpoint_monitor_metric,
+                    epoch_metrics=epoch_metrics,
+                    base_extra_state=checkpoint_extra_state,
+                )
                 if isinstance(checkpoint_extra_state, dict):
                     best_checkpoint_memory_initialized = bool(
                         checkpoint_extra_state.get("memory_initialized", False)
                     )
+                    best_checkpoint_extra_state = dict(checkpoint_extra_state)
                 console_print(
                     "CHECKPOINT",
                     "Checkpoint monitor improved; saving best checkpoint",
@@ -912,17 +958,18 @@ class Trainer:
                 config=config,
                 epoch=epochs,
                 metric_history=self.metric_history,
-                extra_state=(
-                    self.model.get_checkpoint_extra_state()
-                    if hasattr(self.model, "get_checkpoint_extra_state")
-                    else None
-                ),
+                extra_state=best_checkpoint_extra_state,
             )
 
         final_checkpoint_extra_state = (
             self.model.get_checkpoint_extra_state()
             if hasattr(self.model, "get_checkpoint_extra_state")
             else None
+        )
+        final_checkpoint_extra_state = build_checkpoint_evaluation_metadata(
+            checkpoint_monitor_metric=best_checkpoint_monitor_metric,
+            epoch_metrics=last_epoch_metrics or {},
+            base_extra_state=final_checkpoint_extra_state,
         )
         final_checkpoint_path = self.checkpoint_manager.save_checkpoint(
             checkpoint_name="final.pt",

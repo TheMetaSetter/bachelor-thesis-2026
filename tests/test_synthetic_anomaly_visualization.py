@@ -97,6 +97,7 @@ def test_synthetic_anomaly_visualization_writes_artifact(tmp_path) -> None:
         max_segment_fraction=0.3,
         spike_scale=3.0,
         anomaly_families=("flip",),
+        train_balance_classes=False,
     )
     augmented_batch = injector.augment_batch(clean_batch)
 

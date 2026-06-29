@@ -2,12 +2,12 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEFAULT_SESSION_NAME="comparative-smd-top3-entities"
+DEFAULT_SESSION_NAME="benchmark-smd-top3-two-seeds"
 DEFAULT_PYTHON_BIN=".venv/bin/python"
-DEFAULT_REPORT_DIR="outputs/comparative_smd_reports/top3-entities-three-seeds"
+DEFAULT_REPORT_DIR="outputs/benchmark_smd_reports/top3-two-seeds"
 DEFAULT_GPU_INDEX="0"
 DEFAULT_REQUIRED_GPU_NAME_SUBSTRING="RTX 3090"
-DEFAULT_SMOKE_PROFILE="functional"
+DEFAULT_SMOKE_PROFILE="none"
 
 SESSION_NAME="${DEFAULT_SESSION_NAME}"
 PYTHON_BIN="${DEFAULT_PYTHON_BIN}"
@@ -35,24 +35,18 @@ STRESS_SMOKE_CONFIG_PATHS=(
 )
 
 MAIN_CONFIG_PATHS=(
-  "configs/experiment/comparative/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_1_6__w20__seed6__main.yaml"
-  "configs/experiment/comparative/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_1_6__w20__seed36__main.yaml"
-  "configs/experiment/comparative/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_1_6__w20__seed68__main.yaml"
-  "configs/experiment/comparative/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_3_1__w20__seed6__main.yaml"
-  "configs/experiment/comparative/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_3_1__w20__seed36__main.yaml"
-  "configs/experiment/comparative/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_3_1__w20__seed68__main.yaml"
-  "configs/experiment/comparative/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_3_9__w20__seed6__main.yaml"
-  "configs/experiment/comparative/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_3_9__w20__seed36__main.yaml"
-  "configs/experiment/comparative/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_3_9__w20__seed68__main.yaml"
-  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_1_6__w20__seed6__main.yaml"
-  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_1_6__w20__seed36__main.yaml"
-  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_1_6__w20__seed68__main.yaml"
-  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_3_1__w20__seed6__main.yaml"
-  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_3_1__w20__seed36__main.yaml"
-  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_3_1__w20__seed68__main.yaml"
-  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_3_9__w20__seed6__main.yaml"
-  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_3_9__w20__seed36__main.yaml"
-  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_3_9__w20__seed68__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_1_6__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_1_6__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_3_4__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_3_4__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_3_9__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_3_9__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-three-stage-machine_1_6__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-three-stage-machine_1_6__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-three-stage-machine_3_4__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-three-stage-machine_3_4__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-three-stage-machine_3_9__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-three-stage-machine_3_9__w20__seed36__main.yaml"
 )
 
 print_usage() {

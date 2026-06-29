@@ -167,7 +167,7 @@ def reconstruct_pointwise_records_from_window_payload(
     return evaluation_records
 
 
-def _extract_covered_pointwise_arrays(
+def extract_covered_pointwise_arrays(
     evaluation_records: list[dict[str, Any]],
 ) -> tuple[np.ndarray, np.ndarray]:
     covered_point_scores: list[np.ndarray] = []
@@ -267,7 +267,13 @@ class Evaluator:
             for sequence in data_loader.dataset.sequences
         }
 
-    def evaluate(self, model: BaseModel, data_loader: Any) -> dict[str, Any]:
+    def evaluate(
+        self,
+        model: BaseModel,
+        data_loader: Any,
+        point_score_threshold: float | None = None,
+        threshold_source: str | None = None,
+    ) -> dict[str, Any]:
         # Window-level scores are accumulated back onto each entity because the
         # downstream metrics should be interpreted on the original timeline.
         model.to(self.device)
@@ -316,13 +322,18 @@ class Evaluator:
         # Metric computation should use only the timesteps that were actually
         # covered by at least one evaluation window. Full-length raw labels stay
         # on each record for audit and visualization.
-        concatenated_scores, concatenated_labels = _extract_covered_pointwise_arrays(
+        concatenated_scores, concatenated_labels = extract_covered_pointwise_arrays(
             evaluation_records
         )
 
-        # Chọn threshold cho anomaly score
-        # Một timestep có anomaly score vượt ngưỡng threshold này thì tính là anomaly
-        threshold = select_point_score_threshold(concatenated_scores, quantile=0.95)
+        if point_score_threshold is None:
+            # Chọn threshold cho anomaly score
+            # Một timestep có anomaly score vượt ngưỡng threshold này thì tính là anomaly
+            threshold = select_point_score_threshold(concatenated_scores, quantile=0.95)
+            resolved_threshold_source = "positive_support_quantile_0.95"
+        else:
+            threshold = float(point_score_threshold)
+            resolved_threshold_source = threshold_source or "provided_threshold"
 
         # Tính toán các độ đo pointwise (pointwise metric)
         metrics = compute_pointwise_metrics(
@@ -357,7 +368,7 @@ class Evaluator:
         metrics["label_regime"] = label_regime
         metrics["benchmark_comparability"] = benchmark_comparability
         metrics["protocol_status"] = protocol_status
-        metrics["threshold_source"] = "positive_support_quantile_0.95"
+        metrics["threshold_source"] = resolved_threshold_source
         if forward_pass_seconds_history:
             metrics["forward_pass_seconds_mean"] = sum(
                 forward_pass_seconds_history
