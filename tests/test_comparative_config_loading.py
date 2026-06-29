@@ -42,7 +42,7 @@ def test_comparative_model_and_task_configs_lock_shared_semantics() -> None:
         "configs/task/multitask_tsad_redlamp_multiclass_window20_comparative.yaml"
     )
 
-    assert baseline_model_config["model_name"] == "redlamp_mlp_baseline"
+    assert baseline_model_config["model_name"] == "redlamp_baseline"
     assert baseline_model_config["encoder_family"] == "cnn_simple"
     assert baseline_model_config["lambda_recon"] == 0.9
     assert baseline_model_config["lambda_cls"] == 0.1

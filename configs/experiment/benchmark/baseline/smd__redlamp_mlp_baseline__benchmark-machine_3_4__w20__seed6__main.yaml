@@ -1,13 +1,13 @@
 # group: benchmark/baseline
 # stage: single-stage
 
-experiment_name: smd_benchmark_redlamp_mlp_baseline_machine_3_4_seed6
+experiment_name: smd_benchmark_redlamp_baseline_machine_3_4_seed6
 seed: 6
 device: cuda
-output_dir: outputs/benchmark/smd/redlamp_mlp_baseline/machine_3_4/seed6
-checkpoint_dir: outputs/benchmark/smd/redlamp_mlp_baseline/machine_3_4/seed6/checkpoints
+output_dir: outputs/benchmark/smd/redlamp_baseline/machine_3_4/seed6
+checkpoint_dir: outputs/benchmark/smd/redlamp_baseline/machine_3_4/seed6/checkpoints
 data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
-model_config_path: configs/model/redlamp_mlp_baseline_comparative_smd.yaml
+model_config_path: configs/model/redlamp_baseline_comparative_smd.yaml
 task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20_benchmark_fixed_synth.yaml
 optimizer:
   optimizer_name: adamw
@@ -37,4 +37,4 @@ logging:
     - window20
     - seed6
     - val-synth
-  wandb_run_name: smd_benchmark_redlamp_mlp_baseline_machine_3_4_seed6
+  wandb_run_name: smd_benchmark_redlamp_baseline_machine_3_4_seed6

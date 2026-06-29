@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from src.core.config import load_experiment_config, validate_experiment_config
-from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
+from src.models.redlamp_baseline import RedLampBaseline
 from src.models.thesis_multitask import ThesisMultitaskModel
 
 
 def test_baseline_and_thesis_models_default_to_enabled_label_refurbishment() -> None:
-    baseline_model = RedLampMLPBaseline(
+    baseline_model = RedLampBaseline(
         input_dim=38,
         window_size=20,
     )
@@ -23,7 +23,7 @@ def test_baseline_and_thesis_models_default_to_enabled_label_refurbishment() -> 
 
 
 def test_baseline_and_thesis_models_default_to_shared_loss_weights() -> None:
-    baseline_model = RedLampMLPBaseline(
+    baseline_model = RedLampBaseline(
         input_dim=38,
         window_size=20,
     )
@@ -47,7 +47,7 @@ def test_redlamp_aligned_experiment_configs_preserve_shared_semantics() -> None:
             "configs/experiment/scale/"
             "smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-"
             "window20-adamw-cosine-val-vus-pr-gradconf-redlamp-aligned__w20__seed68__default.yaml",
-            "redlamp_mlp_baseline",
+            "redlamp_baseline",
         ),
         (
             "configs/experiment/thesis/exp3/"
@@ -70,7 +70,7 @@ def test_redlamp_aligned_experiment_configs_preserve_shared_semantics() -> None:
             "redlamp_multiclass"
         )
         assert experiment_config["task"]["train_balance_classes"] is True
-        if expected_model_name == "redlamp_mlp_baseline":
+        if expected_model_name == "redlamp_baseline":
             assert (
                 experiment_config["model"]["enable_gradient_conflict_profiling"] is True
             )
@@ -113,7 +113,7 @@ def test_redlamp_aligned_model_and_thesis_model_build_with_shared_task_semantics
         }
     )
 
-    baseline_model = RedLampMLPBaseline(**baseline_model_kwargs)
+    baseline_model = RedLampBaseline(**baseline_model_kwargs)
     thesis_model = ThesisMultitaskModel(**thesis_model_kwargs)
 
     assert baseline_model.lambda_recon == 0.9

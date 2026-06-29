@@ -3,13 +3,13 @@ from __future__ import annotations
 import torch
 
 from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
-from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
+from src.models.redlamp_baseline import RedLampBaseline
 
 
-def test_redlamp_mlp_baseline_defaults_to_balanced_redlamp_multiclass_sampling() -> (
+def test_redlamp_baseline_defaults_to_balanced_redlamp_multiclass_sampling() -> (
     None
 ):
-    model = RedLampMLPBaseline(
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
     )
@@ -18,10 +18,10 @@ def test_redlamp_mlp_baseline_defaults_to_balanced_redlamp_multiclass_sampling()
     assert model.synthetic_anomaly_injector.train_balance_classes is True
 
 
-def test_redlamp_mlp_baseline_accepts_canonical_balance_classes_within_batch_name() -> (
+def test_redlamp_baseline_accepts_canonical_balance_classes_within_batch_name() -> (
     None
 ):
-    model = RedLampMLPBaseline(
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
         balance_classes_within_batch=True,
@@ -32,8 +32,8 @@ def test_redlamp_mlp_baseline_accepts_canonical_balance_classes_within_batch_nam
     assert model.synthetic_validation_injector.train_balance_classes is True
 
 
-def test_redlamp_mlp_baseline_keeps_legacy_balance_binary_alias_compatible() -> None:
-    model = RedLampMLPBaseline(
+def test_redlamp_baseline_keeps_legacy_balance_binary_alias_compatible() -> None:
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
         balance_binary_classes_within_batch=True,
@@ -44,8 +44,8 @@ def test_redlamp_mlp_baseline_keeps_legacy_balance_binary_alias_compatible() -> 
     assert model.synthetic_validation_injector.train_balance_classes is True
 
 
-def test_redlamp_mlp_baseline_forward_contract_and_mlp_depth() -> None:
-    model = RedLampMLPBaseline(
+def test_redlamp_baseline_forward_contract_and_mlp_depth() -> None:
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
         latent_dim=16,
@@ -92,8 +92,8 @@ def test_redlamp_mlp_baseline_forward_contract_and_mlp_depth() -> None:
     )
 
 
-def test_redlamp_mlp_baseline_hidden_is_not_broadcast_window_latent() -> None:
-    model = RedLampMLPBaseline(
+def test_redlamp_baseline_hidden_is_not_broadcast_window_latent() -> None:
+    model = RedLampBaseline(
         input_dim=4,
         window_size=3,
         latent_dim=8,
@@ -127,8 +127,8 @@ def test_redlamp_mlp_baseline_hidden_is_not_broadcast_window_latent() -> None:
     assert not torch.allclose(outputs["hidden"][:, 0, :], outputs["hidden"][:, 1, :])
 
 
-def test_redlamp_mlp_baseline_flattens_hidden_before_classifier() -> None:
-    model = RedLampMLPBaseline(
+def test_redlamp_baseline_flattens_hidden_before_classifier() -> None:
+    model = RedLampBaseline(
         input_dim=4,
         window_size=3,
         latent_dim=8,

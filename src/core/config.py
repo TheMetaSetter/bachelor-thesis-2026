@@ -301,6 +301,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     supported_model_names = {
         "reconstruction_mlp_ae",
         "thesis_multitask",
+        "redlamp_baseline",
         "redlamp_mlp_baseline",
         "online_adaptation",
     }
@@ -318,6 +319,33 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         raise ValueError(f"Unsupported task_name: {task_config.get('task_name')}")
 
     model_name = model_config.get("model_name")
+    redlamp_baseline_model_keys = {
+        "model_name",
+        "input_dim",
+        "window_size",
+        "latent_dim",
+        "encoder_family",
+        "mlp_num_linear_layers",
+        "cnn_num_layers",
+        "cnn_kernel_size",
+        "cnn_hidden_channels",
+        "cnn_dropout",
+        "classifier_dim",
+        "num_classes",
+        "dropout",
+        "lambda_recon",
+        "lambda_cls",
+        "use_label_refurbishment",
+        "refurbishment_alpha",
+        "refurbishment_beta",
+        "enable_gradient_conflict_profiling",
+        "gradient_profiling_scope",
+        "gradient_focus_layer_name",
+        "gradient_log_every_n_steps",
+        "gradient_ema_alpha",
+        "gradient_sma_window",
+        "gradient_profile_include_bias",
+    }
     allowed_model_keys_by_model_name = {
         "reconstruction_mlp_ae": {
             "model_name",
@@ -326,33 +354,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "hidden_dim",
             "dropout",
         },
-        "redlamp_mlp_baseline": {
-            "model_name",
-            "input_dim",
-            "window_size",
-            "latent_dim",
-            "encoder_family",
-            "mlp_num_linear_layers",
-            "cnn_num_layers",
-            "cnn_kernel_size",
-            "cnn_hidden_channels",
-            "cnn_dropout",
-            "classifier_dim",
-            "num_classes",
-            "dropout",
-            "lambda_recon",
-            "lambda_cls",
-            "use_label_refurbishment",
-            "refurbishment_alpha",
-            "refurbishment_beta",
-            "enable_gradient_conflict_profiling",
-            "gradient_profiling_scope",
-            "gradient_focus_layer_name",
-            "gradient_log_every_n_steps",
-            "gradient_ema_alpha",
-            "gradient_sma_window",
-            "gradient_profile_include_bias",
-        },
+        "redlamp_baseline": redlamp_baseline_model_keys,
+        "redlamp_mlp_baseline": redlamp_baseline_model_keys,
         "thesis_multitask": {
             "model_name",
             "enable_classification_path",
@@ -541,7 +544,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         integer_fields["gradient_sma_window"] = model_config.get(
             "gradient_sma_window", 50
         )
-    if model_config.get("model_name") == "redlamp_mlp_baseline":
+    if model_config.get("model_name") in {
+        "redlamp_baseline",
+        "redlamp_mlp_baseline",
+    }:
         integer_fields["latent_dim"] = model_config.get("latent_dim")
         integer_fields["mlp_num_linear_layers"] = model_config.get(
             "mlp_num_linear_layers", 3
@@ -577,10 +583,14 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     if model_config.get("model_name") in {
         "reconstruction_mlp_ae",
         "thesis_multitask",
+        "redlamp_baseline",
         "redlamp_mlp_baseline",
     }:
         float_fields["dropout"] = model_config.get("dropout")
-    if model_config.get("model_name") == "redlamp_mlp_baseline":
+    if model_config.get("model_name") in {
+        "redlamp_baseline",
+        "redlamp_mlp_baseline",
+    }:
         float_fields["cnn_dropout"] = model_config.get(
             "cnn_dropout", model_config.get("dropout")
         )
@@ -907,7 +917,10 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "train_balance_classes": task_config.get("train_balance_classes", True),
             "val_realistic": task_config.get("val_realistic", True),
         }
-        if model_config.get("model_name") == "redlamp_mlp_baseline":
+        if model_config.get("model_name") in {
+            "redlamp_baseline",
+            "redlamp_mlp_baseline",
+        }:
             for model_only_field in [
                 "enable_diversity_loss",
                 "enable_variance_loss",

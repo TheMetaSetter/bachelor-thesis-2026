@@ -1,4 +1,4 @@
-model_name: redlamp_mlp_baseline
+model_name: redlamp_baseline
 input_dim: 38
 window_size: 20
 latent_dim: 128

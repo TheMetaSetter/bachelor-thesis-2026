@@ -36,7 +36,7 @@ from src.data.loaders import (
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
 from src.engine.trainer import Trainer
-from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
+from src.models.redlamp_baseline import RedLampBaseline
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 from src.models.thesis_multitask import ThesisMultitaskModel
 
@@ -48,7 +48,8 @@ def register_runtime_components() -> None:
     register_dataset("anomaly_archive", build_anomaly_archive_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
-    register_model("redlamp_mlp_baseline", RedLampMLPBaseline)
+    register_model("redlamp_mlp_baseline", RedLampBaseline)
+    register_model("redlamp_baseline", RedLampBaseline)
     console_print("REGISTRY", "Registered offline training runtime components")
 
 
@@ -69,7 +70,7 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
         }
     )
     if (
-        model_name in {"redlamp_mlp_baseline", "thesis_multitask"}
+        model_name in {"redlamp_baseline", "redlamp_mlp_baseline", "thesis_multitask"}
         and "window_size" not in model_kwargs
     ):
         model_kwargs["window_size"] = experiment_config["data"]["window_size"]
