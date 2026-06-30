@@ -6,9 +6,7 @@ from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
 from src.models.redlamp_baseline import RedLampBaseline
 
 
-def test_redlamp_baseline_defaults_to_balanced_redlamp_multiclass_sampling() -> (
-    None
-):
+def test_redlamp_baseline_defaults_to_balanced_redlamp_multiclass_sampling() -> None:
     model = RedLampBaseline(
         input_dim=4,
         window_size=20,
@@ -18,9 +16,7 @@ def test_redlamp_baseline_defaults_to_balanced_redlamp_multiclass_sampling() -> 
     assert model.synthetic_anomaly_injector.train_balance_classes is True
 
 
-def test_redlamp_baseline_accepts_canonical_balance_classes_within_batch_name() -> (
-    None
-):
+def test_redlamp_baseline_accepts_canonical_balance_classes_within_batch_name() -> None:
     model = RedLampBaseline(
         input_dim=4,
         window_size=20,

@@ -30,13 +30,10 @@ class DummyPlateauModel(nn.Module):
         self.val_synth_loss_sequence = val_synth_loss_sequence or list(
             val_loss_sequence
         )
-        self.val_synth_point_scores_sequence = (
-            val_synth_point_scores_sequence
-            or [
-                torch.tensor([[0.1, 0.9]], dtype=torch.float32)
-                for _ in self.val_synth_loss_sequence
-            ]
-        )
+        self.val_synth_point_scores_sequence = val_synth_point_scores_sequence or [
+            torch.tensor([[0.1, 0.9]], dtype=torch.float32)
+            for _ in self.val_synth_loss_sequence
+        ]
         self.validation_step_index = 0
         self.synthetic_validation_step_index = 0
 
@@ -495,9 +492,7 @@ def test_trainer_adds_val_vus_pr_before_checkpoint_selection(tmp_path: Path) -> 
 def test_trainer_logs_val_synth_vus_pr_alongside_synthetic_classification_metrics(
     tmp_path: Path,
 ) -> None:
-    model = DummyPlateauModel(
-        val_loss_sequence=[1.0], val_synth_loss_sequence=[1.0]
-    )
+    model = DummyPlateauModel(val_loss_sequence=[1.0], val_synth_loss_sequence=[1.0])
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     experiment_logger = ExperimentLogger(tmp_path / "logs")
     validation_batch = {

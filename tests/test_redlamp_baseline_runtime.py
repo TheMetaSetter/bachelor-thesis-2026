@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from scripts.train import build_model_from_experiment_config, register_runtime_components
+from scripts.train import (
+    build_model_from_experiment_config,
+    register_runtime_components,
+)
 from src.models.redlamp_baseline import RedLampBaseline
 
 

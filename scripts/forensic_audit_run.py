@@ -105,7 +105,7 @@ def _build_forensic_markdown(
         "---",
         f"date: {datetime.now(UTC).isoformat(timespec='seconds')}",
         "researcher: Codex",
-        f"topic: \"Forensic audit for {experiment_config['experiment_name']}\"",
+        f'topic: "Forensic audit for {experiment_config["experiment_name"]}"',
         "status: complete",
         "---",
         "",

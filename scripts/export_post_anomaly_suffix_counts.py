@@ -116,7 +116,9 @@ def build_swat_suffix_row(
         None,
     )
     if label_column is None:
-        raise ValueError(f"SWaT file is missing the Normal/Attack column: {source_file}")
+        raise ValueError(
+            f"SWaT file is missing the Normal/Attack column: {source_file}"
+        )
     labels = frame[label_column].astype(str).str.strip().eq("Attack").astype(int)
     return build_label_based_suffix_row(
         series_id=series_id,

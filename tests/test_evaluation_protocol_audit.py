@@ -71,7 +71,9 @@ def test_reconstructed_records_keep_evaluated_coverage_metadata() -> None:
     assert reconstructed_records[0]["raw_num_points"] == 6
 
 
-def test_reconstructed_records_keep_uncovered_suffix_scores_but_preserve_raw_labels() -> None:
+def test_reconstructed_records_keep_uncovered_suffix_scores_but_preserve_raw_labels() -> (
+    None
+):
     sequences_by_entity = {
         "machine-1": _build_sequence(
             dataset_name="smd",
@@ -286,7 +288,9 @@ def test_window_dataset_stride_one_covers_full_sequence_without_tail_gap() -> No
     assert covered[-1] == 1
 
 
-def test_build_dataset_protocol_audit_report_marks_benchmark_comparable_anomaly_archive() -> None:
+def test_build_dataset_protocol_audit_report_marks_benchmark_comparable_anomaly_archive() -> (
+    None
+):
     from src.analysis.evaluation_protocol_audit import (
         build_dataset_protocol_audit_report,
         render_dataset_protocol_audit_markdown,

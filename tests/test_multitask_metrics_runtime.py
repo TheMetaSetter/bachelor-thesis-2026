@@ -435,7 +435,10 @@ def test_run_evaluation_experiment_reuses_checkpoint_threshold_and_rebuilt_loade
                     "forward_pass_seconds_mean": 0.001,
                 },
                 "records": [],
-                "curves": {"roc_curve": {"x": [], "y": [], "thresholds": []}, "pr_curve": {"x": [], "y": [], "thresholds": []}},
+                "curves": {
+                    "roc_curve": {"x": [], "y": [], "thresholds": []},
+                    "pr_curve": {"x": [], "y": [], "thresholds": []},
+                },
             }
 
     monkeypatch.setattr("scripts.evaluate.Evaluator", _FakeEvaluator)
@@ -458,6 +461,5 @@ def test_run_evaluation_experiment_reuses_checkpoint_threshold_and_rebuilt_loade
     assert captured_evaluator_call["data_loader"] == "rebuilt-test-loader"
     assert captured_evaluator_call["point_score_threshold"] == 0.42
     assert (
-        captured_evaluator_call["threshold_source"]
-        == "checkpoint::val_synth_threshold"
+        captured_evaluator_call["threshold_source"] == "checkpoint::val_synth_threshold"
     )

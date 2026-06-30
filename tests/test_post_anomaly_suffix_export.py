@@ -15,9 +15,7 @@ from scripts.export_post_anomaly_suffix_counts import (
 def test_build_ucr_suffix_row_uses_filename_anomaly_end_index(
     tmp_path: Path,
 ) -> None:
-    file_path = (
-        tmp_path / "123_UCR_Anomaly_DemoSeries_10_40_55.txt"
-    )
+    file_path = tmp_path / "123_UCR_Anomaly_DemoSeries_10_40_55.txt"
     file_path.write_text(" ".join(str(index) for index in range(100)), encoding="utf-8")
 
     row = build_ucr_suffix_row(file_path)

@@ -294,7 +294,14 @@ def test_evaluator_marks_single_class_truncated_run_as_non_comparable() -> None:
         data_loader=data_loader,
     )
 
-    assert evaluation_outputs["records"][0]["point_labels"].tolist() == [1, 1, 1, 0, 0, 0]
+    assert evaluation_outputs["records"][0]["point_labels"].tolist() == [
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+    ]
     assert evaluation_outputs["records"][0]["covered_point_mask"].tolist() == [
         True,
         True,
@@ -307,8 +314,7 @@ def test_evaluator_marks_single_class_truncated_run_as_non_comparable() -> None:
     assert evaluation_outputs["metrics"]["is_truncated_evaluation"] == 1.0
     assert evaluation_outputs["metrics"]["benchmark_comparability"] == "non_comparable"
     assert (
-        evaluation_outputs["metrics"]["protocol_status"]
-        == "truncated_smoke_evaluation"
+        evaluation_outputs["metrics"]["protocol_status"] == "truncated_smoke_evaluation"
     )
 
 
