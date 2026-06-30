@@ -2,7 +2,7 @@
 # stage: general
 # status: active
 # owner: thesis_multitask
-# tags: [smd, w100, seed7, smoke, val_realistic]
+# tags: [smd, w100, seed7, smoke, val_synth]
 
 experiment_name: smd_smoke_checkpoint_10ep_tiny
 seed: 7

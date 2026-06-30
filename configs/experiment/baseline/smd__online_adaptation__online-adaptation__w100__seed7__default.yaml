@@ -2,7 +2,7 @@
 # stage: general
 # status: active
 # owner: online_adaptation
-# tags: [smd, w100, seed7, default, val_realistic]
+# tags: [smd, w100, seed7, default, val_synth]
 
 experiment_name: smd_online_adaptation
 seed: 7

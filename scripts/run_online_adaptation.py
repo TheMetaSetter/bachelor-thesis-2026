@@ -45,7 +45,6 @@ def register_runtime_components() -> None:
     register_dataset("anomaly_archive", build_anomaly_archive_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
-    register_model("redlamp_mlp_baseline", RedLampBaseline)
     register_model("redlamp_baseline", RedLampBaseline)
     register_model("online_adaptation", OnlineAdaptationModel)
     console_print("REGISTRY", "Registered online adaptation runtime components")

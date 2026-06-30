@@ -12,9 +12,6 @@ warmup_beta_value: 0.5
 # often windows are selected for anomaly injection.
 anomaly_probability: 0.5
 train_balance_classes: true
-val_realistic: true
-val_realistic_source: test_same_scope
-val_anomaly_rate_override: null
 min_segment_fraction: 0.2
 max_segment_fraction: 0.3
 spike_scale: 3.0

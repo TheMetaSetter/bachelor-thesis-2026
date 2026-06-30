@@ -33,7 +33,6 @@ from src.metrics.classification_diagnostics import (
     compute_row_normalized_confusion_matrix,
 )
 from src.models.base_model import BaseModel
-from src.data.datasets.smd import compute_smd_test_window_anomaly_rate
 
 
 def _resolve_checkpoint_threshold_metric_name(
@@ -41,8 +40,6 @@ def _resolve_checkpoint_threshold_metric_name(
 ) -> str | None:
     if checkpoint_monitor_metric.startswith("val_synth_"):
         return "val_synth_threshold"
-    if checkpoint_monitor_metric.startswith("val_realistic_"):
-        return "val_realistic_threshold"
     if checkpoint_monitor_metric.startswith("val_"):
         return "val_threshold"
     return None
@@ -199,7 +196,7 @@ class Trainer:
             return {}
 
         diagnostic_metrics: dict[str, float] = {}
-        for stage_name in ("train", "val", "val_realistic", "test"):
+        for stage_name in ("train", "val", "val_synth", "test"):
             reconstruction_loss_key = f"{stage_name}_reconstruction_loss"
             if reconstruction_loss_key not in batch_logs[0]:
                 continue
@@ -396,10 +393,6 @@ class Trainer:
             "val_synth_roc_auc": "max",
             "val_synth_pr_auc": "max",
             "val_synth_vus_pr": "max",
-            "val_realistic_loss": "min",
-            "val_realistic_roc_auc": "max",
-            "val_realistic_pr_auc": "max",
-            "val_realistic_vus_pr": "max",
             "val_vus_pr": "max",
         }
         if checkpoint_monitor_metric not in checkpoint_monitor_modes:
@@ -567,30 +560,6 @@ class Trainer:
             f"{stage_name}_threshold": pointwise_metrics["threshold"],
         }
 
-    def _resolve_realistic_validation_anomaly_rate(
-        self, *, config: dict[str, Any]
-    ) -> float:
-        task_config = config.get("task", {})
-        override_value = task_config.get("val_anomaly_rate_override")
-        if override_value is not None:
-            return float(override_value)
-        if "data" not in config:
-            if hasattr(self.model, "synthetic_validation_injector"):
-                return float(
-                    self.model.synthetic_validation_injector.anomaly_probability
-                )
-            return 0.5
-
-        source_name = str(task_config.get("val_realistic_source", "test_same_scope"))
-        use_all_entities = source_name == "test_smd_all"
-        return compute_smd_test_window_anomaly_rate(
-            root_dir=config["data"]["root_dir"],
-            window_size=int(config["data"]["window_size"]),
-            stride=int(config["data"]["stride"]),
-            entity_ids=config["data"].get("entity_ids"),
-            use_all_entities=use_all_entities,
-        )
-
     def train(
         self,
         train_loader: Any,
@@ -613,9 +582,6 @@ class Trainer:
         best_checkpoint_memory_initialized = False
         best_checkpoint_extra_state: dict[str, Any] | None = None
         last_epoch_metrics: dict[str, Any] | None = None
-        task_config = config.get("task", {})
-        use_val_realistic = bool(task_config.get("val_realistic", True))
-
         self.model.to(self.device)
         console_print(
             "TRAIN",
@@ -727,38 +693,13 @@ class Trainer:
                 stage_name="val",
                 step_method_name="validation_step",
             )
-            validation_aux_stage_name = "val_realistic"
+            validation_aux_stage_name = "val_synth"
             validation_aux_logs: list[dict[str, float]] = []
             validation_aux_logits_history: list[torch.Tensor] = []
             validation_aux_label_history: list[torch.Tensor] = []
             validation_aux_forward_pass_seconds_history: list[float] = []
             validation_aux_pointwise_payloads: list[dict[str, Any]] = []
-            if use_val_realistic and hasattr(self.model, "realistic_validation_step"):
-                validation_aux_stage_name = "val_realistic"
-                # The auxiliary realistic-validation pass reuses the current
-                # val_loader. "Realistic" means the synthetic anomaly prior is
-                # calibrated from test-window statistics, not a new split.
-                realistic_anomaly_rate = (
-                    self._resolve_realistic_validation_anomaly_rate(config=config)
-                )
-                if hasattr(self.model, "prepare_realistic_validation_epoch"):
-                    self.model.prepare_realistic_validation_epoch(
-                        anomaly_probability=realistic_anomaly_rate
-                    )
-                (
-                    validation_aux_logs,
-                    validation_aux_logits_history,
-                    validation_aux_label_history,
-                    validation_aux_forward_pass_seconds_history,
-                    validation_aux_pointwise_payloads,
-                ) = self._run_validation_epoch(
-                    val_loader=val_loader,
-                    epoch_index=epoch_index,
-                    stage_name=validation_aux_stage_name,
-                    step_method_name="realistic_validation_step",
-                    pointwise_label_batch_key="synthetic_anomaly_mask",
-                )
-            elif hasattr(self.model, "synthetic_validation_step"):
+            if hasattr(self.model, "synthetic_validation_step"):
                 validation_aux_stage_name = "val_synth"
                 if hasattr(self.model, "prepare_synthetic_validation_epoch"):
                     self.model.prepare_synthetic_validation_epoch()

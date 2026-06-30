@@ -3,11 +3,11 @@ from __future__ import annotations
 import torch
 
 from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
-from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
+from src.models.redlamp_baseline import RedLampBaseline
 
 
 def test_redlamp_cnn_baseline_forward_backward_and_gradient_profiling() -> None:
-    model = RedLampMLPBaseline(
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
         latent_dim=16,

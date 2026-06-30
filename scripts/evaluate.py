@@ -110,7 +110,6 @@ def register_runtime_components() -> None:
     register_dataset("anomaly_archive", build_anomaly_archive_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
-    register_model("redlamp_mlp_baseline", RedLampBaseline)
     register_model("redlamp_baseline", RedLampBaseline)
     console_print("REGISTRY", "Registered evaluation runtime components")
 
@@ -131,7 +130,7 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
             if key != "task_name"
         }
     )
-    if model_name in {"redlamp_baseline", "redlamp_mlp_baseline"}:
+    if model_name == "redlamp_baseline":
         model_kwargs["window_size"] = experiment_config["data"]["window_size"]
     console_print(
         "MODEL",

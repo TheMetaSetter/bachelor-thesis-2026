@@ -389,9 +389,6 @@ class SyntheticAnomalyConfig:
     use_synthetic_validation: bool = True
     synthetic_train_seed: int | None = None
     synthetic_validation_seed: int = 7
-    val_realistic: bool = True
-    val_realistic_source: str = "test_same_scope"
-    val_anomaly_rate_override: float | None = None
     anomaly_probability: float = 0.5
     min_segment_fraction: float = 0.2
     max_segment_fraction: float = 0.3
@@ -410,15 +407,6 @@ class SyntheticAnomalyConfig:
             raise ValueError(
                 "classification_label_mode must be one of: binary, redlamp_multiclass"
             )
-        if self.val_realistic_source not in {"test_same_scope", "test_smd_all"}:
-            raise ValueError(
-                "val_realistic_source must be one of: test_same_scope, test_smd_all"
-            )
-        if (
-            self.val_anomaly_rate_override is not None
-            and not 0.0 <= float(self.val_anomaly_rate_override) <= 1.0
-        ):
-            raise ValueError("val_anomaly_rate_override must be between 0 and 1")
         object.__setattr__(self, "anomaly_families", tuple(self.anomaly_families))
 
 
@@ -540,9 +528,6 @@ class ThesisMultitaskModelConfig:
             "use_synthetic_validation",
             "synthetic_train_seed",
             "synthetic_validation_seed",
-            "val_realistic",
-            "val_realistic_source",
-            "val_anomaly_rate_override",
             "anomaly_probability",
             "min_segment_fraction",
             "max_segment_fraction",
@@ -732,9 +717,6 @@ class ThesisMultitaskModel(BaseModel):
         self.use_synthetic_validation = synthetic.use_synthetic_validation
         self.synthetic_train_seed = synthetic.synthetic_train_seed
         self.synthetic_validation_seed = synthetic.synthetic_validation_seed
-        self.val_realistic = synthetic.val_realistic
-        self.val_realistic_source = synthetic.val_realistic_source
-        self.val_anomaly_rate_override = synthetic.val_anomaly_rate_override
         self.classification_label_mode = synthetic.classification_label_mode
         self.freeze_fusion_for_epochs = schedule.freeze_fusion_for_epochs
         self.warmup_alpha_value = schedule.warmup_alpha_value
@@ -1878,29 +1860,11 @@ class ThesisMultitaskModel(BaseModel):
         }
         return continuous_outputs, discrete_outputs, fusion_outputs
 
-    def prepare_realistic_validation_epoch(self, anomaly_probability: float) -> None:
-        """Configure auxiliary realistic validation on the existing val loader.
-
-        This only retunes synthetic injection to match a target anomaly prior.
-        It does not switch loaders or create a separate validation split.
-        """
-        if not 0.0 <= float(anomaly_probability) <= 1.0:
-            raise ValueError(
-                "realistic validation anomaly_probability must be in [0, 1]"
-            )
-        self.synthetic_validation_injector.anomaly_probability = float(
-            anomaly_probability
-        )
-        self.synthetic_validation_injector.reset_rng()
-
     def prepare_synthetic_training_epoch(self) -> None:
         self.synthetic_anomaly_injector.reset_rng()
 
     def prepare_synthetic_validation_epoch(self) -> None:
-        # Backward-compatible wrapper for older call sites.
-        self.prepare_realistic_validation_epoch(
-            anomaly_probability=self.synthetic_validation_injector.anomaly_probability
-        )
+        self.synthetic_validation_injector.reset_rng()
 
     def _continuous_prototype_lookup(
         self,
@@ -2297,10 +2261,7 @@ class ThesisMultitaskModel(BaseModel):
         return prepared_batch
 
     def _prepare_batch(self, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
-        if (
-            stage_name in {"val_synth", "val_realistic"}
-            and self.use_synthetic_validation
-        ):
+        if stage_name == "val_synth" and self.use_synthetic_validation:
             return self.synthetic_validation_injector.augment_batch(batch)
         return self._prepare_clean_batch(batch, stage_name)
 
@@ -2313,7 +2274,7 @@ class ThesisMultitaskModel(BaseModel):
             return None
         if not self._phase_uses_contrastive_objective():
             return None
-        if stage_name not in {"train", "val_synth", "val_realistic"}:
+        if stage_name not in {"train", "val_synth"}:
             return None
         clean_batch = self._prepare_clean_batch(
             self._clone_batch(batch), stage_name="val"
@@ -3092,7 +3053,7 @@ class ThesisMultitaskModel(BaseModel):
                 outputs["aux"]["memory"]["train_memory_mode"]
             ),
         }
-        if stage_name in {"train", "val_synth", "val_realistic"}:
+        if stage_name in {"train", "val_synth"}:
             cka_reconstruction_mean = float(
                 outputs["aux"]["fusion"]["cka_reconstruction_mean"]
             )
@@ -3281,14 +3242,6 @@ class ThesisMultitaskModel(BaseModel):
         return self._shared_step(
             batch=batch,
             stage_name="val_synth",
-            classification_weight=self.lambda_cls,
-            include_classification_metrics=True,
-        )
-
-    def realistic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(
-            batch=batch,
-            stage_name="val_realistic",
             classification_weight=self.lambda_cls,
             include_classification_metrics=True,
         )

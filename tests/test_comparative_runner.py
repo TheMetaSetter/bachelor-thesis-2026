@@ -81,7 +81,7 @@ def test_build_comparative_run_plan_dispatches_thesis_and_baseline_without_dupli
             checkpoint_dir=tmp_path / "outputs" / "baseline" / "checkpoints",
             entity_id="machine-1-6",
             seed=36,
-            model_name="redlamp_mlp_baseline",
+            model_name="redlamp_baseline",
             include_three_stage=False,
         ),
     }
@@ -131,7 +131,7 @@ def test_build_comparative_run_plan_rejects_missing_dataset_root(
             checkpoint_dir=tmp_path / "outputs" / "broken" / "checkpoints",
             entity_id="machine-3-1",
             seed=68,
-            model_name="redlamp_mlp_baseline",
+            model_name="redlamp_baseline",
             include_three_stage=False,
         ),
     )
@@ -162,7 +162,7 @@ def test_execute_comparative_run_plan_dry_run_writes_execution_report(
         checkpoint_dir=tmp_path / "outputs" / "baseline" / "checkpoints",
         entity_id="machine-1-6",
         seed=36,
-        model_name="redlamp_mlp_baseline",
+        model_name="redlamp_baseline",
         include_three_stage=False,
     )
     monkeypatch.setattr(
@@ -200,7 +200,7 @@ def test_execute_comparative_run_plan_records_failed_command_and_run(
         checkpoint_dir=tmp_path / "outputs" / "baseline" / "checkpoints",
         entity_id="machine-1-6",
         seed=36,
-        model_name="redlamp_mlp_baseline",
+        model_name="redlamp_baseline",
         include_three_stage=False,
     )
     monkeypatch.setattr(
@@ -253,7 +253,7 @@ def test_build_comparative_run_plan_can_generate_worker_override_configs(
         checkpoint_dir=tmp_path / "outputs" / "baseline" / "checkpoints",
         entity_id="machine-1-6",
         seed=36,
-        model_name="redlamp_mlp_baseline",
+        model_name="redlamp_baseline",
         include_three_stage=False,
     )
     stub_config["device"] = "cuda"
@@ -308,7 +308,7 @@ def test_execute_comparative_run_plan_skips_completed_runs_with_existing_artifac
         checkpoint_dir=checkpoint_dir,
         entity_id="machine-1-6",
         seed=36,
-        model_name="redlamp_mlp_baseline",
+        model_name="redlamp_baseline",
         include_three_stage=False,
     )
     monkeypatch.setattr(
@@ -357,7 +357,7 @@ def test_generated_worker_override_config_can_be_reloaded_by_real_config_loader(
     run_plan = build_comparative_run_plan(
         config_paths=[
             "configs/experiment/comparative/baseline/"
-            "smd__redlamp_mlp_baseline__comparative-single-stage-machine_1_6"
+            "smd__redlamp_baseline__comparative-single-stage-machine_1_6"
             "__w20__seed6__main.yaml"
         ],
         smoke_config_paths=[],

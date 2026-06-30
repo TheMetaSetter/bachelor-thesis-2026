@@ -48,7 +48,6 @@ def register_runtime_components() -> None:
     register_dataset("anomaly_archive", build_anomaly_archive_dataset_bundle)
     register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
     register_model("thesis_multitask", ThesisMultitaskModel)
-    register_model("redlamp_mlp_baseline", RedLampBaseline)
     register_model("redlamp_baseline", RedLampBaseline)
     console_print("REGISTRY", "Registered offline training runtime components")
 
@@ -70,7 +69,7 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
         }
     )
     if (
-        model_name in {"redlamp_baseline", "redlamp_mlp_baseline", "thesis_multitask"}
+        model_name in {"redlamp_baseline", "thesis_multitask"}
         and "window_size" not in model_kwargs
     ):
         model_kwargs["window_size"] = experiment_config["data"]["window_size"]
@@ -191,10 +190,6 @@ def build_scheduler_from_experiment_config(
         "val_synth_roc_auc": "max",
         "val_synth_pr_auc": "max",
         "val_synth_vus_pr": "max",
-        "val_realistic_loss": "min",
-        "val_realistic_roc_auc": "max",
-        "val_realistic_pr_auc": "max",
-        "val_realistic_vus_pr": "max",
     }
     if monitor_metric not in scheduler_mode_by_metric:
         raise ValueError(f"Unsupported scheduler monitor metric: {monitor_metric}")

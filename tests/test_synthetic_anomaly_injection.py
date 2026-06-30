@@ -9,7 +9,7 @@ from src.data.augment import (
     REDLAMP_MULTICLASS_CLASS_NAMES,
     SyntheticAnomalyInjector,
 )
-from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
+from src.models.redlamp_baseline import RedLampBaseline
 
 
 def _build_batch() -> dict[str, object]:
@@ -271,7 +271,7 @@ def test_visibility_boost_increases_deviation_for_same_synthetic_sample() -> Non
 def test_redlamp_baseline_fixed_train_seed_resets_train_synthetic_augmentation() -> (
     None
 ):
-    model = RedLampMLPBaseline(
+    model = RedLampBaseline(
         input_dim=3,
         window_size=20,
         latent_dim=8,

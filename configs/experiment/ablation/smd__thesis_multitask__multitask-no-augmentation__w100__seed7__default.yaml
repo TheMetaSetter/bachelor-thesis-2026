@@ -2,7 +2,7 @@
 # stage: general
 # status: active
 # owner: thesis_multitask
-# tags: [smd, w100, seed7, default, val_realistic]
+# tags: [smd, w100, seed7, default, val_synth]
 
 # Advanced-loss ablation config, not the default thesis starting point.
 # Use this only after the simple reconstruction-plus-classification objective
@@ -35,5 +35,5 @@ optimizer:
     warmup_start_lr: 0.001
     cosine_end_lr: 0.0
     cosine_after_warmup: true
-checkpoint_monitor_metric: val_realistic_vus_pr
+checkpoint_monitor_metric: val_synth_vus_pr
 epochs: 3

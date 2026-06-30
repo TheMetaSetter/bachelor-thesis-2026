@@ -302,7 +302,6 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "reconstruction_mlp_ae",
         "thesis_multitask",
         "redlamp_baseline",
-        "redlamp_mlp_baseline",
         "online_adaptation",
     }
     supported_task_names = {"reconstruction", "multitask_tsad", "online_adaptation"}
@@ -355,7 +354,6 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "dropout",
         },
         "redlamp_baseline": redlamp_baseline_model_keys,
-        "redlamp_mlp_baseline": redlamp_baseline_model_keys,
         "thesis_multitask": {
             "model_name",
             "enable_classification_path",
@@ -467,9 +465,6 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             "warmup_beta_value",
             "anomaly_probability",
             "train_balance_classes",
-            "val_realistic",
-            "val_realistic_source",
-            "val_anomaly_rate_override",
             "min_segment_fraction",
             "max_segment_fraction",
             "spike_scale",
@@ -544,10 +539,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         integer_fields["gradient_sma_window"] = model_config.get(
             "gradient_sma_window", 50
         )
-    if model_config.get("model_name") in {
-        "redlamp_baseline",
-        "redlamp_mlp_baseline",
-    }:
+    if model_config.get("model_name") == "redlamp_baseline":
         integer_fields["latent_dim"] = model_config.get("latent_dim")
         integer_fields["mlp_num_linear_layers"] = model_config.get(
             "mlp_num_linear_layers", 3
@@ -584,13 +576,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "reconstruction_mlp_ae",
         "thesis_multitask",
         "redlamp_baseline",
-        "redlamp_mlp_baseline",
     }:
         float_fields["dropout"] = model_config.get("dropout")
-    if model_config.get("model_name") in {
-        "redlamp_baseline",
-        "redlamp_mlp_baseline",
-    }:
+    if model_config.get("model_name") == "redlamp_baseline":
         float_fields["cnn_dropout"] = model_config.get(
             "cnn_dropout", model_config.get("dropout")
         )
@@ -709,18 +697,12 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         "val_synth_roc_auc",
         "val_synth_pr_auc",
         "val_synth_vus_pr",
-        "val_realistic_loss",
-        "val_realistic_roc_auc",
-        "val_realistic_pr_auc",
-        "val_realistic_vus_pr",
         "val_vus_pr",
     }:
         raise ValueError(
             "checkpoint_monitor_metric must be one of: val_loss, "
             "val_synth_loss, val_synth_roc_auc, val_synth_pr_auc, "
-            "val_synth_vus_pr, "
-            "val_realistic_loss, val_realistic_roc_auc, val_realistic_pr_auc, "
-            "val_realistic_vus_pr, val_vus_pr"
+            "val_synth_vus_pr, val_vus_pr"
         )
 
     scheduler_config = optimizer_config.get("scheduler")
@@ -764,17 +746,11 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 "val_synth_roc_auc",
                 "val_synth_pr_auc",
                 "val_synth_vus_pr",
-                "val_realistic_loss",
-                "val_realistic_roc_auc",
-                "val_realistic_pr_auc",
-                "val_realistic_vus_pr",
             }:
                 raise ValueError(
                     "optimizer.scheduler.monitor_metric must be one of: val_loss, "
                     "val_synth_loss, val_synth_roc_auc, val_synth_pr_auc, "
-                    "val_synth_vus_pr, "
-                    "val_realistic_loss, val_realistic_roc_auc, val_realistic_pr_auc, "
-                    "val_realistic_vus_pr"
+                    "val_synth_vus_pr"
                 )
             scheduler_factor = scheduler_config.get("factor")
             if (
@@ -915,12 +891,8 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 "use_synthetic_validation", True
             ),
             "train_balance_classes": task_config.get("train_balance_classes", True),
-            "val_realistic": task_config.get("val_realistic", True),
         }
-        if model_config.get("model_name") in {
-            "redlamp_baseline",
-            "redlamp_mlp_baseline",
-        }:
+        if model_config.get("model_name") == "redlamp_baseline":
             for model_only_field in [
                 "enable_diversity_loss",
                 "enable_variance_loss",
@@ -1107,27 +1079,6 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError("warmup_beta_value must be between 0 and 1")
         if not 0.0 <= float(task_config["anomaly_probability"]) <= 1.0:
             raise ValueError("anomaly_probability must be between 0 and 1")
-        # val_realistic_source selects where the anomaly prior is estimated
-        # from for auxiliary realistic validation. It does not swap loaders.
-        val_realistic_source = task_config.get(
-            "val_realistic_source", "test_same_scope"
-        )
-        if val_realistic_source not in {"test_same_scope", "test_smd_all"}:
-            raise ValueError(
-                "val_realistic_source must be one of: test_same_scope, test_smd_all"
-            )
-        val_anomaly_rate_override = task_config.get("val_anomaly_rate_override")
-        if val_anomaly_rate_override is not None and not isinstance(
-            val_anomaly_rate_override, (int, float)
-        ):
-            raise ValueError(
-                "val_anomaly_rate_override must be a float in [0, 1] or null"
-            )
-        if (
-            val_anomaly_rate_override is not None
-            and not 0.0 <= float(val_anomaly_rate_override) <= 1.0
-        ):
-            raise ValueError("val_anomaly_rate_override must be between 0 and 1")
         if not 0.0 < float(task_config["min_segment_fraction"]) <= 1.0:
             raise ValueError("min_segment_fraction must be between 0 and 1")
         if not 0.0 < float(task_config["max_segment_fraction"]) <= 1.0:
@@ -1161,7 +1112,9 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
             raise ValueError(
                 "synthetic_train_seed must be a non-negative integer or null"
             )
-        if synthetic_train_seed is not None and bool(data_config.get("shuffle_train", True)):
+        if synthetic_train_seed is not None and bool(
+            data_config.get("shuffle_train", True)
+        ):
             raise ValueError(
                 "synthetic_train_seed requires data.shuffle_train=false so each "
                 "window keeps a stable augmentation assignment across epochs"
@@ -1379,7 +1332,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
                 raise ValueError(
                     "logging.diagnostics_stages_for_classification must be a list of strings when provided"
                 )
-            allowed_stages = {"train", "val", "val_realistic", "test"}
+            allowed_stages = {"train", "val", "val_synth", "test"}
             invalid_stage_names = sorted(
                 set(diagnostics_stages_for_classification) - allowed_stages
             )

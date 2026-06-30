@@ -283,21 +283,6 @@ class RedLampBaseline(BaseModel):
     def prepare_synthetic_validation_epoch(self) -> None:
         self.synthetic_validation_injector.reset_rng()
 
-    def prepare_realistic_validation_epoch(self, anomaly_probability: float) -> None:
-        """Configure auxiliary realistic validation on the existing val loader.
-
-        This only retunes synthetic injection to match a target anomaly prior.
-        It does not switch loaders or create a separate validation split.
-        """
-        if not 0.0 <= float(anomaly_probability) <= 1.0:
-            raise ValueError(
-                "realistic validation anomaly_probability must be in [0, 1]"
-            )
-        self.synthetic_validation_injector.anomaly_probability = float(
-            anomaly_probability
-        )
-        self.synthetic_validation_injector.reset_rng()
-
     def _clone_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         cloned_batch: dict[str, Any] = {}
         for key, value in batch.items():
@@ -320,10 +305,7 @@ class RedLampBaseline(BaseModel):
             return self._clone_batch(batch)
         if stage_name == "train" and self.use_synthetic_augmentation:
             return self.synthetic_anomaly_injector.augment_batch(batch)
-        if (
-            stage_name in {"val_synth", "val_realistic"}
-            and self.use_synthetic_validation
-        ):
+        if stage_name == "val_synth" and self.use_synthetic_validation:
             return self.synthetic_validation_injector.augment_batch(batch)
 
         prepared_batch = self._clone_batch(batch)
@@ -704,13 +686,6 @@ class RedLampBaseline(BaseModel):
         return self._shared_step(
             batch,
             "val_synth",
-            include_classification_metrics=True,
-        )
-
-    def realistic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
-        return self._shared_step(
-            batch,
-            "val_realistic",
             include_classification_metrics=True,
         )
 

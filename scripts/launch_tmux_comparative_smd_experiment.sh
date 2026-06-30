@@ -25,22 +25,22 @@ LOG_DIR="${REPO_ROOT}/outputs/tmux_logs"
 LOG_PATH=""
 
 FUNCTIONAL_SMOKE_CONFIG_PATHS=(
-  "configs/experiment/comparative/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_1_6__w20__seed6__smoke.yaml"
+  "configs/experiment/comparative/baseline/smd__redlamp_baseline__comparative-single-stage-machine_1_6__w20__seed6__smoke.yaml"
   "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_1_6__w20__seed6__smoke.yaml"
 )
 
 STRESS_SMOKE_CONFIG_PATHS=(
-  "configs/experiment/comparative_stress_smoke/baseline/smd__redlamp_mlp_baseline__comparative-single-stage-machine_1_6__w20__seed6__stress-smoke.yaml"
+  "configs/experiment/comparative_stress_smoke/baseline/smd__redlamp_baseline__comparative-single-stage-machine_1_6__w20__seed6__stress-smoke.yaml"
   "configs/experiment/comparative_stress_smoke/thesis/smd__thesis_multitask__comparative-three-stage-machine_1_6__w20__seed6__stress-smoke.yaml"
 )
 
 MAIN_CONFIG_PATHS=(
-  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_1_6__w20__seed6__main.yaml"
-  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_1_6__w20__seed36__main.yaml"
-  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_3_4__w20__seed6__main.yaml"
-  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_3_4__w20__seed36__main.yaml"
-  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_3_9__w20__seed6__main.yaml"
-  "configs/experiment/benchmark/baseline/smd__redlamp_mlp_baseline__benchmark-machine_3_9__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_baseline__benchmark-machine_1_6__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_baseline__benchmark-machine_1_6__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_baseline__benchmark-machine_3_4__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_baseline__benchmark-machine_3_4__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_baseline__benchmark-machine_3_9__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/baseline/smd__redlamp_baseline__benchmark-machine_3_9__w20__seed36__main.yaml"
   "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-three-stage-machine_1_6__w20__seed6__main.yaml"
   "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-three-stage-machine_1_6__w20__seed36__main.yaml"
   "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-three-stage-machine_3_4__w20__seed6__main.yaml"

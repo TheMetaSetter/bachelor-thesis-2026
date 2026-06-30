@@ -5,11 +5,11 @@ import math
 import torch
 
 from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
-from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
+from src.models.redlamp_baseline import RedLampBaseline
 
 
 def test_redlamp_baseline_train_step_logs_gradient_conflict_metrics() -> None:
-    model = RedLampMLPBaseline(
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
         latent_dim=16,

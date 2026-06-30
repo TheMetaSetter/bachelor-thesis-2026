@@ -10,7 +10,7 @@ from src.core.config import (
     validate_experiment_config,
 )
 from src.data.augment import REDLAMP_ANOMALY_FAMILIES
-from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
+from src.models.redlamp_baseline import RedLampBaseline
 
 
 TRAINING_POLICY_EXPERIMENT_CONFIGS = [
@@ -41,11 +41,11 @@ TRAINING_POLICY_EXPERIMENT_CONFIGS = [
     "configs/experiment/smoke/smd__thesis_multitask__multitask-rtx3090-smoke-seed47__w100__seed47__smoke.yaml",
     "configs/experiment/smoke/smd__thesis_multitask__multitask-smoke__w100__seed7__smoke.yaml",
     "configs/experiment/smoke/smd__thesis_multitask__multitask-usage-kaggle-smoke__w100__seed7__smoke.yaml",
-    "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-lr1e-3__w20__seed11__default.yaml",
-    "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr__w20__seed68__default.yaml",
-    "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
-    "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-alt__w20__seed11__default.yaml",
-    "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml",
+    "configs/experiment/scale/smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-lr1e-3__w20__seed11__default.yaml",
+    "configs/experiment/scale/smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr__w20__seed68__default.yaml",
+    "configs/experiment/smoke/smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
+    "configs/experiment/scale/smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-alt__w20__seed11__default.yaml",
+    "configs/experiment/baseline/smd__redlamp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml",
     "configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20__w20__seed11__default.yaml",
     "configs/experiment/thesis/exp3/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-nobootstrap__w20__seed11__default.yaml",
     "configs/experiment/thesis/exp2/smd__thesis_multitask__thesis-multitask-redlamp-multiclass-window20-exp2__w20__seed11__default.yaml",
@@ -76,7 +76,7 @@ def test_load_online_experiment_config_reads_valid_yaml() -> None:
     "experiment_config_path",
     TRAINING_POLICY_EXPERIMENT_CONFIGS,
 )
-def test_target_training_configs_use_shared_adamw_scheduler_val_realistic_vus_pr_policy(
+def test_target_training_configs_use_shared_adamw_scheduler_val_synth_vus_pr_policy(
     experiment_config_path: str,
 ) -> None:
     loaded_config = load_experiment_config(experiment_config_path)
@@ -91,8 +91,8 @@ def test_target_training_configs_use_shared_adamw_scheduler_val_realistic_vus_pr
         assert scheduler_config["cosine_end_lr"] == 0.0
         assert scheduler_config["cosine_after_warmup"] is True
     else:
-        assert scheduler_config["monitor_metric"] == "val_realistic_vus_pr"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
+        assert scheduler_config["monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
 
 
 def test_multitask_config_accepts_memory_bootstrap_fields(tmp_path: Path) -> None:
@@ -207,7 +207,7 @@ def test_load_single_entity_rtx3090_config_reads_valid_yaml() -> None:
     )
     assert loaded_config["data"]["entity_ids"] == ["machine-2-1"]
     assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
 
 
 def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
@@ -220,8 +220,9 @@ def test_load_single_entity_window10_binary_config_reads_valid_yaml() -> None:
     assert loaded_config["data"]["stride"] == 10
 
 
-def test_multitask_config_accepts_fixed_synthetic_train_seed_when_train_is_not_shuffled(
-) -> None:
+def test_multitask_config_accepts_fixed_synthetic_train_seed_when_train_is_not_shuffled() -> (
+    None
+):
     experiment_config = {
         "experiment_name": "fixed-train-synth-ok",
         "seed": 7,
@@ -239,7 +240,7 @@ def test_multitask_config_accepts_fixed_synthetic_train_seed_when_train_is_not_s
             "shuffle_train": False,
         },
         "model": {
-            "model_name": "redlamp_mlp_baseline",
+            "model_name": "redlamp_baseline",
             "input_dim": 38,
             "window_size": 20,
             "latent_dim": 16,
@@ -277,9 +278,6 @@ def test_multitask_config_accepts_fixed_synthetic_train_seed_when_train_is_not_s
             "warmup_beta_value": 0.5,
             "anomaly_probability": 0.5,
             "train_balance_classes": True,
-            "val_realistic": False,
-            "val_realistic_source": "test_same_scope",
-            "val_anomaly_rate_override": None,
             "min_segment_fraction": 0.2,
             "max_segment_fraction": 0.3,
             "spike_scale": 3.0,
@@ -299,8 +297,9 @@ def test_multitask_config_accepts_fixed_synthetic_train_seed_when_train_is_not_s
     validate_experiment_config(experiment_config)
 
 
-def test_multitask_config_rejects_fixed_synthetic_train_seed_when_train_is_shuffled(
-) -> None:
+def test_multitask_config_rejects_fixed_synthetic_train_seed_when_train_is_shuffled() -> (
+    None
+):
     experiment_config = {
         "experiment_name": "fixed-train-synth-bad",
         "seed": 7,
@@ -318,7 +317,7 @@ def test_multitask_config_rejects_fixed_synthetic_train_seed_when_train_is_shuff
             "shuffle_train": True,
         },
         "model": {
-            "model_name": "redlamp_mlp_baseline",
+            "model_name": "redlamp_baseline",
             "input_dim": 38,
             "window_size": 20,
             "latent_dim": 16,
@@ -356,9 +355,6 @@ def test_multitask_config_rejects_fixed_synthetic_train_seed_when_train_is_shuff
             "warmup_beta_value": 0.5,
             "anomaly_probability": 0.5,
             "train_balance_classes": True,
-            "val_realistic": False,
-            "val_realistic_source": "test_same_scope",
-            "val_anomaly_rate_override": None,
             "min_segment_fraction": 0.2,
             "max_segment_fraction": 0.3,
             "spike_scale": 3.0,
@@ -386,7 +382,7 @@ def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor(
     None
 ):
     loaded_config = load_experiment_config(
-        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
+        "configs/experiment/baseline/smd__redlamp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
     )
     loaded_config["optimizer"]["optimizer_name"] = "adamw"
     loaded_config["optimizer"]["gradient_clip_norm"] = 1.0
@@ -402,13 +398,20 @@ def test_validate_config_accepts_adamw_cosine_gradient_clipping_and_vus_monitor(
     validate_experiment_config(loaded_config)
 
 
-def test_validate_config_accepts_val_realistic_vus_pr_checkpoint_monitor() -> None:
+def test_validate_config_rejects_legacy_val_realistic_vus_pr_checkpoint_monitor() -> (
+    None
+):
     loaded_config = load_experiment_config(
-        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
+        "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_baseline__benchmark-machine_1_6__w20__seed6__main.yaml"
     )
     loaded_config["checkpoint_monitor_metric"] = "val_realistic_vus_pr"
 
-    validate_experiment_config(loaded_config)
+    with pytest.raises(
+        ValueError,
+        match="checkpoint_monitor_metric must be one of",
+    ):
+        validate_experiment_config(loaded_config)
 
 
 def test_multitask_validation_defaults_to_balanced_redlamp_multiclass_when_omitted() -> (
@@ -465,7 +468,7 @@ def test_validate_config_rejects_invalid_reconstruction_diagnostics_logging_fiel
 
 def test_validate_config_rejects_invalid_optimizer_name() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
+        "configs/experiment/baseline/smd__redlamp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
     )
     loaded_config["optimizer"]["optimizer_name"] = "sgd"
 
@@ -475,7 +478,7 @@ def test_validate_config_rejects_invalid_optimizer_name() -> None:
 
 def test_validate_config_rejects_non_positive_gradient_clip_norm() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
+        "configs/experiment/baseline/smd__redlamp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
     )
     loaded_config["optimizer"]["gradient_clip_norm"] = 0.0
 
@@ -485,8 +488,8 @@ def test_validate_config_rejects_non_positive_gradient_clip_norm() -> None:
 
 def test_load_explicit_redlamp_adamw_cosine_configs() -> None:
     for config_path in [
-        "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-lr1e-3__w20__seed11__default.yaml",
-        "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-alt__w20__seed11__default.yaml",
+        "configs/experiment/scale/smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-lr1e-3__w20__seed11__default.yaml",
+        "configs/experiment/scale/smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-alt__w20__seed11__default.yaml",
     ]:
         loaded_config = load_experiment_config(config_path)
 
@@ -496,31 +499,31 @@ def test_load_explicit_redlamp_adamw_cosine_configs() -> None:
             "reduce_on_plateau",
         }
         assert loaded_config["optimizer"]["learning_rate"] == 0.001
-        assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
+        assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
         assert loaded_config["epochs"] == 300
 
 
-def test_load_explicit_redlamp_cosine_val_realistic_vus_pr_config() -> None:
+def test_load_explicit_redlamp_cosine_val_synth_vus_pr_config() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/scale/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr__w20__seed68__default.yaml"
+        "configs/experiment/scale/smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr__w20__seed68__default.yaml"
     )
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
     assert (
         loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "reduce_on_plateau"
     )
-    assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
     assert loaded_config["epochs"] == 300
 
 
-def test_load_explicit_redlamp_cosine_val_realistic_vus_pr_smoke_config() -> None:
+def test_load_explicit_redlamp_cosine_val_synth_vus_pr_smoke_config() -> None:
     loaded_config = load_experiment_config(
-        "configs/experiment/smoke/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml"
+        "configs/experiment/smoke/smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml"
     )
 
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
     assert loaded_config["optimizer"]["scheduler"]["scheduler_name"] == "cosine"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
     assert loaded_config["epochs"] == 1
     assert loaded_config["data"]["max_train_windows"] == 64
     assert loaded_config["data"]["max_val_windows"] == 32
@@ -536,8 +539,8 @@ def test_load_explicit_redlamp_cosine_val_realistic_vus_pr_smoke_config() -> Non
             "thesis_multitask",
         ),
         (
-            "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml",
-            "redlamp_mlp_baseline",
+            "configs/experiment/baseline/smd__redlamp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml",
+            "redlamp_baseline",
         ),
     ],
 )
@@ -591,20 +594,20 @@ def test_load_multitask_smoke_config_keeps_wandb_disabled() -> None:
     assert loaded_config["logging"]["wandb_mode"] == "disabled"
 
 
-def test_redlamp_mlp_baseline_constructs_from_training_registry_path() -> None:
+def test_legacy_redlamp_baseline_experiment_path_constructs_canonical_model() -> None:
     from scripts.train import (
         build_model_from_experiment_config,
         register_runtime_components,
     )
 
     loaded_config = load_experiment_config(
-        "configs/experiment/baseline/smd__redlamp_mlp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
+        "configs/experiment/baseline/smd__redlamp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml"
     )
     register_runtime_components()
 
     model = build_model_from_experiment_config(loaded_config)
 
-    assert isinstance(model, RedLampMLPBaseline)
+    assert isinstance(model, RedLampBaseline)
     assert model.window_size == 20
     assert model.num_classes == 12
 
@@ -685,9 +688,6 @@ def test_thesis_model_defaults_to_enabled_label_refurbishment_when_omitted(
                 "warmup_beta_value: 0.5",
                 "anomaly_probability: 0.5",
                 "train_balance_classes: false",
-                "val_realistic: true",
-                "val_realistic_source: test_same_scope",
-                "val_anomaly_rate_override: null",
                 "min_segment_fraction: 0.2",
                 "max_segment_fraction: 0.3",
                 "spike_scale: 3.0",
@@ -816,9 +816,6 @@ def test_load_experiment_config_injects_window_size_into_thesis_model(
                 "max_segment_fraction: 0.2",
                 "spike_scale: 3.0",
                 "train_balance_classes: false",
-                "val_realistic: true",
-                "val_realistic_source: test_same_scope",
-                "val_anomaly_rate_override: null",
                 "anomaly_families: [spike, flip]",
             ]
         ),
@@ -935,9 +932,6 @@ def test_load_experiment_config_rejects_thesis_model_window_size_mismatch(
                 "max_segment_fraction: 0.2",
                 "spike_scale: 3.0",
                 "train_balance_classes: false",
-                "val_realistic: true",
-                "val_realistic_source: test_same_scope",
-                "val_anomaly_rate_override: null",
                 "anomaly_families: [spike, flip]",
             ]
         ),
@@ -1435,22 +1429,22 @@ def test_load_experiment_config_accepts_valid_cosine_scheduler_policy() -> None:
     assert loaded_config["optimizer"]["optimizer_name"] == "adamw"
     assert loaded_config["optimizer"]["learning_rate"] == 0.001
     assert scheduler_config["scheduler_name"] == "reduce_on_plateau"
-    assert scheduler_config["monitor_metric"] == "val_realistic_vus_pr"
-    assert loaded_config["checkpoint_monitor_metric"] == "val_realistic_vus_pr"
+    assert scheduler_config["monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
 
 
-def test_load_experiment_config_accepts_valid_val_realistic_pr_auc_scheduler(
+def test_load_experiment_config_accepts_valid_val_synth_pr_auc_scheduler(
     tmp_path: Path,
 ) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     experiment_config_path.write_text(
         "\n".join(
             [
-                "experiment_name: valid_scheduler_monitor_val_realistic_pr_auc",
+                "experiment_name: valid_scheduler_monitor_val_synth_pr_auc",
                 "seed: 7",
                 "device: cpu",
-                "output_dir: outputs/valid_scheduler_monitor_val_realistic_pr_auc",
-                "checkpoint_dir: outputs/valid_scheduler_monitor_val_realistic_pr_auc/checkpoints",
+                "output_dir: outputs/valid_scheduler_monitor_val_synth_pr_auc",
+                "checkpoint_dir: outputs/valid_scheduler_monitor_val_synth_pr_auc/checkpoints",
                 f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
                 f"model_config_path: {Path('configs/model/thesis_multitask.yaml').resolve()}",
                 f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
@@ -1459,14 +1453,14 @@ def test_load_experiment_config_accepts_valid_val_realistic_pr_auc_scheduler(
                 "  weight_decay: 0.0",
                 "  scheduler:",
                 "    scheduler_name: reduce_on_plateau",
-                "    monitor_metric: val_realistic_pr_auc",
+                "    monitor_metric: val_synth_pr_auc",
                 "    factor: 0.5",
                 "    patience: 2",
                 "    threshold: 0.0001",
                 "    threshold_mode: rel",
                 "    cooldown: 0",
                 "    min_lr: 1.0e-5",
-                "checkpoint_monitor_metric: val_realistic_pr_auc",
+                "checkpoint_monitor_metric: val_synth_pr_auc",
                 "epochs: 3",
             ]
         ),
@@ -1476,23 +1470,22 @@ def test_load_experiment_config_accepts_valid_val_realistic_pr_auc_scheduler(
     loaded_config = load_experiment_config(experiment_config_path)
 
     assert (
-        loaded_config["optimizer"]["scheduler"]["monitor_metric"]
-        == "val_realistic_pr_auc"
+        loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_pr_auc"
     )
 
 
-def test_load_experiment_config_accepts_valid_val_realistic_loss_scheduler(
+def test_load_experiment_config_accepts_valid_val_synth_loss_scheduler(
     tmp_path: Path,
 ) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     experiment_config_path.write_text(
         "\n".join(
             [
-                "experiment_name: valid_scheduler_monitor_val_realistic_loss",
+                "experiment_name: valid_scheduler_monitor_val_synth_loss",
                 "seed: 7",
                 "device: cpu",
-                "output_dir: outputs/valid_scheduler_monitor_val_realistic_loss",
-                "checkpoint_dir: outputs/valid_scheduler_monitor_val_realistic_loss/checkpoints",
+                "output_dir: outputs/valid_scheduler_monitor_val_synth_loss",
+                "checkpoint_dir: outputs/valid_scheduler_monitor_val_synth_loss/checkpoints",
                 f"data_config_path: {Path('configs/data/smd_smoke.yaml').resolve()}",
                 f"model_config_path: {Path('configs/model/thesis_multitask.yaml').resolve()}",
                 f"task_config_path: {Path('configs/task/multitask_tsad.yaml').resolve()}",
@@ -1501,14 +1494,14 @@ def test_load_experiment_config_accepts_valid_val_realistic_loss_scheduler(
                 "  weight_decay: 0.0",
                 "  scheduler:",
                 "    scheduler_name: reduce_on_plateau",
-                "    monitor_metric: val_realistic_loss",
+                "    monitor_metric: val_synth_loss",
                 "    factor: 0.5",
                 "    patience: 2",
                 "    threshold: 0.0001",
                 "    threshold_mode: rel",
                 "    cooldown: 0",
                 "    min_lr: 1.0e-5",
-                "checkpoint_monitor_metric: val_realistic_loss",
+                "checkpoint_monitor_metric: val_synth_loss",
                 "epochs: 3",
             ]
         ),
@@ -1517,10 +1510,7 @@ def test_load_experiment_config_accepts_valid_val_realistic_loss_scheduler(
 
     loaded_config = load_experiment_config(experiment_config_path)
 
-    assert (
-        loaded_config["optimizer"]["scheduler"]["monitor_metric"]
-        == "val_realistic_loss"
-    )
+    assert loaded_config["optimizer"]["scheduler"]["monitor_metric"] == "val_synth_loss"
 
 
 def test_load_experiment_config_accepts_label_refurbishment_and_masking_fields(
@@ -1618,7 +1608,7 @@ def test_load_experiment_config_rejects_invalid_scheduler_monitor_metric(
                 "  weight_decay: 0.0",
                 "  scheduler:",
                 "    scheduler_name: reduce_on_plateau",
-                "    monitor_metric: val_realistic_precision",
+                "    monitor_metric: val_synth_precision",
                 "    factor: 0.5",
                 "    patience: 2",
                 "    threshold: 0.0001",
@@ -1806,7 +1796,7 @@ def test_benchmark_baseline_config_uses_split_specific_coverage_and_fixed_synth(
 ):
     loaded_config = load_experiment_config(
         "configs/experiment/benchmark/baseline/"
-        "smd__redlamp_mlp_baseline__benchmark-machine_3_4__w20__seed6__main.yaml"
+        "smd__redlamp_baseline__benchmark-machine_3_4__w20__seed6__main.yaml"
     )
     validate_experiment_config(loaded_config)
 
@@ -1819,7 +1809,9 @@ def test_benchmark_baseline_config_uses_split_specific_coverage_and_fixed_synth(
     assert loaded_config["data"]["shuffle_train"] is False
     assert loaded_config["task"]["synthetic_train_seed"] == 7
     assert loaded_config["task"]["synthetic_validation_seed"] == 7
-    assert loaded_config["task"]["val_realistic"] is False
+    assert "val_realistic" not in loaded_config["task"]
+    assert "val_realistic_source" not in loaded_config["task"]
+    assert "val_anomaly_rate_override" not in loaded_config["task"]
 
 
 def test_benchmark_thesis_three_stage_config_locks_100_epoch_budget() -> None:
@@ -1848,17 +1840,17 @@ def test_benchmark_thesis_three_stage_config_locks_100_epoch_budget() -> None:
     "experiment_config_path",
     [
         "configs/experiment/benchmark/baseline/"
-        "smd__redlamp_mlp_baseline__benchmark-machine_1_6__w20__seed6__main.yaml",
+        "smd__redlamp_baseline__benchmark-machine_1_6__w20__seed6__main.yaml",
         "configs/experiment/benchmark/baseline/"
-        "smd__redlamp_mlp_baseline__benchmark-machine_1_6__w20__seed36__main.yaml",
+        "smd__redlamp_baseline__benchmark-machine_1_6__w20__seed36__main.yaml",
         "configs/experiment/benchmark/baseline/"
-        "smd__redlamp_mlp_baseline__benchmark-machine_3_4__w20__seed6__main.yaml",
+        "smd__redlamp_baseline__benchmark-machine_3_4__w20__seed6__main.yaml",
         "configs/experiment/benchmark/baseline/"
-        "smd__redlamp_mlp_baseline__benchmark-machine_3_4__w20__seed36__main.yaml",
+        "smd__redlamp_baseline__benchmark-machine_3_4__w20__seed36__main.yaml",
         "configs/experiment/benchmark/baseline/"
-        "smd__redlamp_mlp_baseline__benchmark-machine_3_9__w20__seed6__main.yaml",
+        "smd__redlamp_baseline__benchmark-machine_3_9__w20__seed6__main.yaml",
         "configs/experiment/benchmark/baseline/"
-        "smd__redlamp_mlp_baseline__benchmark-machine_3_9__w20__seed36__main.yaml",
+        "smd__redlamp_baseline__benchmark-machine_3_9__w20__seed36__main.yaml",
         "configs/experiment/benchmark/thesis/"
         "smd__thesis_multitask__benchmark-three-stage-machine_1_6__w20__seed6__main.yaml",
         "configs/experiment/benchmark/thesis/"

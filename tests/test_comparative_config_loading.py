@@ -18,7 +18,7 @@ def _entity_token(entity_id: str) -> str:
 def _baseline_main_config_path(entity_id: str, seed: int) -> str:
     return (
         "configs/experiment/comparative/baseline/"
-        f"smd__redlamp_mlp_baseline__comparative-single-stage-{_entity_token(entity_id)}"
+        f"smd__redlamp_baseline__comparative-single-stage-{_entity_token(entity_id)}"
         f"__w20__seed{seed}__main.yaml"
     )
 
@@ -33,7 +33,7 @@ def _thesis_main_config_path(entity_id: str, seed: int) -> str:
 
 def test_comparative_model_and_task_configs_lock_shared_semantics() -> None:
     baseline_model_config = load_yaml_config(
-        "configs/model/redlamp_mlp_baseline_comparative_smd.yaml"
+        "configs/model/redlamp_baseline_comparative_smd.yaml"
     )
     thesis_model_config = load_yaml_config(
         "configs/model/thesis_multitask_three_stage_comparative_smd.yaml"
@@ -62,8 +62,8 @@ def test_comparative_model_and_task_configs_lock_shared_semantics() -> None:
     assert task_config["train_balance_classes"] is True
     assert task_config["use_synthetic_augmentation"] is True
     assert task_config["use_synthetic_validation"] is True
-    assert task_config["val_realistic"] is True
-    assert task_config["val_realistic_source"] == "test_same_scope"
+    assert "val_realistic" not in task_config
+    assert "val_realistic_source" not in task_config
 
 
 def test_all_comparative_main_configs_resolve_with_exact_stage_contracts() -> None:
@@ -90,7 +90,7 @@ def test_all_comparative_main_configs_resolve_with_exact_stage_contracts() -> No
         assert loaded_config["model"]["lambda_cls"] == 0.1
         assert loaded_config["model"]["use_label_refurbishment"] is True
         assert loaded_config["task"]["train_balance_classes"] is True
-        assert loaded_config["task"]["val_realistic"] is True
+        assert "val_realistic" not in loaded_config["task"]
         assert len(loaded_config["data"]["entity_ids"]) == 1
         assert loaded_config["data"]["window_size"] == 20
         assert loaded_config["data"]["stride"] == 1
@@ -112,7 +112,7 @@ def test_all_comparative_main_configs_resolve_with_exact_stage_contracts() -> No
         assert loaded_config["model"]["lambda_cls"] == 0.1
         assert loaded_config["model"]["use_label_refurbishment"] is True
         assert loaded_config["task"]["train_balance_classes"] is True
-        assert loaded_config["task"]["val_realistic"] is True
+        assert "val_realistic" not in loaded_config["task"]
         assert len(loaded_config["data"]["entity_ids"]) == 1
         assert loaded_config["data"]["window_size"] == 20
         assert loaded_config["data"]["stride"] == 1
@@ -124,7 +124,7 @@ def test_all_comparative_main_configs_resolve_with_exact_stage_contracts() -> No
 def test_comparative_smoke_configs_disable_online_wandb_and_reduce_runtime() -> None:
     smoke_config_paths = [
         "configs/experiment/comparative/baseline/"
-        "smd__redlamp_mlp_baseline__comparative-single-stage-machine_1_6"
+        "smd__redlamp_baseline__comparative-single-stage-machine_1_6"
         "__w20__seed6__smoke.yaml",
         "configs/experiment/comparative/thesis/"
         "smd__thesis_multitask__comparative-three-stage-machine_1_6"
@@ -153,7 +153,7 @@ def test_comparative_smoke_configs_disable_online_wandb_and_reduce_runtime() -> 
 def test_comparative_stress_smoke_configs_use_cuda_and_nonzero_workers() -> None:
     stress_smoke_config_paths = [
         "configs/experiment/comparative_stress_smoke/baseline/"
-        "smd__redlamp_mlp_baseline__comparative-single-stage-machine_1_6"
+        "smd__redlamp_baseline__comparative-single-stage-machine_1_6"
         "__w20__seed6__stress-smoke.yaml",
         "configs/experiment/comparative_stress_smoke/thesis/"
         "smd__thesis_multitask__comparative-three-stage-machine_1_6"

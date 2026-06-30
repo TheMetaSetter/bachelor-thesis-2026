@@ -3,11 +3,11 @@ from __future__ import annotations
 import torch
 
 from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
-from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
+from src.models.redlamp_baseline import RedLampBaseline
 
 
 def test_one_redlamp_mlp_train_step_backpropagates() -> None:
-    model = RedLampMLPBaseline(
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
         latent_dim=16,
@@ -35,7 +35,7 @@ def test_one_redlamp_mlp_train_step_backpropagates() -> None:
 
 
 def test_redlamp_synthetic_validation_step_exposes_synthetic_anomaly_mask() -> None:
-    model = RedLampMLPBaseline(
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
         latent_dim=16,
@@ -62,8 +62,8 @@ def test_redlamp_synthetic_validation_step_exposes_synthetic_anomaly_mask() -> N
     )
 
 
-def test_redlamp_realistic_validation_is_deterministic_after_rng_reset() -> None:
-    model = RedLampMLPBaseline(
+def test_redlamp_synthetic_validation_is_deterministic_after_rng_reset() -> None:
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
         latent_dim=16,
@@ -80,10 +80,10 @@ def test_redlamp_realistic_validation_is_deterministic_after_rng_reset() -> None
         "meta": [{"entity_id": "unit-test"}, {"entity_id": "unit-test"}],
     }
 
-    model.prepare_realistic_validation_epoch(anomaly_probability=0.5)
-    first_step = model.realistic_validation_step(batch)
-    model.prepare_realistic_validation_epoch(anomaly_probability=0.5)
-    second_step = model.realistic_validation_step(batch)
+    model.prepare_synthetic_validation_epoch()
+    first_step = model.synthetic_validation_step(batch)
+    model.prepare_synthetic_validation_epoch()
+    second_step = model.synthetic_validation_step(batch)
 
     assert torch.equal(first_step["batch"]["x"], second_step["batch"]["x"])
     assert torch.equal(
@@ -98,13 +98,13 @@ def test_redlamp_realistic_validation_is_deterministic_after_rng_reset() -> None
         first_step["batch"]["augmentation_metadata"]
         == second_step["batch"]["augmentation_metadata"]
     )
-    assert "val_realistic_loss" in first_step["log"]
-    assert "val_realistic_classification_loss" in first_step["log"]
-    assert "val_realistic_classification_accuracy" in first_step["log"]
+    assert "val_synth_loss" in first_step["log"]
+    assert "val_synth_classification_loss" in first_step["log"]
+    assert "val_synth_classification_accuracy" in first_step["log"]
 
 
 def test_redlamp_total_loss_supports_explicit_reconstruction_weight() -> None:
-    model = RedLampMLPBaseline(
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
         latent_dim=16,
@@ -134,7 +134,7 @@ def test_redlamp_total_loss_supports_explicit_reconstruction_weight() -> None:
 
 
 def test_redlamp_clean_validation_loss_excludes_classification_term() -> None:
-    model = RedLampMLPBaseline(
+    model = RedLampBaseline(
         input_dim=4,
         window_size=20,
         latent_dim=16,

@@ -8,7 +8,7 @@ from src.models.redlamp_baseline import RedLampBaseline
 def test_active_benchmark_baseline_config_resolves_to_redlamp_baseline() -> None:
     experiment_config = load_experiment_config(
         "configs/experiment/benchmark/baseline/"
-        "smd__redlamp_mlp_baseline__benchmark-machine_1_6__w20__seed6__main.yaml"
+        "smd__redlamp_baseline__benchmark-machine_1_6__w20__seed6__main.yaml"
     )
 
     register_runtime_components()

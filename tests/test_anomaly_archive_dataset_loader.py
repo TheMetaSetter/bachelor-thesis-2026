@@ -81,11 +81,11 @@ def test_public_api_exposes_anomaly_archive_loader() -> None:
 
 def test_validate_experiment_config_allows_benchmark_anomaly_archive_dataset() -> None:
     experiment_config = {
-        "experiment_name": "staffiii_redlamp_mlp_baseline",
+        "experiment_name": "staffiii_redlamp_baseline",
         "seed": 11,
         "device": "cpu",
-        "output_dir": "outputs/staffiii_redlamp_mlp_baseline",
-        "checkpoint_dir": "outputs/staffiii_redlamp_mlp_baseline/checkpoints",
+        "output_dir": "outputs/staffiii_redlamp_baseline",
+        "checkpoint_dir": "outputs/staffiii_redlamp_baseline/checkpoints",
         "data": {
             "dataset_name": "anomaly_archive",
             "file_path": str(STAFFIII_FILE),
@@ -97,7 +97,7 @@ def test_validate_experiment_config_allows_benchmark_anomaly_archive_dataset() -
             "shuffle_train": False,
         },
         "model": {
-            "model_name": "redlamp_mlp_baseline",
+            "model_name": "redlamp_baseline",
             "input_dim": 1,
             "window_size": 20,
             "latent_dim": 16,
@@ -133,9 +133,6 @@ def test_validate_experiment_config_allows_benchmark_anomaly_archive_dataset() -
             "warmup_beta_value": 0.0,
             "anomaly_probability": 0.5,
             "train_balance_classes": False,
-            "val_realistic": True,
-            "val_realistic_source": "test_same_scope",
-            "val_anomaly_rate_override": None,
             "min_segment_fraction": 0.2,
             "max_segment_fraction": 0.3,
             "spike_scale": 3.0,
@@ -175,7 +172,7 @@ def test_validate_experiment_config_accepts_split_specific_stride_overrides() ->
             "shuffle_train": False,
         },
         "model": {
-            "model_name": "redlamp_mlp_baseline",
+            "model_name": "redlamp_baseline",
             "input_dim": 1,
             "window_size": 20,
             "latent_dim": 16,
@@ -211,9 +208,6 @@ def test_validate_experiment_config_accepts_split_specific_stride_overrides() ->
             "warmup_beta_value": 0.0,
             "anomaly_probability": 0.5,
             "train_balance_classes": False,
-            "val_realistic": True,
-            "val_realistic_source": "test_same_scope",
-            "val_anomaly_rate_override": None,
             "min_segment_fraction": 0.2,
             "max_segment_fraction": 0.3,
             "spike_scale": 3.0,
@@ -287,7 +281,7 @@ def test_validate_experiment_config_rejects_removed_anomaly_archive_modes() -> N
             "comparison_mode": "pre_vs_anomaly",
         },
         "model": {
-            "model_name": "redlamp_mlp_baseline",
+            "model_name": "redlamp_baseline",
             "input_dim": 1,
             "window_size": 20,
             "latent_dim": 16,
@@ -323,9 +317,6 @@ def test_validate_experiment_config_rejects_removed_anomaly_archive_modes() -> N
             "warmup_beta_value": 0.0,
             "anomaly_probability": 0.5,
             "train_balance_classes": False,
-            "val_realistic": True,
-            "val_realistic_source": "test_same_scope",
-            "val_anomaly_rate_override": None,
             "min_segment_fraction": 0.2,
             "max_segment_fraction": 0.3,
             "spike_scale": 3.0,

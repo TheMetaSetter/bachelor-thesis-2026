@@ -23,11 +23,7 @@ from src.core.config import load_experiment_config
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
-SUPPORTED_BASELINE_MODEL_NAMES = {
-    "redlamp_baseline",
-    "redlamp_mlp_baseline",
-    "redlamp_cnn_baseline",
-}
+SUPPORTED_BASELINE_MODEL_NAMES = {"redlamp_baseline"}
 
 
 def _utc_now_iso() -> str:

@@ -164,7 +164,7 @@ def test_synthetic_train_is_deterministic_after_rng_reset_when_seeded() -> None:
     assert first_batch["augmentation_metadata"] == second_batch["augmentation_metadata"]
 
 
-def test_trainer_logs_clean_and_auxiliary_realistic_validation_metrics_separately(
+def test_trainer_logs_clean_and_auxiliary_synthetic_validation_metrics_separately(
     tmp_path: Path,
 ) -> None:
     model = _build_model()
@@ -204,20 +204,20 @@ def test_trainer_logs_clean_and_auxiliary_realistic_validation_metrics_separatel
     assert "val_usage_lambda" in epoch_metrics
     assert "val_classification_loss" not in epoch_metrics
     assert "val_classification_accuracy" not in epoch_metrics
-    assert "val_realistic_loss" in epoch_metrics
-    assert "val_realistic_classification_loss" in epoch_metrics
-    assert "val_realistic_classification_accuracy" in epoch_metrics
-    assert "val_realistic_roc_auc" in epoch_metrics
-    assert "val_realistic_pr_auc" in epoch_metrics
-    assert "val_realistic_pr_auc_pointwise" in epoch_metrics
-    assert "val_realistic_vus_pr" in epoch_metrics
+    assert "val_synth_loss" in epoch_metrics
+    assert "val_synth_classification_loss" in epoch_metrics
+    assert "val_synth_classification_accuracy" in epoch_metrics
+    assert "val_synth_roc_auc" in epoch_metrics
+    assert "val_synth_pr_auc" in epoch_metrics
+    assert "val_synth_pr_auc_pointwise" in epoch_metrics
+    assert "val_synth_vus_pr" in epoch_metrics
     assert epoch_metrics["train_usage_lambda"] == 0.2
     assert epoch_metrics["val_usage_lambda"] == 0.2
-    assert epoch_metrics["val_realistic_usage_lambda"] == 0.2
-    assert epoch_metrics["val_loss"] != epoch_metrics["val_realistic_loss"]
+    assert epoch_metrics["val_synth_usage_lambda"] == 0.2
+    assert epoch_metrics["val_loss"] != epoch_metrics["val_synth_loss"]
 
 
-def test_trainer_uses_val_synth_namespace_when_realistic_validation_is_disabled(
+def test_trainer_uses_val_synth_namespace_by_default_without_legacy_task_flags(
     tmp_path: Path,
 ) -> None:
     model = _build_model()
@@ -245,7 +245,7 @@ def test_trainer_uses_val_synth_namespace_when_realistic_validation_is_disabled(
             },
             config={
                 "experiment_name": "validation-alignment-test",
-                "task": {"val_realistic": False},
+                "task": {},
             },
             epochs=1,
         )

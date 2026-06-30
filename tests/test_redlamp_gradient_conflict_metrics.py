@@ -5,11 +5,11 @@ import math
 import torch
 
 from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
-from src.models.redlamp_mlp_baseline import RedLampMLPBaseline
+from src.models.redlamp_baseline import RedLampBaseline
 
 
-def _build_model_for_gradient_metrics() -> RedLampMLPBaseline:
-    return RedLampMLPBaseline(
+def _build_model_for_gradient_metrics() -> RedLampBaseline:
+    return RedLampBaseline(
         input_dim=4,
         window_size=20,
         latent_dim=16,

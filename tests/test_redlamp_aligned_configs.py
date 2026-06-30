@@ -45,7 +45,7 @@ def test_redlamp_aligned_experiment_configs_preserve_shared_semantics() -> None:
     experiment_config_paths = [
         (
             "configs/experiment/scale/"
-            "smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-"
+            "smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-"
             "window20-adamw-cosine-val-vus-pr-gradconf-redlamp-aligned__w20__seed68__default.yaml",
             "redlamp_baseline",
         ),
@@ -85,7 +85,7 @@ def test_redlamp_aligned_model_and_thesis_model_build_with_shared_task_semantics
 ):
     baseline_config = load_experiment_config(
         "configs/experiment/scale/"
-        "smd__redlamp_mlp_baseline__redlamp-mlp-baseline-machine-2-1-"
+        "smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-"
         "window20-adamw-cosine-val-vus-pr-gradconf-redlamp-aligned__w20__seed68__default.yaml"
     )
     thesis_config = load_experiment_config(

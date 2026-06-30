@@ -108,7 +108,7 @@ def test_trainer_saves_final_and_fallback_best_checkpoint_when_monitor_is_nan(
         scaler_state={},
         config={
             "experiment_name": "nan-checkpoint-fallback",
-            "task": {"val_realistic": False},
+            "task": {},
         },
         epochs=1,
     )
