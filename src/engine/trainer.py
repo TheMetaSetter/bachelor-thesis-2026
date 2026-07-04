@@ -20,9 +20,12 @@ from src.engine.evaluator import (
     Evaluator,
     extract_covered_pointwise_arrays,
     reconstruct_pointwise_records_from_window_payload,
-    select_point_score_threshold,
 )
 from src.engine.logger import ExperimentLogger
+from src.engine.thresholding import (
+    build_checkpoint_evaluation_metadata,
+    select_point_score_threshold,
+)
 from src.metrics.pointwise import (
     compute_binary_classification_metrics,
     compute_multiclass_classification_metrics,
@@ -33,38 +36,6 @@ from src.metrics.classification_diagnostics import (
     compute_row_normalized_confusion_matrix,
 )
 from src.models.base_model import BaseModel
-
-
-def _resolve_checkpoint_threshold_metric_name(
-    checkpoint_monitor_metric: str,
-) -> str | None:
-    if checkpoint_monitor_metric.startswith("val_synth_"):
-        return "val_synth_threshold"
-    if checkpoint_monitor_metric.startswith("val_"):
-        return "val_threshold"
-    return None
-
-
-def build_checkpoint_evaluation_metadata(
-    *,
-    checkpoint_monitor_metric: str,
-    epoch_metrics: dict[str, Any],
-    base_extra_state: dict[str, Any] | None,
-) -> dict[str, Any] | None:
-    checkpoint_metadata = dict(base_extra_state or {})
-    threshold_metric_name = _resolve_checkpoint_threshold_metric_name(
-        checkpoint_monitor_metric
-    )
-    if threshold_metric_name is None or threshold_metric_name not in epoch_metrics:
-        return checkpoint_metadata or None
-    checkpoint_metadata["evaluation_threshold"] = float(
-        epoch_metrics[threshold_metric_name]
-    )
-    checkpoint_metadata["evaluation_threshold_metric_name"] = threshold_metric_name
-    checkpoint_metadata["evaluation_threshold_source"] = (
-        f"checkpoint::{threshold_metric_name}"
-    )
-    return checkpoint_metadata
 
 
 class Trainer:

@@ -22,34 +22,18 @@ sys.path.append(str(Path(__file__).parent.parent))
 from src.core.console import console_print
 from src.core.config import load_experiment_config
 from src.core.config_help import build_config_help_text
-from src.core.registry import (
-    build_dataset,
-    build_model,
-    register_dataset,
-    register_model,
-)
+from src.core.registry import build_dataset, build_model
+from src.core.runtime_components import register_offline_runtime_components
 from src.core.seed import seed_everything
-from src.data.loaders import (
-    build_anomaly_archive_dataset_bundle,
-    build_smd_dataset_bundle,
-)
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
 from src.engine.trainer import Trainer
-from src.models.redlamp_baseline import RedLampBaseline
-from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
-from src.models.thesis_multitask import ThesisMultitaskModel
 
 
 def register_runtime_components() -> None:
-    # Registration keeps script wiring explicit while still letting experiments
-    # build datasets and models from names instead of hard-coded constructors.
-    register_dataset("smd", build_smd_dataset_bundle)
-    register_dataset("anomaly_archive", build_anomaly_archive_dataset_bundle)
-    register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
-    register_model("thesis_multitask", ThesisMultitaskModel)
-    register_model("redlamp_baseline", RedLampBaseline)
-    console_print("REGISTRY", "Registered offline training runtime components")
+    # Keep the script-facing API stable while moving registration details into
+    # a shared helper with one clear ownership point.
+    register_offline_runtime_components()
 
 
 def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Module:

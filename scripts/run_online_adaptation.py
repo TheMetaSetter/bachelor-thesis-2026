@@ -19,35 +19,19 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.console import console_print
 from src.core.config import load_experiment_config
-from src.core.registry import (
-    build_dataset,
-    build_model,
-    register_dataset,
-    register_model,
-)
+from src.core.registry import build_dataset, build_model
+from src.core.runtime_components import register_online_runtime_components
 from src.core.seed import seed_everything
-from src.data.loaders import (
-    build_anomaly_archive_dataset_bundle,
-    build_smd_dataset_bundle,
-)
 from src.data.stream import OnlineWindowBatcher, SMDOnlineStream
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
 from src.engine.online_loop import OnlineLoop
-from src.models.online_adaptation import OnlineAdaptationModel
-from src.models.redlamp_baseline import RedLampBaseline
-from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
-from src.models.thesis_multitask import ThesisMultitaskModel
 
 
 def register_runtime_components() -> None:
-    register_dataset("smd", build_smd_dataset_bundle)
-    register_dataset("anomaly_archive", build_anomaly_archive_dataset_bundle)
-    register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
-    register_model("thesis_multitask", ThesisMultitaskModel)
-    register_model("redlamp_baseline", RedLampBaseline)
-    register_model("online_adaptation", OnlineAdaptationModel)
-    console_print("REGISTRY", "Registered online adaptation runtime components")
+    # The online path reuses the shared registrations and adds only its own
+    # adaptation model at the boundary.
+    register_online_runtime_components()
 
 
 def build_model_from_experiment_config(

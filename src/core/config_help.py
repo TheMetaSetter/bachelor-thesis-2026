@@ -33,8 +33,8 @@ def build_config_help_text(command_name: str) -> str:
           - Print this help:
               python scripts/{command_name}.py --print-config-help
           - Train:
-              python scripts/train.py --experiment-config configs/experiment/baseline/smd__redlamp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml
+              python scripts/train.py --experiment-config configs/experiment/baseline/smd__redlamp_baseline__redlamp-baseline-window20__w20__seed11__default.yaml
           - Evaluate:
-              python scripts/evaluate.py --experiment-config configs/experiment/baseline/smd__redlamp_baseline__redlamp-mlp-baseline-window20__w20__seed11__default.yaml --checkpoint-path outputs/.../best.pt
+              python scripts/evaluate.py --experiment-config configs/experiment/baseline/smd__redlamp_baseline__redlamp-baseline-window20__w20__seed11__default.yaml --checkpoint-path outputs/.../best.pt
         """
     ).strip()

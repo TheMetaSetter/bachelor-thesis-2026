@@ -18,28 +18,11 @@ from src.metrics.pointwise import (
     compute_pointwise_curve_payload,
     compute_pointwise_metrics,
 )
+from src.engine.thresholding import (
+    resolve_evaluation_threshold,
+    select_point_score_threshold,
+)
 from src.models.base_model import BaseModel
-
-
-def select_point_score_threshold(
-    point_scores: np.ndarray, quantile: float = 0.95
-) -> float:
-    """
-    Hàm này có nhiệm vụ chọn threshold
-    để biến anomaly score liên tục
-    thành dự đoán nhị phân.
-    """
-
-    # The smoke runs can produce many exact zeros, so selecting a threshold from
-    # only the positive support avoids the "everything is anomalous" failure
-    # mode in plots and thresholded metrics.
-    positive_scores = point_scores[point_scores > 0.0]
-    reference_scores = positive_scores if positive_scores.size > 0 else point_scores
-    threshold = float(np.quantile(reference_scores, quantile))
-
-    if threshold <= 0.0 and positive_scores.size > 0:
-        threshold = float(np.min(positive_scores))
-    return threshold
 
 
 def _describe_benchmark_comparability(
@@ -326,14 +309,12 @@ class Evaluator:
             evaluation_records
         )
 
-        if point_score_threshold is None:
-            # Chọn threshold cho anomaly score
-            # Một timestep có anomaly score vượt ngưỡng threshold này thì tính là anomaly
-            threshold = select_point_score_threshold(concatenated_scores, quantile=0.95)
-            resolved_threshold_source = "positive_support_quantile_0.95"
-        else:
-            threshold = float(point_score_threshold)
-            resolved_threshold_source = threshold_source or "provided_threshold"
+        threshold, resolved_threshold_source = resolve_evaluation_threshold(
+            concatenated_scores,
+            point_score_threshold=point_score_threshold,
+            threshold_source=threshold_source,
+            quantile=0.95,
+        )
 
         # Tính toán các độ đo pointwise (pointwise metric)
         metrics = compute_pointwise_metrics(

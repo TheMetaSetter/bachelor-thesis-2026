@@ -26,23 +26,14 @@ from src.analysis.evaluation_protocol_audit import (
 from src.core.console import console_print
 from src.core.config import load_experiment_config
 from src.core.config_help import build_config_help_text
-from src.core.registry import (
-    build_dataset,
-    build_model,
-    register_dataset,
-    register_model,
-)
+from src.core.registry import build_dataset, build_model
+from src.core.runtime_components import register_evaluation_runtime_components
 from src.data.loaders import (
-    build_anomaly_archive_dataset_bundle,
-    build_smd_dataset_bundle,
     rebuild_dataset_bundle_with_scaler_state,
 )
 from src.engine.checkpoint import CheckpointManager
 from src.engine.evaluator import Evaluator
 from src.engine.logger import ExperimentLogger
-from src.models.redlamp_baseline import RedLampBaseline
-from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
-from src.models.thesis_multitask import ThesisMultitaskModel
 
 
 def _serialize_evaluation_record(record: dict[str, object]) -> dict[str, object]:
@@ -106,12 +97,9 @@ def _build_fallback_protocol_audit_report(
 
 
 def register_runtime_components() -> None:
-    register_dataset("smd", build_smd_dataset_bundle)
-    register_dataset("anomaly_archive", build_anomaly_archive_dataset_bundle)
-    register_model("reconstruction_mlp_ae", ReconstructionMLPAutoencoder)
-    register_model("thesis_multitask", ThesisMultitaskModel)
-    register_model("redlamp_baseline", RedLampBaseline)
-    console_print("REGISTRY", "Registered evaluation runtime components")
+    # Keep evaluation setup thin and route the shared registrations through one
+    # explicit helper.
+    register_evaluation_runtime_components()
 
 
 def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Module:
