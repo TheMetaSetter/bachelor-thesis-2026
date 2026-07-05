@@ -127,6 +127,8 @@ def _resolve_thesis_model_window_size(experiment_config: dict[str, Any]) -> None
 
 
 def _normalize_three_stage_config_keys(three_stage_config: dict[str, Any]) -> None:
+    # Legacy three-stage compatibility remains read-supported only.
+    # The active two-stage rerun should be interpreted from `two_stage`.
     has_legacy_key = STAGE3_WARMUP_EPOCHS_LEGACY_KEY in three_stage_config
     has_canonical_key = STAGE3_WARMUP_EPOCHS_CANONICAL_KEY in three_stage_config
     if has_legacy_key and has_canonical_key:
@@ -156,6 +158,8 @@ def _normalize_three_stage_config_keys(three_stage_config: dict[str, Any]) -> No
 
 def _validate_three_stage_config(three_stage_config: dict[str, Any]) -> None:
     _normalize_three_stage_config_keys(three_stage_config)
+    # This validator is retained for the historical three-stage path.
+    # The active rerun uses `_validate_two_stage_config`.
     allowed_three_stage_keys = {
         "expected_total_training_epochs",
         "stage1_classification_epochs",
@@ -226,6 +230,7 @@ def _validate_three_stage_config(three_stage_config: dict[str, Any]) -> None:
 
 
 def _validate_two_stage_config(two_stage_config: dict[str, Any]) -> None:
+    # This validator defines the active rerun contract.
     allowed_two_stage_keys = {
         "expected_total_training_epochs",
         TWO_STAGE_A_EPOCHS_KEY,

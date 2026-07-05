@@ -187,6 +187,7 @@ class ThesisMultitaskSetupMixin:
             )
 
     def _phase_uses_prototype_path(self) -> bool:
+        # Active two-stage runs only use the prototype path in Stage B.
         return self.training_phase in {
             STAGE3_PHASE_CANONICAL_NAME,
             "multitask_pretraining",
@@ -225,6 +226,7 @@ class ThesisMultitaskSetupMixin:
         return float(self.lambda_contrastive)
 
     def _phase_freezes_encoder(self) -> bool:
+        # Stage B is the active freeze point for the two-stage rerun.
         return self.training_phase == TWO_STAGE_B_PHASE_NAME or (
             self.training_phase == STAGE3_PHASE_CANONICAL_NAME
             and self.freeze_recovered_zipped_encoder_during_warmup

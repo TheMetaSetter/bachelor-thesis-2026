@@ -159,6 +159,8 @@ class ThesisMultitaskStateMixin:
         )
 
     def _semantic_stage_label(self) -> str:
+        # Active two-stage runs should read as Stage A or Stage B.
+        # Stage 3 remains only as a legacy compatibility label.
         if self.training_phase == TWO_STAGE_A_PHASE_NAME:
             return "Stage A: Multitask Pretraining"
         if self.training_phase == TWO_STAGE_B_PHASE_NAME:
@@ -203,6 +205,7 @@ class ThesisMultitaskStateMixin:
         return {
             "bootstrap_encoder_epochs": self.bootstrap_encoder_epochs,
             "current_epoch": self.current_epoch_index + 1,
+            # The lifecycle state is stage-facing for active two-stage runs.
             "semantic_stage_label": self._semantic_stage_label(),
             "memory_initialization_substep": (
                 self._memory_initialization_substep_active()

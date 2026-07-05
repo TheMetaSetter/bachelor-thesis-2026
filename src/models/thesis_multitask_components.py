@@ -33,7 +33,7 @@ from src.data.augment import (
 )
 from src.models.base_model import BaseModel
 
-# Legacy phase label kept only so older configs and checkpoints still load.
+# Legacy Stage 3 label kept only so older configs and checkpoints still load.
 STAGE3_PHASE_LEGACY_NAME = "stage3_prototype_warmup"
 STAGE3_PHASE_CANONICAL_NAME = "stage3_memory_initialization_and_fusion_warmup"
 TWO_STAGE_A_PHASE_NAME = "stage_a_multitask_pretraining"

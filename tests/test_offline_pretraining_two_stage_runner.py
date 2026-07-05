@@ -9,7 +9,7 @@ from scripts.run_two_stage_offline_pretraining import (
 )
 
 
-def test_two_stage_training_plan_matches_80_plus_20_contract() -> None:
+def test_two_stage_training_plan_matches_80_plus_20_stage_contract() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/thesis/exp4/"
         "smd__thesis_multitask__offline-pretraining-two-stage-machine-3-4-window20"
@@ -33,7 +33,7 @@ def test_two_stage_training_plan_matches_80_plus_20_contract() -> None:
     ]
 
 
-def test_thesis_multitask_two_stage_phases_switch_trainable_surface() -> None:
+def test_thesis_multitask_two_stage_stages_switch_trainable_surface() -> None:
     stage_a_model = ThesisMultitaskModel(
         input_dim=38,
         window_size=20,
@@ -74,4 +74,3 @@ def test_thesis_multitask_two_stage_phases_switch_trainable_surface() -> None:
         parameter.requires_grad is False
         for parameter in stage_b_model.encoder.parameters()
     )
-

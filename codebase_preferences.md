@@ -61,6 +61,19 @@ This is important so I will repeat 3 times.
 
 - Stick to "least amount of codepaths" principle, which means configurations, models, pre-processing, all of that should be obvious to users. Reading should be obvious and configurations should be obvious.
 
+- Minimalistic, easy to comprehend, and single-meaning are mandatory codebase-wide criteria.
+  - Minimalistic means prefer the smallest workable design that preserves behavior.
+  - Easy to comprehend means the reader should be able to infer the intended contract directly from file names, function names, comments, and config keys.
+  - Single-meaning means one term, one contract, one runtime concept. If a term can plausibly mean two different things, rename or separate it.
+
+- Keep methods and functions short.
+  - A method inside a class must not exceed 50 lines.
+  - A standalone function must not exceed 50 lines.
+
+- Keep files small.
+  - A code file must not exceed 500 lines.
+  - If a file grows past that size, split it into smaller files or move non-core helpers into a narrower boundary.
+
 - Do not write overly long `for` loops. When a loop starts handling many responsibilities at once, split the work into small, clearly named helper functions or methods so each step can be read, reused, tested, and modified independently.
 
 - Write explanatory comments to support user reading code. Comments should be updated in parallel with code or implementations.

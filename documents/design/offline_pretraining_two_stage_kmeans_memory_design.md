@@ -32,6 +32,15 @@ to keep the active thesis experiment simple:
 This document is the new SSOT for the approved high-level training contract
 before code and config changes.
 
+## Terminology
+
+For the active rerun described in this document:
+
+- `offline pre-training` is the large phase.
+- `Stage A` and `Stage B` are the only stages inside that phase.
+- The older three-stage material remains historical context only and does not
+  define the active meaning of `phase` for this rerun.
+
 ## Scope
 
 This design applies to:

@@ -8,7 +8,7 @@ import torch
 from src.models.thesis_multitask import ThesisMultitaskModel
 
 
-def _build_phase_model(
+def _build_three_stage_compatibility_model(
     training_phase: str,
     **overrides: Any,
 ) -> ThesisMultitaskModel:
@@ -98,17 +98,19 @@ def test_memory_lifecycle_switches_with_three_stage_phase(
     expected_bypass: bool,
     expected_update: bool,
 ) -> None:
-    model = _build_phase_model(training_phase)
+    model = _build_three_stage_compatibility_model(training_phase)
     model.mark_memories_initialized(initialization_epoch=1)
 
     assert model._should_bypass_memory_for_stage("train") is expected_bypass
     assert model._should_update_memory("train") is expected_update
 
 
-def test_stage3_warmup_freezes_encoder_but_keeps_heads_and_concat_projections_trainable() -> (
+def test_stage3_warmup_freezes_encoder_but_keeps_heads_and_concat_projections_trainable_compatibility() -> (
     None
 ):
-    model = _build_phase_model("stage3_memory_initialization_and_fusion_warmup")
+    model = _build_three_stage_compatibility_model(
+        "stage3_memory_initialization_and_fusion_warmup"
+    )
 
     assert all(not parameter.requires_grad for parameter in model.encoder.parameters())
     assert all(
@@ -127,8 +129,10 @@ def test_stage3_warmup_freezes_encoder_but_keeps_heads_and_concat_projections_tr
     )
 
 
-def test_stage3_warmup_disables_non_target_trainable_modules() -> None:
-    model = _build_phase_model("stage3_memory_initialization_and_fusion_warmup")
+def test_stage3_warmup_disables_non_target_trainable_modules_compatibility() -> None:
+    model = _build_three_stage_compatibility_model(
+        "stage3_memory_initialization_and_fusion_warmup"
+    )
 
     assert all(
         not parameter.requires_grad
@@ -150,8 +154,10 @@ def test_stage3_warmup_disables_non_target_trainable_modules() -> None:
     assert model.beta_logit.requires_grad is False
 
 
-def test_stage3_lifecycle_state_exposes_semantic_label_and_trainable_modules() -> None:
-    model = _build_phase_model("stage3_memory_initialization_and_fusion_warmup")
+def test_stage3_lifecycle_state_exposes_semantic_label_and_trainable_modules_compatibility() -> None:
+    model = _build_three_stage_compatibility_model(
+        "stage3_memory_initialization_and_fusion_warmup"
+    )
     lifecycle_state = model.get_memory_lifecycle_state()
 
     assert (
@@ -187,7 +193,7 @@ def test_loss_weighting_changes_with_three_stage_phase(
     expected_reconstruction_weight: float,
     expected_classification_weight: float,
 ) -> None:
-    model = _build_phase_model(
+    model = _build_three_stage_compatibility_model(
         training_phase,
         enable_two_view_contrastive=False,
     )
@@ -219,7 +225,7 @@ def test_stage1_loss_weighting_ignores_global_lambda_values(
     expected_reconstruction_weight: float,
     expected_classification_weight: float,
 ) -> None:
-    model = _build_phase_model(
+    model = _build_three_stage_compatibility_model(
         training_phase,
         lambda_recon=7.5,
         lambda_cls=3.25,
@@ -253,7 +259,7 @@ def test_stage1_total_loss_uses_fixed_contrastive_weight(
     expected_reconstruction_weight: float,
     expected_classification_weight: float,
 ) -> None:
-    model = _build_phase_model(
+    model = _build_three_stage_compatibility_model(
         training_phase,
         lambda_recon=7.5,
         lambda_cls=3.25,
@@ -287,7 +293,7 @@ def test_contrastive_pairing_is_phase_aware(
     training_phase: str,
     should_build_pair: bool,
 ) -> None:
-    model = _build_phase_model(training_phase)
+    model = _build_three_stage_compatibility_model(training_phase)
     contrastive_pair = model._prepare_contrastive_pair_batches(
         _build_preaugmented_batch(),
         stage_name="train",
@@ -297,6 +303,6 @@ def test_contrastive_pairing_is_phase_aware(
 
 
 def test_legacy_stage3_phase_alias_still_loads_for_model_compatibility() -> None:
-    model = _build_phase_model("stage3_prototype_warmup")
+    model = _build_three_stage_compatibility_model("stage3_prototype_warmup")
 
     assert model.training_phase == "stage3_memory_initialization_and_fusion_warmup"

@@ -74,10 +74,8 @@ def validate_two_stage_epoch_budget(experiment_config: dict[str, Any]) -> None:
 def build_two_stage_training_plan(
     experiment_config: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    # TODO: Thống nhất lại khái niệm "phase" và "stage".
-    # "phase" là pha lớn của method, ví dụ "offline pre-training",
-    # "online test-time adaptation".
-    # "stage" là các bước con bên trong phase đó, ví dụ Stage A và Stage B.
+    # Offline pre-training is the large phase.
+    # Stage A and Stage B are the two stages inside that phase.
 
     validate_two_stage_epoch_budget(experiment_config)
     two_stage_config = experiment_config["two_stage"]
@@ -161,7 +159,7 @@ def materialize_two_stage_run_manifest(
     generated_configs_dir = manifest_root / "generated_configs"
     generated_configs_dir.mkdir(parents=True, exist_ok=True)
 
-    training_stages: list[dict[str, Any]] = []
+    stage_records: list[dict[str, Any]] = []
     for stage_index, stage_record in enumerate(training_plan, start=1):
         stage_name = str(stage_record["phase_name"])
         stage_config = _build_stage_experiment_config(experiment_config, stage_record)
@@ -170,7 +168,7 @@ def materialize_two_stage_run_manifest(
         )
         with stage_config_path.open("w", encoding="utf-8") as handle:
             yaml.safe_dump(stage_config, handle, sort_keys=False)
-        training_stages.append(
+        stage_records.append(
             {
                 **stage_record,
                 "config_path": str(stage_config_path),
@@ -185,15 +183,15 @@ def materialize_two_stage_run_manifest(
         )
 
     evaluation = {
-        "config_path": training_stages[-1]["config_path"],
-        "checkpoint_path": training_stages[-1]["best_checkpoint_path"],
+        "config_path": stage_records[-1]["config_path"],
+        "checkpoint_path": stage_records[-1]["best_checkpoint_path"],
     }
     manifest = {
         "experiment_name": str(experiment_config["experiment_name"]),
         "manifest_version": 1,
         "created_at_utc": _utc_now_iso(),
         "manifest_root": str(manifest_root),
-        "training_stages": training_stages,
+        "training_stages": stage_records,
         "total_training_epochs": compute_two_stage_total_training_epochs(
             experiment_config["two_stage"]
         ),
