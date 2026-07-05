@@ -106,6 +106,7 @@ def _validate_model_and_task_config(
             "freeze_memories_after_initialization",
             "freeze_recovered_zipped_encoder_during_warmup",
             "discrete_memory_label_source",
+            "stage_name",
             "enable_gradient_conflict_profiling",
             "gradient_profiling_scope",
             "gradient_focus_layer_name",

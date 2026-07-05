@@ -435,6 +435,17 @@ class ThesisMultitaskModelConfig:
     ) -> "ThesisMultitaskModelConfig":
         remaining_kwargs = dict(flat_kwargs)
 
+        if "stage_name" in remaining_kwargs:
+            stage_name = remaining_kwargs.pop("stage_name")
+            if (
+                "training_phase" in remaining_kwargs
+                and remaining_kwargs["training_phase"] != stage_name
+            ):
+                raise ValueError(
+                    "training_phase and stage_name must match when both are provided"
+                )
+            remaining_kwargs["training_phase"] = stage_name
+
         def take_group(group_keys: set[str]) -> dict[str, Any]:
             group_values: dict[str, Any] = {}
             for key in group_keys:

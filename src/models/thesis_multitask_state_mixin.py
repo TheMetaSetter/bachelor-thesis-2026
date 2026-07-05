@@ -160,7 +160,8 @@ class ThesisMultitaskStateMixin:
 
     def _semantic_stage_label(self) -> str:
         # Active two-stage runs should read as Stage A or Stage B.
-        # Stage 3 remains only as a legacy compatibility label.
+        # The label is stage-facing even when the runtime field still uses the
+        # historical training_phase name internally.
         if self.training_phase == TWO_STAGE_A_PHASE_NAME:
             return "Stage A: Multitask Pretraining"
         if self.training_phase == TWO_STAGE_B_PHASE_NAME:

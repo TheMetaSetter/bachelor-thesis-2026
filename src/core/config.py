@@ -126,6 +126,53 @@ def _resolve_thesis_model_window_size(experiment_config: dict[str, Any]) -> None
         raise ValueError("model.window_size must match data.window_size")
 
 
+def _normalize_alias_with_compatibility(
+    config: dict[str, Any],
+    *,
+    new_key: str,
+    legacy_keys: tuple[str, ...],
+) -> None:
+    legacy_values = [config[key] for key in legacy_keys if key in config]
+    if not legacy_values:
+        return
+    resolved_value = legacy_values[0]
+    if new_key in config and config[new_key] != resolved_value:
+        raise ValueError(
+            f"Config alias mismatch for {new_key}: {config[new_key]} != {resolved_value}"
+        )
+    config[new_key] = resolved_value
+    for legacy_key in legacy_keys:
+        if legacy_key in config and config[legacy_key] != resolved_value:
+            raise ValueError(
+                f"Config alias mismatch for {legacy_key}: {config[legacy_key]} != {resolved_value}"
+            )
+
+
+def _normalize_stage_metadata_aliases(experiment_config: dict[str, Any]) -> None:
+    _normalize_alias_with_compatibility(
+        experiment_config,
+        new_key="stage_name",
+        legacy_keys=("two_stage_phase", "three_stage_phase"),
+    )
+    _normalize_alias_with_compatibility(
+        experiment_config,
+        new_key="stage_global_epoch_start",
+        legacy_keys=("two_stage_global_epoch_start", "three_stage_global_epoch_start"),
+    )
+    _normalize_alias_with_compatibility(
+        experiment_config,
+        new_key="stage_global_epoch_end",
+        legacy_keys=("two_stage_global_epoch_end", "three_stage_global_epoch_end"),
+    )
+    model_config = experiment_config.get("model")
+    if isinstance(model_config, dict):
+        _normalize_alias_with_compatibility(
+            model_config,
+            new_key="stage_name",
+            legacy_keys=("training_phase",),
+        )
+
+
 def _normalize_three_stage_config_keys(three_stage_config: dict[str, Any]) -> None:
     # Legacy three-stage compatibility remains read-supported only.
     # The active two-stage rerun should be interpreted from `two_stage`.
@@ -320,6 +367,9 @@ def _validate_experiment_top_level_structure(
         "two_stage_phase",
         "two_stage_global_epoch_start",
         "two_stage_global_epoch_end",
+        "stage_name",
+        "stage_global_epoch_start",
+        "stage_global_epoch_end",
         "initialization_checkpoint_path",
     }
     unknown_top_level_keys = sorted(set(experiment_config) - allowed_top_level_keys)
@@ -864,6 +914,7 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
         root_config.get("task_overrides"),
     )
 
+    _normalize_stage_metadata_aliases(resolved_experiment_config)
     _resolve_thesis_model_window_size(resolved_experiment_config)
     validate_experiment_config(resolved_experiment_config)
     console_print(

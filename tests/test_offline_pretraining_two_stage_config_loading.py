@@ -18,7 +18,7 @@ def test_two_stage_machine_3_4_experiment_config_matches_exact_100_epoch_stage_b
     assert loaded_config["two_stage"]["expected_total_training_epochs"] == 100
     assert loaded_config["two_stage"]["stage_a_multitask_epochs"] == 80
     assert loaded_config["two_stage"]["stage_b_fusion_finetuning_epochs"] == 20
-    assert loaded_config["model"]["training_phase"] == "stage_a_multitask_pretraining"
+    assert loaded_config["model"]["stage_name"] == "stage_a_multitask_pretraining"
     assert loaded_config["model"]["continuous_num_prototypes"] == 32
     assert loaded_config["model"]["discrete_codebook_size"] == 60
     assert loaded_config["model"]["discrete_query_mode"] == "cosine_topk"

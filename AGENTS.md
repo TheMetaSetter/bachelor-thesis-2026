@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+Locally, the root of this repo is: `/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/`.
+
 All contributors and agents must strictly follow every requirement in `codebase_preferences.md`.
 The single source of truth for this codebase is the `documents/design/` directory under `documents/`.
 

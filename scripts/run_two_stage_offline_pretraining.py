@@ -90,7 +90,7 @@ def build_two_stage_training_plan(
     for stage_name, field_name in TWO_STAGE_PHASE_FIELD_ORDER:
         stage_epochs = int(two_stage_config[field_name])
         stage_record = {
-            "phase_name": stage_name,
+            "stage_name": stage_name,
             "epochs": stage_epochs,
             "global_epoch_start": current_global_epoch_start,
             "global_epoch_end": current_global_epoch_start + stage_epochs - 1,
@@ -116,7 +116,7 @@ def _build_stage_experiment_config(
     stage_record: dict[str, Any],
 ) -> dict[str, Any]:
     stage_config = copy.deepcopy(experiment_config)
-    stage_name = str(stage_record["phase_name"])
+    stage_name = str(stage_record["stage_name"])
     stage_config["experiment_name"] = (
         f"{experiment_config['experiment_name']}__{stage_name}"
     )
@@ -135,12 +135,20 @@ def _build_stage_experiment_config(
             stage_config[reference_field] = _resolve_repo_config_reference(
                 str(stage_config[reference_field])
             )
-    stage_config["two_stage_phase"] = stage_name
-    stage_config["two_stage_global_epoch_start"] = int(
+    stage_config.pop("two_stage_phase", None)
+    stage_config.pop("two_stage_global_epoch_start", None)
+    stage_config.pop("two_stage_global_epoch_end", None)
+    stage_config["stage_name"] = stage_name
+    stage_config["stage_global_epoch_start"] = int(
         stage_record["global_epoch_start"]
     )
-    stage_config["two_stage_global_epoch_end"] = int(stage_record["global_epoch_end"])
-    stage_config["model"]["training_phase"] = stage_name
+    stage_config["stage_global_epoch_end"] = int(stage_record["global_epoch_end"])
+    stage_config["model"].pop("training_phase", None)
+    stage_config["model"]["stage_name"] = stage_name
+    model_overrides = copy.deepcopy(stage_config.get("model_overrides", {}))
+    model_overrides["training_phase"] = stage_name
+    model_overrides["stage_name"] = stage_name
+    stage_config["model_overrides"] = model_overrides
     logging_config = copy.deepcopy(stage_config.get("logging", {}))
     logging_config["wandb_job_type"] = stage_name
     logging_config["wandb_run_name"] = stage_config["experiment_name"]
@@ -169,7 +177,7 @@ def materialize_two_stage_run_manifest(
 
     stage_records: list[dict[str, Any]] = []
     for stage_index, stage_record in enumerate(training_plan, start=1):
-        stage_name = str(stage_record["phase_name"])
+        stage_name = str(stage_record["stage_name"])
         stage_config = _build_stage_experiment_config(experiment_config, stage_record)
         stage_config_path = (
             generated_configs_dir / f"{stage_index:02d}_{stage_name}.yaml"
@@ -242,7 +250,7 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
         init_device = "cpu"
     model.to(init_device)
     if not model.maybe_initialize_memories_from_loader(
-        train_loader=data_bundle["train_loader"],
+        train_loader=data_bundle["loaders"]["train"],
         device=init_device,
     ):
         raise RuntimeError(
@@ -289,18 +297,23 @@ def execute_two_stage_plan(
     started_at_utc = _utc_now_iso()
     executed_stage_names: list[str] = []
 
-    if not dry_run:
-        _prepare_stage_b_initialization_checkpoint(manifest)
+    training_stage_records = list(manifest["training_stages"])
+    training_commands = list(command_plan["training"])
 
-    for stage_record, command in zip(
-        manifest["training_stages"],
-        command_plan["training"],
-        strict=True,
-    ):
-        executed_stage_names.append(str(stage_record["phase_name"]))
-        if dry_run:
-            continue
-        subprocess.run(command, check=True)
+    if dry_run:
+        for stage_record in training_stage_records:
+            executed_stage_names.append(str(stage_record["stage_name"]))
+    else:
+        subprocess.run(training_commands[0], check=True)
+        executed_stage_names.append(str(training_stage_records[0]["stage_name"]))
+        _prepare_stage_b_initialization_checkpoint(manifest)
+        for stage_record, command in zip(
+            training_stage_records[1:],
+            training_commands[1:],
+            strict=True,
+        ):
+            executed_stage_names.append(str(stage_record["stage_name"]))
+            subprocess.run(command, check=True)
 
     executed_stage_names.append("evaluation")
     if not dry_run:
