@@ -430,7 +430,9 @@ class ThesisMultitaskStateMixin:
         normalized_tokens = self._normalize_memory_vectors(tokens)
         num_tokens = int(normalized_tokens.shape[0])
         if num_tokens <= k:
-            repeated_indices = torch.arange(k, device=normalized_tokens.device) % num_tokens
+            repeated_indices = (
+                torch.arange(k, device=normalized_tokens.device) % num_tokens
+            )
             return normalized_tokens.index_select(0, repeated_indices)
 
         # Deterministic initialization:

@@ -1,8 +1,0 @@
-dataset_name: anomaly_archive
-file_path: data/AnomalyArchive/219_UCR_Anomaly_STAFFIIIDatabase_41612_64632_64852.txt
-window_size: 20
-stride: 10
-batch_size: 64
-num_workers: 4
-validation_split_ratio: 0.2
-shuffle_train: true

@@ -48,7 +48,9 @@ def test_two_stage_manifest_and_stage_configs_use_stage_name_keys(tmp_path) -> N
 
     manifest = materialize_two_stage_run_manifest(experiment_config)
 
-    assert manifest["training_stages"][0]["stage_name"] == "stage_a_multitask_pretraining"
+    assert (
+        manifest["training_stages"][0]["stage_name"] == "stage_a_multitask_pretraining"
+    )
     assert manifest["training_stages"][1]["stage_name"] == "stage_b_fusion_finetuning"
     assert manifest["training_stages"][0]["global_epoch_start"] == 1
     assert manifest["training_stages"][1]["global_epoch_end"] == 5

@@ -139,9 +139,7 @@ def _build_stage_experiment_config(
     stage_config.pop("two_stage_global_epoch_start", None)
     stage_config.pop("two_stage_global_epoch_end", None)
     stage_config["stage_name"] = stage_name
-    stage_config["stage_global_epoch_start"] = int(
-        stage_record["global_epoch_start"]
-    )
+    stage_config["stage_global_epoch_start"] = int(stage_record["global_epoch_start"])
     stage_config["stage_global_epoch_end"] = int(stage_record["global_epoch_end"])
     stage_config["model"].pop("training_phase", None)
     stage_config["model"]["stage_name"] = stage_name
