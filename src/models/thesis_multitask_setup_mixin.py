@@ -375,12 +375,19 @@ class ThesisMultitaskSetupMixin:
             self.register_buffer("continuous_prototype_bank", None)
 
         # Discrete branch.
-        # This branch assigns tokens to a codebook through Gumbel-Softmax.
+        # The active two-stage rerun uses cosine-topk, so the Gumbel-only
+        # assignment head stays optional in Stage B while legacy phases keep it.
         if self.discrete_memory_enabled:
-            self.discrete_assignment = nn.Linear(
-                architecture.hidden_dim,
-                prototypes.discrete_codebook_size,
-            )
+            if (
+                self.training_phase == TWO_STAGE_B_PHASE_NAME
+                and self.discrete_query_mode == "cosine_topk"
+            ):
+                self.discrete_assignment = None
+            else:
+                self.discrete_assignment = nn.Linear(
+                    architecture.hidden_dim,
+                    prototypes.discrete_codebook_size,
+                )
             self.register_buffer(
                 "discrete_codebook",
                 torch.randn(

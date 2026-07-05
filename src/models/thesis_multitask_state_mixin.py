@@ -411,6 +411,76 @@ class ThesisMultitaskStateMixin:
         )
         return normalized_vectors.index_select(0, selected_index_tensor)
 
+    def _run_kmeans(
+        self,
+        tokens: torch.Tensor,
+        k: int,
+        *,
+        num_iterations: int,
+    ) -> torch.Tensor:
+        if tokens.ndim != 2:
+            raise ValueError("tokens must have shape [N, H]")
+        if tokens.shape[0] == 0:
+            raise ValueError("tokens must contain at least one row")
+        if k <= 0:
+            raise ValueError("k must be positive")
+        if num_iterations <= 0:
+            raise ValueError("num_iterations must be positive")
+
+        normalized_tokens = self._normalize_memory_vectors(tokens)
+        num_tokens = int(normalized_tokens.shape[0])
+        if num_tokens <= k:
+            repeated_indices = torch.arange(k, device=normalized_tokens.device) % num_tokens
+            return normalized_tokens.index_select(0, repeated_indices)
+
+        # Deterministic initialization:
+        # 1. choose the token closest to the mean as the first center
+        # 2. iteratively choose the farthest token from the current center set
+        token_mean = normalized_tokens.mean(dim=0, keepdim=True)
+        squared_distances_to_mean = torch.sum(
+            (normalized_tokens - token_mean) ** 2,
+            dim=1,
+        )
+        first_index = int(torch.argmin(squared_distances_to_mean).item())
+        selected_indices = [first_index]
+
+        minimum_squared_distances = torch.sum(
+            (normalized_tokens - normalized_tokens[first_index]) ** 2,
+            dim=1,
+        )
+        while len(selected_indices) < k:
+            next_index = int(torch.argmax(minimum_squared_distances).item())
+            selected_indices.append(next_index)
+            next_squared_distances = torch.sum(
+                (normalized_tokens - normalized_tokens[next_index]) ** 2,
+                dim=1,
+            )
+            minimum_squared_distances = torch.minimum(
+                minimum_squared_distances,
+                next_squared_distances,
+            )
+
+        centers = normalized_tokens.index_select(
+            0,
+            torch.tensor(selected_indices, device=normalized_tokens.device),
+        )
+
+        for _ in range(num_iterations):
+            pairwise_distances = torch.cdist(normalized_tokens, centers, p=2)
+            assignments = torch.argmin(pairwise_distances, dim=1)
+            updated_centers: list[torch.Tensor] = []
+            for center_index in range(k):
+                cluster_mask = assignments == center_index
+                if not torch.any(cluster_mask):
+                    updated_centers.append(centers[center_index])
+                    continue
+                cluster_tokens = normalized_tokens[cluster_mask]
+                updated_centers.append(cluster_tokens.mean(dim=0))
+            centers = torch.stack(updated_centers, dim=0)
+            centers = self._normalize_memory_vectors(centers)
+
+        return centers
+
     def _collect_memory_initialization_token_pool_from_loader(
         self,
         train_loader: Any,
@@ -515,9 +585,10 @@ class ThesisMultitaskStateMixin:
             )
 
         if self.continuous_prototype_bank is not None:
-            continuous_seed_vectors = self._select_covering_vectors(
+            continuous_seed_vectors = self._run_kmeans(
                 continuous_hidden_tokens,
                 self.continuous_num_prototypes,
+                num_iterations=10,
             )
             self.continuous_prototype_bank.copy_(continuous_seed_vectors)
 
@@ -527,8 +598,6 @@ class ThesisMultitaskStateMixin:
                 raise ValueError(
                     "discrete_hidden_tokens_by_class must contain at least one class"
                 )
-            base_codewords_per_class = self.discrete_codebook_size // self.num_classes
-            remaining_codewords = self.discrete_codebook_size % self.num_classes
             fallback_hidden_tokens = torch.cat(
                 [
                     discrete_hidden_tokens_by_class[class_index]
@@ -538,18 +607,14 @@ class ThesisMultitaskStateMixin:
             )
             class_stratified_vectors: list[torch.Tensor] = []
             for class_index in range(self.num_classes):
-                codewords_for_class = base_codewords_per_class
-                if class_index < remaining_codewords:
-                    codewords_for_class += 1
-                if codewords_for_class == 0:
-                    continue
                 class_hidden_tokens = discrete_hidden_tokens_by_class.get(class_index)
                 if class_hidden_tokens is None or class_hidden_tokens.shape[0] == 0:
                     class_hidden_tokens = fallback_hidden_tokens
                 class_stratified_vectors.append(
-                    self._select_covering_vectors(
+                    self._run_kmeans(
                         class_hidden_tokens,
-                        codewords_for_class,
+                        self.discrete_codebook_size // self.num_classes,
+                        num_iterations=10,
                     )
                 )
             discrete_seed_vectors = torch.cat(class_stratified_vectors, dim=0)

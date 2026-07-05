@@ -97,6 +97,30 @@ def _build_synthetic_batch(raw_batch: dict[str, object]) -> dict[str, object]:
     return synthetic_batch
 
 
+def test_run_kmeans_returns_normalized_centroids_for_clear_clusters() -> None:
+    model = _build_initialization_model()
+    tokens = torch.tensor(
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.9, 0.1, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.9, 0.1, 0.0],
+        ],
+        dtype=torch.float32,
+    )
+
+    centroids = model._run_kmeans(tokens, 2, num_iterations=5)  # type: ignore[attr-defined]
+
+    assert centroids.shape == (2, 4)
+    assert torch.allclose(
+        centroids.norm(dim=-1),
+        torch.ones(2),
+        atol=1.0e-5,
+    )
+    assert torch.any(torch.isclose(centroids[:, 0], torch.tensor(1.0), atol=0.2))
+    assert torch.any(torch.isclose(centroids[:, 1], torch.tensor(1.0), atol=0.2))
+
+
 def test_initialization_pool_separates_normal_only_continuous_tokens_and_class_stratified_discrete_tokens() -> (
     None
 ):
@@ -159,6 +183,37 @@ def test_memory_initialization_marks_model_initialized_and_freezes_memory_update
         initial_memory_state["discrete_codebook"],
         model.discrete_codebook,
     )
+    assert torch.allclose(
+        model.continuous_prototype_bank.norm(dim=-1),
+        torch.ones(2),
+        atol=1.0e-5,
+    )
+    assert torch.allclose(
+        model.discrete_codebook.norm(dim=-1),
+        torch.ones(60),
+        atol=1.0e-5,
+    )
+
+
+def test_memory_initialization_uses_kmeans_centroids_from_token_pool() -> None:
+    model = _build_initialization_model()
+    raw_batch = _build_raw_batch()
+
+    model.synthetic_anomaly_injector.augment_batch = (  # type: ignore[method-assign]
+        lambda batch: _build_synthetic_batch(batch)
+    )
+    model.set_epoch_context(epoch_index=1, total_epochs=2)
+
+    was_initialized = model.maybe_initialize_memories_from_loader(
+        [raw_batch],
+        device="cpu",
+    )
+
+    assert was_initialized is True
+    assert model.continuous_prototype_bank is not None
+    assert model.discrete_codebook is not None
+    assert model.continuous_prototype_bank.shape == (2, 4)
+    assert model.discrete_codebook.shape == (60, 4)
     assert torch.allclose(
         model.continuous_prototype_bank.norm(dim=-1),
         torch.ones(2),
