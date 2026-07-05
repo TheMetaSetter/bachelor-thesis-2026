@@ -77,6 +77,9 @@ def build_two_stage_training_plan(
     # Offline pre-training is the large phase.
     # Stage A and Stage B are the two stages inside that phase.
 
+    # In this method, there will be also online test-time adaptation phase,
+    # after offline pre-training.
+
     validate_two_stage_epoch_budget(experiment_config)
     two_stage_config = experiment_config["two_stage"]
     training_plan: list[dict[str, Any]] = []
