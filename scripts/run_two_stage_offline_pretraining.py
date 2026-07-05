@@ -74,6 +74,17 @@ def validate_two_stage_epoch_budget(experiment_config: dict[str, Any]) -> None:
 def build_two_stage_training_plan(
     experiment_config: dict[str, Any],
 ) -> list[dict[str, Any]]:
+    
+    # TODO: Thống nhất lại khái niệm "stage" và "phase"
+
+    # "stage" là các giai đoạn nằm trong 1 "phase"
+    # "phase" là các pha của một method hoặc framework nghiên cứu được đề xuất.
+
+    # Ví dụ:
+    # "offline pre-training" là một phase.
+    # "online test-time adaptation" là một phase.
+    # Trong một phase có thể có một hoặc nhiều phase khác nhau.
+
     validate_two_stage_epoch_budget(experiment_config)
     two_stage_config = experiment_config["two_stage"]
     training_plan: list[dict[str, Any]] = []
