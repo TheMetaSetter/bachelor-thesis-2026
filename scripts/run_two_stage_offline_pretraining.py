@@ -74,36 +74,30 @@ def validate_two_stage_epoch_budget(experiment_config: dict[str, Any]) -> None:
 def build_two_stage_training_plan(
     experiment_config: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    
-    # TODO: Thống nhất lại khái niệm "stage" và "phase"
-
-    # "stage" là các giai đoạn nằm trong 1 "phase"
-    # "phase" là các pha của một method hoặc framework nghiên cứu được đề xuất.
-
-    # Ví dụ:
-    # "offline pre-training" là một phase.
-    # "online test-time adaptation" là một phase.
-    # Trong một phase có thể có một hoặc nhiều phase khác nhau.
+    # TODO: Thống nhất lại khái niệm "phase" và "stage".
+    # "phase" là pha lớn của method, ví dụ "offline pre-training",
+    # "online test-time adaptation".
+    # "stage" là các bước con bên trong phase đó, ví dụ Stage A và Stage B.
 
     validate_two_stage_epoch_budget(experiment_config)
     two_stage_config = experiment_config["two_stage"]
     training_plan: list[dict[str, Any]] = []
     current_global_epoch_start = 1
-    for phase_name, field_name in TWO_STAGE_PHASE_FIELD_ORDER:
-        phase_epochs = int(two_stage_config[field_name])
-        phase_record = {
-            "phase_name": phase_name,
-            "epochs": phase_epochs,
+    for stage_name, field_name in TWO_STAGE_PHASE_FIELD_ORDER:
+        stage_epochs = int(two_stage_config[field_name])
+        stage_record = {
+            "phase_name": stage_name,
+            "epochs": stage_epochs,
             "global_epoch_start": current_global_epoch_start,
-            "global_epoch_end": current_global_epoch_start + phase_epochs - 1,
+            "global_epoch_end": current_global_epoch_start + stage_epochs - 1,
         }
-        training_plan.append(phase_record)
-        current_global_epoch_start += phase_epochs
+        training_plan.append(stage_record)
+        current_global_epoch_start += stage_epochs
     return training_plan
 
 
-def _to_stage_output_dir(base_output_dir: str, phase_name: str) -> str:
-    return str(Path(base_output_dir) / "two_stage" / phase_name)
+def _to_stage_output_dir(base_output_dir: str, stage_name: str) -> str:
+    return str(Path(base_output_dir) / "two_stage" / stage_name)
 
 
 def _resolve_repo_config_reference(config_reference: str) -> str:
@@ -115,17 +109,17 @@ def _resolve_repo_config_reference(config_reference: str) -> str:
 
 def _build_stage_experiment_config(
     experiment_config: dict[str, Any],
-    phase_record: dict[str, Any],
+    stage_record: dict[str, Any],
 ) -> dict[str, Any]:
     stage_config = copy.deepcopy(experiment_config)
-    phase_name = str(phase_record["phase_name"])
-    stage_config["experiment_name"] = f"{experiment_config['experiment_name']}__{phase_name}"
+    stage_name = str(stage_record["phase_name"])
+    stage_config["experiment_name"] = f"{experiment_config['experiment_name']}__{stage_name}"
     stage_output_dir = Path(
-        _to_stage_output_dir(str(experiment_config["output_dir"]), phase_name)
+        _to_stage_output_dir(str(experiment_config["output_dir"]), stage_name)
     )
     stage_config["output_dir"] = str(stage_output_dir)
     stage_config["checkpoint_dir"] = str(stage_output_dir / "checkpoints")
-    stage_config["epochs"] = int(phase_record["epochs"])
+    stage_config["epochs"] = int(stage_record["epochs"])
     for reference_field in [
         "data_config_path",
         "model_config_path",
@@ -135,17 +129,17 @@ def _build_stage_experiment_config(
             stage_config[reference_field] = _resolve_repo_config_reference(
                 str(stage_config[reference_field])
             )
-    stage_config["two_stage_phase"] = phase_name
+    stage_config["two_stage_phase"] = stage_name
     stage_config["two_stage_global_epoch_start"] = int(
-        phase_record["global_epoch_start"]
+        stage_record["global_epoch_start"]
     )
-    stage_config["two_stage_global_epoch_end"] = int(phase_record["global_epoch_end"])
-    stage_config["model"]["training_phase"] = phase_name
+    stage_config["two_stage_global_epoch_end"] = int(stage_record["global_epoch_end"])
+    stage_config["model"]["training_phase"] = stage_name
     logging_config = copy.deepcopy(stage_config.get("logging", {}))
-    logging_config["wandb_job_type"] = phase_name
+    logging_config["wandb_job_type"] = stage_name
     logging_config["wandb_run_name"] = stage_config["experiment_name"]
     stage_config["logging"] = logging_config
-    if phase_name == TWO_STAGE_B_PHASE_NAME:
+    if stage_name == TWO_STAGE_B_PHASE_NAME:
         stage_config["initialization_checkpoint_path"] = str(
             Path(str(experiment_config["output_dir"]))
             / "two_stage"
@@ -168,17 +162,17 @@ def materialize_two_stage_run_manifest(
     generated_configs_dir.mkdir(parents=True, exist_ok=True)
 
     training_stages: list[dict[str, Any]] = []
-    for phase_index, phase_record in enumerate(training_plan, start=1):
-        phase_name = str(phase_record["phase_name"])
-        stage_config = _build_stage_experiment_config(experiment_config, phase_record)
+    for stage_index, stage_record in enumerate(training_plan, start=1):
+        stage_name = str(stage_record["phase_name"])
+        stage_config = _build_stage_experiment_config(experiment_config, stage_record)
         stage_config_path = (
-            generated_configs_dir / f"{phase_index:02d}_{phase_name}.yaml"
+            generated_configs_dir / f"{stage_index:02d}_{stage_name}.yaml"
         )
         with stage_config_path.open("w", encoding="utf-8") as handle:
             yaml.safe_dump(stage_config, handle, sort_keys=False)
         training_stages.append(
             {
-                **phase_record,
+                **stage_record,
                 "config_path": str(stage_config_path),
                 "checkpoint_dir": stage_config["checkpoint_dir"],
                 "best_checkpoint_path": str(
