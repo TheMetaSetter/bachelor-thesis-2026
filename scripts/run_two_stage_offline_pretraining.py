@@ -43,7 +43,10 @@ def _utc_now_iso() -> str:
 
 
 def compute_two_stage_total_training_epochs(two_stage_config: dict[str, Any]) -> int:
-    return sum(int(two_stage_config[field_name]) for _, field_name in TWO_STAGE_PHASE_FIELD_ORDER)
+    return sum(
+        int(two_stage_config[field_name])
+        for _, field_name in TWO_STAGE_PHASE_FIELD_ORDER
+    )
 
 
 def validate_two_stage_epoch_budget(experiment_config: dict[str, Any]) -> None:
@@ -114,7 +117,9 @@ def _build_stage_experiment_config(
 ) -> dict[str, Any]:
     stage_config = copy.deepcopy(experiment_config)
     stage_name = str(stage_record["phase_name"])
-    stage_config["experiment_name"] = f"{experiment_config['experiment_name']}__{stage_name}"
+    stage_config["experiment_name"] = (
+        f"{experiment_config['experiment_name']}__{stage_name}"
+    )
     stage_output_dir = Path(
         _to_stage_output_dir(str(experiment_config["output_dir"]), stage_name)
     )
@@ -240,7 +245,9 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
         train_loader=data_bundle["train_loader"],
         device=init_device,
     ):
-        raise RuntimeError("Stage B initialization checkpoint could not initialize memories")
+        raise RuntimeError(
+            "Stage B initialization checkpoint could not initialize memories"
+        )
 
     initialization_payload = dict(stage_a_checkpoint)
     initialization_payload["model_state_dict"] = model.state_dict()
@@ -273,7 +280,9 @@ def build_two_stage_execution_commands(manifest: dict[str, Any]) -> dict[str, An
     return {"training": training_commands, "evaluation": evaluation_command}
 
 
-def execute_two_stage_plan(manifest: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
+def execute_two_stage_plan(
+    manifest: dict[str, Any], dry_run: bool = False
+) -> dict[str, Any]:
     command_plan = build_two_stage_execution_commands(manifest)
     manifest_root = Path(str(manifest["manifest_root"]))
     execution_report_path = manifest_root / "two_stage_execution_report.json"

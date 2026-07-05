@@ -233,7 +233,9 @@ def build_swat_span_rows(dataset_root: Path) -> list[dict[str, object]]:
         None,
     )
     if label_column is None:
-        raise ValueError(f"SWaT file is missing the Normal/Attack column: {merged_file}")
+        raise ValueError(
+            f"SWaT file is missing the Normal/Attack column: {merged_file}"
+        )
     labels = frame[label_column].astype(str).str.strip().eq("Attack").astype(int)
     return build_span_rows_from_labels(
         dataset_name="swat",
@@ -264,14 +266,18 @@ def _register_zero_anomaly_series(
     }
 
 
-def collect_series_registry(data_root: Path, selected_datasets: Iterable[str]) -> list[dict[str, object]]:
+def collect_series_registry(
+    data_root: Path, selected_datasets: Iterable[str]
+) -> list[dict[str, object]]:
     normalized_datasets = tuple(selected_datasets)
     series_rows: list[dict[str, object]] = []
 
     if "anomaly_archive" in normalized_datasets:
         dataset_root = data_root / "AnomalyArchive"
         if not dataset_root.exists():
-            raise FileNotFoundError(f"AnomalyArchive directory does not exist: {dataset_root}")
+            raise FileNotFoundError(
+                f"AnomalyArchive directory does not exist: {dataset_root}"
+            )
         for file_path in sorted(dataset_root.glob("*.txt")):
             match = _ANOMALY_ARCHIVE_FILENAME_PATTERN.match(file_path.name)
             if match is None:
@@ -306,7 +312,9 @@ def collect_series_registry(data_root: Path, selected_datasets: Iterable[str]) -
     if "smd" in normalized_datasets:
         label_dir = data_root / "ServerMachineDataset" / "test_label"
         if not label_dir.exists():
-            raise FileNotFoundError(f"SMD test_label directory does not exist: {label_dir}")
+            raise FileNotFoundError(
+                f"SMD test_label directory does not exist: {label_dir}"
+            )
         for label_file in sorted(label_dir.glob("*.txt")):
             series_rows.append(
                 _register_zero_anomaly_series(
@@ -351,13 +359,17 @@ def collect_series_registry(data_root: Path, selected_datasets: Iterable[str]) -
     return series_rows
 
 
-def collect_span_rows(data_root: Path, selected_datasets: Iterable[str]) -> list[dict[str, object]]:
+def collect_span_rows(
+    data_root: Path, selected_datasets: Iterable[str]
+) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     dataset_set = tuple(selected_datasets)
     if "anomaly_archive" in dataset_set:
         dataset_root = data_root / "AnomalyArchive"
         if not dataset_root.exists():
-            raise FileNotFoundError(f"AnomalyArchive directory does not exist: {dataset_root}")
+            raise FileNotFoundError(
+                f"AnomalyArchive directory does not exist: {dataset_root}"
+            )
         for file_path in sorted(dataset_root.glob("*.txt")):
             rows.extend(build_anomaly_archive_span_rows(file_path))
     if "nasa" in dataset_set:
@@ -379,11 +391,23 @@ def summarize_span_rows(
     span_frame = pd.DataFrame(span_rows)
     registry_frame = pd.DataFrame(series_registry)
     for dataset_name in sorted(registry_frame["dataset_name"].unique().tolist()):
-        dataset_registry = registry_frame.loc[registry_frame["dataset_name"] == dataset_name]
-        dataset_spans = span_frame.loc[span_frame["dataset_name"] == dataset_name] if not span_frame.empty else pd.DataFrame()
-        span_lengths = dataset_spans["span_length"].astype(float).to_numpy() if not dataset_spans.empty else np.asarray([], dtype=float)
+        dataset_registry = registry_frame.loc[
+            registry_frame["dataset_name"] == dataset_name
+        ]
+        dataset_spans = (
+            span_frame.loc[span_frame["dataset_name"] == dataset_name]
+            if not span_frame.empty
+            else pd.DataFrame()
+        )
+        span_lengths = (
+            dataset_spans["span_length"].astype(float).to_numpy()
+            if not dataset_spans.empty
+            else np.asarray([], dtype=float)
+        )
         anomalous_series = (
-            set(dataset_spans["series_id"].tolist()) if not dataset_spans.empty else set()
+            set(dataset_spans["series_id"].tolist())
+            if not dataset_spans.empty
+            else set()
         )
         num_series = int(dataset_registry["series_id"].nunique())
         num_zero_anomaly_series = num_series - len(anomalous_series)
@@ -428,7 +452,9 @@ def summarize_span_rows(
     return summary_rows
 
 
-def _write_csv(output_path: Path, fieldnames: list[str], rows: list[dict[str, object]]) -> None:
+def _write_csv(
+    output_path: Path, fieldnames: list[str], rows: list[dict[str, object]]
+) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -506,7 +532,9 @@ def run_span_summary(
 
     output_dir.mkdir(parents=True, exist_ok=True)
     _write_csv(output_dir / "anomaly_span_lengths.csv", SPAN_COLUMNS, span_rows)
-    _write_csv(output_dir / "anomaly_span_length_summary.csv", SUMMARY_COLUMNS, summary_rows)
+    _write_csv(
+        output_dir / "anomaly_span_length_summary.csv", SUMMARY_COLUMNS, summary_rows
+    )
     _write_markdown_summary(
         output_dir / "research-anomaly-span-length-summary.md",
         summary_rows,

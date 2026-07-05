@@ -66,7 +66,9 @@ def test_thesis_multitask_two_stage_stages_switch_trainable_surface() -> None:
 
     assert stage_a_model._phase_uses_prototype_path() is False
     assert stage_a_model._phase_uses_contrastive_objective() is True
-    assert all(parameter.requires_grad for parameter in stage_a_model.encoder.parameters())
+    assert all(
+        parameter.requires_grad for parameter in stage_a_model.encoder.parameters()
+    )
 
     assert stage_b_model._phase_uses_prototype_path() is True
     assert stage_b_model._phase_uses_contrastive_objective() is False

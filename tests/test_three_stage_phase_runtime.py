@@ -154,7 +154,9 @@ def test_stage3_warmup_disables_non_target_trainable_modules_compatibility() -> 
     assert model.beta_logit.requires_grad is False
 
 
-def test_stage3_lifecycle_state_exposes_semantic_label_and_trainable_modules_compatibility() -> None:
+def test_stage3_lifecycle_state_exposes_semantic_label_and_trainable_modules_compatibility() -> (
+    None
+):
     model = _build_three_stage_compatibility_model(
         "stage3_memory_initialization_and_fusion_warmup"
     )

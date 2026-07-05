@@ -101,7 +101,9 @@ def test_build_smd_span_rows_extracts_contiguous_segments(tmp_path: Path) -> Non
 
     rows = build_smd_span_rows(tmp_path / "ServerMachineDataset")
 
-    assert [(row["span_start_index"], row["span_end_index_exclusive"]) for row in rows] == [
+    assert [
+        (row["span_start_index"], row["span_end_index_exclusive"]) for row in rows
+    ] == [
         (1, 3),
         (4, 5),
     ]
@@ -134,7 +136,9 @@ def test_build_swat_span_rows_uses_merged_csv_attack_column(tmp_path: Path) -> N
 
     rows = build_swat_span_rows(dataset_root)
 
-    assert [(row["span_start_index"], row["span_end_index_exclusive"]) for row in rows] == [
+    assert [
+        (row["span_start_index"], row["span_end_index_exclusive"]) for row in rows
+    ] == [
         (1, 3),
         (4, 5),
     ]

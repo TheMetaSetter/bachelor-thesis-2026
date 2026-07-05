@@ -81,8 +81,12 @@ def save_smd_train_test_visualization(
     output_file = Path(output_path)
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
-    color_min = float(np.percentile(np.concatenate([train_values, test_values], axis=0), 1))
-    color_max = float(np.percentile(np.concatenate([train_values, test_values], axis=0), 99))
+    color_min = float(
+        np.percentile(np.concatenate([train_values, test_values], axis=0), 1)
+    )
+    color_max = float(
+        np.percentile(np.concatenate([train_values, test_values], axis=0), 99)
+    )
     anomaly_spans = labels_to_spans(test_labels)
 
     figure, axes = plt.subplots(

@@ -41,7 +41,9 @@ def test_load_smd_entity_series_requires_matching_test_and_label_lengths(
         fmt="%d",
     )
 
-    with pytest.raises(ValueError, match="test sequence length must match test_label length"):
+    with pytest.raises(
+        ValueError, match="test sequence length must match test_label length"
+    ):
         load_smd_entity_series(dataset_root=dataset_root, entity_id="machine-x")
 
 
