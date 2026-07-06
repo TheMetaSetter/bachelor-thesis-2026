@@ -220,6 +220,26 @@ def _load_checkpoint_payload(checkpoint_path: Path) -> dict[str, Any]:
     return torch.load(checkpoint_path, map_location="cpu")
 
 
+def _load_stage_a_state_into_stage_b_model(
+    *,
+    model: torch.nn.Module,
+    stage_a_state_dict: dict[str, Any],
+) -> None:
+    load_result = model.load_state_dict(stage_a_state_dict, strict=False)
+    allowed_unexpected_keys = {
+        "discrete_assignment.weight",
+        "discrete_assignment.bias",
+    }
+    unexpected_keys = set(load_result.unexpected_keys)
+    missing_keys = set(load_result.missing_keys)
+    if unexpected_keys - allowed_unexpected_keys or missing_keys:
+        raise RuntimeError(
+            "Unexpected checkpoint mismatch while preparing Stage B initialization: "
+            f"missing_keys={sorted(missing_keys)}, "
+            f"unexpected_keys={sorted(unexpected_keys)}"
+        )
+
+
 def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path:
     stage_a_record = manifest["training_stages"][0]
     stage_b_record = manifest["training_stages"][1]
@@ -233,7 +253,10 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
     register_runtime_components()
     model = build_model_from_experiment_config(stage_b_config)
     stage_a_checkpoint = _load_checkpoint_payload(stage_a_checkpoint_path)
-    model.load_state_dict(stage_a_checkpoint["model_state_dict"])
+    _load_stage_a_state_into_stage_b_model(
+        model=model,
+        stage_a_state_dict=stage_a_checkpoint["model_state_dict"],
+    )
     if hasattr(model, "load_checkpoint_extra_state"):
         model.load_checkpoint_extra_state(stage_a_checkpoint.get("extra_state"))
 

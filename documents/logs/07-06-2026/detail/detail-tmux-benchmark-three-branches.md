@@ -63,7 +63,40 @@ Config files:
 
 ## 2. Lệnh tmux
 
-### 2.1 Baseline
+### 2.0 Chạy kiểm tra nhỏ trước
+
+Ý tưởng chính ở đây là:
+- kiểm tra `tmux` và repo root trước
+- chạy `--preflight-only` trước khi train thật
+- thử đúng 1 config trước, rồi mới bung đủ 9 config
+
+```bash
+tmux ls
+git rev-parse --show-toplevel
+```
+
+```bash
+tmux new-session -d -s smd-benchmark-thesis-base bash -lc 'cd "$(git rev-parse --show-toplevel)" && \
+CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 .venv/bin/python scripts/preflight_comparative_smd_server.py \
+  --report-dir outputs/comparative_smd_reports/benchmark-thesis-base \
+  --gpu-index 0 \
+  --required-gpu-name-substring "" \
+  --config-paths \
+  configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed6__main.yaml \
+  --print-json \
+  --require-launch-ready'
+```
+
+```bash
+tmux new-session -d -s smd-benchmark-thesis-base bash -lc 'cd "$(git rev-parse --show-toplevel)" && \
+CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 .venv/bin/python scripts/run_comparative_smd_experiments.py \
+  --report-dir outputs/comparative_smd_reports/benchmark-thesis-base \
+  --skip-completed \
+  --config-paths \
+  configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed6__main.yaml'
+```
+
+### 2.1 Baseline full shard
 
 ```bash
 tmux new-session -d -s smd-benchmark-baseline bash -lc 'cd "$(git rev-parse --show-toplevel)" && \
@@ -98,7 +131,7 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 .venv/bin/python scripts/run
   configs/experiment/benchmark/baseline/smd__redlamp_baseline__benchmark-machine_3_9__w20__seed36__main.yaml'
 ```
 
-### 2.2 Thesis base
+### 2.2 Thesis base full shard
 
 ```bash
 tmux new-session -d -s smd-benchmark-thesis-base bash -lc 'cd "$(git rev-parse --show-toplevel)" && \
@@ -133,7 +166,7 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 .venv/bin/python scripts/run
   configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-machine_3_9__w20__seed36__main.yaml'
 ```
 
-### 2.3 Thesis point-score
+### 2.3 Thesis point-score full shard
 
 ```bash
 tmux new-session -d -s smd-benchmark-thesis-point-score bash -lc 'cd "$(git rev-parse --show-toplevel)" && \
