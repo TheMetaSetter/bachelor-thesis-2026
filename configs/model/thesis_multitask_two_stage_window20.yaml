@@ -56,7 +56,7 @@ gate_barrier_margin: 0.25 # TODO: giải thích lại cái này
 # Contrastive / fusion
 enable_two_view_contrastive: true
 contrastive_temperature: 0.1
-lambda_contrastive: 0.1
+lambda_contrastive: 0.3
 enable_cka_gated_fusion: false
 cka_eps: 1.0e-6
 
