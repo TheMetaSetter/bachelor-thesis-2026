@@ -53,6 +53,15 @@ MAIN_CONFIG_PATHS=(
   "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-machine_3_9__w20__seed6__main.yaml"
   "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-machine_3_9__w20__seed8__main.yaml"
   "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-machine_3_9__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_1_6__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_1_6__w20__seed8__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_1_6__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_4__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_4__w20__seed8__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_4__w20__seed36__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_9__w20__seed6__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_9__w20__seed8__main.yaml"
+  "configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_9__w20__seed36__main.yaml"
 )
 
 print_usage() {

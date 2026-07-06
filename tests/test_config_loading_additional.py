@@ -931,6 +931,31 @@ def test_benchmark_thesis_two_stage_config_locks_100_epoch_budget() -> None:
     )
 
 
+def test_benchmark_thesis_point_score_config_enables_stage_a_score_loss() -> None:
+    loaded_config = load_experiment_config(
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_4__w20__seed36__main.yaml"
+    )
+    validate_experiment_config(loaded_config)
+
+    assert loaded_config["epochs"] == 100
+    assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
+    assert loaded_config["experiment_variant"] == "two_stage_point_score_supervised_v1"
+    assert loaded_config["model"]["model_name"] == "thesis_multitask"
+    assert loaded_config["model"]["enable_score_loss"] is True
+    assert (
+        loaded_config["model"]["score_loss_type"]
+        == "pointwise_balanced_reconstruction_score"
+    )
+    assert loaded_config["model"]["score_loss_granularity"] == "point"
+    assert loaded_config["model"]["score_loss_target"] == "synthetic_anomaly_mask"
+    assert (
+        loaded_config["model"]["score_loss_normalization"]
+        == "train_batch_normal_tokens_detached_mean_std"
+    )
+    assert loaded_config["model"]["score_loss_reduction"] == "pointwise_binary_balanced_mean"
+
+
 @pytest.mark.parametrize(
     "experiment_config_path",
     [
@@ -970,6 +995,24 @@ def test_benchmark_thesis_two_stage_config_locks_100_epoch_budget() -> None:
         "smd__thesis_multitask__benchmark-two-stage-machine_3_9__w20__seed8__main.yaml",
         "configs/experiment/benchmark/thesis/"
         "smd__thesis_multitask__benchmark-two-stage-machine_3_9__w20__seed36__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-point-score-machine_1_6__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-point-score-machine_1_6__w20__seed8__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-point-score-machine_1_6__w20__seed36__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_4__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_4__w20__seed8__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_4__w20__seed36__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_9__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_9__w20__seed8__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_9__w20__seed36__main.yaml",
     ],
 )
 def test_all_new_benchmark_experiment_configs_load_and_validate(

@@ -5,7 +5,7 @@ from src.core.config import load_experiment_config, validate_experiment_config
 
 BENCHMARK_SEEDS = (6, 8, 36)
 BENCHMARK_ENTITY_IDS = ("machine_1_6", "machine_3_4", "machine_3_9")
-BENCHMARK_METHODS = ("baseline", "thesis")
+BENCHMARK_METHODS = ("baseline", "thesis_base", "thesis_point_score")
 
 
 def _benchmark_config_path(method: str, entity_id: str, seed: int) -> str:
@@ -13,6 +13,12 @@ def _benchmark_config_path(method: str, entity_id: str, seed: int) -> str:
         return (
             "configs/experiment/benchmark/baseline/"
             f"smd__redlamp_baseline__benchmark-{entity_id}__w20__seed{seed}__main.yaml"
+        )
+    if method == "thesis_point_score":
+        return (
+            "configs/experiment/benchmark/thesis/"
+            f"smd__thesis_multitask__benchmark-two-stage-point-score-{entity_id}"
+            f"__w20__seed{seed}__main.yaml"
         )
     return (
         "configs/experiment/benchmark/thesis/"
@@ -52,7 +58,7 @@ def test_benchmark_two_method_configs_share_the_same_windowing_contract() -> Non
                     "train",
                     "val_synth",
                 ]
-                if method == "thesis":
+                if method == "thesis_base":
                     assert loaded_config["experiment_variant"] == "two_stage_base_v1"
                     assert loaded_config["model"]["model_name"] == "thesis_multitask"
                     assert (
@@ -63,4 +69,15 @@ def test_benchmark_two_method_configs_share_the_same_windowing_contract() -> Non
                     assert (
                         loaded_config["two_stage"]["stage_b_fusion_finetuning_epochs"]
                         == 20
+                    )
+                if method == "thesis_point_score":
+                    assert (
+                        loaded_config["experiment_variant"]
+                        == "two_stage_point_score_supervised_v1"
+                    )
+                    assert loaded_config["model"]["model_name"] == "thesis_multitask"
+                    assert loaded_config["model"]["enable_score_loss"] is True
+                    assert (
+                        loaded_config["model"]["score_loss_type"]
+                        == "pointwise_balanced_reconstruction_score"
                     )
