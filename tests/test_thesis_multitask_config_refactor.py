@@ -64,6 +64,12 @@ def _flat_model_kwargs(**overrides: object) -> dict[str, object]:
         "lambda_cov": 0.0,
         "lambda_use": 0.03,
         "lambda_gate": 0.0,
+        "enable_score_loss": False,
+        "score_loss_granularity": "point",
+        "score_loss_type": "pointwise_balanced_bce_logits",
+        "score_loss_target": "synthetic_anomaly_mask",
+        "score_loss_normalization": "train_batch_normal_tokens_detached_mean_std",
+        "score_loss_reduction": "pointwise_binary_balanced_mean",
         "usage_lambda_schedule_fraction": 0.75,
         "variance_floor_gamma": 1.1,
         "gate_barrier_margin": 0.2,
@@ -142,6 +148,10 @@ def test_flat_kwargs_are_grouped_into_readable_config_sections() -> None:
     assert config.objective.reconstruction_normal_only is True
     assert config.objective.lambda_recon == 0.9
     assert config.objective.lambda_cls == 1.25
+    assert config.objective.enable_score_loss is False
+    assert config.objective.score_loss_granularity == "point"
+    assert config.objective.score_loss_type == "pointwise_balanced_bce_logits"
+    assert config.objective.score_loss_target == "synthetic_anomaly_mask"
     assert config.memory.bootstrap_encoder_epochs == 2
     assert config.memory.memory_initialization_batches == 3
     assert config.synthetic.use_synthetic_augmentation is False

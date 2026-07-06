@@ -108,13 +108,15 @@ def validate_unique_artifact_paths(
 
 def resolve_stage_family(resolved_experiment_config: dict[str, Any]) -> str:
     model_name = str(resolved_experiment_config["model"]["model_name"])
+    if model_name == "thesis_multitask" and "two_stage" in resolved_experiment_config:
+        return "thesis_two_stage"
     if model_name == "thesis_multitask" and "three_stage" in resolved_experiment_config:
         return "thesis_three_stage"
     if model_name in SUPPORTED_BASELINE_MODEL_NAMES:
         return "baseline_single_stage"
     raise ValueError(
         "Unsupported comparative run family for model "
-        f"{model_name}. Expected thesis three-stage or supported baseline."
+        f"{model_name}. Expected thesis two-stage, thesis three-stage, or supported baseline."
     )
 
 
@@ -128,6 +130,17 @@ def _validate_single_entity_contract(resolved_experiment_config: dict[str, Any])
     if not isinstance(entity_id, str) or not entity_id:
         raise ValueError("Comparative SMD entity_id must be a non-empty string")
     return entity_id
+
+
+def _build_thesis_two_stage_commands(config_path: Path) -> list[list[str]]:
+    return [
+        [
+            sys.executable,
+            str(REPOSITORY_ROOT / "scripts" / "run_two_stage_offline_pretraining.py"),
+            "--experiment-config",
+            str(config_path),
+        ]
+    ]
 
 
 def _build_thesis_three_stage_commands(config_path: Path) -> list[list[str]]:
@@ -175,7 +188,9 @@ def _build_run_record(
     stage_family = resolve_stage_family(resolved_experiment_config)
     entity_id = _validate_single_entity_contract(resolved_experiment_config)
     output_dir = Path(str(resolved_experiment_config["output_dir"]))
-    if stage_family == "thesis_three_stage":
+    if stage_family == "thesis_two_stage":
+        commands = _build_thesis_two_stage_commands(config_path)
+    elif stage_family == "thesis_three_stage":
         commands = _build_thesis_three_stage_commands(config_path)
     else:
         commands = _build_baseline_single_stage_commands(
@@ -387,11 +402,18 @@ def _run_has_required_artifacts(run_record: dict[str, Any]) -> bool:
             for path in [checkpoint_path, metrics_path, records_path, curves_path]
         )
 
-    three_stage_execution_report_path = (
-        _normalize_artifact_path(run_record["output_dir"])
-        / "three_stage"
-        / "three_stage_execution_report.json"
-    )
+    if str(run_record["stage_family"]) == "thesis_two_stage":
+        stage_execution_report_path = (
+            _normalize_artifact_path(run_record["output_dir"])
+            / "two_stage"
+            / "two_stage_execution_report.json"
+        )
+    else:
+        stage_execution_report_path = (
+            _normalize_artifact_path(run_record["output_dir"])
+            / "three_stage"
+            / "three_stage_execution_report.json"
+        )
     return all(
         path.exists()
         for path in [
@@ -399,7 +421,7 @@ def _run_has_required_artifacts(run_record: dict[str, Any]) -> bool:
             metrics_path,
             records_path,
             curves_path,
-            three_stage_execution_report_path,
+            stage_execution_report_path,
         ]
     )
 
@@ -455,7 +477,11 @@ def execute_comparative_run_plan(
                     command_to_run = list(command)
                     if (
                         skip_completed
-                        and str(run_record["stage_family"]) == "thesis_three_stage"
+                        and str(run_record["stage_family"])
+                        in {
+                            "thesis_two_stage",
+                            "thesis_three_stage",
+                        }
                         and "--skip-completed" not in command_to_run
                     ):
                         command_to_run.append("--skip-completed")

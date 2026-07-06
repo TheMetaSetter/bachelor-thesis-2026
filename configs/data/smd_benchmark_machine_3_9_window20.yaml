@@ -4,10 +4,10 @@ entity_ids:
   - machine-3-9
 window_size: 20
 stride: 1
-train_stride: 10
+train_stride: 1
 val_stride: 20
 test_stride: 20
-batch_size: 256
+batch_size: 512
 num_workers: 16
 validation_split_ratio: 0.2
-shuffle_train: true
+shuffle_train: false

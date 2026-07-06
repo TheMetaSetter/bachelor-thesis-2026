@@ -891,38 +891,44 @@ def test_benchmark_baseline_config_uses_split_specific_coverage_and_fixed_synth(
 
     assert loaded_config["epochs"] == 100
     assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
-    assert loaded_config["data"]["stride"] == 10
-    assert loaded_config["data"]["train_stride"] == 10
-    assert loaded_config["data"]["val_stride"] == 1
-    assert loaded_config["data"]["test_stride"] == 1
+    assert loaded_config["data"]["window_size"] == 20
+    assert loaded_config["data"]["stride"] == 1
+    assert loaded_config["data"]["train_stride"] == 1
+    assert loaded_config["data"]["val_stride"] == 20
+    assert loaded_config["data"]["test_stride"] == 20
+    assert loaded_config["data"]["batch_size"] == 512
     assert loaded_config["data"]["shuffle_train"] is False
     assert loaded_config["task"]["synthetic_train_seed"] == 7
     assert loaded_config["task"]["synthetic_validation_seed"] == 7
     assert "val_realistic" not in loaded_config["task"]
     assert "val_realistic_source" not in loaded_config["task"]
     assert "val_anomaly_rate_override" not in loaded_config["task"]
+    assert loaded_config["logging"]["log_hard_prediction_ratio"] is True
+    assert loaded_config["logging"]["log_row_normalized_confusion_matrix"] is True
+    assert loaded_config["logging"]["diagnostics_stages_for_classification"] == [
+        "train",
+        "val_synth",
+    ]
 
 
-def test_benchmark_thesis_three_stage_config_locks_100_epoch_budget() -> None:
+def test_benchmark_thesis_two_stage_config_locks_100_epoch_budget() -> None:
     loaded_config = load_experiment_config(
         "configs/experiment/benchmark/thesis/"
-        "smd__thesis_multitask__benchmark-three-stage-machine_3_4__w20__seed36__main.yaml"
+        "smd__thesis_multitask__benchmark-two-stage-machine_3_4__w20__seed36__main.yaml"
     )
     validate_experiment_config(loaded_config)
 
     assert loaded_config["epochs"] == 100
     assert loaded_config["checkpoint_monitor_metric"] == "val_synth_vus_pr"
-    assert loaded_config["three_stage"]["expected_total_training_epochs"] == 100
-    assert loaded_config["three_stage"]["stage1_classification_epochs"] == 15
-    assert loaded_config["three_stage"]["stage1_reconstruction_epochs"] == 25
-    assert loaded_config["three_stage"]["stage2_recovery_epochs"] == 5
+    assert loaded_config["experiment_variant"] == "two_stage_base_v1"
+    assert loaded_config["two_stage"]["expected_total_training_epochs"] == 100
+    assert loaded_config["two_stage"]["stage_a_multitask_epochs"] == 80
+    assert loaded_config["two_stage"]["stage_b_fusion_finetuning_epochs"] == 20
+    assert loaded_config["two_stage"]["freeze_encoder_and_memories_in_stage_b"] is True
     assert (
-        loaded_config["three_stage"][
-            "stage3_memory_initialization_and_fusion_warmup_epochs"
-        ]
-        == 5
+        loaded_config["two_stage"]["discrete_memory_label_source"]
+        == "synthetic_train_labels"
     )
-    assert loaded_config["three_stage"]["multitask_pretraining_epochs"] == 50
 
 
 @pytest.mark.parametrize(
@@ -931,27 +937,39 @@ def test_benchmark_thesis_three_stage_config_locks_100_epoch_budget() -> None:
         "configs/experiment/benchmark/baseline/"
         "smd__redlamp_baseline__benchmark-machine_1_6__w20__seed6__main.yaml",
         "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_baseline__benchmark-machine_1_6__w20__seed8__main.yaml",
+        "configs/experiment/benchmark/baseline/"
         "smd__redlamp_baseline__benchmark-machine_1_6__w20__seed36__main.yaml",
         "configs/experiment/benchmark/baseline/"
         "smd__redlamp_baseline__benchmark-machine_3_4__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_baseline__benchmark-machine_3_4__w20__seed8__main.yaml",
         "configs/experiment/benchmark/baseline/"
         "smd__redlamp_baseline__benchmark-machine_3_4__w20__seed36__main.yaml",
         "configs/experiment/benchmark/baseline/"
         "smd__redlamp_baseline__benchmark-machine_3_9__w20__seed6__main.yaml",
         "configs/experiment/benchmark/baseline/"
+        "smd__redlamp_baseline__benchmark-machine_3_9__w20__seed8__main.yaml",
+        "configs/experiment/benchmark/baseline/"
         "smd__redlamp_baseline__benchmark-machine_3_9__w20__seed36__main.yaml",
         "configs/experiment/benchmark/thesis/"
-        "smd__thesis_multitask__benchmark-three-stage-machine_1_6__w20__seed6__main.yaml",
+        "smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed6__main.yaml",
         "configs/experiment/benchmark/thesis/"
-        "smd__thesis_multitask__benchmark-three-stage-machine_1_6__w20__seed36__main.yaml",
+        "smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed8__main.yaml",
         "configs/experiment/benchmark/thesis/"
-        "smd__thesis_multitask__benchmark-three-stage-machine_3_4__w20__seed6__main.yaml",
+        "smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed36__main.yaml",
         "configs/experiment/benchmark/thesis/"
-        "smd__thesis_multitask__benchmark-three-stage-machine_3_4__w20__seed36__main.yaml",
+        "smd__thesis_multitask__benchmark-two-stage-machine_3_4__w20__seed6__main.yaml",
         "configs/experiment/benchmark/thesis/"
-        "smd__thesis_multitask__benchmark-three-stage-machine_3_9__w20__seed6__main.yaml",
+        "smd__thesis_multitask__benchmark-two-stage-machine_3_4__w20__seed8__main.yaml",
         "configs/experiment/benchmark/thesis/"
-        "smd__thesis_multitask__benchmark-three-stage-machine_3_9__w20__seed36__main.yaml",
+        "smd__thesis_multitask__benchmark-two-stage-machine_3_4__w20__seed36__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-machine_3_9__w20__seed6__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-machine_3_9__w20__seed8__main.yaml",
+        "configs/experiment/benchmark/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-machine_3_9__w20__seed36__main.yaml",
     ],
 )
 def test_all_new_benchmark_experiment_configs_load_and_validate(

@@ -298,6 +298,88 @@ class ThesisMultitaskLossMixin:
         beta_penalty = 1.0 - beta_entropy / max_entropy
         return 0.5 * (alpha_penalty + beta_penalty).mean()
 
+    def _point_mask_from_synthetic_mask(
+        self, synthetic_anomaly_mask: torch.Tensor
+    ) -> torch.Tensor:
+        if synthetic_anomaly_mask.ndim == 2:
+            return synthetic_anomaly_mask.bool()
+        if synthetic_anomaly_mask.ndim == 3:
+            return synthetic_anomaly_mask.bool().any(dim=-1)
+        raise ValueError("synthetic_anomaly_mask must have shape [B, L] or [B, L, C]")
+
+    def _compute_point_score_loss(
+        self,
+        outputs: dict[str, Any],
+        batch: dict[str, Any],
+    ) -> tuple[torch.Tensor | None, dict[str, torch.Tensor]]:
+        diagnostics: dict[str, torch.Tensor] = {
+            "point_score_normal_count": torch.tensor(0, device=outputs["recon"].device),
+            "point_score_anomaly_count": torch.tensor(
+                0, device=outputs["recon"].device
+            ),
+        }
+        if not self.enable_score_loss:
+            return None, diagnostics
+        if self.training_phase != TWO_STAGE_A_PHASE_NAME:
+            return None, diagnostics
+        if "synthetic_anomaly_mask" not in batch:
+            return None, diagnostics
+        if self.score_loss_granularity != "point":
+            return None, diagnostics
+        if self.score_loss_target != "synthetic_anomaly_mask":
+            return None, diagnostics
+        if self.score_loss_type not in {
+            "pointwise_balanced_bce_logits",
+            "pointwise_balanced_reconstruction_score",
+        }:
+            return None, diagnostics
+
+        pointwise_reconstruction_error = ((outputs["recon"] - batch["x"]) ** 2).mean(
+            dim=-1
+        )
+        anomaly_mask = self._point_mask_from_synthetic_mask(
+            batch["synthetic_anomaly_mask"]
+        )
+        normal_mask = ~anomaly_mask
+
+        normal_count = normal_mask.sum()
+        anomaly_count = anomaly_mask.sum()
+        diagnostics["point_score_normal_count"] = normal_count.detach()
+        diagnostics["point_score_anomaly_count"] = anomaly_count.detach()
+        if int(normal_count.item()) == 0 or int(anomaly_count.item()) == 0:
+            return None, diagnostics
+
+        normal_scores = pointwise_reconstruction_error[normal_mask]
+        score_mean = normal_scores.mean().detach()
+        score_std = normal_scores.std(unbiased=False).detach().clamp_min(self.epsilon)
+        normalized_scores = (pointwise_reconstruction_error - score_mean) / score_std
+        point_targets = anomaly_mask.float()
+        loss_per_token = F.binary_cross_entropy_with_logits(
+            normalized_scores,
+            point_targets,
+            reduction="none",
+        )
+        loss_normal = loss_per_token[normal_mask].mean()
+        loss_anomaly = loss_per_token[anomaly_mask].mean()
+        score_loss = 0.5 * loss_normal + 0.5 * loss_anomaly
+
+        with torch.no_grad():
+            anomaly_scores = pointwise_reconstruction_error[anomaly_mask]
+            diagnostics.update(
+                {
+                    "point_score_normal_mean": normal_scores.mean(),
+                    "point_score_normal_std": normal_scores.std(unbiased=False),
+                    "point_score_anomaly_mean": anomaly_scores.mean(),
+                    "point_score_anomaly_std": anomaly_scores.std(unbiased=False),
+                    "point_score_gap_mean": anomaly_scores.mean()
+                    - normal_scores.mean(),
+                    "point_score_gap_extreme": anomaly_scores.min()
+                    - normal_scores.max(),
+                }
+            )
+
+        return score_loss, diagnostics
+
     def _compute_optional_loss_terms(
         self, outputs: dict[str, Any]
     ) -> dict[str, torch.Tensor]:
@@ -722,11 +804,32 @@ class ThesisMultitaskLossMixin:
         reconstruction_loss = self._compute_reconstruction_loss(outputs, prepared_batch)
         classification_loss = self._compute_classification_loss(outputs, prepared_batch)
         optional_loss_values = self._compute_optional_loss_terms(outputs)
+        score_loss, score_loss_diagnostics = self._compute_point_score_loss(
+            outputs,
+            prepared_batch,
+        )
+        if score_loss is None:
+            score_loss = self._zero_loss(outputs["recon"])
+            score_loss_was_skipped = (
+                self.enable_score_loss and self.training_phase == TWO_STAGE_A_PHASE_NAME
+            )
+        else:
+            score_loss_was_skipped = False
+        if self.enable_score_loss and self.training_phase == TWO_STAGE_A_PHASE_NAME:
+            if score_loss_was_skipped:
+                if not hasattr(self, "_score_loss_skipped_batches"):
+                    self._score_loss_skipped_batches = 0
+                self._score_loss_skipped_batches += 1
+                classification_branch_loss = classification_loss
+            else:
+                classification_branch_loss = 0.5 * (classification_loss + score_loss)
+        else:
+            classification_branch_loss = classification_loss
 
         # Tính toán hàm loss tổng
         total_loss = self._compute_total_loss(
             reconstruction_loss=reconstruction_loss,
-            classification_loss=classification_loss,
+            classification_loss=classification_branch_loss,
             optional_loss_values=optional_loss_values,
             reconstruction_weight=self._phase_reconstruction_weight(),
             classification_weight=(
@@ -744,6 +847,7 @@ class ThesisMultitaskLossMixin:
             "total_loss": total_loss,
             "reconstruction_loss": reconstruction_loss,
             "classification_loss": classification_loss,
+            "score_loss": score_loss,
             "contrastive_loss": contrastive_loss,
             **optional_loss_values,
         }
@@ -754,6 +858,7 @@ class ThesisMultitaskLossMixin:
             total_loss=float(total_loss.detach().cpu()),
             reconstruction_loss=float(reconstruction_loss.detach().cpu()),
             classification_loss=float(classification_loss.detach().cpu()),
+            score_loss=float(score_loss.detach().cpu()),
             diversity_loss=float(optional_loss_values["diversity_loss"].detach().cpu()),
             variance_loss=float(optional_loss_values["variance_loss"].detach().cpu()),
             covariance_loss=float(
@@ -762,6 +867,9 @@ class ThesisMultitaskLossMixin:
             usage_loss=float(optional_loss_values["usage_loss"].detach().cpu()),
             gate_loss=float(optional_loss_values["gate_loss"].detach().cpu()),
             contrastive_loss=float(contrastive_loss.detach().cpu()),
+            score_loss_skipped_batches=float(
+                getattr(self, "_score_loss_skipped_batches", 0)
+            ),
             classification_label_distribution=(
                 summarize_label_distribution(prepared_batch["classification_labels"])
                 if self.enable_classification_path
@@ -778,6 +886,15 @@ class ThesisMultitaskLossMixin:
             prepared_batch,
             include_classification_metrics=include_classification_metrics,
         )
+        stage_log[f"{stage_name}_score_loss"] = float(score_loss.detach().cpu())
+        if self.enable_score_loss and self.training_phase == TWO_STAGE_A_PHASE_NAME:
+            stage_log[f"{stage_name}_score_loss_skipped_batches"] = float(
+                getattr(self, "_score_loss_skipped_batches", 0)
+            )
+            for diagnostic_name, diagnostic_value in score_loss_diagnostics.items():
+                stage_log[f"diag/score/{stage_name}_{diagnostic_name}"] = float(
+                    diagnostic_value.detach().cpu()
+                )
         if stage_name == "train":
             self._gradient_profile_train_step_count += 1
             should_log_gradient_conflict = (

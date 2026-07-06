@@ -119,6 +119,12 @@ def _validate_model_and_task_config(
             "enable_covariance_loss",
             "enable_usage_loss",
             "enable_gate_loss",
+            "enable_score_loss",
+            "score_loss_granularity",
+            "score_loss_type",
+            "score_loss_target",
+            "score_loss_normalization",
+            "score_loss_reduction",
         },
         "online_adaptation": {
             "model_name",

@@ -1,13 +1,14 @@
 # group: benchmark/thesis
-# stage: three-stage
+# stage: two-stage
 
-experiment_name: smd_benchmark_thesis_multitask_three_stage_machine_1_6_seed6
-seed: 6
+experiment_name: smd_benchmark_thesis_multitask_two_stage_machine_1_6_seed8
+seed: 8
+experiment_variant: two_stage_base_v1
 device: cuda
-output_dir: outputs/benchmark/smd/thesis_multitask/machine_1_6/seed6
-checkpoint_dir: outputs/benchmark/smd/thesis_multitask/machine_1_6/seed6/checkpoints
+output_dir: outputs/benchmark/smd/thesis_multitask/machine_1_6/seed8
+checkpoint_dir: outputs/benchmark/smd/thesis_multitask/machine_1_6/seed8/checkpoints
 data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml
-model_config_path: configs/model/thesis_multitask_three_stage_comparative_smd.yaml
+model_config_path: configs/model/thesis_multitask_two_stage_window20.yaml
 task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20_benchmark_fixed_synth.yaml
 optimizer:
   optimizer_name: adamw
@@ -31,20 +32,21 @@ logging:
   wandb_mode: online
   wandb_tags:
     - benchmark
-    - thesis-three-stage
+    - thesis-two-stage
     - smd
     - machine-1-6
     - window20
-    - seed6
+    - seed8
     - val-synth
-  wandb_run_name: smd_benchmark_thesis_multitask_three_stage_machine_1_6_seed6
-three_stage:
+  wandb_run_name: smd_benchmark_thesis_multitask_two_stage_machine_1_6_seed8
+  log_hard_prediction_ratio: true
+  log_row_normalized_confusion_matrix: true
+  diagnostics_stages_for_classification:
+    - train
+    - val_synth
+two_stage:
   expected_total_training_epochs: 100
-  stage1_classification_epochs: 15
-  stage1_reconstruction_epochs: 25
-  stage2_recovery_epochs: 5
-  stage3_memory_initialization_and_fusion_warmup_epochs: 5
-  multitask_pretraining_epochs: 50
+  stage_a_multitask_epochs: 80
+  stage_b_fusion_finetuning_epochs: 20
   discrete_memory_label_source: synthetic_train_labels
-  freeze_memories_after_initialization: true
-  freeze_recovered_zipped_encoder_during_warmup: true
+  freeze_encoder_and_memories_in_stage_b: true

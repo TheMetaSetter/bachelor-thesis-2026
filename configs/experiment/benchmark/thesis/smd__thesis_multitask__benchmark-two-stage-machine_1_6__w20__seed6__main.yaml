@@ -1,13 +1,14 @@
-# group: benchmark/baseline
-# stage: single-stage
+# group: benchmark/thesis
+# stage: two-stage
 
-experiment_name: smd_benchmark_redlamp_baseline_machine_1_6_seed6
+experiment_name: smd_benchmark_thesis_multitask_two_stage_machine_1_6_seed6
 seed: 6
+experiment_variant: two_stage_base_v1
 device: cuda
-output_dir: outputs/benchmark/smd/redlamp_baseline/machine_1_6/seed6
-checkpoint_dir: outputs/benchmark/smd/redlamp_baseline/machine_1_6/seed6/checkpoints
+output_dir: outputs/benchmark/smd/thesis_multitask/machine_1_6/seed6
+checkpoint_dir: outputs/benchmark/smd/thesis_multitask/machine_1_6/seed6/checkpoints
 data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml
-model_config_path: configs/model/redlamp_baseline_comparative_smd.yaml
+model_config_path: configs/model/thesis_multitask_two_stage_window20.yaml
 task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20_benchmark_fixed_synth.yaml
 optimizer:
   optimizer_name: adamw
@@ -31,15 +32,21 @@ logging:
   wandb_mode: online
   wandb_tags:
     - benchmark
-    - baseline-single-stage
+    - thesis-two-stage
     - smd
     - machine-1-6
     - window20
     - seed6
     - val-synth
-  wandb_run_name: smd_benchmark_redlamp_baseline_machine_1_6_seed6
+  wandb_run_name: smd_benchmark_thesis_multitask_two_stage_machine_1_6_seed6
   log_hard_prediction_ratio: true
   log_row_normalized_confusion_matrix: true
   diagnostics_stages_for_classification:
     - train
     - val_synth
+two_stage:
+  expected_total_training_epochs: 100
+  stage_a_multitask_epochs: 80
+  stage_b_fusion_finetuning_epochs: 20
+  discrete_memory_label_source: synthetic_train_labels
+  freeze_encoder_and_memories_in_stage_b: true

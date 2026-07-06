@@ -359,6 +359,7 @@ def _validate_experiment_top_level_structure(
         "evaluation",
         "logging",
         "checkpoint_monitor_metric",
+        "experiment_variant",
         "three_stage",
         "two_stage",
         "three_stage_phase",

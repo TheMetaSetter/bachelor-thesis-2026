@@ -38,3 +38,8 @@ logging:
     - seed6
     - val-synth
   wandb_run_name: smd_benchmark_redlamp_baseline_machine_3_9_seed6
+  log_hard_prediction_ratio: true
+  log_row_normalized_confusion_matrix: true
+  diagnostics_stages_for_classification:
+    - train
+    - val_synth

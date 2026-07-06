@@ -106,6 +106,12 @@ class ThesisMultitaskSetupMixin:
         self.enable_covariance_loss = objective.enable_covariance_loss
         self.enable_usage_loss = objective.enable_usage_loss
         self.enable_gate_loss = objective.enable_gate_loss
+        self.enable_score_loss = objective.enable_score_loss
+        self.score_loss_granularity = objective.score_loss_granularity
+        self.score_loss_type = objective.score_loss_type
+        self.score_loss_target = objective.score_loss_target
+        self.score_loss_normalization = objective.score_loss_normalization
+        self.score_loss_reduction = objective.score_loss_reduction
         self.variance_floor_gamma = objective.variance_floor_gamma
         self.gate_barrier_margin = objective.gate_barrier_margin
         self.enable_two_view_contrastive = objective.enable_two_view_contrastive
@@ -157,6 +163,7 @@ class ThesisMultitaskSetupMixin:
         self.current_total_epochs = 1
         self.active_alpha_override: float | None = None
         self.active_beta_override: float | None = None
+        self._score_loss_skipped_batches = 0
         self.continuous_memory_enabled = (
             prototypes.continuous_enabled and prototypes.continuous_num_prototypes > 0
         )
@@ -584,6 +591,12 @@ class ThesisMultitaskSetupMixin:
             lambda_cov=objective.lambda_cov,
             lambda_use=objective.lambda_use,
             lambda_gate=objective.lambda_gate,
+            enable_score_loss=objective.enable_score_loss,
+            score_loss_granularity=objective.score_loss_granularity,
+            score_loss_type=objective.score_loss_type,
+            score_loss_target=objective.score_loss_target,
+            score_loss_normalization=objective.score_loss_normalization,
+            score_loss_reduction=objective.score_loss_reduction,
             temperature_start=schedule.temperature_start,
             temperature_end=schedule.temperature_end,
             temperature_hold_fraction=schedule.temperature_hold_fraction,

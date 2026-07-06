@@ -282,6 +282,12 @@ class ObjectiveConfig:
     lambda_cov: float = 0.0
     lambda_use: float = 0.0
     lambda_gate: float = 0.0
+    enable_score_loss: bool = False
+    score_loss_granularity: str = "point"
+    score_loss_type: str = "pointwise_balanced_bce_logits"
+    score_loss_target: str = "synthetic_anomaly_mask"
+    score_loss_normalization: str = "train_batch_normal_tokens_detached_mean_std"
+    score_loss_reduction: str = "pointwise_binary_balanced_mean"
     variance_floor_gamma: float = 1.0
     gate_barrier_margin: float = 0.25
     enable_two_view_contrastive: bool = False
@@ -295,6 +301,31 @@ class ObjectiveConfig:
             raise ValueError("lambda_recon must be non-negative")
         if self.lambda_cls < 0.0:
             raise ValueError("lambda_cls must be non-negative")
+        if self.score_loss_granularity not in {"point"}:
+            raise ValueError("score_loss_granularity must be one of: point")
+        if self.score_loss_type not in {
+            "pointwise_balanced_bce_logits",
+            "pointwise_balanced_reconstruction_score",
+        }:
+            raise ValueError(
+                "score_loss_type must be one of: "
+                "pointwise_balanced_bce_logits, pointwise_balanced_reconstruction_score"
+            )
+        if self.score_loss_target != "synthetic_anomaly_mask":
+            raise ValueError("score_loss_target must be 'synthetic_anomaly_mask'")
+        if self.score_loss_normalization not in {
+            "train_batch_normal_tokens_detached_mean_std",
+            "batch_normal_tokens_detached_mean_std",
+        }:
+            raise ValueError(
+                "score_loss_normalization must be one of: "
+                "train_batch_normal_tokens_detached_mean_std, "
+                "batch_normal_tokens_detached_mean_std"
+            )
+        if self.score_loss_reduction != "pointwise_binary_balanced_mean":
+            raise ValueError(
+                "score_loss_reduction must be 'pointwise_binary_balanced_mean'"
+            )
 
 
 @dataclass(frozen=True)
@@ -507,6 +538,12 @@ class ThesisMultitaskModelConfig:
             "lambda_cov",
             "lambda_use",
             "lambda_gate",
+            "enable_score_loss",
+            "score_loss_granularity",
+            "score_loss_type",
+            "score_loss_target",
+            "score_loss_normalization",
+            "score_loss_reduction",
             "variance_floor_gamma",
             "gate_barrier_margin",
             "enable_two_view_contrastive",
