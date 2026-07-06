@@ -8,6 +8,6 @@ train_stride: 1
 val_stride: 20
 test_stride: 20
 batch_size: 512
-num_workers: 16
+num_workers: 12
 validation_split_ratio: 0.2
 shuffle_train: false
