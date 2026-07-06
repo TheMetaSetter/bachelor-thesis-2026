@@ -42,13 +42,13 @@ fi
 if ! command -v uv >/dev/null 2>&1; then
     log "Installing uv"
     curl -LsSf https://astral.sh/uv/install.sh | sh
-    if [[ -f "$HOME/.local/bin/env" ]]; then
-        # shellcheck disable=SC1090
-        source "$HOME/.local/bin/env"
-    fi
 fi
 
-export PATH="$HOME/.local/bin:$PATH"
+if [[ -d "$HOME/.local/bin" ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+source "$HOME/.local/bin/env"
 require_command uv
 
 log "Creating Python 3.12 virtual environment"
@@ -65,6 +65,8 @@ if [[ -n "${TORCH_EXTRA_INDEX_URL:-}" ]]; then
 else
     uv pip install -r requirements.txt
 fi
+
+uv pip install gdown
 
 log "Verifying installation"
 python --version
