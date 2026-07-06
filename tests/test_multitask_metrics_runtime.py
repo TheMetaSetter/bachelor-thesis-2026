@@ -325,7 +325,7 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
     assert saved_metrics["benchmark_comparability"] == "non_comparable"
     assert saved_metrics["protocol_status"] == "fallback_unknown"
     assert "label_regime" not in saved_metrics
-    assert saved_metrics["threshold_source"] == "positive_support_quantile_0.95"
+    assert saved_metrics["threshold_source"] == "positive_support_quantile_0.99"
     assert saved_records[0]["covered_point_mask"] == [True, False]
     assert any(
         "evaluation/precision" in logged_metrics

@@ -265,7 +265,7 @@ def run_evaluation_experiment(
             evaluation_outputs["metrics"]["label_regime"] = test_split["label_regime"]
     evaluation_outputs["metrics"].setdefault(
         "threshold_source",
-        "positive_support_quantile_0.95",
+        "positive_support_quantile_0.99",
     )
     protocol_audit_markdown = render_dataset_protocol_audit_markdown(
         protocol_audit_report,

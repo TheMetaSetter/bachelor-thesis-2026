@@ -139,7 +139,7 @@ def test_evaluator_averages_overlapping_window_point_scores() -> None:
     )
     assert (
         evaluation_outputs["metrics"]["threshold_source"]
-        == "positive_support_quantile_0.95"
+        == "positive_support_quantile_0.99"
     )
 
 

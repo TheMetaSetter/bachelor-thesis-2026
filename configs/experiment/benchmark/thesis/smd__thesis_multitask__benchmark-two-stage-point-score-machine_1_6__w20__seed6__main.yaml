@@ -1,7 +1,7 @@
 # group: benchmark/thesis
 # stage: two-stage
 
-experiment_name: smd_benchmark_thesis_multitask_two_stage_point_score_machine_1_6_seed6
+experiment_name: smd_benchmark_thesis_multitask_two_stage_point_score_machine_1_6_seed6_p99
 seed: 6
 experiment_variant: two_stage_point_score_supervised_v1
 device: cuda
@@ -39,7 +39,7 @@ logging:
     - window20
     - seed6
     - val-synth
-  wandb_run_name: smd_benchmark_thesis_multitask_two_stage_point_score_machine_1_6_seed6
+  wandb_run_name: smd_benchmark_thesis_multitask_two_stage_point_score_machine_1_6_seed6_p99
   log_hard_prediction_ratio: true
   log_row_normalized_confusion_matrix: true
   diagnostics_stages_for_classification:

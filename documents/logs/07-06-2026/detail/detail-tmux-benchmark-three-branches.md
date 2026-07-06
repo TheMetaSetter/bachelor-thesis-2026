@@ -104,7 +104,7 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 .venv/bin/python scripts/run
 tmux new-session -d -s smd-benchmark-thesis-base bash -lc 'cd "$(git rev-parse --show-toplevel)" && \
 CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 .venv/bin/python scripts/preflight_comparative_smd_server.py \
   --report-dir outputs/comparative_smd_reports/benchmark-thesis-base \
-  --gpu-index 1 \
+  --gpu-index 0 \
   --required-gpu-name-substring "" \
   --config-paths \
   configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed6__main.yaml \
@@ -139,7 +139,7 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 .venv/bin/python scripts/run
 tmux new-session -d -s smd-benchmark-thesis-point-score bash -lc 'cd "$(git rev-parse --show-toplevel)" && \
 CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=2 .venv/bin/python scripts/preflight_comparative_smd_server.py \
   --report-dir outputs/comparative_smd_reports/benchmark-thesis-point-score \
-  --gpu-index 2 \
+  --gpu-index 0 \
   --required-gpu-name-substring "" \
   --config-paths \
   configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_1_6__w20__seed6__main.yaml \
@@ -211,6 +211,7 @@ tmux kill-session -t smd-benchmark-thesis-point-score
 - Trước khi chạy thật, nên kiểm tra `tmux ls` để chắc không đè session cũ.
 - Nếu server đã có session trùng tên, thêm `--replace-session` vào launcher hoặc kill session cũ trước.
 - Nếu bạn đổi mapping GPU, nhớ giữ `--gpu-index` khớp với `CUDA_VISIBLE_DEVICES`.
+- Nếu `CUDA_VISIBLE_DEVICES` đã khóa còn đúng 1 GPU trong tmux session, thì `--gpu-index 0` là đúng vì tiến trình chỉ thấy một CUDA device cục bộ.
 - Mỗi nhánh đã tách report dir riêng nên artifacts sẽ không đè nhau.
 
 ## 5. Artifact sẽ sinh ra
@@ -221,4 +222,3 @@ tmux kill-session -t smd-benchmark-thesis-point-score
 - `outputs/tmux_logs/smd-benchmark-baseline.log`
 - `outputs/tmux_logs/smd-benchmark-thesis-base.log`
 - `outputs/tmux_logs/smd-benchmark-thesis-point-score.log`
-

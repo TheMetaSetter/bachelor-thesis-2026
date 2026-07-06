@@ -7,7 +7,7 @@ import numpy as np
 
 def select_point_score_threshold(
     point_scores: np.ndarray,
-    quantile: float = 0.95,
+    quantile: float = 0.99,
 ) -> float:
     # Smoke runs can produce many exact zeros, so selecting from positive
     # support avoids an "everything is anomalous" threshold.
@@ -24,7 +24,7 @@ def resolve_evaluation_threshold(
     *,
     point_score_threshold: float | None = None,
     threshold_source: str | None = None,
-    quantile: float = 0.95,
+    quantile: float = 0.99,
 ) -> tuple[float, str]:
     if point_score_threshold is None:
         threshold = select_point_score_threshold(point_scores, quantile=quantile)

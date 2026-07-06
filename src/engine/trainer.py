@@ -501,7 +501,7 @@ class Trainer:
         concatenated_scores, concatenated_labels = extract_covered_pointwise_arrays(
             reconstructed_records
         )
-        threshold = select_point_score_threshold(concatenated_scores, quantile=0.95)
+        threshold = select_point_score_threshold(concatenated_scores, quantile=0.99)
         pointwise_metrics = compute_pointwise_metrics(
             point_labels=concatenated_labels,
             point_scores=concatenated_scores,

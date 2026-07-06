@@ -313,7 +313,7 @@ class Evaluator:
             concatenated_scores,
             point_score_threshold=point_score_threshold,
             threshold_source=threshold_source,
-            quantile=0.95,
+            quantile=0.99,
         )
 
         # Tính toán các độ đo pointwise (pointwise metric)

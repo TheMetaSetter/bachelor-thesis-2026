@@ -1,7 +1,7 @@
 # group: benchmark/baseline
 # stage: single-stage
 
-experiment_name: smd_benchmark_redlamp_baseline_machine_3_9_seed6
+experiment_name: smd_benchmark_redlamp_baseline_machine_3_9_seed6_p99
 seed: 6
 device: cuda
 output_dir: outputs/benchmark/smd/redlamp_baseline/machine_3_9/seed6
@@ -37,7 +37,7 @@ logging:
     - window20
     - seed6
     - val-synth
-  wandb_run_name: smd_benchmark_redlamp_baseline_machine_3_9_seed6
+  wandb_run_name: smd_benchmark_redlamp_baseline_machine_3_9_seed6_p99
   log_hard_prediction_ratio: true
   log_row_normalized_confusion_matrix: true
   diagnostics_stages_for_classification:
