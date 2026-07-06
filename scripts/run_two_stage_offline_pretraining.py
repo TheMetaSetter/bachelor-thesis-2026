@@ -310,13 +310,47 @@ def build_two_stage_execution_commands(manifest: dict[str, Any]) -> dict[str, An
 
 
 def execute_two_stage_plan(
-    manifest: dict[str, Any], dry_run: bool = False
+    manifest: dict[str, Any],
+    dry_run: bool = False,
+    skip_completed: bool = False,
 ) -> dict[str, Any]:
     command_plan = build_two_stage_execution_commands(manifest)
     manifest_root = Path(str(manifest["manifest_root"]))
     execution_report_path = manifest_root / "two_stage_execution_report.json"
     started_at_utc = _utc_now_iso()
     executed_stage_names: list[str] = []
+    completed_stage_names: list[str] = []
+    skipped_stage_names: list[str] = []
+    existing_execution_report: dict[str, Any] | None = None
+
+    if skip_completed and not dry_run and execution_report_path.exists():
+        existing_execution_report = json.loads(
+            execution_report_path.read_text(encoding="utf-8")
+        )
+        if str(existing_execution_report.get("status")) == "completed":
+            return {
+                "manifest_path": str(manifest_root / "two_stage_manifest.json"),
+                "execution_report_path": str(execution_report_path),
+                "started_at_utc": started_at_utc,
+                "finished_at_utc": _utc_now_iso(),
+                "dry_run": dry_run,
+                "skip_completed": skip_completed,
+                "resumed_from_existing_report": True,
+                "status": "skipped_completed",
+                "executed_stage_names": [],
+                "completed_stage_names": list(
+                    existing_execution_report.get("completed_stage_names", [])
+                ),
+                "skipped_stage_names": list(
+                    existing_execution_report.get("completed_stage_names", [])
+                ),
+                "stage_b_initialization_checkpoint_path": str(
+                    manifest_root / "initializations" / "stage_b_init.pt"
+                ),
+                "evaluation_checkpoint_path": str(
+                    manifest["evaluation"]["checkpoint_path"]
+                ),
+            }
 
     training_stage_records = list(manifest["training_stages"])
     training_commands = list(command_plan["training"])
@@ -324,19 +358,27 @@ def execute_two_stage_plan(
     if dry_run:
         for stage_record in training_stage_records:
             executed_stage_names.append(str(stage_record["stage_name"]))
+            completed_stage_names.append(str(stage_record["stage_name"]))
+        completed_stage_names.append("evaluation")
+        executed_stage_names.append("evaluation")
     else:
         subprocess.run(training_commands[0], check=True)
-        executed_stage_names.append(str(training_stage_records[0]["stage_name"]))
+        first_stage_name = str(training_stage_records[0]["stage_name"])
+        executed_stage_names.append(first_stage_name)
+        completed_stage_names.append(first_stage_name)
         _prepare_stage_b_initialization_checkpoint(manifest)
         for stage_record, command in zip(
             training_stage_records[1:],
             training_commands[1:],
             strict=True,
         ):
-            executed_stage_names.append(str(stage_record["stage_name"]))
+            stage_name = str(stage_record["stage_name"])
+            executed_stage_names.append(stage_name)
+            completed_stage_names.append(stage_name)
             subprocess.run(command, check=True)
 
     executed_stage_names.append("evaluation")
+    completed_stage_names.append("evaluation")
     if not dry_run:
         subprocess.run(command_plan["evaluation"], check=True)
 
@@ -346,7 +388,12 @@ def execute_two_stage_plan(
         "started_at_utc": started_at_utc,
         "finished_at_utc": _utc_now_iso(),
         "dry_run": dry_run,
+        "skip_completed": skip_completed,
+        "resumed_from_existing_report": existing_execution_report is not None,
+        "status": "dry_run" if dry_run else "completed",
         "executed_stage_names": executed_stage_names,
+        "completed_stage_names": completed_stage_names,
+        "skipped_stage_names": skipped_stage_names,
         "stage_b_initialization_checkpoint_path": str(
             manifest_root / "initializations" / "stage_b_init.pt"
         ),
@@ -364,6 +411,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--experiment-config", required=True)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--skip-completed", action="store_true")
     return parser.parse_args()
 
 
@@ -371,7 +419,11 @@ def main() -> None:
     args = parse_args()
     experiment_config = load_experiment_config(args.experiment_config)
     manifest = materialize_two_stage_run_manifest(experiment_config)
-    execution_report = execute_two_stage_plan(manifest, dry_run=args.dry_run)
+    execution_report = execute_two_stage_plan(
+        manifest,
+        dry_run=args.dry_run,
+        skip_completed=args.skip_completed,
+    )
     console_print(
         "TWO_STAGE",
         "Completed two-stage orchestration",
