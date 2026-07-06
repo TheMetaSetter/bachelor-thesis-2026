@@ -137,7 +137,7 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1 .venv/bin/python scripts/run
 
 ```bash
 tmux new-session -d -s smd-benchmark-thesis-point-score bash -lc 'cd "$(git rev-parse --show-toplevel)" && \
-CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=2 .venv/bin/python scripts/preflight_comparative_smd_server.py \
+CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 .venv/bin/python scripts/preflight_comparative_smd_server.py \
   --report-dir outputs/comparative_smd_reports/benchmark-thesis-point-score \
   --gpu-index 0 \
   --required-gpu-name-substring "" \
@@ -153,7 +153,7 @@ CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=2 .venv/bin/python scripts/pre
   configs/experiment/benchmark/thesis/smd__thesis_multitask__benchmark-two-stage-point-score-machine_3_9__w20__seed36__main.yaml \
   --print-json \
   --require-launch-ready && \
-CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=2 .venv/bin/python scripts/run_comparative_smd_experiments.py \
+CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=0 .venv/bin/python scripts/run_comparative_smd_experiments.py \
   --report-dir outputs/comparative_smd_reports/benchmark-thesis-point-score \
   --skip-completed \
   --config-paths \
