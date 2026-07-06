@@ -7,6 +7,9 @@ resolved configs, derives the run family from config semantics, writes a durable
 manifest, then delegates the actual work to existing entrypoints.
 """
 
+# (´▽`♡) IMPORTS - Essential Dependencies
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+
 import argparse
 from datetime import datetime, timezone
 import json
@@ -22,17 +25,38 @@ import yaml
 from src.core.config import load_experiment_config
 
 
+# (๑•́ ω •̀๑) CONSTANTS - Runtime Configuration
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 SUPPORTED_BASELINE_MODEL_NAMES = {"redlamp_baseline"}
 
 
-def _utc_now_iso() -> str:
+# ≧◡≦ UTILITY FUNCTIONS - Timestamps & Formatting
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+
+def _utc_now_iso() -> str:  # (´◡`) Returns current UTC in ISO format
+    """Generate ISO 8601 timestamp with Z suffix for UTC timezone."""
     return (
         datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     )
 
 
-def parse_args() -> argparse.Namespace:
+# ٩(◕‿◕｡)۶ CLI INTERFACE - Argument Parsing
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+
+def parse_args() -> argparse.Namespace:  # └(★ω★)┘ Build CLI parser
+    """Parse command-line arguments for experiment configuration.
+    
+    Supported flags:
+      --config-paths: Paths to experiment config files (required)
+      --smoke-config-paths: Quick test configs (optional)
+      --report-dir: Output directory for reports
+      --data-num-workers-override: Override thread count
+      --dry-run: Show what would run without executing
+      --preflight-only: Validate configs without running
+      --skip-completed: Resume interrupted experiments
+    """
     parser = argparse.ArgumentParser(
         description="Run mixed baseline and thesis comparative SMD experiments"
     )
@@ -53,21 +77,52 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def normalize_config_path(config_path: str | Path) -> Path:
+# (´•ω•̥`) PATH RESOLUTION - Normalize File Paths
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Convert relative paths to absolute, resolve symlinks
+# Impact: Ensures configs are found from any working directory
+
+def normalize_config_path(config_path: str | Path) -> Path:  # ≧★≦ Make absolute
+    """Convert config path to absolute canonical form.
+    
+    Args:
+        config_path: Relative or absolute path to config file
+    
+    Returns:
+        Resolved absolute Path object
+    """
     path = Path(config_path)
     if not path.is_absolute():
         path = REPOSITORY_ROOT / path
     return path.resolve()
 
 
-def resolve_dataset_root(resolved_experiment_config: dict[str, Any]) -> Path:
+def resolve_dataset_root(resolved_experiment_config: dict[str, Any]) -> Path:  # (๑♡⌓♡๑) Dataset paths
+    """Extract and normalize dataset root path from config.
+    
+    Args:
+        resolved_experiment_config: Resolved experiment configuration dict
+    
+    Returns:
+        Absolute path to dataset directory
+    """
     dataset_root = Path(str(resolved_experiment_config["data"]["root_dir"]))
     if not dataset_root.is_absolute():
         dataset_root = REPOSITORY_ROOT / dataset_root
     return dataset_root.resolve()
 
 
-def validate_dataset_roots(resolved_experiment_configs: list[dict[str, Any]]) -> None:
+# (✿◠‿◠) VALIDATION LAYER - Integrity Checks
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Catch configuration errors early before execution
+# Impact: Prevents silent failures and corrupted results
+
+def validate_dataset_roots(resolved_experiment_configs: list[dict[str, Any]]) -> None:  # (´∀｀)♡ Check datasets exist
+    """Verify all dataset roots are accessible.
+    
+    Raises:
+        FileNotFoundError: If any dataset directory doesn't exist
+    """
     for resolved_experiment_config in resolved_experiment_configs:
         dataset_root = resolve_dataset_root(resolved_experiment_config)
         if not dataset_root.exists():
@@ -76,7 +131,15 @@ def validate_dataset_roots(resolved_experiment_configs: list[dict[str, Any]]) ->
             )
 
 
-def _normalize_artifact_path(path_like: str | Path) -> Path:
+def _normalize_artifact_path(path_like: str | Path) -> Path:  # (づ｡◕‿‿◕｡)づ Artifact paths
+    """Convert artifact path to absolute form.
+    
+    Args:
+        path_like: Artifact path (output dir, checkpoint, etc)
+    
+    Returns:
+        Resolved absolute path
+    """
     path = Path(path_like)
     if not path.is_absolute():
         path = REPOSITORY_ROOT / path
@@ -85,7 +148,15 @@ def _normalize_artifact_path(path_like: str | Path) -> Path:
 
 def validate_unique_artifact_paths(
     resolved_experiment_configs: list[dict[str, Any]],
-) -> None:
+) -> None:  # ≧★≦ No duplicate paths allowed
+    """Check for path collisions across experiments.
+    
+    Ensures each experiment has unique output_dir and checkpoint_dir
+    to prevent overwriting results.
+    
+    Raises:
+        ValueError: If duplicate paths detected
+    """
     seen_output_dirs: dict[Path, str] = {}
     seen_checkpoint_dirs: dict[Path, str] = {}
     for resolved_experiment_config in resolved_experiment_configs:
@@ -106,7 +177,20 @@ def validate_unique_artifact_paths(
         seen_checkpoint_dirs[checkpoint_dir] = experiment_name
 
 
-def resolve_stage_family(resolved_experiment_config: dict[str, Any]) -> str:
+# (✿◠‿◠) RUN FAMILY CLASSIFICATION - Type Detection
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Route configs to correct training pipeline
+# Impact: One config → correct executor (two-stage, three-stage, baseline)
+
+def resolve_stage_family(resolved_experiment_config: dict[str, Any]) -> str:  # (´▽`♡) Classify run type
+    """Determine which training pipeline to use.
+    
+    Returns:
+        One of: 'thesis_two_stage', 'thesis_three_stage', 'baseline_single_stage'
+    
+    Raises:
+        ValueError: If model type is unsupported
+    """
     model_name = str(resolved_experiment_config["model"]["model_name"])
     if model_name == "thesis_multitask" and "two_stage" in resolved_experiment_config:
         return "thesis_two_stage"
@@ -120,7 +204,18 @@ def resolve_stage_family(resolved_experiment_config: dict[str, Any]) -> str:
     )
 
 
-def _validate_single_entity_contract(resolved_experiment_config: dict[str, Any]) -> str:
+def _validate_single_entity_contract(resolved_experiment_config: dict[str, Any]) -> str:  # (๑•́ ω •̀๑) One entity per run
+    """Enforce requirement: exactly ONE entity_id per experiment.
+    
+    This constraint simplifies comparative analysis - each experiment
+    focuses on a single system/entity.
+    
+    Returns:
+        The single entity_id string
+    
+    Raises:
+        ValueError: If entity_ids list is missing, empty, or has multiple entries
+    """
     entity_ids = resolved_experiment_config["data"].get("entity_ids")
     if not isinstance(entity_ids, list) or len(entity_ids) != 1:
         raise ValueError(
@@ -132,7 +227,17 @@ def _validate_single_entity_contract(resolved_experiment_config: dict[str, Any])
     return entity_id
 
 
-def _build_thesis_two_stage_commands(config_path: Path) -> list[list[str]]:
+# ٩(◕‿◕｡)۶ COMMAND BUILDERS - Executable Construction
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Compose subprocess.run() commands for different run types
+# Impact: Each pipeline gets correct training script + args
+
+def _build_thesis_two_stage_commands(config_path: Path) -> list[list[str]]:  # ≧◡≦ Build two-stage pipeline
+    """Create command for two-stage training (pretraining → fine-tuning).
+    
+    Returns:
+        List of command lists, each ready for subprocess.run()
+    """
     return [
         [
             sys.executable,
@@ -143,7 +248,12 @@ def _build_thesis_two_stage_commands(config_path: Path) -> list[list[str]]:
     ]
 
 
-def _build_thesis_three_stage_commands(config_path: Path) -> list[list[str]]:
+def _build_thesis_three_stage_commands(config_path: Path) -> list[list[str]]:  # (´◡`) Build three-stage pipeline
+    """Create command for three-stage training.
+    
+    Returns:
+        List of command lists, each ready for subprocess.run()
+    """
     return [
         [
             sys.executable,
@@ -157,7 +267,16 @@ def _build_thesis_three_stage_commands(config_path: Path) -> list[list[str]]:
 def _build_baseline_single_stage_commands(
     config_path: Path,
     resolved_experiment_config: dict[str, Any],
-) -> list[list[str]]:
+) -> list[list[str]]:  # └(★ω★)┘ Build baseline pipeline
+    """Create commands for baseline: train THEN evaluate.
+    
+    Baseline runs two separate scripts in sequence:
+      1. train.py - fits model on training data
+      2. evaluate.py - tests on held-out test set
+    
+    Returns:
+        Two command lists: [train_cmd, evaluate_cmd]
+    """
     checkpoint_path = (
         Path(str(resolved_experiment_config["checkpoint_dir"])) / "best.pt"
     )
@@ -179,12 +298,30 @@ def _build_baseline_single_stage_commands(
     ]
 
 
+# (づ｡◕‿‿◕｡)づ RUN RECORD ASSEMBLY - Package Metadata
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Create a structured dict with all execution info
+# Impact: Single source of truth for each run's configuration
+
 def _build_run_record(
     *,
     config_path: Path,
     resolved_experiment_config: dict[str, Any],
     run_stage: str,
-) -> dict[str, Any]:
+) -> dict[str, Any]:  # (๑♡⌓♡๑) Create structured execution record
+    """Build a complete record for one experiment run.
+    
+    Combines config metadata, commands, and artifact paths into a
+    single dictionary for easy tracking and debugging.
+    
+    Args:
+        config_path: Path to config file
+        resolved_experiment_config: Fully resolved config dict
+        run_stage: Either 'smoke' or 'main'
+    
+    Returns:
+        Dict with run_id, commands, paths, and metadata
+    """
     stage_family = resolve_stage_family(resolved_experiment_config)
     entity_id = _validate_single_entity_contract(resolved_experiment_config)
     output_dir = Path(str(resolved_experiment_config["output_dir"]))
@@ -225,10 +362,27 @@ def _build_run_record(
     }
 
 
+# └(★ω★)┘ BATCH LOADING - Prepare Configurations
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Load all configs and create run records in bulk
+# Impact: Validates all inputs before ANY experiment runs
+
 def _load_run_records(
     config_paths: list[str | Path],
     run_stage: str,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:  # ≧★≦ Resolve configs into records
+    """Load configs and convert to structured run records.
+    
+    This is the first validation gate - bad configs fail here,
+    preventing partial/corrupted runs.
+    
+    Args:
+        config_paths: Paths to YAML config files
+        run_stage: 'smoke' for quick tests, 'main' for full runs
+    
+    Returns:
+        Tuple of (run_records, resolved_configs) dicts
+    """
     run_records: list[dict[str, Any]] = []
     resolved_experiment_configs: list[dict[str, Any]] = []
     for config_path in config_paths:
@@ -248,13 +402,32 @@ def _load_run_records(
     return run_records, resolved_experiment_configs
 
 
+# (´∀｀)♡ PARAMETER OVERRIDES - Config Customization
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Create config variants with modified parameters
+# Impact: Enables quick tuning without editing source configs
+
 def _materialize_worker_override_configs(
     *,
     run_records: list[dict[str, Any]],
     resolved_experiment_configs: list[dict[str, Any]],
     report_dir: Path,
     data_num_workers_override: int,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:  # (✿◠‿◠) Generate override variants
+    """Create modified configs with custom num_workers setting.
+    
+    Useful for performance tuning - run same experiment with
+    different thread counts without modifying original configs.
+    
+    Args:
+        run_records: Original run records
+        resolved_experiment_configs: Original configs
+        report_dir: Where to save generated configs
+        data_num_workers_override: New num_workers value
+    
+    Returns:
+        Tuple of (modified_run_records, modified_configs)
+    """
     generated_configs_dir = report_dir / "generated_configs"
     generated_configs_dir.mkdir(parents=True, exist_ok=True)
     overridden_run_records: list[dict[str, Any]] = []
@@ -311,13 +484,39 @@ def _materialize_worker_override_configs(
     return overridden_run_records, overridden_configs
 
 
+# (´◡`) PLAN ORCHESTRATION - Blueprint Construction
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+
+# (´◡`) PLAN ORCHESTRATION - Blueprint Construction
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Assemble complete execution plan with all validations
+# Impact: All errors caught before first subprocess spawns
+
 def build_comparative_run_plan(
     *,
     config_paths: list[str | Path],
     smoke_config_paths: list[str | Path],
     report_dir: str | Path,
     data_num_workers_override: int | None = None,
-) -> dict[str, Any]:
+) -> dict[str, Any]:  # ᐛᐛ Build complete execution manifest
+    """Create durable execution plan from all configs.
+    
+    Performs these checks:
+      1. Load and validate all configs
+      2. Generate override configs if needed
+      3. Check for path collisions
+      4. Verify datasets exist
+      5. Write manifest to disk
+    
+    Args:
+        config_paths: Main experiment configs
+        smoke_config_paths: Quick test configs (run first)
+        report_dir: Output directory for reports
+        data_num_workers_override: Override thread count (optional)
+    
+    Returns:
+        Complete run plan with smoke_runs and main_runs
+    """
     smoke_runs, smoke_configs = _load_run_records(smoke_config_paths, run_stage="smoke")
     main_runs, main_configs = _load_run_records(config_paths, run_stage="main")
 
@@ -342,7 +541,9 @@ def build_comparative_run_plan(
 
     all_runs = smoke_runs + main_runs
     resolved_experiment_configs = smoke_configs + main_configs
+    # ✓ VALIDATION: Check for path collisions
     validate_unique_artifact_paths(resolved_experiment_configs)
+    # ✓ VALIDATION: Verify all datasets accessible
     validate_dataset_roots(resolved_experiment_configs)
 
     run_plan = {
@@ -363,10 +564,20 @@ def build_comparative_run_plan(
     return run_plan
 
 
+# (๑•́ ω •̀๑) REPORTING - Write Results & Status
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Persist execution status to disk for recovery
+# Impact: Enables resume on interruption, post-mortem analysis
+
 def _write_execution_report(
     execution_report_path: str | Path,
     execution_report: dict[str, Any],
-) -> None:
+) -> None:  # ≧◡≦ Persist report to disk
+    """Write execution status to JSON file.
+    
+    Records: timestamps, completed runs, failures, return codes
+    Used for: resuming interrupted experiments, debugging
+    """
     Path(execution_report_path).write_text(
         json.dumps(execution_report, indent=2),
         encoding="utf-8",
@@ -375,7 +586,13 @@ def _write_execution_report(
 
 def _iter_run_groups(
     run_plan: dict[str, Any],
-) -> list[tuple[str, list[dict[str, Any]]]]:
+) -> list[tuple[str, list[dict[str, Any]]]]:  # └(★ω★)┘ Partition runs into groups
+    """Organize runs into execution groups.
+    
+    Returns:
+        List of (group_name, runs_list) tuples
+        Order: smoke tests FIRST, then main experiments
+    """
     return [
         ("smoke", list(run_plan["smoke_runs"])),
         ("main", list(run_plan["main_runs"])),
@@ -384,14 +601,26 @@ def _iter_run_groups(
 
 def _load_existing_execution_report(
     execution_report_path: str | Path,
-) -> dict[str, Any] | None:
+) -> dict[str, Any] | None:  # (´▽`♡) Retrieve previous execution report
+    """Load report from previous run for resumption.
+    
+    Returns:
+        Parsed report dict, or None if file doesn't exist
+    """
     report_path = Path(execution_report_path)
     if not report_path.exists():
         return None
     return json.loads(report_path.read_text(encoding="utf-8"))
 
 
-def _run_has_required_artifacts(run_record: dict[str, Any]) -> bool:
+def _run_has_required_artifacts(run_record: dict[str, Any]) -> bool:  # (๑♡⌓♡๑) Check artifacts exist
+    """Verify all output files exist for a completed run.
+    
+    Checks for: checkpoint, metrics, records, curves, stage reports
+    
+    Returns:
+        True if all expected files present, False otherwise
+    """
     checkpoint_path = _normalize_artifact_path(run_record["checkpoint_dir"]) / "best.pt"
     metrics_path = _normalize_artifact_path(run_record["evaluation_metrics_path"])
     records_path = _normalize_artifact_path(run_record["evaluation_records_path"])
@@ -426,12 +655,37 @@ def _run_has_required_artifacts(run_record: dict[str, Any]) -> bool:
     )
 
 
+# (๑♡⌓♡๑) EXECUTION ENGINE - Run & Track
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Execute all experiments sequentially with progress tracking
+# Impact: Runs experiments, records completion, enables resume on failure
+
 def execute_comparative_run_plan(
     run_plan: dict[str, Any],
     *,
     dry_run: bool,
     skip_completed: bool = False,
-) -> dict[str, Any]:
+) -> dict[str, Any]:  # ٩(◕‿◕｡)۶ Execute experiments sequentially
+    """Run all experiments with error handling and status tracking.
+    
+    Execution flow:
+      1. Check for previous run (if resuming)
+      2. Run smoke tests first (fail fast)
+      3. Run main experiments
+      4. Track completion status per run
+      5. Write final report to disk
+    
+    Args:
+        run_plan: Complete plan from build_comparative_run_plan()
+        dry_run: If True, only show what would run
+        skip_completed: If True, skip runs that succeeded before
+    
+    Returns:
+        Execution report with timestamps and results
+    
+    Raises:
+        subprocess.CalledProcessError: If any command fails
+    """
     existing_execution_report = (
         _load_existing_execution_report(run_plan["execution_report_path"])
         if skip_completed and not dry_run
@@ -456,14 +710,17 @@ def execute_comparative_run_plan(
     }
 
     if dry_run:
+        # Dry run mode: just validate, don't execute
         execution_report["status"] = "dry_run"
         execution_report["finished_at_utc"] = _utc_now_iso()
         _write_execution_report(run_plan["execution_report_path"], execution_report)
         return execution_report
 
     try:
+        # Execute runs grouped by type (smoke first, then main)
         for _, run_records in _iter_run_groups(run_plan):
             for run_record in run_records:
+                # Check if already completed in previous run
                 if (
                     skip_completed
                     and run_record["run_id"] in existing_completed_run_ids
@@ -472,9 +729,11 @@ def execute_comparative_run_plan(
                     execution_report["completed_run_ids"].append(run_record["run_id"])
                     execution_report["skipped_run_ids"].append(run_record["run_id"])
                     continue
+                # Execute this run
                 execution_report["executed_run_ids"].append(run_record["run_id"])
                 for command in run_record["commands"]:
                     command_to_run = list(command)
+                    # Add --skip-completed flag for multistage runs if resuming
                     if (
                         skip_completed
                         and str(run_record["stage_family"])
@@ -488,6 +747,7 @@ def execute_comparative_run_plan(
                     subprocess.run(command_to_run, cwd=REPOSITORY_ROOT, check=True)
                 execution_report["completed_run_ids"].append(run_record["run_id"])
     except subprocess.CalledProcessError as error:
+        # Failure: record error and re-raise
         execution_report["status"] = "failed"
         execution_report["failed_at_utc"] = _utc_now_iso()
         if execution_report["executed_run_ids"]:
@@ -497,13 +757,19 @@ def execute_comparative_run_plan(
         _write_execution_report(run_plan["execution_report_path"], execution_report)
         raise
 
+    # Success: update status and write final report
     execution_report["status"] = "completed"
     execution_report["finished_at_utc"] = _utc_now_iso()
     _write_execution_report(run_plan["execution_report_path"], execution_report)
     return execution_report
 
 
-def _print_run_records(run_records: list[dict[str, Any]], stage_name: str) -> None:
+
+def _print_run_records(run_records: list[dict[str, Any]], stage_name: str) -> None:  # ≧◡≦ Output metadata
+    """Print run metadata to stdout for logging/debugging.
+    
+    Outputs JSON format for easy parsing by other tools.
+    """
     for run_record in run_records:
         print(
             json.dumps(
@@ -519,7 +785,20 @@ def _print_run_records(run_records: list[dict[str, Any]], stage_name: str) -> No
         )
 
 
-def main() -> None:
+# (✿◠‿◠) ENTRY POINT - Main Workflow
+# ～～～～～～～～～～～～～～～～～～～～～～～～～～～
+# Purpose: Orchestrate full pipeline: plan → validate → execute
+# Impact: Single entry point for batch experiment runs
+
+def main() -> None:  # └(★ω★)┘ Orchestrate the entire pipeline
+    """Main entry point for comparative experiment launcher.
+    
+    Flow:
+      1. Parse CLI arguments
+      2. Build complete execution plan with all validations
+      3. Print run manifest (for inspection/logging)
+      4. Execute all experiments (smoke first, then main)
+    """
     args = parse_args()
     run_plan = build_comparative_run_plan(
         config_paths=list(args.config_paths),
