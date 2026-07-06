@@ -201,7 +201,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--smoke-config-paths", nargs="*", default=[])
     parser.add_argument("--report-dir", required=True)
     parser.add_argument("--gpu-index", type=int, default=0)
-    parser.add_argument("--required-gpu-name-substring", default="RTX 3090")
+    parser.add_argument("--required-gpu-name-substring", default="")
     parser.add_argument("--data-num-workers-override", type=int, default=None)
     parser.add_argument("--print-json", action="store_true")
     parser.add_argument("--require-launch-ready", action="store_true")
