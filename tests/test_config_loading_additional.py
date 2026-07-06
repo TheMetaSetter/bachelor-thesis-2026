@@ -953,7 +953,10 @@ def test_benchmark_thesis_point_score_config_enables_stage_a_score_loss() -> Non
         loaded_config["model"]["score_loss_normalization"]
         == "train_batch_normal_tokens_detached_mean_std"
     )
-    assert loaded_config["model"]["score_loss_reduction"] == "pointwise_binary_balanced_mean"
+    assert (
+        loaded_config["model"]["score_loss_reduction"]
+        == "pointwise_binary_balanced_mean"
+    )
 
 
 @pytest.mark.parametrize(
