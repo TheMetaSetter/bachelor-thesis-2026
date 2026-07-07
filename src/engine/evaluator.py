@@ -2,8 +2,38 @@ from __future__ import annotations
 
 """Evaluation loop that merges overlapping window scores back to entity timelines.
 
-A new reader should pair this file with the batch and output contracts. The
-evaluator relies on the fixed `point_scores` field so it can stay model-agnostic.
+This file is part of the final evaluation step in the anomaly detection pipeline.
+The model scores many short windows of time, and these window-level scores are
+merged back to the original full timeline for each entity (for example, a
+machine or a server). That way, we can measure how well the model found
+anomalies on the real timeline instead of just on short fragments.
+
+How the flow works in this codebase:
+
+  data_loader -> batch of windows -> model.test_step -> point_scores
+               \___________________________________________/
+                              merge back to full timeline
+
+Cute diagram for the flow:
+
+  (｡•́‿•̀｡)ﾉ  DATA SERIES
+           \  [full entity timeline]
+            v
+        +----------------+      +------------------+      +------------------+
+        | windowed input | ---> | model predicts   | ---> | merge window     |
+        |  segment 1     |      | point_scores     |      | scores back into |
+        +----------------+      +------------------+      | full timeline    |
+            ^  ^  ^                                       +------------------+
+            |  |  |                                         |
+    overlapping windows                      final metrics   v
+            |  |  |                                         |
+        +----------------+      +------------------+      +------------------+
+        | windowed input | ---> | model predicts   | ---> | compute metrics  |
+        |  segment 2     |      | point_scores     |      | on covered points|
+        +----------------+      +------------------+      +------------------+
+
+The evaluator is intentionally model-agnostic. It only needs the model to
+produce `point_scores` and `window_scores` for each batch of windows.
 """
 
 from typing import Any
@@ -20,7 +50,7 @@ from src.metrics.pointwise import (
 )
 from src.engine.thresholding import (
     resolve_evaluation_threshold,
-    select_point_score_threshold,
+    # select_point_score_threshold,
 )
 from src.models.base_model import BaseModel
 
@@ -30,6 +60,11 @@ def _describe_benchmark_comparability(
     label_regime: str,
     is_truncated_evaluation: bool,
 ) -> tuple[str, str]:
+    """Decide whether the results are comparable to benchmark evaluations.
+
+    If the evaluation is truncated or the label regime is not the expected mixed
+    benchmark format, then the results should be marked as non-comparable.
+    """
     if is_truncated_evaluation:
         return "non_comparable", "truncated_smoke_evaluation"
     if label_regime != "mixed":
@@ -41,6 +76,12 @@ def _build_entity_raw_point_labels(
     sequence_by_entity: dict[str, Any],
     fallback_dtype: torch.dtype,
 ) -> torch.Tensor:
+    """Get the true labels for the full sequence, or use zeros if missing.
+
+    In this codebase, each entity may have a full timeline stored in
+    `sequence_by_entity`. If the raw labels are missing, we create a zero
+    tensor so the evaluator still has a valid fallback.
+    """
     raw_point_labels = sequence_by_entity.get("point_labels")
     if raw_point_labels is None:
         sequence_length = int(sequence_by_entity["x"].shape[0])
@@ -56,10 +97,18 @@ def accumulate_pointwise_window_payload(
     entity_score_counts: dict[str, torch.Tensor],
     entity_point_labels: dict[str, torch.Tensor],
 ) -> None:
+    """Add window-level scores back onto the full entity timeline.
+
+    Each batch contains many overlapping windows from the same entity.
+    This function keeps a running sum and count so overlapping points
+    can later be averaged cleanly.
+    """
     batch_meta = batch_payload["meta"]
     point_scores = batch_payload["point_scores"]
     point_labels = batch_payload["point_labels"]
 
+    # Each batch contains many windows. For each window we have a vector of
+    # pointwise anomaly scores and the same shape of true labels.
     if point_scores.ndim != 2:
         raise ValueError("batch_payload['point_scores'] must have shape [B, L]")
     if point_labels.ndim != 2:
@@ -70,6 +119,8 @@ def accumulate_pointwise_window_payload(
         )
     if len(batch_meta) != point_scores.shape[0]:
         raise ValueError("batch_payload['meta'] length must match batch size")
+
+    # For each window inside the batch, add scores back to the full entity timeline.
 
     for window_index, meta in enumerate(batch_meta):
         entity_id = meta["entity_id"]
@@ -106,6 +157,12 @@ def reconstruct_pointwise_records_from_window_payload(
     sequences_by_entity: dict[str, dict[str, Any]],
     batch_payloads: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
+    """Turn all window predictions into full entity evaluation records.
+
+    This merges overlapping window scores for each entity and keeps a
+    mask showing which time points were actually covered by at least one
+    window.
+    """
     entity_score_sums: dict[str, torch.Tensor] = {}
     entity_score_counts: dict[str, torch.Tensor] = {}
     entity_point_labels: dict[str, torch.Tensor] = {}
@@ -153,6 +210,11 @@ def reconstruct_pointwise_records_from_window_payload(
 def extract_covered_pointwise_arrays(
     evaluation_records: list[dict[str, Any]],
 ) -> tuple[np.ndarray, np.ndarray]:
+    """Collect only the actual covered points for metric calculation.
+
+    Some parts of the entity timeline may not be inside any window, so
+    we only evaluate on points that were scored by the model.
+    """
     covered_point_scores: list[np.ndarray] = []
     covered_point_labels: list[np.ndarray] = []
 
@@ -298,6 +360,8 @@ class Evaluator:
                     }
                 )
 
+        # After the loop, we have all window-level scores for every entity.
+        # Next we reconstruct the full entity timelines from those windows.
         evaluation_records = reconstruct_pointwise_records_from_window_payload(
             sequences_by_entity=sequences_by_entity,
             batch_payloads=pointwise_batch_payloads,

@@ -80,6 +80,14 @@ This is important so I will repeat 3 times.
 
 - Write explanatory comments to support user reading code. Comments should be updated in parallel with code or implementations.
 
+- Make code pedagogical-first. The primary audience for every code review, code comment, and explanation is a high-school student who should be able to understand the intent, the data flow, and the runtime contract without guessing.
+
+- When adding or changing code, explain the surrounding computation in a way that is easy to follow from first principles. Prefer short, explicit comments that say what each step does and why it exists.
+
+- Add cute ASCII flow diagrams regularly when they help readers understand how a snippet fits into the larger processing pipeline. The diagram should focus on the local snippet's place in the end-to-end flow, not on decoration.
+
+- If a change cannot be explained clearly enough for a high-school student to follow, treat that as a code-quality failure and simplify the code or the explanation before considering the work done.
+
 - When writing, reviewing, or refactoring Python code in this repository, strictly follow `python_semantics.md` as a required semantic checklist for slicing, indexing, assignment, mutability, and function-call behavior.
 
 ---

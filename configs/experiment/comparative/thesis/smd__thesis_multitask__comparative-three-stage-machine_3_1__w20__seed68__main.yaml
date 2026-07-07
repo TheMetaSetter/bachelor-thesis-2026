@@ -23,7 +23,7 @@ optimizer:
     cosine_end_lr: 0.0
     cosine_after_warmup: true
 checkpoint_monitor_metric: val_synth_vus_pr
-epochs: 300
+epochs: 30
 evaluation:
   vus_max_buffer_size: 20
   vus_num_thresholds: 200
@@ -40,12 +40,12 @@ logging:
     - seed68
   wandb_run_name: smd_comparative_thesis_multitask_three_stage_machine_3_1_seed68
 three_stage:
-  expected_total_training_epochs: 300
-  stage1_classification_epochs: 50
-  stage1_reconstruction_epochs: 70
-  stage2_recovery_epochs: 20
-  stage3_memory_initialization_and_fusion_warmup_epochs: 20
-  multitask_pretraining_epochs: 140
+  expected_total_training_epochs: 30
+  stage1_classification_epochs: 5
+  stage1_reconstruction_epochs: 7
+  stage2_recovery_epochs: 2
+  stage3_memory_initialization_and_fusion_warmup_epochs: 2
+  multitask_pretraining_epochs: 14
   discrete_memory_label_source: synthetic_train_labels
   freeze_memories_after_initialization: true
   freeze_recovered_zipped_encoder_during_warmup: true
