@@ -1,0 +1,10 @@
+.navbar-brand img {
+    width: auto;
+}
+.table {
+    display: block;
+    overflow-x: scroll;
+}
+html div.rendered_html table {
+    table-layout: auto;
+}

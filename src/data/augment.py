@@ -48,6 +48,7 @@ class SyntheticAnomalyInjector:
         balance_binary_classes_within_batch: bool | None = None,
         deterministic_seed: int | None = None,
         classification_label_mode: str = "redlamp_multiclass",
+        family_intensity: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         # In the active balanced multiclass path, class quotas come from
         # train_balance_classes and the active taxonomy. anomaly_probability
@@ -87,6 +88,7 @@ class SyntheticAnomalyInjector:
         self.classification_label_mode = classification_label_mode
         self.epsilon = 1e-6
         self.deterministic_seed = deterministic_seed
+        self.family_intensity = family_intensity or {}
         self._rng: torch.Generator | None = None
         self._class_rotation_offset = 0
 
@@ -117,8 +119,18 @@ class SyntheticAnomalyInjector:
         )
         if unknown_families:
             raise ValueError(f"Unsupported anomaly_families: {unknown_families}")
+        unknown_intensity_families = sorted(
+            set(self.family_intensity) - set(self.family_registry)
+        )
+        if unknown_intensity_families:
+            raise ValueError(
+                f"Unsupported family_intensity families: {unknown_intensity_families}"
+            )
 
         self.reset_rng()
+
+    def _family_settings(self, family_name: str) -> dict[str, Any]:
+        return self.family_intensity.get(family_name, {})
 
     def _classification_class_names(self) -> tuple[str, ...]:
         if self.classification_label_mode == "binary":
@@ -314,9 +326,11 @@ class SyntheticAnomalyInjector:
             clean_channel_window, start_index, end_index
         )
         segment_length = segment.shape[0]
+        settings = self._family_settings("spike")
+        max_spikes = int(settings.get("max_spikes", 3))
         num_spikes = int(
             self._randint(
-                1, min(segment_length, 3) + 1, (1,), device=segment.device
+                1, min(segment_length, max_spikes) + 1, (1,), device=segment.device
             ).item()
         )
         spike_positions = (
@@ -324,7 +338,9 @@ class SyntheticAnomalyInjector:
             .sort()
             .values
         )
+        spike_multiplier = float(settings.get("spike_scale_multiplier", 1.0))
         spike_strength = self._segment_scale(segment) * self.spike_scale
+        spike_strength = spike_strength * spike_multiplier
         spike_noise = (
             self._randn(num_spikes, device=segment.device, dtype=segment.dtype)
             * spike_strength
@@ -392,9 +408,10 @@ class SyntheticAnomalyInjector:
         segment = self._extract_channel_segment(
             clean_channel_window, start_index, end_index
         )
+        factors = self._family_settings("speedup").get("factors", [1.5, 2.0, 3.0])
         speed_factor = float(
-            torch.tensor([1.5, 2.0, 3.0], device=segment.device)[
-                self._randint(0, 3, (1,), device=segment.device)
+            torch.tensor(factors, device=segment.device)[
+                self._randint(0, len(factors), (1,), device=segment.device)
             ].item()
         )
         source_positions = (
@@ -531,8 +548,9 @@ class SyntheticAnomalyInjector:
             clean_channel_window, start_index, end_index
         )
         center = segment.mean()
+        factors = self._family_settings("scale").get("factors", [0.25, 0.5, 1.5, 2.0])
         scale_factor_candidates = torch.tensor(
-            [0.25, 0.5, 1.5, 2.0], device=segment.device, dtype=segment.dtype
+            factors, device=segment.device, dtype=segment.dtype
         )
         scale_factor = float(
             scale_factor_candidates[

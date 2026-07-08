@@ -1,0 +1,12 @@
+protocol_name: smd_window20_cleanval_q99_ewma09
+window_size: 20
+offline_tail_policy: end_align
+offline_threshold_split: clean_validation
+offline_threshold_quantile: 0.99
+online_window_stride: 1
+online_threshold_split: clean_validation
+online_threshold_quantile: 0.99
+online_ewma_current_weight: 0.9
+online_ewma_previous_weight: 0.1
+test_label_usage: metrics_only
+point_adjustment: false

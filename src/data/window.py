@@ -5,6 +5,7 @@ from typing import Any
 import torch
 
 from src.core.contracts import validate_raw_sequence, validate_window
+from src.protocols.point_scores import build_nonoverlap_tail_window_starts
 
 
 def _clone_optional_tensor(optional_tensor: torch.Tensor | None) -> torch.Tensor | None:
@@ -17,16 +18,25 @@ def slice_sequence_into_windows(
     raw_sequence: dict[str, Any],
     window_size: int = 100,
     stride: int = 10,
+    tail_policy: str = "drop",
 ) -> list[dict[str, Any]]:
     validate_raw_sequence(raw_sequence)
     full_sequence = raw_sequence["x"]
     sequence_length = full_sequence.shape[0]
     if window_size > sequence_length:
         return []
+    if tail_policy not in {"drop", "end_align"}:
+        raise ValueError("tail_policy must be 'drop' or 'end_align'")
 
     sliced_windows: list[dict[str, Any]] = []
-    for start_index in range(0, sequence_length - window_size + 1, stride):
+    if tail_policy == "end_align":
+        start_indices = build_nonoverlap_tail_window_starts(sequence_length, window_size)
+    else:
+        start_indices = list(range(0, sequence_length - window_size + 1, stride))
+
+    for window_order, start_index in enumerate(start_indices):
         end_index = start_index + window_size
+        is_tail_window = tail_policy == "end_align" and start_index % window_size != 0
         window = {
             "x": full_sequence[start_index:end_index].clone(),
             "point_labels": None
@@ -60,6 +70,10 @@ def slice_sequence_into_windows(
                         "source_sequence_length",
                         raw_sequence["meta"]["sequence_length"],
                     )
+                ),
+                "tail_policy": tail_policy,
+                "is_tail_window": bool(
+                    is_tail_window and window_order == len(start_indices) - 1
                 ),
             },
         }

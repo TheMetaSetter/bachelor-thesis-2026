@@ -19,6 +19,30 @@ def select_point_score_threshold(
     return threshold
 
 
+def _select_nan_safe_quantile(point_scores: np.ndarray, quantile: float) -> float:
+    finite_scores = np.asarray(point_scores, dtype=float)
+    finite_scores = finite_scores[~np.isnan(finite_scores)]
+    if finite_scores.size == 0:
+        raise ValueError("Cannot select a threshold from only NaN scores")
+    return float(np.nanquantile(finite_scores, quantile))
+
+
+def select_clean_validation_point_threshold(
+    clean_validation_point_scores: np.ndarray,
+    quantile: float,
+) -> float:
+    """Select the official offline point threshold from clean validation only."""
+    return _select_nan_safe_quantile(clean_validation_point_scores, quantile)
+
+
+def select_online_ewma_threshold(
+    clean_validation_ewma_scores: np.ndarray,
+    quantile: float,
+) -> float:
+    """Select the online TTA threshold after clean-val stride-1 EWMA simulation."""
+    return _select_nan_safe_quantile(clean_validation_ewma_scores, quantile)
+
+
 def resolve_evaluation_threshold(
     point_scores: np.ndarray,
     *,

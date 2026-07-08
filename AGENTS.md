@@ -5,7 +5,7 @@ Locally, the root of this repo is: `/Users/conquerormikrokosmos/Downloads/LAPTOP
 On macos environment, please use `realpath` command to get the full file path everytime you cite a file or a folder. File paths may contain language-specific unicode characters (e.g., Vietnamese) so you need to be extra careful with file paths while reasoning and also when respond to me.
 
 All contributors and agents must strictly follow every requirement in `codebase_preferences.md`.
-The single source of truth for this codebase is the `documents/design/` directory under `documents/`.
+The single source of truth for this codebase is the `documents/` directory.
 
 ## Project Structure and Module Organization
 This repository is research-first and currently centers on notebooks, design documents, and reference codebases.

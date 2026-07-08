@@ -1,0 +1,7 @@
+profile_name: synthetic_redlamp12_legacy_window20
+window_size: 20
+min_segment_fraction: 0.2
+max_segment_fraction: 0.3
+spike_scale: 3.0
+anomaly_visibility_boost: 1.5
+family_intensity: {}

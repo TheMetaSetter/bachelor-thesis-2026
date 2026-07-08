@@ -359,8 +359,6 @@ def execute_two_stage_plan(
         for stage_record in training_stage_records:
             executed_stage_names.append(str(stage_record["stage_name"]))
             completed_stage_names.append(str(stage_record["stage_name"]))
-        completed_stage_names.append("evaluation")
-        executed_stage_names.append("evaluation")
     else:
         subprocess.run(training_commands[0], check=True)
         first_stage_name = str(training_stage_records[0]["stage_name"])
