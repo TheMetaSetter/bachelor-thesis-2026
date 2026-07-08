@@ -28,12 +28,25 @@ import yaml
 sys.path.append(str(Path(__file__).parent.parent))
 
 from scripts.visualize_synthetic_anomalies import build_demo_batch
+from src.data.collate import collate_windows
 from src.data.augment import REDLAMP_ANOMALY_FAMILIES, SyntheticAnomalyInjector
+from src.data.loaders import build_smd_dataset_bundle
 from src.protocols.synthetic_profile import injector_kwargs_from_synthetic_profile
+
+
+SMD_ENTITY_CONFIG_PATHS = {
+    "machine-1-6": "configs/data/smd_benchmark_machine_1_6_window20.yaml",
+    "machine-3-4": "configs/data/smd_benchmark_machine_3_4_window20.yaml",
+    "machine-3-9": "configs/data/smd_benchmark_machine_3_9_window20.yaml",
+}
 
 
 def _load_profile(path: Path) -> dict[str, Any]:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def _load_yaml(path: str | Path) -> dict[str, Any]:
+    return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
 
 
 def _resolve_visualization_seed(
@@ -44,6 +57,54 @@ def _resolve_visualization_seed(
         return int(requested_seed)
     active_rng = rng if rng is not None else np.random.default_rng()
     return int(active_rng.integers(0, 2**31 - 1))
+
+
+def _select_random_window_indices(
+    dataset_lengths: dict[str, int],
+    rng: Any,
+) -> dict[str, int]:
+    return {
+        entity_id: int(rng.integers(0, dataset_length))
+        for entity_id, dataset_length in dataset_lengths.items()
+    }
+
+
+def build_random_smd_entity_window_batch(
+    *,
+    entity_ids: list[str],
+    split_name: str,
+    seed: int,
+) -> dict[str, Any]:
+    """Build one random real SMD window per requested entity.
+
+    ₍^. .^₎⟆ Notebook data path
+
+    3 SMD entities
+      -> one random window from each entity
+      -> collated clean batch
+      -> synthetic profile comparison
+    """
+    rng = np.random.default_rng(seed)
+    datasets_by_entity = {}
+    for entity_id in entity_ids:
+        data_config = _load_yaml(SMD_ENTITY_CONFIG_PATHS[entity_id])
+        data_config["num_workers"] = 0
+        data_config["batch_size"] = 1
+        data_bundle = build_smd_dataset_bundle(data_config)
+        datasets_by_entity[entity_id] = data_bundle["datasets"][split_name]
+
+    window_indices = _select_random_window_indices(
+        {
+            entity_id: len(dataset)
+            for entity_id, dataset in datasets_by_entity.items()
+        },
+        rng,
+    )
+    windows = [
+        datasets_by_entity[entity_id][window_indices[entity_id]]
+        for entity_id in entity_ids
+    ]
+    return collate_windows(windows)
 
 
 def _ensure_demo_batch_has_enough_channels(
@@ -116,14 +177,28 @@ def _build_sample_plot_annotation(
     anomaly_family = metadata["anomaly_family"]
     start_index = metadata["start_index"]
     end_index = metadata["end_index"]
+    entity_id = metadata.get("entity_id", "unknown")
+    source_start_index = metadata.get("source_start_index", "unknown")
     return {
         "title": (
-            f"{profile_name} | anomaly={anomaly_family} "
+            f"{profile_name} | entity={entity_id} "
+            f"| window_start={source_start_index} | anomaly={anomaly_family} "
             f"| segment=[{start_index}, {end_index})"
         ),
         "injected_point_indices": _injected_point_indices(batch, sample_index),
         "affected_channels": list(metadata.get("affected_channels", [])),
     }
+
+
+def _attach_source_window_metadata(batch: dict[str, Any]) -> None:
+    for metadata, source_meta in zip(
+        batch["augmentation_metadata"],
+        batch["meta"],
+        strict=True,
+    ):
+        metadata["entity_id"] = source_meta.get("entity_id", "unknown")
+        metadata["source_start_index"] = int(source_meta.get("start_index", -1))
+        metadata["source_end_index"] = int(source_meta.get("end_index", -1))
 
 
 def _select_most_visible_sample_channel(
@@ -188,6 +263,7 @@ def _augment_until_three_visible_channels(
         candidate_batch = _build_injector(profile, candidate_seed).augment_batch(
             clean_batch
         )
+        _attach_source_window_metadata(candidate_batch)
         sample_index, _ = _select_most_visible_sample_channel(
             clean_batch,
             candidate_batch,
@@ -325,10 +401,17 @@ def _plot_first_sample(
 
 def run_comparison(args: argparse.Namespace) -> dict[str, Any]:
     base_seed = _resolve_visualization_seed(args.seed)
-    clean_batch = _ensure_demo_batch_has_enough_channels(
-        build_demo_batch(args.experiment_config),
-        min_channels=12,
-    )
+    if bool(args.use_smd_entities):
+        clean_batch = build_random_smd_entity_window_batch(
+            entity_ids=list(SMD_ENTITY_CONFIG_PATHS),
+            split_name=str(args.split),
+            seed=base_seed,
+        )
+    else:
+        clean_batch = _ensure_demo_batch_has_enough_channels(
+            build_demo_batch(args.experiment_config),
+            min_channels=12,
+        )
     legacy_profile = _load_profile(Path(args.legacy_profile))
     visible_profile = _load_profile(Path(args.visible_profile))
 
@@ -349,6 +432,8 @@ def run_comparison(args: argparse.Namespace) -> dict[str, Any]:
         "requested_seed": args.seed,
         "base_visualization_seed": base_seed,
         "experiment_config": args.experiment_config,
+        "source": "smd_entities" if bool(args.use_smd_entities) else "demo_batch",
+        "split": args.split if bool(args.use_smd_entities) else None,
         "visualization_seeds": {
             "legacy": legacy_seed,
             "visible": visible_seed,
@@ -387,6 +472,17 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         default="outputs/synthetic_profile_comparison",
+    )
+    parser.add_argument(
+        "--use-smd-entities",
+        action="store_true",
+        help="Sample one real SMD window from each benchmark entity.",
+    )
+    parser.add_argument(
+        "--split",
+        choices=["train", "val", "test"],
+        default="train",
+        help="Dataset split to sample when --use-smd-entities is enabled.",
     )
     summary = run_comparison(parser.parse_args())
     print(json.dumps(summary, indent=2, sort_keys=True))

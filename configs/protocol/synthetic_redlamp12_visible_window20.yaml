@@ -3,10 +3,10 @@ window_size: 20
 min_segment_fraction: 0.2
 max_segment_fraction: 0.4
 spike_scale: 3.0
-anomaly_visibility_boost: 2
+anomaly_visibility_boost: 1.5
 family_intensity:
   spike:
-    spike_scale_multiplier: 1.2
+    spike_scale_multiplier: 1
     max_spikes: 2
   flip:
     min_segment_fraction: 0.35

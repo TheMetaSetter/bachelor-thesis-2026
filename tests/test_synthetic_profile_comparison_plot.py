@@ -9,6 +9,7 @@ from scripts.compare_synthetic_profiles import (
     _resolve_visualization_seed,
     _select_most_visible_channels,
     _select_most_visible_sample_channel,
+    _select_random_window_indices,
 )
 
 
@@ -35,6 +36,8 @@ def test_sample_plot_annotation_names_profile_family_and_segment() -> None:
                 "start_index": 3,
                 "end_index": 7,
                 "affected_channels": [0, 2],
+                "entity_id": "machine-1-6",
+                "source_start_index": 120,
             }
         ],
         "synthetic_anomaly_mask": torch.tensor([[0, 0, 0, 1, 1, 0, 0, 0]]),
@@ -46,7 +49,10 @@ def test_sample_plot_annotation_names_profile_family_and_segment() -> None:
         sample_index=0,
     )
 
-    assert annotation["title"] == "Visible profile | anomaly=spike | segment=[3, 7)"
+    assert annotation["title"] == (
+        "Visible profile | entity=machine-1-6 | window_start=120 "
+        "| anomaly=spike | segment=[3, 7)"
+    )
     assert annotation["injected_point_indices"] == [3, 4]
     assert annotation["affected_channels"] == [0, 2]
 
@@ -121,3 +127,17 @@ def test_resolve_visualization_seed_uses_rng_when_seed_is_missing() -> None:
             return 123
 
     assert _resolve_visualization_seed(None, rng=FakeRng()) == 123
+
+
+def test_select_random_window_indices_samples_one_index_per_entity() -> None:
+    class FakeRng:
+        def integers(self, low: int, high: int) -> int:
+            assert low == 0
+            return high - 1
+
+    indices = _select_random_window_indices(
+        dataset_lengths={"machine-1-6": 3, "machine-3-4": 5},
+        rng=FakeRng(),
+    )
+
+    assert indices == {"machine-1-6": 2, "machine-3-4": 4}
