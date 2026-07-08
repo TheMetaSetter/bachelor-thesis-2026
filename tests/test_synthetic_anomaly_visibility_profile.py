@@ -54,7 +54,8 @@ def test_visible_profile_builds_injector_kwargs_without_changing_mixture() -> No
 
     assert kwargs["window_size"] == 20
     assert kwargs["min_segment_fraction"] == 0.2
-    assert kwargs["max_segment_fraction"] == 0.3
+    assert kwargs["max_segment_fraction"] == 0.4
+    assert kwargs["anomaly_visibility_boost"] == 2.0
     assert kwargs["family_intensity"]["mixture"] == {"keep_legacy_behavior": True}
 
 
