@@ -42,8 +42,8 @@ from src.models.thesis_multitask_components import (
     SyntheticAnomalyConfig,
     ThesisMultitaskModelConfig,
     build_multilayer_perceptron,
-    _initialize_mlp_linear_layers,
 )
+from src.models.neural_blocks import _initialize_mlp_linear_layers
 
 
 class ThesisMultitaskSetupMixin:

@@ -32,6 +32,7 @@ from src.data.augment import (
     SyntheticAnomalyInjector,
 )
 from src.models.base_model import BaseModel
+from src.models.neural_blocks import SimpleWindowCnnEncoder, build_multilayer_perceptron
 
 # Legacy Stage 3 label kept only so older configs and checkpoints still load.
 STAGE3_PHASE_LEGACY_NAME = "stage3_prototype_warmup"
@@ -39,123 +40,6 @@ STAGE3_PHASE_CANONICAL_NAME = "stage3_memory_initialization_and_fusion_warmup"
 TWO_STAGE_A_PHASE_NAME = "stage_a_multitask_pretraining"
 TWO_STAGE_B_PHASE_NAME = "stage_b_fusion_finetuning"
 TWO_STAGE_PHASE_NAMES = {TWO_STAGE_A_PHASE_NAME, TWO_STAGE_B_PHASE_NAME}
-
-
-def build_multilayer_perceptron(
-    *,
-    input_dim: int,
-    intermediate_dim: int,
-    output_dim: int,
-    num_linear_layers: int,
-    dropout: float,
-    apply_output_activation: bool,
-) -> nn.Sequential:
-    """Build a readable MLP with one explicit shared depth contract.
-
-    The repository keeps one thesis model in one file, so this helper exists
-    only to avoid repeating the same layer-construction pattern three times for
-    the encoder, reconstruction head, and classification head.
-    """
-    if num_linear_layers < 2:
-        raise ValueError("num_linear_layers must be at least 2")
-
-    layer_dims = (
-        [input_dim] + [intermediate_dim] * (num_linear_layers - 1) + [output_dim]
-    )
-    network_layers: list[nn.Module] = []
-    for layer_index, (layer_input_dim, layer_output_dim) in enumerate(
-        zip(layer_dims[:-1], layer_dims[1:])
-    ):
-        is_last_linear_layer = layer_index == num_linear_layers - 1
-        network_layers.append(nn.Linear(layer_input_dim, layer_output_dim))
-        if not is_last_linear_layer:
-            network_layers.append(nn.ReLU())
-            network_layers.append(nn.Dropout(dropout))
-        elif apply_output_activation:
-            network_layers.append(nn.ReLU())
-
-    mlp = nn.Sequential(*network_layers)
-    _initialize_mlp_linear_layers(mlp)
-    return mlp
-
-
-def _initialize_mlp_linear_layers(mlp: nn.Sequential) -> None:
-    """Apply the repository-wide MLP initialization policy.
-
-    Policy:
-    - Linear immediately followed by ReLU: Kaiming-uniform initialization.
-    - Final/output linear (not followed by ReLU): Xavier-uniform initialization.
-    - All linear biases: zero.
-    """
-    for layer_index, layer in enumerate(mlp):
-        if not isinstance(layer, nn.Linear):
-            continue
-        next_layer = mlp[layer_index + 1] if layer_index + 1 < len(mlp) else None
-        followed_by_relu = isinstance(next_layer, nn.ReLU)
-        if followed_by_relu:
-            nn.init.kaiming_uniform_(layer.weight, a=0.0, nonlinearity="relu")
-        else:
-            nn.init.xavier_uniform_(layer.weight)
-        if layer.bias is not None:
-            nn.init.zeros_(layer.bias)
-
-
-class SimpleWindowCnnEncoder(nn.Module):
-    def __init__(
-        self,
-        input_dim: int,
-        output_dim: int,
-        hidden_channels: int,
-        kernel_size: int,
-        num_layers: int,
-        dropout: float,
-    ) -> None:
-        super().__init__()
-        if input_dim <= 0:
-            raise ValueError("input_dim must be positive")
-        if output_dim <= 0:
-            raise ValueError("output_dim must be positive")
-        if hidden_channels <= 0:
-            raise ValueError("hidden_channels must be positive")
-        if kernel_size <= 0:
-            raise ValueError("kernel_size must be positive")
-        if num_layers < 2:
-            raise ValueError("num_layers must be at least 2")
-
-        layer_dims = [input_dim] + [hidden_channels] * (num_layers - 1) + [output_dim]
-        layers: list[nn.Module] = []
-        for layer_index, (layer_input_dim, layer_output_dim) in enumerate(
-            zip(layer_dims[:-1], layer_dims[1:])
-        ):
-            is_last_layer = layer_index == num_layers - 1
-            padding_total = kernel_size - 1
-            padding_left = padding_total // 2
-            padding_right = padding_total - padding_left
-            layers.append(nn.ConstantPad1d((padding_left, padding_right), 0.0))
-            layers.append(nn.Conv1d(layer_input_dim, layer_output_dim, kernel_size))
-            if not is_last_layer:
-                layers.append(nn.ReLU())
-                layers.append(nn.Dropout(dropout))
-            else:
-                layers.append(nn.ReLU())
-
-        self.network = nn.Sequential(*layers)
-        self._initialize_conv_layers()
-
-    def _initialize_conv_layers(self) -> None:
-        for layer in self.network:
-            if not isinstance(layer, nn.Conv1d):
-                continue
-            nn.init.kaiming_uniform_(layer.weight, a=0.0, nonlinearity="relu")
-            if layer.bias is not None:
-                nn.init.zeros_(layer.bias)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if x.ndim != 3:
-            raise ValueError("x must have shape [B, L, D]")
-        x_channel_first = x.transpose(1, 2)
-        hidden_channel_first = self.network(x_channel_first)
-        return hidden_channel_first.transpose(1, 2)
 
 
 class MultitaskWindowEncoder(nn.Module):

@@ -33,17 +33,11 @@
 
 ## 4. Model file organization and self-contained design
 
-- Keep everything related to one particular model placed inside 1 single file for that model.
+- Each model has exactly one public entrypoint in `src/models/`. The entrypoint owns the constructor, public inference/training API, configuration boundary, and checkpoint contract.
 
-- Stick to `1 model - 1 file` rule.
+- Helpers may be placed in separate files only when they are small reusable primitives or immutable configuration objects. Helpers must not use mixins to distribute a model lifecycle, define a second public model, or hide phase-specific runtime behavior.
 
-- All inference logic and training logic of one model need to be placed in one single file of that model, in a way such that user can read the easiest.
-
-- Core logic of one model, including inference and training logic, should be well-written and can be read from top-to-bottom in ONE SINGLE FILE of that model. The purpose is to make this self-contained.
-
-- All calculations directly related to one model need to be placed inside the single file of that model, or more ideally, to be placed within Python classes of that model.
-
-- All logic related to one model needs to be placed in one single file of that model.
+- A reader must still be able to start at the public model entrypoint and follow the complete runtime flow through explicitly named helpers without guessing.
 
 ---
 

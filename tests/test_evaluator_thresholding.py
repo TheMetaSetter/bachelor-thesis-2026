@@ -5,11 +5,8 @@ from typing import Any
 import numpy as np
 import torch
 
-from src.engine.evaluator import (
-    Evaluator,
-    reconstruct_pointwise_records_from_window_payload,
-    select_point_score_threshold,
-)
+from src.engine.evaluator import Evaluator, reconstruct_pointwise_records_from_window_payload
+from src.engine.thresholding import select_point_score_threshold
 from src.metrics.pointwise import (
     compute_binary_classification_metrics,
     compute_pointwise_curve_payload,

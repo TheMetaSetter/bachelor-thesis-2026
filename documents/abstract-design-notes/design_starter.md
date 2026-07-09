@@ -814,3 +814,8 @@ Current unresolved implementation problem: `src/engine/evaluator.py` currently c
 - Evaluators may compute different metrics, but they must still reduce predictions into the same `evaluation_record` schema.
 
 If these interfaces remain fixed, then the codebase can swap SMD for another dataset, or MOMENT for another encoder, without forcing broad rewrites across the framework.
+# Active source-layout note
+
+`src/models/` contains one public entrypoint per model. Reusable neural blocks,
+immutable configuration objects, and other model-independent primitives may
+live beside it, but model lifecycle mixins are not part of the target layout.
