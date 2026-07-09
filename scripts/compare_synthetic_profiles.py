@@ -99,10 +99,7 @@ def build_random_smd_entity_window_batch(
         datasets_by_entity[entity_id] = data_bundle["datasets"][split_name]
 
     window_indices = _select_random_window_indices(
-        {
-            entity_id: len(dataset)
-            for entity_id, dataset in datasets_by_entity.items()
-        },
+        {entity_id: len(dataset) for entity_id, dataset in datasets_by_entity.items()},
         rng,
     )
     windows = [
@@ -182,7 +179,9 @@ def _build_family_gallery_batches(
     return gallery_batches
 
 
-def _mean_abs_delta(clean_batch: dict[str, Any], augmented_batch: dict[str, Any]) -> float:
+def _mean_abs_delta(
+    clean_batch: dict[str, Any], augmented_batch: dict[str, Any]
+) -> float:
     delta = torch.abs(augmented_batch["x"] - clean_batch["x"])
     return float(delta.mean().detach().cpu())
 
@@ -454,7 +453,9 @@ def _plot_first_sample(
         visible_sample,
     )
     legacy_mask = legacy_batch["synthetic_anomaly_mask"][legacy_sample].detach().cpu()
-    visible_mask = visible_batch["synthetic_anomaly_mask"][visible_sample].detach().cpu()
+    visible_mask = (
+        visible_batch["synthetic_anomaly_mask"][visible_sample].detach().cpu()
+    )
     legacy_channels = _select_most_visible_channels(
         clean[legacy_sample],
         legacy[legacy_sample],

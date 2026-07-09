@@ -90,4 +90,3 @@ def ewma_scores(
         previous_score = float(smoothed[index])
 
     return smoothed
-

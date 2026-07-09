@@ -8,10 +8,11 @@ from src.core.contracts import validate_raw_sequence
 
 
 class SequenceStandardScaler:
-    def __init__(self, epsilon: float = 1e-6) -> None:
+    def __init__(self, epsilon: float = 1.0e-3) -> None:
         self.epsilon = epsilon
         self.feature_mean: torch.Tensor | None = None
         self.feature_std: torch.Tensor | None = None
+        self.feature_active_mask: torch.Tensor | None = None
 
     def fit(self, sequences: list[dict[str, Any]]) -> None:
         if not sequences:
@@ -24,17 +25,35 @@ class SequenceStandardScaler:
         )
         self.feature_mean = stacked_training_points.mean(dim=0)
         raw_feature_std = stacked_training_points.std(dim=0, unbiased=False)
-        self.feature_std = torch.clamp(raw_feature_std, min=self.epsilon)
+        self.feature_std = raw_feature_std
+        self.feature_active_mask = raw_feature_std > 0.0
+
+    def _resolve_active_feature_std(self) -> torch.Tensor:
+        if self.feature_std is None:
+            raise RuntimeError("Scaler must be fit before transform")
+        return torch.clamp(self.feature_std, min=self.epsilon)
 
     def transform_sequence(self, sequence: dict[str, Any]) -> dict[str, Any]:
         validate_raw_sequence(sequence)
-        if self.feature_mean is None or self.feature_std is None:
+        if (
+            self.feature_mean is None
+            or self.feature_std is None
+            or self.feature_active_mask is None
+        ):
             raise RuntimeError("Scaler must be fit before transform")
 
         transformed_sequence = dict(sequence)
-        transformed_sequence["x"] = (
-            sequence["x"] - self.feature_mean
-        ) / self.feature_std
+        transformed_x = sequence["x"].clone()
+        active_mask = self.feature_active_mask.to(device=transformed_x.device)
+        if bool(active_mask.any()):
+            scaled_feature_std = self._resolve_active_feature_std().to(
+                device=transformed_x.device
+            )
+            feature_mean = self.feature_mean.to(device=transformed_x.device)
+            transformed_x[:, active_mask] = (
+                sequence["x"][:, active_mask] - feature_mean[active_mask]
+            ) / scaled_feature_std[active_mask]
+        transformed_sequence["x"] = transformed_x
         transformed_sequence["meta"] = dict(sequence["meta"])
         return transformed_sequence
 
@@ -54,9 +73,15 @@ class SequenceStandardScaler:
             "epsilon": self.epsilon,
             "feature_mean": self.feature_mean,
             "feature_std": self.feature_std,
+            "feature_active_mask": self.feature_active_mask,
         }
 
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         self.epsilon = float(state_dict["epsilon"])
         self.feature_mean = state_dict["feature_mean"]
         self.feature_std = state_dict["feature_std"]
+        feature_active_mask = state_dict.get("feature_active_mask")
+        if feature_active_mask is None:
+            self.feature_active_mask = torch.ones_like(self.feature_std, dtype=torch.bool)
+        else:
+            self.feature_active_mask = feature_active_mask.to(dtype=torch.bool)

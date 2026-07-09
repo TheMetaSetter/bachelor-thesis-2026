@@ -27,7 +27,7 @@ def test_thesis_online_a0_wrapper_writes_protocol_report(tmp_path, monkeypatch) 
     output_dir = tmp_path / "outputs"
     _write_online_config(config_path, output_dir)
 
-    def fake_online_run(experiment_config):
+    def fake_online_run(*, experiment_config, protocol_config, online_variant, dry_run):
         return {
             "final_checkpoint_path": str(output_dir / "checkpoints" / "final.pt"),
             "metric_history": [{"online/step": 1}],
@@ -35,7 +35,7 @@ def test_thesis_online_a0_wrapper_writes_protocol_report(tmp_path, monkeypatch) 
         }
 
     monkeypatch.setattr(
-        "scripts.run_thesis_online_benchmark.run_online_adaptation_experiment",
+        "scripts.run_thesis_online_benchmark.run_thesis_online_tta_experiment",
         fake_online_run,
     )
 

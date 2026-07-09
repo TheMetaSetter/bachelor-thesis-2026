@@ -106,31 +106,36 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
         return list(self.model.encoder.parameters())
 
 
-class ResidualProjector(nn.Module):
-    # The projector is residual and near-identity on purpose. That makes it the
-    # safest first parameter group to adapt online.
+class NearIdentityMLPProjector(nn.Module):
+    # The projector is residual and near-identity on purpose. That keeps the
+    # first online step close to the calibrated latent space.
     def __init__(
-        self, hidden_dim: int, projector_hidden_dim: int, dropout: float = 0.0
+        self,
+        hidden_dim: int,
+        projector_hidden_dim: int,
+        dropout: float = 0.0,
+        init_alpha: float = 1.0e-3,
     ) -> None:
         super().__init__()
-        self.network = nn.Sequential(
-            nn.Linear(hidden_dim, projector_hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(projector_hidden_dim, hidden_dim),
-        )
+        self.fc1 = nn.Linear(hidden_dim, projector_hidden_dim)
+        self.activation = nn.GELU()
+        self.dropout = nn.Dropout(dropout)
+        self.fc2 = nn.Linear(projector_hidden_dim, hidden_dim)
+        self.alpha = nn.Parameter(torch.tensor(float(init_alpha)))
 
-        # Khởi tạo tham số của lớp Linear cuối cùng
-        # bằng 0 hết.
-        final_layer = self.network[-1]
-        if isinstance(final_layer, nn.Linear):
-            nn.init.zeros_(final_layer.weight)
-            nn.init.zeros_(final_layer.bias)
+        nn.init.kaiming_uniform_(self.fc1.weight, a=5**0.5)
+        nn.init.zeros_(self.fc1.bias)
+        nn.init.normal_(self.fc2.weight, mean=0.0, std=1.0e-4)
+        nn.init.zeros_(self.fc2.bias)
 
     def forward(self, hidden: torch.Tensor) -> torch.Tensor:
-        # Khi mới khởi tạo thì self.network(hidden)
-        # là ma trận chứa toàn số xấp xỉ 0.
-        return hidden + self.network(hidden)
+        # At initialization the residual branch is tiny, so the projector is
+        # almost an identity map but still trainable.
+        residual = self.fc1(hidden)
+        residual = self.activation(residual)
+        residual = self.dropout(residual)
+        residual = self.fc2(residual)
+        return hidden + self.alpha * residual
 
 
 class OnlineAdaptationModel(BaseModel):
@@ -190,11 +195,12 @@ class OnlineAdaptationModel(BaseModel):
         self.online_encoder = ThesisMultitaskEncoderAdapter(
             frozen_multitask_model, freeze_parameters=True
         )
-        self.projector = ResidualProjector(
+        self.online_mlp_projector = NearIdentityMLPProjector(
             hidden_dim=hidden_dim,
             projector_hidden_dim=projector_hidden_dim,
             dropout=projector_dropout,
         )
+        self.projector = self.online_mlp_projector
         self.projector_anchor_state_dict = self._clone_projector_state_dict()
         self._set_trainable_parameter_group(target_param_group)
         print_parameter_summary(
@@ -204,7 +210,7 @@ class OnlineAdaptationModel(BaseModel):
             {
                 "reference_encoder": self.reference_encoder,
                 "online_encoder": self.online_encoder,
-                "projector": self.projector,
+                "online_mlp_projector": self.online_mlp_projector,
             },
             input_dim=input_dim,
             encoder_dim=encoder_dim,
@@ -256,7 +262,7 @@ class OnlineAdaptationModel(BaseModel):
     def _clone_projector_state_dict(self) -> dict[str, torch.Tensor]:
         return {
             parameter_name: parameter.detach().cpu().clone()
-            for parameter_name, parameter in self.projector.state_dict().items()
+            for parameter_name, parameter in self.online_mlp_projector.state_dict().items()
         }
 
     def get_projector_anchor_state_dict(self) -> dict[str, torch.Tensor]:
@@ -280,11 +286,11 @@ class OnlineAdaptationModel(BaseModel):
             parameter.requires_grad = False
         for parameter in self.online_encoder.parameters():
             parameter.requires_grad = False
-        for parameter in self.projector.parameters():
+        for parameter in self.online_mlp_projector.parameters():
             parameter.requires_grad = False
 
         if target_param_group == "projector_params":
-            for parameter in self.projector.parameters():
+            for parameter in self.online_mlp_projector.parameters():
                 parameter.requires_grad = True
             console_print(
                 "MODEL",
@@ -307,7 +313,7 @@ class OnlineAdaptationModel(BaseModel):
 
     def get_parameter_group(self, target_param_group: str) -> list[nn.Parameter]:
         if target_param_group == "projector_params":
-            return list(self.projector.parameters())
+            return list(self.online_mlp_projector.parameters())
         if target_param_group == "online_encoder_params":
             return self.online_encoder.encoder_parameters()
         raise ValueError(
@@ -358,7 +364,7 @@ class OnlineAdaptationModel(BaseModel):
     def _compute_anchor_loss(self) -> torch.Tensor:
         # The anchor term measures drift away from the projector's initial state.
         anchor_loss = None
-        for parameter_name, parameter in self.projector.named_parameters():
+        for parameter_name, parameter in self.online_mlp_projector.named_parameters():
             anchor_parameter = self.projector_anchor_state_dict[parameter_name].to(
                 parameter.device
             )
@@ -372,7 +378,7 @@ class OnlineAdaptationModel(BaseModel):
 
     def _compute_projector_drift(self) -> torch.Tensor:
         drift_value = None
-        for parameter_name, parameter in self.projector.named_parameters():
+        for parameter_name, parameter in self.online_mlp_projector.named_parameters():
             anchor_parameter = self.projector_anchor_state_dict[parameter_name].to(
                 parameter.device
             )
@@ -401,7 +407,7 @@ class OnlineAdaptationModel(BaseModel):
         )
         reference_hidden = reference_outputs["hidden"]
         online_hidden = online_outputs["hidden"]
-        projected_hidden = self.projector(online_hidden)
+        projected_hidden = self.online_mlp_projector(online_hidden)
 
         scored_outputs = self.reference_encoder.score_from_hidden(
             projected_hidden, batch["x"]

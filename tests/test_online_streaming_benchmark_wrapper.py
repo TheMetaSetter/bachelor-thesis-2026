@@ -1,0 +1,172 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+import torch
+import yaml
+
+from scripts.run_online_streaming_benchmark import run_online_streaming_benchmark
+
+
+class _FakeOnlineBaseline:
+    def __init__(self) -> None:
+        self.calibrate_calls = 0
+        self.run_calls = 0
+
+    def calibrate(self, clean_validation_sequences, protocol_config, device: str):
+        self.calibrate_calls += 1
+        return {
+            "threshold_artifact": {
+                "thresholds": {
+                    "offline_point": {"value": 0.3, "source_split": "clean_validation"},
+                    "online_ewma_point": {
+                        "value": 0.4,
+                        "source_split": "clean_validation",
+                    },
+                }
+            },
+            "threshold_value": 0.4,
+            "threshold_source": "clean_validation_stride1_ewma",
+        }
+
+    def run_sequence(self, sequence, threshold_value, protocol_config, device: str):
+        self.run_calls += 1
+        return (
+            [
+                {
+                    "online/step": 1,
+                    "online/raw_point_score": 0.1,
+                    "online/ewma_point_score": 0.1,
+                    "online/threshold": threshold_value,
+                    "online/prediction": 0,
+                    "online/did_update": False,
+                    "online/loss_total": None,
+                    "online/triage_decision": "hard_old_normality",
+                    "online/verification_buffer_size": 0,
+                    "online/ttl_buffer_size": 0,
+                }
+            ],
+            [
+                {
+                    "entity_id": sequence["meta"]["entity_id"],
+                    "point_index": 19,
+                    "window_start_index": 0,
+                    "window_end_index": 20,
+                    "raw_point_score": 0.1,
+                    "ewma_point_score": 0.1,
+                    "latent_window_score": 0.1,
+                    "threshold": threshold_value,
+                    "prediction": 0,
+                    "online_variant": "A0",
+                    "triage_decision": "hard_old_normality",
+                    "did_update": False,
+                    "loss_total": None,
+                }
+            ],
+        )
+
+
+def _build_sequence(entity_id: str) -> dict[str, object]:
+    return {
+        "x": torch.randn(40, 38),
+        "point_labels": torch.zeros(40, dtype=torch.long),
+        "mask": torch.ones(40, 38),
+        "timestamps": torch.arange(40),
+        "meta": {
+            "dataset_name": "smd",
+            "entity_id": entity_id,
+            "split": "test",
+            "sequence_length": 40,
+            "source_sequence_length": 40,
+        },
+    }
+
+
+def test_online_streaming_benchmark_writes_shared_report(tmp_path, monkeypatch) -> None:
+    config_path = tmp_path / "online_benchmark.yaml"
+    protocol_path = tmp_path / "protocol.yaml"
+    output_dir = tmp_path / "outputs"
+
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "benchmark_name": "fake-online-benchmark",
+                "baseline_name": "fake",
+                "baseline_kwargs": {},
+                "data_config_path": "configs/data/smd_benchmark_machine_1_6_window20.yaml",
+                "output_dir": str(output_dir),
+                "protocol_config_path": str(protocol_path),
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    protocol_path.write_text(
+        yaml.safe_dump(
+            {
+                "protocol_name": "smd_window20_cleanval_q99_ewma09",
+                "window_size": 20,
+                "offline_tail_policy": "end_align",
+                "offline_threshold_split": "clean_validation",
+                "offline_threshold_quantile": 0.99,
+                "online_window_stride": 1,
+                "online_threshold_split": "clean_validation",
+                "online_threshold_quantile": 0.99,
+                "online_ewma_current_weight": 0.9,
+                "online_ewma_previous_weight": 0.1,
+                "test_label_usage": "metrics_only",
+                "point_adjustment": False,
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    fake_baseline = _FakeOnlineBaseline()
+    monkeypatch.setattr(
+        "scripts.run_online_streaming_benchmark.BASELINE_BUILDERS",
+        {"fake": lambda **kwargs: fake_baseline},
+    )
+    monkeypatch.setattr(
+        "scripts.run_online_streaming_benchmark.load_yaml_config",
+        lambda path: yaml.safe_load(Path(path).read_text(encoding="utf-8")),
+    )
+    monkeypatch.setattr(
+        "scripts.run_online_streaming_benchmark.build_dataset",
+        lambda name, config: {
+            "scaled_sequences": {
+                "val": [_build_sequence("machine-1-6")],
+                "test": [_build_sequence("machine-1-6")],
+            }
+        },
+    )
+    monkeypatch.setattr(
+        "scripts.run_online_streaming_benchmark.register_evaluation_runtime_components",
+        lambda: None,
+    )
+
+    report = run_online_streaming_benchmark(
+        benchmark_config_path=str(config_path),
+        protocol_config_path=str(protocol_path),
+        dry_run=False,
+    )
+
+    assert fake_baseline.calibrate_calls == 1
+    assert fake_baseline.run_calls == 1
+    assert report["online_execution"]["threshold_source"] == (
+        "clean_validation_stride1_ewma"
+    )
+    assert (
+        output_dir / "benchmark" / "online_streaming_benchmark_report.json"
+    ).exists()
+    assert (output_dir / "thresholds" / "online_thresholds.json").exists()
+    assert (output_dir / "online_metrics.json").exists()
+    assert (output_dir / "online_records.json").exists()
+    threshold_payload = json.loads(
+        (output_dir / "thresholds" / "online_thresholds.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert threshold_payload["thresholds"]["online_ewma_point"]["value"] == 0.4

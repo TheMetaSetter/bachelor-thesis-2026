@@ -1,0 +1,17 @@
+benchmark_name: smd__kmeans_ad__online_A2__machine_3_4__w20__seed36__smoke
+baseline_name: kmeans_ad
+online_variant: A2
+entity_id: machine_3_4
+seed: 36
+window_size: 20
+data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
+protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
+output_dir: outputs/benchmark_smoke/online_streaming/smd/kmeans_ad/A2/machine_3_4/seed36
+device: cpu
+baseline_kwargs:
+  window_size: 20
+  n_clusters: 4
+  normalize_windows: true
+  threshold_quantile: 0.99
+  seed: 36
+benchmark_mode: smoke

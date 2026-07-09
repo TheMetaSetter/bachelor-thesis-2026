@@ -63,12 +63,12 @@ def test_benchmark_two_method_configs_share_the_same_windowing_contract() -> Non
                     assert loaded_config["model"]["model_name"] == "thesis_multitask"
                     assert (
                         loaded_config["two_stage"]["expected_total_training_epochs"]
-                        == 100
+                        == 30
                     )
-                    assert loaded_config["two_stage"]["stage_a_multitask_epochs"] == 80
+                    assert loaded_config["two_stage"]["stage_a_multitask_epochs"] == 25
                     assert (
                         loaded_config["two_stage"]["stage_b_fusion_finetuning_epochs"]
-                        == 20
+                        == 5
                     )
                 if method == "thesis_point_score":
                     assert (

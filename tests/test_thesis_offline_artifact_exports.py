@@ -4,9 +4,13 @@ from pathlib import Path
 
 import json
 import numpy as np
+import torch
 import yaml
 
-from scripts.run_thesis_offline_benchmark import run_thesis_offline_benchmark
+from scripts.run_thesis_offline_benchmark import (
+    collect_offline_artifact_inputs,
+    run_thesis_offline_benchmark,
+)
 
 
 def _write_experiment_config(path: Path, output_dir: Path) -> None:
@@ -74,7 +78,9 @@ def test_thesis_offline_wrapper_writes_dry_run_report(tmp_path, monkeypatch) -> 
     assert report["benchmark_status"] == "dry_run"
 
 
-def test_thesis_offline_wrapper_exports_protocol_artifacts(tmp_path, monkeypatch) -> None:
+def test_thesis_offline_wrapper_exports_protocol_artifacts(
+    tmp_path, monkeypatch
+) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     output_dir = tmp_path / "outputs"
     _write_experiment_config(experiment_config_path, output_dir)
@@ -86,7 +92,11 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(tmp_path, monkeypatch
         }
 
     def fake_execute(manifest, dry_run, skip_completed):
-        return {"status": "completed", "dry_run": dry_run, "skip_completed": skip_completed}
+        return {
+            "status": "completed",
+            "dry_run": dry_run,
+            "skip_completed": skip_completed,
+        }
 
     def fake_collect(*, experiment_config, protocol_config, manifest, execution_report):
         return {
@@ -155,3 +165,98 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(tmp_path, monkeypatch
     )
     clean_scores = np.load(output_dir / "scores" / "clean_validation_point_scores.npz")
     assert np.allclose(clean_scores["point_scores"], [0.1, 0.2, 0.3])
+
+
+def test_collect_offline_artifact_inputs_uses_checkpoint_and_three_splits(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    calls: list[str] = []
+
+    class FakeCheckpointManager:
+        def __init__(self, checkpoint_dir):
+            calls.append(f"checkpoint_dir:{checkpoint_dir}")
+
+        def load_checkpoint(self, checkpoint_path, model, optimizer=None):
+            calls.append(f"checkpoint:{checkpoint_path}")
+            return {"scaler_state_dict": {"mean": [0.0]}, "extra_state": {}}
+
+    class FakeEvaluator:
+        def __init__(self, device, vus_max_buffer_size=None, vus_num_thresholds=200):
+            calls.append(f"evaluator:{device}:{vus_num_thresholds}")
+
+        def evaluate(
+            self,
+            model,
+            data_loader,
+            point_score_threshold=None,
+            threshold_source=None,
+        ):
+            split_name = data_loader["split_name"]
+            calls.append(f"evaluate:{split_name}")
+            score_base = {"val": 0.1, "val_synth": 0.4, "test": 0.7}[split_name]
+            return {
+                "records": [
+                    {
+                        "entity_id": "machine-1-6",
+                        "point_scores": torch.tensor([score_base, score_base + 0.1]),
+                        "point_labels": torch.tensor([0, 1]),
+                        "covered_point_mask": torch.tensor([True, True]),
+                    }
+                ],
+                "metrics": {"threshold": score_base, "split_name": split_name},
+            }
+
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.register_evaluation_runtime_components",
+        lambda: calls.append("register"),
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.build_dataset",
+        lambda name, config: {
+            "loaders": {
+                "val": {"split_name": "val"},
+                "val_synth": {"split_name": "val_synth"},
+                "test": {"split_name": "test"},
+            }
+        },
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.build_model_from_experiment_config",
+        lambda config: torch.nn.Linear(1, 1),
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.CheckpointManager",
+        FakeCheckpointManager,
+    )
+    monkeypatch.setattr("scripts.run_thesis_offline_benchmark.Evaluator", FakeEvaluator)
+
+    experiment_config = {
+        "checkpoint_dir": str(tmp_path / "checkpoints"),
+        "data": {"dataset_name": "smd"},
+        "device": "cpu",
+        "evaluation": {"vus_num_thresholds": 17},
+        "seed": 6,
+    }
+    manifest = {"evaluation": {"checkpoint_path": str(tmp_path / "best.pt")}}
+
+    artifact_inputs = collect_offline_artifact_inputs(
+        experiment_config=experiment_config,
+        protocol_config={"offline_threshold_quantile": 0.99, "window_size": 20},
+        manifest=manifest,
+        execution_report={"status": "completed"},
+    )
+
+    assert calls == [
+        "register",
+        f"checkpoint_dir:{tmp_path / 'checkpoints'}",
+        f"checkpoint:{tmp_path / 'best.pt'}",
+        "evaluator:cpu:17",
+        "evaluate:val",
+        "evaluate:val_synth",
+        "evaluate:test",
+    ]
+    assert artifact_inputs["entity_id"] == "machine-1-6"
+    assert artifact_inputs["seed"] == 6
+    assert artifact_inputs["variant_name"] == "O0"
+    assert np.allclose(artifact_inputs["test"]["point_scores"], [0.7, 0.8])

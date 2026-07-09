@@ -1,0 +1,13 @@
+benchmark_name: smd__stumpy_channel_ab__offline__machine_1_6__w20__seed8__main
+baseline_name: stumpy_channel_ab
+entity_id: machine-1-6
+seed: 8
+window_size: 20
+data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml
+protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
+output_dir: outputs/benchmark/smd/offline_benchmark/stumpy_channel_ab/machine_1_6/seed8
+baseline_kwargs:
+  window_size: 20
+  normalize: true
+  p: 2.0
+  threshold_quantile: 0.99

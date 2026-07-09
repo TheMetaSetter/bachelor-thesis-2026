@@ -116,6 +116,21 @@ window = {
 
 The new fields `tail_policy` and `is_tail_window` must be additive. Existing code that ignores them should keep working.
 
+### 2.1.1 Channel Scaling Contract
+
+Train-time scaling must decide one mask per channel:
+
+```python
+channel_is_scaled = train_channel_std > 0
+```
+
+Rules:
+
+- Fit the scaler on train only.
+- For channels where `channel_is_scaled` is `False`, leave `x[:, channel]` unchanged on train, clean validation, synthetic validation, and test.
+- For channels where `channel_is_scaled` is `True`, standardize with denominator `max(train_channel_std, 1e-3)`.
+- Store the mask inside the scaler state so checkpoint reloads preserve the exact same decision on validation and test.
+
 ### 2.2 Point Score Contract
 
 All methods must export point scores as:
@@ -217,6 +232,7 @@ configs/protocol/synthetic_redlamp12_visible_window20.yaml
 Modify:
 
 ```text
+src/data/scalers.py
 src/data/window.py
 src/core/config.py
 src/core/config_experiment_validation.py
@@ -326,6 +342,8 @@ def select_online_ewma_threshold(
 
 Use `np.nanquantile` and ignore `nan` warm-up points.
 
+In `src/data/scalers.py`, keep the existing API shape but add channel masking so zero-variance train channels pass through unchanged on every split. Active channels should use a denominator floor of `1e-3`.
+
 In `src/protocols/threshold_artifact.py`, define:
 
 ```python
@@ -365,6 +383,7 @@ Important cases:
 - Existing windowizer tests still pass.
 - No existing train config changes behavior unless it sets the new tail policy.
 - New protocol config loads through the config system.
+- Scaler round-trips preserve the train-derived channel mask and keep zero-variance channels unchanged on train, clean validation, synthetic validation, and test.
 
 ## 4. Phase 2: Synthetic Profile Comparison
 

@@ -24,7 +24,8 @@ import yaml
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from scripts.run_online_adaptation import run_online_adaptation_experiment
+from src.core.config import load_experiment_config
+from src.engine.online_tta.online_engine import run_thesis_online_tta_experiment
 from src.protocols.smd_benchmark_protocol import validate_protocol_config
 
 
@@ -36,6 +37,22 @@ def _utc_now_iso() -> str:
 
 def _load_yaml_config(path: str) -> dict[str, Any]:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+
+
+def _load_experiment_config_with_compatibility(
+    experiment_config_path: str,
+) -> dict[str, Any]:
+    raw_config = _load_yaml_config(experiment_config_path)
+    has_config_references = all(
+        key in raw_config
+        for key in ("data_config_path", "model_config_path", "task_config_path")
+    )
+    if not has_config_references:
+        return raw_config
+    try:
+        return load_experiment_config(experiment_config_path)
+    except (FileNotFoundError, ValueError):
+        return raw_config
 
 
 def _normalize_online_records(
@@ -76,14 +93,18 @@ def run_thesis_online_benchmark(
     if online_variant not in {"A0", "A1", "A2"}:
         raise ValueError("online_variant must be one of: A0, A1, A2")
 
-    experiment_config = _load_yaml_config(experiment_config_path)
+    experiment_config = _load_experiment_config_with_compatibility(
+        experiment_config_path
+    )
     protocol_config = _load_yaml_config(protocol_config_path)
     validate_protocol_config(protocol_config)
 
-    if dry_run:
-        online_outputs = {"final_checkpoint_path": None, "metric_history": [], "records": []}
-    else:
-        online_outputs = run_online_adaptation_experiment(experiment_config)
+    online_outputs = run_thesis_online_tta_experiment(
+        experiment_config=experiment_config,
+        protocol_config=protocol_config,
+        online_variant=online_variant,
+        dry_run=dry_run,
+    )
     online_outputs = dict(online_outputs)
     online_outputs["records"] = _normalize_online_records(
         list(online_outputs.get("records", [])),

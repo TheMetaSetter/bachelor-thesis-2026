@@ -84,12 +84,27 @@ class CheckpointManager:
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer | None = None,
         scheduler: Any | None = None,
+        *,
+        strict: bool = True,
     ) -> dict[str, Any]:
         console_print(
-            "CHECKPOINT", "Loading checkpoint", checkpoint_path=checkpoint_path
+            "CHECKPOINT",
+            "Loading checkpoint",
+            checkpoint_path=checkpoint_path,
+            strict=strict,
         )
         loaded_checkpoint = torch.load(checkpoint_path, map_location="cpu")
-        model.load_state_dict(loaded_checkpoint["model_state_dict"])
+        load_result = model.load_state_dict(
+            loaded_checkpoint["model_state_dict"],
+            strict=strict,
+        )
+        if not strict and hasattr(load_result, "missing_keys"):
+            console_print(
+                "CHECKPOINT",
+                "Loaded checkpoint with compatibility mode",
+                missing_keys=list(load_result.missing_keys),
+                unexpected_keys=list(load_result.unexpected_keys),
+            )
         if hasattr(model, "load_checkpoint_extra_state"):
             model.load_checkpoint_extra_state(loaded_checkpoint.get("extra_state"))
         if optimizer is not None:

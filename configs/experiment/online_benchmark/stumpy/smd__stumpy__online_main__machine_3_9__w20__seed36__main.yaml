@@ -1,0 +1,17 @@
+benchmark_name: smd__stumpy__online_main__machine_3_9__w20__seed36__main
+baseline_name: stumpy
+online_variant: main
+entity_id: machine_3_9
+seed: 36
+window_size: 20
+data_config_path: configs/data/smd_benchmark_machine_3_9_window20.yaml
+protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
+output_dir: outputs/benchmark/online_streaming/smd/stumpy/main/machine_3_9/seed36
+device: cuda
+baseline_kwargs:
+  window_size: 20
+  normalize: true
+  p: 2.0
+  threshold_quantile: 0.99
+  seed: 36
+benchmark_mode: main

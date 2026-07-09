@@ -1,0 +1,17 @@
+benchmark_name: smd__iforest__online_A0__machine_3_9__w20__seed6__smoke
+baseline_name: iforest
+online_variant: A0
+entity_id: machine_3_9
+seed: 6
+window_size: 20
+data_config_path: configs/data/smd_benchmark_machine_3_9_window20.yaml
+protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
+output_dir: outputs/benchmark_smoke/online_streaming/smd/iforest/A0/machine_3_9/seed6
+device: cpu
+baseline_kwargs:
+  window_size: 20
+  n_estimators: 20
+  normalize_windows: true
+  threshold_quantile: 0.99
+  seed: 6
+benchmark_mode: smoke

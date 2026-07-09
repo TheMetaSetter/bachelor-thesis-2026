@@ -27,12 +27,18 @@ import yaml
 
 sys.path.append(str(Path(__file__).parent.parent))
 
+from scripts.train import build_model_from_experiment_config
 from scripts.run_two_stage_offline_pretraining import (
     execute_two_stage_plan,
     materialize_two_stage_run_manifest,
     validate_two_stage_epoch_budget,
 )
 from src.core.config import load_experiment_config
+from src.core.registry import build_dataset
+from src.core.runtime_components import register_evaluation_runtime_components
+from src.data.loaders import rebuild_dataset_bundle_with_scaler_state
+from src.engine.checkpoint import CheckpointManager
+from src.engine.evaluator import Evaluator
 from src.engine.thresholding import (
     select_clean_validation_point_threshold,
     select_online_ewma_threshold,
@@ -87,10 +93,154 @@ def collect_offline_artifact_inputs(
     manifest: dict[str, Any],
     execution_report: dict[str, Any],
 ) -> dict[str, Any]:
-    raise NotImplementedError(
-        "Offline artifact collection needs a completed evaluation hook. "
-        "Tests can monkeypatch this function while the evaluator integration lands."
+    register_evaluation_runtime_components()
+    data_bundle = build_dataset(
+        experiment_config["data"]["dataset_name"],
+        experiment_config["data"],
     )
+    model = build_model_from_experiment_config(experiment_config)
+    checkpoint_payload = _load_evaluation_checkpoint(
+        experiment_config,
+        manifest,
+        model,
+    )
+    data_bundle = _maybe_rebuild_with_checkpoint_scaler(
+        data_bundle,
+        experiment_config,
+        checkpoint_payload,
+    )
+    evaluator = _build_evaluator(experiment_config)
+    split_outputs = _evaluate_offline_benchmark_splits(
+        evaluator=evaluator,
+        model=model,
+        loaders=data_bundle["loaders"],
+        protocol_config=protocol_config,
+    )
+    return {
+        "entity_id": _first_entity_id(split_outputs["test"]),
+        "seed": int(experiment_config.get("seed", 0)),
+        "variant_name": str(experiment_config.get("offline_variant", "O0")),
+        "clean_validation": split_outputs["clean_validation_payload"],
+        "synthetic_validation": _evaluation_outputs_to_score_payload(
+            split_outputs["synthetic_validation"],
+        ),
+        "test": _evaluation_outputs_to_score_payload(split_outputs["test"]),
+        "offline_metrics": dict(split_outputs["test"]["metrics"]),
+    }
+
+
+def _load_evaluation_checkpoint(
+    experiment_config: dict[str, Any],
+    manifest: dict[str, Any],
+    model: Any,
+) -> dict[str, Any]:
+    checkpoint_path = manifest["evaluation"]["checkpoint_path"]
+    checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
+    return checkpoint_manager.load_checkpoint(checkpoint_path, model, strict=False)
+
+
+def _maybe_rebuild_with_checkpoint_scaler(
+    data_bundle: dict[str, Any],
+    experiment_config: dict[str, Any],
+    checkpoint_payload: dict[str, Any],
+) -> dict[str, Any]:
+    if "raw_sequences" not in data_bundle:
+        return data_bundle
+    scaler_state = checkpoint_payload.get("scaler_state_dict")
+    if scaler_state is None:
+        return data_bundle
+    return rebuild_dataset_bundle_with_scaler_state(
+        data_bundle=data_bundle,
+        data_config=experiment_config["data"],
+        scaler_state_dict=scaler_state,
+    )
+
+
+def _build_evaluator(experiment_config: dict[str, Any]) -> Evaluator:
+    evaluation_config = dict(experiment_config.get("evaluation", {}))
+    return Evaluator(
+        device=str(experiment_config["device"]),
+        vus_max_buffer_size=evaluation_config.get("vus_max_buffer_size"),
+        vus_num_thresholds=int(evaluation_config.get("vus_num_thresholds", 200)),
+    )
+
+
+def _evaluate_offline_benchmark_splits(
+    *,
+    evaluator: Evaluator,
+    model: Any,
+    loaders: dict[str, Any],
+    protocol_config: dict[str, Any],
+) -> dict[str, Any]:
+    clean_outputs = evaluator.evaluate(model, loaders["val"])
+    clean_payload = _evaluation_outputs_to_score_payload(clean_outputs)
+    clean_threshold = select_clean_validation_point_threshold(
+        clean_payload["point_scores"],
+        quantile=float(protocol_config["offline_threshold_quantile"]),
+    )
+    synthetic_outputs = _evaluate_named_split(
+        evaluator,
+        model,
+        loaders,
+        split_name="val_synth",
+        fallback_split_name="val",
+        point_score_threshold=clean_threshold,
+    )
+    test_outputs = evaluator.evaluate(
+        model,
+        loaders["test"],
+        point_score_threshold=clean_threshold,
+        threshold_source="clean_validation_quantile",
+    )
+    return {
+        "clean_validation": clean_outputs,
+        "clean_validation_payload": clean_payload,
+        "synthetic_validation": synthetic_outputs,
+        "test": test_outputs,
+    }
+
+
+def _evaluate_named_split(
+    evaluator: Evaluator,
+    model: Any,
+    loaders: dict[str, Any],
+    *,
+    split_name: str,
+    fallback_split_name: str,
+    point_score_threshold: float,
+) -> dict[str, Any]:
+    loader = loaders.get(split_name, loaders[fallback_split_name])
+    return evaluator.evaluate(
+        model,
+        loader,
+        point_score_threshold=point_score_threshold,
+        threshold_source="clean_validation_quantile",
+    )
+
+
+def _evaluation_outputs_to_score_payload(
+    evaluation_outputs: dict[str, Any],
+) -> dict[str, np.ndarray]:
+    score_arrays: list[np.ndarray] = []
+    label_arrays: list[np.ndarray] = []
+    mask_arrays: list[np.ndarray] = []
+    for record in evaluation_outputs["records"]:
+        mask = np.asarray(record["covered_point_mask"], dtype=bool)
+        score_arrays.append(np.asarray(record["point_scores"], dtype=float)[mask])
+        label_arrays.append(np.asarray(record["point_labels"], dtype=np.int64)[mask])
+        mask_arrays.append(np.ones(int(mask.sum()), dtype=bool))
+    return {
+        "point_scores": np.concatenate(score_arrays),
+        "point_labels": np.concatenate(label_arrays),
+        "covered_point_mask": np.concatenate(mask_arrays),
+    }
+
+
+def _first_entity_id(evaluation_outputs: dict[str, Any]) -> str:
+    records = evaluation_outputs["records"]
+    if not records:
+        return "unknown"
+    return str(records[0]["entity_id"])
 
 
 def _build_thresholds(

@@ -160,7 +160,10 @@ def run_evaluation_experiment(
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
     loaded_checkpoint = checkpoint_manager.load_checkpoint(
-        checkpoint_path, model, optimizer
+        checkpoint_path,
+        model,
+        optimizer,
+        strict=False,
     )
     checkpoint_scaler_state = loaded_checkpoint["scaler_state_dict"]
     checkpoint_extra_state = loaded_checkpoint.get("extra_state") or {}

@@ -1,0 +1,17 @@
+benchmark_name: smd__kmeans_ad__online_A1__machine_1_6__w20__seed6__main
+baseline_name: kmeans_ad
+online_variant: A1
+entity_id: machine_1_6
+seed: 6
+window_size: 20
+data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml
+protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
+output_dir: outputs/benchmark/online_streaming/smd/kmeans_ad/A1/machine_1_6/seed6
+device: cuda
+baseline_kwargs:
+  window_size: 20
+  n_clusters: 20
+  normalize_windows: true
+  threshold_quantile: 0.99
+  seed: 6
+benchmark_mode: main

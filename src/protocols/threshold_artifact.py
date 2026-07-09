@@ -61,4 +61,3 @@ def write_threshold_artifact(artifact: dict[str, Any], output_path: Path) -> Non
 
 def load_threshold_artifact(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
-

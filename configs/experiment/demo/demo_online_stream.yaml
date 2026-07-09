@@ -1,0 +1,2 @@
+online_report_path: outputs/benchmark/online_streaming_benchmark_report.json
+output_dir: outputs/demo/online

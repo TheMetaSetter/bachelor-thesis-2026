@@ -883,6 +883,7 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
     ]:
         config_reference = Path(root_config[reference_field])
         if not config_reference.is_absolute():
+            candidate_reference = None
             if config_reference.parts and config_reference.parts[0] == "configs":
                 repository_root = experiment_path.parent
                 while (
@@ -890,9 +891,19 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
                     and not (repository_root / "configs").exists()
                 ):
                     repository_root = repository_root.parent
-                config_reference = repository_root / config_reference
-            else:
-                config_reference = experiment_path.parent / config_reference
+                repository_candidate = repository_root / config_reference
+                if repository_candidate.exists():
+                    candidate_reference = repository_candidate
+            if candidate_reference is None:
+                sibling_candidate = experiment_path.parent / config_reference
+                if sibling_candidate.exists():
+                    candidate_reference = sibling_candidate
+            if candidate_reference is None:
+                cwd_candidate = Path.cwd() / config_reference
+                if cwd_candidate.exists():
+                    candidate_reference = cwd_candidate
+            if candidate_reference is not None:
+                config_reference = candidate_reference
         console_print(
             "CONFIG",
             "Resolving referenced config",

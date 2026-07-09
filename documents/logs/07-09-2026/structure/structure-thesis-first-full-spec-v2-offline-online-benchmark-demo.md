@@ -23,6 +23,12 @@ The central rule is simple: data protocol, point-score protocol, threshold artif
 
 Clean validation, synthetic validation, and test must use non-overlapping windows. If a sequence has a final leftover segment shorter than `window_size`, create one final full window ending at the sequence end. Only that final window may overlap the previous window. Overlapped points average their anomaly scores.
 
+Scaler rule:
+
+- Fit the sequence scaler on train only.
+- If a train channel has zero standard deviation, leave that channel unchanged on train, clean validation, synthetic validation, and test.
+- If a train channel has non-zero standard deviation, standardize it on every split with denominator floor `1e-3`.
+
 ```text
 ₍^. .^₎⟆ offline score path
 

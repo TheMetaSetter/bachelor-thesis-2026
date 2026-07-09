@@ -600,6 +600,11 @@ class ThesisMultitaskStateMixin:
                 raise ValueError(
                     "discrete_hidden_tokens_by_class must contain at least one class"
                 )
+            per_class_counts = [
+                self.discrete_codebook_size // self.num_classes
+                + (1 if class_index < self.discrete_codebook_size % self.num_classes else 0)
+                for class_index in range(self.num_classes)
+            ]
             fallback_hidden_tokens = torch.cat(
                 [
                     discrete_hidden_tokens_by_class[class_index]
@@ -608,14 +613,16 @@ class ThesisMultitaskStateMixin:
                 dim=0,
             )
             class_stratified_vectors: list[torch.Tensor] = []
-            for class_index in range(self.num_classes):
+            for class_index, class_target_count in enumerate(per_class_counts):
+                if class_target_count == 0:
+                    continue
                 class_hidden_tokens = discrete_hidden_tokens_by_class.get(class_index)
                 if class_hidden_tokens is None or class_hidden_tokens.shape[0] == 0:
                     class_hidden_tokens = fallback_hidden_tokens
                 class_stratified_vectors.append(
                     self._run_kmeans(
                         class_hidden_tokens,
-                        self.discrete_codebook_size // self.num_classes,
+                        class_target_count,
                         num_iterations=10,
                     )
                 )

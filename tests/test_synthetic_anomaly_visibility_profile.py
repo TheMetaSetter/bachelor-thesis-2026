@@ -28,7 +28,9 @@ def _batch() -> dict:
 
 
 def test_profile_validation_keeps_redlamp_family_order_unchanged() -> None:
-    profile = _load_profile("configs/protocol/synthetic_redlamp12_visible_window20.yaml")
+    profile = _load_profile(
+        "configs/protocol/synthetic_redlamp12_visible_window20.yaml"
+    )
 
     validate_synthetic_profile_config(profile)
 
@@ -48,7 +50,9 @@ def test_profile_validation_keeps_redlamp_family_order_unchanged() -> None:
 
 
 def test_visible_profile_builds_injector_kwargs_without_changing_mixture() -> None:
-    profile = _load_profile("configs/protocol/synthetic_redlamp12_visible_window20.yaml")
+    profile = _load_profile(
+        "configs/protocol/synthetic_redlamp12_visible_window20.yaml"
+    )
 
     kwargs = injector_kwargs_from_synthetic_profile(profile)
 
@@ -60,7 +64,9 @@ def test_visible_profile_builds_injector_kwargs_without_changing_mixture() -> No
 
 
 def test_visible_profile_is_deterministic_under_fixed_seed() -> None:
-    profile = _load_profile("configs/protocol/synthetic_redlamp12_visible_window20.yaml")
+    profile = _load_profile(
+        "configs/protocol/synthetic_redlamp12_visible_window20.yaml"
+    )
     kwargs = injector_kwargs_from_synthetic_profile(profile)
     kwargs.pop("window_size")
 
@@ -87,7 +93,9 @@ def test_visible_profile_is_deterministic_under_fixed_seed() -> None:
 
 
 def test_profile_validation_rejects_unknown_family_names() -> None:
-    profile = _load_profile("configs/protocol/synthetic_redlamp12_visible_window20.yaml")
+    profile = _load_profile(
+        "configs/protocol/synthetic_redlamp12_visible_window20.yaml"
+    )
     profile["family_intensity"]["not_a_family"] = {"scale": 2.0}
 
     try:

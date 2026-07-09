@@ -16,6 +16,7 @@ import torch
 from src.core.console import console_print, summarize_batch, summarize_tensor
 from src.core.contracts import validate_online_batch, validate_window
 from src.data.collate import collate_windows
+from src.protocols.point_scores import build_nonoverlap_tail_window_starts
 
 
 @dataclass
@@ -41,6 +42,7 @@ class SMDOnlineStream:
         window_size: int,
         stride: int,
         clean_stream_only: bool = True,
+        stream_window_mode: str = "legacy_stride",
         max_windows: int | None = None,
     ) -> None:
         # The first accepted online slice is intentionally conservative. The
@@ -49,9 +51,19 @@ class SMDOnlineStream:
             raise ValueError(
                 "The first online adaptation slice supports only clean_stream_only=True"
             )
+        if stream_window_mode not in {
+            "legacy_stride",
+            "sliding_stride_1",
+            "nonoverlap_tail",
+        }:
+            raise ValueError(
+                "stream_window_mode must be one of: "
+                "legacy_stride, sliding_stride_1, nonoverlap_tail"
+            )
         self.sequences = sequences
         self.window_size = window_size
         self.stride = stride
+        self.stream_window_mode = stream_window_mode
         self.cursor = SequenceCursor(position=0)
         self.index_records: list[tuple[int, int, int]] = []
 
@@ -59,7 +71,18 @@ class SMDOnlineStream:
             sequence_length = int(sequence["x"].shape[0])
             if sequence_length < window_size:
                 continue
-            for start_index in range(0, sequence_length - window_size + 1, stride):
+            if stream_window_mode == "sliding_stride_1":
+                start_indices = range(0, sequence_length - window_size + 1, 1)
+            elif stream_window_mode == "nonoverlap_tail":
+                start_indices = build_nonoverlap_tail_window_starts(
+                    sequence_length=sequence_length,
+                    window_size=window_size,
+                )
+            else:
+                start_indices = range(
+                    0, sequence_length - window_size + 1, stride
+                )
+            for start_index in start_indices:
                 end_index = start_index + window_size
                 self.index_records.append((sequence_index, start_index, end_index))
                 if max_windows is not None and len(self.index_records) >= max_windows:
@@ -69,6 +92,7 @@ class SMDOnlineStream:
                         num_sequences=len(sequences),
                         window_size=window_size,
                         stride=stride,
+                        stream_window_mode=stream_window_mode,
                         max_windows=max_windows,
                         total_windows=len(self.index_records),
                     )
@@ -79,6 +103,7 @@ class SMDOnlineStream:
             num_sequences=len(sequences),
             window_size=window_size,
             stride=stride,
+            stream_window_mode=stream_window_mode,
             total_windows=len(self.index_records),
         )
 
@@ -136,6 +161,7 @@ class SMDOnlineStream:
                     )
                 ),
                 "stream_step": stream_step,
+                "stream_window_mode": self.stream_window_mode,
             },
         }
         validate_window(window)
@@ -154,6 +180,7 @@ class SMDOnlineStream:
             "cursor": self.cursor.state_dict(),
             "window_size": self.window_size,
             "stride": self.stride,
+            "stream_window_mode": self.stream_window_mode,
             "num_index_records": len(self.index_records),
         }
 

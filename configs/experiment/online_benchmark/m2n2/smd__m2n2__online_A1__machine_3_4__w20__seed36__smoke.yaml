@@ -1,0 +1,16 @@
+benchmark_name: smd__m2n2__online_A1__machine_3_4__w20__seed36__smoke
+baseline_name: m2n2
+online_variant: A1
+entity_id: machine_3_4
+seed: 36
+window_size: 20
+data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
+protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
+output_dir: outputs/benchmark_smoke/online_streaming/smd/m2n2/A1/machine_3_4/seed36
+device: cpu
+baseline_kwargs:
+  window_size: 20
+  threshold_quantile: 0.99
+  adaptation_momentum: 0.01
+  seed: 36
+benchmark_mode: smoke

@@ -1,0 +1,17 @@
+benchmark_name: smd__iforest__online_A0__machine_3_4__w20__seed8__main
+baseline_name: iforest
+online_variant: A0
+entity_id: machine_3_4
+seed: 8
+window_size: 20
+data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
+protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
+output_dir: outputs/benchmark/online_streaming/smd/iforest/A0/machine_3_4/seed8
+device: cuda
+baseline_kwargs:
+  window_size: 20
+  n_estimators: 100
+  normalize_windows: true
+  threshold_quantile: 0.99
+  seed: 8
+benchmark_mode: main
