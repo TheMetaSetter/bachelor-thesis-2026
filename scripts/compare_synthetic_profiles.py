@@ -30,23 +30,28 @@ sys.path.append(str(Path(__file__).parent.parent))
 from scripts.visualize_synthetic_anomalies import build_demo_batch
 from src.data.collate import collate_windows
 from src.data.augment import REDLAMP_ANOMALY_FAMILIES, SyntheticAnomalyInjector
+from src.data.download import resolve_repo_relative_path
 from src.data.loaders import build_smd_dataset_bundle
 from src.protocols.synthetic_profile import injector_kwargs_from_synthetic_profile
 
 
 SMD_ENTITY_CONFIG_PATHS = {
-    "machine-1-6": "configs/data/smd_benchmark_machine_1_6_window20.yaml",
-    "machine-3-4": "configs/data/smd_benchmark_machine_3_4_window20.yaml",
-    "machine-3-9": "configs/data/smd_benchmark_machine_3_9_window20.yaml",
+    "machine-1-6": "../configs/data/smd_benchmark_machine_1_6_window20.yaml",
+    "machine-3-4": "../configs/data/smd_benchmark_machine_3_4_window20.yaml",
+    "machine-3-9": "../configs/data/smd_benchmark_machine_3_9_window20.yaml",
 }
 
 
-def _load_profile(path: Path) -> dict[str, Any]:
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
+def _resolve_runtime_path(path: str | Path) -> Path:
+    return resolve_repo_relative_path(path)
+
+
+def _load_profile(path: str | Path) -> dict[str, Any]:
+    return yaml.safe_load(_resolve_runtime_path(path).read_text(encoding="utf-8"))
 
 
 def _load_yaml(path: str | Path) -> dict[str, Any]:
-    return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    return yaml.safe_load(_resolve_runtime_path(path).read_text(encoding="utf-8"))
 
 
 def _resolve_visualization_seed(
@@ -133,6 +138,48 @@ def _build_injector(profile: dict[str, Any], seed: int) -> SyntheticAnomalyInjec
         classification_label_mode="redlamp_multiclass",
         **kwargs,
     )
+
+
+def _build_family_injector(
+    profile: dict[str, Any],
+    family_name: str,
+    seed: int,
+) -> SyntheticAnomalyInjector:
+    kwargs = injector_kwargs_from_synthetic_profile(profile)
+    kwargs.pop("window_size")
+    return SyntheticAnomalyInjector(
+        anomaly_probability=1.0,
+        anomaly_families=(family_name,),
+        deterministic_seed=seed,
+        train_balance_classes=False,
+        classification_label_mode="redlamp_multiclass",
+        **kwargs,
+    )
+
+
+def _build_family_gallery_batches(
+    *,
+    profile: dict[str, Any],
+    clean_batch: dict[str, Any],
+    seed: int,
+) -> list[dict[str, Any]]:
+    gallery_batches: list[dict[str, Any]] = []
+    for family_index, family_name in enumerate(REDLAMP_ANOMALY_FAMILIES):
+        family_seed = seed + family_index
+        augmented_batch = _build_family_injector(
+            profile,
+            family_name,
+            family_seed,
+        ).augment_batch(clean_batch)
+        _attach_source_window_metadata(augmented_batch)
+        gallery_batches.append(
+            {
+                "family_name": family_name,
+                "seed": family_seed,
+                "batch": augmented_batch,
+            }
+        )
+    return gallery_batches
 
 
 def _mean_abs_delta(clean_batch: dict[str, Any], augmented_batch: dict[str, Any]) -> float:
@@ -327,6 +374,57 @@ def _plot_clean_reference_channels(
     axis.legend(loc="upper right")
 
 
+def _plot_family_gallery(
+    clean_batch: dict[str, Any],
+    gallery_batches: list[dict[str, Any]],
+    output_path: Path,
+) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    clean = clean_batch["x"].detach().cpu()
+    figure_height = max(22 * 2.1, 20)
+    figure, axes = plt.subplots(
+        len(gallery_batches) * 2,
+        1,
+        figsize=(13, figure_height),
+        constrained_layout=True,
+    )
+    for family_index, gallery_item in enumerate(gallery_batches):
+        augmented_batch = gallery_item["batch"]
+        sample_index, _ = _select_most_visible_sample_channel(
+            clean_batch,
+            augmented_batch,
+        )
+        augmented = augmented_batch["x"].detach().cpu()
+        mask = augmented_batch["synthetic_anomaly_mask"][sample_index].detach().cpu()
+        channels = _select_most_visible_channels(
+            clean[sample_index],
+            augmented[sample_index],
+            mask.bool(),
+        )
+        annotation = _build_sample_plot_annotation(
+            "Synthetic",
+            augmented_batch,
+            sample_index,
+        )
+        clean_axis = axes[family_index * 2]
+        anomaly_axis = axes[family_index * 2 + 1]
+        _plot_clean_reference_channels(
+            clean_axis,
+            clean[sample_index],
+            channels,
+            f"{gallery_item['family_name']} clean reference",
+        )
+        _plot_profile_window(
+            anomaly_axis,
+            augmented[sample_index],
+            annotation,
+            channels,
+        )
+        anomaly_axis.set_xlabel("point index inside window")
+    figure.savefig(output_path, dpi=150)
+    plt.close(figure)
+
+
 def _plot_first_sample(
     clean_batch: dict[str, Any],
     legacy_batch: dict[str, Any],
@@ -412,8 +510,38 @@ def run_comparison(args: argparse.Namespace) -> dict[str, Any]:
             build_demo_batch(args.experiment_config),
             min_channels=12,
         )
-    legacy_profile = _load_profile(Path(args.legacy_profile))
-    visible_profile = _load_profile(Path(args.visible_profile))
+    legacy_profile = _load_profile(args.legacy_profile)
+    visible_profile = _load_profile(args.visible_profile)
+    output_dir = _resolve_runtime_path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.plot_mode == "full_taxonomy":
+        selected_profile = visible_profile
+        gallery_batches = _build_family_gallery_batches(
+            profile=selected_profile,
+            clean_batch=clean_batch,
+            seed=base_seed,
+        )
+        summary = {
+            "requested_seed": args.seed,
+            "base_visualization_seed": base_seed,
+            "source": "smd_entities" if bool(args.use_smd_entities) else "demo_batch",
+            "split": args.split if bool(args.use_smd_entities) else None,
+            "plot_mode": args.plot_mode,
+            "profile_name": selected_profile["profile_name"],
+            "families": [
+                {"family_name": item["family_name"], "seed": item["seed"]}
+                for item in gallery_batches
+            ],
+        }
+        summary_path = output_dir / "synthetic_profile_comparison_summary.json"
+        summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), "utf-8")
+        _plot_family_gallery(
+            clean_batch,
+            gallery_batches,
+            output_dir / "synthetic_profile_comparison_first_sample.png",
+        )
+        return summary
 
     legacy_batch, legacy_seed = _augment_until_three_visible_channels(
         legacy_profile,
@@ -426,14 +554,13 @@ def run_comparison(args: argparse.Namespace) -> dict[str, Any]:
         base_seed,
     )
 
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
     summary = {
         "requested_seed": args.seed,
         "base_visualization_seed": base_seed,
         "experiment_config": args.experiment_config,
         "source": "smd_entities" if bool(args.use_smd_entities) else "demo_batch",
         "split": args.split if bool(args.use_smd_entities) else None,
+        "plot_mode": args.plot_mode,
         "visualization_seeds": {
             "legacy": legacy_seed,
             "visible": visible_seed,
@@ -483,6 +610,11 @@ def main() -> None:
         choices=["train", "val", "test"],
         default="train",
         help="Dataset split to sample when --use-smd-entities is enabled.",
+    )
+    parser.add_argument(
+        "--plot-mode",
+        choices=["profile_comparison", "full_taxonomy"],
+        default="profile_comparison",
     )
     summary = run_comparison(parser.parse_args())
     print(json.dumps(summary, indent=2, sort_keys=True))

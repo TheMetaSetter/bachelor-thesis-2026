@@ -5,12 +5,14 @@ import torch
 from scripts.compare_synthetic_profiles import (
     _ensure_demo_batch_has_enough_channels,
     _build_sample_plot_annotation,
+    _build_family_gallery_batches,
     _injected_point_indices,
     _resolve_visualization_seed,
     _select_most_visible_channels,
     _select_most_visible_sample_channel,
     _select_random_window_indices,
 )
+from src.data.augment import REDLAMP_ANOMALY_FAMILIES
 
 
 def test_injected_point_indices_come_from_synthetic_mask() -> None:
@@ -141,3 +143,36 @@ def test_select_random_window_indices_samples_one_index_per_entity() -> None:
     )
 
     assert indices == {"machine-1-6": 2, "machine-3-4": 4}
+
+
+def test_build_family_gallery_batches_contains_all_redlamp_families() -> None:
+    clean_batch = {
+        "x": torch.randn(3, 20, 6),
+        "point_labels": torch.zeros(3, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [
+            {"entity_id": "machine-1-6", "start_index": 0, "end_index": 20},
+            {"entity_id": "machine-3-4", "start_index": 0, "end_index": 20},
+            {"entity_id": "machine-3-9", "start_index": 0, "end_index": 20},
+        ],
+    }
+    profile = {
+        "window_size": 20,
+        "min_segment_fraction": 0.2,
+        "max_segment_fraction": 0.3,
+        "spike_scale": 3.0,
+        "anomaly_visibility_boost": 1.5,
+        "family_intensity": {},
+    }
+
+    gallery_batches = _build_family_gallery_batches(
+        profile=profile,
+        clean_batch=clean_batch,
+        seed=11,
+    )
+
+    assert [item["family_name"] for item in gallery_batches] == list(
+        REDLAMP_ANOMALY_FAMILIES
+    )
+    assert len(gallery_batches) == 11

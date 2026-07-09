@@ -52,9 +52,39 @@ def _build_http_session() -> requests.Session:
     return session
 
 
+def _find_repo_root(start_path: str | Path | None = None) -> Path:
+    search_path = Path(start_path or __file__).expanduser().resolve()
+    for candidate in [search_path, *search_path.parents]:
+        if (candidate / ".git").exists() or (candidate / "AGENTS.md").exists():
+            return candidate
+    return search_path
+
+
+def resolve_repo_relative_path(path: str | Path) -> Path:
+    expanded_path = Path(os.path.expanduser(os.path.expandvars(str(path))))
+    if expanded_path.is_absolute():
+        return Path(os.path.abspath(str(expanded_path)))
+
+    cwd_candidate = Path(os.path.abspath(str(Path.cwd() / expanded_path)))
+    repo_root = _find_repo_root()
+    repo_candidate = Path(os.path.abspath(str(repo_root / expanded_path)))
+    repo_candidate_without_parent = None
+    if expanded_path.parts and expanded_path.parts[0] == "..":
+        stripped_parts = expanded_path.parts[1:]
+        if stripped_parts:
+            repo_candidate_without_parent = Path(
+                os.path.abspath(str(repo_root / Path(*stripped_parts)))
+            )
+
+    for candidate in [cwd_candidate, repo_candidate, repo_candidate_without_parent]:
+        if candidate is not None and candidate.exists():
+            return candidate
+    return cwd_candidate
+
+
 def get_smd_dataset_root(root_dir: str | Path) -> Path:
     configured_root_dir = os.environ.get("SMD_ROOT_DIR", root_dir)
-    root_path = Path(os.path.expanduser(os.path.expandvars(str(configured_root_dir))))
+    root_path = resolve_repo_relative_path(configured_root_dir)
     resolved_from_env = "SMD_ROOT_DIR" in os.environ
     if root_path.name == DATASET_DIRECTORY_IN_REPOSITORY:
         console_print(

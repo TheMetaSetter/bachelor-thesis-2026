@@ -9,6 +9,7 @@ import torch
 from src.core.console import console_print, summarize_tensor
 from src.core.contracts import validate_raw_sequence
 from src.data.base import BaseSequenceParser
+from src.data.download import resolve_repo_relative_path
 
 
 class SMDDatasetParser(BaseSequenceParser):
@@ -18,7 +19,7 @@ class SMDDatasetParser(BaseSequenceParser):
         validation_split_ratio: float = 0.2,
         entity_ids: list[str] | None = None,
     ) -> None:
-        self.root_dir = Path(root_dir)
+        self.root_dir = resolve_repo_relative_path(root_dir)
         self.validation_split_ratio = validation_split_ratio
         self.entity_ids = entity_ids
         self.train_dir = self.root_dir / "train"
@@ -189,15 +190,16 @@ def compute_smd_test_window_anomaly_rate(
     entity_ids: list[str] | None,
     use_all_entities: bool,
 ) -> float:
+    resolved_root_dir = resolve_repo_relative_path(root_dir)
     if use_all_entities:
-        resolved_test_dir = Path(root_dir) / "test"
+        resolved_test_dir = resolved_root_dir / "test"
         resolved_entity_ids = sorted(
             file_path.stem for file_path in resolved_test_dir.glob("*.txt")
         )
     else:
         resolved_entity_ids = entity_ids
     parser = SMDDatasetParser(
-        root_dir=root_dir,
+        root_dir=resolved_root_dir,
         validation_split_ratio=0.2,
         entity_ids=resolved_entity_ids,
     )

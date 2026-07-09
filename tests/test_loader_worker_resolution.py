@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from src.data.datasets.smd import SMDDatasetParser
 from src.data.loaders import _resolve_data_loader_num_workers, _resolve_smd_root_dir
 
 
@@ -57,3 +58,20 @@ def test_resolve_smd_root_dir_prefers_environment_override(
     resolved_root_dir = _resolve_smd_root_dir({"root_dir": "data/ServerMachineDataset"})
 
     assert Path(resolved_root_dir) == Path("/tmp/kaggle-smd/ServerMachineDataset")
+
+
+def test_smd_parser_resolves_repo_relative_data_root_from_other_cwd(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    parser = SMDDatasetParser(
+        root_dir="data/ServerMachineDataset",
+        validation_split_ratio=0.2,
+        entity_ids=["machine-1-6"],
+    )
+    parsed_sequences = parser.parse()
+
+    assert len(parsed_sequences["train"]) == 1
+    assert parsed_sequences["train"][0]["meta"]["entity_id"] == "machine-1-6"

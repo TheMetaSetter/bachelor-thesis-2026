@@ -22,6 +22,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import yaml
 
 sys.path.append(str(Path(__file__).parent.parent))
@@ -32,7 +33,16 @@ from scripts.run_two_stage_offline_pretraining import (
     validate_two_stage_epoch_budget,
 )
 from src.core.config import load_experiment_config
+from src.engine.thresholding import (
+    select_clean_validation_point_threshold,
+    select_online_ewma_threshold,
+)
+from src.protocols.point_scores import ewma_scores
 from src.protocols.smd_benchmark_protocol import validate_protocol_config
+from src.protocols.threshold_artifact import (
+    build_threshold_artifact,
+    write_threshold_artifact,
+)
 
 
 def _utc_now_iso() -> str:
@@ -51,6 +61,112 @@ def _write_report(output_dir: Path, report: dict[str, Any]) -> Path:
     report_path = report_dir / "thesis_offline_benchmark_report.json"
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True), "utf-8")
     return report_path
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", "utf-8")
+    return str(path)
+
+
+def _write_score_npz(path: Path, payload: dict[str, Any]) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(
+        path,
+        point_scores=np.asarray(payload["point_scores"], dtype=float),
+        point_labels=np.asarray(payload["point_labels"], dtype=np.int64),
+        covered_point_mask=np.asarray(payload["covered_point_mask"], dtype=bool),
+    )
+    return str(path)
+
+
+def collect_offline_artifact_inputs(
+    *,
+    experiment_config: dict[str, Any],
+    protocol_config: dict[str, Any],
+    manifest: dict[str, Any],
+    execution_report: dict[str, Any],
+) -> dict[str, Any]:
+    raise NotImplementedError(
+        "Offline artifact collection needs a completed evaluation hook. "
+        "Tests can monkeypatch this function while the evaluator integration lands."
+    )
+
+
+def _build_thresholds(
+    artifact_inputs: dict[str, Any],
+    protocol_config: dict[str, Any],
+    experiment_config_path: str,
+) -> dict[str, Any]:
+    clean_scores = np.asarray(
+        artifact_inputs["clean_validation"]["point_scores"],
+        dtype=float,
+    )
+    quantile = float(protocol_config["offline_threshold_quantile"])
+    online_scores = ewma_scores(
+        clean_scores,
+        current_weight=float(protocol_config["online_ewma_current_weight"]),
+        previous_weight=float(protocol_config["online_ewma_previous_weight"]),
+    )
+    return build_threshold_artifact(
+        method_name="THESIS",
+        variant_name=str(artifact_inputs["variant_name"]),
+        entity_id=str(artifact_inputs["entity_id"]),
+        seed=int(artifact_inputs["seed"]),
+        window_size=int(protocol_config["window_size"]),
+        offline_point_threshold=select_clean_validation_point_threshold(
+            clean_scores,
+            quantile=quantile,
+        ),
+        online_ewma_point_threshold=select_online_ewma_threshold(
+            online_scores,
+            quantile=float(protocol_config["online_threshold_quantile"]),
+        ),
+        quantile=quantile,
+        ewma_current_weight=float(protocol_config["online_ewma_current_weight"]),
+        ewma_previous_weight=float(protocol_config["online_ewma_previous_weight"]),
+        created_by="scripts/run_thesis_offline_benchmark.py",
+        config_path=experiment_config_path,
+    )
+
+
+def _export_offline_artifacts(
+    *,
+    output_dir: Path,
+    artifact_inputs: dict[str, Any],
+    protocol_config: dict[str, Any],
+    experiment_config_path: str,
+) -> dict[str, str]:
+    threshold_artifact = _build_thresholds(
+        artifact_inputs,
+        protocol_config,
+        experiment_config_path,
+    )
+    threshold_path = output_dir / "thresholds" / "thresholds.json"
+    write_threshold_artifact(threshold_artifact, threshold_path)
+    return {
+        "thresholds": str(threshold_path),
+        "clean_validation_scores": _write_score_npz(
+            output_dir / "scores" / "clean_validation_point_scores.npz",
+            artifact_inputs["clean_validation"],
+        ),
+        "synthetic_validation_scores": _write_score_npz(
+            output_dir / "scores" / "synthetic_validation_point_scores.npz",
+            artifact_inputs["synthetic_validation"],
+        ),
+        "test_scores": _write_score_npz(
+            output_dir / "scores" / "test_point_scores.npz",
+            artifact_inputs["test"],
+        ),
+        "offline_metrics": _write_json(
+            output_dir / "metrics" / "offline_metrics.json",
+            artifact_inputs["offline_metrics"],
+        ),
+        "resolved_protocol": _write_json(
+            output_dir / "protocol" / "resolved_protocol.json",
+            protocol_config,
+        ),
+    }
 
 
 def run_thesis_offline_benchmark(
@@ -72,8 +188,23 @@ def run_thesis_offline_benchmark(
         dry_run=dry_run,
         skip_completed=skip_completed,
     )
+    artifact_paths: dict[str, str] = {}
+    if not dry_run:
+        artifact_inputs = collect_offline_artifact_inputs(
+            experiment_config=experiment_config,
+            protocol_config=protocol_config,
+            manifest=manifest,
+            execution_report=execution_report,
+        )
+        artifact_paths = _export_offline_artifacts(
+            output_dir=Path(str(experiment_config["output_dir"])),
+            artifact_inputs=artifact_inputs,
+            protocol_config=protocol_config,
+            experiment_config_path=experiment_config_path,
+        )
     report = {
         "benchmark_status": "dry_run" if dry_run else execution_report["status"],
+        "artifact_paths": artifact_paths,
         "created_at_utc": _utc_now_iso(),
         "experiment_config_path": experiment_config_path,
         "protocol_config_path": protocol_config_path,
