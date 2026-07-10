@@ -15,6 +15,27 @@ from demo.loaders import (
 )
 
 
+def consume_online_stream(
+    controller: Any,
+    window_size: int,
+    score_callback: Any,
+) -> list[dict[str, Any]]:
+    """Consume points and score only completed causal windows."""
+    if window_size < 1:
+        raise ValueError("window_size must be positive")
+    points: list[Any] = []
+    outputs: list[dict[str, Any]] = []
+    for item in controller:
+        value = item.get("x") if isinstance(item, dict) else item
+        points.append(value)
+        if len(points) < window_size:
+            continue
+        window = points[-window_size:]
+        result = score_callback(window)
+        outputs.append({"end_index": len(points), "score": result})
+    return outputs
+
+
 def _load_threshold_artifact(
     report: dict[str, Any], report_path: Path
 ) -> dict[str, Any]:

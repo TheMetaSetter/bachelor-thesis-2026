@@ -31,11 +31,16 @@ from src.engine.online_tta.online_losses import (
     compute_a1_pnn_reconstruction_loss,
     compute_a2_hard_old_reconstruction_loss,
     compute_a2_online_contrastive_loss,
+    compute_hard_old_hinge_loss,
+    compute_masked_pnn_reconstruction_loss,
 )
 from src.engine.online_tta.online_optimizer import (
     assert_only_projector_is_trainable,
+    build_online_optimizer,
+    clip_projector_gradients,
     collect_projector_parameters,
 )
+from src.engine.online_tta.non_overlap_guard import NonOverlapGuard
 from src.engine.online_tta.triage import classify_online_window
 from src.engine.online_tta.ttl_buffer import TTLBuffer
 from src.engine.online_tta.verification_buffer import VerificationBuffer
@@ -308,12 +313,68 @@ def calibrate_online_threshold_artifact(
     )
 
 
+def calibrate_entity_thresholds(
+    *,
+    model: torch.nn.Module,
+    clean_validation_sequence: dict[str, Any],
+    entity_id: str,
+    experiment_config: dict[str, Any],
+    protocol_config: dict[str, Any],
+    device: str,
+) -> dict[str, Any]:
+    """Calibrate exactly one entity without reading labels or other entities."""
+    actual = str(clean_validation_sequence.get("meta", {}).get("entity_id", ""))
+    if actual != entity_id:
+        raise ValueError(f"validation entity {actual!r} does not match {entity_id!r}")
+    return calibrate_online_threshold_artifact(
+        model=model,
+        clean_validation_sequences=[clean_validation_sequence],
+        experiment_config=experiment_config,
+        protocol_config=protocol_config,
+        online_variant=str(experiment_config.get("online_variant", "A0")),
+        device=device,
+    )
+
+
+def calibrate_entity_threshold_artifacts(
+    *,
+    model: torch.nn.Module,
+    clean_validation_sequences: list[dict[str, Any]],
+    experiment_config: dict[str, Any],
+    protocol_config: dict[str, Any],
+    online_variant: str,
+    device: str,
+) -> dict[str, dict[str, Any]]:
+    """Return independent threshold artifacts keyed by validation entity."""
+    grouped: dict[str, dict[str, Any]] = {}
+    for sequence in clean_validation_sequences:
+        entity_id = str(sequence.get("meta", {}).get("entity_id", ""))
+        if not entity_id:
+            raise ValueError("clean validation sequence is missing entity_id")
+        if entity_id in grouped:
+            continue
+        grouped[entity_id] = calibrate_entity_thresholds(
+            model=model,
+            clean_validation_sequence=sequence,
+            entity_id=entity_id,
+            experiment_config={**experiment_config, "online_variant": online_variant},
+            protocol_config=protocol_config,
+            device=device,
+        )
+    return grouped
+
+
 def _build_triage_thresholds(online_ewma_threshold: float) -> dict[str, float]:
+    threshold = float(online_ewma_threshold)
     return {
-        "strong_anomaly_threshold": float(online_ewma_threshold),
-        "hard_old_normality_threshold": float(online_ewma_threshold) * 0.5,
-        "pnn_candidate_input_threshold": float(online_ewma_threshold) * 0.75,
-        "pnn_candidate_latent_threshold": float(online_ewma_threshold) * 0.75,
+        "input_window_threshold": threshold,
+        "latent_window_low_threshold": threshold * 0.5,
+        "latent_window_high_threshold": threshold,
+        # Legacy names remain for consumers that inspect the context directly.
+        "strong_anomaly_threshold": threshold,
+        "hard_old_normality_threshold": threshold * 0.5,
+        "pnn_candidate_input_threshold": threshold * 0.75,
+        "pnn_candidate_latent_threshold": threshold * 0.75,
     }
 
 
@@ -370,9 +431,12 @@ def _process_online_window(
         verification_buffer=verification_buffer,
         ttl_buffer=ttl_buffer,
     )
+    event_optimizer = optimizer
+    if online_variant != "A0":
+        event_optimizer = build_online_optimizer(model)
     step_result = execute_online_tta_step(
         model=model,
-        optimizer=optimizer,
+        optimizer=event_optimizer,
         batch=batch_on_device,
         online_variant=online_variant,
         threshold_value=threshold_value,
@@ -407,7 +471,10 @@ def _score_online_window(
     with torch.no_grad():
         pre_outputs = model.forward(batch_on_device)
     raw_point_score = float(pre_outputs["point_scores"][0, -1].detach().cpu())
-    latent_window_score = float(pre_outputs["aux"]["alignment_loss"].detach().cpu())
+    latent_value = pre_outputs["aux"].get("latent_window_score")
+    if latent_value is None:
+        latent_value = pre_outputs["window_scores"]
+    latent_window_score = float(torch.as_tensor(latent_value).mean().detach().cpu())
     if previous_ewma_score is None:
         ewma_point_score = raw_point_score
     else:
@@ -453,6 +520,8 @@ def _build_online_window_outputs(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     record = dict(step_result["record"])
     record["threshold"] = float(threshold_value)
+    record["input_window_score"] = float(raw_point_score)
+    record["verification_cycle_ready"] = verification_buffer.should_verify()
     metric = {
         "online/step": 0,
         "online/raw_point_score": raw_point_score,
@@ -462,6 +531,22 @@ def _build_online_window_outputs(
         "online/did_update": record["did_update"],
         "online/loss_total": record["loss_total"],
         "online/triage_decision": triage_decision,
+        "online/input_window_score": raw_point_score,
+        "online/latent_window_score": float(step_result["record"].get("latent_window_score", 0.0)),
+        "online/num_buffer_admitted_windows": len(verification_buffer),
+        "online/num_buffer_rejected_overlap_windows": 0,
+        "online/num_points_removed_by_discrete_anom_filter": 0,
+        "online/num_points_remaining_for_signature": 0,
+        "online/num_recurrent_signatures": 0,
+        "online/num_pseudo_new_normality_points": 0,
+        "online/loss_hard_recon": step_result["record"].get("loss_total") if triage_decision == "hard_old_normality" else None,
+        "online/loss_pnn_recon": step_result["record"].get("loss_total") if triage_decision == "pnn_candidate" else None,
+        "online/loss_contrastive": None,
+        "online/projector_grad_norm": None,
+        "online/source_encoder_grad_norm": 0.0,
+        "online/source_memory_grad_norm": 0.0,
+        "online/recon_head_grad_norm": 0.0,
+        "online/classification_head_grad_norm": 0.0,
         "online/verification_buffer_size": len(verification_buffer),
         "online/ttl_buffer_size": len(ttl_buffer),
     }
@@ -486,7 +571,11 @@ def _compute_step_scores(
             )
         if latent_window_score is None:
             latent_window_score = float(
-                scoring_outputs["aux"]["alignment_loss"].detach().cpu()
+                torch.as_tensor(
+                    scoring_outputs["aux"].get(
+                        "latent_window_score", scoring_outputs["window_scores"]
+                    )
+                ).mean().detach().cpu()
             )
     if ewma_point_score is None:
         ewma_point_score = float(raw_point_score)
@@ -527,21 +616,30 @@ def _build_step_record(
 
 def _run_online_variant_update(
     *,
+    model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     batch: dict[str, Any],
     online_variant: str,
     triage_decision: str | None,
     training_outputs: dict[str, Any],
+    threshold_value: float,
 ) -> torch.Tensor | None:
     if online_variant == "A1":
         if triage_decision != "pnn_candidate":
             return None
-        loss_total = compute_a1_pnn_reconstruction_loss(
-            training_outputs["recon"], batch["x"], mask=batch.get("mask")
-        )
+        pnn_mask = batch.get("pnn_mask")
+        if pnn_mask is not None:
+            loss_total = compute_masked_pnn_reconstruction_loss(
+                training_outputs["recon"], batch["x"], pnn_mask
+            )
+        else:
+            loss_total = compute_a1_pnn_reconstruction_loss(
+                training_outputs["recon"], batch["x"], mask=batch.get("mask")
+            )
     elif online_variant == "A2":
-        reconstruction_loss = compute_a2_hard_old_reconstruction_loss(
-            training_outputs["recon"], batch["x"], mask=batch.get("mask")
+        window_score = training_outputs["window_scores"].mean()
+        reconstruction_loss = compute_hard_old_hinge_loss(
+            window_score, threshold_value
         )
         if triage_decision in {"gray_zone", "pnn_candidate"}:
             contrastive_loss = compute_a2_online_contrastive_loss(
@@ -555,6 +653,7 @@ def _run_online_variant_update(
         raise ValueError("online_variant must be one of: A0, A1, A2")
 
     loss_total.backward()
+    clip_projector_gradients(model)
     optimizer.step()
     return loss_total
 
@@ -595,11 +694,13 @@ def execute_online_tta_step(
     optimizer.zero_grad()
     training_outputs = model.forward(batch)
     loss_total = _run_online_variant_update(
+        model=model,
         optimizer=optimizer,
         batch=batch,
         online_variant=online_variant,
         triage_decision=triage_decision,
         training_outputs=training_outputs,
+        threshold_value=threshold_value,
     )
     if loss_total is None:
         return _step_result(record=record, did_update=False, loss_total=None)
@@ -741,6 +842,7 @@ def _build_runtime_online_context(
         "device": str(experiment_config["device"]),
         "max_online_steps": int(experiment_config["task"].get("max_online_steps", 0)),
         "verification_buffer": VerificationBuffer(max_size=64, non_overlap_gap=0),
+        "hard_old_guard": NonOverlapGuard(max_size=1),
         "ttl_buffer": TTLBuffer(ttl_steps=int(protocol_config["window_size"])),
     }
 
@@ -806,6 +908,8 @@ def _finalize_online_execution(
             "online_variant": context["online_variant"],
             "verification_buffer_size": len(context["verification_buffer"]),
             "ttl_buffer_size": len(context["ttl_buffer"]),
+            "verification_buffer_entries": context["verification_buffer"].items(),
+            "hard_old_guard_intervals": context["hard_old_guard"].intervals(),
         },
     )
     return {

@@ -6,9 +6,30 @@ import torch
 import pytest
 
 from src.engine.checkpoint import CheckpointManager
-from src.models.online_adaptation import OnlineAdaptationModel
+from src.models.online_adaptation import (
+    OnlineAdaptationModel,
+    _resolve_reference_checkpoint_path,
+)
 from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 from src.models.thesis_multitask import ThesisMultitaskModel
+
+
+def test_legacy_reference_path_resolves_two_stage_stage_b_checkpoint(
+    tmp_path: Path,
+) -> None:
+    requested = tmp_path / "seed6" / "checkpoints" / "best.pt"
+    resolved = (
+        tmp_path
+        / "seed6"
+        / "two_stage"
+        / "stage_b_fusion_finetuning"
+        / "checkpoints"
+        / "best.pt"
+    )
+    resolved.parent.mkdir(parents=True)
+    resolved.write_bytes(b"checkpoint")
+
+    assert _resolve_reference_checkpoint_path(requested) == resolved
 
 
 def test_online_model_rejects_reconstruction_reference_checkpoint(

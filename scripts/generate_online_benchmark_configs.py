@@ -75,7 +75,7 @@ def _reference_checkpoint_path(
     root_dir = "benchmark_smoke" if smoke else "benchmark"
     return (
         f"outputs/{root_dir}/smd/thesis/{offline_variant}/{_entity_token(entity_id)}"
-        f"/seed{seed}/checkpoints/best.pt"
+        f"/seed{seed}/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt"
     )
 
 

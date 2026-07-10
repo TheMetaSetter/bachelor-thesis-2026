@@ -39,6 +39,21 @@ def compute_a2_hard_old_reconstruction_loss(
     return _masked_mean_squared_error(reconstruction, target, mask)
 
 
+def compute_hard_old_hinge_loss(score: torch.Tensor, b_window: float) -> torch.Tensor:
+    """Return mean ``relu(score - B_window)^2`` without label-dependent state."""
+    return torch.relu(score - float(b_window)).square().mean()
+
+
+def compute_masked_pnn_reconstruction_loss(
+    reconstruction: torch.Tensor, target: torch.Tensor, pnn_mask: torch.Tensor,
+) -> torch.Tensor:
+    if reconstruction.shape != target.shape or reconstruction.ndim != 3:
+        raise ValueError("reconstruction and target must have shape [B, L, C]")
+    if pnn_mask.shape != reconstruction.shape[:2]:
+        raise ValueError("pnn_mask must have shape [B, L]")
+    return _masked_mean_squared_error(reconstruction, target, pnn_mask)
+
+
 def compute_a2_online_contrastive_loss(
     reference_hidden: torch.Tensor,
     projected_hidden: torch.Tensor,
@@ -52,3 +67,20 @@ def compute_a2_online_contrastive_loss(
         F.cross_entropy(similarity_logits, labels)
         + F.cross_entropy(similarity_logits.T, labels)
     )
+
+
+def compute_token_multi_positive_info_nce(
+    reference_hidden: torch.Tensor,
+    projected_hidden: torch.Tensor,
+    temperature: float = 0.1,
+) -> torch.Tensor:
+    """Contrast every projected token against same-position positives."""
+    if reference_hidden.shape != projected_hidden.shape or reference_hidden.ndim != 3:
+        raise ValueError("hidden tensors must share shape [B, L, H]")
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+    reference = F.normalize(reference_hidden, dim=-1).reshape(-1, reference_hidden.shape[-1])
+    projected = F.normalize(projected_hidden, dim=-1).reshape_as(reference)
+    logits = projected @ reference.T / temperature
+    labels = torch.arange(logits.shape[0], device=logits.device)
+    return F.cross_entropy(logits, labels)

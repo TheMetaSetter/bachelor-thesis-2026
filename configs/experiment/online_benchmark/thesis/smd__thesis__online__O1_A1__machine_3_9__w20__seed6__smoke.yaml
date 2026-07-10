@@ -28,7 +28,7 @@ model_overrides:
   lambda_anchor: 0.001
   score_source: projected_hidden
 task_overrides:
-  reference_checkpoint_path: outputs/benchmark_smoke/smd/thesis/O1/machine_3_9/seed6/checkpoints/best.pt
+  reference_checkpoint_path: outputs/benchmark_smoke/smd/thesis/O1/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt
   warm_start_projector: false
   target_param_group: projector_params
   clean_stream_only: true

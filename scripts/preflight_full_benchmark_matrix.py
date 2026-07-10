@@ -71,6 +71,16 @@ def _validate_thesis_online(paths: list[Path]) -> None:
     observed_variants = {path.name.split("__")[3] for path in paths}
     if observed_variants != expected_variants:
         raise ValueError(f"THESIS online variants are incomplete: {observed_variants}")
+    for path in paths:
+        config = load_experiment_config(path)
+        reference_path = str(config["task"]["reference_checkpoint_path"])
+        if not reference_path.endswith(
+            "two_stage/stage_b_fusion_finetuning/checkpoints/best.pt"
+        ):
+            raise ValueError(
+                "THESIS online configs must reference the offline Stage-B checkpoint: "
+                f"{path}"
+            )
 
 
 def _validate_wrapper_configs(paths: list[Path], expected_count: int, label: str) -> None:

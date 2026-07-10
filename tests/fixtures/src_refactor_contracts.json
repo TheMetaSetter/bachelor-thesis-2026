@@ -1,0 +1,106 @@
+{
+  "registry_names": [
+    "online_adaptation",
+    "reconstruction_mlp_ae",
+    "redlamp_baseline",
+    "thesis_multitask"
+  ],
+  "model_output_keys": [
+    "aux",
+    "hidden",
+    "logits",
+    "point_scores",
+    "pooled",
+    "recon",
+    "window_scores"
+  ],
+  "reconstruction_state_dict_keys": [
+    "decoder.0.bias",
+    "decoder.0.weight",
+    "decoder.3.bias",
+    "decoder.3.weight",
+    "encoder.0.bias",
+    "encoder.0.weight",
+    "encoder.3.bias",
+    "encoder.3.weight"
+  ],
+  "checkpoint_top_level_keys": [
+    "config",
+    "epoch",
+    "metric_history",
+    "model_state_dict",
+    "optimizer_state_dict",
+    "scaler_state_dict"
+  ],
+  "checkpoint_extra_state_keys": [
+    "bootstrap_encoder_epochs",
+    "memory_initialized",
+    "memory_training_enabled"
+  ],
+  "pointwise_metric_keys": [
+    "affiliation_f1",
+    "f1",
+    "fpr",
+    "is_single_class_label_regime",
+    "n_neg",
+    "n_pos",
+    "positive_ratio",
+    "pr_auc",
+    "precision",
+    "predicted_positive_count",
+    "predicted_positive_ratio",
+    "recall",
+    "roc_auc",
+    "score_max",
+    "score_mean",
+    "score_min",
+    "score_std",
+    "threshold",
+    "unique_label_count",
+    "vus_pr",
+    "vus_roc"
+  ],
+  "online_report_keys": [
+    "benchmark_status",
+    "created_at_utc",
+    "final_checkpoint_path",
+    "metric_history",
+    "online_metrics_path",
+    "online_records_path",
+    "online_variant",
+    "records",
+    "threshold_artifact",
+    "threshold_artifact_path",
+    "threshold_source"
+  ],
+  "config_key_trees": {
+    "offline_thesis": {
+      "top_level": [
+        "checkpoint_dir", "checkpoint_monitor_metric", "data_config_path",
+        "data_overrides", "device", "epochs", "evaluation",
+        "experiment_name", "experiment_variant", "logging", "model_config_path",
+        "optimizer", "output_dir", "seed", "task_config_path", "two_stage"
+      ],
+      "nested": {
+        "data_overrides": ["batch_size", "max_test_windows", "max_train_windows", "max_val_windows", "num_workers"],
+        "optimizer": ["gradient_clip_norm", "learning_rate", "optimizer_name", "scheduler", "weight_decay"],
+        "evaluation": ["vus_max_buffer_size", "vus_num_thresholds"],
+        "two_stage": ["discrete_memory_label_source", "expected_total_training_epochs", "freeze_encoder_and_memories_in_stage_b", "stage_a_multitask_epochs", "stage_b_fusion_finetuning_epochs"]
+      }
+    },
+    "redlamp": {
+      "top_level": [
+        "checkpoint_dir", "checkpoint_monitor_metric", "data_config_path", "data_overrides",
+        "device", "epochs", "evaluation", "experiment_name", "logging", "model_config_path",
+        "optimizer", "output_dir", "seed", "task_config_path"
+      ]
+    },
+    "online": {
+      "top_level": [
+        "checkpoint_dir", "data_config_path", "data_overrides", "device", "epochs", "evaluation",
+        "experiment_name", "experiment_variant", "logging", "model_config_path", "model_overrides",
+        "optimizer", "output_dir", "seed", "task_config_path", "task_overrides"
+      ]
+    }
+  }
+}

@@ -8,30 +8,14 @@ continuous branch, discrete branch, fusion, optional losses, then the shared
 stage step that assembles the training objective.
 """
 
-import math
-import time
-from collections import OrderedDict, deque
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-from src.core.console import (
-    console_print,
-    print_parameter_summary,
-    summarize_batch,
-    summarize_label_distribution,
-    summarize_tensor,
-)
-from src.core.contracts import validate_batch, validate_model_outputs
 from src.data.augment import (
     REDLAMP_ANOMALY_FAMILIES,
     REDLAMP_MULTICLASS_CLASS_NAMES,
     SyntheticAnomalyInjector,
 )
-from src.models.base_model import BaseModel
 from src.models.neural_blocks import SimpleWindowCnnEncoder, build_multilayer_perceptron
 
 # Legacy Stage 3 label kept only so older configs and checkpoints still load.
@@ -40,55 +24,6 @@ STAGE3_PHASE_CANONICAL_NAME = "stage3_memory_initialization_and_fusion_warmup"
 TWO_STAGE_A_PHASE_NAME = "stage_a_multitask_pretraining"
 TWO_STAGE_B_PHASE_NAME = "stage_b_fusion_finetuning"
 TWO_STAGE_PHASE_NAMES = {TWO_STAGE_A_PHASE_NAME, TWO_STAGE_B_PHASE_NAME}
-
-
-class MultitaskWindowEncoder(nn.Module):
-    def __init__(
-        self,
-        architecture: "MultitaskArchitectureConfig",
-    ) -> None:
-        super().__init__()
-        self.architecture = architecture
-        self.encoder_family = architecture.encoder_family
-        if architecture.encoder_family == "mlp":
-            # The encoder depth is shared with both task heads so the offline model
-            # can form a symmetric MLP contract from YAML instead of hard-coding
-            # different depths in different submodules.
-            self.network = build_multilayer_perceptron(
-                input_dim=architecture.input_dim,
-                intermediate_dim=architecture.encoder_dim,
-                output_dim=architecture.hidden_dim,
-                num_linear_layers=architecture.mlp_num_linear_layers,
-                dropout=architecture.dropout,
-                apply_output_activation=True,
-            )
-        elif architecture.encoder_family == "cnn_simple":
-            self.network = SimpleWindowCnnEncoder(
-                input_dim=architecture.input_dim,
-                output_dim=architecture.hidden_dim,
-                hidden_channels=architecture.cnn_hidden_channels,
-                kernel_size=architecture.cnn_kernel_size,
-                num_layers=architecture.cnn_num_layers,
-                dropout=architecture.cnn_dropout,
-            )
-        else:
-            raise ValueError(
-                f"Unsupported encoder_family: {architecture.encoder_family}"
-            )
-
-    def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
-        hidden = self.network(batch["x"])
-        if hidden.shape[1] != self.architecture.window_size:
-            raise ValueError(
-                "encoder must preserve window_size="
-                f"{self.architecture.window_size}, but received hidden.shape[1]="
-                f"{hidden.shape[1]}"
-            )
-        return {
-            "hidden": hidden,
-            "pooled": hidden.mean(dim=1),
-            "aux": {"encoder_name": "multitask_window_encoder"},
-        }
 
 
 @dataclass(frozen=True)
@@ -526,3 +461,7 @@ class ThesisMultitaskModelConfig:
             profiling=GradientProfilingConfig(**profiling_values),
             synthetic=SyntheticAnomalyConfig(**synthetic_values),
         )
+
+
+# Compatibility re-export: existing mixins and public imports keep resolving.
+from src.models.thesis_multitask_encoder import MultitaskWindowEncoder

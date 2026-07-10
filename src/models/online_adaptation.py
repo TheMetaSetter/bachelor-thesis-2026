@@ -26,6 +26,33 @@ from src.models.base_model import BaseModel
 from src.models.thesis_multitask import ThesisMultitaskModel
 
 
+def _resolve_reference_checkpoint_path(checkpoint_path: str | Path) -> Path:
+    """Resolve legacy flat paths to the two-stage Stage-B checkpoint."""
+    requested = Path(checkpoint_path)
+    if requested.exists():
+        return requested
+    if requested.name == "best.pt" and requested.parent.name == "checkpoints":
+        stage_b_path = (
+            requested.parent.parent
+            / "two_stage"
+            / "stage_b_fusion_finetuning"
+            / "checkpoints"
+            / "best.pt"
+        )
+        if stage_b_path.exists():
+            console_print(
+                "MODEL",
+                "Resolved legacy online reference checkpoint path",
+                requested_path=requested,
+                resolved_path=stage_b_path,
+            )
+            return stage_b_path
+    raise FileNotFoundError(
+        "Online reference checkpoint does not exist: "
+        f"{requested}. Run the matching offline two-stage experiment first."
+    )
+
+
 class ThesisMultitaskEncoderAdapter(nn.Module):
     # The adapter keeps the online file readable by reusing the offline encoder
     # without forcing the rest of the online logic back into the multitask file.
@@ -85,6 +112,7 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
                 "hidden_classification": hidden_classification,
                 "alpha": fusion_outputs["alpha"],
                 "beta": fusion_outputs["beta"],
+                "latent_window_score": point_scores.mean(dim=1),
             },
         }
 
@@ -232,7 +260,8 @@ class OnlineAdaptationModel(BaseModel):
     ) -> ThesisMultitaskModel:
         # The online runtime is defined only for multitask checkpoints. Failing
         # early here prevents confusing baseline-versus-online mismatches later.
-        loaded_checkpoint = torch.load(checkpoint_path, map_location="cpu")
+        resolved_checkpoint_path = _resolve_reference_checkpoint_path(checkpoint_path)
+        loaded_checkpoint = torch.load(resolved_checkpoint_path, map_location="cpu")
         config = loaded_checkpoint["config"]
         model_name = config.get("model", {}).get("model_name")
         if model_name != "thesis_multitask":
@@ -438,6 +467,7 @@ class OnlineAdaptationModel(BaseModel):
                 "projector_drift": projector_drift,
                 "target_param_group": self.target_param_group,
                 "scoring": scored_outputs["aux"],
+                "latent_window_score": scored_outputs["window_scores"],
             },
         }
         validate_model_outputs(outputs)

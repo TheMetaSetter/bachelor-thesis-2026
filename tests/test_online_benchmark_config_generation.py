@@ -69,7 +69,7 @@ def test_generate_thesis_online_benchmark_configs_writes_all_expected_files() ->
                         assert loaded_config["task"][
                             "reference_checkpoint_path"
                         ].endswith(
-                            f"outputs/{'benchmark_smoke' if smoke else 'benchmark'}/smd/thesis/{offline_variant}/{entity_id.replace('-', '_')}/seed{seed}/checkpoints/best.pt"
+                            f"outputs/{'benchmark_smoke' if smoke else 'benchmark'}/smd/thesis/{offline_variant}/{entity_id.replace('-', '_')}/seed{seed}/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt"
                         )
                         if smoke:
                             assert loaded_config["device"] == "cpu"

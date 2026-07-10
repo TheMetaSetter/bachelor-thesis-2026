@@ -21,6 +21,27 @@ def collect_projector_parameters(model: torch.nn.Module) -> list[torch.nn.Parame
     return list(projector.parameters())
 
 
+def build_online_optimizer(
+    model: torch.nn.Module,
+    learning_rate: float = 1e-4,
+    weight_decay: float = 1e-4,
+) -> torch.optim.Optimizer:
+    """Create a fresh per-event AdamW optimizer for the projector only."""
+    assert_only_projector_is_trainable(model)
+    return torch.optim.AdamW(
+        collect_projector_parameters(model),
+        lr=float(learning_rate),
+        weight_decay=float(weight_decay),
+    )
+
+
+def clip_projector_gradients(model: torch.nn.Module, max_norm: float = 0.5) -> float:
+    """Clip projector gradients and return the pre-clipping norm."""
+    parameters = collect_projector_parameters(model)
+    norm = torch.nn.utils.clip_grad_norm_(parameters, float(max_norm))
+    return float(norm.detach().cpu())
+
+
 def assert_only_projector_is_trainable(model: torch.nn.Module) -> None:
     projector_parameter_ids = {
         id(parameter) for parameter in collect_projector_parameters(model)

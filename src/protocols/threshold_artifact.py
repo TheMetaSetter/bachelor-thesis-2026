@@ -19,15 +19,11 @@ def build_threshold_artifact(
     ewma_previous_weight: float,
     created_by: str,
     config_path: str,
+    input_window_threshold: float | None = None,
+    latent_window_low_threshold: float | None = None,
+    latent_window_high_threshold: float | None = None,
 ) -> dict[str, Any]:
-    return {
-        "artifact_version": 1,
-        "method_name": method_name,
-        "variant_name": variant_name,
-        "entity_id": entity_id,
-        "seed": int(seed),
-        "window_size": int(window_size),
-        "thresholds": {
+    thresholds = {
             "offline_point": {
                 "value": float(offline_point_threshold),
                 "source_split": "clean_validation",
@@ -42,7 +38,33 @@ def build_threshold_artifact(
                 "ewma_current_weight": float(ewma_current_weight),
                 "ewma_previous_weight": float(ewma_previous_weight),
             },
-        },
+    }
+    if input_window_threshold is not None:
+        thresholds["input_window"] = {
+            "value": float(input_window_threshold), "source_split": "clean_validation",
+            "score_rule": "window_mean_squared_error", "quantile": 0.99,
+        }
+    if latent_window_low_threshold is not None or latent_window_high_threshold is not None:
+        if latent_window_low_threshold is None or latent_window_high_threshold is None:
+            raise ValueError("latent window thresholds must be supplied together")
+        if latent_window_low_threshold > latent_window_high_threshold:
+            raise ValueError("latent window low threshold must not exceed high threshold")
+        thresholds["latent_window_low"] = {
+            "value": float(latent_window_low_threshold), "source_split": "clean_validation",
+            "score_rule": "latent_memory_distance", "quantile": 0.95,
+        }
+        thresholds["latent_window_high"] = {
+            "value": float(latent_window_high_threshold), "source_split": "clean_validation",
+            "score_rule": "latent_memory_distance", "quantile": 0.99,
+        }
+    return {
+        "artifact_version": 2,
+        "method_name": method_name,
+        "variant_name": variant_name,
+        "entity_id": entity_id,
+        "seed": int(seed),
+        "window_size": int(window_size),
+        "thresholds": thresholds,
         "provenance": {
             "test_label_usage": "metrics_only",
             "created_by": created_by,
