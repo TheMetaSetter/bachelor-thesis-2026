@@ -844,10 +844,11 @@ semantic folders under `tests/`.
 - [x] TTL decrement is implemented in cycle finalization.
 - [x] Hard-old guard primitive exists.
 - [x] Engine uses `try_admit()` for PNN candidates.
-- [ ] Engine runs a real verification callback at capacity eight.
+- [x] Engine runs a deterministic score-based verification callback at capacity eight.
 - [ ] Engine marks entries as adapted or unresolved from verification results.
-- [ ] Hard-old guard is consulted before every A2 hard-old update.
-- [ ] Rejected-overlap diagnostics count actual rejections.
+- [x] Hard-old guard is consulted before every A2 hard-old update.
+- [x] Failed hard-old updates do not reserve an interval.
+- [x] Rejected-overlap diagnostics count actual rejections.
 
 ### F. Loss and optimizer semantics
 
@@ -857,7 +858,7 @@ semantic folders under `tests/`.
 - [x] Projector gradient clipping uses norm `0.5`.
 - [x] A2 runtime uses hard-old hinge score.
 - [x] A2 runtime uses token multi-positive InfoNCE in the active branch.
-- [ ] Optimizer moments are proven absent from every event checkpoint.
+- [x] Online final checkpoints omit optimizer moments; resume must rebuild AdamW.
 - [ ] Projector-only mutation is asserted by integration test for A0/A1/A2.
 
 ### G. Checkpoint and resume
@@ -972,3 +973,143 @@ marked `[x]` only after its implementation and focused test are both present.
   `pytest -q`; archive only tests proven to target removed legacy flows.
 - Mark the final checklist items only after zero AST violations and a green
   active suite are recorded.
+
+## 16. Phased implementation of all remaining unchecked items
+
+The remaining work is divided into the following executable phases. A later
+phase must not be started until the previous phase's test gate passes.
+
+### Phase R1 — Freeze the real prototype-verification contract
+
+**Goal:** provide genuine anomaly metadata instead of the current all-false
+mask and infinite-radius fallback.
+
+**Edits:**
+
+1. Inspect the Stage-B checkpoint export path in
+   `src/models/thesis_multitask.py`, `src/models/thesis_multitask_components.py`,
+   and `src/engine/checkpoint.py`.
+2. Add checkpoint fields for `anomalous_codeword_mask` and `anomaly_radii`,
+   with explicit tensor shapes `[K]` and non-negative radii.
+3. Add an offline calibration/export helper that computes these fields from
+   clean validation hidden states and the discrete codebook without using test
+   labels.
+4. Make `PrototypeVerificationMetadata.from_model()` fail closed when either
+   field is absent; remove the temporary all-false/infinite fallback from the
+   online engine.
+5. Add `tests/online/test_online_prototype_metadata_contract.py` cases for
+   checkpoint roundtrip, shape mismatch, negative radius, and missing metadata.
+
+**Gate:** one synthetic checkpoint exposes real metadata; online startup fails
+clearly for a checkpoint without it; anomaly-radius tests pass.
+
+### Phase R2 — Make verification cycles semantically complete
+
+**Goal:** replace the current score-only placeholder callback with an explicit
+verification controller whose result determines entry status.
+
+**Edits:**
+
+1. Add `src/engine/online_tta/verification_adapter.py` with a small callback
+   contract: `verify(entry, model_outputs) -> VerificationResult`.
+2. Define `VerificationResult` with `adapted`, `pseudo_normal_points`, and
+   `reason` fields.
+3. Update `VerificationCycleController` to pass model-scored entries to this
+   adapter and call `mark_verification_result()` exactly once per entry.
+4. Keep the controller independent from the UI and from test labels.
+5. Add tests for capacity 7/8, adapted entries, unresolved entries, expired
+   entries, and exactly-one TTL decrement.
+
+**Gate:** a synthetic eight-entry buffer produces deterministic adapted and
+unresolved statuses, and TTL changes only during `maybe_run()`.
+
+### Phase R3 — Wire resume into the official online entrypoint
+
+**Goal:** make checkpoint resume restore live runtime state before the next
+causal event.
+
+**Edits:**
+
+1. Add `resume_online_runtime()` to
+   `src/engine/online_tta/runtime_state.py` or a focused companion module.
+2. Load `extra_state`, validate `entity_id`, `online_variant`, artifact path,
+   and state version before touching model or buffers.
+3. Restore `VerificationBuffer`, `RecurrentSignatureStore`, and
+   `NonOverlapGuard` from serialized state.
+4. Rebuild a fresh AdamW optimizer and never load optimizer moments.
+5. Add `tests/online/test_online_resume_runtime.py` comparing the next event of
+   uninterrupted and resumed streams.
+
+**Gate:** matching resume produces equal next-event triage and threshold;
+mismatched entity/variant fails before adaptation.
+
+### Phase R4 — Complete live demo ownership
+
+**Goal:** make the queue-based demo use the same causal scoring contract as the
+online engine without leaking labels.
+
+**Edits:**
+
+1. Add `run_live_online_replay()` to `demo/online_replay.py` with injected
+   `StreamQueueController`, window size, scoring callback, and mutable demo
+   state.
+2. Ensure the callback receives only `x`, metadata needed for ordering, and the
+   latest window; exclude `point_labels` and test annotations.
+3. Modify `demo/app.py` only to construct the queue, pause/resume controls, and
+   plotting updates.
+4. Add `tests/demo/test_live_online_replay.py` using a spy callback to prove
+   label isolation and below-window waiting.
+
+**Gate:** live demo processes one point at a time, emits no score before `L`
+points, and never passes labels to scoring/adaptation.
+
+### Phase R5 — GPU/server integrity evidence
+
+**Goal:** prove that the implementation is safe for the real CUDA matrix.
+
+**Edits:**
+
+1. Extend `scripts/preflight_full_benchmark_matrix.py` with `--require-cuda`,
+   device-name reporting, Stage-B checkpoint identity validation, entity
+   artifact-map validation, and deterministic seed reporting.
+2. Add `tests/benchmarks/test_full_spec_gpu_preflight.py` for CPU dry-run and
+   simulated CUDA failures.
+3. Run O0-A0, O0-A2, O1-A0, and O1-A2 on the target GPU server.
+4. Store command output, CUDA device name, artifact paths, checkpoint paths,
+   and final report hashes in `documents/logs/07-10-2026/detail/`.
+
+**Gate:** all four server smoke commands complete with matching entity paths;
+CPU-only runs cannot be reported as GPU evidence.
+
+### Phase R6 — Readability and full-suite closure
+
+**Goal:** satisfy the hard source limits and active test collection.
+
+**Edits:**
+
+1. Run `tests/codebase_compliance.py` and export the complete violation list.
+2. Split remaining oversized files by responsibility, prioritizing
+   `src/engine/online_tta/online_engine.py`, `src/core/config.py`,
+   `src/engine/trainer.py`, and `src/engine/evaluator.py`.
+3. Split every callable over 50 lines into named helpers while preserving public
+   constructors, registry names, report keys, and checkpoint keys.
+4. Run focused semantic folders, then `pytest --collect-only -q`, then full
+   `pytest -q`.
+5. Archive only tests proven to target removed legacy flows; do not archive a
+   failing current contract test to make the suite green.
+
+**Gate:** zero AST violations, active collection only, and full pytest pass.
+
+### Phase order and rollback
+
+```text
+R1 metadata
+  -> R2 verification cycle
+  -> R3 resume
+  -> R4 live demo
+  -> R5 GPU evidence
+  -> R6 AST + full suite
+```
+
+Each phase has an independent rollback boundary. A failed gate stops the next
+phase and records the exact mismatch in the dated detail log.

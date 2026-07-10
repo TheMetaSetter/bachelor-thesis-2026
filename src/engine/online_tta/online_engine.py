@@ -418,6 +418,7 @@ def _process_online_window(
     device: str,
     signature_history: list[SignatureWindow],
     verification_controller: VerificationCycleController,
+    hard_old_guard: NonOverlapGuard,
 ) -> tuple[float, dict[str, Any], dict[str, Any]]:
     (
         batch_on_device,
@@ -449,14 +450,23 @@ def _process_online_window(
         latent_window_score=latent_window_score,
         thresholds=triage_thresholds,
     )
-    _update_online_window_buffers(
+    if triage_decision == "hard_old_normality":
+        interval = (
+            int(batch_on_device["meta"][0]["start_index"]),
+            int(batch_on_device["meta"][0]["end_index"]),
+        )
+        if not hard_old_guard.accept(interval):
+            triage_decision = "gray_zone"
+    buffer_admitted, buffer_rejected = _update_online_window_buffers(
         batch_on_device=batch_on_device,
         raw_point_score=raw_point_score,
         triage_decision=triage_decision,
         verification_buffer=verification_buffer,
         ttl_buffer=ttl_buffer,
     )
-    verification_controller.maybe_run(lambda _: False)
+    verification_controller.maybe_run(
+        lambda entry: float(entry.get("point_score", float("inf"))) <= threshold_value
+    )
     event_optimizer = optimizer
     if online_variant != "A0":
         event_optimizer = build_online_optimizer(model)
@@ -471,6 +481,13 @@ def _process_online_window(
         latent_window_score=latent_window_score,
         triage_decision=triage_decision,
     )
+    if step_result["did_update"] and triage_decision == "hard_old_normality":
+        hard_old_guard.add(
+            (
+                int(batch_on_device["meta"][0]["start_index"]),
+                int(batch_on_device["meta"][0]["end_index"]),
+            )
+        )
     record, metric = _build_online_window_outputs(
         step_result=step_result,
         threshold_value=threshold_value,
@@ -482,6 +499,8 @@ def _process_online_window(
         ttl_buffer=ttl_buffer,
     )
     metric.update(signature_diagnostics)
+    metric["online/num_buffer_admitted_windows"] = int(buffer_admitted)
+    metric["online/num_buffer_rejected_overlap_windows"] = int(buffer_rejected)
     return ewma_point_score, metric, record
 
 
@@ -566,9 +585,11 @@ def _update_online_window_buffers(
     triage_decision: str,
     verification_buffer: VerificationBuffer,
     ttl_buffer: TTLBuffer,
-) -> None:
+) -> tuple[bool, bool]:
+    admitted = False
+    rejected = False
     if triage_decision == "pnn_candidate":
-        verification_buffer.try_admit(
+        admitted = verification_buffer.try_admit(
             {
                 "entry_id": f"window-{int(batch_on_device['meta'][0]['stream_step'])}",
                 "window_start": int(batch_on_device["meta"][0]["start_index"]),
@@ -576,11 +597,13 @@ def _update_online_window_buffers(
                 "point_score": raw_point_score,
             }
         )
+        rejected = not admitted
     if triage_decision != "strong_anomaly":
         ttl_buffer.add(
             item=int(batch_on_device["meta"][0]["end_index"]) - 1,
             current_step=int(batch_on_device["meta"][0]["stream_step"]),
         )
+    return admitted, rejected
 
 
 def _build_online_window_outputs(
@@ -803,6 +826,7 @@ def _run_online_sequence(
     device: str,
     verification_buffer: VerificationBuffer,
     ttl_buffer: TTLBuffer,
+    hard_old_guard: NonOverlapGuard,
     max_online_steps: int | None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     batcher = _build_online_stream(
@@ -839,6 +863,7 @@ def _run_online_sequence(
             device=device,
             signature_history=signature_history,
             verification_controller=verification_controller,
+            hard_old_guard=hard_old_guard,
         )
         metric["online/step"] = len(metric_history) + 1
         records.append(record)
@@ -968,6 +993,7 @@ def _run_online_execution_sequences(
             device=context["device"],
             verification_buffer=context["verification_buffer"],
             ttl_buffer=context["ttl_buffer"],
+            hard_old_guard=context["hard_old_guard"],
             max_online_steps=(
                 None
                 if max_online_steps_limit is None
@@ -992,7 +1018,7 @@ def _finalize_online_execution(
     final_checkpoint_path = context["checkpoint_manager"].save_checkpoint(
         checkpoint_name="online_final.pt",
         model=context["model"],
-        optimizer=context["optimizer"],
+        optimizer=None,
         scheduler=None,
         scaler_state=context["data_bundle"]["scaler"].state_dict(),
         config=experiment_config,
