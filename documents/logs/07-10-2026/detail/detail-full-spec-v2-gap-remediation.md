@@ -760,3 +760,215 @@ green.
 This document is ready for implementation after review. Any change to public
 threshold keys, model output fields, buffer method semantics, or demo ownership
 must be recorded as a new decision before coding.
+
+## 13. Blocker-remediation supplement
+
+The original batches above are retained as the historical implementation
+contract. The current repository audit found that helper-level implementation
+was ahead of runtime integration. The executable continuation is now defined in
+`documents/logs/07-10-2026/detail/detail-full-spec-v2-blocker-remediation.md`.
+
+The continuation must be executed in this order:
+
+1. freeze one `OnlineRuntimeState` and current semantic test folders;
+2. route runtime calibration through an entity-keyed artifact map;
+3. connect read-only prototype access and bounded recurrent signature history to
+   each causal event;
+4. trigger verification cycles through `try_admit()` and tick TTL only after a
+   completed cycle;
+5. enforce projector-only updates, hard-old guard acceptance, fresh AdamW and
+   diagnostic gradient checks;
+6. restore entity, variant, artifact, buffer, signature and guard state without
+   optimizer moments;
+7. wire the live demo consumer and validate the four GPU smoke wrappers;
+8. refresh the source-audit detail using final AST/test evidence.
+
+The authoritative blocker evidence is in
+`documents/logs/07-10-2026/research/research-full-spec-v2-blocker-audit.md`.
+The previous test paths `tests/unit`, `tests/contract`, and
+`tests/integration` are obsolete; acceptance commands must use the current
+semantic folders under `tests/`.
+
+## 14. Execution checklist
+
+### A. Contract and state
+
+- [x] Public model registry names remain unchanged.
+- [x] Existing online report keys remain present.
+- [x] `OnlineRuntimeState` validates non-empty entity identity.
+- [x] `OnlineRuntimeState` validates `A0`, `A1`, and `A2` variants.
+- [x] Runtime state has JSON-safe serialization.
+- [x] Runtime state rejects mismatched threshold artifact entity.
+- [x] Runtime state roundtrip test passes.
+
+### B. Entity-specific calibration
+
+- [x] A pure per-entity calibration entrypoint exists.
+- [x] Runtime builds an artifact map keyed by entity.
+- [x] Runtime writes `thresholds/{entity_id}/online_thresholds.json`.
+- [x] Test sequence selects its own entity artifact before scoring.
+- [ ] Multi-entity integration test proves two different threshold values are
+  used in one execution context.
+- [ ] Artifact schema contains `B_window`, `A_low`, and `A_high` values from
+  their own score distributions rather than aliases of point thresholds.
+
+### C. Exact triage and causal scoring
+
+- [x] New triage keys are preferred over legacy aliases.
+- [x] Boundary tests cover normal, hard-old, gray-zone, and strong anomaly.
+- [x] Latent score no longer silently uses alignment loss.
+- [x] Online endpoint score is causal.
+- [x] Input-window score is computed from full-window reconstruction MSE in the
+  engine instead of endpoint point score.
+- [ ] Latent score is explicitly sourced from prototype/memory distance.
+
+### D. Prototype-aware PNN
+
+- [x] Nearest discrete codeword helper exists.
+- [x] Anomaly-radius filtering helper exists.
+- [x] Ordered top-k continuous signature helper exists.
+- [x] Non-overlapping recurrence helper exists.
+- [x] Known-anomaly exclusion helper exists.
+- [ ] Engine obtains codebook, anomaly mask, radii, and continuous prototypes
+  through a read-only adapter.
+- [x] Engine stores recurrent signatures per entity stream.
+- [x] Engine creates `batch["pnn_mask"]` before A1/A2 dispatch.
+- [x] A1 refuses adaptation when no verified PNN mask exists.
+- [x] PNN diagnostics report real counts for codebook/prototype filtering.
+
+### E. Verification buffer and hard-old guard
+
+- [x] Buffer entry has status, TTL, and adaptation fields.
+- [x] `try_admit()` rejects overlaps.
+- [x] Verification capacity is explicit.
+- [x] TTL decrement is implemented in cycle finalization.
+- [x] Hard-old guard primitive exists.
+- [x] Engine uses `try_admit()` for PNN candidates.
+- [ ] Engine runs a real verification callback at capacity eight.
+- [ ] Engine marks entries as adapted or unresolved from verification results.
+- [ ] Hard-old guard is consulted before every A2 hard-old update.
+- [ ] Rejected-overlap diagnostics count actual rejections.
+
+### F. Loss and optimizer semantics
+
+- [x] Hard-old hinge helper exists.
+- [x] Masked PNN reconstruction helper exists.
+- [x] Fresh AdamW factory exists.
+- [x] Projector gradient clipping uses norm `0.5`.
+- [x] A2 runtime uses hard-old hinge score.
+- [x] A2 runtime uses token multi-positive InfoNCE in the active branch.
+- [ ] Optimizer moments are proven absent from every event checkpoint.
+- [ ] Projector-only mutation is asserted by integration test for A0/A1/A2.
+
+### G. Checkpoint and resume
+
+- [x] Final checkpoint writes threshold artifact identity.
+- [x] Final checkpoint writes buffer entries.
+- [x] Final checkpoint writes hard-old guard intervals.
+- [x] Resume identity validator exists.
+- [ ] Runtime loader restores buffer entries into a live `VerificationBuffer`.
+- [ ] Runtime loader restores signature history.
+- [ ] Runtime loader restores hard-old guard intervals.
+- [ ] Resume test proves next event equals uninterrupted execution.
+
+### H. Demo and reporting
+
+- [x] Queue producer/consumer controller exists.
+- [x] Queue pause/resume/stop tests pass.
+- [x] Live consumer waits until `L` points exist.
+- [ ] `demo/app.py` wires the live consumer rather than only replaying reports.
+- [ ] Demo callback receives no labels.
+- [ ] Online diagnostics contain real PNN, buffer, loss, and gradient values.
+
+### I. GPU/server acceptance
+
+- [x] Matrix preflight reports ready on the current machine.
+- [x] Offline O0 smoke completes locally.
+- [x] Offline O1 smoke completes locally.
+- [x] Online O0-A0 smoke completes locally.
+- [x] Online O0-A2 smoke completes locally.
+- [x] Online O1-A0 smoke completes locally.
+- [x] Online O1-A2 smoke completes locally.
+- [ ] The four online smoke commands complete on the target CUDA GPU server.
+- [ ] Artifact paths and checkpoint paths are preserved after server resume.
+
+### J. Readability and test collection
+
+- [x] Tests are grouped into semantic directories under `tests/`.
+- [x] Legacy tests are archived outside pytest collection.
+- [x] Focused online/demo/compliance tests pass.
+- [ ] AST scan reports zero `src/` files over 500 lines.
+- [ ] AST scan reports zero `src/` callables over 50 lines.
+- [ ] Full active `pytest -q` passes without archived legacy tests.
+
+## 15. Unfinished-item execution plans
+
+The following plans close every remaining unchecked item above. An item may be
+marked `[x]` only after its implementation and focused test are both present.
+
+### 15.1 Real anomaly mask and radius contract
+
+- Add `PrototypeVerificationMetadata` to
+  `src/engine/online_tta/signature_verification.py` with detached tensors for
+  `codebook`, `anomalous_codeword_mask`, and `anomaly_radii`.
+- Require the online model adapter to expose this metadata explicitly. If the
+  checkpoint does not contain it, fail before the first adaptive event instead
+  of silently using an all-false mask or infinite radii.
+- Add `tests/online/test_online_prototype_metadata_contract.py` covering shape,
+  dtype, missing metadata, and radius filtering.
+
+### 15.2 Verification callback and cycle controller
+
+- Add `VerificationCycleController` in
+  `src/engine/online_tta/verification_cycle.py`.
+- The controller owns the eight-entry trigger, calls a pure verification
+  callback, marks each entry, and finalizes TTL exactly once.
+- Inject the controller into `_process_online_window()`; remove direct cycle
+  logic from the engine body.
+- Add tests for capacity 7/8, adapted versus unresolved entries, and TTL
+  decrement count.
+
+### 15.3 Hard-old guard wiring
+
+- Pass `NonOverlapGuard` through `_run_online_sequence()` and
+  `_process_online_window()`.
+- Before A2 hard-old dispatch, call `accept((window_start, window_end))`.
+- Add the interval only after `did_update=True`; record rejection count in the
+  event metrics.
+- Add a test proving a failed update does not reserve an interval.
+
+### 15.4 Complete resume entrypoint
+
+- Add `resume_online_runtime()` under
+  `src/engine/online_tta/runtime_state.py` or a focused companion module.
+- Load checkpoint extra state, validate entity, variant and artifact identity,
+  restore buffer/history/guard, and create a fresh optimizer.
+- Add an uninterrupted-versus-resumed next-event integration test.
+
+### 15.5 Live demo ownership
+
+- Add `run_live_online_replay()` in `demo/online_replay.py` accepting an
+  injected `StreamQueueController`, window size, and score callback.
+- Modify `demo/app.py` only to construct the controller and callback; labels may
+  be used by plotting but never passed to scoring/adaptation.
+- Add a test that spies on the callback arguments and proves labels are absent.
+
+### 15.6 GPU evidence and artifact safety
+
+- Extend `scripts/preflight_full_benchmark_matrix.py` with a CUDA requirement
+  switch, checkpoint identity check, artifact-map check, and deterministic seed
+  check.
+- Run the four online smoke wrappers on the target GPU server and save command
+  output, CUDA device name, artifact paths, and checkpoint paths in a dated
+  implementation log.
+- Do not mark GPU checklist items from CPU-only local runs.
+
+### 15.7 AST and full-suite closure
+
+- Run the AST scanner after every source split; split every remaining `src/`
+  file over 500 lines and every callable over 50 lines.
+- Update imports only through public entrypoints and retain checkpoint keys.
+- Run `pytest --collect-only -q`, focused semantic folders, then full
+  `pytest -q`; archive only tests proven to target removed legacy flows.
+- Mark the final checklist items only after zero AST violations and a green
+  active suite are recorded.

@@ -7,6 +7,38 @@ import torch
 import torch.nn.functional as F
 
 
+@dataclass(frozen=True)
+class PrototypeVerificationMetadata:
+    """Detached codebook metadata required for safe anomaly filtering."""
+
+    codebook: torch.Tensor
+    anomalous_codeword_mask: torch.Tensor
+    anomaly_radii: torch.Tensor
+
+    def __post_init__(self) -> None:
+        codebook_size = self.codebook.shape[0]
+        if self.codebook.ndim != 2:
+            raise ValueError("codebook must have shape [K, H]")
+        if self.anomalous_codeword_mask.shape != (codebook_size,):
+            raise ValueError("anomalous_codeword_mask must have shape [K]")
+        if self.anomaly_radii.shape != (codebook_size,):
+            raise ValueError("anomaly_radii must have shape [K]")
+        if self.anomaly_radii.any().item() and (self.anomaly_radii < 0).any().item():
+            raise ValueError("anomaly_radii must be non-negative")
+
+    @classmethod
+    def from_model(cls, model: torch.nn.Module) -> "PrototypeVerificationMetadata":
+        codebook = getattr(model, "discrete_codebook", None)
+        mask = getattr(model, "anomalous_codeword_mask", None)
+        radii = getattr(model, "anomaly_radii", None)
+        if not all(isinstance(value, torch.Tensor) for value in (codebook, mask, radii)):
+            raise AttributeError(
+                "online reference model must expose discrete_codebook, "
+                "anomalous_codeword_mask, and anomaly_radii"
+            )
+        return cls(codebook.detach(), mask.detach().bool(), radii.detach())
+
+
 def nearest_discrete_codeword(hidden: torch.Tensor, codebook: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     if hidden.ndim != 3 or codebook.ndim != 2 or hidden.shape[-1] != codebook.shape[-1]:
         raise ValueError("hidden must be [B,L,H] and codebook [K,H]")

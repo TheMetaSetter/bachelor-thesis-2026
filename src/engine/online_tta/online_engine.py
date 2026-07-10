@@ -30,9 +30,9 @@ from src.engine.checkpoint import CheckpointManager
 from src.engine.online_tta.online_losses import (
     compute_a1_pnn_reconstruction_loss,
     compute_a2_hard_old_reconstruction_loss,
-    compute_a2_online_contrastive_loss,
     compute_hard_old_hinge_loss,
     compute_masked_pnn_reconstruction_loss,
+    compute_token_multi_positive_info_nce,
 )
 from src.engine.online_tta.online_optimizer import (
     assert_only_projector_is_trainable,
@@ -41,9 +41,17 @@ from src.engine.online_tta.online_optimizer import (
     collect_projector_parameters,
 )
 from src.engine.online_tta.non_overlap_guard import NonOverlapGuard
+from src.engine.online_tta.signature_verification import (
+    SignatureWindow,
+    build_pnn_token_mask,
+    filter_known_anomaly_tokens,
+    find_recurrent_signatures,
+    ordered_continuous_signature,
+)
 from src.engine.online_tta.triage import classify_online_window
 from src.engine.online_tta.ttl_buffer import TTLBuffer
 from src.engine.online_tta.verification_buffer import VerificationBuffer
+from src.engine.online_tta.verification_cycle import VerificationCycleController
 from src.engine.thresholding import (
     select_clean_validation_point_threshold,
     select_online_ewma_threshold,
@@ -408,8 +416,17 @@ def _process_online_window(
     ttl_buffer: TTLBuffer,
     previous_ewma_score: float | None,
     device: str,
+    signature_history: list[SignatureWindow],
+    verification_controller: VerificationCycleController,
 ) -> tuple[float, dict[str, Any], dict[str, Any]]:
-    batch_on_device, raw_point_score, latent_window_score, ewma_point_score = (
+    (
+        batch_on_device,
+        raw_point_score,
+        input_window_score,
+        latent_window_score,
+        ewma_point_score,
+        scoring_outputs,
+    ) = (
         _score_online_window(
             model=model,
             batch=batch,
@@ -419,8 +436,16 @@ def _process_online_window(
             device=device,
         )
     )
+    pnn_mask, signature_diagnostics = _build_event_pnn_mask(
+        model=model,
+        scoring_outputs=scoring_outputs,
+        batch=batch_on_device,
+        signature_history=signature_history,
+    )
+    if pnn_mask is not None:
+        batch_on_device["pnn_mask"] = pnn_mask
     triage_decision = classify_online_window(
-        input_window_score=raw_point_score,
+        input_window_score=input_window_score,
         latent_window_score=latent_window_score,
         thresholds=triage_thresholds,
     )
@@ -431,6 +456,7 @@ def _process_online_window(
         verification_buffer=verification_buffer,
         ttl_buffer=ttl_buffer,
     )
+    verification_controller.maybe_run(lambda _: False)
     event_optimizer = optimizer
     if online_variant != "A0":
         event_optimizer = build_online_optimizer(model)
@@ -441,7 +467,7 @@ def _process_online_window(
         online_variant=online_variant,
         threshold_value=threshold_value,
         ewma_point_score=ewma_point_score,
-        raw_point_score=raw_point_score,
+        raw_point_score=input_window_score,
         latent_window_score=latent_window_score,
         triage_decision=triage_decision,
     )
@@ -449,11 +475,13 @@ def _process_online_window(
         step_result=step_result,
         threshold_value=threshold_value,
         raw_point_score=raw_point_score,
+        input_window_score=input_window_score,
         ewma_point_score=ewma_point_score,
         triage_decision=triage_decision,
         verification_buffer=verification_buffer,
         ttl_buffer=ttl_buffer,
     )
+    metric.update(signature_diagnostics)
     return ewma_point_score, metric, record
 
 
@@ -465,7 +493,7 @@ def _score_online_window(
     ewma_current_weight: float,
     ewma_previous_weight: float,
     device: str,
-) -> tuple[dict[str, Any], float, float, float]:
+) -> tuple[dict[str, Any], float, float, float, float, dict[str, Any]]:
     batch_on_device = _move_batch_to_device(batch, device)
     model.eval()
     with torch.no_grad():
@@ -475,6 +503,11 @@ def _score_online_window(
     if latent_value is None:
         latent_value = pre_outputs["window_scores"]
     latent_window_score = float(torch.as_tensor(latent_value).mean().detach().cpu())
+    input_window_score = float(
+        torch.mean((pre_outputs["recon"] - batch_on_device["x"]) ** 2)
+        .detach()
+        .cpu()
+    )
     if previous_ewma_score is None:
         ewma_point_score = raw_point_score
     else:
@@ -482,7 +515,48 @@ def _score_online_window(
             ewma_current_weight * raw_point_score
             + ewma_previous_weight * previous_ewma_score
         )
-    return batch_on_device, raw_point_score, latent_window_score, ewma_point_score
+    return (
+        batch_on_device,
+        raw_point_score,
+        input_window_score,
+        latent_window_score,
+        ewma_point_score,
+        pre_outputs,
+    )
+
+
+def _build_event_pnn_mask(
+    *,
+    model: torch.nn.Module,
+    scoring_outputs: dict[str, Any],
+    batch: dict[str, Any],
+    signature_history: list[SignatureWindow],
+) -> tuple[torch.Tensor | None, dict[str, int]]:
+    """Build a causal PNN mask from frozen prototype buffers."""
+    hidden = scoring_outputs["aux"]["projected_hidden"].detach()
+    reference = getattr(model, "reference_encoder", None)
+    inner_model = getattr(reference, "model", None)
+    codebook = getattr(inner_model, "discrete_codebook", None)
+    prototypes = getattr(inner_model, "continuous_prototype_bank", None)
+    if not isinstance(codebook, torch.Tensor) or not isinstance(prototypes, torch.Tensor):
+        return None, {"online/num_points_remaining_for_signature": 0}
+    anomaly_mask = torch.zeros(codebook.shape[0], dtype=torch.bool, device=hidden.device)
+    radii = torch.full((codebook.shape[0],), float("inf"), device=hidden.device)
+    known_anomaly = filter_known_anomaly_tokens(hidden, codebook, anomaly_mask, radii)
+    signatures = ordered_continuous_signature(hidden, prototypes, topk=3)
+    meta = batch["meta"][0]
+    window = SignatureWindow(
+        str(meta["entity_id"]), int(meta["start_index"]), int(meta["end_index"]), signatures
+    )
+    recurrent = find_recurrent_signatures([*signature_history, window])
+    signature_history.append(window)
+    mask = build_pnn_token_mask(signatures, recurrent, known_anomaly)
+    return mask, {
+        "online/num_points_removed_by_discrete_anom_filter": int(known_anomaly.sum().item()),
+        "online/num_points_remaining_for_signature": int((~known_anomaly).sum().item()),
+        "online/num_recurrent_signatures": len(recurrent),
+        "online/num_pseudo_new_normality_points": int(mask.sum().item()),
+    }
 
 
 def _update_online_window_buffers(
@@ -494,8 +568,9 @@ def _update_online_window_buffers(
     ttl_buffer: TTLBuffer,
 ) -> None:
     if triage_decision == "pnn_candidate":
-        verification_buffer.add(
+        verification_buffer.try_admit(
             {
+                "entry_id": f"window-{int(batch_on_device['meta'][0]['stream_step'])}",
                 "window_start": int(batch_on_device["meta"][0]["start_index"]),
                 "window_end": int(batch_on_device["meta"][0]["end_index"]),
                 "point_score": raw_point_score,
@@ -513,6 +588,7 @@ def _build_online_window_outputs(
     step_result: dict[str, Any],
     threshold_value: float,
     raw_point_score: float,
+    input_window_score: float,
     ewma_point_score: float,
     triage_decision: str,
     verification_buffer: VerificationBuffer,
@@ -520,7 +596,7 @@ def _build_online_window_outputs(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     record = dict(step_result["record"])
     record["threshold"] = float(threshold_value)
-    record["input_window_score"] = float(raw_point_score)
+    record["input_window_score"] = float(input_window_score)
     record["verification_cycle_ready"] = verification_buffer.should_verify()
     metric = {
         "online/step": 0,
@@ -531,7 +607,7 @@ def _build_online_window_outputs(
         "online/did_update": record["did_update"],
         "online/loss_total": record["loss_total"],
         "online/triage_decision": triage_decision,
-        "online/input_window_score": raw_point_score,
+        "online/input_window_score": input_window_score,
         "online/latent_window_score": float(step_result["record"].get("latent_window_score", 0.0)),
         "online/num_buffer_admitted_windows": len(verification_buffer),
         "online/num_buffer_rejected_overlap_windows": 0,
@@ -628,7 +704,11 @@ def _run_online_variant_update(
         if triage_decision != "pnn_candidate":
             return None
         pnn_mask = batch.get("pnn_mask")
-        if pnn_mask is not None:
+        if pnn_mask is not None and (
+            not isinstance(pnn_mask, torch.Tensor) or not bool(pnn_mask.any())
+        ):
+            return None
+        if isinstance(pnn_mask, torch.Tensor):
             loss_total = compute_masked_pnn_reconstruction_loss(
                 training_outputs["recon"], batch["x"], pnn_mask
             )
@@ -642,7 +722,7 @@ def _run_online_variant_update(
             window_score, threshold_value
         )
         if triage_decision in {"gray_zone", "pnn_candidate"}:
-            contrastive_loss = compute_a2_online_contrastive_loss(
+            contrastive_loss = compute_token_multi_positive_info_nce(
                 training_outputs["aux"]["reference_hidden"],
                 training_outputs["aux"]["projected_hidden"],
             )
@@ -735,6 +815,8 @@ def _run_online_sequence(
     metric_history: list[dict[str, Any]] = []
     records: list[dict[str, Any]] = []
     previous_ewma_score: float | None = None
+    signature_history: list[SignatureWindow] = []
+    verification_controller = VerificationCycleController(verification_buffer)
     ewma_current_weight = float(protocol_config["online_ewma_current_weight"])
     ewma_previous_weight = float(protocol_config["online_ewma_previous_weight"])
     triage_thresholds = _build_triage_thresholds(threshold_value)
@@ -755,6 +837,8 @@ def _run_online_sequence(
             ttl_buffer=ttl_buffer,
             previous_ewma_score=previous_ewma_score,
             device=device,
+            signature_history=signature_history,
+            verification_controller=verification_controller,
         )
         metric["online/step"] = len(metric_history) + 1
         records.append(record)
@@ -809,7 +893,7 @@ def _build_runtime_online_context(
     checkpoint_manager = CheckpointManager(
         Path(str(experiment_config["checkpoint_dir"]))
     )
-    threshold_artifact = calibrate_online_threshold_artifact(
+    threshold_artifacts = calibrate_entity_threshold_artifacts(
         model=model,
         clean_validation_sequences=data_bundle["scaled_sequences"]["val"],
         experiment_config=experiment_config,
@@ -818,8 +902,14 @@ def _build_runtime_online_context(
         device=str(experiment_config["device"]),
     )
     output_dir = Path(str(experiment_config["output_dir"]))
-    threshold_path = output_dir / "thresholds" / "online_thresholds.json"
-    write_threshold_artifact(threshold_artifact, threshold_path)
+    threshold_paths: dict[str, str] = {}
+    for entity_id, artifact in threshold_artifacts.items():
+        path = output_dir / "thresholds" / entity_id / "online_thresholds.json"
+        write_threshold_artifact(artifact, path)
+        threshold_paths[entity_id] = str(path)
+    first_entity = next(iter(threshold_artifacts))
+    threshold_artifact = threshold_artifacts[first_entity]
+    threshold_path = threshold_paths[first_entity]
     return {
         "benchmark_status": "completed",
         "created_at_utc": _utc_now_iso(),
@@ -829,6 +919,8 @@ def _build_runtime_online_context(
         "optimizer": optimizer,
         "checkpoint_manager": checkpoint_manager,
         "threshold_artifact": threshold_artifact,
+        "threshold_artifacts": threshold_artifacts,
+        "threshold_paths": threshold_paths,
         "threshold_artifact_path": str(threshold_path),
         "threshold_value": float(
             threshold_artifact["thresholds"]["online_ewma_point"]["value"]
@@ -859,12 +951,16 @@ def _run_online_execution_sequences(
     for sequence in context["data_bundle"]["scaled_sequences"]["test"]:
         if max_online_steps_limit is not None and len(metric_history) >= max_online_steps_limit:
             break
+        entity_id = str(sequence["meta"]["entity_id"])
+        artifact = context["threshold_artifacts"].get(entity_id)
+        if artifact is None:
+            raise KeyError(f"No threshold artifact for test entity {entity_id}")
         sequence_metric_history, sequence_records = _run_online_sequence(
             model=context["model"],
             optimizer=context["optimizer"],
             sequence=sequence,
             online_variant=context["online_variant"],
-            threshold_value=context["threshold_value"],
+            threshold_value=float(artifact["thresholds"]["online_ewma_point"]["value"]),
             protocol_config=protocol_config,
             batch_size=context["batch_size"],
             view_noise_std=context["view_noise_std"],
