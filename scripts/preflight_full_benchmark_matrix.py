@@ -62,7 +62,10 @@ def _validate_thesis_offline(paths: list[Path]) -> None:
         if config["epochs"] != 30:
             raise ValueError(f"THESIS offline must use 30 epochs: {path}")
         two_stage = config["two_stage"]
-        if (two_stage["stage_a_multitask_epochs"], two_stage["stage_b_fusion_finetuning_epochs"]) != (25, 5):
+        if (
+            two_stage["stage_a_multitask_epochs"],
+            two_stage["stage_b_fusion_finetuning_epochs"],
+        ) != (25, 5):
             raise ValueError(f"THESIS two-stage budget must be 25+5: {path}")
 
 
@@ -84,7 +87,9 @@ def _validate_thesis_online(paths: list[Path]) -> None:
             )
 
 
-def _validate_wrapper_configs(paths: list[Path], expected_count: int, label: str) -> None:
+def _validate_wrapper_configs(
+    paths: list[Path], expected_count: int, label: str
+) -> None:
     _require_count(paths, expected_count, label)
     for path in paths:
         config = _load_yaml(path)
@@ -110,7 +115,9 @@ def _validate_redlamp_configs() -> None:
 
 
 def build_preflight_report() -> dict[str, Any]:
-    protocol_path = REPOSITORY_ROOT / "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
+    protocol_path = (
+        REPOSITORY_ROOT / "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
+    )
     protocol = _load_yaml(protocol_path)
     validate_protocol_config(protocol)
     offline_root = REPOSITORY_ROOT / "configs/experiment/offline_benchmark"
@@ -159,8 +166,15 @@ def main() -> None:
         raise SystemExit("CUDA is required but no CUDA device is available")
     report = build_preflight_report()
     if args.require_cuda:
-        report["cuda"] = {"device_count": torch.cuda.device_count(), "device_name": torch.cuda.get_device_name(0)}
-    print(json.dumps(report, indent=2, sort_keys=True) if args.json else "benchmark matrix: ready")
+        report["cuda"] = {
+            "device_count": torch.cuda.device_count(),
+            "device_name": torch.cuda.get_device_name(0),
+        }
+    print(
+        json.dumps(report, indent=2, sort_keys=True)
+        if args.json
+        else "benchmark matrix: ready"
+    )
 
 
 if __name__ == "__main__":

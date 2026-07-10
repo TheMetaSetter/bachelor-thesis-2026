@@ -33,7 +33,9 @@ def _build_mlp_layers(
 ) -> list[nn.Module]:
     layers: list[nn.Module] = []
     last_index = len(layer_dims) - 2
-    for index, (input_size, output_size) in enumerate(zip(layer_dims[:-1], layer_dims[1:])):
+    for index, (input_size, output_size) in enumerate(
+        zip(layer_dims[:-1], layer_dims[1:])
+    ):
         layers.append(nn.Linear(input_size, output_size))
         if index != last_index:
             layers.extend((nn.ReLU(), nn.Dropout(dropout)))
@@ -60,16 +62,23 @@ class SimpleWindowCnnEncoder(nn.Module):
     """Preserve time length while encoding a ``[batch, time, feature]`` window."""
 
     def __init__(
-        self, input_dim: int, output_dim: int, hidden_channels: int,
-        kernel_size: int, num_layers: int, dropout: float,
+        self,
+        input_dim: int,
+        output_dim: int,
+        hidden_channels: int,
+        kernel_size: int,
+        num_layers: int,
+        dropout: float,
     ) -> None:
         super().__init__()
         _validate_cnn_dimensions(
             input_dim, output_dim, hidden_channels, kernel_size, num_layers
         )
-        self.network = nn.Sequential(*_build_cnn_layers(
-            input_dim, output_dim, hidden_channels, kernel_size, num_layers, dropout
-        ))
+        self.network = nn.Sequential(
+            *_build_cnn_layers(
+                input_dim, output_dim, hidden_channels, kernel_size, num_layers, dropout
+            )
+        )
         _initialize_conv_layers(self.network)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -79,12 +88,17 @@ class SimpleWindowCnnEncoder(nn.Module):
 
 
 def _validate_cnn_dimensions(
-    input_dim: int, output_dim: int, hidden_channels: int,
-    kernel_size: int, num_layers: int,
+    input_dim: int,
+    output_dim: int,
+    hidden_channels: int,
+    kernel_size: int,
+    num_layers: int,
 ) -> None:
     for name, value in {
-        "input_dim": input_dim, "output_dim": output_dim,
-        "hidden_channels": hidden_channels, "kernel_size": kernel_size,
+        "input_dim": input_dim,
+        "output_dim": output_dim,
+        "hidden_channels": hidden_channels,
+        "kernel_size": kernel_size,
     }.items():
         if value <= 0:
             raise ValueError(f"{name} must be positive")
@@ -93,15 +107,27 @@ def _validate_cnn_dimensions(
 
 
 def _build_cnn_layers(
-    input_dim: int, output_dim: int, hidden_channels: int,
-    kernel_size: int, num_layers: int, dropout: float,
+    input_dim: int,
+    output_dim: int,
+    hidden_channels: int,
+    kernel_size: int,
+    num_layers: int,
+    dropout: float,
 ) -> list[nn.Module]:
     dimensions = [input_dim] + [hidden_channels] * (num_layers - 1) + [output_dim]
     padding_left = (kernel_size - 1) // 2
     padding_right = kernel_size - 1 - padding_left
     layers: list[nn.Module] = []
-    for index, (input_size, output_size) in enumerate(zip(dimensions[:-1], dimensions[1:])):
-        layers.extend((nn.ConstantPad1d((padding_left, padding_right), 0.0), nn.Conv1d(input_size, output_size, kernel_size), nn.ReLU()))
+    for index, (input_size, output_size) in enumerate(
+        zip(dimensions[:-1], dimensions[1:])
+    ):
+        layers.extend(
+            (
+                nn.ConstantPad1d((padding_left, padding_right), 0.0),
+                nn.Conv1d(input_size, output_size, kernel_size),
+                nn.ReLU(),
+            )
+        )
         if index != num_layers - 1:
             layers.append(nn.Dropout(dropout))
     return layers

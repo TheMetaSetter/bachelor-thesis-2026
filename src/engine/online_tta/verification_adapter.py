@@ -1,4 +1,5 @@
 """Pure prototype filters used by one shared verification buffer."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

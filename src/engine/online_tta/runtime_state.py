@@ -1,4 +1,5 @@
 """Serializable state owned by one online entity stream."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -34,12 +35,17 @@ class OnlineRuntimeState:
             "threshold_artifact": self.threshold_artifact,
             "signature_history": list(self.signature_history),
             "verification_entries": list(self.verification_entries),
-            "hard_old_intervals": [list(interval) for interval in self.hard_old_intervals],
+            "hard_old_intervals": [
+                list(interval) for interval in self.hard_old_intervals
+            ],
         }
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "OnlineRuntimeState":
-        intervals = [tuple(int(value) for value in interval) for interval in payload.get("hard_old_intervals", [])]
+        intervals = [
+            tuple(int(value) for value in interval)
+            for interval in payload.get("hard_old_intervals", [])
+        ]
         return cls(
             entity_id=str(payload["entity_id"]),
             online_variant=str(payload["online_variant"]),
@@ -76,7 +82,9 @@ def restore_online_runtime_state(
     for interval in state.hard_old_intervals:
         hard_old_guard.add(interval)
     if signature_history is not None:
-        from src.engine.online_tta.signature_verification import signature_window_from_dict
+        from src.engine.online_tta.signature_verification import (
+            signature_window_from_dict,
+        )
 
         signature_history.clear()
         signature_history.extend(

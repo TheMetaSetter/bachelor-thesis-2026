@@ -626,7 +626,11 @@ class ThesisMultitaskStateMixin:
                 )
             per_class_counts = [
                 self.discrete_codebook_size // self.num_classes
-                + (1 if class_index < self.discrete_codebook_size % self.num_classes else 0)
+                + (
+                    1
+                    if class_index < self.discrete_codebook_size % self.num_classes
+                    else 0
+                )
                 for class_index in range(self.num_classes)
             ]
             fallback_hidden_tokens = torch.cat(
@@ -691,9 +695,11 @@ class ThesisMultitaskStateMixin:
         ]
         if anomaly_groups:
             anomaly_tokens = torch.cat(anomaly_groups, dim=0)
-            distances = 1.0 - F.normalize(anomaly_tokens, dim=-1) @ F.normalize(
-                self.discrete_codebook, dim=-1
-            ).T
+            distances = (
+                1.0
+                - F.normalize(anomaly_tokens, dim=-1)
+                @ F.normalize(self.discrete_codebook, dim=-1).T
+            )
             nearest_ids = distances.argmin(dim=-1)
             nearest_distances = distances.gather(1, nearest_ids[:, None]).squeeze(1)
             for codeword_id in torch.unique(nearest_ids).tolist():

@@ -38,7 +38,9 @@ class MultitaskWindowEncoder(nn.Module):
                 dropout=architecture.cnn_dropout,
             )
         else:
-            raise ValueError(f"Unsupported encoder_family: {architecture.encoder_family}")
+            raise ValueError(
+                f"Unsupported encoder_family: {architecture.encoder_family}"
+            )
 
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
         """Encode ``batch['x']`` and return sequence and pooled representations."""

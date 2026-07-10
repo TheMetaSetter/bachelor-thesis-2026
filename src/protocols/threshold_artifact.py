@@ -24,38 +24,49 @@ def build_threshold_artifact(
     latent_window_high_threshold: float | None = None,
 ) -> dict[str, Any]:
     thresholds = {
-            "offline_point": {
-                "value": float(offline_point_threshold),
-                "source_split": "clean_validation",
-                "score_rule": "nonoverlap_tail_average",
-                "quantile": float(quantile),
-            },
-            "online_ewma_point": {
-                "value": float(online_ewma_point_threshold),
-                "source_split": "clean_validation",
-                "score_rule": "stride1_causal_endpoint_ewma",
-                "quantile": float(quantile),
-                "ewma_current_weight": float(ewma_current_weight),
-                "ewma_previous_weight": float(ewma_previous_weight),
-            },
+        "offline_point": {
+            "value": float(offline_point_threshold),
+            "source_split": "clean_validation",
+            "score_rule": "nonoverlap_tail_average",
+            "quantile": float(quantile),
+        },
+        "online_ewma_point": {
+            "value": float(online_ewma_point_threshold),
+            "source_split": "clean_validation",
+            "score_rule": "stride1_causal_endpoint_ewma",
+            "quantile": float(quantile),
+            "ewma_current_weight": float(ewma_current_weight),
+            "ewma_previous_weight": float(ewma_previous_weight),
+        },
     }
     if input_window_threshold is not None:
         thresholds["input_window"] = {
-            "value": float(input_window_threshold), "source_split": "clean_validation",
-            "score_rule": "window_mean_squared_error", "quantile": 0.99,
+            "value": float(input_window_threshold),
+            "source_split": "clean_validation",
+            "score_rule": "window_mean_squared_error",
+            "quantile": 0.99,
         }
-    if latent_window_low_threshold is not None or latent_window_high_threshold is not None:
+    if (
+        latent_window_low_threshold is not None
+        or latent_window_high_threshold is not None
+    ):
         if latent_window_low_threshold is None or latent_window_high_threshold is None:
             raise ValueError("latent window thresholds must be supplied together")
         if latent_window_low_threshold > latent_window_high_threshold:
-            raise ValueError("latent window low threshold must not exceed high threshold")
+            raise ValueError(
+                "latent window low threshold must not exceed high threshold"
+            )
         thresholds["latent_window_low"] = {
-            "value": float(latent_window_low_threshold), "source_split": "clean_validation",
-            "score_rule": "latent_memory_distance", "quantile": 0.95,
+            "value": float(latent_window_low_threshold),
+            "source_split": "clean_validation",
+            "score_rule": "latent_memory_distance",
+            "quantile": 0.95,
         }
         thresholds["latent_window_high"] = {
-            "value": float(latent_window_high_threshold), "source_split": "clean_validation",
-            "score_rule": "latent_memory_distance", "quantile": 0.99,
+            "value": float(latent_window_high_threshold),
+            "source_split": "clean_validation",
+            "score_rule": "latent_memory_distance",
+            "quantile": 0.99,
         }
     return {
         "artifact_version": 2,

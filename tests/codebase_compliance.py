@@ -28,8 +28,12 @@ class AuditResult:
     @property
     def violations(self) -> tuple[SizeViolation, ...]:
         """Return all violations in deterministic path/name order."""
-        return tuple(sorted(self.file_violations + self.callable_violations,
-                            key=lambda item: (str(item.path), item.line, item.name)))
+        return tuple(
+            sorted(
+                self.file_violations + self.callable_violations,
+                key=lambda item: (str(item.path), item.line, item.name),
+            )
+        )
 
 
 def _callable_name(node: ast.AST, parents: tuple[str, ...]) -> str:
@@ -39,6 +43,7 @@ def _callable_name(node: ast.AST, parents: tuple[str, ...]) -> str:
 
 def _iter_callables(tree: ast.AST):
     """Yield callable nodes, including nested and asynchronous definitions."""
+
     def walk(current: ast.AST, parents: tuple[str, ...]):
         for child in ast.iter_child_nodes(current):
             if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):

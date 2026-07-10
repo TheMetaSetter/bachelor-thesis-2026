@@ -1,4 +1,5 @@
 """Verification-cycle orchestration separated from stream scoring."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -19,9 +20,7 @@ class VerificationCycleController:
 
     def maybe_run(
         self,
-        verify: Callable[
-            [list[dict[str, Any]]], dict[str, VerificationResult]
-        ],
+        verify: Callable[[list[dict[str, Any]]], dict[str, VerificationResult]],
     ) -> dict[str, int] | None:
         if len(self.buffer) < self.capacity or not self.buffer.should_verify():
             return None

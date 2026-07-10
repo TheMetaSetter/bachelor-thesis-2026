@@ -40,7 +40,9 @@ class VerificationBuffer:
 
     def try_admit(self, entry: dict[str, Any]) -> bool:
         """Admit a non-overlapping unresolved entry and initialize its TTL."""
-        if not self.admit(window_start=int(entry["window_start"]), window_end=int(entry["window_end"])):
+        if not self.admit(
+            window_start=int(entry["window_start"]), window_end=int(entry["window_end"])
+        ):
             return False
         self.add(entry)
         return True

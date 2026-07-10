@@ -1,4 +1,5 @@
 """Small producer/consumer controller for deterministic demo replay."""
+
 from __future__ import annotations
 
 from queue import Empty, Queue
@@ -13,7 +14,12 @@ class StreamQueueController:
 
     _STOP = object()
 
-    def __init__(self, items: Iterable[Any] | None = None, maxsize: int = 128, delay_seconds: float = 0.05) -> None:
+    def __init__(
+        self,
+        items: Iterable[Any] | None = None,
+        maxsize: int = 128,
+        delay_seconds: float = 0.05,
+    ) -> None:
         self._source = iter(items or ())
         self._delay_seconds = float(delay_seconds)
         self._queue: Queue[Any] = Queue(maxsize=maxsize)

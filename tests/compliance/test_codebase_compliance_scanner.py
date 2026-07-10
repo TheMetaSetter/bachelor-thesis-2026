@@ -41,9 +41,11 @@ def test_file_over_boundary_is_reported(tmp_path: Path) -> None:
 
 
 def test_nested_and_method_callables_are_scanned(tmp_path: Path) -> None:
-    body = "class Model:\n    def method(self):\n" + "\n".join(
-        "        value = 1" for _ in range(49)
-    ) + "\n        return value\n"
+    body = (
+        "class Model:\n    def method(self):\n"
+        + "\n".join("        value = 1" for _ in range(49))
+        + "\n        return value\n"
+    )
     _write_module(tmp_path, body)
     result = scan_source_size_violations(tmp_path / "src")
     assert [item.name for item in result.callable_violations] == ["Model.method"]

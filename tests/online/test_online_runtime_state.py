@@ -32,7 +32,9 @@ def test_runtime_state_rejects_wrong_entity_before_restore() -> None:
 
 def test_runtime_state_restores_live_containers() -> None:
     state = OnlineRuntimeState(
-        "machine-1-6", "A2", _artifact("machine-1-6"),
+        "machine-1-6",
+        "A2",
+        _artifact("machine-1-6"),
         verification_entries=[{"entry_id": "e1", "window_start": 0, "window_end": 2}],
         hard_old_intervals=[(4, 6)],
     )
@@ -48,12 +50,14 @@ def test_runtime_state_restores_signature_history() -> None:
         "machine-1-6",
         "A2",
         _artifact("machine-1-6"),
-        signature_history=[{
-            "entity_id": "machine-1-6",
-            "start": 0,
-            "end": 2,
-            "signatures": [[[0, 1, 2], [1, 2, 3]]],
-        }],
+        signature_history=[
+            {
+                "entity_id": "machine-1-6",
+                "start": 0,
+                "end": 2,
+                "signatures": [[[0, 1, 2], [1, 2, 3]]],
+            }
+        ],
     )
     history: list[SignatureWindow] = []
     restore_online_runtime_state(
@@ -73,7 +77,9 @@ def test_resumed_next_event_matches_uninterrupted_execution() -> None:
     original, resumed = VerificationBuffer(), VerificationBuffer()
     original_guard, resumed_guard = NonOverlapGuard(), NonOverlapGuard()
     restore_online_runtime_state(state, original, original_guard)
-    restore_online_runtime_state(OnlineRuntimeState.from_dict(state.to_dict()), resumed, resumed_guard)
+    restore_online_runtime_state(
+        OnlineRuntimeState.from_dict(state.to_dict()), resumed, resumed_guard
+    )
     next_entry = {"entry_id": "e7", "window_start": 21, "window_end": 23}
     original.try_admit(next_entry)
     resumed.try_admit(next_entry)

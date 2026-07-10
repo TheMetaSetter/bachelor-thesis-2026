@@ -19,13 +19,19 @@ def classify_online_window(
     latent_window_score: float,
     thresholds: dict[str, Any],
 ) -> str:
-    required = ("input_window_threshold", "latent_window_low_threshold", "latent_window_high_threshold")
+    required = (
+        "input_window_threshold",
+        "latent_window_low_threshold",
+        "latent_window_high_threshold",
+    )
     if all(key in thresholds for key in required):
         input_threshold = float(thresholds[required[0]])
         latent_low = float(thresholds[required[1]])
         latent_high = float(thresholds[required[2]])
         if latent_low > latent_high:
-            raise ValueError("latent_window_low_threshold must not exceed high threshold")
+            raise ValueError(
+                "latent_window_low_threshold must not exceed high threshold"
+            )
         if input_window_score <= input_threshold:
             return "normal"
         if latent_window_score <= latent_low:

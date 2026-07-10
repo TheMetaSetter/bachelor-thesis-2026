@@ -45,7 +45,9 @@ def compute_hard_old_hinge_loss(score: torch.Tensor, b_window: float) -> torch.T
 
 
 def compute_masked_pnn_reconstruction_loss(
-    reconstruction: torch.Tensor, target: torch.Tensor, pnn_mask: torch.Tensor,
+    reconstruction: torch.Tensor,
+    target: torch.Tensor,
+    pnn_mask: torch.Tensor,
 ) -> torch.Tensor:
     if reconstruction.shape != target.shape or reconstruction.ndim != 3:
         raise ValueError("reconstruction and target must have shape [B, L, C]")
@@ -79,7 +81,9 @@ def compute_token_multi_positive_info_nce(
         raise ValueError("hidden tensors must share shape [B, L, H]")
     if temperature <= 0:
         raise ValueError("temperature must be positive")
-    reference = F.normalize(reference_hidden, dim=-1).reshape(-1, reference_hidden.shape[-1])
+    reference = F.normalize(reference_hidden, dim=-1).reshape(
+        -1, reference_hidden.shape[-1]
+    )
     projected = F.normalize(projected_hidden, dim=-1).reshape_as(reference)
     logits = projected @ reference.T / temperature
     labels = torch.arange(logits.shape[0], device=logits.device)

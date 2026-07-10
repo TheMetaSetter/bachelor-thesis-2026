@@ -58,7 +58,9 @@ def run_live_online_replay(
             "window": list(points[-window_size:]),
             "end_index": stream_index + 1,
         }
-        outputs.append({"end_index": stream_index + 1, "score": score_callback(payload)})
+        outputs.append(
+            {"end_index": stream_index + 1, "score": score_callback(payload)}
+        )
     return outputs
 
 
