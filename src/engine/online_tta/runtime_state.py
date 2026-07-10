@@ -67,6 +67,7 @@ def restore_online_runtime_state(
     state: OnlineRuntimeState,
     verification_buffer: Any,
     hard_old_guard: Any,
+    signature_history: list[Any] | None = None,
 ) -> None:
     """Restore mutable containers after identity validation."""
     verification_buffer.clear()
@@ -74,3 +75,42 @@ def restore_online_runtime_state(
         verification_buffer.add(entry)
     for interval in state.hard_old_intervals:
         hard_old_guard.add(interval)
+    if signature_history is not None:
+        from src.engine.online_tta.signature_verification import signature_window_from_dict
+
+        signature_history.clear()
+        signature_history.extend(
+            signature_window_from_dict(entry) for entry in state.signature_history
+        )
+
+
+def resume_online_runtime(
+    *,
+    checkpoint_manager: Any,
+    checkpoint_path: str,
+    model: Any,
+    entity_id: str,
+    online_variant: str,
+    verification_buffer: Any,
+    hard_old_guard: Any,
+    signature_history: list[Any] | None = None,
+) -> OnlineRuntimeState:
+    """Load model state, validate identity, and restore mutable containers."""
+    checkpoint = checkpoint_manager.load_checkpoint(
+        checkpoint_path, model, optimizer=None, scheduler=None
+    )
+    extra_state = checkpoint.get("extra_state", {})
+    state_payload = extra_state.get("online_runtime_state")
+    if state_payload is None:
+        state_payload = {
+            "entity_id": entity_id,
+            "online_variant": extra_state.get("online_variant", online_variant),
+            "threshold_artifact": extra_state.get("threshold_artifact", {}),
+            "verification_entries": extra_state.get("verification_buffer_entries", []),
+            "hard_old_intervals": extra_state.get("hard_old_guard_intervals", []),
+        }
+    state = validate_resume_state(state_payload, entity_id, online_variant)
+    restore_online_runtime_state(
+        state, verification_buffer, hard_old_guard, signature_history
+    )
+    return state

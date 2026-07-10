@@ -143,6 +143,8 @@ def test_execute_online_tta_step_updates_only_projector_for_a1_and_a2(
 
     assert a1_record["did_update"] is True
     assert a1_record["online_variant"] == "A1"
+    assert a1_record["record"]["reconstruction_loss"] >= 0.0
+    assert a1_record["record"]["projector_grad_norm"] >= 0.0
     assert any(
         not torch.allclose(before, after)
         for before, after in zip(
@@ -170,6 +172,7 @@ def test_execute_online_tta_step_updates_only_projector_for_a1_and_a2(
 
     assert a2_record["did_update"] is True
     assert a2_record["online_variant"] == "A2"
+    assert a2_record["record"]["contrastive_loss"] >= 0.0
     assert any(
         not torch.allclose(before, after)
         for before, after in zip(

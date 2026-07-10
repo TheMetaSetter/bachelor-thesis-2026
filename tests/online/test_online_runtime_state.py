@@ -7,6 +7,11 @@ from src.engine.online_tta.runtime_state import (
     validate_resume_state,
 )
 from src.engine.online_tta.verification_buffer import VerificationBuffer
+from src.engine.online_tta.signature_verification import SignatureWindow
+from src.engine.online_tta.verification_adapter import VerificationResult
+from src.engine.online_tta.verification_cycle import VerificationCycleController
+from src.engine.online_tta.triage import classify_online_window
+import torch
 
 
 def _artifact(entity_id: str) -> dict[str, object]:
@@ -36,3 +41,57 @@ def test_runtime_state_restores_live_containers() -> None:
     restore_online_runtime_state(state, buffer, guard)
     assert len(buffer) == 1
     assert guard.intervals() == [(4, 6)]
+
+
+def test_runtime_state_restores_signature_history() -> None:
+    state = OnlineRuntimeState(
+        "machine-1-6",
+        "A2",
+        _artifact("machine-1-6"),
+        signature_history=[{
+            "entity_id": "machine-1-6",
+            "start": 0,
+            "end": 2,
+            "signatures": [[[0, 1, 2], [1, 2, 3]]],
+        }],
+    )
+    history: list[SignatureWindow] = []
+    restore_online_runtime_state(
+        state, VerificationBuffer(), NonOverlapGuard(), history
+    )
+    assert history[0].signatures == [[(0, 1, 2), (1, 2, 3)]]
+
+
+def test_resumed_next_event_matches_uninterrupted_execution() -> None:
+    entries = [
+        {"entry_id": f"e{i}", "window_start": i * 3, "window_end": i * 3 + 2}
+        for i in range(7)
+    ]
+    state = OnlineRuntimeState(
+        "machine-1-6", "A2", _artifact("machine-1-6"), verification_entries=entries
+    )
+    original, resumed = VerificationBuffer(), VerificationBuffer()
+    original_guard, resumed_guard = NonOverlapGuard(), NonOverlapGuard()
+    restore_online_runtime_state(state, original, original_guard)
+    restore_online_runtime_state(OnlineRuntimeState.from_dict(state.to_dict()), resumed, resumed_guard)
+    next_entry = {"entry_id": "e7", "window_start": 21, "window_end": 23}
+    original.try_admit(next_entry)
+    resumed.try_admit(next_entry)
+
+    def unresolved(current_entries):
+        return {
+            entry["entry_id"]: VerificationResult(
+                False, 0, "unresolved", torch.zeros(1, 2, dtype=torch.bool)
+            )
+            for entry in current_entries
+        }
+
+    first = VerificationCycleController(original).maybe_run(unresolved)
+    second = VerificationCycleController(resumed).maybe_run(unresolved)
+    thresholds = {
+        "input_window_threshold": 1.0,
+        "latent_window_low_threshold": 0.5,
+        "latent_window_high_threshold": 0.9,
+    }
+    assert first == second and original.items() == resumed.items()
+    assert classify_online_window(1.2, 0.7, thresholds) == "gray_zone"

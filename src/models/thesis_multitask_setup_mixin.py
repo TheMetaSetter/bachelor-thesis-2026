@@ -413,11 +413,19 @@ class ThesisMultitaskSetupMixin:
                     architecture.hidden_dim,
                 ),
             )
+            self.anomalous_codeword_mask = torch.zeros(
+                prototypes.discrete_codebook_size, dtype=torch.bool
+            )
+            self.anomaly_radii = torch.zeros(prototypes.discrete_codebook_size)
+            self.verification_metadata_source = "uninitialized"
         else:
             self.discrete_assignment = None
             self.register_buffer("discrete_codebook", None)
             self.register_buffer("discrete_ema_counts", None)
             self.register_buffer("discrete_ema_sums", None)
+            self.anomalous_codeword_mask = None
+            self.anomaly_radii = None
+            self.verification_metadata_source = "disabled"
 
         self.continuous_update_gate = nn.Sequential(
             nn.Linear(self.hidden_dim * 2, self.hidden_dim),

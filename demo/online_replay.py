@@ -36,6 +36,32 @@ def consume_online_stream(
     return outputs
 
 
+def run_live_online_replay(
+    controller: Any,
+    window_size: int,
+    score_callback: Any,
+) -> list[dict[str, Any]]:
+    """Score causal windows without exposing labels to the callback."""
+    if window_size < 1:
+        raise ValueError("window_size must be positive")
+    points: list[Any] = []
+    outputs: list[dict[str, Any]] = []
+    for stream_index, item in enumerate(controller):
+        value = item.get("x") if isinstance(item, dict) else item
+        metadata = item.get("meta", {}) if isinstance(item, dict) else {}
+        points.append(value)
+        if len(points) < window_size:
+            continue
+        payload = {
+            "x": value,
+            "meta": dict(metadata) if isinstance(metadata, dict) else {},
+            "window": list(points[-window_size:]),
+            "end_index": stream_index + 1,
+        }
+        outputs.append({"end_index": stream_index + 1, "score": score_callback(payload)})
+    return outputs
+
+
 def _load_threshold_artifact(
     report: dict[str, Any], report_path: Path
 ) -> dict[str, Any]:

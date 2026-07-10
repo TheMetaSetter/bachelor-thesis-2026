@@ -5,6 +5,7 @@ from collections.abc import Callable
 from typing import Any
 
 from src.engine.online_tta.verification_buffer import VerificationBuffer
+from src.engine.online_tta.verification_adapter import VerificationResult
 
 
 class VerificationCycleController:
@@ -17,13 +18,20 @@ class VerificationCycleController:
             raise ValueError("verification capacity must be positive")
 
     def maybe_run(
-        self, verify: Callable[[dict[str, Any]], bool]
+        self,
+        verify: Callable[
+            [list[dict[str, Any]]], dict[str, VerificationResult]
+        ],
     ) -> dict[str, int] | None:
         if len(self.buffer) < self.capacity or not self.buffer.should_verify():
             return None
         entries = self.buffer.items()
+        results = verify(entries)
         for entry in entries:
+            entry_id = str(entry["entry_id"])
+            if entry_id not in results:
+                raise ValueError(f"verification result missing entry {entry_id}")
             self.buffer.mark_verification_result(
-                str(entry["entry_id"]), bool(verify(dict(entry)))
+                entry_id, bool(results[entry_id].adapted)
             )
         return self.buffer.finish_verification_cycle()

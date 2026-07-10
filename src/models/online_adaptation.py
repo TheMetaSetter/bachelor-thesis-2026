@@ -98,6 +98,7 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
         )
         logits = self.model.classification_head(flattened_classification_hidden)
         point_scores = torch.mean((recon - x_tensor) ** 2, dim=-1)
+        latent_window_score = self._compute_latent_memory_score(hidden)
         return {
             "pooled": flattened_classification_hidden,
             "recon": recon,
@@ -112,9 +113,19 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
                 "hidden_classification": hidden_classification,
                 "alpha": fusion_outputs["alpha"],
                 "beta": fusion_outputs["beta"],
-                "latent_window_score": point_scores.mean(dim=1),
+                "latent_window_score": latent_window_score,
             },
         }
+
+    def _compute_latent_memory_score(self, hidden: torch.Tensor) -> torch.Tensor:
+        """Return mean nearest-normal-prototype cosine distance per window."""
+        prototypes = self.model.continuous_prototype_bank
+        if not isinstance(prototypes, torch.Tensor):
+            raise ValueError("continuous prototype bank is required for latent scoring")
+        normalized_hidden = F.normalize(hidden, dim=-1)
+        normalized_prototypes = F.normalize(prototypes, dim=-1)
+        distances = 1.0 - normalized_hidden @ normalized_prototypes.T
+        return distances.min(dim=-1).values.mean(dim=-1)
 
     def compute_prototype_target(self, hidden: torch.Tensor) -> torch.Tensor:
         prototype_targets: list[torch.Tensor] = []

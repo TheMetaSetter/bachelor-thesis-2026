@@ -234,7 +234,15 @@ class ThesisMultitaskStateMixin:
         }
 
     def get_checkpoint_extra_state(self) -> dict[str, Any]:
-        return self.get_memory_lifecycle_state()
+        state = self.get_memory_lifecycle_state()
+        if isinstance(self.anomalous_codeword_mask, torch.Tensor):
+            state["anomalous_codeword_mask"] = (
+                self.anomalous_codeword_mask.detach().cpu().tolist()
+            )
+        if isinstance(self.anomaly_radii, torch.Tensor):
+            state["anomaly_radii"] = self.anomaly_radii.detach().cpu().tolist()
+        state["verification_metadata_source"] = self.verification_metadata_source
+        return state
 
     def get_memory_tensor_state(self) -> dict[str, torch.Tensor | None]:
         return {
@@ -345,6 +353,22 @@ class ThesisMultitaskStateMixin:
             "memory_initialization_epoch",
             self.memory_initialization_epoch,
         )
+        mask = extra_state.get("anomalous_codeword_mask")
+        radii = extra_state.get("anomaly_radii")
+        if mask is not None and radii is not None:
+            if not isinstance(self.discrete_codebook, torch.Tensor):
+                raise ValueError("verification metadata requires a discrete codebook")
+            mask = torch.as_tensor(mask, dtype=torch.bool)
+            radii = torch.as_tensor(radii, dtype=torch.float32)
+            if mask.shape != (self.discrete_codebook.shape[0],):
+                raise ValueError("anomalous_codeword_mask checkpoint shape mismatch")
+            if radii.shape != mask.shape or (radii < 0).any().item():
+                raise ValueError("anomaly_radii checkpoint shape or value mismatch")
+            self.anomalous_codeword_mask = mask.detach().bool().clone()
+            self.anomaly_radii = radii.detach().float().clone()
+            self.verification_metadata_source = str(
+                extra_state.get("verification_metadata_source", "checkpoint")
+            )
 
     def _move_initialization_batch_to_device(
         self,
@@ -638,6 +662,46 @@ class ThesisMultitaskStateMixin:
                 self.discrete_ema_counts.fill_(1.0)
             if self.discrete_ema_sums is not None:
                 self.discrete_ema_sums.copy_(discrete_seed_vectors)
+            self._calibrate_anomaly_verification_metadata(
+                discrete_hidden_tokens_by_class=discrete_hidden_tokens_by_class
+            )
+
+    def _calibrate_anomaly_verification_metadata(
+        self, *, discrete_hidden_tokens_by_class: dict[int, torch.Tensor]
+    ) -> None:
+        """Mark anomaly codewords and store q99 train-token radii."""
+        if not isinstance(self.discrete_codebook, torch.Tensor):
+            return
+        counts = [
+            self.discrete_codebook_size // self.num_classes
+            + (1 if index < self.discrete_codebook_size % self.num_classes else 0)
+            for index in range(self.num_classes)
+        ]
+        mask = torch.zeros(self.discrete_codebook_size, dtype=torch.bool)
+        offset = 0
+        for class_index, count in enumerate(counts):
+            if class_index > 0:
+                mask[offset : offset + count] = True
+            offset += count
+        radii = torch.zeros(self.discrete_codebook_size)
+        anomaly_groups = [
+            values.reshape(-1, self.hidden_dim)
+            for class_index, values in discrete_hidden_tokens_by_class.items()
+            if class_index > 0 and values.numel() > 0
+        ]
+        if anomaly_groups:
+            anomaly_tokens = torch.cat(anomaly_groups, dim=0)
+            distances = 1.0 - F.normalize(anomaly_tokens, dim=-1) @ F.normalize(
+                self.discrete_codebook, dim=-1
+            ).T
+            nearest_ids = distances.argmin(dim=-1)
+            nearest_distances = distances.gather(1, nearest_ids[:, None]).squeeze(1)
+            for codeword_id in torch.unique(nearest_ids).tolist():
+                assigned = nearest_distances[nearest_ids == codeword_id]
+                radii[codeword_id] = torch.quantile(assigned, 0.99)
+        self.anomalous_codeword_mask = mask
+        self.anomaly_radii = radii
+        self.verification_metadata_source = "train_anomaly_tokens_q99"
 
     def _update_continuous_memory_bank(
         self,

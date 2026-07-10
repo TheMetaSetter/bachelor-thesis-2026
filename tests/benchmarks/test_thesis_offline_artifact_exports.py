@@ -177,7 +177,7 @@ def test_collect_offline_artifact_inputs_uses_checkpoint_and_three_splits(
         def __init__(self, checkpoint_dir):
             calls.append(f"checkpoint_dir:{checkpoint_dir}")
 
-        def load_checkpoint(self, checkpoint_path, model, optimizer=None):
+        def load_checkpoint(self, checkpoint_path, model, optimizer=None, strict=True):
             calls.append(f"checkpoint:{checkpoint_path}")
             return {"scaler_state_dict": {"mean": [0.0]}, "extra_state": {}}
 

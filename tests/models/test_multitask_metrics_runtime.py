@@ -240,7 +240,7 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
         def __init__(self, checkpoint_dir) -> None:
             self.checkpoint_dir = checkpoint_dir
 
-        def load_checkpoint(self, checkpoint_path, model, optimizer):
+        def load_checkpoint(self, checkpoint_path, model, optimizer, strict=True):
             return {
                 "scaler_state_dict": {
                     "feature_mean": torch.zeros(1),
@@ -363,7 +363,7 @@ def test_run_evaluation_experiment_reuses_checkpoint_threshold_and_rebuilt_loade
         def __init__(self, checkpoint_dir) -> None:
             self.checkpoint_dir = checkpoint_dir
 
-        def load_checkpoint(self, checkpoint_path, model, optimizer):
+        def load_checkpoint(self, checkpoint_path, model, optimizer, strict=True):
             return {
                 "scaler_state_dict": {
                     "epsilon": 1.0e-6,

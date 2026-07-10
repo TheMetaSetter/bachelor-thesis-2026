@@ -29,7 +29,7 @@ class CheckpointManager:
         self,
         checkpoint_name: str,
         model: torch.nn.Module,
-        optimizer: torch.optim.Optimizer,
+        optimizer: torch.optim.Optimizer | None,
         scheduler: Any | None,
         scaler_state: dict[str, Any],
         config: dict[str, Any],
@@ -40,12 +40,13 @@ class CheckpointManager:
         checkpoint_path = self.checkpoint_dir / checkpoint_name
         checkpoint_payload = {
             "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
             "scaler_state_dict": scaler_state,
             "config": config,
             "epoch": epoch,
             "metric_history": metric_history,
         }
+        if optimizer is not None:
+            checkpoint_payload["optimizer_state_dict"] = optimizer.state_dict()
         if scheduler is not None:
             checkpoint_payload["scheduler_state_dict"] = scheduler.state_dict()
         if extra_state is not None:
@@ -107,7 +108,7 @@ class CheckpointManager:
             )
         if hasattr(model, "load_checkpoint_extra_state"):
             model.load_checkpoint_extra_state(loaded_checkpoint.get("extra_state"))
-        if optimizer is not None:
+        if optimizer is not None and "optimizer_state_dict" in loaded_checkpoint:
             optimizer.load_state_dict(loaded_checkpoint["optimizer_state_dict"])
         if scheduler is not None and "scheduler_state_dict" in loaded_checkpoint:
             scheduler.load_state_dict(loaded_checkpoint["scheduler_state_dict"])

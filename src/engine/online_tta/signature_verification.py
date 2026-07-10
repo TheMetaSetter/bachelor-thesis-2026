@@ -19,15 +19,30 @@ class PrototypeVerificationMetadata:
         codebook_size = self.codebook.shape[0]
         if self.codebook.ndim != 2:
             raise ValueError("codebook must have shape [K, H]")
+        if not torch.is_floating_point(self.codebook):
+            raise TypeError("codebook must use a floating dtype")
         if self.anomalous_codeword_mask.shape != (codebook_size,):
             raise ValueError("anomalous_codeword_mask must have shape [K]")
+        if self.anomalous_codeword_mask.dtype != torch.bool:
+            raise TypeError("anomalous_codeword_mask must use bool dtype")
         if self.anomaly_radii.shape != (codebook_size,):
             raise ValueError("anomaly_radii must have shape [K]")
-        if self.anomaly_radii.any().item() and (self.anomaly_radii < 0).any().item():
+        if not torch.is_floating_point(self.anomaly_radii):
+            raise TypeError("anomaly_radii must use a floating dtype")
+        if (self.anomaly_radii < 0).any().item():
             raise ValueError("anomaly_radii must be non-negative")
 
     @classmethod
     def from_model(cls, model: torch.nn.Module) -> "PrototypeVerificationMetadata":
+        if getattr(model, "verification_metadata_source", "") in {
+            "",
+            "uninitialized",
+            "disabled",
+        }:
+            raise AttributeError(
+                "online reference model checkpoint lacks calibrated "
+                "anomalous_codeword_mask and anomaly_radii metadata"
+            )
         codebook = getattr(model, "discrete_codebook", None)
         mask = getattr(model, "anomalous_codeword_mask", None)
         radii = getattr(model, "anomaly_radii", None)
@@ -68,6 +83,28 @@ class SignatureWindow:
     start: int
     end: int
     signatures: list[list[tuple[int, ...]]]
+
+
+def signature_window_to_dict(window: SignatureWindow) -> dict[str, object]:
+    """Convert one signature window to checkpoint-safe primitives."""
+    return {
+        "entity_id": window.entity_id,
+        "start": window.start,
+        "end": window.end,
+        "signatures": [[list(signature) for signature in token] for token in window.signatures],
+    }
+
+
+def signature_window_from_dict(payload: dict[str, object]) -> SignatureWindow:
+    """Restore one signature window from checkpoint-safe primitives."""
+    raw_signatures = payload.get("signatures", [])
+    signatures = [
+        [tuple(int(value) for value in signature) for signature in token]
+        for token in raw_signatures  # type: ignore[union-attr]
+    ]
+    return SignatureWindow(
+        str(payload["entity_id"]), int(payload["start"]), int(payload["end"]), signatures
+    )
 
 
 def find_recurrent_signatures(window_signatures: Sequence[SignatureWindow]) -> set[tuple[int, ...]]:

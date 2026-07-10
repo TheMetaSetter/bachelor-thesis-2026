@@ -9,8 +9,9 @@ from typing import Any
 import yaml
 
 from demo.offline_replay import build_offline_replay_state
-from demo.online_replay import build_online_replay_state
+from demo.online_replay import build_online_replay_state, run_live_online_replay
 from demo.plotting import plot_offline_replay, plot_online_replay
+from demo.stream_queue import StreamQueueController
 
 
 def _load_yaml(path: str | Path) -> dict[str, Any]:
@@ -42,6 +43,18 @@ def run_demo(
             )
         )
     return outputs
+
+
+def run_live_demo(
+    *, values: list[Any], window_size: int, score_callback: Any
+) -> list[dict[str, Any]]:
+    """Construct the official queue controller and run causal live scoring."""
+    controller = StreamQueueController(values, delay_seconds=0.0)
+    controller.start()
+    try:
+        return run_live_online_replay(controller, window_size, score_callback)
+    finally:
+        controller.stop()
 
 
 def main() -> None:

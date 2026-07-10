@@ -13,6 +13,7 @@ config files
 
 import argparse
 import json
+import torch
 import sys
 from pathlib import Path
 from typing import Any
@@ -152,8 +153,13 @@ def build_preflight_report() -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--require-cuda", action="store_true")
     args = parser.parse_args()
+    if args.require_cuda and not torch.cuda.is_available():
+        raise SystemExit("CUDA is required but no CUDA device is available")
     report = build_preflight_report()
+    if args.require_cuda:
+        report["cuda"] = {"device_count": torch.cuda.device_count(), "device_name": torch.cuda.get_device_name(0)}
     print(json.dumps(report, indent=2, sort_keys=True) if args.json else "benchmark matrix: ready")
 
 

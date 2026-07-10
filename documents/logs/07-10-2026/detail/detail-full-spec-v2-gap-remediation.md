@@ -807,9 +807,9 @@ semantic folders under `tests/`.
 - [x] Runtime builds an artifact map keyed by entity.
 - [x] Runtime writes `thresholds/{entity_id}/online_thresholds.json`.
 - [x] Test sequence selects its own entity artifact before scoring.
-- [ ] Multi-entity integration test proves two different threshold values are
+- [x] Multi-entity integration test proves two different threshold values are
   used in one execution context.
-- [ ] Artifact schema contains `B_window`, `A_low`, and `A_high` values from
+- [x] Artifact schema contains `B_window`, `A_low`, and `A_high` values from
   their own score distributions rather than aliases of point thresholds.
 
 ### C. Exact triage and causal scoring
@@ -820,7 +820,7 @@ semantic folders under `tests/`.
 - [x] Online endpoint score is causal.
 - [x] Input-window score is computed from full-window reconstruction MSE in the
   engine instead of endpoint point score.
-- [ ] Latent score is explicitly sourced from prototype/memory distance.
+- [x] Latent score is explicitly sourced from prototype/memory distance.
 
 ### D. Prototype-aware PNN
 
@@ -829,7 +829,7 @@ semantic folders under `tests/`.
 - [x] Ordered top-k continuous signature helper exists.
 - [x] Non-overlapping recurrence helper exists.
 - [x] Known-anomaly exclusion helper exists.
-- [ ] Engine obtains codebook, anomaly mask, radii, and continuous prototypes
+- [x] Engine obtains codebook, anomaly mask, radii, and continuous prototypes
   through a read-only adapter.
 - [x] Engine stores recurrent signatures per entity stream.
 - [x] Engine creates `batch["pnn_mask"]` before A1/A2 dispatch.
@@ -843,9 +843,14 @@ semantic folders under `tests/`.
 - [x] Verification capacity is explicit.
 - [x] TTL decrement is implemented in cycle finalization.
 - [x] Hard-old guard primitive exists.
-- [x] Engine uses `try_admit()` for PNN candidates.
-- [x] Engine runs a deterministic score-based verification callback at capacity eight.
-- [ ] Engine marks entries as adapted or unresolved from verification results.
+- [x] Engine uses `try_admit()` for gray-zone candidates.
+- [x] One shared buffer triggers verification only at eight entries plus a new admission.
+- [x] One trigger processes every entry currently in the shared buffer.
+- [x] Engine runs buffer-wide discrete-radius and recurrent-signature verification at capacity eight.
+- [x] Engine marks entries as adapted or unresolved from verification results.
+- [x] Every remaining entry decreases TTL exactly once after a trigger.
+- [x] Verification trigger re-runs discrete-radius and continuous-signature
+  filtering over every entry currently in the shared buffer.
 - [x] Hard-old guard is consulted before every A2 hard-old update.
 - [x] Failed hard-old updates do not reserve an interval.
 - [x] Rejected-overlap diagnostics count actual rejections.
@@ -859,7 +864,7 @@ semantic folders under `tests/`.
 - [x] A2 runtime uses hard-old hinge score.
 - [x] A2 runtime uses token multi-positive InfoNCE in the active branch.
 - [x] Online final checkpoints omit optimizer moments; resume must rebuild AdamW.
-- [ ] Projector-only mutation is asserted by integration test for A0/A1/A2.
+- [x] Projector-only mutation is asserted by integration test for A0/A1/A2.
 
 ### G. Checkpoint and resume
 
@@ -867,19 +872,19 @@ semantic folders under `tests/`.
 - [x] Final checkpoint writes buffer entries.
 - [x] Final checkpoint writes hard-old guard intervals.
 - [x] Resume identity validator exists.
-- [ ] Runtime loader restores buffer entries into a live `VerificationBuffer`.
-- [ ] Runtime loader restores signature history.
-- [ ] Runtime loader restores hard-old guard intervals.
-- [ ] Resume test proves next event equals uninterrupted execution.
+- [x] Runtime loader restores buffer entries into a live `VerificationBuffer`.
+- [x] Runtime loader restores signature history.
+- [x] Runtime loader restores hard-old guard intervals.
+- [x] Resume test proves next event equals uninterrupted execution.
 
 ### H. Demo and reporting
 
 - [x] Queue producer/consumer controller exists.
 - [x] Queue pause/resume/stop tests pass.
 - [x] Live consumer waits until `L` points exist.
-- [ ] `demo/app.py` wires the live consumer rather than only replaying reports.
-- [ ] Demo callback receives no labels.
-- [ ] Online diagnostics contain real PNN, buffer, loss, and gradient values.
+- [x] `demo/app.py` wires the live consumer rather than only replaying reports.
+- [x] Demo callback receives no labels.
+- [x] Online diagnostics contain real PNN, buffer, loss, and gradient values.
 
 ### I. GPU/server acceptance
 
@@ -898,9 +903,9 @@ semantic folders under `tests/`.
 - [x] Tests are grouped into semantic directories under `tests/`.
 - [x] Legacy tests are archived outside pytest collection.
 - [x] Focused online/demo/compliance tests pass.
-- [ ] AST scan reports zero `src/` files over 500 lines.
-- [ ] AST scan reports zero `src/` callables over 50 lines.
-- [ ] Full active `pytest -q` passes without archived legacy tests.
+- [ ] AST scan reports zero `src/` files over 500 lines (current scan: 12).
+- [ ] AST scan reports zero `src/` callables over 50 lines (current scan: 74).
+- [x] Full active `pytest -q` passes without archived legacy tests (`389 passed`).
 
 ## 15. Unfinished-item execution plans
 
@@ -1113,3 +1118,42 @@ R1 metadata
 
 Each phase has an independent rollback boundary. A failed gate stops the next
 phase and records the exact mismatch in the dated detail log.
+
+### 16.1 Decisions requiring confirmation before implementation
+
+The following two contracts are intentionally not hard-coded until the owner
+confirms them. They change checkpoint/artifact semantics and therefore cannot be
+resolved safely by guessing:
+
+1. **Source of anomaly codeword metadata:** Stage-B checkpoint fields, a new
+   clean-validation artifact, or synthetic-anomaly memory.
+2. **Verification callback semantics:** score-only recheck, independent forward
+   verification, or label-based verification. Label-based verification is
+   incompatible with label-free online adaptation and must not be selected
+   without an explicit protocol change.
+
+Implementation is paused at Phase R1 metadata finalization until these two
+decisions are recorded in the follow-up decisions section.
+
+### 16.2 Confirmed verification-buffer decision
+
+The verification design is now fixed as follows:
+
+- There is exactly one `VerificationBuffer` for the online runtime context.
+- Every admitted window is one entry in that buffer and owns its own
+  `ttl_remaining` value.
+- Admission initializes `ttl_remaining = 2` because admission is the first of
+  three total verification chances.
+- A verification trigger occurs only when the single buffer contains at least
+  eight windows and at least one new entry has been admitted since the previous
+  trigger.
+- One trigger verifies all windows currently in the buffer.
+- After verification, every remaining entry decreases its TTL by exactly one.
+- Entries marked `was_adapted=True` are removed immediately.
+- Unresolved entries are retained while `ttl_remaining > 0` and removed when it
+  reaches zero.
+- TTL never decreases on an ordinary stream step.
+- The filter order remains discrete anomalous-codeword/radius filtering,
+  continuous ordered top-3 signature recurrence, and PNN mask construction.
+- The buffer controls adaptation only; final point-level anomaly prediction is
+  still produced by score and threshold logic.

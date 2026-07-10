@@ -32,3 +32,27 @@ def test_threshold_artifact_round_trips_json(tmp_path) -> None:
     assert loaded["thresholds"]["online_ewma_point"]["score_rule"] == (
         "stride1_causal_endpoint_ewma"
     )
+
+
+def test_threshold_artifact_keeps_independent_window_thresholds() -> None:
+    artifact = build_threshold_artifact(
+        method_name="THESIS",
+        variant_name="A2",
+        entity_id="machine-1-6",
+        seed=6,
+        window_size=20,
+        offline_point_threshold=1.0,
+        online_ewma_point_threshold=2.0,
+        input_window_threshold=3.0,
+        latent_window_low_threshold=4.0,
+        latent_window_high_threshold=5.0,
+        quantile=0.99,
+        ewma_current_weight=0.9,
+        ewma_previous_weight=0.1,
+        created_by="pytest",
+        config_path="test.yaml",
+    )
+    thresholds = artifact["thresholds"]
+    assert thresholds["input_window"]["value"] == 3.0
+    assert thresholds["latent_window_low"]["quantile"] == 0.95
+    assert thresholds["latent_window_high"]["value"] == 5.0
