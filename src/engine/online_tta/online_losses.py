@@ -72,19 +72,45 @@ def compute_a2_online_contrastive_loss(
 
 
 def compute_token_multi_positive_info_nce(
-    reference_hidden: torch.Tensor,
     projected_hidden: torch.Tensor,
+    reference_hidden: torch.Tensor,
+    anomalous_codewords: torch.Tensor,
+    pnn_mask: torch.Tensor | None = None,
+    recurrent_signature_ids: torch.Tensor | None = None,
+    known_anomaly_mask: torch.Tensor | None = None,
     temperature: float = 0.1,
 ) -> torch.Tensor:
-    """Contrast every projected token against same-position positives."""
+    """Use source/same-signature positives and anomaly-memory negatives."""
     if reference_hidden.shape != projected_hidden.shape or reference_hidden.ndim != 3:
         raise ValueError("hidden tensors must share shape [B, L, H]")
-    if temperature <= 0:
+    if anomalous_codewords.ndim != 2 or anomalous_codewords.shape[1] != projected_hidden.shape[-1]:
+        raise ValueError("anomalous_codewords must have shape [K_anom, H]")
+    if anomalous_codewords.shape[0] == 0:
+        raise ValueError("at least one anomalous codeword is required")
+    if temperature <= 0.0:
         raise ValueError("temperature must be positive")
-    reference = F.normalize(reference_hidden, dim=-1).reshape(
-        -1, reference_hidden.shape[-1]
-    )
-    projected = F.normalize(projected_hidden, dim=-1).reshape_as(reference)
-    logits = projected @ reference.T / temperature
-    labels = torch.arange(logits.shape[0], device=logits.device)
-    return F.cross_entropy(logits, labels)
+    anchor_mask = torch.ones(projected_hidden.shape[:2], dtype=torch.bool, device=projected_hidden.device)
+    if pnn_mask is not None:
+        anchor_mask = pnn_mask.to(device=projected_hidden.device, dtype=torch.bool)
+    projected = F.normalize(projected_hidden, dim=-1)
+    source = F.normalize(reference_hidden.detach(), dim=-1)
+    anomaly_keys = F.normalize(anomalous_codewords.detach(), dim=-1)
+    losses = []
+    for batch_id, token_id in anchor_mask.nonzero(as_tuple=False).tolist():
+        anchor = projected[batch_id, token_id]
+        positives = [source[batch_id, token_id]]
+        if recurrent_signature_ids is not None:
+            signature = recurrent_signature_ids[batch_id, token_id]
+            matches = (recurrent_signature_ids == signature).all(dim=-1) & anchor_mask
+            matches[batch_id, token_id] = False
+            positives.extend(projected[matches].detach().unbind(0))
+        negatives = [anomaly_keys]
+        if known_anomaly_mask is not None and known_anomaly_mask.any():
+            mask = known_anomaly_mask.to(device=projected.device, dtype=torch.bool)
+            negatives.extend([projected[mask].detach(), source[mask]])
+        positive_logits = anchor @ torch.stack(positives).T / temperature
+        negative_logits = anchor @ torch.cat(negatives, dim=0).T / temperature
+        losses.append(torch.logsumexp(torch.cat([positive_logits, negative_logits]), dim=0) - torch.logsumexp(positive_logits, dim=0))
+    if not losses:
+        return projected_hidden.sum() * 0.0
+    return torch.stack(losses).mean()

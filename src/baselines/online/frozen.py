@@ -32,7 +32,7 @@ from src.baselines.traditional.base import build_window_matrix
 from src.baselines.traditional.stumpy_channel_ab import (
     compute_stumpy_channel_ab_subsequence_scores,
 )
-from src.engine.online_tta.triage import classify_online_window
+from src.engine.online_tta.triage import classify_legacy_baseline_window
 from src.protocols.threshold_artifact import build_threshold_artifact
 
 
@@ -209,7 +209,7 @@ class _FrozenStreamingBaseline(OnlineStreamingBaselineProtocol):
             if np.isnan(ewma_score):
                 continue
             prediction = int(ewma_score > float(threshold_value))
-            triage_decision = classify_online_window(
+            triage_decision = classify_legacy_baseline_window(
                 input_window_score=float(raw_score),
                 latent_window_score=float(raw_score),
                 thresholds=build_online_thresholds(threshold_value=threshold_value),

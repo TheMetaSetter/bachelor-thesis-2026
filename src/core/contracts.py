@@ -110,8 +110,13 @@ def validate_batch(batch: dict[str, Any]) -> None:
 
 
 def validate_online_batch(batch: dict[str, Any]) -> None:
-    # The online path extends the offline batch instead of inventing a second
-    # unrelated structure. The only extra fields are the two semantic views.
+    # Full-spec-v2 uses exactly one input window. Online-only fields such as a
+    # PNN mask may be appended later, but two augmented views are not required.
+    validate_batch(batch)
+
+
+def validate_legacy_two_view_batch(batch: dict[str, Any]) -> None:
+    """Validate historical two-view experiments outside full-spec-v2."""
     validate_batch(batch)
     _require_keys(batch, ["view_a", "view_b"], "online_batch")
     _require_tensor_rank(batch["view_a"], 3, "online_batch['view_a']")

@@ -30,6 +30,10 @@ class PrototypeVerificationMetadata:
             raise ValueError("anomaly_radii must have shape [K]")
         if not torch.is_floating_point(self.anomaly_radii):
             raise TypeError("anomaly_radii must use a floating dtype")
+        if not torch.isfinite(self.codebook).all().item():
+            raise ValueError("codebook must contain only finite values")
+        if not torch.isfinite(self.anomaly_radii).all().item():
+            raise ValueError("anomaly_radii must contain only finite values")
         if (self.anomaly_radii < 0).any().item():
             raise ValueError("anomaly_radii must be non-negative")
 

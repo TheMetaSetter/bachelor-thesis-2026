@@ -242,6 +242,12 @@ class ThesisMultitaskStateMixin:
         if isinstance(self.anomaly_radii, torch.Tensor):
             state["anomaly_radii"] = self.anomaly_radii.detach().cpu().tolist()
         state["verification_metadata_source"] = self.verification_metadata_source
+        state["verification_metadata_schema_version"] = 1
+        state["verification_metadata_split"] = "synthetic_train"
+        state["verification_radius_quantile"] = 0.99
+        state["verification_metadata_label_source"] = (
+            self.discrete_memory_label_source
+        )
         return state
 
     def get_memory_tensor_state(self) -> dict[str, torch.Tensor | None]:
@@ -362,7 +368,11 @@ class ThesisMultitaskStateMixin:
             radii = torch.as_tensor(radii, dtype=torch.float32)
             if mask.shape != (self.discrete_codebook.shape[0],):
                 raise ValueError("anomalous_codeword_mask checkpoint shape mismatch")
-            if radii.shape != mask.shape or (radii < 0).any().item():
+            if (
+                radii.shape != mask.shape
+                or not torch.isfinite(radii).all().item()
+                or (radii < 0).any().item()
+            ):
                 raise ValueError("anomaly_radii checkpoint shape or value mismatch")
             self.anomalous_codeword_mask = mask.detach().bool().clone()
             self.anomaly_radii = radii.detach().float().clone()

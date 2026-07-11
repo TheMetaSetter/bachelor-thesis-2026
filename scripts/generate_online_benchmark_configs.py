@@ -109,7 +109,7 @@ def _task_overrides(
     seed: int,
     smoke: bool,
 ) -> dict[str, Any]:
-    max_online_steps = 16 if smoke else 200
+    max_online_steps = 16 if smoke else None
     checkpoint_every_n_steps = 8 if smoke else 50
     return {
         "reference_checkpoint_path": _reference_checkpoint_path(
@@ -124,8 +124,6 @@ def _task_overrides(
         "max_online_steps": max_online_steps,
         "log_every_n_steps": 1,
         "checkpoint_every_n_steps": checkpoint_every_n_steps,
-        "view_noise_std": 0.01 if smoke else 0.0,
-        "view_dropout_probability": 0.0,
         "reset_policy": "disabled",
         "reset_alignment_threshold": 0.0,
     }

@@ -346,10 +346,12 @@ def _validate_model_and_task_config(
         float_fields["lambda_align"] = model_config.get("lambda_align")
         float_fields["lambda_proto"] = model_config.get("lambda_proto")
         float_fields["lambda_anchor"] = model_config.get("lambda_anchor")
-        float_fields["view_noise_std"] = task_config.get("view_noise_std")
-        float_fields["view_dropout_probability"] = task_config.get(
-            "view_dropout_probability"
-        )
+        if "view_noise_std" in task_config:
+            float_fields["view_noise_std"] = task_config["view_noise_std"]
+        if "view_dropout_probability" in task_config:
+            float_fields["view_dropout_probability"] = task_config[
+                "view_dropout_probability"
+            ]
         float_fields["reset_alignment_threshold"] = task_config.get(
             "reset_alignment_threshold"
         )
@@ -436,6 +438,8 @@ def _validate_model_and_task_config(
     if task_config.get("task_name") == "online_adaptation":
         for field_name in optional_online_integer_fields:
             field_value = task_config.get(field_name)
+            if field_name == "max_online_steps" and field_value is None:
+                continue
             if not isinstance(field_value, int) or field_value <= 0:
                 raise ValueError(f"{field_name} must be a positive integer")
 
@@ -676,9 +680,9 @@ def _validate_model_and_task_semantics(
             raise ValueError("lambda_proto must be non-negative")
         if float(model_config["lambda_anchor"]) < 0.0:
             raise ValueError("lambda_anchor must be non-negative")
-        if float(task_config["view_noise_std"]) < 0.0:
+        if float(task_config.get("view_noise_std", 0.0)) < 0.0:
             raise ValueError("view_noise_std must be non-negative")
-        if not 0.0 <= float(task_config["view_dropout_probability"]) <= 1.0:
+        if not 0.0 <= float(task_config.get("view_dropout_probability", 0.0)) <= 1.0:
             raise ValueError("view_dropout_probability must be between 0 and 1")
         if task_config.get("target_param_group") not in {
             "projector_params",

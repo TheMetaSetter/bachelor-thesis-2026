@@ -6,7 +6,5 @@ clean_stream_only: true
 max_online_steps: 16
 log_every_n_steps: 1
 checkpoint_every_n_steps: 8
-view_noise_std: 0.01
-view_dropout_probability: 0.0
 reset_policy: disabled
 reset_alignment_threshold: 0.0

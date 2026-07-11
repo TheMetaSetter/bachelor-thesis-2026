@@ -68,6 +68,20 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
         return self.model.encoder(batch)
 
+    def encode_source(self, batch: dict[str, Any]) -> torch.Tensor:
+        """Encode one input window with the frozen source encoder."""
+        return self.forward(batch)["hidden"].detach()
+
+    def score_source(
+        self, source_hidden: torch.Tensor, x_tensor: torch.Tensor
+    ) -> dict[str, Any]:
+        return self.score_from_hidden(source_hidden, x_tensor)
+
+    def score_projected(
+        self, projected_hidden: torch.Tensor, x_tensor: torch.Tensor
+    ) -> dict[str, Any]:
+        return self.score_from_hidden(projected_hidden, x_tensor)
+
     def score_from_hidden(
         self, hidden: torch.Tensor, x_tensor: torch.Tensor
     ) -> dict[str, Any]:
@@ -432,24 +446,41 @@ class OnlineAdaptationModel(BaseModel):
             return torch.zeros((), dtype=torch.float32)
         return torch.sqrt(drift_value)
 
+    def forward_source(self, batch: dict[str, Any]) -> dict[str, Any]:
+        """Score the frozen source path directly for the A0 variant."""
+        validate_online_batch(batch)
+        source_hidden = self.reference_encoder.encode_source(batch)
+        scored = self.reference_encoder.score_source(source_hidden, batch["x"])
+        outputs = {
+            "hidden": source_hidden,
+            "pooled": scored["pooled"],
+            "recon": scored["recon"],
+            "logits": scored["logits"],
+            "point_scores": scored["point_scores"],
+            "window_scores": scored["window_scores"],
+            "aux": {
+                "reference_hidden": source_hidden,
+                "online_hidden": source_hidden,
+                "projected_hidden": None,
+                "scoring": scored["aux"],
+                "latent_window_score": scored["aux"]["latent_window_score"],
+            },
+        }
+        validate_model_outputs(outputs)
+        return outputs
+
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
-        # The forward path follows the design narrative literally:
-        # build two views, encode them separately, project the online one, then score in reference space.
+        # One frozen source encoding feeds the residual projector. This keeps
+        # calibration and adaptation in the same latent geometry.
         validate_online_batch(batch)
         console_print(
             "MODEL", "Online adaptation forward input batch", **summarize_batch(batch)
         )
-        reference_outputs = self.reference_encoder(
-            self._replace_batch_x(batch, batch["view_a"])
-        )
-        online_outputs = self.online_encoder(
-            self._replace_batch_x(batch, batch["view_b"])
-        )
-        reference_hidden = reference_outputs["hidden"]
-        online_hidden = online_outputs["hidden"]
-        projected_hidden = self.online_mlp_projector(online_hidden)
+        reference_hidden = self.reference_encoder.encode_source(batch)
+        online_hidden = reference_hidden
+        projected_hidden = self.online_mlp_projector(reference_hidden)
 
-        scored_outputs = self.reference_encoder.score_from_hidden(
+        scored_outputs = self.reference_encoder.score_projected(
             projected_hidden, batch["x"]
         )
         alignment_loss = self._compute_alignment_loss(
@@ -478,7 +509,9 @@ class OnlineAdaptationModel(BaseModel):
                 "projector_drift": projector_drift,
                 "target_param_group": self.target_param_group,
                 "scoring": scored_outputs["aux"],
-                "latent_window_score": scored_outputs["window_scores"],
+                "latent_window_score": scored_outputs["aux"][
+                    "latent_window_score"
+                ],
             },
         }
         validate_model_outputs(outputs)

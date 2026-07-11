@@ -101,7 +101,7 @@ def _build_batch(batch_size: int = 1) -> dict[str, Any]:
 
 def _build_model(tmp_path: Path) -> OnlineAdaptationModel:
     checkpoint_path = _build_reference_checkpoint(tmp_path)
-    return OnlineAdaptationModel(
+    model = OnlineAdaptationModel(
         input_dim=38,
         encoder_dim=64,
         hidden_dim=32,
@@ -117,6 +117,14 @@ def _build_model(tmp_path: Path) -> OnlineAdaptationModel:
         target_param_group="projector_params",
         clean_stream_only=True,
     )
+    reference = model.reference_encoder.model
+    reference.verification_metadata_source = "pytest_training_memory"
+    reference.anomalous_codeword_mask = torch.zeros(
+        reference.discrete_codebook.shape[0], dtype=torch.bool
+    )
+    reference.anomalous_codeword_mask[reference.discrete_codebook.shape[0] // 2 :] = True
+    reference.anomaly_radii = torch.ones(reference.discrete_codebook.shape[0])
+    return model
 
 
 def test_execute_online_tta_step_updates_only_projector_for_a1_and_a2(
@@ -138,7 +146,7 @@ def test_execute_online_tta_step_updates_only_projector_for_a1_and_a2(
         batch=batch,
         online_variant="A1",
         threshold_value=0.0,
-        triage_decision="pnn_candidate",
+        triage_decision="pnn_verified",
     )
 
     assert a1_record["did_update"] is True
@@ -167,7 +175,7 @@ def test_execute_online_tta_step_updates_only_projector_for_a1_and_a2(
         batch=batch,
         online_variant="A2",
         threshold_value=0.0,
-        triage_decision="gray_zone",
+        triage_decision="hard_old_normality",
     )
 
     assert a2_record["did_update"] is True

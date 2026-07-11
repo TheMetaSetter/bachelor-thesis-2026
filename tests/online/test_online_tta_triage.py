@@ -5,10 +5,9 @@ from src.engine.online_tta.triage import classify_online_window
 
 def test_online_tta_triage_assigns_strong_anomaly_first() -> None:
     thresholds = {
-        "strong_anomaly_threshold": 0.8,
-        "pnn_candidate_input_threshold": 0.4,
-        "pnn_candidate_latent_threshold": 0.6,
-        "hard_old_normality_threshold": 0.2,
+        "input_window_threshold": 0.2,
+        "latent_window_low_threshold": 0.4,
+        "latent_window_high_threshold": 0.8,
     }
 
     assert (
@@ -23,15 +22,14 @@ def test_online_tta_triage_assigns_strong_anomaly_first() -> None:
 
 def test_online_tta_triage_assigns_hard_old_normality() -> None:
     thresholds = {
-        "strong_anomaly_threshold": 0.8,
-        "pnn_candidate_input_threshold": 0.4,
-        "pnn_candidate_latent_threshold": 0.6,
-        "hard_old_normality_threshold": 0.2,
+        "input_window_threshold": 0.2,
+        "latent_window_low_threshold": 0.4,
+        "latent_window_high_threshold": 0.8,
     }
 
     assert (
         classify_online_window(
-            input_window_score=0.1,
+            input_window_score=0.3,
             latent_window_score=0.1,
             thresholds=thresholds,
         )
@@ -39,21 +37,20 @@ def test_online_tta_triage_assigns_hard_old_normality() -> None:
     )
 
 
-def test_online_tta_triage_assigns_pnn_candidate_and_gray_zone() -> None:
+def test_online_tta_triage_assigns_normal_and_gray_zone() -> None:
     thresholds = {
-        "strong_anomaly_threshold": 0.8,
-        "pnn_candidate_input_threshold": 0.4,
-        "pnn_candidate_latent_threshold": 0.6,
-        "hard_old_normality_threshold": 0.2,
+        "input_window_threshold": 0.2,
+        "latent_window_low_threshold": 0.4,
+        "latent_window_high_threshold": 0.8,
     }
 
     assert (
         classify_online_window(
-            input_window_score=0.3,
+            input_window_score=0.2,
             latent_window_score=0.7,
             thresholds=thresholds,
         )
-        == "pnn_candidate"
+        == "normal"
     )
     assert (
         classify_online_window(

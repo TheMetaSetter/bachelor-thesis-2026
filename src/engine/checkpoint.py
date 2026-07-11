@@ -25,9 +25,8 @@ class CheckpointManager:
             num_artifact_sinks=len(self.artifact_sinks),
         )
 
-    def save_checkpoint(
-        self,
-        checkpoint_name: str,
+    @staticmethod
+    def _build_payload(
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer | None,
         scheduler: Any | None,
@@ -35,10 +34,9 @@ class CheckpointManager:
         config: dict[str, Any],
         epoch: int,
         metric_history: list[dict[str, Any]],
-        extra_state: dict[str, Any] | None = None,
-    ) -> Path:
-        checkpoint_path = self.checkpoint_dir / checkpoint_name
-        checkpoint_payload = {
+        extra_state: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
             "model_state_dict": model.state_dict(),
             "scaler_state_dict": scaler_state,
             "config": config,
@@ -46,22 +44,20 @@ class CheckpointManager:
             "metric_history": metric_history,
         }
         if optimizer is not None:
-            checkpoint_payload["optimizer_state_dict"] = optimizer.state_dict()
+            payload["optimizer_state_dict"] = optimizer.state_dict()
         if scheduler is not None:
-            checkpoint_payload["scheduler_state_dict"] = scheduler.state_dict()
+            payload["scheduler_state_dict"] = scheduler.state_dict()
         if extra_state is not None:
-            checkpoint_payload["extra_state"] = extra_state
-        console_print(
-            "CHECKPOINT",
-            "Saving checkpoint",
-            checkpoint_path=checkpoint_path,
-            checkpoint_name=checkpoint_name,
-            epoch=epoch,
-            metric_history_length=len(metric_history),
-            has_scheduler_state=scheduler is not None,
-            has_extra_state=extra_state is not None,
-        )
-        torch.save(checkpoint_payload, checkpoint_path)
+            payload["extra_state"] = extra_state
+        return payload
+
+    def _sync_artifacts(
+        self,
+        checkpoint_path: Path,
+        checkpoint_name: str,
+        config: dict[str, Any],
+        epoch: int,
+    ) -> None:
         for artifact_sink in self.artifact_sinks:
             console_print(
                 "CHECKPOINT",
@@ -77,6 +73,36 @@ class CheckpointManager:
                     "experiment_name": config.get("experiment_name"),
                 },
             )
+
+    def save_checkpoint(
+        self,
+        checkpoint_name: str,
+        model: torch.nn.Module,
+        optimizer: torch.optim.Optimizer | None,
+        scheduler: Any | None,
+        scaler_state: dict[str, Any],
+        config: dict[str, Any],
+        epoch: int,
+        metric_history: list[dict[str, Any]],
+        extra_state: dict[str, Any] | None = None,
+    ) -> Path:
+        checkpoint_path = self.checkpoint_dir / checkpoint_name
+        checkpoint_payload = self._build_payload(
+            model, optimizer, scheduler, scaler_state, config, epoch,
+            metric_history, extra_state,
+        )
+        console_print(
+            "CHECKPOINT",
+            "Saving checkpoint",
+            checkpoint_path=checkpoint_path,
+            checkpoint_name=checkpoint_name,
+            epoch=epoch,
+            metric_history_length=len(metric_history),
+            has_scheduler_state=scheduler is not None,
+            has_extra_state=extra_state is not None,
+        )
+        torch.save(checkpoint_payload, checkpoint_path)
+        self._sync_artifacts(checkpoint_path, checkpoint_name, config, epoch)
         return checkpoint_path
 
     def load_checkpoint(

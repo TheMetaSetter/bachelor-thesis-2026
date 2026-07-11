@@ -76,7 +76,7 @@ def test_generate_thesis_online_benchmark_configs_writes_all_expected_files() ->
                             assert loaded_config["task"]["max_online_steps"] == 16
                         else:
                             assert loaded_config["device"] == "cuda"
-                            assert loaded_config["task"]["max_online_steps"] == 200
+                            assert loaded_config["task"]["max_online_steps"] is None
                         assert (
                             loaded_config["model"]["model_name"] == "online_adaptation"
                         )

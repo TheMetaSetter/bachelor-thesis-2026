@@ -26,6 +26,7 @@ from src.core.registry import build_dataset, build_model
 from src.core.runtime_components import register_online_runtime_components
 from src.core.seed import seed_everything
 from src.data.stream import OnlineWindowBatcher, SMDOnlineStream
+from src.data.window import slice_sequence_into_windows
 from src.engine.checkpoint import CheckpointManager
 from src.engine.online_tta.online_losses import (
     compute_a1_pnn_reconstruction_loss,
@@ -243,8 +244,35 @@ def _collect_clean_validation_scores(
     current_weight: float,
     previous_weight: float,
 ) -> dict[str, list[float]]:
-    collected = {"point": [], "ewma": [], "input_window": [], "latent_window": []}
+    collected = {
+        "offline_point": [],
+        "point": [],
+        "ewma": [],
+        "input_window": [],
+        "latent_window": [],
+    }
     for sequence in clean_validation_sequences:
+        offline_windows = slice_sequence_into_windows(
+            sequence, window_size=window_size, stride=window_size, tail_policy="end_align"
+        )
+        for window in offline_windows:
+            offline_batch = {
+                "x": window["x"].unsqueeze(0).to(device),
+                "point_labels": None,
+                "mask": None,
+                "timestamps": None,
+                "meta": [window["meta"]],
+            }
+            model.eval()
+            with torch.no_grad():
+                offline_outputs = (
+                    model.forward_source(offline_batch)
+                    if hasattr(model, "forward_source")
+                    else model.forward(offline_batch)
+                )
+            collected["offline_point"].extend(
+                offline_outputs["point_scores"].reshape(-1).detach().cpu().tolist()
+            )
         sequence_scores = _run_stride1_sequence_scores(
             model=model,
             sequence=sequence,
@@ -278,7 +306,7 @@ def _build_threshold_artifact_from_scores(
     window_size: int,
 ) -> dict[str, Any]:
     offline_point_threshold = select_clean_validation_point_threshold(
-        np.asarray(calibration_scores["point"], dtype=float),
+        np.asarray(calibration_scores["offline_point"], dtype=float),
         quantile=float(protocol_config["offline_threshold_quantile"]),
     )
     online_ewma_point_threshold = select_online_ewma_threshold(
@@ -474,17 +502,21 @@ def _process_online_window(
     ) = _score_online_window(
         model=model,
         batch=batch,
+        online_variant=online_variant,
         previous_ewma_score=previous_ewma_score,
         ewma_current_weight=ewma_current_weight,
         ewma_previous_weight=ewma_previous_weight,
         device=device,
     )
-    pnn_mask, signature_diagnostics = _build_event_pnn_mask(
-        model=model,
-        scoring_outputs=scoring_outputs,
-        batch=batch_on_device,
-        signature_history=signature_history,
-    )
+    pnn_mask = None
+    signature_diagnostics: dict[str, int] = {}
+    if online_variant != "A0":
+        pnn_mask, signature_diagnostics = _build_event_pnn_mask(
+            model=model,
+            scoring_outputs=scoring_outputs,
+            batch=batch_on_device,
+            signature_history=signature_history,
+        )
     if pnn_mask is not None:
         batch_on_device["pnn_mask"] = pnn_mask
     triage_decision = classify_online_window(
@@ -578,6 +610,12 @@ def _verify_and_adapt_entries(
             continue
         batch = build_entry_batch(entry, device)
         batch["pnn_mask"] = candidate.pnn_mask.to(device)
+        if candidate.recurrent_signature_ids is not None:
+            batch["recurrent_signature_ids"] = (
+                candidate.recurrent_signature_ids.to(device)
+            )
+        if candidate.known_anomaly_mask is not None:
+            batch["known_anomaly_mask"] = candidate.known_anomaly_mask.to(device)
         step = execute_online_tta_step(
             model=model,
             optimizer=build_online_optimizer(model),
@@ -587,7 +625,7 @@ def _verify_and_adapt_entries(
             ewma_point_score=float(entry["point_score"]),
             raw_point_score=float(entry["input_window_score"]),
             latent_window_score=float(entry["latent_window_score"]),
-            triage_decision="pnn_candidate",
+            triage_decision="pnn_verified",
         )
         finalized[entry_id] = VerificationResult(
             bool(step["did_update"]),
@@ -602,6 +640,7 @@ def _score_online_window(
     *,
     model: torch.nn.Module,
     batch: dict[str, Any],
+    online_variant: str,
     previous_ewma_score: float | None,
     ewma_current_weight: float,
     ewma_previous_weight: float,
@@ -610,7 +649,10 @@ def _score_online_window(
     batch_on_device = _move_batch_to_device(batch, device)
     model.eval()
     with torch.no_grad():
-        pre_outputs = model.forward(batch_on_device)
+        if online_variant == "A0" and hasattr(model, "forward_source"):
+            pre_outputs = model.forward_source(batch_on_device)
+        else:
+            pre_outputs = model.forward(batch_on_device)
     raw_point_score = float(pre_outputs["point_scores"][0, -1].detach().cpu())
     latent_value = pre_outputs["aux"].get("latent_window_score")
     if latent_value is None:
@@ -752,7 +794,7 @@ def _build_online_window_outputs(
         if triage_decision == "hard_old_normality"
         else None,
         "online/loss_pnn_recon": record.get("reconstruction_loss")
-        if triage_decision == "pnn_candidate"
+        if triage_decision == "pnn_verified"
         else None,
         "online/loss_contrastive": record.get("contrastive_loss"),
         "online/projector_grad_norm": record.get("projector_grad_norm"),
@@ -770,6 +812,7 @@ def _compute_step_scores(
     *,
     model: torch.nn.Module,
     batch: dict[str, Any],
+    online_variant: str,
     ewma_point_score: float | None,
     raw_point_score: float | None,
     latent_window_score: float | None,
@@ -777,7 +820,10 @@ def _compute_step_scores(
     if raw_point_score is None or latent_window_score is None:
         model.eval()
         with torch.no_grad():
-            scoring_outputs = model.forward(batch)
+            if online_variant == "A0" and hasattr(model, "forward_source"):
+                scoring_outputs = model.forward_source(batch)
+            else:
+                scoring_outputs = model.forward(batch)
         if raw_point_score is None:
             raw_point_score = float(
                 scoring_outputs["point_scores"][0, -1].detach().cpu()
@@ -841,7 +887,7 @@ def _run_online_variant_update(
     threshold_value: float,
 ) -> torch.Tensor | None:
     if online_variant == "A1":
-        if triage_decision != "pnn_candidate":
+        if triage_decision != "pnn_verified":
             return None
         pnn_mask = batch.get("pnn_mask")
         if pnn_mask is not None and (
@@ -859,22 +905,35 @@ def _run_online_variant_update(
         reconstruction_loss = loss_total
         contrastive_loss = loss_total.new_zeros(())
     elif online_variant == "A2":
-        if triage_decision == "pnn_candidate":
+        if triage_decision == "pnn_verified":
             pnn_mask = batch.get("pnn_mask")
             if not isinstance(pnn_mask, torch.Tensor) or not bool(pnn_mask.any()):
                 return None
             reconstruction_loss = compute_masked_pnn_reconstruction_loss(
                 training_outputs["recon"], batch["x"], pnn_mask
             )
-        else:
+        elif triage_decision == "hard_old_normality":
             reconstruction_loss = compute_hard_old_hinge_loss(
                 training_outputs["window_scores"].mean(), threshold_value
             )
+        else:
+            return None
         contrastive_loss = reconstruction_loss.new_zeros(())
-        if triage_decision in {"gray_zone", "pnn_candidate"}:
+        if triage_decision in {"hard_old_normality", "pnn_verified"}:
+            source_model = model.reference_encoder.model
+            metadata = PrototypeVerificationMetadata.from_model(source_model)
+            anomalous_codewords = metadata.codebook[
+                metadata.anomalous_codeword_mask
+            ].to(reconstruction_loss.device)
             contrastive_loss = compute_token_multi_positive_info_nce(
-                training_outputs["aux"]["reference_hidden"],
                 training_outputs["aux"]["projected_hidden"],
+                training_outputs["aux"]["reference_hidden"],
+                anomalous_codewords,
+                pnn_mask=batch.get("pnn_mask")
+                if triage_decision == "pnn_verified"
+                else None,
+                recurrent_signature_ids=batch.get("recurrent_signature_ids"),
+                known_anomaly_mask=batch.get("known_anomaly_mask"),
             )
             loss_total = reconstruction_loss + 0.1 * contrastive_loss
         else:
@@ -908,6 +967,7 @@ def execute_online_tta_step(
     ewma_point_score, raw_point_score, latent_window_score = _compute_step_scores(
         model=model,
         batch=batch,
+        online_variant=online_variant,
         ewma_point_score=ewma_point_score,
         raw_point_score=raw_point_score,
         latent_window_score=latent_window_score,
@@ -1157,6 +1217,20 @@ def _finalize_online_execution(
     records: list[dict[str, Any]],
 ) -> dict[str, Any]:
     output_dir = context["output_dir"]
+    window_size = int(experiment_config["data"]["window_size"])
+    expected_windows = sum(
+        max(0, int(sequence["x"].shape[0]) - window_size + 1)
+        for sequence in context["data_bundle"]["scaled_sequences"]["test"]
+    )
+    smoke_limit = context.get("max_online_steps")
+    expected_processed = (
+        min(expected_windows, int(smoke_limit))
+        if smoke_limit is not None and int(smoke_limit) > 0
+        else expected_windows
+    )
+    coverage_status = (
+        "complete" if len(records) == expected_processed else "incomplete"
+    )
     metrics_path = _write_json(output_dir / "online_metrics.json", metric_history)
     records_path = _write_json(output_dir / "online_records.json", records)
     final_checkpoint_path = context["checkpoint_manager"].save_checkpoint(
@@ -1190,7 +1264,15 @@ def _finalize_online_execution(
         },
     )
     return {
-        "benchmark_status": "completed",
+        "benchmark_status": "completed" if coverage_status == "complete" else "failed",
+        "experiment_status": "complete" if coverage_status == "complete" else "incomplete",
+        "matrix_status": "matrix_ready",
+        "runtime_protocol_status": "full_spec_v2",
+        "stream_coverage_status": coverage_status,
+        "artifact_integrity_status": "written",
+        "metric_availability_status": "recorded",
+        "expected_windows": expected_windows,
+        "processed_windows": len(records),
         "created_at_utc": context["created_at_utc"],
         "online_variant": context["online_variant"],
         "threshold_artifact": context["threshold_artifact"],

@@ -23,7 +23,7 @@ from src.baselines.online.base import (
     causal_point_scores_from_windows,
     smooth_point_scores,
 )
-from src.engine.online_tta.triage import classify_online_window
+from src.engine.online_tta.triage import classify_legacy_baseline_window
 from src.protocols.threshold_artifact import build_threshold_artifact
 
 
@@ -260,7 +260,7 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         ):
             if np.isnan(ewma_score):
                 continue
-            triage_decision = classify_online_window(
+            triage_decision = classify_legacy_baseline_window(
                 input_window_score=float(raw_score),
                 latent_window_score=float(latent_score),
                 thresholds=thresholds,

@@ -856,6 +856,12 @@ class Trainer:
             and bool(getattr(self.model, "memory_initialized"))
             and not best_checkpoint_memory_initialized
         ):
+            refreshed_extra_state = self.model.get_checkpoint_extra_state()
+            refreshed_extra_state = build_checkpoint_evaluation_metadata(
+                checkpoint_monitor_metric=best_checkpoint_monitor_metric,
+                epoch_metrics=last_epoch_metrics or {},
+                base_extra_state=refreshed_extra_state,
+            )
             console_print(
                 "CHECKPOINT",
                 "Refreshing best checkpoint with initialized memory state",
@@ -870,7 +876,7 @@ class Trainer:
                 config=config,
                 epoch=epochs,
                 metric_history=self.metric_history,
-                extra_state=best_checkpoint_extra_state,
+                extra_state=refreshed_extra_state,
             )
 
         final_checkpoint_extra_state = (

@@ -25,6 +25,8 @@ class VerificationResult:
     pseudo_normal_points: int
     reason: str
     pnn_mask: torch.Tensor
+    recurrent_signature_ids: torch.Tensor | None = None
+    known_anomaly_mask: torch.Tensor | None = None
 
 
 def build_entry_batch(entry: dict[str, Any], device: str) -> dict[str, Any]:
@@ -41,8 +43,6 @@ def build_entry_batch(entry: dict[str, Any], device: str) -> dict[str, Any]:
     }
     return {
         "x": x_tensor,
-        "view_a": x_tensor,
-        "view_b": x_tensor,
         "point_labels": None,
         "mask": None,
         "timestamps": None,
@@ -98,5 +98,9 @@ def verify_buffer_entries(
             pseudo_normal_points=count,
             reason="recurrent_signature" if count else "no_recurrent_signature",
             pnn_mask=pnn_mask.detach(),
+            recurrent_signature_ids=torch.as_tensor(
+                signatures, dtype=torch.long
+            ).detach(),
+            known_anomaly_mask=known_anomaly.detach(),
         )
     return results
