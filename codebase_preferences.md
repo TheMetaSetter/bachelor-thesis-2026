@@ -27,7 +27,7 @@
 
 - `plan` to use which design patterns before `structure`.
 
-- Traverse the codebase using the directory tree inside `documents/design/design_starter.md`. This tree is planned to be fixed most of the time. But if you really need to change the structure of the directory, please remember to update the tree.
+- Traverse the codebase using the directory tree inside `documents/abstract-design-notes/design_starter.md`. This tree is planned to be fixed most of the time. But if you really need to change the structure of the directory, please remember to update the tree.
 
 ---
 
