@@ -89,6 +89,36 @@ def _build_entity_raw_point_labels(
     return raw_point_labels.detach().cpu().clone().to(fallback_dtype)
 
 
+def _validate_window_payload(batch_payload: dict[str, Any]) -> tuple[Any, Any, Any]:
+    batch_meta = batch_payload["meta"]
+    point_scores = batch_payload["point_scores"]
+    point_labels = batch_payload["point_labels"]
+    if point_scores.ndim != 2 or point_labels.ndim != 2:
+        raise ValueError("window scores and labels must have shape [B, L]")
+    if point_scores.shape != point_labels.shape:
+        raise ValueError("window scores and labels must share the same shape")
+    if len(batch_meta) != point_scores.shape[0]:
+        raise ValueError("window metadata length must match batch size")
+    return batch_meta, point_scores, point_labels
+
+
+def _initialize_entity_accumulators(
+    *,
+    entity_id: str,
+    sequence_by_entity: dict[str, Any],
+    point_labels: torch.Tensor,
+    score_sums: dict[str, torch.Tensor],
+    score_counts: dict[str, torch.Tensor],
+    entity_labels: dict[str, torch.Tensor],
+) -> None:
+    sequence_length = int(sequence_by_entity["x"].shape[0])
+    score_sums[entity_id] = torch.zeros(sequence_length, dtype=torch.float32)
+    score_counts[entity_id] = torch.zeros(sequence_length, dtype=torch.float32)
+    entity_labels[entity_id] = _build_entity_raw_point_labels(
+        sequence_by_entity, fallback_dtype=point_labels.dtype
+    )
+
+
 def accumulate_pointwise_window_payload(
     *,
     sequences_by_entity: dict[str, dict[str, Any]],
@@ -103,22 +133,7 @@ def accumulate_pointwise_window_payload(
     This function keeps a running sum and count so overlapping points
     can later be averaged cleanly.
     """
-    batch_meta = batch_payload["meta"]
-    point_scores = batch_payload["point_scores"]
-    point_labels = batch_payload["point_labels"]
-
-    # Each batch contains many windows. For each window we have a vector of
-    # pointwise anomaly scores and the same shape of true labels.
-    if point_scores.ndim != 2:
-        raise ValueError("batch_payload['point_scores'] must have shape [B, L]")
-    if point_labels.ndim != 2:
-        raise ValueError("batch_payload['point_labels'] must have shape [B, L]")
-    if point_scores.shape != point_labels.shape:
-        raise ValueError(
-            "batch_payload['point_scores'] and batch_payload['point_labels'] must share the same shape"
-        )
-    if len(batch_meta) != point_scores.shape[0]:
-        raise ValueError("batch_payload['meta'] length must match batch size")
+    batch_meta, point_scores, point_labels = _validate_window_payload(batch_payload)
 
     # For each window inside the batch, add scores back to the full entity timeline.
 
@@ -126,20 +141,14 @@ def accumulate_pointwise_window_payload(
         entity_id = meta["entity_id"]
         start_index = int(meta["start_index"])
         end_index = int(meta["end_index"])
-        sequence_length = int(sequences_by_entity[entity_id]["x"].shape[0])
-
         if entity_id not in entity_score_sums:
-            entity_score_sums[entity_id] = torch.zeros(
-                sequence_length,
-                dtype=torch.float32,
-            )
-            entity_score_counts[entity_id] = torch.zeros(
-                sequence_length,
-                dtype=torch.float32,
-            )
-            entity_point_labels[entity_id] = _build_entity_raw_point_labels(
-                sequences_by_entity[entity_id],
-                fallback_dtype=point_labels.dtype,
+            _initialize_entity_accumulators(
+                entity_id=entity_id,
+                sequence_by_entity=sequences_by_entity[entity_id],
+                point_labels=point_labels,
+                score_sums=entity_score_sums,
+                score_counts=entity_score_counts,
+                entity_labels=entity_point_labels,
             )
 
         entity_score_sums[entity_id][start_index:end_index] += point_scores[
@@ -178,33 +187,44 @@ def reconstruct_pointwise_records_from_window_payload(
 
     evaluation_records: list[dict[str, Any]] = []
     for entity_id, score_sum in entity_score_sums.items():
-        raw_counts = entity_score_counts[entity_id]
-        counts = torch.clamp(raw_counts, min=1.0)
-        averaged_scores = score_sum / counts
-        covered_indices = torch.nonzero(raw_counts > 0.0, as_tuple=False).reshape(-1)
-        if covered_indices.numel() == 0:
-            evaluated_start_index = 0
-            evaluated_end_index = 0
-            evaluated_num_points = 0
-        else:
-            evaluated_start_index = int(covered_indices[0].item())
-            evaluated_end_index = int(covered_indices[-1].item()) + 1
-            evaluated_num_points = int(covered_indices.numel())
-        evaluation_record = {
-            "entity_id": entity_id,
-            "point_scores": averaged_scores,
-            "point_labels": entity_point_labels[entity_id],
-            "covered_point_mask": raw_counts > 0.0,
-            "num_points": int(averaged_scores.shape[0]),
-            "evaluated_start_index": evaluated_start_index,
-            "evaluated_end_index": evaluated_end_index,
-            "evaluated_num_points": evaluated_num_points,
-            "raw_num_points": int(averaged_scores.shape[0]),
-        }
+        evaluation_record = _build_reconstructed_evaluation_record(
+            entity_id=entity_id,
+            score_sum=score_sum,
+            raw_counts=entity_score_counts[entity_id],
+            point_labels=entity_point_labels[entity_id],
+        )
         validate_evaluation_record(evaluation_record)
         evaluation_records.append(evaluation_record)
 
     return evaluation_records
+
+
+def _build_reconstructed_evaluation_record(
+    *,
+    entity_id: str,
+    score_sum: torch.Tensor,
+    raw_counts: torch.Tensor,
+    point_labels: torch.Tensor,
+) -> dict[str, Any]:
+    averaged_scores = score_sum / torch.clamp(raw_counts, min=1.0)
+    covered_indices = torch.nonzero(raw_counts > 0.0, as_tuple=False).reshape(-1)
+    if covered_indices.numel() == 0:
+        start_index, end_index, num_evaluated_points = 0, 0, 0
+    else:
+        start_index = int(covered_indices[0].item())
+        end_index = int(covered_indices[-1].item()) + 1
+        num_evaluated_points = int(covered_indices.numel())
+    return {
+        "entity_id": entity_id,
+        "point_scores": averaged_scores,
+        "point_labels": point_labels,
+        "covered_point_mask": raw_counts > 0.0,
+        "num_points": int(averaged_scores.shape[0]),
+        "evaluated_start_index": start_index,
+        "evaluated_end_index": end_index,
+        "evaluated_num_points": num_evaluated_points,
+        "raw_num_points": int(averaged_scores.shape[0]),
+    }
 
 
 def extract_covered_pointwise_arrays(

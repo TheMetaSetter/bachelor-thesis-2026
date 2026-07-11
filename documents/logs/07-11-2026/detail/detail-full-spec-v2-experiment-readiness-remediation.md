@@ -860,7 +860,7 @@ This detail plan is ready for owner review. Coding should start at Batch 0 only 
 - [x] Batch 6 generated main online configs use full-stream `null`; smoke configs retain 16 steps; existing causal resume tests pass.
 - [ ] Batch 7 expanded artifact status/checksum readback is not yet implemented.
 - [x] Batch 8 existing queue/demo label-isolation regression tests pass.
-- [ ] Batch 9 is open: AST audit reports 12 files and 74 callables over the hard limits after the first `CheckpointManager` extraction.
+- [ ] Batch 9 is open: AST audit reports 12 files and 69 callables over the hard limits after checkpoint, evaluator, calibration, and online-window event extractions.
 - [x] Batch 10 CPU matrix preflight reports structurally ready with counts 18/54/9/27/81.
 - [ ] Batch 10 CUDA smokes, resume evidence, and full 189-run execution require the target GPU environment.
 
@@ -924,6 +924,8 @@ This checklist is the execution ledger for the complete remediation. An item is 
 
 ### 19.8 Batch 7 — artifact/report integrity
 
+- [x] Write and immediately checksum-readback an online-run manifest for checkpoint, threshold, metrics, and records; an integrity failure prevents `completed` status.
+- [x] Write and immediately checksum-readback a separate online benchmark-report manifest.
 - [ ] Add checksum generation for checkpoint, threshold, report, and manifest artifacts.
 - [ ] Add checksum readback and identity verification before `--skip-completed`.
 - [ ] Persist explicit non-success manifests for failed or incomplete runs.
@@ -942,6 +944,10 @@ This checklist is the execution ledger for the complete remediation. An item is 
 
 - [x] Add the compliance audit and deterministic violation report.
 - [x] Refactor `CheckpointManager.save_checkpoint` into payload construction and artifact synchronization helpers without changing its public contract.
+- [x] Extract evaluator window-payload validation, entity-accumulator initialization, and reconstructed-record construction helpers; evaluation semantics remain unchanged.
+- [x] Extract clean-validation scoring, EWMA collection, and online-stream construction into `online_calibration.py`; the public online engine facade remains unchanged.
+- [x] Split one-window online event handling into preparation, buffer/verification admission, update transaction, and result finalization helpers; A0/A1/A2 regressions remain green.
+- [x] Extract Benjamini–Hochberg adjustment from anomaly-archive ranking; ranking and significance semantics remain unchanged.
 - [ ] Refactor the remaining 11 oversized source files to at most 500 lines.
 - [ ] Refactor the remaining oversized callables to at most 50 lines.
 - [ ] Split `online_engine.py` into the planned calibration, scoring, event-dispatch, execution, and reporting seams.

@@ -25,6 +25,11 @@ import yaml
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.config import load_experiment_config
+from src.core.artifact_integrity import (
+    build_artifact_manifest,
+    verify_artifact_manifest,
+    write_artifact_manifest,
+)
 from src.engine.online_tta.online_engine import run_thesis_online_tta_experiment
 from src.protocols.smd_benchmark_protocol import validate_protocol_config
 
@@ -125,7 +130,25 @@ def run_thesis_online_benchmark(
         online_variant,
         report,
     )
+    report_identity = {
+        "experiment_name": str(experiment_config["experiment_name"]),
+        "online_variant": online_variant,
+        "protocol_config_path": str(protocol_config_path),
+    }
+    report_manifest = build_artifact_manifest(
+        {"benchmark_report": report_path}, report_identity
+    )
+    report_manifest_path = write_artifact_manifest(
+        report_path.with_name(f"{report_path.stem}_integrity_manifest.json"),
+        report_manifest,
+    )
     report["report_path"] = str(report_path)
+    report["report_artifact_integrity_status"] = (
+        "verified"
+        if verify_artifact_manifest(report_manifest, report_identity)
+        else "failed"
+    )
+    report["report_artifact_manifest_path"] = str(report_manifest_path)
     return report
 
 

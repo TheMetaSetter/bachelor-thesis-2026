@@ -292,20 +292,7 @@ def rank_anomaly_archive_by_ks(
     if not reports:
         return []
 
-    sorted_indices = sorted(
-        range(len(reports)), key=lambda index: reports[index].p_value
-    )
-    total_reports = len(reports)
-    adjusted_p_values = [0.0] * total_reports
-    running_min = 1.0
-
-    for reverse_rank, report_index in enumerate(reversed(sorted_indices), start=1):
-        raw_p_value = reports[report_index].p_value
-        bh_value = min(
-            raw_p_value * total_reports / (total_reports - reverse_rank + 1), 1.0
-        )
-        running_min = min(running_min, bh_value)
-        adjusted_p_values[report_index] = running_min
+    adjusted_p_values = _benjamini_hochberg_adjustment(reports)
 
     ranking_reports = []
     for report_index, report in enumerate(reports):
@@ -334,3 +321,19 @@ def rank_anomaly_archive_by_ks(
         )
     )
     return ranking_reports
+
+
+def _benjamini_hochberg_adjustment(
+    reports: list[DriftSignificanceReport],
+) -> list[float]:
+    sorted_indices = sorted(
+        range(len(reports)), key=lambda index: reports[index].p_value
+    )
+    adjusted_p_values = [0.0] * len(reports)
+    running_min = 1.0
+    for reverse_rank, report_index in enumerate(reversed(sorted_indices), start=1):
+        raw_p_value = reports[report_index].p_value
+        bh_value = min(raw_p_value * len(reports) / (len(reports) - reverse_rank + 1), 1.0)
+        running_min = min(running_min, bh_value)
+        adjusted_p_values[report_index] = running_min
+    return adjusted_p_values

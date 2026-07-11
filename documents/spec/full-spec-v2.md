@@ -30,6 +30,21 @@ Frozen during online TTA:
 
 The goal is to keep the implementation small, testable, and safe from data leakage.
 
+### 0.1 Revision status — 2026-07-11
+
+This document is the normative experiment specification.  The detailed
+remediation plans dated 2026-07-10 and 2026-07-11 refine this specification
+where they make a contract more precise.  In particular, Sections 25--31 below
+supersede older wording that leaves calibration identity, online state,
+completion, or baseline handling implicit.
+
+Implementation evidence is deliberately separate from the normative contract.
+At this revision, the shared online contracts through the full-stream/resume
+slice have focused regression evidence; artifact closure, readability closure,
+CUDA evidence, and the full matrix remain acceptance gates.  A run is never
+called complete merely because its configuration resolves or its matrix cell is
+enumerated.
+
 ---
 
 ## 1. Scope
@@ -59,7 +74,8 @@ The current implementation should not attempt to:
 3. Update reconstruction prediction head online.
 4. Update source memories online.
 5. Update classification path online.
-6. Add a new lambda for online contrastive loss.
+6. Add an undocumented or implicit online contrastive weight outside the
+   explicit `lambda_online_contrastive` configuration contract.
 7. Add complex UI architecture such as a custom React frontend unless strictly necessary.
 ```
 
@@ -392,6 +408,7 @@ online_adaptation_steps: 1
 online_optimizer: adamw
 online_adaptation_lr: 0.0001
 online_adaptation_weight_decay: 0.0001
+lambda_online_contrastive: 0.3
 online_lr_scheduler: none
 online_gradient_clip: true
 online_gradient_clip_norm: 0.5
@@ -445,7 +462,7 @@ online_reconstruction_adaptation_enabled: true
 online_contrastive_adaptation_enabled: true
 online_contrastive_type: source_consistency_multi_positive_infonce
 online_contrastive_temperature: 0.1
-online_contrastive_weight: reuse_lambda_contrastive
+online_contrastive_weight: lambda_online_contrastive
 
 online_contrastive_anchor: projected_online_token
 online_contrastive_positive:
@@ -1210,13 +1227,13 @@ L_online = L_pnn_recon
 ### 14.2 A2 hard-old loss
 
 ```text
-L_online = L_hard_recon + lambda_contrastive * L_online_contrastive
+L_online = L_hard_recon + lambda_online_contrastive * L_online_contrastive
 ```
 
 ### 14.3 A2 PNN loss
 
 ```text
-L_online = L_pnn_recon + lambda_contrastive * L_online_contrastive
+L_online = L_pnn_recon + lambda_online_contrastive * L_online_contrastive
 ```
 
 ### 14.4 Trainable parameter filter
@@ -1869,3 +1886,325 @@ This order prevents the demo from delaying the thesis experiment pipeline.
 [LOCKED] TTL buffer keeps unresolved windows for two verification cycles after admission.
 [LOCKED] Demo is separate from official evaluation.
 ```
+
+---
+
+## 25. Revision 2026-07-11: precise cross-layer contracts
+
+Sections 25--31 are the current locked refinement from the detailed plans of
+2026-07-10 and 2026-07-11. They supersede any older text that leaves calibration
+identity, online state, completion, or baseline handling implicit. This is a
+normative contract, not proof that every remaining release gate is already met.
+
+The update closes these previously underspecified areas: one-window/source-once
+online tensors; Stage-B verification provenance; independent entity artifacts;
+four-region causal event order; label-free PNN/TTL ownership; atomic update and
+resume identity; integrity-aware reporting/aggregation; the full deep-learning
+and traditional-baseline matrix; demo isolation; and the readability/CUDA gates.
+
+### 25.1 Online batch, single encoding, and output meanings
+
+The active THESIS online input is exactly one causal window
+`x: FloatTensor[B, 20, D]`. `mask`, `timestamps`, and absolute-order metadata
+are additive. `point_labels` may exist at the outer evaluation boundary but is
+`None` inside scoring, verification, and adaptation. Active full-spec configs
+must not require `view_a`/`view_b`; a retained legacy two-view validator is
+unreachable from this path.
+
+The frozen source encoder runs exactly once per window:
+
+```text
+Z_source: FloatTensor[B,20,H] = frozen_source_encoder(x)
+A0: score Z_source directly; projector is not called.
+A1/A2: Z_proj = g_psi(Z_source), then score Z_proj through frozen memories/heads.
+```
+
+Stable scoring outputs have these distinct meanings:
+
+```text
+recon: FloatTensor[B,20,D]          point_scores: FloatTensor[B,20]
+window_scores: FloatTensor[B]       full-window reconstruction MSE
+latent_window_score: FloatTensor[B] nearest normal continuous-memory distance
+nearest_codeword_ids: LongTensor[B,20] | None
+continuous_signature_ids: LongTensor[B,20,3] | None
+```
+
+`window_scores` and `latent_window_score` are never aliases: the first controls
+reconstruction abnormality, the second controls memory-based triage.
+
+### 25.2 Stage-B metadata and fail-closed startup
+
+The Stage-B checkpoint is the only source of online verification metadata. It
+serializes `anomalous_codeword_mask: BoolTensor[K]`,
+`anomaly_radii: FloatTensor[K]`, initialization identity, source split,
+class-to-codeword rule, radius statistic/quantile, contributing-token count,
+seed, and schema version. These values are fitted from training or
+synthetic-training memory only; validation/test labels never create or modify
+them.
+
+A1/A2 must fail before processing a window if metadata is absent, provenance is
+incomplete, a radius is non-finite/negative, shape is incompatible, or schema is
+unsupported. An old checkpoint may serve A0 only if A0 does not request this
+metadata and its report records compatibility mode; it is not an A1/A2
+full-spec checkpoint.
+
+### 25.3 Entity threshold artifact and state ownership
+
+Each entity owns an independent artifact containing:
+
+```text
+schema_version; entity_id; window_size=20
+offline_point_threshold_nonoverlap; online_point_threshold_ewma
+B_window; A_low; A_high; offline_stride=20; online_stride=1
+calibration_split=clean_validation; quantile definitions
+EWMA weights (0.9 current, 0.1 previous)
+source checkpoint path/SHA-256; resolved-config SHA-256; seed; created_at
+```
+
+Calibration is `eval()` plus `no_grad()`. Offline uses an end-aligned,
+non-overlapping timeline; online uses stride-one windows and absolute-index
+EWMA. They may share point-score primitives, never a score timeline. Before
+mutation, selection rejects an entity, window-size, checkpoint-hash,
+config-hash, or schema mismatch.
+
+`OnlineRuntimeState` owns entity/variant identity, cursor, EWMA, provisional and
+finalized points, verification entries, new-admission flag, signature history,
+hard-old intervals, update counts, threshold identity, and schema version; it
+does not serialize optimizer moments. `VerificationBuffer` owns entries, status,
+TTL, adaptation state, and admission state. `VerificationCycleController` owns
+capacity eight, eligibility, callback invocation, and exactly-one finalization.
+
+---
+
+## 26. THESIS computation in two phases
+
+### 26.1 Offline O0/O1: Stage A then Stage B
+
+```text
+TRAIN SPLIT ONLY
+raw sequence -> train-fitted scaler -> windows [B,20,D]
+                                      |
+                                      v
+                       synthetic anomaly injection (train only)
+                                      |
+                                      v
+Stage A: shared encoder -> continuous/discrete branches -> task-specific fusion
+                                      |                         |
+                                      |                         +-> X_hat / class / point-score outputs
+                                      v
+      L_recon + L_cls (+ L_score for O1 inside classification-side objective)
+                       + L_contrastive
+                                      |
+                                      v
+      Stage-A checkpoint -> initialize frozen memories and anomaly metadata
+                                      |
+                                      v
+Stage B: freeze encoder + both memories; train fusion/prediction heads only
+                       with L_recon + L_cls
+                                      |
+                                      v
+Stage-B checkpoint + provenance -> clean-validation thresholds -> test prediction
+                                                    -> labels only for metrics
+```
+
+Main O0/O1 budgets are exactly Stage A `25` plus Stage B `5` epochs. Smoke
+configs may use `1 + 1` and are not main scientific runs. O1 enables the
+point-wise balanced reconstruction-score loss only in Stage A, does not add a
+main `lambda_score`, and does not use that BCE loss in Stage B by default.
+
+### 26.2 Online A0/A1/A2: causal stream
+
+```text
+Stage-B checkpoint + entity threshold artifact + online config
+                         |
+                         v
+test point tau -> append -> wait for 20 points -> latest causal window
+                         |
+                         v
+              frozen source encoder ONCE -> Z_source
+                         |                   |
+               A0 source score              +-> A1/A2 g_psi -> projected score
+                         \________________________ __________________/
+                                                  v
+         point scores -> absolute-index EWMA -> provisional/finalized predictions
+                                                  |
+                                                  v
+        (window reconstruction score, latent-memory distance) -> four-region triage
+                   | normal/strong: record only
+                   | hard-old: A2 guard -> atomic update -> append interval on success
+                   | gray: non-overlap admission -> eligible verification cycle
+                                                  |
+                                                  v
+             verified PNN: A1 reconstruction OR A2 reconstruction + contrastive
+                                                  |
+                                                  v
+          event record + runtime checkpoint + coverage/integrity-checked artifacts
+```
+
+Main configurations use `max_online_steps: null` or omit it and process the
+whole stream. A positive cap is smoke-only (current smoke contract: `16`); zero
+and negative caps fail. Expected causal forwards equal `max(0, T - 20 + 1)`;
+an incomplete main stream is non-success.
+
+---
+
+## 27. Exact online event, verification, and updates
+
+### 27.1 Triage and fixed order
+
+The exhaustive THESIS partition is:
+
+```text
+s_input <= B_window                               normal
+s_input > B_window and s_latent <= A_low          hard_old
+s_input > B_window and A_low < s_latent <= A_high gray_zone
+s_input > B_window and s_latent > A_high          strong_anomaly
+```
+
+For every window, execute `score -> EWMA -> triage -> permitted update/admission
+-> verification if due -> future-only point finalization -> record`. Gray-zone
+may only admit/trigger verification and may not construct an optimizer. Strong
+anomaly never adapts. Baseline triage is isolated from this truth table.
+
+### 27.2 Label-free PNN and TTL
+
+Gray-zone admission stores a window/absolute interval, unresolved status,
+`ttl_remaining=2`, and adaptation flag, only when it does not overlap a current
+entry. A verification cycle starts only at capacity at least eight and after a
+new admission. It makes an independent frozen-source forward per entry with
+labels absent. Detached tensors are:
+
+```text
+hidden [N,20,H]; nearest_codeword_ids/distances [N,20]
+known_anomaly_mask [N,20]; continuous_signatures [N,20,3]; pnn_mask [N,20]
+```
+
+Tokens within an anomalous codeword radius are known anomalies, excluded from
+PNN. Other tokens use their ordered top-three continuous-prototype IDs. A
+signature is recurrent only after appearing in more than one non-overlapping
+window. No first occurrence, future window, label, or mutable memory creates
+PNN. Adapted entries are removed; unresolved entries lose one TTL only at cycle
+completion and are removed at zero. Admission is opportunity one of three.
+
+### 27.3 Atomic projector-only adaptation
+
+A1 accepts only non-empty verified PNN and uses masked reconstruction. A2
+accepts only guarded hard-old or non-empty verified PNN:
+
+```text
+L_hard_recon = relu(window_reconstruction_MSE - B_window)^2
+L_pnn_recon  = reconstruction mean over masked PNN tokens/channels
+L_A2 = reconstruction term + lambda_online_contrastive * L_contrastive
+```
+
+Hard-old A2: every projected token anchors to its detached same-position source
+token; all anomalous codewords are negatives. PNN A2: PNN anchors use the
+same-token source key and detached same-signature PNN projected keys as
+positives; anomalous codewords plus available known-anomaly projected/source
+keys are negatives. Non-PNN non-known-anomaly tokens are ignored.
+
+Each accepted event asserts only `online_mlp_projector` is trainable, creates a
+fresh AdamW, checks finite loss, backpropagates, checks frozen gradients, clips
+projector norm at `0.5`, and steps once. Buffer and guard state commit only after
+success; non-finite loss or optimizer failure commits neither.
+
+---
+
+## 28. Resume, artifacts, and metric validity
+
+Resume validates entity, variant, seed, window size, checkpoint hash, threshold
+hash, and schema before mutation; restores all causal fields; then starts at the
+next unseen point. It builds a fresh optimizer only for a later accepted event.
+The resumed canonical report/event trace must match uninterrupted execution
+except timing fields.
+
+Artifacts record resolved config, git commit/dirty flag, seed, entity, device,
+dataset identity, checkpoint and threshold paths/hashes, schemas, processed
+counts, metric definitions/support, timing, and report checksum in
+collision-safe directories. The online completion manifest is written last and
+immediately checksum-read back for checkpoint, threshold, metrics, and records;
+the benchmark report has a separate integrity manifest.
+
+The required statuses are `matrix_status`, `runtime_protocol_status`,
+`stream_coverage_status`, `artifact_integrity_status`,
+`metric_availability_status`, and `experiment_status`. Only all-success values
+yield `experiment_status: complete`; `matrix_ready` is structural enumeration,
+not readiness. `--skip-completed` requires identity, coverage, and checksum
+readback. Missing, incomplete, corrupt, or identity-mismatched artifacts never
+aggregate. Failed/incomplete runs require explicit non-success manifests.
+
+Reports distinguish raw pointwise, event/range, VUS, affiliation, and adjusted
+metrics. Raw metrics are primary. A one-class slice records unavailable metrics
+and support count, never invented values. Test labels are used only after fixed
+predictions for metrics or an optional post-prediction demo overlay.
+
+---
+
+## 29. Full benchmark flow: THESIS, deep baselines, and traditional ML
+
+```text
+experiment + protocol YAML -> config validation -> no-train CPU preflight
+                                              |       |
+                                              |       +-> counts, budgets, hashes, paths,
+                                              |           full-stream semantics, output safety
+                                              v
+dataset registry -> train-fitted scaling -> windows -> model/baseline registry
+       |                                      |               |
+       |                                      |               +-> THESIS O0/O1: Stage A 25 + Stage B 5
+       |                                      |               +-> RedLamp: configured deep-learning training
+       |                                      |               +-> traditional ML: fit only allowed train data
+       |                                      |
+       |                                      +-> clean validation thresholds, no tuning with test labels
+       v
+test prediction with labels withheld from scorer
+       |-> offline THESIS / RedLamp / traditional -> scores -> predictions -> metrics
+       |-> online THESIS: O0/O1 x A0/A1/A2 causal engine above
+       `-> online baselines: CANDI/M2N2 use their own A0/A1/A2 policies;
+           STUMPY/KMeansAD/Isolation Forest use frozen `online_main` scoring.
+           No baseline inherits THESIS triage, PNN, or projector updates.
+       |
+       v
+local artifacts + W&B logical mirror -> integrity/coverage readback
+       |-> valid complete -> comparative aggregation
+       `-> failed/incomplete/missing -> explicit non-success cell, never aggregate
+```
+
+The main matrix is exactly 18 THESIS offline + 54 THESIS online + 9 RedLamp
+offline + 27 traditional offline + 81 online baselines = 189 cells. Every online
+cell resolves its exact Stage-B checkpoint and entity threshold artifact before
+launch. Each cell is complete, failed, or missing; none is silently omitted.
+
+---
+
+## 30. Demo and readability release boundaries
+
+The demo receives one injected shared scorer that accepts only values, causal
+ordering metadata, runtime identity, and state, and returns safe diagnostics.
+It never accepts labels. Queue ownership covers producer order, bounded queue,
+timeout/delay, pause/resume, and stop; replay scores only after exactly 20
+points; display/plotting are presentation-only. Labels are optional overlays;
+demo output is never an official metric artifact.
+
+`ThesisMultitaskModel` remains the only public offline model entrypoint and
+`online_adaptation.py` the public online entrypoint. Helpers may isolate
+calibration, scoring, dispatch, execution, and reporting, but may not hide
+lifecycle behavior in mixins or create a second public model. Every `src/`
+callable is at most 50 lines and every `src/` Python file at most 500 lines.
+This is a release gate, not cosmetic advice.
+
+---
+
+## 31. Revised launch gates
+
+Before CUDA rental/main launch, pass focused online/loss/verification/resume/
+artifact/demo/compliance tests, the full pytest suite with zero readability
+violations, CPU preflight with counts `18/54/9/27/81`, full-stream and `25+5`
+checks, and four local O0/O1 x A0/A2 dry-run wrappers. On CUDA: run
+`--require-cuda` preflight; O0/O1 offline smokes; O0/O1-A0/A2 online smokes; and
+one explicit A2 interruption/resume smoke. Record command, commit, device,
+environment lock, timestamps, paths, hashes, and status in a dated detail log.
+Stop at the first failed gate.
+
+Done means all 189 cells are accounted for with causal-resume, coverage,
+artifact-integrity, metric-availability, and frozen-surface evidence. A passing
+preflight, config load, or demo replay alone is insufficient.

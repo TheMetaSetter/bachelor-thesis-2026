@@ -22,12 +22,20 @@ import numpy as np
 import torch
 
 from src.core.console import console_print
+from src.core.artifact_integrity import (
+    build_artifact_manifest,
+    verify_artifact_manifest,
+    write_artifact_manifest,
+)
 from src.core.registry import build_dataset, build_model
 from src.core.runtime_components import register_online_runtime_components
 from src.core.seed import seed_everything
-from src.data.stream import OnlineWindowBatcher, SMDOnlineStream
-from src.data.window import slice_sequence_into_windows
 from src.engine.checkpoint import CheckpointManager
+from src.engine.online_tta.online_calibration import (
+    build_online_stream as _build_online_stream,
+    collect_clean_validation_scores as _collect_clean_validation_scores,
+    move_batch_to_device as _move_batch_to_device,
+)
 from src.engine.online_tta.online_losses import (
     compute_a1_pnn_reconstruction_loss,
     compute_a2_hard_old_reconstruction_loss,
@@ -64,10 +72,6 @@ from src.engine.online_tta.runtime_state import OnlineRuntimeState
 from src.engine.thresholding import (
     select_clean_validation_point_threshold,
     select_online_ewma_threshold,
-)
-from src.protocols.point_scores import (
-    ewma_scores,
-    window_scores_to_causal_endpoint_scores,
 )
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
@@ -148,152 +152,6 @@ def _build_optimizer_from_experiment_config(
     if optimizer_name == "adamw":
         return torch.optim.AdamW(optimizer_parameters, **optimizer_kwargs)
     raise ValueError(f"Unsupported optimizer_name: {optimizer_name}")
-
-
-def _build_online_stream(
-    *,
-    sequences: list[dict[str, Any]],
-    window_size: int,
-    batch_size: int,
-    view_noise_std: float,
-    view_dropout_probability: float,
-) -> OnlineWindowBatcher:
-    stream = SMDOnlineStream(
-        sequences=sequences,
-        window_size=window_size,
-        stride=1,
-        clean_stream_only=True,
-        stream_window_mode="sliding_stride_1",
-    )
-    return OnlineWindowBatcher(
-        stream=stream,
-        batch_size=batch_size,
-        view_noise_std=view_noise_std,
-        view_dropout_probability=view_dropout_probability,
-    )
-
-
-def _move_batch_to_device(batch: dict[str, Any], device: str) -> dict[str, Any]:
-    return {
-        key: value.to(device) if isinstance(value, torch.Tensor) else value
-        for key, value in batch.items()
-    }
-
-
-def _run_stride1_sequence_scores(
-    *,
-    model: torch.nn.Module,
-    sequence: dict[str, Any],
-    window_size: int,
-    batch_size: int,
-    view_noise_std: float,
-    view_dropout_probability: float,
-    device: str,
-) -> dict[str, list[float]]:
-    batcher = _build_online_stream(
-        sequences=[sequence],
-        window_size=window_size,
-        batch_size=batch_size,
-        view_noise_std=view_noise_std,
-        view_dropout_probability=view_dropout_probability,
-    )
-    sequence_length = int(sequence["x"].shape[0])
-    endpoint_scores: list[float] = []
-    input_window_scores: list[float] = []
-    latent_window_scores: list[float] = []
-
-    for batch in batcher:
-        batch_on_device = _move_batch_to_device(batch, device)
-        model.eval()
-        with torch.no_grad():
-            outputs = model.forward(batch_on_device)
-        endpoint_scores.extend(outputs["point_scores"][:, -1].detach().cpu().tolist())
-        input_window_scores.extend(
-            ((outputs["recon"] - batch_on_device["x"]) ** 2)
-            .mean(dim=(1, 2))
-            .detach()
-            .cpu()
-            .tolist()
-        )
-        latent = outputs["aux"].get("latent_window_score")
-        if not isinstance(latent, torch.Tensor):
-            raise KeyError("online model must expose aux.latent_window_score")
-        latent_window_scores.extend(latent.reshape(-1).detach().cpu().tolist())
-
-    causal_scores = window_scores_to_causal_endpoint_scores(
-        window_scores=endpoint_scores,
-        sequence_length=sequence_length,
-        window_size=window_size,
-    )
-    return {
-        "point": [float(value) for value in causal_scores if not np.isnan(value)],
-        "input_window": [float(value) for value in input_window_scores],
-        "latent_window": [float(value) for value in latent_window_scores],
-    }
-
-
-def _collect_clean_validation_scores(
-    *,
-    model: torch.nn.Module,
-    clean_validation_sequences: list[dict[str, Any]],
-    window_size: int,
-    batch_size: int,
-    view_noise_std: float,
-    view_dropout_probability: float,
-    device: str,
-    current_weight: float,
-    previous_weight: float,
-) -> dict[str, list[float]]:
-    collected = {
-        "offline_point": [],
-        "point": [],
-        "ewma": [],
-        "input_window": [],
-        "latent_window": [],
-    }
-    for sequence in clean_validation_sequences:
-        offline_windows = slice_sequence_into_windows(
-            sequence, window_size=window_size, stride=window_size, tail_policy="end_align"
-        )
-        for window in offline_windows:
-            offline_batch = {
-                "x": window["x"].unsqueeze(0).to(device),
-                "point_labels": None,
-                "mask": None,
-                "timestamps": None,
-                "meta": [window["meta"]],
-            }
-            model.eval()
-            with torch.no_grad():
-                offline_outputs = (
-                    model.forward_source(offline_batch)
-                    if hasattr(model, "forward_source")
-                    else model.forward(offline_batch)
-                )
-            collected["offline_point"].extend(
-                offline_outputs["point_scores"].reshape(-1).detach().cpu().tolist()
-            )
-        sequence_scores = _run_stride1_sequence_scores(
-            model=model,
-            sequence=sequence,
-            window_size=window_size,
-            batch_size=batch_size,
-            view_noise_std=view_noise_std,
-            view_dropout_probability=view_dropout_probability,
-            device=device,
-        )
-        smoothed_scores = ewma_scores(
-            np.asarray(sequence_scores["point"], dtype=float),
-            current_weight=current_weight,
-            previous_weight=previous_weight,
-        )
-        collected["point"].extend(sequence_scores["point"])
-        collected["ewma"].extend(
-            float(score) for score in smoothed_scores if not np.isnan(score)
-        )
-        collected["input_window"].extend(sequence_scores["input_window"])
-        collected["latent_window"].extend(sequence_scores["latent_window"])
-    return collected
 
 
 def _build_threshold_artifact_from_scores(
@@ -492,6 +350,84 @@ def _process_online_window(
     verification_controller: VerificationCycleController,
     hard_old_guard: NonOverlapGuard,
 ) -> tuple[float, dict[str, Any], dict[str, Any]]:
+    event = _prepare_online_window_event(
+        model=model,
+        batch=batch,
+        online_variant=online_variant,
+        previous_ewma_score=previous_ewma_score,
+        ewma_current_weight=ewma_current_weight,
+        ewma_previous_weight=ewma_previous_weight,
+        triage_thresholds=triage_thresholds,
+        signature_history=signature_history,
+        hard_old_guard=hard_old_guard, device=device,
+    )
+    admitted, rejected = _admit_and_verify_online_window(
+        model=model,
+        event=event,
+        online_variant=online_variant,
+        threshold_value=threshold_value,
+        verification_buffer=verification_buffer,
+        ttl_buffer=ttl_buffer,
+        verification_controller=verification_controller,
+        device=device,
+    )
+    step_result = _execute_window_event_step(
+        model=model,
+        optimizer=optimizer,
+        event=event,
+        online_variant=online_variant,
+        threshold_value=threshold_value,
+        hard_old_guard=hard_old_guard,
+    )
+    record, metric = _build_event_window_outputs(step_result, event, threshold_value, verification_buffer, ttl_buffer)
+    return _finalize_window_result(event, metric, record, admitted, rejected)
+
+
+def _finalize_window_result(
+    event: dict[str, Any],
+    metric: dict[str, Any],
+    record: dict[str, Any],
+    admitted: int,
+    rejected: int,
+) -> tuple[float, dict[str, Any], dict[str, Any]]:
+    metric.update(event["signature_diagnostics"])
+    metric["online/num_buffer_admitted_windows"] = int(admitted)
+    metric["online/num_buffer_rejected_overlap_windows"] = int(rejected)
+    return event["ewma_point_score"], metric, record
+
+
+def _build_event_window_outputs(
+    step_result: dict[str, Any],
+    event: dict[str, Any],
+    threshold_value: float,
+    verification_buffer: VerificationBuffer,
+    ttl_buffer: TTLBuffer,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    return _build_online_window_outputs(
+        step_result=step_result,
+        threshold_value=threshold_value,
+        raw_point_score=event["raw_point_score"],
+        input_window_score=event["input_window_score"],
+        ewma_point_score=event["ewma_point_score"],
+        triage_decision=event["triage_decision"],
+        verification_buffer=verification_buffer,
+        ttl_buffer=ttl_buffer,
+    )
+
+
+def _prepare_online_window_event(
+    *,
+    model: torch.nn.Module,
+    batch: dict[str, Any],
+    online_variant: str,
+    previous_ewma_score: float | None,
+    ewma_current_weight: float,
+    ewma_previous_weight: float,
+    triage_thresholds: dict[str, float],
+    signature_history: list[SignatureWindow],
+    hard_old_guard: NonOverlapGuard,
+    device: str,
+) -> dict[str, Any]:
     (
         batch_on_device,
         raw_point_score,
@@ -508,35 +444,48 @@ def _process_online_window(
         ewma_previous_weight=ewma_previous_weight,
         device=device,
     )
-    pnn_mask = None
-    signature_diagnostics: dict[str, int] = {}
-    if online_variant != "A0":
-        pnn_mask, signature_diagnostics = _build_event_pnn_mask(
-            model=model,
-            scoring_outputs=scoring_outputs,
-            batch=batch_on_device,
-            signature_history=signature_history,
-        )
-    if pnn_mask is not None:
-        batch_on_device["pnn_mask"] = pnn_mask
-    triage_decision = classify_online_window(
+    signature_diagnostics = _attach_event_pnn_mask(
+        model, scoring_outputs, batch_on_device, online_variant, signature_history
+    )
+    triage_decision = _classify_event_window(
         input_window_score=input_window_score,
         latent_window_score=latent_window_score,
         thresholds=triage_thresholds,
+        batch=batch_on_device,
+        hard_old_guard=hard_old_guard,
     )
-    if triage_decision == "hard_old_normality":
-        interval = (
-            int(batch_on_device["meta"][0]["start_index"]),
-            int(batch_on_device["meta"][0]["end_index"]),
-        )
-        if not hard_old_guard.accept(interval):
-            triage_decision = "gray_zone"
-    buffer_admitted, buffer_rejected = _update_online_window_buffers(
-        batch_on_device=batch_on_device,
-        raw_point_score=raw_point_score,
-        input_window_score=input_window_score,
-        latent_window_score=latent_window_score,
-        triage_decision=triage_decision,
+    return {
+        "batch": batch_on_device,
+        "raw_point_score": raw_point_score,
+        "input_window_score": input_window_score,
+        "latent_window_score": latent_window_score,
+        "ewma_point_score": ewma_point_score,
+        "triage_decision": triage_decision,
+        "signature_diagnostics": signature_diagnostics,
+    }
+
+
+def _admit_and_verify_online_window(
+    *,
+    model: torch.nn.Module,
+    event: dict[str, Any],
+    online_variant: str,
+    threshold_value: float,
+    raw_point_score: float,
+    input_window_score: float,
+    latent_window_score: float,
+    triage_decision: str,
+    verification_buffer: VerificationBuffer,
+    ttl_buffer: TTLBuffer,
+    verification_controller: VerificationCycleController,
+    device: str,
+) -> tuple[int, int]:
+    admitted, rejected = _update_online_window_buffers(
+        batch_on_device=event["batch"],
+        raw_point_score=event["raw_point_score"],
+        input_window_score=event["input_window_score"],
+        latent_window_score=event["latent_window_score"],
+        triage_decision=event["triage_decision"],
         verification_buffer=verification_buffer,
         ttl_buffer=ttl_buffer,
     )
@@ -549,41 +498,84 @@ def _process_online_window(
             device=device,
         )
     )
+    return admitted, rejected
+
+
+def _execute_window_event_step(
+    *,
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    event: dict[str, Any],
+    online_variant: str,
+    threshold_value: float,
+    ewma_point_score: float,
+    input_window_score: float,
+    latent_window_score: float,
+    triage_decision: str,
+    hard_old_guard: NonOverlapGuard,
+) -> dict[str, Any]:
     event_optimizer = optimizer
     if online_variant != "A0":
         event_optimizer = build_online_optimizer(model)
     step_result = execute_online_tta_step(
         model=model,
         optimizer=event_optimizer,
-        batch=batch_on_device,
+        batch=event["batch"],
         online_variant=online_variant,
         threshold_value=threshold_value,
-        ewma_point_score=ewma_point_score,
-        raw_point_score=input_window_score,
-        latent_window_score=latent_window_score,
-        triage_decision=triage_decision,
+        ewma_point_score=event["ewma_point_score"],
+        raw_point_score=event["input_window_score"],
+        latent_window_score=event["latent_window_score"],
+        triage_decision=event["triage_decision"],
     )
-    if step_result["did_update"] and triage_decision == "hard_old_normality":
-        hard_old_guard.add(
-            (
-                int(batch_on_device["meta"][0]["start_index"]),
-                int(batch_on_device["meta"][0]["end_index"]),
-            )
-        )
-    record, metric = _build_online_window_outputs(
-        step_result=step_result,
-        threshold_value=threshold_value,
-        raw_point_score=raw_point_score,
+    if step_result["did_update"] and event["triage_decision"] == "hard_old_normality":
+        hard_old_guard.add(_window_interval(event["batch"]))
+    return step_result
+
+
+def _window_interval(batch: dict[str, Any]) -> tuple[int, int]:
+    meta = batch["meta"][0]
+    return int(meta["start_index"]), int(meta["end_index"])
+
+
+def _attach_event_pnn_mask(
+    model: torch.nn.Module,
+    scoring_outputs: dict[str, Any],
+    batch: dict[str, Any],
+    online_variant: str,
+    signature_history: list[SignatureWindow],
+) -> dict[str, int]:
+    if online_variant == "A0":
+        return {}
+    pnn_mask, diagnostics = _build_event_pnn_mask(
+        model=model,
+        scoring_outputs=scoring_outputs,
+        batch=batch,
+        signature_history=signature_history,
+    )
+    if pnn_mask is not None:
+        batch["pnn_mask"] = pnn_mask
+    return diagnostics
+
+
+def _classify_event_window(
+    *,
+    input_window_score: float,
+    latent_window_score: float,
+    thresholds: dict[str, float],
+    batch: dict[str, Any],
+    hard_old_guard: NonOverlapGuard,
+) -> str:
+    decision = classify_online_window(
         input_window_score=input_window_score,
-        ewma_point_score=ewma_point_score,
-        triage_decision=triage_decision,
-        verification_buffer=verification_buffer,
-        ttl_buffer=ttl_buffer,
+        latent_window_score=latent_window_score,
+        thresholds=thresholds,
     )
-    metric.update(signature_diagnostics)
-    metric["online/num_buffer_admitted_windows"] = int(buffer_admitted)
-    metric["online/num_buffer_rejected_overlap_windows"] = int(buffer_rejected)
-    return ewma_point_score, metric, record
+    if decision == "hard_old_normality" and not hard_old_guard.accept(
+        _window_interval(batch)
+    ):
+        return "gray_zone"
+    return decision
 
 
 def _verify_and_adapt_entries(
@@ -1263,13 +1255,40 @@ def _finalize_online_execution(
             ).to_dict(),
         },
     )
+    artifact_identity = {
+        "entity_id": str(context["threshold_artifact"]["entity_id"]),
+        "online_variant": str(context["online_variant"]),
+        "experiment_name": str(experiment_config["experiment_name"]),
+    }
+    artifact_manifest = build_artifact_manifest(
+        {
+            "checkpoint": final_checkpoint_path,
+            "metrics": metrics_path,
+            "records": records_path,
+            "threshold": context["threshold_artifact_path"],
+        },
+        identity=artifact_identity,
+    )
+    artifact_manifest_path = write_artifact_manifest(
+        output_dir / "online_artifact_manifest.json", artifact_manifest
+    )
+    artifact_integrity_status = (
+        "verified"
+        if verify_artifact_manifest(artifact_manifest, artifact_identity)
+        else "failed"
+    )
+    execution_complete = (
+        coverage_status == "complete" and artifact_integrity_status == "verified"
+    )
     return {
-        "benchmark_status": "completed" if coverage_status == "complete" else "failed",
-        "experiment_status": "complete" if coverage_status == "complete" else "incomplete",
+        "benchmark_status": "completed" if execution_complete else "failed",
+        "experiment_status": "complete" if execution_complete else "incomplete",
         "matrix_status": "matrix_ready",
         "runtime_protocol_status": "full_spec_v2",
         "stream_coverage_status": coverage_status,
-        "artifact_integrity_status": "written",
+        "artifact_integrity_status": artifact_integrity_status,
+        "artifact_manifest": artifact_manifest,
+        "artifact_manifest_path": str(artifact_manifest_path),
         "metric_availability_status": "recorded",
         "expected_windows": expected_windows,
         "processed_windows": len(records),
