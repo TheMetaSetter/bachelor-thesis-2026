@@ -66,6 +66,14 @@ def _validate_model_and_task_config(
             "discrete_enabled",
             "discrete_codebook_size",
             "gumbel_temperature",
+            "stochastic_inference",
+            "monte_carlo_samples",
+            "continuous_temperature",
+            "discrete_temperature",
+            "variance_correction",
+            "sample_variance_correction",
+            "return_mc_samples",
+            "sample_retention_policy",
             "temperature_start",
             "temperature_end",
             "temperature_anneal_fraction",
@@ -280,6 +288,20 @@ def _validate_model_and_task_config(
             "cnn_dropout", model_config.get("dropout")
         )
         float_fields["gradient_ema_alpha"] = model_config.get("gradient_ema_alpha", 0.1)
+    if model_config.get("model_name") == "thesis_multitask":
+        float_fields["continuous_temperature"] = model_config.get(
+            "continuous_temperature", 0.9
+        )
+        float_fields["discrete_temperature"] = model_config.get(
+            "discrete_temperature", 0.9
+        )
+        float_fields["monte_carlo_samples"] = model_config.get(
+            "monte_carlo_samples", 10
+        )
+        float_fields["variance_correction"] = model_config.get(
+            "variance_correction",
+            model_config.get("sample_variance_correction", 1),
+        )
     if task_config.get("task_name") == "multitask_tsad":
         if model_config.get("model_name") == "thesis_multitask":
             float_fields["gumbel_temperature"] = model_config.get("gumbel_temperature")
@@ -386,6 +408,8 @@ def _validate_model_and_task_config(
             "memory_initialization_with_synthetic_windows": model_config.get(
                 "memory_initialization_with_synthetic_windows", True
             ),
+            "stochastic_inference": model_config.get("stochastic_inference", True),
+            "return_mc_samples": model_config.get("return_mc_samples", False),
             "use_synthetic_augmentation": task_config.get("use_synthetic_augmentation"),
             "use_synthetic_validation": task_config.get(
                 "use_synthetic_validation", True
@@ -528,6 +552,10 @@ def _validate_model_and_task_semantics(
         if model_name == "thesis_multitask":
             if float(model_config["gumbel_temperature"]) <= 0.0:
                 raise ValueError("gumbel_temperature must be positive")
+            if float(model_config.get("continuous_temperature", 0.9)) <= 0.0:
+                raise ValueError("continuous_temperature must be positive")
+            if float(model_config.get("discrete_temperature", 0.9)) <= 0.0:
+                raise ValueError("discrete_temperature must be positive")
             if float(model_config["temperature_start"]) <= 0.0:
                 raise ValueError("temperature_start must be positive")
             if float(model_config["temperature_end"]) <= 0.0:
@@ -546,8 +574,26 @@ def _validate_model_and_task_semantics(
             raise ValueError("refurbishment_beta must be in [0, 1]")
         if float(model_config.get("lambda_recon", 0.9)) < 0.0:
             raise ValueError("lambda_recon must be non-negative")
-        if float(model_config.get("lambda_cls", 0.1)) < 0.0:
-            raise ValueError("lambda_cls must be non-negative")
+            if float(model_config.get("lambda_cls", 0.1)) < 0.0:
+                raise ValueError("lambda_cls must be non-negative")
+            if int(model_config.get("monte_carlo_samples", 10)) < 1:
+                raise ValueError("monte_carlo_samples must be at least 1")
+            if int(model_config.get("variance_correction", 1)) not in {0, 1}:
+                raise ValueError("variance_correction must be 0 or 1")
+            if model_config.get("sample_retention_policy", "none") not in {
+                "none",
+                "retain_all",
+                "retain_for_eda",
+            }:
+                raise ValueError(
+                    "sample_retention_policy must be one of: none, retain_all, retain_for_eda"
+                )
+            if model_config.get("sample_retention_policy", "none") == "none" and bool(
+                model_config.get("return_mc_samples", False)
+            ):
+                raise ValueError(
+                    "return_mc_samples=true requires sample_retention_policy to retain samples"
+                )
         anomaly_families = task_config.get("anomaly_families")
         if not isinstance(anomaly_families, list) or not anomaly_families:
             raise ValueError("anomaly_families must be a non-empty list")

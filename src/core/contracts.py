@@ -28,6 +28,14 @@ def _require_tensor_rank(tensor: torch.Tensor, rank: int, tensor_name: str) -> N
         raise ValueError(f"{tensor_name} must have rank {rank}, got {tensor.ndim}")
 
 
+def _require_optional_tensor_rank(
+    tensor: torch.Tensor | None, rank: int, tensor_name: str
+) -> None:
+    if tensor is None:
+        return
+    _require_tensor_rank(tensor, rank, tensor_name)
+
+
 def _require_same_shape(
     first_tensor: torch.Tensor,
     second_tensor: torch.Tensor,
@@ -146,6 +154,130 @@ def validate_model_outputs(outputs: dict[str, Any]) -> None:
         _require_tensor_rank(outputs["window_scores"], 1, "outputs['window_scores']")
     if not isinstance(outputs["aux"], dict):
         raise TypeError("outputs['aux'] must be a dictionary")
+    stochastic_query = outputs["aux"].get("stochastic_query")
+    if stochastic_query is not None:
+        validate_stochastic_query_aux(stochastic_query)
+    uncertainty = outputs["aux"].get("uncertainty")
+    if uncertainty is not None:
+        validate_uncertainty_aux(uncertainty)
+    deterministic_geometry = outputs["aux"].get("deterministic_geometry")
+    if deterministic_geometry is not None:
+        validate_deterministic_geometry_aux(deterministic_geometry)
+
+
+def validate_stochastic_query_aux(stochastic_query: dict[str, Any]) -> None:
+    _require_keys(
+        stochastic_query,
+        ["schema_version", "enabled", "num_samples"],
+        "outputs['aux']['stochastic_query']",
+    )
+    if int(stochastic_query["schema_version"]) != 3:
+        raise ValueError("stochastic_query.schema_version must be 3")
+    if not isinstance(stochastic_query["enabled"], bool):
+        raise TypeError("stochastic_query.enabled must be a boolean")
+    if not isinstance(stochastic_query["num_samples"], int) or (
+        stochastic_query["num_samples"] <= 0
+    ):
+        raise ValueError("stochastic_query.num_samples must be a positive integer")
+    for field_name in ["continuous_temperature", "discrete_temperature"]:
+        field_value = stochastic_query.get(field_name)
+        if field_value is not None and float(field_value) <= 0.0:
+            raise ValueError(f"stochastic_query.{field_name} must be positive")
+    for field_name in [
+        "continuous_retrieved_samples",
+        "discrete_retrieved_samples",
+        "discrete_topk_ids",
+        "reconstruction_samples",
+        "classification_probability_samples",
+        "point_score_samples",
+        "window_score_samples",
+    ]:
+        field_value = stochastic_query.get(field_name)
+        if field_value is not None and not isinstance(field_value, torch.Tensor):
+            raise TypeError(
+                f"stochastic_query.{field_name} must be a torch.Tensor or null"
+            )
+
+
+def validate_uncertainty_aux(uncertainty: dict[str, Any]) -> None:
+    for field_name in [
+        "point_anomaly_score_variance",
+        "continuous_retrieval_variance_point",
+        "discrete_retrieval_variance_point",
+        "reconstruction_variance_point",
+    ]:
+        _require_optional_tensor_rank(
+            uncertainty.get(field_name), 2, f"outputs['aux']['uncertainty']['{field_name}']"
+        )
+    for field_name in [
+        "window_anomaly_score_variance",
+        "continuous_retrieval_variance_window",
+        "discrete_retrieval_variance_window",
+        "reconstruction_variance_window",
+        "classification_variance_mean",
+    ]:
+        _require_optional_tensor_rank(
+            uncertainty.get(field_name), 1, f"outputs['aux']['uncertainty']['{field_name}']"
+        )
+    _require_optional_tensor_rank(
+        uncertainty.get("reconstruction_variance_full"),
+        3,
+        "outputs['aux']['uncertainty']['reconstruction_variance_full']",
+    )
+    _require_optional_tensor_rank(
+        uncertainty.get("classification_probability_variance"),
+        2,
+        "outputs['aux']['uncertainty']['classification_probability_variance']",
+    )
+
+
+def validate_deterministic_geometry_aux(
+    deterministic_geometry: dict[str, Any]
+) -> None:
+    for field_name in [
+        "nearest_codeword_ids",
+        "nearest_codeword_distances",
+        "known_anomaly_mask",
+        "continuous_signature_ids",
+        "latent_window_score",
+    ]:
+        field_value = deterministic_geometry.get(field_name)
+        if field_value is None:
+            continue
+        if not isinstance(field_value, torch.Tensor):
+            raise TypeError(
+                f"outputs['aux']['deterministic_geometry']['{field_name}'] must be a torch.Tensor or null"
+            )
+    if deterministic_geometry.get("nearest_codeword_ids") is not None:
+        _require_tensor_rank(
+            deterministic_geometry["nearest_codeword_ids"],
+            2,
+            "outputs['aux']['deterministic_geometry']['nearest_codeword_ids']",
+        )
+    if deterministic_geometry.get("nearest_codeword_distances") is not None:
+        _require_tensor_rank(
+            deterministic_geometry["nearest_codeword_distances"],
+            2,
+            "outputs['aux']['deterministic_geometry']['nearest_codeword_distances']",
+        )
+    if deterministic_geometry.get("known_anomaly_mask") is not None:
+        _require_tensor_rank(
+            deterministic_geometry["known_anomaly_mask"],
+            2,
+            "outputs['aux']['deterministic_geometry']['known_anomaly_mask']",
+        )
+    if deterministic_geometry.get("continuous_signature_ids") is not None:
+        _require_tensor_rank(
+            deterministic_geometry["continuous_signature_ids"],
+            3,
+            "outputs['aux']['deterministic_geometry']['continuous_signature_ids']",
+        )
+    if deterministic_geometry.get("latent_window_score") is not None:
+        _require_tensor_rank(
+            deterministic_geometry["latent_window_score"],
+            1,
+            "outputs['aux']['deterministic_geometry']['latent_window_score']",
+        )
 
 
 def validate_evaluation_record(evaluation_record: dict[str, Any]) -> None:

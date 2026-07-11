@@ -23,20 +23,32 @@ def sha256_file(path: str | Path) -> str:
 def build_artifact_manifest(
     artifact_paths: dict[str, str | Path],
     identity: dict[str, Any],
+    provenance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a deterministic checksum manifest for named artifact files."""
     artifacts = {
         name: {"path": str(Path(path)), "sha256": sha256_file(path)}
         for name, path in sorted(artifact_paths.items())
     }
-    return {"schema_version": 1, "identity": identity, "artifacts": artifacts}
+    manifest: dict[str, Any] = {
+        "schema_version": 1,
+        "identity": identity,
+        "artifacts": artifacts,
+    }
+    if provenance is not None:
+        manifest["provenance"] = provenance
+    return manifest
 
 
 def verify_artifact_manifest(
-    manifest: dict[str, Any], expected_identity: dict[str, Any] | None = None
+    manifest: dict[str, Any],
+    expected_identity: dict[str, Any] | None = None,
+    expected_provenance: dict[str, Any] | None = None,
 ) -> bool:
     """Return whether identity and all named artifact checksums still match."""
     if expected_identity is not None and manifest.get("identity") != expected_identity:
+        return False
+    if expected_provenance is not None and manifest.get("provenance") != expected_provenance:
         return False
     artifacts = manifest.get("artifacts")
     if not isinstance(artifacts, dict) or not artifacts:

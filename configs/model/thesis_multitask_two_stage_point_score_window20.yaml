@@ -21,6 +21,13 @@ continuous_enabled: true
 continuous_num_prototypes: 32
 discrete_enabled: true
 discrete_codebook_size: 60
+stochastic_inference: true
+monte_carlo_samples: 10
+continuous_temperature: 0.9
+discrete_temperature: 0.9
+variance_correction: 1
+return_mc_samples: false
+sample_retention_policy: none
 
 # Temperature and annealing
 gumbel_temperature: 1.5

@@ -26,6 +26,23 @@ TWO_STAGE_B_PHASE_NAME = "stage_b_fusion_finetuning"
 TWO_STAGE_PHASE_NAMES = {TWO_STAGE_A_PHASE_NAME, TWO_STAGE_B_PHASE_NAME}
 
 
+def _normalize_variance_correction_value(value: Any) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        if value in {0, 1}:
+            return value
+    if isinstance(value, str):
+        normalized_value = value.strip().lower()
+        if normalized_value in {"unbiased", "sample", "sample_unbiased"}:
+            return 1
+        if normalized_value in {"population", "biased", "none"}:
+            return 0
+    raise ValueError(
+        "variance_correction must be 0, 1, or one of: unbiased, sample, population"
+    )
+
+
 @dataclass(frozen=True)
 class MultitaskArchitectureConfig:
     input_dim: int
@@ -64,6 +81,41 @@ class PrototypeBranchConfig:
     discrete_codebook_size: int = 16
     gumbel_temperature: float = 1.0
     discrete_ema_decay: float = 0.99
+    stochastic_inference: bool = True
+    monte_carlo_samples: int = 10
+    continuous_temperature: float = 0.9
+    discrete_temperature: float = 0.9
+    variance_correction: int = 1
+    return_mc_samples: bool = False
+    sample_retention_policy: str = "none"
+
+    def __post_init__(self) -> None:
+        if self.continuous_num_prototypes < 0:
+            raise ValueError("continuous_num_prototypes must be non-negative")
+        if self.discrete_codebook_size < 0:
+            raise ValueError("discrete_codebook_size must be non-negative")
+        if self.gumbel_temperature <= 0.0:
+            raise ValueError("gumbel_temperature must be positive")
+        if not isinstance(self.stochastic_inference, bool):
+            raise TypeError("stochastic_inference must be boolean")
+        if self.monte_carlo_samples < 1:
+            raise ValueError("monte_carlo_samples must be at least 1")
+        if self.continuous_temperature <= 0.0:
+            raise ValueError("continuous_temperature must be positive")
+        if self.discrete_temperature <= 0.0:
+            raise ValueError("discrete_temperature must be positive")
+        if self.variance_correction not in {0, 1}:
+            raise ValueError("variance_correction must be 0 or 1")
+        if not isinstance(self.return_mc_samples, bool):
+            raise TypeError("return_mc_samples must be boolean")
+        if self.sample_retention_policy not in {
+            "none",
+            "retain_all",
+            "retain_for_eda",
+        }:
+            raise ValueError(
+                "sample_retention_policy must be one of: none, retain_all, retain_for_eda"
+            )
 
 
 @dataclass(frozen=True)
@@ -145,6 +197,8 @@ class ObjectiveConfig:
             raise ValueError(
                 "score_loss_reduction must be 'pointwise_binary_balanced_mean'"
             )
+        if self.variance_floor_gamma <= 0.0:
+            raise ValueError("variance_floor_gamma must be positive")
 
 
 @dataclass(frozen=True)
@@ -285,6 +339,26 @@ class ThesisMultitaskModelConfig:
     ) -> "ThesisMultitaskModelConfig":
         remaining_kwargs = dict(flat_kwargs)
 
+        if (
+            "sample_variance_correction" in remaining_kwargs
+            and "variance_correction" in remaining_kwargs
+            and remaining_kwargs["sample_variance_correction"]
+            != remaining_kwargs["variance_correction"]
+        ):
+            raise ValueError(
+                "sample_variance_correction and variance_correction must match when both are provided"
+            )
+        if "variance_correction" not in remaining_kwargs and "sample_variance_correction" in remaining_kwargs:
+            remaining_kwargs["variance_correction"] = remaining_kwargs.pop(
+                "sample_variance_correction"
+            )
+        else:
+            remaining_kwargs.pop("sample_variance_correction", None)
+        if "variance_correction" in remaining_kwargs:
+            remaining_kwargs["variance_correction"] = _normalize_variance_correction_value(
+                remaining_kwargs["variance_correction"]
+            )
+
         if "stage_name" in remaining_kwargs:
             stage_name = remaining_kwargs.pop("stage_name")
             if (
@@ -324,6 +398,13 @@ class ThesisMultitaskModelConfig:
             "discrete_codebook_size",
             "gumbel_temperature",
             "discrete_ema_decay",
+            "stochastic_inference",
+            "monte_carlo_samples",
+            "continuous_temperature",
+            "discrete_temperature",
+            "variance_correction",
+            "return_mc_samples",
+            "sample_retention_policy",
         }
         schedule_keys = {
             "temperature_start",

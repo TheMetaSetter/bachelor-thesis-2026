@@ -28,10 +28,18 @@ def test_threshold_artifact_round_trips_json(tmp_path) -> None:
     loaded = load_threshold_artifact(output_path)
 
     assert loaded == artifact
+    assert loaded["schema_version"] == 3
+    assert loaded["stochastic_inference"] is True
+    assert loaded["monte_carlo_samples"] == 10
+    assert loaded["variance_correction"] == 1
+    assert loaded["return_mc_samples"] is False
+    assert loaded["sample_retention_policy"] == "none"
     assert loaded["thresholds"]["offline_point"]["source_split"] == "clean_validation"
     assert loaded["thresholds"]["online_ewma_point"]["score_rule"] == (
         "stride1_causal_endpoint_ewma"
     )
+    assert loaded["provenance"]["calibration_split"] == "clean_validation"
+    assert loaded["provenance"]["score_reduction"] == "mean"
 
 
 def test_threshold_artifact_keeps_independent_window_thresholds() -> None:
@@ -56,3 +64,5 @@ def test_threshold_artifact_keeps_independent_window_thresholds() -> None:
     assert thresholds["input_window"]["value"] == 3.0
     assert thresholds["latent_window_low"]["quantile"] == 0.95
     assert thresholds["latent_window_high"]["value"] == 5.0
+    assert artifact["offline_point_threshold_nonoverlap"] == 1.0
+    assert artifact["online_point_threshold_ewma"] == 2.0

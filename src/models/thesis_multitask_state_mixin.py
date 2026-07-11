@@ -248,6 +248,13 @@ class ThesisMultitaskStateMixin:
         state["verification_metadata_label_source"] = (
             self.discrete_memory_label_source
         )
+        state["stochastic_inference"] = self.stochastic_inference
+        state["monte_carlo_samples"] = self.monte_carlo_samples
+        state["continuous_temperature"] = self.continuous_temperature
+        state["discrete_temperature"] = self.discrete_temperature
+        state["variance_correction"] = self.variance_correction
+        state["return_mc_samples"] = self.return_mc_samples
+        state["sample_retention_policy"] = self.sample_retention_policy
         return state
 
     def get_memory_tensor_state(self) -> dict[str, torch.Tensor | None]:
@@ -343,6 +350,24 @@ class ThesisMultitaskStateMixin:
     def load_checkpoint_extra_state(self, extra_state: dict[str, Any] | None) -> None:
         if not extra_state:
             return
+        if "verification_metadata_schema_version" in extra_state and int(
+            extra_state["verification_metadata_schema_version"]
+        ) != 1:
+            raise ValueError("verification_metadata_schema_version must be 1")
+        if "verification_metadata_split" in extra_state and extra_state.get(
+            "verification_metadata_split"
+        ) != "synthetic_train":
+            raise ValueError("verification_metadata_split must be synthetic_train")
+        if "verification_radius_quantile" in extra_state and not (
+            0.0 < float(extra_state["verification_radius_quantile"]) <= 1.0
+        ):
+            raise ValueError("verification_radius_quantile must be in (0, 1]")
+        if "verification_metadata_label_source" in extra_state and extra_state.get(
+            "verification_metadata_label_source"
+        ) != self.discrete_memory_label_source:
+            raise ValueError(
+                "verification_metadata_label_source must match discrete_memory_label_source"
+            )
         self.memory_initialized = bool(
             extra_state.get("memory_initialized", self.memory_initialized)
         )
@@ -379,6 +404,20 @@ class ThesisMultitaskStateMixin:
             self.verification_metadata_source = str(
                 extra_state.get("verification_metadata_source", "checkpoint")
             )
+        if "stochastic_inference" in extra_state:
+            if bool(extra_state["stochastic_inference"]) != self.stochastic_inference:
+                raise ValueError("checkpoint stochastic_inference does not match model")
+        if "monte_carlo_samples" in extra_state:
+            if int(extra_state["monte_carlo_samples"]) != self.monte_carlo_samples:
+                raise ValueError("checkpoint monte_carlo_samples does not match model")
+        if "variance_correction" in extra_state:
+            if int(extra_state["variance_correction"]) != self.variance_correction:
+                raise ValueError("checkpoint variance_correction does not match model")
+        if "sample_retention_policy" in extra_state:
+            if str(extra_state["sample_retention_policy"]) != self.sample_retention_policy:
+                raise ValueError(
+                    "checkpoint sample_retention_policy does not match model"
+                )
 
     def _move_initialization_batch_to_device(
         self,

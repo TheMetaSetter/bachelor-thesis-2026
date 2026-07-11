@@ -44,6 +44,8 @@ def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(
 
     assert loaded_checkpoint["config"] == config
     assert loaded_checkpoint["epoch"] == 3
+    assert loaded_checkpoint["checkpoint_metadata"]["schema_version"] == 3
+    assert loaded_checkpoint["checkpoint_metadata"]["experiment_name"] == "unit-test"
     assert torch.equal(
         loaded_checkpoint["scaler_state_dict"]["feature_mean"], scaler.feature_mean
     )
@@ -116,6 +118,7 @@ def test_checkpoint_roundtrip_restores_scheduler_state_when_present(
     )
 
     assert "scheduler_state_dict" in loaded_checkpoint
+    assert loaded_checkpoint["checkpoint_metadata"]["schema_version"] == 3
     assert reloaded_optimizer.param_groups[0]["lr"] == optimizer.param_groups[0]["lr"]
     assert reloaded_scheduler.state_dict() == scheduler.state_dict()
 
@@ -158,6 +161,7 @@ def test_checkpoint_roundtrip_restores_extra_memory_state(tmp_path: Path) -> Non
     assert loaded_checkpoint["extra_state"]["memory_training_enabled"] is True
     assert loaded_checkpoint["extra_state"]["memory_initialized"] is True
     assert loaded_checkpoint["extra_state"]["bootstrap_encoder_epochs"] == 10
+    assert loaded_checkpoint["checkpoint_metadata"]["schema_version"] == 3
 
 
 def test_multitask_checkpoint_roundtrip_restores_memory_buffers(tmp_path: Path) -> None:

@@ -5,6 +5,139 @@ from pathlib import Path
 from typing import Any
 
 
+THRESHOLD_ARTIFACT_SCHEMA_VERSION = 3
+
+
+def _normalize_variance_correction(value: Any) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        if value not in {0, 1}:
+            raise ValueError("variance_correction must be 0 or 1")
+        return value
+    if isinstance(value, str):
+        normalized_value = value.strip().lower()
+        if normalized_value in {"unbiased", "sample", "sample_unbiased"}:
+            return 1
+        if normalized_value in {"population", "biased", "none"}:
+            return 0
+    raise ValueError(
+        "variance_correction must be 0, 1, or one of: unbiased, sample, population"
+    )
+
+
+def _validate_threshold_artifact(artifact: dict[str, Any]) -> None:
+    required_keys = {
+        "schema_version",
+        "method_name",
+        "variant_name",
+        "entity_id",
+        "seed",
+        "window_size",
+        "calibration_split",
+        "stochastic_inference",
+        "monte_carlo_samples",
+        "continuous_temperature",
+        "discrete_temperature",
+        "score_reduction",
+        "variance_correction",
+        "numeric_precision",
+        "return_mc_samples",
+        "sample_retention_policy",
+        "offline_point_threshold_nonoverlap",
+        "online_point_threshold_ewma",
+        "offline_stride",
+        "online_stride",
+        "ewma_current_weight",
+        "ewma_previous_weight",
+        "provenance",
+        "thresholds",
+    }
+    missing_keys = sorted(required_keys - set(artifact))
+    if missing_keys:
+        raise ValueError(f"threshold artifact is missing required keys: {missing_keys}")
+    if int(artifact["schema_version"]) != THRESHOLD_ARTIFACT_SCHEMA_VERSION:
+        raise ValueError(
+            "threshold artifact schema_version must be "
+            f"{THRESHOLD_ARTIFACT_SCHEMA_VERSION}"
+        )
+    if not isinstance(artifact["entity_id"], str) or not artifact["entity_id"]:
+        raise ValueError("threshold artifact entity_id must be a non-empty string")
+    if not isinstance(artifact["method_name"], str) or not artifact["method_name"]:
+        raise ValueError("threshold artifact method_name must be a non-empty string")
+    if not isinstance(artifact["variant_name"], str) or not artifact["variant_name"]:
+        raise ValueError("threshold artifact variant_name must be a non-empty string")
+    if not isinstance(artifact["seed"], int) or artifact["seed"] < 0:
+        raise ValueError("threshold artifact seed must be a non-negative integer")
+    if not isinstance(artifact["window_size"], int) or artifact["window_size"] <= 0:
+        raise ValueError("threshold artifact window_size must be a positive integer")
+    if artifact["calibration_split"] != "clean_validation":
+        raise ValueError("threshold artifact calibration_split must be clean_validation")
+    if not isinstance(artifact["stochastic_inference"], bool):
+        raise TypeError("threshold artifact stochastic_inference must be boolean")
+    if not isinstance(artifact["monte_carlo_samples"], int) or (
+        artifact["monte_carlo_samples"] <= 0
+    ):
+        raise ValueError(
+            "threshold artifact monte_carlo_samples must be a positive integer"
+        )
+    for field_name in [
+        "continuous_temperature",
+        "discrete_temperature",
+        "ewma_current_weight",
+        "ewma_previous_weight",
+    ]:
+        if float(artifact[field_name]) <= 0.0:
+            raise ValueError(f"threshold artifact {field_name} must be positive")
+    if artifact["score_reduction"] not in {"mean", "median", "sum"}:
+        raise ValueError(
+            "threshold artifact score_reduction must be one of: mean, median, sum"
+        )
+    if int(artifact["variance_correction"]) not in {0, 1}:
+        raise ValueError("threshold artifact variance_correction must be 0 or 1")
+    if artifact["numeric_precision"] not in {"fp16", "fp32", "fp64"}:
+        raise ValueError(
+            "threshold artifact numeric_precision must be one of: fp16, fp32, fp64"
+        )
+    if not isinstance(artifact["return_mc_samples"], bool):
+        raise TypeError("threshold artifact return_mc_samples must be boolean")
+    if artifact["sample_retention_policy"] not in {
+        "none",
+        "retain_all",
+        "retain_for_eda",
+    }:
+        raise ValueError(
+            "threshold artifact sample_retention_policy must be one of: "
+            "none, retain_all, retain_for_eda"
+        )
+    provenance = artifact["provenance"]
+    if not isinstance(provenance, dict):
+        raise TypeError("threshold artifact provenance must be a mapping")
+    for provenance_key in ["created_by", "config_path"]:
+        provenance_value = provenance.get(provenance_key)
+        if not isinstance(provenance_value, str) or not provenance_value:
+            raise ValueError(
+                f"threshold artifact provenance.{provenance_key} must be a non-empty string"
+            )
+    if provenance.get("calibration_split") != artifact["calibration_split"]:
+        raise ValueError(
+            "threshold artifact provenance.calibration_split must match calibration_split"
+        )
+    thresholds = artifact["thresholds"]
+    if not isinstance(thresholds, dict) or not thresholds:
+        raise TypeError("threshold artifact thresholds must be a non-empty mapping")
+    for threshold_name, threshold_record in thresholds.items():
+        if not isinstance(threshold_record, dict):
+            raise TypeError(
+                f"threshold artifact threshold {threshold_name} must be a mapping"
+            )
+        for threshold_key in ["value", "source_split", "score_rule", "quantile"]:
+            if threshold_key not in threshold_record:
+                raise ValueError(
+                    f"threshold artifact threshold {threshold_name} is missing {threshold_key}"
+                )
+
+
 def build_threshold_artifact(
     *,
     method_name: str,
@@ -19,20 +152,35 @@ def build_threshold_artifact(
     ewma_previous_weight: float,
     created_by: str,
     config_path: str,
+    calibration_split: str = "clean_validation",
+    stochastic_inference: bool = True,
+    monte_carlo_samples: int = 10,
+    continuous_temperature: float = 0.9,
+    discrete_temperature: float = 0.9,
+    score_reduction: str = "mean",
+    variance_correction: int | str = 1,
+    numeric_precision: str = "fp32",
+    return_mc_samples: bool = False,
+    sample_retention_policy: str = "none",
+    offline_stride: int = 20,
+    online_stride: int = 1,
+    checkpoint_sha256: str | None = None,
+    resolved_config_sha256: str | None = None,
     input_window_threshold: float | None = None,
     latent_window_low_threshold: float | None = None,
     latent_window_high_threshold: float | None = None,
 ) -> dict[str, Any]:
+    variance_correction_value = _normalize_variance_correction(variance_correction)
     thresholds = {
         "offline_point": {
             "value": float(offline_point_threshold),
-            "source_split": "clean_validation",
+            "source_split": calibration_split,
             "score_rule": "nonoverlap_tail_average",
             "quantile": float(quantile),
         },
         "online_ewma_point": {
             "value": float(online_ewma_point_threshold),
-            "source_split": "clean_validation",
+            "source_split": calibration_split,
             "score_rule": "stride1_causal_endpoint_ewma",
             "quantile": float(quantile),
             "ewma_current_weight": float(ewma_current_weight),
@@ -42,7 +190,7 @@ def build_threshold_artifact(
     if input_window_threshold is not None:
         thresholds["input_window"] = {
             "value": float(input_window_threshold),
-            "source_split": "clean_validation",
+            "source_split": calibration_split,
             "score_rule": "window_mean_squared_error",
             "quantile": 0.99,
         }
@@ -58,33 +206,59 @@ def build_threshold_artifact(
             )
         thresholds["latent_window_low"] = {
             "value": float(latent_window_low_threshold),
-            "source_split": "clean_validation",
+            "source_split": calibration_split,
             "score_rule": "latent_memory_distance",
             "quantile": 0.95,
         }
         thresholds["latent_window_high"] = {
             "value": float(latent_window_high_threshold),
-            "source_split": "clean_validation",
+            "source_split": calibration_split,
             "score_rule": "latent_memory_distance",
             "quantile": 0.99,
         }
     return {
-        "artifact_version": 2,
+        "artifact_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION,
+        "schema_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION,
         "method_name": method_name,
         "variant_name": variant_name,
         "entity_id": entity_id,
         "seed": int(seed),
         "window_size": int(window_size),
+        "calibration_split": calibration_split,
+        "stochastic_inference": bool(stochastic_inference),
+        "monte_carlo_samples": int(monte_carlo_samples),
+        "continuous_temperature": float(continuous_temperature),
+        "discrete_temperature": float(discrete_temperature),
+        "score_reduction": score_reduction,
+        "variance_correction": variance_correction_value,
+        "numeric_precision": numeric_precision,
+        "return_mc_samples": bool(return_mc_samples),
+        "sample_retention_policy": sample_retention_policy,
+        "offline_point_threshold_nonoverlap": float(offline_point_threshold),
+        "online_point_threshold_ewma": float(online_ewma_point_threshold),
+        "ewma_current_weight": float(ewma_current_weight),
+        "ewma_previous_weight": float(ewma_previous_weight),
+        "offline_stride": int(offline_stride),
+        "online_stride": int(online_stride),
+        "checkpoint_sha256": checkpoint_sha256,
+        "resolved_config_sha256": resolved_config_sha256,
         "thresholds": thresholds,
         "provenance": {
-            "test_label_usage": "metrics_only",
             "created_by": created_by,
             "config_path": config_path,
+            "calibration_split": calibration_split,
+            "threshold_method": method_name,
+            "threshold_variant": variant_name,
+            "test_label_usage": "metrics_only",
+            "score_reduction": score_reduction,
+            "variance_correction": variance_correction_value,
+            "numeric_precision": numeric_precision,
         },
     }
 
 
 def write_threshold_artifact(artifact: dict[str, Any], output_path: Path) -> None:
+    _validate_threshold_artifact(artifact)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
         json.dumps(artifact, indent=2, sort_keys=True) + "\n",
@@ -93,4 +267,6 @@ def write_threshold_artifact(artifact: dict[str, Any], output_path: Path) -> Non
 
 
 def load_threshold_artifact(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    _validate_threshold_artifact(artifact)
+    return artifact

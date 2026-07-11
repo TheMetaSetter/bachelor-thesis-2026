@@ -173,6 +173,38 @@ def _normalize_stage_metadata_aliases(experiment_config: dict[str, Any]) -> None
         )
 
 
+def _normalize_thesis_multitask_v3_aliases(experiment_config: dict[str, Any]) -> None:
+    model_config = experiment_config.get("model")
+    if not isinstance(model_config, dict):
+        return
+    def _normalize_variance_correction_value(value: Any) -> int:
+        if isinstance(value, bool):
+            return int(value)
+        if isinstance(value, int) and value in {0, 1}:
+            return value
+        if isinstance(value, str):
+            normalized_value = value.strip().lower()
+            if normalized_value in {"unbiased", "sample", "sample_unbiased"}:
+                return 1
+            if normalized_value in {"population", "biased", "none"}:
+                return 0
+        raise ValueError(
+            "variance_correction must be 0, 1, or one of: unbiased, sample, population"
+        )
+    if "sample_variance_correction" in model_config and "variance_correction" in model_config:
+        if model_config["sample_variance_correction"] != model_config["variance_correction"]:
+            raise ValueError(
+                "Config alias mismatch for variance_correction and sample_variance_correction"
+            )
+    if "variance_correction" not in model_config and "sample_variance_correction" in model_config:
+        model_config["variance_correction"] = model_config["sample_variance_correction"]
+    if "variance_correction" in model_config:
+        model_config["variance_correction"] = _normalize_variance_correction_value(
+            model_config["variance_correction"]
+        )
+    model_config.pop("sample_variance_correction", None)
+
+
 def _normalize_three_stage_config_keys(three_stage_config: dict[str, Any]) -> None:
     # Legacy three-stage compatibility remains read-supported only.
     # The active two-stage rerun should be interpreted from `two_stage`.
@@ -927,6 +959,7 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
     )
 
     _normalize_stage_metadata_aliases(resolved_experiment_config)
+    _normalize_thesis_multitask_v3_aliases(resolved_experiment_config)
     _resolve_thesis_model_window_size(resolved_experiment_config)
     validate_experiment_config(resolved_experiment_config)
     console_print(

@@ -73,6 +73,13 @@ class ThesisMultitaskSetupMixin:
         self.discrete_codebook_size = prototypes.discrete_codebook_size
         self.default_gumbel_temperature = prototypes.gumbel_temperature
         self.gumbel_temperature = prototypes.gumbel_temperature
+        self.stochastic_inference = prototypes.stochastic_inference
+        self.monte_carlo_samples = prototypes.monte_carlo_samples
+        self.continuous_temperature = prototypes.continuous_temperature
+        self.discrete_temperature = prototypes.discrete_temperature
+        self.variance_correction = prototypes.variance_correction
+        self.return_mc_samples = prototypes.return_mc_samples
+        self.sample_retention_policy = prototypes.sample_retention_policy
         self.temperature_start = schedule.temperature_start
         self.temperature_end = schedule.temperature_end
         self.temperature_anneal_fraction = schedule.temperature_anneal_fraction

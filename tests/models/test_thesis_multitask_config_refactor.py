@@ -41,6 +41,13 @@ def _flat_model_kwargs(**overrides: object) -> dict[str, object]:
         "continuous_num_prototypes": 4,
         "discrete_enabled": True,
         "discrete_codebook_size": 8,
+        "stochastic_inference": True,
+        "monte_carlo_samples": 10,
+        "continuous_temperature": 0.9,
+        "discrete_temperature": 0.9,
+        "variance_correction": 1,
+        "return_mc_samples": False,
+        "sample_retention_policy": "none",
         "gumbel_temperature": 1.5,
         "temperature_start": 1.5,
         "temperature_end": 0.7,
@@ -140,6 +147,13 @@ def test_flat_kwargs_are_grouped_into_readable_config_sections() -> None:
     assert config.architecture.mlp_num_linear_layers == 3
     assert config.prototypes.continuous_num_prototypes == 4
     assert config.prototypes.discrete_codebook_size == 8
+    assert config.prototypes.stochastic_inference is True
+    assert config.prototypes.monte_carlo_samples == 10
+    assert config.prototypes.continuous_temperature == 0.9
+    assert config.prototypes.discrete_temperature == 0.9
+    assert config.prototypes.variance_correction == 1
+    assert config.prototypes.return_mc_samples is False
+    assert config.prototypes.sample_retention_policy == "none"
     assert config.prototypes.gumbel_temperature == 1.5
     assert config.schedule.temperature_start == 1.5
     assert config.schedule.temperature_end == 0.7
