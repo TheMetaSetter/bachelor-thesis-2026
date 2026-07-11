@@ -16,6 +16,11 @@ class _ReferenceModel(torch.nn.Module):
         self.discrete_codebook = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
         self.anomalous_codeword_mask = torch.tensor([True, False])
         self.anomaly_radii = torch.tensor([0.01, 0.01])
+        self.verification_codeword_class_ids = torch.tensor([0, 1])
+        self.verification_contributing_token_counts = torch.tensor([1.0, 1.0])
+        self.verification_metadata_split = "synthetic_train"
+        self.verification_metadata_schema_version = 1
+        self.verification_metadata_initialization_seed = 7
         self.continuous_prototype_bank = torch.tensor(
             [[1.0, 0.0], [0.0, 1.0], [-1.0, 0.0]]
         )

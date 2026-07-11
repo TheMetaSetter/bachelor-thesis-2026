@@ -15,6 +15,11 @@ class PrototypeVerificationMetadata:
     codebook: torch.Tensor
     anomalous_codeword_mask: torch.Tensor
     anomaly_radii: torch.Tensor
+    codeword_class_ids: torch.Tensor | None = None
+    contributing_token_counts: torch.Tensor | None = None
+    source_split: str = "synthetic_train"
+    schema_version: int = 1
+    initialization_seed: int = 0
 
     def __post_init__(self) -> None:
         codebook_size = self.codebook.shape[0]
@@ -30,12 +35,35 @@ class PrototypeVerificationMetadata:
             raise ValueError("anomaly_radii must have shape [K]")
         if not torch.is_floating_point(self.anomaly_radii):
             raise TypeError("anomaly_radii must use a floating dtype")
+        if self.codeword_class_ids is not None:
+            if self.codeword_class_ids.shape != (codebook_size,):
+                raise ValueError("codeword_class_ids must have shape [K]")
+            if self.codeword_class_ids.dtype not in {
+                torch.int16,
+                torch.int32,
+                torch.int64,
+                torch.long,
+            }:
+                raise TypeError("codeword_class_ids must use an integer dtype")
+        if self.contributing_token_counts is not None:
+            if self.contributing_token_counts.shape != (codebook_size,):
+                raise ValueError("contributing_token_counts must have shape [K]")
+            if not torch.is_floating_point(self.contributing_token_counts):
+                raise TypeError(
+                    "contributing_token_counts must use a floating dtype"
+                )
         if not torch.isfinite(self.codebook).all().item():
             raise ValueError("codebook must contain only finite values")
         if not torch.isfinite(self.anomaly_radii).all().item():
             raise ValueError("anomaly_radii must contain only finite values")
         if (self.anomaly_radii < 0).any().item():
             raise ValueError("anomaly_radii must be non-negative")
+        if self.schema_version != 1:
+            raise ValueError("schema_version must be 1")
+        if self.initialization_seed < 0:
+            raise ValueError("initialization_seed must be non-negative")
+        if not self.source_split:
+            raise ValueError("source_split must be non-empty")
 
     @classmethod
     def from_model(cls, model: torch.nn.Module) -> "PrototypeVerificationMetadata":
@@ -51,6 +79,10 @@ class PrototypeVerificationMetadata:
         codebook = getattr(model, "discrete_codebook", None)
         mask = getattr(model, "anomalous_codeword_mask", None)
         radii = getattr(model, "anomaly_radii", None)
+        codeword_class_ids = getattr(model, "verification_codeword_class_ids", None)
+        contributing_token_counts = getattr(
+            model, "verification_contributing_token_counts", None
+        )
         if not all(
             isinstance(value, torch.Tensor) for value in (codebook, mask, radii)
         ):
@@ -58,7 +90,28 @@ class PrototypeVerificationMetadata:
                 "online reference model must expose discrete_codebook, "
                 "anomalous_codeword_mask, and anomaly_radii"
             )
-        return cls(codebook.detach(), mask.detach().bool(), radii.detach())
+        if codeword_class_ids is not None and not isinstance(
+            codeword_class_ids, torch.Tensor
+        ):
+            raise AttributeError("verification_codeword_class_ids must be a tensor")
+        if contributing_token_counts is not None and not isinstance(
+            contributing_token_counts, torch.Tensor
+        ):
+            raise AttributeError(
+                "verification_contributing_token_counts must be a tensor"
+            )
+        return cls(
+            codebook.detach(),
+            mask.detach().bool(),
+            radii.detach(),
+            None if codeword_class_ids is None else codeword_class_ids.detach().long(),
+            None
+            if contributing_token_counts is None
+            else contributing_token_counts.detach().float(),
+            str(getattr(model, "verification_metadata_split", "synthetic_train")),
+            int(getattr(model, "verification_metadata_schema_version", 1)),
+            int(getattr(model, "verification_metadata_initialization_seed", 0)),
+        )
 
 
 def nearest_discrete_codeword(

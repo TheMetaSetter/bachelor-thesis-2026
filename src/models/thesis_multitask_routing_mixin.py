@@ -37,6 +37,7 @@ from src.models.thesis_multitask_components import (
     MultitaskWindowEncoder,
     ObjectiveConfig,
     MemoryInitializationConfig,
+    QueryBundle,
     PrototypeBranchConfig,
     ScheduleAndWarmupConfig,
     SyntheticAnomalyConfig,
@@ -46,6 +47,430 @@ from src.models.thesis_multitask_components import (
 
 
 class ThesisMultitaskRoutingMixin:
+    def _gumbel_noise_from_uniform(self, uniform: torch.Tensor) -> torch.Tensor:
+        eps = torch.finfo(uniform.dtype).eps
+        clamped_uniform = uniform.clamp(min=eps, max=1.0 - eps)
+        return -torch.log(-torch.log(clamped_uniform))
+
+    def _sample_gumbel_noise(self, reference: torch.Tensor) -> torch.Tensor:
+        uniform = torch.rand(
+            reference.shape,
+            device=reference.device,
+            dtype=reference.dtype,
+        )
+        return self._gumbel_noise_from_uniform(uniform)
+
+    def build_stochastic_queries(
+        self,
+        hidden: torch.Tensor,
+        *,
+        stage_name: str,
+        active_memory_bank: torch.Tensor | None = None,
+        active_codebook: torch.Tensor | None = None,
+    ) -> QueryBundle:
+        normalized_hidden = self._normalize_hidden_for_memory(hidden)
+        memory_bypass_active = self._should_bypass_memory_for_stage(stage_name)
+
+        continuous_memory_bank = None
+        continuous_logits = None
+        if active_memory_bank is not None and not memory_bypass_active:
+            continuous_memory_bank = self._normalize_memory_vectors(active_memory_bank)
+            continuous_logits = torch.einsum(
+                "blh,kh->blk",
+                normalized_hidden,
+                continuous_memory_bank,
+            ) / math.sqrt(self.hidden_dim)
+
+        discrete_codebook = None
+        discrete_logits = None
+        if active_codebook is not None and not memory_bypass_active:
+            discrete_codebook = self._normalize_memory_vectors(active_codebook)
+        elif self.discrete_codebook is not None and not memory_bypass_active:
+            discrete_codebook = self._normalize_memory_vectors(self.discrete_codebook)
+
+        if not memory_bypass_active:
+            if self.discrete_query_mode == "cosine_topk":
+                if discrete_codebook is not None:
+                    discrete_logits = torch.einsum(
+                        "blh,kh->blk",
+                        normalized_hidden,
+                        discrete_codebook,
+                    )
+            else:
+                if self.discrete_assignment is None:
+                    raise ValueError("discrete_assignment is not available")
+                discrete_logits = self.discrete_assignment(normalized_hidden)
+
+        return QueryBundle(
+            hidden=hidden,
+            normalized_hidden=normalized_hidden,
+            continuous_memory_bank=continuous_memory_bank,
+            discrete_codebook=discrete_codebook,
+            continuous_logits=continuous_logits,
+            discrete_logits=discrete_logits,
+            memory_bypass_active=memory_bypass_active,
+            discrete_query_mode=self.discrete_query_mode,
+            continuous_temperature=self.continuous_temperature,
+            discrete_temperature=self.discrete_temperature,
+            discrete_topk=self.discrete_topk,
+        )
+
+    def sample_continuous_retrieval(
+        self,
+        query_bundle: QueryBundle,
+        num_samples: int,
+    ) -> torch.Tensor:
+        if num_samples < 1:
+            raise ValueError("num_samples must be at least 1")
+        if (
+            query_bundle.continuous_memory_bank is None
+            or query_bundle.continuous_logits is None
+            or query_bundle.memory_bypass_active
+        ):
+            return query_bundle.hidden.unsqueeze(1).expand(
+                -1, num_samples, -1, -1
+            ).contiguous()
+
+        sampled_logits = query_bundle.continuous_logits.unsqueeze(1).expand(
+            -1, num_samples, -1, -1
+        )
+        if self.stochastic_inference:
+            sampled_logits = sampled_logits + self._sample_gumbel_noise(sampled_logits)
+        sampled_logits = sampled_logits / query_bundle.continuous_temperature
+        sample_weights = torch.softmax(sampled_logits, dim=-1)
+        sample_hidden = torch.einsum(
+            "bmlk,kh->bmlh",
+            sample_weights,
+            query_bundle.continuous_memory_bank,
+        )
+        return self._normalize_hidden_for_memory(sample_hidden)
+
+    def sample_discrete_retrieval(
+        self,
+        query_bundle: QueryBundle,
+        num_samples: int,
+    ) -> torch.Tensor:
+        if num_samples < 1:
+            raise ValueError("num_samples must be at least 1")
+        if (
+            query_bundle.discrete_codebook is None
+            or query_bundle.discrete_logits is None
+            or query_bundle.memory_bypass_active
+        ):
+            return query_bundle.hidden.unsqueeze(1).expand(
+                -1, num_samples, -1, -1
+            ).contiguous()
+
+        if query_bundle.discrete_query_mode == "cosine_topk":
+            topk_value_count = min(
+                query_bundle.discrete_topk,
+                int(query_bundle.discrete_logits.shape[-1]),
+            )
+            topk_logits, topk_indices = torch.topk(
+                query_bundle.discrete_logits,
+                k=topk_value_count,
+                dim=-1,
+            )
+            topk_logits = topk_logits.unsqueeze(1).expand(-1, num_samples, -1, -1)
+            topk_indices = topk_indices.unsqueeze(1).expand(-1, num_samples, -1, -1)
+            assignment_probabilities = torch.zeros_like(
+                query_bundle.discrete_logits.unsqueeze(1).expand(
+                    -1, num_samples, -1, -1
+                )
+            )
+            assignment_probabilities.scatter_(
+                dim=-1,
+                index=topk_indices,
+                src=torch.softmax(
+                    topk_logits / query_bundle.discrete_temperature,
+                    dim=-1,
+                ),
+            )
+        else:
+            sampled_logits = query_bundle.discrete_logits.unsqueeze(1).expand(
+                -1, num_samples, -1, -1
+            )
+            if self.stochastic_inference:
+                sampled_logits = sampled_logits + self._sample_gumbel_noise(
+                    sampled_logits
+                )
+            sampled_logits = sampled_logits / query_bundle.discrete_temperature
+            assignment_probabilities = torch.softmax(sampled_logits, dim=-1)
+
+        sample_hidden = torch.einsum(
+            "bmlk,kh->bmlh",
+            assignment_probabilities,
+            query_bundle.discrete_codebook,
+        )
+        return self._normalize_hidden_for_memory(sample_hidden)
+
+    def sample_discrete_topk_ids(
+        self,
+        query_bundle: QueryBundle,
+        num_samples: int,
+    ) -> torch.Tensor:
+        if num_samples < 1:
+            raise ValueError("num_samples must be at least 1")
+        if query_bundle.discrete_logits is None:
+            return query_bundle.hidden.new_zeros(
+                query_bundle.hidden.shape[0],
+                num_samples,
+                query_bundle.hidden.shape[1],
+                3,
+                dtype=torch.long,
+            )
+        topk_count = min(3, int(query_bundle.discrete_logits.shape[-1]))
+        topk_indices = torch.topk(
+            query_bundle.discrete_logits,
+            k=topk_count,
+            dim=-1,
+        ).indices
+        if topk_count < 3:
+            repeat_count = 3 - topk_count
+            topk_indices = torch.cat(
+                [topk_indices, topk_indices[..., -1:].expand(-1, -1, repeat_count)],
+                dim=-1,
+            )
+        return topk_indices.unsqueeze(1).expand(-1, num_samples, -1, -1).contiguous()
+
+    def _build_sampled_fusion_hidden(
+        self,
+        continuous_samples: torch.Tensor,
+        discrete_samples: torch.Tensor,
+        *,
+        alpha: torch.Tensor,
+        beta: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        if continuous_samples.shape != discrete_samples.shape:
+            raise ValueError("continuous_samples and discrete_samples must match shape")
+        if continuous_samples.ndim != 4:
+            raise ValueError("sample tensors must have rank 4")
+        if alpha.ndim != 1 or beta.ndim != 1:
+            raise ValueError("alpha and beta must have rank 1")
+        if alpha.shape[0] != continuous_samples.shape[0] or beta.shape[0] != continuous_samples.shape[0]:
+            raise ValueError("alpha and beta must match batch size")
+
+        if self.fusion_mode == "task_specific_concat_projection":
+            concatenated_hidden = torch.cat(
+                [continuous_samples, discrete_samples], dim=-1
+            )
+            flattened_hidden = concatenated_hidden.reshape(
+                concatenated_hidden.shape[0] * concatenated_hidden.shape[1],
+                concatenated_hidden.shape[2],
+                concatenated_hidden.shape[3],
+            )
+            hidden_reconstruction = self.reconstruction_concat_projection(
+                flattened_hidden
+            ).reshape(
+                concatenated_hidden.shape[0],
+                concatenated_hidden.shape[1],
+                concatenated_hidden.shape[2],
+                self.hidden_dim,
+            )
+            hidden_classification = self.classification_concat_projection(
+                flattened_hidden
+            ).reshape(
+                concatenated_hidden.shape[0],
+                concatenated_hidden.shape[1],
+                concatenated_hidden.shape[2],
+                self.hidden_dim,
+            )
+            return hidden_reconstruction, hidden_classification
+
+        alpha_expanded = alpha.view(-1, 1, 1, 1)
+        beta_expanded = beta.view(-1, 1, 1, 1)
+        hidden_reconstruction = (
+            beta_expanded * discrete_samples
+            + (1.0 - beta_expanded) * continuous_samples
+        )
+        hidden_classification = (
+            alpha_expanded * discrete_samples
+            + (1.0 - alpha_expanded) * continuous_samples
+        )
+        return hidden_reconstruction, hidden_classification
+
+    def _variance_from_samples(
+        self,
+        sample_tensor: torch.Tensor,
+        *,
+        correction: int | None = None,
+    ) -> torch.Tensor:
+        if sample_tensor.ndim < 2:
+            raise ValueError("sample_tensor must have at least rank 2")
+        if sample_tensor.shape[1] < 2:
+            variance = torch.zeros_like(sample_tensor[:, 0])
+        else:
+            variance = sample_tensor.var(
+                dim=1,
+                correction=self.variance_correction if correction is None else correction,
+            )
+        return variance
+
+    def _build_monte_carlo_uncertainty(
+        self,
+        *,
+        reconstruction_samples: torch.Tensor,
+        continuous_samples: torch.Tensor,
+        discrete_samples: torch.Tensor,
+        point_score_samples: torch.Tensor,
+        window_score_samples: torch.Tensor,
+        classification_probability_samples: torch.Tensor | None,
+    ) -> dict[str, torch.Tensor | None]:
+        reconstruction_variance_full = self._variance_from_samples(reconstruction_samples)
+        reconstruction_variance_point = reconstruction_variance_full.mean(dim=-1)
+        reconstruction_variance_window = reconstruction_variance_point.mean(dim=-1)
+
+        continuous_variance_full = self._variance_from_samples(continuous_samples)
+        continuous_retrieval_variance_point = continuous_variance_full.mean(dim=-1)
+        continuous_retrieval_variance_window = (
+            continuous_retrieval_variance_point.mean(dim=-1)
+        )
+
+        discrete_variance_full = self._variance_from_samples(discrete_samples)
+        discrete_retrieval_variance_point = discrete_variance_full.mean(dim=-1)
+        discrete_retrieval_variance_window = discrete_retrieval_variance_point.mean(
+            dim=-1
+        )
+
+        point_anomaly_score_variance = self._variance_from_samples(point_score_samples)
+        window_anomaly_score_variance = self._variance_from_samples(window_score_samples)
+
+        classification_probability_variance = None
+        classification_variance_mean = None
+        if classification_probability_samples is not None:
+            classification_probability_variance = self._variance_from_samples(
+                classification_probability_samples
+            )
+            classification_variance_mean = classification_probability_variance.mean(
+                dim=-1
+            )
+
+        return {
+            "point_anomaly_score_variance": point_anomaly_score_variance,
+            "window_anomaly_score_variance": window_anomaly_score_variance,
+            "continuous_retrieval_variance_point": continuous_retrieval_variance_point,
+            "continuous_retrieval_variance_window": continuous_retrieval_variance_window,
+            "discrete_retrieval_variance_point": discrete_retrieval_variance_point,
+            "discrete_retrieval_variance_window": discrete_retrieval_variance_window,
+            "reconstruction_variance_point": reconstruction_variance_point,
+            "reconstruction_variance_window": reconstruction_variance_window,
+            "reconstruction_variance_full": reconstruction_variance_full,
+            "classification_probability_variance": classification_probability_variance,
+            "classification_variance_mean": classification_variance_mean,
+        }
+
+    def _build_monte_carlo_forward_outputs(
+        self,
+        batch: dict[str, Any],
+        *,
+        fusion_outputs: dict[str, Any],
+        query_bundle: QueryBundle,
+        continuous_samples: torch.Tensor,
+        discrete_samples: torch.Tensor,
+        discrete_topk_ids: torch.Tensor,
+    ) -> dict[str, Any]:
+        batch_size, num_samples, window_size, hidden_dim = continuous_samples.shape
+        if window_size != self.window_size or hidden_dim != self.hidden_dim:
+            raise ValueError("sample tensors must match model window and hidden sizes")
+        sampled_hidden_reconstruction, sampled_hidden_classification = (
+            self._build_sampled_fusion_hidden(
+                continuous_samples,
+                discrete_samples,
+                alpha=fusion_outputs["alpha"],
+                beta=fusion_outputs["beta"],
+            )
+        )
+        flattened_reconstruction_hidden = sampled_hidden_reconstruction.reshape(
+            batch_size * num_samples,
+            window_size,
+            hidden_dim,
+        )
+        flattened_classification_hidden = sampled_hidden_classification.reshape(
+            batch_size * num_samples,
+            window_size * hidden_dim,
+        )
+        input_dim = batch["x"].shape[-1]
+        reconstruction_samples = self.reconstruction_head(
+            flattened_reconstruction_hidden
+        ).reshape(batch_size, num_samples, window_size, input_dim)
+        logits_samples = None
+        classification_probability_samples = None
+        if self.enable_classification_path:
+            logits_samples = self.classification_head(
+                flattened_classification_hidden
+            ).reshape(batch_size, num_samples, self.num_classes)
+            classification_probability_samples = torch.softmax(
+                logits_samples,
+                dim=-1,
+            )
+        point_score_samples = torch.mean(
+            (reconstruction_samples - batch["x"].unsqueeze(1)) ** 2,
+            dim=-1,
+        )
+        window_score_samples = point_score_samples.mean(dim=-1)
+        reconstruction_mean = reconstruction_samples.mean(dim=1)
+        point_score_mean = point_score_samples.mean(dim=1)
+        window_score_mean = window_score_samples.mean(dim=1)
+        if classification_probability_samples is not None:
+            class_probabilities = classification_probability_samples.mean(dim=1)
+            logits = torch.log(class_probabilities.clamp_min(torch.finfo(class_probabilities.dtype).eps))
+        else:
+            class_probabilities = None
+            logits = None
+        uncertainty = self._build_monte_carlo_uncertainty(
+            reconstruction_samples=reconstruction_samples,
+            continuous_samples=continuous_samples,
+            discrete_samples=discrete_samples,
+            point_score_samples=point_score_samples,
+            window_score_samples=window_score_samples,
+            classification_probability_samples=classification_probability_samples,
+        )
+        stochastic_query = {
+            "schema_version": 3,
+            "enabled": True,
+            "num_samples": num_samples,
+            "continuous_temperature": self.continuous_temperature,
+            "discrete_temperature": self.discrete_temperature,
+            "continuous_retrieved_samples": continuous_samples,
+            "discrete_retrieved_samples": discrete_samples,
+            "discrete_topk_ids": discrete_topk_ids,
+            "reconstruction_samples": reconstruction_samples,
+            "classification_probability_samples": classification_probability_samples,
+            "point_score_samples": point_score_samples,
+            "window_score_samples": window_score_samples,
+            "return_mc_samples": self.return_mc_samples,
+            "sample_retention_policy": self.sample_retention_policy,
+        }
+        if logits_samples is not None:
+            stochastic_query["logits_samples"] = logits_samples
+        outputs = {
+            "recon": reconstruction_mean,
+            "logits": logits,
+            "point_scores": point_score_mean,
+            "window_scores": window_score_mean,
+        }
+        aux = {
+            "class_probabilities": class_probabilities,
+            "uncertainty": uncertainty,
+            "deterministic_geometry": {
+                "hidden_reconstruction": fusion_outputs["hidden_reconstruction"],
+                "hidden_classification": fusion_outputs["hidden_classification"],
+                "alpha": fusion_outputs["alpha"],
+                "beta": fusion_outputs["beta"],
+                "fusion": fusion_outputs["aux"],
+            },
+            "stochastic_query": stochastic_query,
+        }
+        return {
+            "outputs": outputs,
+            "aux": aux,
+            "sample_outputs": {
+                "reconstruction_samples": reconstruction_samples,
+                "logits_samples": logits_samples,
+                "classification_probability_samples": classification_probability_samples,
+            },
+        }
+
     def prepare_synthetic_training_epoch(self) -> None:
         self.synthetic_anomaly_injector.reset_rng()
 
@@ -558,6 +983,48 @@ class ThesisMultitaskRoutingMixin:
                 base_hidden=hidden,
                 paired_hidden=batch.get("paired_hidden_for_fusion"),
             )
+            stochastic_query = None
+            monte_carlo_forward_outputs = None
+            if self.stochastic_inference:
+                query_bundle = self.build_stochastic_queries(
+                    hidden,
+                    stage_name=stage_name,
+                    active_memory_bank=active_continuous_memory_bank,
+                    active_codebook=active_discrete_codebook,
+                )
+                continuous_retrieved_samples = self.sample_continuous_retrieval(
+                    query_bundle,
+                    self.monte_carlo_samples,
+                )
+                discrete_retrieved_samples = self.sample_discrete_retrieval(
+                    query_bundle,
+                    self.monte_carlo_samples,
+                )
+                discrete_topk_ids = self.sample_discrete_topk_ids(
+                    query_bundle,
+                    self.monte_carlo_samples,
+                )
+                stochastic_query = {
+                    "schema_version": 3,
+                    "enabled": True,
+                    "num_samples": self.monte_carlo_samples,
+                    "continuous_temperature": self.continuous_temperature,
+                    "discrete_temperature": self.discrete_temperature,
+                    "continuous_retrieved_samples": continuous_retrieved_samples,
+                    "discrete_retrieved_samples": discrete_retrieved_samples,
+                    "discrete_topk_ids": discrete_topk_ids,
+                }
+                if not self.training:
+                    monte_carlo_forward_outputs = (
+                        self._build_monte_carlo_forward_outputs(
+                            batch,
+                            fusion_outputs=fusion_outputs,
+                            query_bundle=query_bundle,
+                            continuous_samples=continuous_retrieved_samples,
+                            discrete_samples=discrete_retrieved_samples,
+                            discrete_topk_ids=discrete_topk_ids,
+                        )
+                    )
         else:
             active_continuous_memory_bank = None
             active_discrete_codebook = None
@@ -566,6 +1033,7 @@ class ThesisMultitaskRoutingMixin:
                 discrete_outputs,
                 fusion_outputs,
             ) = self._build_phase_passthrough_outputs(hidden)
+            stochastic_query = None
 
         # Lấy ra vec-tơ kết hợp dùng cho từng tác vụ
         hidden_reconstruction = fusion_outputs["hidden_reconstruction"]
@@ -589,15 +1057,26 @@ class ThesisMultitaskRoutingMixin:
         )
         logits = None
         class_probabilities = None
-        if self.enable_classification_path:
+        monte_carlo_uncertainty = None
+        point_scores = torch.mean((recon - batch["x"]) ** 2, dim=-1)
+        window_scores = point_scores.mean(dim=1)
+        if not self.training and monte_carlo_forward_outputs is not None:
+            recon = monte_carlo_forward_outputs["outputs"]["recon"]
+            logits = monte_carlo_forward_outputs["outputs"]["logits"]
+            point_scores = monte_carlo_forward_outputs["outputs"]["point_scores"]
+            window_scores = monte_carlo_forward_outputs["outputs"]["window_scores"]
+            class_probabilities = monte_carlo_forward_outputs["aux"].get(
+                "class_probabilities"
+            )
+            stochastic_query = monte_carlo_forward_outputs["aux"].get(
+                "stochastic_query"
+            )
+            monte_carlo_uncertainty = monte_carlo_forward_outputs["aux"].get(
+                "uncertainty"
+            )
+        elif self.enable_classification_path:
             logits = self.classification_head(flattened_classification_hidden)
             class_probabilities = torch.softmax(logits, dim=-1)
-
-        # Độ bất thường được tính bằng cách
-        # Tính toán độ lỗi (error) giữa bản gốc và bản tái tạo
-        # ở từng bước thời gian.
-        # Xong, bình phương tất cả độ lỗi lên rồi cộng lại chia lấy trung bình.
-        point_scores = torch.mean((recon - batch["x"]) ** 2, dim=-1)
 
         # Chuẩn bị đầu ra theo thoả thuận (contract) đã được thiết lập.
         # Xem: src/core/contracts.py
@@ -607,7 +1086,7 @@ class ThesisMultitaskRoutingMixin:
             "recon": recon,
             "logits": logits,
             "point_scores": point_scores,
-            "window_scores": point_scores.mean(dim=1),
+            "window_scores": window_scores,
             "aux": {
                 "encoder": encoder_outputs["aux"],
                 "continuous_branch": continuous_outputs,
@@ -620,8 +1099,21 @@ class ThesisMultitaskRoutingMixin:
                 "alpha": fusion_outputs["alpha"],
                 "beta": fusion_outputs["beta"],
                 "class_probabilities": class_probabilities,
+                "deterministic_geometry": {
+                    "hidden_reconstruction": hidden_reconstruction,
+                    "hidden_classification": hidden_classification,
+                    "alpha": fusion_outputs["alpha"],
+                    "beta": fusion_outputs["beta"],
+                    "fusion": fusion_outputs["aux"],
+                },
                 "classification_class_names": self._classification_class_names(),
                 "memory": self.get_memory_lifecycle_state(),
+                "stochastic_query": stochastic_query,
+                "uncertainty": monte_carlo_uncertainty,
+                "retention": {
+                    "return_mc_samples": self.return_mc_samples,
+                    "sample_retention_policy": self.sample_retention_policy,
+                },
                 "forward_pass_seconds": time.perf_counter() - forward_start_time,
             },
         }

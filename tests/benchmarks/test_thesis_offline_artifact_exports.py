@@ -118,6 +118,9 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
                 "point_labels": np.array([0, 1], dtype=np.int64),
                 "covered_point_mask": np.array([True, True]),
             },
+            "clean_validation_traces": [{"batch_index": 1}],
+            "synthetic_validation_traces": [{"batch_index": 2}],
+            "test_traces": [{"batch_index": 3}],
             "offline_metrics": {"point_f1": 1.0},
         }
 
@@ -149,6 +152,9 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
     assert (output_dir / "scores" / "clean_validation_point_scores.npz").exists()
     assert (output_dir / "scores" / "synthetic_validation_point_scores.npz").exists()
     assert (output_dir / "scores" / "test_point_scores.npz").exists()
+    assert (output_dir / "traces" / "clean_validation_traces.json").exists()
+    assert (output_dir / "traces" / "synthetic_validation_traces.json").exists()
+    assert (output_dir / "traces" / "test_traces.json").exists()
     assert (output_dir / "metrics" / "offline_metrics.json").exists()
     assert (output_dir / "protocol" / "resolved_protocol.json").exists()
     assert report["artifact_paths"]["thresholds"].endswith("thresholds.json")

@@ -197,6 +197,48 @@ def validate_stochastic_query_aux(stochastic_query: dict[str, Any]) -> None:
             raise TypeError(
                 f"stochastic_query.{field_name} must be a torch.Tensor or null"
             )
+    if stochastic_query.get("continuous_retrieved_samples") is not None:
+        _require_tensor_rank(
+            stochastic_query["continuous_retrieved_samples"],
+            4,
+            "outputs['aux']['stochastic_query']['continuous_retrieved_samples']",
+        )
+    if stochastic_query.get("discrete_retrieved_samples") is not None:
+        _require_tensor_rank(
+            stochastic_query["discrete_retrieved_samples"],
+            4,
+            "outputs['aux']['stochastic_query']['discrete_retrieved_samples']",
+        )
+    if stochastic_query.get("discrete_topk_ids") is not None:
+        _require_tensor_rank(
+            stochastic_query["discrete_topk_ids"],
+            4,
+            "outputs['aux']['stochastic_query']['discrete_topk_ids']",
+        )
+    if stochastic_query.get("reconstruction_samples") is not None:
+        _require_tensor_rank(
+            stochastic_query["reconstruction_samples"],
+            4,
+            "outputs['aux']['stochastic_query']['reconstruction_samples']",
+        )
+    if stochastic_query.get("classification_probability_samples") is not None:
+        _require_tensor_rank(
+            stochastic_query["classification_probability_samples"],
+            3,
+            "outputs['aux']['stochastic_query']['classification_probability_samples']",
+        )
+    if stochastic_query.get("point_score_samples") is not None:
+        _require_tensor_rank(
+            stochastic_query["point_score_samples"],
+            3,
+            "outputs['aux']['stochastic_query']['point_score_samples']",
+        )
+    if stochastic_query.get("window_score_samples") is not None:
+        _require_tensor_rank(
+            stochastic_query["window_score_samples"],
+            2,
+            "outputs['aux']['stochastic_query']['window_score_samples']",
+        )
 
 
 def validate_uncertainty_aux(uncertainty: dict[str, Any]) -> None:

@@ -264,6 +264,16 @@ def extract_covered_pointwise_arrays(
     )
 
 
+def _json_safe_value(value: Any) -> Any:
+    if isinstance(value, torch.Tensor):
+        return value.detach().cpu().tolist()
+    if isinstance(value, dict):
+        return {key: _json_safe_value(inner) for key, inner in value.items()}
+    if isinstance(value, list):
+        return [_json_safe_value(inner) for inner in value]
+    return value
+
+
 class Evaluator:
     def __init__(
         self,
@@ -317,13 +327,63 @@ class Evaluator:
         step_output: dict[str, Any],
         point_scores: torch.Tensor,
     ) -> None:
+        uncertainty = step_output["outputs"]["aux"].get("uncertainty")
+        uncertainty_summary = {}
+        if uncertainty is not None:
+            uncertainty_summary = {
+                "point_score_variance_mean": float(
+                    uncertainty["point_anomaly_score_variance"].mean().detach().cpu()
+                ),
+                "window_score_variance_mean": float(
+                    uncertainty["window_anomaly_score_variance"].mean().detach().cpu()
+                ),
+                "reconstruction_variance_mean": float(
+                    uncertainty["reconstruction_variance_full"].mean().detach().cpu()
+                ),
+            }
         console_print(
             "EVAL",
             "Produced evaluation batch outputs",
             batch_index=batch_index,
             point_scores=summarize_tensor(point_scores),
             window_scores=summarize_tensor(step_output["outputs"]["window_scores"]),
+            **uncertainty_summary,
         )
+
+    @staticmethod
+    def _detach_uncertainty_to_cpu(
+        uncertainty: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
+        if uncertainty is None:
+            return None
+        return {
+            key: value.detach().cpu() if isinstance(value, torch.Tensor) else value
+            for key, value in uncertainty.items()
+        }
+
+    @staticmethod
+    def _build_trace_payload(
+        *,
+        batch_index: int,
+        batch_meta: list[dict[str, Any]],
+        step_output: dict[str, Any],
+        point_scores: torch.Tensor,
+    ) -> dict[str, Any]:
+        return {
+            "batch_index": batch_index,
+            "entity_ids": [meta["entity_id"] for meta in batch_meta],
+            "point_score_summary": summarize_tensor(point_scores),
+            "window_score_summary": summarize_tensor(step_output["outputs"]["window_scores"]),
+            "uncertainty": _json_safe_value(
+                step_output["outputs"]["aux"].get("uncertainty")
+            ),
+            "deterministic_geometry": _json_safe_value(
+                step_output["outputs"]["aux"].get("deterministic_geometry")
+            ),
+            "stochastic_query": _json_safe_value(
+                step_output["outputs"]["aux"].get("stochastic_query")
+            ),
+        }
 
     @staticmethod
     def _build_sequences_by_entity(data_loader: Any) -> dict[str, dict[str, Any]]:
@@ -352,6 +412,7 @@ class Evaluator:
         forward_pass_seconds_history: list[float] = []
         sequences_by_entity = self._build_sequences_by_entity(data_loader)
         pointwise_batch_payloads: list[dict[str, Any]] = []
+        trace_payloads: list[dict[str, Any]] = []
 
         with torch.no_grad():
             # Với mỗi batch dữ liệu đọc được từ data_loader,
@@ -372,11 +433,22 @@ class Evaluator:
                     step_output=step_output,
                     point_scores=point_scores,
                 )
+                trace_payloads.append(
+                    self._build_trace_payload(
+                        batch_index=batch_index,
+                        batch_meta=batch["meta"],
+                        step_output=step_output,
+                        point_scores=point_scores,
+                    )
+                )
                 pointwise_batch_payloads.append(
                     {
                         "meta": batch["meta"],
                         "point_scores": point_scores,
                         "point_labels": batch["point_labels"].detach().cpu(),
+                        "uncertainty": self._detach_uncertainty_to_cpu(
+                            step_output["outputs"]["aux"].get("uncertainty")
+                        ),
                     }
                 )
 
@@ -458,4 +530,5 @@ class Evaluator:
             "metrics": metrics,
             "records": evaluation_records,
             "curves": curves,
+            "traces": trace_payloads,
         }

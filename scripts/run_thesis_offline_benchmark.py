@@ -86,6 +86,12 @@ def _write_score_npz(path: Path, payload: dict[str, Any]) -> str:
     return str(path)
 
 
+def _write_trace_json(path: Path, payload: Any) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", "utf-8")
+    return str(path)
+
+
 def collect_offline_artifact_inputs(
     *,
     experiment_config: dict[str, Any],
@@ -121,10 +127,16 @@ def collect_offline_artifact_inputs(
         "seed": int(experiment_config.get("seed", 0)),
         "variant_name": str(experiment_config.get("offline_variant", "O0")),
         "clean_validation": split_outputs["clean_validation_payload"],
+        "clean_validation_traces": split_outputs["clean_validation"].get("traces", []),
         "synthetic_validation": _evaluation_outputs_to_score_payload(
             split_outputs["synthetic_validation"],
         ),
+        "synthetic_validation_traces": split_outputs["synthetic_validation"].get(
+            "traces",
+            [],
+        ),
         "test": _evaluation_outputs_to_score_payload(split_outputs["test"]),
+        "test_traces": split_outputs["test"].get("traces", []),
         "offline_metrics": dict(split_outputs["test"]["metrics"]),
     }
 
@@ -300,13 +312,25 @@ def _export_offline_artifacts(
             output_dir / "scores" / "clean_validation_point_scores.npz",
             artifact_inputs["clean_validation"],
         ),
+        "clean_validation_traces": _write_trace_json(
+            output_dir / "traces" / "clean_validation_traces.json",
+            artifact_inputs["clean_validation_traces"],
+        ),
         "synthetic_validation_scores": _write_score_npz(
             output_dir / "scores" / "synthetic_validation_point_scores.npz",
             artifact_inputs["synthetic_validation"],
         ),
+        "synthetic_validation_traces": _write_trace_json(
+            output_dir / "traces" / "synthetic_validation_traces.json",
+            artifact_inputs["synthetic_validation_traces"],
+        ),
         "test_scores": _write_score_npz(
             output_dir / "scores" / "test_point_scores.npz",
             artifact_inputs["test"],
+        ),
+        "test_traces": _write_trace_json(
+            output_dir / "traces" / "test_traces.json",
+            artifact_inputs["test_traces"],
         ),
         "offline_metrics": _write_json(
             output_dir / "metrics" / "offline_metrics.json",

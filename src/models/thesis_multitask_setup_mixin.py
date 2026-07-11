@@ -425,6 +425,19 @@ class ThesisMultitaskSetupMixin:
             )
             self.anomaly_radii = torch.zeros(prototypes.discrete_codebook_size)
             self.verification_metadata_source = "uninitialized"
+            self.verification_metadata_schema_version = 1
+            self.verification_metadata_split = "synthetic_train"
+            self.verification_metadata_initialization_seed = (
+                self.synthetic_train_seed
+                if self.synthetic_train_seed is not None
+                else self.synthetic_validation_seed
+            )
+            self.verification_codeword_class_ids = torch.zeros(
+                prototypes.discrete_codebook_size, dtype=torch.long
+            )
+            self.verification_contributing_token_counts = torch.zeros(
+                prototypes.discrete_codebook_size, dtype=torch.float32
+            )
         else:
             self.discrete_assignment = None
             self.register_buffer("discrete_codebook", None)
@@ -433,6 +446,11 @@ class ThesisMultitaskSetupMixin:
             self.anomalous_codeword_mask = None
             self.anomaly_radii = None
             self.verification_metadata_source = "disabled"
+            self.verification_metadata_schema_version = 1
+            self.verification_metadata_split = "synthetic_train"
+            self.verification_metadata_initialization_seed = 0
+            self.verification_codeword_class_ids = None
+            self.verification_contributing_token_counts = None
 
         self.continuous_update_gate = nn.Sequential(
             nn.Linear(self.hidden_dim * 2, self.hidden_dim),

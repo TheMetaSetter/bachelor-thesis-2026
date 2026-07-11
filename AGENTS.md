@@ -2,6 +2,8 @@
 
 Locally, the root of this repo is: `/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/`.
 
+Use `.venv/bin/python` to run code regularly instead of only writing code.
+
 On macos environment, please use `realpath` command to get the full file path everytime you cite a file or a folder. File paths may contain language-specific unicode characters (e.g., Vietnamese) so you need to be extra careful with file paths while reasoning and also when respond to me.
 
 Responded file paths containing Vietnamese must be valid in NFC Unicode normalization. Please check using very quick Python command in CLI.
@@ -34,6 +36,8 @@ When adding new source code, follow the guidance in `codebase_preferences.md`: o
 
 ## Testing Guidelines
 Tests should use `pytest` and remain minimal and focused. Expected coverage includes data loader shapes, one forward and backward pass, checkpoint save and load, and synthetic anomaly injection behavior as described in `codebase_preferences.md`.
+
+Tests should be minimal and focused while also being extra skeptical.
 
 ## Commit and Pull Request Guidelines
 Commit messages in history use short, imperative summaries (for example, “Add data loaders”, “Fix type errors”). Follow the same pattern without prefixes or scopes.

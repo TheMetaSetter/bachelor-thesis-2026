@@ -141,6 +141,9 @@ def test_evaluator_averages_overlapping_window_point_scores() -> None:
         evaluation_outputs["metrics"]["threshold_source"]
         == "positive_support_quantile_0.99"
     )
+    assert len(evaluation_outputs["traces"]) == 2
+    assert evaluation_outputs["traces"][0]["entity_ids"] == ["machine-1"]
+    assert "point_score_summary" in evaluation_outputs["traces"][0]
 
 
 def test_evaluator_uses_explicit_threshold_when_provided() -> None:

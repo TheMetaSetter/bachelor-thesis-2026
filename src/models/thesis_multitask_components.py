@@ -119,6 +119,21 @@ class PrototypeBranchConfig:
 
 
 @dataclass(frozen=True)
+class QueryBundle:
+    hidden: Any
+    normalized_hidden: Any
+    continuous_memory_bank: Any = None
+    discrete_codebook: Any = None
+    continuous_logits: Any = None
+    discrete_logits: Any = None
+    memory_bypass_active: bool = False
+    discrete_query_mode: str = "cosine_topk"
+    continuous_temperature: float = 1.0
+    discrete_temperature: float = 1.0
+    discrete_topk: int = 3
+
+
+@dataclass(frozen=True)
 class ScheduleAndWarmupConfig:
     temperature_start: float = 1.0
     temperature_end: float = 1.0

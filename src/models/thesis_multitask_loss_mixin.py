@@ -713,6 +713,24 @@ class ThesisMultitaskLossMixin:
                 outputs["aux"]["memory"]["train_memory_mode"]
             ),
         }
+        uncertainty = outputs["aux"].get("uncertainty")
+        if uncertainty is not None:
+            stage_log[f"diag/uncertainty/{stage_name}_point_score_variance_mean"] = float(
+                uncertainty["point_anomaly_score_variance"].mean().detach().cpu()
+            )
+            stage_log[f"diag/uncertainty/{stage_name}_window_score_variance_mean"] = float(
+                uncertainty["window_anomaly_score_variance"].mean().detach().cpu()
+            )
+            stage_log[f"diag/uncertainty/{stage_name}_reconstruction_variance_mean"] = float(
+                uncertainty["reconstruction_variance_full"].mean().detach().cpu()
+            )
+            stage_log[
+                f"diag/uncertainty/{stage_name}_classification_variance_mean"
+            ] = float(
+                uncertainty["classification_variance_mean"].mean().detach().cpu()
+                if uncertainty.get("classification_variance_mean") is not None
+                else 0.0
+            )
         if stage_name in {"train", "val_synth"}:
             cka_reconstruction_mean = float(
                 outputs["aux"]["fusion"]["cka_reconstruction_mean"]

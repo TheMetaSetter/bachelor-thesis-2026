@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import torch
+import pytest
 
+from src.core.contracts import validate_model_outputs
 from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
 from src.models.thesis_multitask import ThesisMultitaskModel
 
@@ -117,6 +119,269 @@ def test_multitask_model_supports_cosine_topk_discrete_query_mode() -> None:
     assert outputs["aux"]["discrete_branch"]["aux"]["query_mode"] == "cosine_topk"
     assert outputs["aux"]["discrete_branch"]["aux"]["topk"] == 3
     assert outputs["aux"]["discrete_branch"]["aux"]["query_temperature"] == 0.1
+
+
+def test_multitask_model_builds_vectorized_stochastic_query_samples() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        mlp_num_linear_layers=3,
+        num_classes=2,
+        dropout=0.0,
+        continuous_enabled=True,
+        continuous_num_prototypes=4,
+        discrete_enabled=True,
+        discrete_codebook_size=8,
+        stochastic_inference=True,
+        monte_carlo_samples=10,
+        continuous_temperature=0.9,
+        discrete_temperature=0.9,
+        gumbel_temperature=1.5,
+        alpha_logit_init=0.0,
+        beta_logit_init=0.0,
+    )
+    model.memory_initialized = True
+    model.memory_training_enabled = False
+    hidden = torch.randn(2, 20, 16)
+
+    query_bundle = model.build_stochastic_queries(
+        hidden,
+        stage_name="train",
+        active_memory_bank=model.continuous_prototype_bank,
+        active_codebook=model.discrete_codebook,
+    )
+
+    continuous_samples = model.sample_continuous_retrieval(
+        query_bundle,
+        model.monte_carlo_samples,
+    )
+    discrete_samples = model.sample_discrete_retrieval(
+        query_bundle,
+        model.monte_carlo_samples,
+    )
+    discrete_topk_ids = model.sample_discrete_topk_ids(
+        query_bundle,
+        model.monte_carlo_samples,
+    )
+    gumbel_noise = model._gumbel_noise_from_uniform(
+        torch.tensor([0.0, 1.0], dtype=torch.float32)
+    )
+
+    assert continuous_samples.shape == (2, 10, 20, 16)
+    assert discrete_samples.shape == (2, 10, 20, 16)
+    assert discrete_topk_ids.shape == (2, 10, 20, 3)
+    assert torch.isfinite(continuous_samples).all()
+    assert torch.isfinite(discrete_samples).all()
+    assert torch.isfinite(gumbel_noise).all()
+
+
+def test_multitask_model_calls_encoder_once_per_forward(monkeypatch) -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        mlp_num_linear_layers=3,
+        num_classes=2,
+        dropout=0.0,
+        continuous_enabled=True,
+        continuous_num_prototypes=4,
+        discrete_enabled=True,
+        discrete_codebook_size=8,
+        stochastic_inference=True,
+        monte_carlo_samples=10,
+        continuous_temperature=0.9,
+        discrete_temperature=0.9,
+        gumbel_temperature=1.5,
+        alpha_logit_init=0.0,
+        beta_logit_init=0.0,
+    )
+    model.memory_initialized = True
+    model.memory_training_enabled = False
+    batch = {
+        "x": torch.randn(4, 20, 38),
+        "point_labels": torch.zeros(4, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": f"machine-{index}"} for index in range(4)],
+    }
+    call_count = {"count": 0}
+    original_forward = model.encoder.forward
+
+    def wrapped_forward(*args, **kwargs):
+        call_count["count"] += 1
+        return original_forward(*args, **kwargs)
+
+    monkeypatch.setattr(model.encoder, "forward", wrapped_forward)
+
+    outputs = model(batch)
+
+    assert outputs["aux"]["stochastic_query"]["continuous_retrieved_samples"].shape == (
+        4,
+        10,
+        20,
+        16,
+    )
+    assert call_count["count"] == 1
+
+
+def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        mlp_num_linear_layers=3,
+        num_classes=2,
+        dropout=0.0,
+        continuous_enabled=True,
+        continuous_num_prototypes=4,
+        discrete_enabled=True,
+        discrete_codebook_size=8,
+        stochastic_inference=True,
+        monte_carlo_samples=10,
+        continuous_temperature=0.9,
+        discrete_temperature=0.9,
+        gumbel_temperature=1.5,
+        alpha_logit_init=0.0,
+        beta_logit_init=0.0,
+    )
+    model.memory_initialized = True
+    model.memory_training_enabled = False
+    model.eval()
+    batch = {
+        "x": torch.randn(3, 20, 38),
+        "point_labels": torch.zeros(3, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": f"machine-{index}"} for index in range(3)],
+    }
+
+    outputs = model(batch)
+
+    validate_model_outputs(outputs)
+    assert outputs["recon"].shape == (3, 20, 38)
+    assert outputs["point_scores"].shape == (3, 20)
+    assert outputs["window_scores"].shape == (3,)
+    assert outputs["aux"]["stochastic_query"]["reconstruction_samples"].shape == (
+        3,
+        10,
+        20,
+        38,
+    )
+    assert outputs["aux"]["stochastic_query"]["classification_probability_samples"].shape == (
+        3,
+        10,
+        2,
+    )
+    assert outputs["aux"]["stochastic_query"]["point_score_samples"].shape == (
+        3,
+        10,
+        20,
+    )
+    assert outputs["aux"]["stochastic_query"]["window_score_samples"].shape == (
+        3,
+        10,
+    )
+    assert outputs["aux"]["uncertainty"]["point_anomaly_score_variance"].shape == (
+        3,
+        20,
+    )
+    assert outputs["aux"]["uncertainty"]["window_anomaly_score_variance"].shape == (
+        3,
+    )
+    assert outputs["aux"]["uncertainty"]["reconstruction_variance_full"].shape == (
+        3,
+        20,
+        38,
+    )
+    assert outputs["aux"]["uncertainty"]["classification_probability_variance"].shape == (
+        3,
+        2,
+    )
+    assert torch.allclose(
+        outputs["aux"]["class_probabilities"].sum(dim=-1),
+        torch.ones(3),
+        atol=1e-6,
+    )
+    assert torch.allclose(
+        outputs["logits"].exp(),
+        outputs["aux"]["class_probabilities"],
+        atol=1e-6,
+    )
+    assert torch.isfinite(outputs["aux"]["uncertainty"]["reconstruction_variance_full"]).all()
+
+
+def test_multitask_model_handles_single_sample_monte_carlo_without_nan() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        stochastic_inference=True,
+        monte_carlo_samples=1,
+        continuous_enabled=True,
+        continuous_num_prototypes=4,
+        discrete_enabled=True,
+        discrete_codebook_size=8,
+    )
+    model.memory_initialized = True
+    model.memory_training_enabled = False
+    model.eval()
+    batch = {
+        "x": torch.randn(2, 20, 38),
+        "point_labels": torch.zeros(2, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": f"machine-{index}"} for index in range(2)],
+    }
+
+    outputs = model(batch)
+
+    assert torch.isfinite(outputs["recon"]).all()
+    assert torch.isfinite(outputs["point_scores"]).all()
+    assert torch.isfinite(outputs["window_scores"]).all()
+    assert torch.equal(
+        outputs["aux"]["uncertainty"]["point_anomaly_score_variance"],
+        torch.zeros_like(outputs["aux"]["uncertainty"]["point_anomaly_score_variance"]),
+    )
+    assert torch.equal(
+        outputs["aux"]["uncertainty"]["window_anomaly_score_variance"],
+        torch.zeros_like(outputs["aux"]["uncertainty"]["window_anomaly_score_variance"]),
+    )
+
+
+def test_validate_model_outputs_rejects_malformed_stochastic_sample_ranks() -> None:
+    outputs = {
+        "hidden": torch.randn(2, 20, 16),
+        "pooled": torch.randn(2, 320),
+        "recon": torch.randn(2, 20, 38),
+        "logits": torch.randn(2, 2),
+        "point_scores": torch.randn(2, 20),
+        "window_scores": torch.randn(2),
+        "aux": {
+            "stochastic_query": {
+                "schema_version": 3,
+                "enabled": True,
+                "num_samples": 10,
+                "continuous_temperature": 0.9,
+                "discrete_temperature": 0.9,
+                "continuous_retrieved_samples": torch.randn(2, 10, 20),
+                "discrete_retrieved_samples": torch.randn(2, 10, 20, 16),
+                "discrete_topk_ids": torch.randint(0, 8, (2, 10, 20, 3)),
+                "reconstruction_samples": torch.randn(2, 10, 20, 38),
+                "classification_probability_samples": torch.randn(2, 10, 2),
+                "point_score_samples": torch.randn(2, 10, 20),
+                "window_score_samples": torch.randn(2, 10),
+            }
+        },
+    }
+
+    with pytest.raises(ValueError):
+        validate_model_outputs(outputs)
 
 
 def test_multitask_model_uses_shared_three_layer_mlp_depth() -> None:

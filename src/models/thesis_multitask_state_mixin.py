@@ -242,8 +242,23 @@ class ThesisMultitaskStateMixin:
         if isinstance(self.anomaly_radii, torch.Tensor):
             state["anomaly_radii"] = self.anomaly_radii.detach().cpu().tolist()
         state["verification_metadata_source"] = self.verification_metadata_source
-        state["verification_metadata_schema_version"] = 1
-        state["verification_metadata_split"] = "synthetic_train"
+        state["verification_metadata_schema_version"] = int(
+            getattr(self, "verification_metadata_schema_version", 1)
+        )
+        state["verification_metadata_split"] = str(
+            getattr(self, "verification_metadata_split", "synthetic_train")
+        )
+        state["verification_metadata_initialization_seed"] = int(
+            getattr(self, "verification_metadata_initialization_seed", 0)
+        )
+        if isinstance(self.verification_codeword_class_ids, torch.Tensor):
+            state["verification_codeword_class_ids"] = (
+                self.verification_codeword_class_ids.detach().cpu().tolist()
+            )
+        if isinstance(self.verification_contributing_token_counts, torch.Tensor):
+            state["verification_contributing_token_counts"] = (
+                self.verification_contributing_token_counts.detach().cpu().tolist()
+            )
         state["verification_radius_quantile"] = 0.99
         state["verification_metadata_label_source"] = (
             self.discrete_memory_label_source
@@ -368,6 +383,10 @@ class ThesisMultitaskStateMixin:
             raise ValueError(
                 "verification_metadata_label_source must match discrete_memory_label_source"
             )
+        if "verification_metadata_initialization_seed" in extra_state and int(
+            extra_state["verification_metadata_initialization_seed"]
+        ) < 0:
+            raise ValueError("verification_metadata_initialization_seed must be non-negative")
         self.memory_initialized = bool(
             extra_state.get("memory_initialized", self.memory_initialized)
         )
@@ -403,6 +422,38 @@ class ThesisMultitaskStateMixin:
             self.anomaly_radii = radii.detach().float().clone()
             self.verification_metadata_source = str(
                 extra_state.get("verification_metadata_source", "checkpoint")
+            )
+            if "verification_codeword_class_ids" in extra_state:
+                codeword_class_ids = torch.as_tensor(
+                    extra_state["verification_codeword_class_ids"], dtype=torch.long
+                )
+                if codeword_class_ids.shape != mask.shape:
+                    raise ValueError(
+                        "verification_codeword_class_ids checkpoint shape mismatch"
+                    )
+                self.verification_codeword_class_ids = (
+                    codeword_class_ids.detach().clone()
+                )
+            if "verification_contributing_token_counts" in extra_state:
+                contributing_token_counts = torch.as_tensor(
+                    extra_state["verification_contributing_token_counts"],
+                    dtype=torch.float32,
+                )
+                if contributing_token_counts.shape != mask.shape:
+                    raise ValueError(
+                        "verification_contributing_token_counts checkpoint shape mismatch"
+                    )
+                self.verification_contributing_token_counts = (
+                    contributing_token_counts.detach().clone()
+                )
+            self.verification_metadata_schema_version = int(
+                extra_state.get("verification_metadata_schema_version", 1)
+            )
+            self.verification_metadata_split = str(
+                extra_state.get("verification_metadata_split", "synthetic_train")
+            )
+            self.verification_metadata_initialization_seed = int(
+                extra_state.get("verification_metadata_initialization_seed", 0)
             )
         if "stochastic_inference" in extra_state:
             if bool(extra_state["stochastic_inference"]) != self.stochastic_inference:
@@ -731,10 +782,17 @@ class ThesisMultitaskStateMixin:
             for index in range(self.num_classes)
         ]
         mask = torch.zeros(self.discrete_codebook_size, dtype=torch.bool)
+        codeword_class_ids = torch.zeros(
+            self.discrete_codebook_size, dtype=torch.long
+        )
+        contributing_token_counts = torch.zeros(
+            self.discrete_codebook_size, dtype=torch.float32
+        )
         offset = 0
         for class_index, count in enumerate(counts):
             if class_index > 0:
                 mask[offset : offset + count] = True
+            codeword_class_ids[offset : offset + count] = class_index
             offset += count
         radii = torch.zeros(self.discrete_codebook_size)
         anomaly_groups = [
@@ -751,12 +809,25 @@ class ThesisMultitaskStateMixin:
             )
             nearest_ids = distances.argmin(dim=-1)
             nearest_distances = distances.gather(1, nearest_ids[:, None]).squeeze(1)
+            contributing_token_counts += torch.bincount(
+                nearest_ids,
+                minlength=self.discrete_codebook_size,
+            ).to(dtype=torch.float32)
             for codeword_id in torch.unique(nearest_ids).tolist():
                 assigned = nearest_distances[nearest_ids == codeword_id]
                 radii[codeword_id] = torch.quantile(assigned, 0.99)
         self.anomalous_codeword_mask = mask
         self.anomaly_radii = radii
+        self.verification_codeword_class_ids = codeword_class_ids
+        self.verification_contributing_token_counts = contributing_token_counts
         self.verification_metadata_source = "train_anomaly_tokens_q99"
+        self.verification_metadata_schema_version = 1
+        self.verification_metadata_split = "synthetic_train"
+        self.verification_metadata_initialization_seed = int(
+            self.synthetic_train_seed
+            if getattr(self, "synthetic_train_seed", None) is not None
+            else getattr(self, "synthetic_validation_seed", 0)
+        )
 
     def _update_continuous_memory_bank(
         self,
