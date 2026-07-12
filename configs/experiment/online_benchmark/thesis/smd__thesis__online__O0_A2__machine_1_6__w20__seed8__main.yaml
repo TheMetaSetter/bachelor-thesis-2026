@@ -46,9 +46,9 @@ evaluation:
   vus_max_buffer_size: 20
   vus_num_thresholds: 200
 logging:
-  use_wandb: false
+  use_wandb: true
   wandb_project: bachelor-thesis-2026
-  wandb_mode: disabled
+  wandb_mode: online
   wandb_run_name: smd__thesis__online__O0_A2__machine_1_6__w20__seed8__main
   wandb_tags:
   - online-benchmark
