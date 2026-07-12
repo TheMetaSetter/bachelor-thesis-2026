@@ -20,7 +20,7 @@ from typing import Any
 
 import yaml
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from src.core.config import load_experiment_config
 from src.core.config_experiment_validation import validate_experiment_config
@@ -31,7 +31,7 @@ from src.protocols.smd_benchmark_protocol import (
 )
 
 
-REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 WINDOW_SIZE = 20
 OFFLINE_TRADITIONAL_METHODS = ("stumpy", "kmeans_ad", "iforest")
 ONLINE_TRADITIONAL_METHODS = ("stumpy", "kmeans_ad", "iforest")

@@ -1,0 +1,16 @@
+benchmark_name: smd__candi__online_A1__machine_3_9__w20__seed6__main
+baseline_name: candi
+online_variant: A1
+entity_id: machine_3_9
+seed: 6
+window_size: 20
+data_config_path: configs/data/smd_benchmark_machine_3_9_window20.yaml
+protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
+output_dir: outputs/benchmark/online_streaming/smd/candi/A1/machine_3_9/seed6
+device: cuda
+baseline_kwargs:
+  window_size: 20
+  threshold_quantile: 0.99
+  adaptation_momentum: 0.02
+  seed: 6
+benchmark_mode: main

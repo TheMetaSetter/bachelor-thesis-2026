@@ -94,8 +94,14 @@ def run_online_adaptation_experiment(
 ) -> dict[str, Any]:
     # The first accepted online runtime is intentionally conservative:
     # build a clean stream, adapt a small parameter group, and checkpoint often.
+    from scripts.run_online_adaptation import (
+        build_model_from_experiment_config as public_build_model_from_experiment_config,
+        register_runtime_components as public_register_runtime_components,
+        OnlineLoop as public_online_loop_class,
+    )
+
     seed_everything(int(experiment_config["seed"]))
-    register_runtime_components()
+    public_register_runtime_components()
     console_print(
         "ONLINE",
         "Starting online adaptation experiment",
@@ -106,7 +112,9 @@ def run_online_adaptation_experiment(
         checkpoint_dir=experiment_config["checkpoint_dir"],
     )
 
-    data_bundle = build_dataset(
+    from scripts.run_online_adaptation import build_dataset as public_build_dataset
+
+    data_bundle = public_build_dataset(
         experiment_config["data"]["dataset_name"], experiment_config["data"]
     )
     console_print(
@@ -115,7 +123,7 @@ def run_online_adaptation_experiment(
         dataset_name=experiment_config["data"]["dataset_name"],
         test_sequences=len(data_bundle["scaled_sequences"]["test"]),
     )
-    model = build_model_from_experiment_config(experiment_config)
+    model = public_build_model_from_experiment_config(experiment_config)
     optimizer = build_optimizer_from_experiment_config(model, experiment_config)
     optimizer_name = str(experiment_config["optimizer"].get("optimizer_name", "adam"))
     console_print(
@@ -171,7 +179,7 @@ def run_online_adaptation_experiment(
         view_dropout_probability=experiment_config["task"]["view_dropout_probability"],
     )
 
-    online_loop = OnlineLoop(
+    online_loop = public_online_loop_class(
         model=model,
         optimizer=optimizer,
         checkpoint_manager=checkpoint_manager,

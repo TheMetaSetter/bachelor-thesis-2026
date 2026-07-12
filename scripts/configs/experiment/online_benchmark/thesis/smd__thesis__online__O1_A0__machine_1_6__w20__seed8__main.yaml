@@ -1,0 +1,66 @@
+experiment_name: smd__thesis__online__O1_A0__machine_1_6__w20__seed8__main
+seed: 8
+experiment_variant: online_tta_a0_v1
+device: cuda
+output_dir: outputs/benchmark/online/smd/thesis/O1_A0/machine_1_6/seed8
+checkpoint_dir: outputs/benchmark/online/smd/thesis/O1_A0/machine_1_6/seed8/checkpoints
+data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml
+model_config_path: configs/model/online_adaptation.yaml
+task_config_path: configs/task/online_adaptation.yaml
+data_overrides:
+  window_size: 20
+  stride: 1
+  train_stride: 1
+  val_stride: 20
+  test_stride: 20
+  shuffle_train: false
+  batch_size: 1
+  num_workers: 12
+model_overrides:
+  input_dim: 38
+  encoder_dim: 64
+  hidden_dim: 32
+  projector_hidden_dim: 64
+  projector_dropout: 0.0
+  enable_prototype_alignment: false
+  lambda_align: 1.0
+  lambda_proto: 0.1
+  lambda_anchor: 0.001
+  score_source: projected_hidden
+task_overrides:
+  reference_checkpoint_path: outputs/benchmark/smd/thesis/O1/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt
+  warm_start_projector: false
+  target_param_group: projector_params
+  clean_stream_only: true
+  max_online_steps: null
+  log_every_n_steps: 1
+  checkpoint_every_n_steps: 50
+  reset_policy: disabled
+  reset_alignment_threshold: 0.0
+optimizer:
+  optimizer_name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0
+epochs: 1
+evaluation:
+  vus_max_buffer_size: 20
+  vus_num_thresholds: 200
+logging:
+  use_wandb: false
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: disabled
+  wandb_run_name: smd__thesis__online__O1_A0__machine_1_6__w20__seed8__main
+  wandb_tags:
+  - online-benchmark
+  - thesis
+  - o1
+  - a0
+  - machine_1_6
+  - seed8
+  - window20
+  - main
+  log_hard_prediction_ratio: false
+  log_row_normalized_confusion_matrix: false
+  diagnostics_stages_for_classification:
+  - train
+  - val_synth

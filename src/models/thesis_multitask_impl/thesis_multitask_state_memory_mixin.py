@@ -9,19 +9,13 @@ import torch
 import torch.nn.functional as F
 
 from src.core.console import console_print
+from src.models.thesis_multitask_impl.thesis_multitask_state_memory_init_helpers import (
+    move_initialization_batch_to_device as _move_initialization_batch_to_device,
+    maybe_initialize_memories_from_loader as _maybe_initialize_memories_from_loader,
+)
 
 
 class ThesisMultitaskStateMemoryMixin:
-    def _move_initialization_batch_to_device(
-        self,
-        batch: dict[str, Any],
-        device: str,
-    ) -> dict[str, Any]:
-        return {
-            key: value.to(device) if isinstance(value, torch.Tensor) else value
-            for key, value in batch.items()
-        }
-
     def _normalize_memory_vectors(self, vectors: torch.Tensor) -> torch.Tensor:
         return F.normalize(vectors, dim=-1, eps=self.memory_norm_epsilon)
 
@@ -162,7 +156,7 @@ class ThesisMultitaskStateMemoryMixin:
                 if batch_index >= self.memory_initialization_batches:
                     break
                 num_batches_used += 1
-                batch_on_device = self._move_initialization_batch_to_device(
+                batch_on_device = _move_initialization_batch_to_device(
                     raw_batch,
                     device,
                 )
@@ -487,4 +481,16 @@ class ThesisMultitaskStateMemoryMixin:
             assignment_logits,
             assignment_probabilities,
             self._normalize_memory_vectors(self.discrete_codebook),
+        )
+
+    def maybe_initialize_memories_from_loader(
+        self,
+        train_loader: Any,
+        *,
+        device: str,
+    ) -> bool:
+        return _maybe_initialize_memories_from_loader(
+            self,
+            train_loader,
+            device=device,
         )

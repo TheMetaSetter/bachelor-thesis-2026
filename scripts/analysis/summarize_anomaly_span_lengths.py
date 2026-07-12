@@ -11,11 +11,12 @@ import numpy as np
 import pandas as pd
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.datasets.anomaly_archive import _ANOMALY_ARCHIVE_FILENAME_PATTERN
+from scripts.analysis.summarize_anomaly_span_lengths_helpers import collect_span_rows
 
 
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "documents" / "logs" / "07-03-2026" / "research"
@@ -266,190 +267,11 @@ def _register_zero_anomaly_series(
     }
 
 
-def collect_series_registry(
-    data_root: Path, selected_datasets: Iterable[str]
-) -> list[dict[str, object]]:
-    normalized_datasets = tuple(selected_datasets)
-    series_rows: list[dict[str, object]] = []
+from scripts.analysis.summarize_anomaly_span_lengths_helpers import (
+    collect_series_registry,
+    summarize_span_rows,
+)
 
-    if "anomaly_archive" in normalized_datasets:
-        dataset_root = data_root / "AnomalyArchive"
-        if not dataset_root.exists():
-            raise FileNotFoundError(
-                f"AnomalyArchive directory does not exist: {dataset_root}"
-            )
-        for file_path in sorted(dataset_root.glob("*.txt")):
-            match = _ANOMALY_ARCHIVE_FILENAME_PATTERN.match(file_path.name)
-            if match is None:
-                raise ValueError(f"Invalid AnomalyArchive file name: {file_path}")
-            series_id = str(match.group("series_name"))
-            series_rows.append(
-                _register_zero_anomaly_series(
-                    dataset_name="anomaly_archive",
-                    series_id=series_id,
-                    source_file=file_path,
-                    split="test",
-                    entity_id=series_id,
-                )
-            )
-
-    if "nasa" in normalized_datasets:
-        metadata_path = data_root / "NASA" / "labeled_anomalies.csv"
-        metadata_frame = pd.read_csv(metadata_path)
-        for metadata_row in metadata_frame.to_dict(orient="records"):
-            chan_id = str(metadata_row["chan_id"])
-            series_rows.append(
-                _register_zero_anomaly_series(
-                    dataset_name="nasa",
-                    series_id=chan_id,
-                    source_file=metadata_path,
-                    split="test",
-                    entity_id=chan_id,
-                    spacecraft=str(metadata_row["spacecraft"]),
-                )
-            )
-
-    if "smd" in normalized_datasets:
-        label_dir = data_root / "ServerMachineDataset" / "test_label"
-        if not label_dir.exists():
-            raise FileNotFoundError(
-                f"SMD test_label directory does not exist: {label_dir}"
-            )
-        for label_file in sorted(label_dir.glob("*.txt")):
-            series_rows.append(
-                _register_zero_anomaly_series(
-                    dataset_name="smd",
-                    series_id=label_file.stem,
-                    source_file=label_file,
-                    split="test",
-                    entity_id=label_file.stem,
-                )
-            )
-
-    if "iops" in normalized_datasets:
-        dataset_root = data_root / "IOPS"
-        if not dataset_root.exists():
-            raise FileNotFoundError(f"IOPS directory does not exist: {dataset_root}")
-        for file_path in sorted(dataset_root.glob("*.test.out")):
-            series_id = file_path.name.removesuffix(".test.out")
-            series_rows.append(
-                _register_zero_anomaly_series(
-                    dataset_name="iops",
-                    series_id=series_id,
-                    source_file=file_path,
-                    split="test",
-                    entity_id=series_id,
-                )
-            )
-
-    if "swat" in normalized_datasets:
-        merged_file = data_root / "SWaT" / "merged.csv"
-        if not merged_file.exists():
-            raise FileNotFoundError(f"SWaT merged.csv does not exist: {merged_file}")
-        series_rows.append(
-            _register_zero_anomaly_series(
-                dataset_name="swat",
-                series_id="merged.csv",
-                source_file=merged_file,
-                split="test",
-                entity_id="merged.csv",
-            )
-        )
-
-    return series_rows
-
-
-def collect_span_rows(
-    data_root: Path, selected_datasets: Iterable[str]
-) -> list[dict[str, object]]:
-    rows: list[dict[str, object]] = []
-    dataset_set = tuple(selected_datasets)
-    if "anomaly_archive" in dataset_set:
-        dataset_root = data_root / "AnomalyArchive"
-        if not dataset_root.exists():
-            raise FileNotFoundError(
-                f"AnomalyArchive directory does not exist: {dataset_root}"
-            )
-        for file_path in sorted(dataset_root.glob("*.txt")):
-            rows.extend(build_anomaly_archive_span_rows(file_path))
-    if "nasa" in dataset_set:
-        rows.extend(build_nasa_span_rows(data_root / "NASA" / "labeled_anomalies.csv"))
-    if "smd" in dataset_set:
-        rows.extend(build_smd_span_rows(data_root / "ServerMachineDataset"))
-    if "iops" in dataset_set:
-        rows.extend(build_iops_span_rows(data_root / "IOPS"))
-    if "swat" in dataset_set:
-        rows.extend(build_swat_span_rows(data_root / "SWaT"))
-    return rows
-
-
-def summarize_span_rows(
-    span_rows: list[dict[str, object]],
-    series_registry: list[dict[str, object]],
-) -> list[dict[str, object]]:
-    summary_rows: list[dict[str, object]] = []
-    span_frame = pd.DataFrame(span_rows)
-    registry_frame = pd.DataFrame(series_registry)
-    for dataset_name in sorted(registry_frame["dataset_name"].unique().tolist()):
-        dataset_registry = registry_frame.loc[
-            registry_frame["dataset_name"] == dataset_name
-        ]
-        dataset_spans = (
-            span_frame.loc[span_frame["dataset_name"] == dataset_name]
-            if not span_frame.empty
-            else pd.DataFrame()
-        )
-        span_lengths = (
-            dataset_spans["span_length"].astype(float).to_numpy()
-            if not dataset_spans.empty
-            else np.asarray([], dtype=float)
-        )
-        anomalous_series = (
-            set(dataset_spans["series_id"].tolist())
-            if not dataset_spans.empty
-            else set()
-        )
-        num_series = int(dataset_registry["series_id"].nunique())
-        num_zero_anomaly_series = num_series - len(anomalous_series)
-        if span_lengths.size == 0:
-            summary_rows.append(
-                {
-                    "dataset_name": dataset_name,
-                    "num_series": num_series,
-                    "num_spans": 0,
-                    "num_anomalous_points": 0,
-                    "mean_span_length": None,
-                    "median_span_length": None,
-                    "std_span_length": None,
-                    "min_span_length": None,
-                    "max_span_length": None,
-                    "p25": None,
-                    "p75": None,
-                    "p90": None,
-                    "p95": None,
-                    "num_zero_anomaly_series": num_zero_anomaly_series,
-                }
-            )
-            continue
-        summary_rows.append(
-            {
-                "dataset_name": dataset_name,
-                "num_series": num_series,
-                "num_spans": int(span_lengths.shape[0]),
-                "num_anomalous_points": int(span_lengths.sum()),
-                "mean_span_length": float(np.mean(span_lengths)),
-                "median_span_length": float(np.median(span_lengths)),
-                "std_span_length": float(np.std(span_lengths, ddof=0)),
-                "min_span_length": int(np.min(span_lengths)),
-                "max_span_length": int(np.max(span_lengths)),
-                "p25": float(np.percentile(span_lengths, 25)),
-                "p75": float(np.percentile(span_lengths, 75)),
-                "p90": float(np.percentile(span_lengths, 90)),
-                "p95": float(np.percentile(span_lengths, 95)),
-                "num_zero_anomaly_series": num_zero_anomaly_series,
-            }
-        )
-    return summary_rows
 
 
 def _write_csv(
