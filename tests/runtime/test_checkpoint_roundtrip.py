@@ -46,6 +46,10 @@ def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(
     assert loaded_checkpoint["epoch"] == 3
     assert loaded_checkpoint["checkpoint_metadata"]["schema_version"] == 3
     assert loaded_checkpoint["checkpoint_metadata"]["experiment_name"] == "unit-test"
+    assert (
+        loaded_checkpoint["checkpoint_metadata"]["resolved_config_sha256"]
+        == loaded_checkpoint["checkpoint_metadata"]["config_sha256"]
+    )
     assert torch.equal(
         loaded_checkpoint["scaler_state_dict"]["feature_mean"], scaler.feature_mean
     )

@@ -27,6 +27,11 @@ import yaml
 
 sys.path.append(str(Path(__file__).parent.parent))
 from src.core.config import load_experiment_config
+from src.core.artifact_integrity import (
+    build_retention_bundle_manifest,
+    sha256_file,
+    write_retention_bundle_manifest,
+)
 from src.core.registry import build_dataset
 from src.data.loaders import rebuild_dataset_bundle_with_scaler_state
 from src.engine.checkpoint import CheckpointManager
@@ -137,6 +142,11 @@ def _write_trace_json(path: Path, payload: Any) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", "utf-8")
     return str(path)
+
+
+def _resolve_retention_policy(experiment_config: dict[str, Any]) -> str:
+    evaluation_config = dict(experiment_config.get("evaluation", {}))
+    return str(evaluation_config.get("retention_policy", "retain_for_eda"))
 
 
 def collect_offline_artifact_inputs(
@@ -390,6 +400,117 @@ def _export_offline_artifacts(
     }
 
 
+def _export_offline_retention_bundle(
+    *,
+    output_dir: Path,
+    artifact_inputs: dict[str, Any],
+    artifact_paths: dict[str, str],
+    manifest: dict[str, Any],
+    execution_report: dict[str, Any],
+    experiment_config: dict[str, Any],
+    protocol_config: dict[str, Any],
+    protocol_config_path: str,
+    retention_policy: str,
+) -> dict[str, str]:
+    entity_id = str(artifact_inputs["entity_id"])
+    retention_root = output_dir / "retention" / entity_id / "offline"
+    bundle_paths: dict[str, str] = {}
+    resolved_config_sha256 = CheckpointManager._stable_json_digest(experiment_config)
+    checkpoint_sha256 = None
+    candidate_checkpoint = manifest.get("evaluation", {}).get("checkpoint_path")
+    if candidate_checkpoint:
+        candidate_path = Path(str(candidate_checkpoint))
+        if candidate_path.is_file():
+            checkpoint_sha256 = sha256_file(candidate_path)
+    summary_payload = {
+        "bundle_type": "offline_thesis_retention",
+        "bundle_schema_version": 1,
+        "entity_id": entity_id,
+        "retention_policy": retention_policy,
+        "compression": "none",
+        "experiment_name": experiment_config.get("experiment_name"),
+        "protocol_config_path": protocol_config_path,
+        "checkpoint_sha256": checkpoint_sha256,
+        "resolved_config_sha256": resolved_config_sha256,
+        "artifact_paths": dict(artifact_paths),
+        "evaluation_split_sizes": {
+            "clean_validation": int(
+                len(np.asarray(artifact_inputs["clean_validation"]["point_scores"]))
+            ),
+            "synthetic_validation": int(
+                len(np.asarray(artifact_inputs["synthetic_validation"]["point_scores"]))
+            ),
+            "test": int(len(np.asarray(artifact_inputs["test"]["point_scores"]))),
+        },
+        "offline_metrics": dict(artifact_inputs["offline_metrics"]),
+        "two_stage_execution": dict(execution_report),
+        "inspection_ready": retention_policy == "retain_for_eda",
+    }
+    bundle_paths["summary"] = _write_json(
+        retention_root / "retention_summary.json",
+        summary_payload,
+    )
+    if retention_policy == "retain_for_eda":
+        bundle_paths["clean_validation_traces"] = _write_trace_json(
+            retention_root / "clean_validation_traces.json",
+            artifact_inputs["clean_validation_traces"],
+        )
+        bundle_paths["synthetic_validation_traces"] = _write_trace_json(
+            retention_root / "synthetic_validation_traces.json",
+            artifact_inputs["synthetic_validation_traces"],
+        )
+        bundle_paths["test_traces"] = _write_trace_json(
+            retention_root / "test_traces.json",
+            artifact_inputs["test_traces"],
+        )
+        bundle_paths["clean_validation_scores"] = _write_score_npz(
+            retention_root / "clean_validation_point_scores.npz",
+            artifact_inputs["clean_validation"],
+        )
+        bundle_paths["synthetic_validation_scores"] = _write_score_npz(
+            retention_root / "synthetic_validation_point_scores.npz",
+            artifact_inputs["synthetic_validation"],
+        )
+        bundle_paths["test_scores"] = _write_score_npz(
+            retention_root / "test_point_scores.npz",
+            artifact_inputs["test"],
+        )
+        bundle_paths["offline_metrics"] = _write_json(
+            retention_root / "offline_metrics.json",
+            artifact_inputs["offline_metrics"],
+        )
+        bundle_paths["resolved_protocol"] = _write_json(
+            retention_root / "resolved_protocol.json",
+            protocol_config,
+        )
+    manifest_identity = {
+        "entity_id": entity_id,
+        "experiment_name": str(experiment_config.get("experiment_name")),
+        "retention_policy": retention_policy,
+    }
+    manifest = build_retention_bundle_manifest(
+        bundle_paths,
+        manifest_identity,
+        provenance={
+            "checkpoint_sha256": checkpoint_sha256,
+            "resolved_config_sha256": resolved_config_sha256,
+            "protocol_config_path": protocol_config_path,
+        },
+        retention_policy=retention_policy,
+        compression="none",
+        export_scope="entity",
+    )
+    manifest_path = write_retention_bundle_manifest(
+        retention_root / "retention_bundle_manifest.json",
+        manifest,
+    )
+    bundle_paths["manifest"] = str(manifest_path)
+    bundle_paths["checkpoint_sha256"] = str(checkpoint_sha256) if checkpoint_sha256 else ""
+    bundle_paths["resolved_config_sha256"] = resolved_config_sha256
+    bundle_paths["retention_root"] = str(retention_root)
+    return bundle_paths
+
+
 def run_thesis_offline_benchmark(
     *,
     experiment_config_path: str,
@@ -399,6 +520,7 @@ def run_thesis_offline_benchmark(
 ) -> dict[str, Any]:
     experiment_config = load_experiment_config(experiment_config_path)
     protocol_config = _load_yaml_config(protocol_config_path)
+    retention_policy = _resolve_retention_policy(experiment_config)
 
     validate_protocol_config(protocol_config)
     validate_two_stage_epoch_budget(experiment_config)
@@ -410,6 +532,7 @@ def run_thesis_offline_benchmark(
         skip_completed=skip_completed,
     )
     artifact_paths: dict[str, str] = {}
+    retention_artifact_paths: dict[str, str] = {}
     if not dry_run:
         artifact_inputs = collect_offline_artifact_inputs(
             experiment_config=experiment_config,
@@ -423,9 +546,22 @@ def run_thesis_offline_benchmark(
             protocol_config=protocol_config,
             experiment_config_path=experiment_config_path,
         )
+        retention_artifact_paths = _export_offline_retention_bundle(
+            output_dir=Path(str(experiment_config["output_dir"])),
+            artifact_inputs=artifact_inputs,
+            artifact_paths=artifact_paths,
+            manifest=manifest,
+            execution_report=execution_report,
+            experiment_config=experiment_config,
+            protocol_config=protocol_config,
+            protocol_config_path=protocol_config_path,
+            retention_policy=retention_policy,
+        )
     report = {
         "benchmark_status": "dry_run" if dry_run else execution_report["status"],
         "artifact_paths": artifact_paths,
+        "retention_policy": retention_policy,
+        "retention_artifact_paths": retention_artifact_paths,
         "created_at_utc": _utc_now_iso(),
         "experiment_config_path": experiment_config_path,
         "protocol_config_path": protocol_config_path,

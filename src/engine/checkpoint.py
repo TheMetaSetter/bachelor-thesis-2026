@@ -62,6 +62,7 @@ class CheckpointManager:
             "variance_correction": model_config.get("variance_correction"),
             "return_mc_samples": model_config.get("return_mc_samples"),
             "sample_retention_policy": model_config.get("sample_retention_policy"),
+            "resolved_config_sha256": cls._stable_json_digest(config),
         }
         if extra_state is not None:
             metadata["extra_state_sha256"] = cls._stable_json_digest(extra_state)
@@ -95,6 +96,7 @@ class CheckpointManager:
             "variance_correction",
             "return_mc_samples",
             "sample_retention_policy",
+            "resolved_config_sha256",
         }
         missing_keys = sorted(required_keys - set(checkpoint_metadata))
         if missing_keys:
@@ -147,6 +149,12 @@ class CheckpointManager:
                 )
         if checkpoint_metadata["config_sha256"] != cls._stable_json_digest(config):
             raise ValueError("checkpoint_metadata config_sha256 does not match config")
+        if checkpoint_metadata["resolved_config_sha256"] != cls._stable_json_digest(
+            config
+        ):
+            raise ValueError(
+                "checkpoint_metadata resolved_config_sha256 does not match config"
+            )
         if checkpoint_metadata["model_config_sha256"] != cls._stable_json_digest(
             model_config
         ):

@@ -157,7 +157,32 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
     assert (output_dir / "traces" / "test_traces.json").exists()
     assert (output_dir / "metrics" / "offline_metrics.json").exists()
     assert (output_dir / "protocol" / "resolved_protocol.json").exists()
+    assert (
+        output_dir
+        / "retention"
+        / "machine-1-6"
+        / "offline"
+        / "retention_summary.json"
+    ).exists()
+    assert (
+        output_dir
+        / "retention"
+        / "machine-1-6"
+        / "offline"
+        / "clean_validation_traces.json"
+    ).exists()
+    assert (
+        output_dir
+        / "retention"
+        / "machine-1-6"
+        / "offline"
+        / "retention_bundle_manifest.json"
+    ).exists()
     assert report["artifact_paths"]["thresholds"].endswith("thresholds.json")
+    assert report["retention_policy"] == "retain_for_eda"
+    assert report["retention_artifact_paths"]["summary"].endswith(
+        "retention_summary.json"
+    )
 
     threshold_payload = json.loads(
         (output_dir / "thresholds" / "thresholds.json").read_text(encoding="utf-8")
@@ -171,6 +196,96 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
     )
     clean_scores = np.load(output_dir / "scores" / "clean_validation_point_scores.npz")
     assert np.allclose(clean_scores["point_scores"], [0.1, 0.2, 0.3])
+
+
+def test_thesis_offline_wrapper_supports_summary_only_retention(
+    tmp_path, monkeypatch
+) -> None:
+    experiment_config_path = tmp_path / "experiment.yaml"
+    output_dir = tmp_path / "outputs"
+    config = {
+        "experiment_name": "pytest-thesis-offline",
+        "output_dir": str(output_dir),
+        "checkpoint_dir": str(output_dir / "checkpoints"),
+        "epochs": 30,
+        "device": "cpu",
+        "data": {"dataset_name": "smd", "window_size": 20},
+        "model": {"model_name": "thesis_multitask"},
+        "task": {"task_name": "multitask_tsad"},
+        "evaluation": {"retention_policy": "summary_only"},
+        "two_stage": {
+            "expected_total_training_epochs": 30,
+            "stage_a_multitask_epochs": 25,
+            "stage_b_fusion_finetuning_epochs": 5,
+        },
+    }
+    experiment_config_path.write_text(
+        yaml.safe_dump(config, sort_keys=False), encoding="utf-8"
+    )
+
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.materialize_two_stage_run_manifest",
+        lambda experiment_config: {
+            "manifest_root": str(output_dir / "two_stage"),
+            "evaluation": {"checkpoint_path": str(output_dir / "best.pt")},
+        },
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.execute_two_stage_plan",
+        lambda manifest, dry_run, skip_completed: {
+            "status": "completed",
+            "dry_run": dry_run,
+            "skip_completed": skip_completed,
+        },
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.load_experiment_config",
+        lambda path: yaml.safe_load(Path(path).read_text(encoding="utf-8")),
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.collect_offline_artifact_inputs",
+        lambda **kwargs: {
+            "entity_id": "machine-1-6",
+            "seed": 6,
+            "variant_name": "O0",
+            "clean_validation": {
+                "point_scores": np.array([0.1, 0.2], dtype=float),
+                "point_labels": np.array([0, 0], dtype=np.int64),
+                "covered_point_mask": np.array([True, True]),
+            },
+            "synthetic_validation": {
+                "point_scores": np.array([0.3, 0.4], dtype=float),
+                "point_labels": np.array([0, 1], dtype=np.int64),
+                "covered_point_mask": np.array([True, True]),
+            },
+            "test": {
+                "point_scores": np.array([0.5, 0.6], dtype=float),
+                "point_labels": np.array([0, 1], dtype=np.int64),
+                "covered_point_mask": np.array([True, True]),
+            },
+            "clean_validation_traces": [{"batch_index": 1}],
+            "synthetic_validation_traces": [{"batch_index": 2}],
+            "test_traces": [{"batch_index": 3}],
+            "offline_metrics": {"point_f1": 1.0},
+        },
+    )
+
+    report = run_thesis_offline_benchmark(
+        experiment_config_path=str(experiment_config_path),
+        protocol_config_path="configs/protocol/smd_window20_cleanval_q99_ewma09.yaml",
+        dry_run=False,
+        skip_completed=True,
+    )
+
+    retention_root = output_dir / "retention" / "machine-1-6" / "offline"
+    assert (retention_root / "retention_summary.json").exists()
+    assert (retention_root / "retention_bundle_manifest.json").exists()
+    assert not (retention_root / "clean_validation_traces.json").exists()
+    assert not (retention_root / "test_point_scores.npz").exists()
+    assert report["retention_policy"] == "summary_only"
+    assert report["retention_artifact_paths"]["summary"].endswith(
+        "retention_summary.json"
+    )
 
 
 def test_collect_offline_artifact_inputs_uses_checkpoint_and_three_splits(

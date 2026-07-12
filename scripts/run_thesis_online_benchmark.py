@@ -21,16 +21,21 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+import torch
 
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.config import load_experiment_config
 from src.core.artifact_integrity import (
     build_artifact_manifest,
+    build_retention_bundle_manifest,
+    sha256_file,
     verify_artifact_manifest,
     write_artifact_manifest,
+    write_retention_bundle_manifest,
 )
 from src.engine.online_tta.online_engine import run_thesis_online_tta_experiment
+from src.engine.checkpoint import CheckpointManager
 from src.protocols.smd_benchmark_protocol import validate_protocol_config
 
 
@@ -88,6 +93,125 @@ def _write_report(
     return report_path
 
 
+def _write_json(path: Path, payload: Any) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return str(path)
+
+
+def _resolve_retention_policy(experiment_config: dict[str, Any]) -> str:
+    evaluation_config = dict(experiment_config.get("evaluation", {}))
+    return str(evaluation_config.get("retention_policy", "retain_for_eda"))
+
+
+def _load_runtime_state_snapshot(checkpoint_path: str | None) -> dict[str, Any] | None:
+    if not checkpoint_path:
+        return None
+    checkpoint_file = Path(checkpoint_path)
+    if not checkpoint_file.is_file():
+        return None
+    checkpoint_payload = torch.load(checkpoint_file, map_location="cpu")
+    extra_state = checkpoint_payload.get("extra_state", {})
+    runtime_state = extra_state.get("online_runtime_state")
+    if runtime_state is not None:
+        return runtime_state
+    return {
+        "online_variant": extra_state.get("online_variant"),
+        "threshold_artifact": extra_state.get("threshold_artifact"),
+        "stream_cursor": extra_state.get("stream_cursor"),
+        "previous_ewma_score": extra_state.get("previous_ewma_score"),
+        "signature_history": extra_state.get("signature_history", []),
+        "recurrent_signatures": extra_state.get("recurrent_signatures", []),
+        "verification_entries": extra_state.get("verification_buffer_entries", []),
+        "verification_history": extra_state.get("verification_history", []),
+        "hard_old_intervals": extra_state.get("hard_old_guard_intervals", []),
+    }
+
+
+def _export_online_retention_bundle(
+    *,
+    output_dir: Path,
+    experiment_config: dict[str, Any],
+    online_outputs: dict[str, Any],
+    online_variant: str,
+    retention_policy: str,
+) -> dict[str, str]:
+    threshold_artifact = dict(online_outputs["threshold_artifact"])
+    entity_id = str(threshold_artifact["entity_id"])
+    retention_root = output_dir / "retention" / entity_id / online_variant
+    retention_root.mkdir(parents=True, exist_ok=True)
+    checkpoint_path = online_outputs.get("final_checkpoint_path")
+    checkpoint_sha256 = None
+    if checkpoint_path and Path(checkpoint_path).is_file():
+        checkpoint_sha256 = sha256_file(checkpoint_path)
+    resolved_config_sha256 = CheckpointManager._stable_json_digest(experiment_config)
+    runtime_state = _load_runtime_state_snapshot(checkpoint_path)
+    summary_payload = {
+        "bundle_type": "online_thesis_retention",
+        "bundle_schema_version": 1,
+        "entity_id": entity_id,
+        "online_variant": online_variant,
+        "retention_policy": retention_policy,
+        "compression": "none",
+        "experiment_name": experiment_config.get("experiment_name"),
+        "checkpoint_path": checkpoint_path,
+        "checkpoint_sha256": checkpoint_sha256,
+        "resolved_config_sha256": resolved_config_sha256,
+        "threshold_artifact_sha256": CheckpointManager._stable_json_digest(
+            threshold_artifact
+        ),
+        "metric_history_length": len(online_outputs.get("metric_history", [])),
+        "record_length": len(online_outputs.get("records", [])),
+        "runtime_state_present": runtime_state is not None,
+        "inspection_ready": retention_policy == "retain_for_eda",
+    }
+    bundle_paths: dict[str, str] = {
+        "summary": _write_json(retention_root / "retention_summary.json", summary_payload)
+    }
+    if retention_policy == "retain_for_eda":
+        bundle_paths["metrics"] = _write_json(
+            retention_root / "online_metrics.json",
+            online_outputs.get("metric_history", []),
+        )
+        bundle_paths["records"] = _write_json(
+            retention_root / "online_records.json",
+            online_outputs.get("records", []),
+        )
+        bundle_paths["threshold_artifact"] = _write_json(
+            retention_root / "threshold_artifact.json",
+            threshold_artifact,
+        )
+        if runtime_state is not None:
+            bundle_paths["runtime_state"] = _write_json(
+                retention_root / "online_runtime_state.json",
+                runtime_state,
+            )
+    manifest = build_retention_bundle_manifest(
+        bundle_paths,
+        identity={
+            "entity_id": entity_id,
+            "experiment_name": str(experiment_config.get("experiment_name")),
+            "online_variant": online_variant,
+        },
+        provenance={
+            "checkpoint_sha256": checkpoint_sha256,
+            "resolved_config_sha256": resolved_config_sha256,
+            "threshold_artifact_sha256": summary_payload["threshold_artifact_sha256"],
+        },
+        retention_policy=retention_policy,
+        compression="none",
+        export_scope="entity",
+    )
+    manifest_path = write_retention_bundle_manifest(
+        retention_root / "retention_bundle_manifest.json",
+        manifest,
+    )
+    bundle_paths["manifest"] = str(manifest_path)
+    return bundle_paths
+
+
 def run_thesis_online_benchmark(
     *,
     experiment_config_path: str,
@@ -102,6 +226,7 @@ def run_thesis_online_benchmark(
         experiment_config_path
     )
     protocol_config = _load_yaml_config(protocol_config_path)
+    retention_policy = _resolve_retention_policy(experiment_config)
     validate_protocol_config(protocol_config)
 
     online_outputs = run_thesis_online_tta_experiment(
@@ -124,12 +249,22 @@ def run_thesis_online_benchmark(
         "protocol_config_path": protocol_config_path,
         "protocol": protocol_config,
         "online_execution": online_outputs,
+        "retention_policy": retention_policy,
     }
     report_path = _write_report(
         Path(str(experiment_config["output_dir"])),
         online_variant,
         report,
     )
+    retention_artifact_paths: dict[str, str] = {}
+    if not dry_run:
+        retention_artifact_paths = _export_online_retention_bundle(
+            output_dir=Path(str(experiment_config["output_dir"])),
+            experiment_config=experiment_config,
+            online_outputs=online_outputs,
+            online_variant=online_variant,
+            retention_policy=retention_policy,
+        )
     report_identity = {
         "experiment_name": str(experiment_config["experiment_name"]),
         "online_variant": online_variant,
@@ -143,6 +278,7 @@ def run_thesis_online_benchmark(
         report_manifest,
     )
     report["report_path"] = str(report_path)
+    report["retention_artifact_paths"] = retention_artifact_paths
     report["report_artifact_integrity_status"] = (
         "verified"
         if verify_artifact_manifest(report_manifest, report_identity)
