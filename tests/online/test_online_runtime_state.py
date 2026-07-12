@@ -19,9 +19,31 @@ def _artifact(entity_id: str) -> dict[str, object]:
 
 
 def test_runtime_state_roundtrip_validates_identity() -> None:
-    state = OnlineRuntimeState("machine-1-6", "A2", _artifact("machine-1-6"))
+    state = OnlineRuntimeState(
+        "machine-1-6",
+        "A2",
+        _artifact("machine-1-6"),
+        stream_cursor=7,
+        previous_ewma_score=2.5,
+        signature_history=[
+            {
+                "entity_id": "machine-1-6",
+                "start": 0,
+                "end": 2,
+                "signatures": [[[0, 1, 2]]],
+            }
+        ],
+        recurrent_signatures=[{"signature": [0, 1, 2]}],
+        verification_history=[{"step": 1, "decision": "gray_zone"}],
+        checkpoint_path="/tmp/online_final.pt",
+        threshold_artifact_path="/tmp/thresholds/machine-1-6.json",
+    )
     restored = validate_resume_state(state.to_dict(), "machine-1-6", "A2")
     assert restored.to_dict() == state.to_dict()
+    assert restored.stream_cursor == 7
+    assert restored.previous_ewma_score == 2.5
+    assert restored.recurrent_signatures == [{"signature": [0, 1, 2]}]
+    assert restored.verification_history == [{"step": 1, "decision": "gray_zone"}]
 
 
 def test_runtime_state_rejects_wrong_entity_before_restore() -> None:
@@ -61,9 +83,22 @@ def test_runtime_state_restores_signature_history() -> None:
     )
     history: list[SignatureWindow] = []
     restore_online_runtime_state(
-        state, VerificationBuffer(), NonOverlapGuard(), history
+        state,
+        VerificationBuffer(),
+        NonOverlapGuard(),
+        history,
+        recurrent_signatures=[],
+        verification_history=[],
     )
     assert history[0].signatures == [[(0, 1, 2), (1, 2, 3)]]
+
+
+def test_runtime_state_rejects_schema_mismatch() -> None:
+    state = OnlineRuntimeState("machine-1-6", "A2", _artifact("machine-1-6"))
+    payload = state.to_dict()
+    payload["runtime_schema_version"] = 2
+    with pytest.raises(ValueError, match="runtime schema"):
+        validate_resume_state(payload, "machine-1-6", "A2")
 
 
 def test_resumed_next_event_matches_uninterrupted_execution() -> None:

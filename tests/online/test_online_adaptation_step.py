@@ -159,3 +159,46 @@ def test_online_adaptation_step_updates_only_projector_parameters(
             model.online_encoder.encoder_parameters(),
         )
     )
+
+
+def test_online_adapter_exposes_frozen_prototype_metadata(
+    tmp_path: Path,
+) -> None:
+    checkpoint_path = _build_reference_checkpoint(tmp_path)
+    model = OnlineAdaptationModel(
+        input_dim=38,
+        encoder_dim=64,
+        hidden_dim=32,
+        projector_hidden_dim=48,
+        projector_dropout=0.0,
+        enable_prototype_alignment=True,
+        lambda_align=1.0,
+        lambda_proto=0.1,
+        lambda_anchor=0.001,
+        score_source="projected_hidden",
+        reference_checkpoint_path=str(checkpoint_path),
+        warm_start_projector=False,
+        target_param_group="projector_params",
+        clean_stream_only=True,
+    )
+    reference_model = model.reference_encoder.model
+    reference_model.verification_metadata_source = "pytest_training_memory"
+    reference_model.verification_metadata_split = "synthetic_train"
+    reference_model.verification_metadata_schema_version = 1
+    reference_model.verification_metadata_initialization_seed = 7
+    reference_model.verification_codeword_class_ids = torch.zeros(
+        reference_model.discrete_codebook.shape[0], dtype=torch.long
+    )
+    reference_model.verification_contributing_token_counts = torch.zeros(
+        reference_model.discrete_codebook.shape[0], dtype=torch.float32
+    )
+    reference_model.anomalous_codeword_mask = torch.zeros(
+        reference_model.discrete_codebook.shape[0], dtype=torch.bool
+    )
+    reference_model.anomaly_radii = torch.ones(
+        reference_model.discrete_codebook.shape[0], dtype=torch.float32
+    )
+    metadata = model.reference_encoder.prototype_verification_metadata()
+    assert metadata.schema_version == 1
+    assert metadata.source_split == "synthetic_train"
+    assert metadata.codebook.shape[0] == metadata.anomalous_codeword_mask.shape[0]

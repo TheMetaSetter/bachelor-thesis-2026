@@ -116,6 +116,58 @@ def _collect_offline_scores(
     return collected
 
 
+def collect_nonoverlap_offline_scores(
+    *,
+    model: torch.nn.Module,
+    clean_validation_sequences: list[dict[str, Any]],
+    window_size: int,
+    device: str,
+) -> list[float]:
+    """Collect offline calibration scores from non-overlapping validation windows."""
+    collected: list[float] = []
+    for sequence in clean_validation_sequences:
+        collected.extend(_collect_offline_scores(model, sequence, window_size, device))
+    return collected
+
+
+def collect_stride1_online_scores(
+    *,
+    model: torch.nn.Module,
+    clean_validation_sequences: list[dict[str, Any]],
+    window_size: int,
+    batch_size: int,
+    view_noise_std: float,
+    view_dropout_probability: float,
+    device: str,
+    current_weight: float,
+    previous_weight: float,
+) -> dict[str, list[float]]:
+    """Collect stride-1 causal validation scores for online thresholding."""
+    collected = {
+        key: [] for key in ("point", "ewma", "input_window", "latent_window")
+    }
+    for sequence in clean_validation_sequences:
+        scores = run_stride1_sequence_scores(
+            model=model,
+            sequence=sequence,
+            window_size=window_size,
+            batch_size=batch_size,
+            view_noise_std=view_noise_std,
+            view_dropout_probability=view_dropout_probability,
+            device=device,
+        )
+        smoothed = ewma_scores(
+            np.asarray(scores["point"], dtype=float),
+            current_weight=current_weight,
+            previous_weight=previous_weight,
+        )
+        collected["point"].extend(scores["point"])
+        collected["ewma"].extend(float(score) for score in smoothed if not np.isnan(score))
+        collected["input_window"].extend(scores["input_window"])
+        collected["latent_window"].extend(scores["latent_window"])
+    return collected
+
+
 def collect_clean_validation_scores(
     *,
     model: torch.nn.Module,
@@ -128,17 +180,23 @@ def collect_clean_validation_scores(
     current_weight: float,
     previous_weight: float,
 ) -> dict[str, list[float]]:
-    collected = {key: [] for key in ("offline_point", "point", "ewma", "input_window", "latent_window")}
-    for sequence in clean_validation_sequences:
-        collected["offline_point"].extend(_collect_offline_scores(model, sequence, window_size, device))
-        scores = run_stride1_sequence_scores(
-            model=model, sequence=sequence, window_size=window_size, batch_size=batch_size,
-            view_noise_std=view_noise_std, view_dropout_probability=view_dropout_probability,
-            device=device,
-        )
-        smoothed = ewma_scores(np.asarray(scores["point"], dtype=float), current_weight=current_weight, previous_weight=previous_weight)
-        collected["point"].extend(scores["point"])
-        collected["ewma"].extend(float(score) for score in smoothed if not np.isnan(score))
-        collected["input_window"].extend(scores["input_window"])
-        collected["latent_window"].extend(scores["latent_window"])
+    collected = {"offline_point": []}
+    collected["offline_point"] = collect_nonoverlap_offline_scores(
+        model=model,
+        clean_validation_sequences=clean_validation_sequences,
+        window_size=window_size,
+        device=device,
+    )
+    stride1_scores = collect_stride1_online_scores(
+        model=model,
+        clean_validation_sequences=clean_validation_sequences,
+        window_size=window_size,
+        batch_size=batch_size,
+        view_noise_std=view_noise_std,
+        view_dropout_probability=view_dropout_probability,
+        device=device,
+        current_weight=current_weight,
+        previous_weight=previous_weight,
+    )
+    collected.update(stride1_scores)
     return collected

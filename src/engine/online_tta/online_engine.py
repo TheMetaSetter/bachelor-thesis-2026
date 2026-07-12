@@ -68,7 +68,10 @@ from src.engine.online_tta.verification_adapter import (
     build_entry_batch,
     verify_buffer_entries,
 )
-from src.engine.online_tta.runtime_state import OnlineRuntimeState
+from src.engine.online_tta.runtime_state import (
+    OnlineRuntimeState,
+    build_online_runtime_state,
+)
 from src.engine.thresholding import (
     select_clean_validation_point_threshold,
     select_online_ewma_threshold,
@@ -91,6 +94,50 @@ def _write_json(path: Path, payload: Any) -> str:
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     return str(path)
+
+
+def _validate_single_window_online_batch(batch: dict[str, Any]) -> None:
+    # The online benchmark is defined on one causal window at a time. That
+    # assumption is easy to miss because other parts of the code can still score
+    # batched windows, so we fail fast here instead of silently dropping items.
+    if int(batch["x"].shape[0]) != 1:
+        raise ValueError(
+            "online benchmark batches must contain exactly one causal window"
+        )
+    if len(batch.get("meta", [])) != 1:
+        raise ValueError("online benchmark batches must carry exactly one meta row")
+
+
+def _serialize_recurrent_signatures(
+    recurrent_signatures: set[tuple[int, ...]]
+) -> list[dict[str, Any]]:
+    return [
+        {"signature": [int(value) for value in signature]}
+        for signature in sorted(recurrent_signatures)
+    ]
+
+
+def _sync_online_runtime_state(
+    *,
+    runtime_state: OnlineRuntimeState,
+    previous_ewma_score: float | None,
+    signature_history: list[SignatureWindow],
+    recurrent_signatures: set[tuple[int, ...]],
+    record: dict[str, Any],
+    hard_old_guard: NonOverlapGuard,
+    verification_buffer: VerificationBuffer,
+) -> None:
+    runtime_state.record_previous_ewma_score(previous_ewma_score)
+    runtime_state.advance_cursor(1)
+    runtime_state.signature_history = [
+        signature_window_to_dict(window) for window in signature_history
+    ]
+    runtime_state.append_recurrent_signatures(
+        _serialize_recurrent_signatures(recurrent_signatures)
+    )
+    runtime_state.append_verification_history(record)
+    runtime_state.hard_old_intervals = hard_old_guard.intervals()
+    runtime_state.verification_entries = verification_buffer.items()
 
 
 def _load_model_kwargs(experiment_config: dict[str, Any]) -> dict[str, Any]:
@@ -444,7 +491,7 @@ def _prepare_online_window_event(
         ewma_previous_weight=ewma_previous_weight,
         device=device,
     )
-    signature_diagnostics = _attach_event_pnn_mask(
+    signature_diagnostics, recurrent_signatures = _attach_event_pnn_mask(
         model, scoring_outputs, batch_on_device, online_variant, signature_history
     )
     triage_decision = _classify_event_window(
@@ -462,6 +509,7 @@ def _prepare_online_window_event(
         "ewma_point_score": ewma_point_score,
         "triage_decision": triage_decision,
         "signature_diagnostics": signature_diagnostics,
+        "recurrent_signatures": recurrent_signatures,
     }
 
 
@@ -544,9 +592,9 @@ def _attach_event_pnn_mask(
     batch: dict[str, Any],
     online_variant: str,
     signature_history: list[SignatureWindow],
-) -> dict[str, int]:
+) -> tuple[dict[str, int], set[tuple[int, ...]]]:
     if online_variant == "A0":
-        return {}
+        return {}, set()
     pnn_mask, diagnostics = _build_event_pnn_mask(
         model=model,
         scoring_outputs=scoring_outputs,
@@ -555,7 +603,8 @@ def _attach_event_pnn_mask(
     )
     if pnn_mask is not None:
         batch["pnn_mask"] = pnn_mask
-    return diagnostics
+    recurrent_signatures = find_recurrent_signatures(signature_history)
+    return diagnostics, recurrent_signatures
 
 
 def _classify_event_window(
@@ -1011,6 +1060,7 @@ def _run_online_sequence(
     device: str,
     verification_buffer: VerificationBuffer,
     ttl_buffer: TTLBuffer,
+    runtime_state: OnlineRuntimeState | None = None,
     max_online_steps: int | None,
     hard_old_guard: NonOverlapGuard | None = None,
     signature_history: list[SignatureWindow] | None = None,
@@ -1020,6 +1070,15 @@ def _run_online_sequence(
         hard_old_guard = NonOverlapGuard(max_size=1)
     if signature_history is None:
         signature_history = []
+    if runtime_state is None:
+        runtime_state = build_online_runtime_state(
+            entity_id=str(sequence["meta"]["entity_id"]),
+            online_variant=online_variant,
+            threshold_artifact={
+                "entity_id": str(sequence["meta"]["entity_id"]),
+                "thresholds": {},
+            },
+        )
     batcher = _build_online_stream(
         sequences=[sequence],
         window_size=int(protocol_config["window_size"]),
@@ -1036,6 +1095,7 @@ def _run_online_sequence(
     triage_thresholds = _build_triage_thresholds(threshold_value, threshold_artifact)
 
     for batch in batcher:
+        _validate_single_window_online_batch(batch)
         if max_online_steps is not None and len(metric_history) >= max_online_steps:
             break
         previous_ewma_score, metric, record = _process_online_window(
@@ -1056,6 +1116,15 @@ def _run_online_sequence(
             hard_old_guard=hard_old_guard,
         )
         metric["online/step"] = len(metric_history) + 1
+        _sync_online_runtime_state(
+            runtime_state=runtime_state,
+            previous_ewma_score=previous_ewma_score,
+            signature_history=signature_history,
+            recurrent_signatures=find_recurrent_signatures(signature_history),
+            record=record,
+            hard_old_guard=hard_old_guard,
+            verification_buffer=verification_buffer,
+        )
         records.append(record)
         metric_history.append(metric)
 
@@ -1125,6 +1194,21 @@ def _build_runtime_online_context(
     first_entity = next(iter(threshold_artifacts))
     threshold_artifact = threshold_artifacts[first_entity]
     threshold_path = threshold_paths[first_entity]
+    batch_size = int(experiment_config["data"]["batch_size"])
+    if batch_size != 1:
+        raise ValueError(
+            "online benchmark startup expects batch_size=1 so each step is one causal window"
+        )
+    # The runtime state keeps the causal cursor and EWMA trail alongside the
+    # artifact provenance. That makes resume validation explicit instead of
+    # relying on hidden local variables.
+    runtime_state = build_online_runtime_state(
+        entity_id=str(threshold_artifact["entity_id"]),
+        online_variant=online_variant,
+        threshold_artifact=threshold_artifact,
+        checkpoint_path=str(checkpoint_manager.checkpoint_dir / "online_final.pt"),
+        threshold_artifact_path=str(threshold_path),
+    )
     return {
         "benchmark_status": "completed",
         "created_at_utc": _utc_now_iso(),
@@ -1140,8 +1224,9 @@ def _build_runtime_online_context(
         "threshold_value": float(
             threshold_artifact["thresholds"]["online_ewma_point"]["value"]
         ),
+        "runtime_state": runtime_state,
         "output_dir": output_dir,
-        "batch_size": int(experiment_config["data"]["batch_size"]),
+        "batch_size": batch_size,
         "view_noise_std": float(experiment_config["task"].get("view_noise_std", 0.0)),
         "view_dropout_probability": float(
             experiment_config["task"].get("view_dropout_probability", 0.0)
@@ -1187,6 +1272,7 @@ def _run_online_execution_sequences(
             device=context["device"],
             verification_buffer=context["verification_buffer"],
             ttl_buffer=context["ttl_buffer"],
+            runtime_state=context.get("runtime_state"),
             hard_old_guard=context["hard_old_guard"],
             signature_history=context["signature_history"],
             max_online_steps=(
@@ -1238,21 +1324,16 @@ def _finalize_online_execution(
             "threshold_artifact": context["threshold_artifact"],
             "threshold_artifact_path": context["threshold_artifact_path"],
             "online_variant": context["online_variant"],
+            "stream_cursor": context["runtime_state"].stream_cursor,
+            "previous_ewma_score": context["runtime_state"].previous_ewma_score,
+            "signature_history": context["runtime_state"].signature_history,
+            "recurrent_signatures": context["runtime_state"].recurrent_signatures,
             "verification_buffer_size": len(context["verification_buffer"]),
             "ttl_buffer_size": len(context["ttl_buffer"]),
             "verification_buffer_entries": context["verification_buffer"].items(),
+            "verification_history": context["runtime_state"].verification_history,
             "hard_old_guard_intervals": context["hard_old_guard"].intervals(),
-            "online_runtime_state": OnlineRuntimeState(
-                entity_id=str(context["threshold_artifact"]["entity_id"]),
-                online_variant=str(context["online_variant"]),
-                threshold_artifact=context["threshold_artifact"],
-                signature_history=[
-                    signature_window_to_dict(window)
-                    for window in context["signature_history"]
-                ],
-                verification_entries=context["verification_buffer"].items(),
-                hard_old_intervals=context["hard_old_guard"].intervals(),
-            ).to_dict(),
+            "online_runtime_state": context["runtime_state"].to_dict(),
         },
     )
     artifact_identity = {

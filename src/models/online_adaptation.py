@@ -22,6 +22,9 @@ from src.core.console import (
     summarize_tensor,
 )
 from src.core.contracts import validate_model_outputs, validate_online_batch
+from src.engine.online_tta.signature_verification import (
+    PrototypeVerificationMetadata,
+)
 from src.models.base_model import BaseModel
 from src.models.thesis_multitask import ThesisMultitaskModel
 
@@ -85,6 +88,8 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
     def score_from_hidden(
         self, hidden: torch.Tensor, x_tensor: torch.Tensor
     ) -> dict[str, Any]:
+        # The online adapter reuses the frozen offline scoring heads on the same
+        # latent geometry. That assumption is deliberate and should stay visible.
         continuous_outputs = self.model._continuous_prototype_lookup(
             hidden,
             stage_name="test",
@@ -130,6 +135,10 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
                 "latent_window_score": latent_window_score,
             },
         }
+
+    def prototype_verification_metadata(self) -> PrototypeVerificationMetadata:
+        """Expose frozen prototype metadata for the online verification path."""
+        return PrototypeVerificationMetadata.from_model(self.model)
 
     def _compute_latent_memory_score(self, hidden: torch.Tensor) -> torch.Tensor:
         """Return mean nearest-normal-prototype cosine distance per window."""
