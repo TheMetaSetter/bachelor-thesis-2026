@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
+
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     load_threshold_artifact,
@@ -40,6 +44,9 @@ def test_threshold_artifact_round_trips_json(tmp_path) -> None:
     )
     assert loaded["provenance"]["calibration_split"] == "clean_validation"
     assert loaded["provenance"]["score_reduction"] == "mean"
+    assert loaded["provenance"]["resolved_config_sha256"] is None
+    assert loaded["offline_stride"] == loaded["window_size"]
+    assert loaded["online_stride"] == 1
 
 
 def test_threshold_artifact_keeps_independent_window_thresholds() -> None:
@@ -66,3 +73,23 @@ def test_threshold_artifact_keeps_independent_window_thresholds() -> None:
     assert thresholds["latent_window_high"]["value"] == 5.0
     assert artifact["offline_point_threshold_nonoverlap"] == 1.0
     assert artifact["online_point_threshold_ewma"] == 2.0
+
+
+def test_threshold_artifact_rejects_invalid_stride_contract() -> None:
+    artifact = build_threshold_artifact(
+        method_name="THESIS",
+        variant_name="A2",
+        entity_id="machine-1-6",
+        seed=6,
+        window_size=20,
+        offline_point_threshold=1.0,
+        online_ewma_point_threshold=2.0,
+        quantile=0.99,
+        ewma_current_weight=0.9,
+        ewma_previous_weight=0.1,
+        created_by="pytest",
+        config_path="test.yaml",
+        offline_stride=10,
+    )
+    with pytest.raises(ValueError, match="offline_stride must match window_size"):
+        write_threshold_artifact(artifact, Path("/tmp/threshold.json"))

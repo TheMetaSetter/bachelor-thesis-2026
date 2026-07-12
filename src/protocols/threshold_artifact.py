@@ -26,7 +26,7 @@ def _normalize_variance_correction(value: Any) -> int:
     )
 
 
-def _validate_threshold_artifact(artifact: dict[str, Any]) -> None:
+def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
     required_keys = {
         "schema_version",
         "method_name",
@@ -123,6 +123,28 @@ def _validate_threshold_artifact(artifact: dict[str, Any]) -> None:
         raise ValueError(
             "threshold artifact provenance.calibration_split must match calibration_split"
         )
+    if "checkpoint_sha256" in artifact and artifact["checkpoint_sha256"] is not None:
+        if not isinstance(artifact["checkpoint_sha256"], str) or not artifact[
+            "checkpoint_sha256"
+        ]:
+            raise ValueError("threshold artifact checkpoint_sha256 must be a non-empty string")
+    if "resolved_config_sha256" in artifact and artifact["resolved_config_sha256"] is not None:
+        if not isinstance(artifact["resolved_config_sha256"], str) or not artifact[
+            "resolved_config_sha256"
+        ]:
+            raise ValueError(
+                "threshold artifact resolved_config_sha256 must be a non-empty string"
+            )
+    if not isinstance(artifact["offline_stride"], int) or artifact["offline_stride"] <= 0:
+        raise ValueError("threshold artifact offline_stride must be a positive integer")
+    if not isinstance(artifact["online_stride"], int) or artifact["online_stride"] <= 0:
+        raise ValueError("threshold artifact online_stride must be a positive integer")
+    if artifact["online_stride"] != 1:
+        raise ValueError("threshold artifact online_stride must be 1")
+    if artifact["offline_stride"] != artifact["window_size"]:
+        raise ValueError(
+            "threshold artifact offline_stride must match window_size for non-overlap calibration"
+        )
     thresholds = artifact["thresholds"]
     if not isinstance(thresholds, dict) or not thresholds:
         raise TypeError("threshold artifact thresholds must be a non-empty mapping")
@@ -136,6 +158,31 @@ def _validate_threshold_artifact(artifact: dict[str, Any]) -> None:
                 raise ValueError(
                     f"threshold artifact threshold {threshold_name} is missing {threshold_key}"
                 )
+            if threshold_key == "quantile" and not (0.0 < float(threshold_record[threshold_key]) <= 1.0):
+                raise ValueError(
+                    f"threshold artifact threshold {threshold_name} quantile must be in (0, 1]"
+                )
+        if not isinstance(threshold_record["value"], (int, float)):
+            raise TypeError(
+                f"threshold artifact threshold {threshold_name} value must be numeric"
+            )
+        if not isinstance(threshold_record["score_rule"], str) or not threshold_record["score_rule"]:
+            raise ValueError(
+                f"threshold artifact threshold {threshold_name} score_rule must be a non-empty string"
+            )
+        if not isinstance(threshold_record["source_split"], str) or not threshold_record["source_split"]:
+            raise ValueError(
+                f"threshold artifact threshold {threshold_name} source_split must be a non-empty string"
+            )
+        if "ewma_current_weight" in threshold_record or "ewma_previous_weight" in threshold_record:
+            if threshold_name != "online_ewma_point":
+                raise ValueError(
+                    "EWMA weights may only be attached to online_ewma_point threshold"
+                )
+            if float(threshold_record["ewma_current_weight"]) <= 0.0 or float(
+                threshold_record["ewma_previous_weight"]
+            ) <= 0.0:
+                raise ValueError("EWMA threshold weights must be positive")
 
 
 def build_threshold_artifact(
@@ -170,6 +217,8 @@ def build_threshold_artifact(
     latent_window_low_threshold: float | None = None,
     latent_window_high_threshold: float | None = None,
 ) -> dict[str, Any]:
+    if not 0.0 < float(quantile) <= 1.0:
+        raise ValueError("quantile must be in (0, 1]")
     variance_correction_value = _normalize_variance_correction(variance_correction)
     thresholds = {
         "offline_point": {
@@ -253,12 +302,14 @@ def build_threshold_artifact(
             "score_reduction": score_reduction,
             "variance_correction": variance_correction_value,
             "numeric_precision": numeric_precision,
+            "checkpoint_sha256": checkpoint_sha256,
+            "resolved_config_sha256": resolved_config_sha256,
         },
     }
 
 
 def write_threshold_artifact(artifact: dict[str, Any], output_path: Path) -> None:
-    _validate_threshold_artifact(artifact)
+    validate_threshold_artifact(artifact)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
         json.dumps(artifact, indent=2, sort_keys=True) + "\n",
@@ -268,5 +319,5 @@ def write_threshold_artifact(artifact: dict[str, Any], output_path: Path) -> Non
 
 def load_threshold_artifact(path: Path) -> dict[str, Any]:
     artifact = json.loads(path.read_text(encoding="utf-8"))
-    _validate_threshold_artifact(artifact)
+    validate_threshold_artifact(artifact)
     return artifact

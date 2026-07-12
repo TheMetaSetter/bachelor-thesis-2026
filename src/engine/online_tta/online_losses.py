@@ -44,6 +44,16 @@ def compute_hard_old_hinge_loss(score: torch.Tensor, b_window: float) -> torch.T
     return torch.relu(score - float(b_window)).square().mean()
 
 
+def _require_mask_shape(
+    mask: torch.Tensor,
+    expected_shape: tuple[int, int],
+    context: str,
+) -> torch.Tensor:
+    if mask.shape != expected_shape:
+        raise ValueError(f"{context} must have shape {list(expected_shape)}")
+    return mask.to(dtype=torch.bool)
+
+
 def compute_masked_pnn_reconstruction_loss(
     reconstruction: torch.Tensor,
     target: torch.Tensor,
@@ -89,9 +99,27 @@ def compute_token_multi_positive_info_nce(
         raise ValueError("at least one anomalous codeword is required")
     if temperature <= 0.0:
         raise ValueError("temperature must be positive")
-    anchor_mask = torch.ones(projected_hidden.shape[:2], dtype=torch.bool, device=projected_hidden.device)
+    anchor_mask = torch.ones(
+        projected_hidden.shape[:2], dtype=torch.bool, device=projected_hidden.device
+    )
     if pnn_mask is not None:
-        anchor_mask = pnn_mask.to(device=projected_hidden.device, dtype=torch.bool)
+        anchor_mask = _require_mask_shape(
+            pnn_mask.to(device=projected_hidden.device),
+            projected_hidden.shape[:2],
+            "pnn_mask",
+        )
+    if recurrent_signature_ids is not None:
+        recurrent_signature_ids = recurrent_signature_ids.to(
+            device=projected_hidden.device
+        )
+        if recurrent_signature_ids.ndim != 3 or recurrent_signature_ids.shape[:2] != projected_hidden.shape[:2]:
+            raise ValueError("recurrent_signature_ids must have shape [B, L, T]")
+    if known_anomaly_mask is not None:
+        known_anomaly_mask = _require_mask_shape(
+            known_anomaly_mask.to(device=projected_hidden.device),
+            projected_hidden.shape[:2],
+            "known_anomaly_mask",
+        )
     projected = F.normalize(projected_hidden, dim=-1)
     source = F.normalize(reference_hidden.detach(), dim=-1)
     anomaly_keys = F.normalize(anomalous_codewords.detach(), dim=-1)
@@ -106,11 +134,18 @@ def compute_token_multi_positive_info_nce(
             positives.extend(projected[matches].detach().unbind(0))
         negatives = [anomaly_keys]
         if known_anomaly_mask is not None and known_anomaly_mask.any():
-            mask = known_anomaly_mask.to(device=projected.device, dtype=torch.bool)
-            negatives.extend([projected[mask].detach(), source[mask]])
+            negatives.extend(
+                [
+                    projected[known_anomaly_mask].detach(),
+                    source[known_anomaly_mask],
+                ]
+            )
         positive_logits = anchor @ torch.stack(positives).T / temperature
         negative_logits = anchor @ torch.cat(negatives, dim=0).T / temperature
-        losses.append(torch.logsumexp(torch.cat([positive_logits, negative_logits]), dim=0) - torch.logsumexp(positive_logits, dim=0))
+        losses.append(
+            torch.logsumexp(torch.cat([positive_logits, negative_logits]), dim=0)
+            - torch.logsumexp(positive_logits, dim=0)
+        )
     if not losses:
         return projected_hidden.sum() * 0.0
     return torch.stack(losses).mean()

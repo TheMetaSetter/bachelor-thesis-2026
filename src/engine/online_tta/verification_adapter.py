@@ -56,8 +56,16 @@ def _score_verification_entry(
     batch = build_entry_batch(entry, device)
     model.eval()
     with torch.no_grad():
-        outputs = model.forward(batch)
-    hidden = outputs["aux"]["projected_hidden"].detach()
+        if hasattr(model, "forward_source"):
+            outputs = model.forward_source(batch)
+        else:
+            outputs = model.forward(batch)
+    hidden = outputs.get("aux", {}).get("reference_hidden")
+    if hidden is None:
+        hidden = outputs.get("hidden")
+    if not isinstance(hidden, torch.Tensor):
+        raise ValueError("verification path must expose frozen source hidden states")
+    hidden = hidden.detach()
     reference_model = model.reference_encoder.model
     metadata = PrototypeVerificationMetadata.from_model(reference_model)
     known_anomaly = filter_known_anomaly_tokens(

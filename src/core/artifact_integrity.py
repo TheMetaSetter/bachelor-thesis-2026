@@ -26,17 +26,21 @@ def build_artifact_manifest(
     provenance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a deterministic checksum manifest for named artifact files."""
+    if not isinstance(identity, dict) or not identity:
+        raise ValueError("manifest identity must be a non-empty mapping")
     artifacts = {
         name: {"path": str(Path(path)), "sha256": sha256_file(path)}
         for name, path in sorted(artifact_paths.items())
     }
     manifest: dict[str, Any] = {
         "schema_version": 1,
-        "identity": identity,
+        "identity": dict(identity),
         "artifacts": artifacts,
     }
     if provenance is not None:
-        manifest["provenance"] = provenance
+        if not isinstance(provenance, dict) or not provenance:
+            raise ValueError("manifest provenance must be a non-empty mapping")
+        manifest["provenance"] = dict(provenance)
     return manifest
 
 
@@ -50,6 +54,8 @@ def verify_artifact_manifest(
         return False
     if expected_provenance is not None and manifest.get("provenance") != expected_provenance:
         return False
+    if manifest.get("schema_version") != 1:
+        return False
     artifacts = manifest.get("artifacts")
     if not isinstance(artifacts, dict) or not artifacts:
         return False
@@ -57,6 +63,10 @@ def verify_artifact_manifest(
         if not isinstance(artifact, dict):
             return False
         try:
+            if not isinstance(artifact.get("path"), str) or not isinstance(
+                artifact.get("sha256"), str
+            ):
+                return False
             if sha256_file(artifact["path"]) != artifact["sha256"]:
                 return False
         except (FileNotFoundError, KeyError):

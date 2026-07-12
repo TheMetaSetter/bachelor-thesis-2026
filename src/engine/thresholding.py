@@ -5,6 +5,13 @@ from typing import Any
 import numpy as np
 
 
+def _validate_quantile(quantile: float) -> float:
+    quantile_value = float(quantile)
+    if not 0.0 < quantile_value <= 1.0:
+        raise ValueError("quantile must be in (0, 1]")
+    return quantile_value
+
+
 def select_point_score_threshold(
     point_scores: np.ndarray,
     quantile: float = 0.99,
@@ -32,7 +39,7 @@ def select_clean_validation_point_threshold(
     quantile: float,
 ) -> float:
     """Select the official offline point threshold from clean validation only."""
-    return _select_nan_safe_quantile(clean_validation_point_scores, quantile)
+    return _select_nan_safe_quantile(clean_validation_point_scores, _validate_quantile(quantile))
 
 
 def select_online_ewma_threshold(
@@ -40,7 +47,7 @@ def select_online_ewma_threshold(
     quantile: float,
 ) -> float:
     """Select the online TTA threshold after clean-val stride-1 EWMA simulation."""
-    return _select_nan_safe_quantile(clean_validation_ewma_scores, quantile)
+    return _select_nan_safe_quantile(clean_validation_ewma_scores, _validate_quantile(quantile))
 
 
 def resolve_evaluation_threshold(
@@ -51,7 +58,7 @@ def resolve_evaluation_threshold(
     quantile: float = 0.99,
 ) -> tuple[float, str]:
     if point_score_threshold is None:
-        threshold = select_point_score_threshold(point_scores, quantile=quantile)
+        threshold = select_point_score_threshold(point_scores, quantile=_validate_quantile(quantile))
         return threshold, f"positive_support_quantile_{quantile}"
     return float(point_score_threshold), threshold_source or "provided_threshold"
 

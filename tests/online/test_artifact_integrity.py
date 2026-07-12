@@ -15,12 +15,19 @@ def test_artifact_manifest_verifies_identity_and_detects_content_change(tmp_path
     identity = {"entity_id": "machine-1-6", "online_variant": "A2"}
 
     manifest = build_artifact_manifest(
-        {"checkpoint": checkpoint_path, "records": records_path}, identity
+        {"checkpoint": checkpoint_path, "records": records_path},
+        identity,
+        provenance={"created_by": "pytest", "config_path": "test.yaml"},
     )
     manifest_path = write_artifact_manifest(tmp_path / "manifest.json", manifest)
 
     assert manifest_path.is_file()
     assert verify_artifact_manifest(manifest, expected_identity=identity)
+    assert verify_artifact_manifest(
+        manifest,
+        expected_identity=identity,
+        expected_provenance={"created_by": "pytest", "config_path": "test.yaml"},
+    )
     assert not verify_artifact_manifest(
         manifest, expected_identity={"entity_id": "machine-1-6", "online_variant": "A0"}
     )

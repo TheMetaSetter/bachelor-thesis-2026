@@ -240,6 +240,7 @@ def _build_threshold_artifact_from_scores(
         ewma_previous_weight=float(protocol_config["online_ewma_previous_weight"]),
         created_by="src/engine/online_tta/online_engine.py",
         config_path=str(experiment_config.get("experiment_name", "unknown")),
+        resolved_config_sha256=CheckpointManager._stable_json_digest(experiment_config),
     )
 
 
@@ -727,7 +728,12 @@ def _build_event_pnn_mask(
     signature_history: list[SignatureWindow],
 ) -> tuple[torch.Tensor | None, dict[str, int]]:
     """Build a causal PNN mask from frozen prototype buffers."""
-    hidden = scoring_outputs["aux"]["projected_hidden"].detach()
+    hidden = scoring_outputs["aux"].get("reference_hidden")
+    if hidden is None:
+        hidden = scoring_outputs["hidden"]
+    if not isinstance(hidden, torch.Tensor):
+        raise ValueError("online scoring outputs must expose frozen source hidden")
+    hidden = hidden.detach()
     reference = getattr(model, "reference_encoder", None)
     inner_model = getattr(reference, "model", None)
     metadata = PrototypeVerificationMetadata.from_model(inner_model)
@@ -1349,13 +1355,28 @@ def _finalize_online_execution(
             "threshold": context["threshold_artifact_path"],
         },
         identity=artifact_identity,
+        provenance={
+            "threshold_artifact_path": context["threshold_artifact_path"],
+            "threshold_artifact_sha256": CheckpointManager._stable_json_digest(
+                context["threshold_artifact"]
+            ),
+            "resolved_experiment_config_sha256": CheckpointManager._stable_json_digest(
+                experiment_config
+            ),
+            "online_variant": context["online_variant"],
+        },
     )
     artifact_manifest_path = write_artifact_manifest(
         output_dir / "online_artifact_manifest.json", artifact_manifest
     )
+    expected_provenance = artifact_manifest.get("provenance")
     artifact_integrity_status = (
         "verified"
-        if verify_artifact_manifest(artifact_manifest, artifact_identity)
+        if verify_artifact_manifest(
+            artifact_manifest,
+            artifact_identity,
+            expected_provenance=expected_provenance,
+        )
         else "failed"
     )
     execution_complete = (

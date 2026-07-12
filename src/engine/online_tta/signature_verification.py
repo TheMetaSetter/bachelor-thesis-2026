@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
+
 import torch
 import torch.nn.functional as F
 
@@ -140,6 +141,35 @@ def filter_known_anomaly_tokens(
     )
 
 
+def _normalize_signature_value(value: object, *, context: str) -> int:
+    if isinstance(value, torch.Tensor):
+        if value.ndim != 0:
+            raise TypeError(f"{context} values must be scalar integers")
+        if value.dtype not in {
+            torch.int8,
+            torch.int16,
+            torch.int32,
+            torch.int64,
+            torch.long,
+            torch.uint8,
+        }:
+            raise TypeError(f"{context} values must be integer scalars")
+        return int(value.item())
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{context} values must be integers")
+    return int(value)
+
+
+def _normalize_signature_tuple(
+    signature: Sequence[object], *, context: str
+) -> tuple[int, ...]:
+    if isinstance(signature, (str, bytes)):
+        raise TypeError(f"{context} must be a sequence of integers")
+    return tuple(
+        _normalize_signature_value(value, context=context) for value in signature
+    )
+
+
 def ordered_continuous_signature(
     hidden: torch.Tensor, continuous_prototypes: torch.Tensor, topk: int = 3
 ) -> list[list[tuple[int, ...]]]:
@@ -148,8 +178,17 @@ def ordered_continuous_signature(
     distances = (
         1.0 - F.normalize(hidden, dim=-1) @ F.normalize(continuous_prototypes, dim=-1).T
     )
-    ids = distances.topk(topk, dim=-1, largest=False).indices
-    return [[tuple(int(v) for v in row) for row in batch] for batch in ids.tolist()]
+    ordered_signatures: list[list[tuple[int, ...]]] = []
+    for batch_distances in distances.tolist():
+        token_signatures: list[tuple[int, ...]] = []
+        for token_distances in batch_distances:
+            ranked_ids = sorted(
+                range(len(token_distances)),
+                key=lambda index: (float(token_distances[index]), int(index)),
+            )[:topk]
+            token_signatures.append(tuple(int(index) for index in ranked_ids))
+        ordered_signatures.append(token_signatures)
+    return ordered_signatures
 
 
 @dataclass(frozen=True)
@@ -176,7 +215,10 @@ def signature_window_from_dict(payload: dict[str, object]) -> SignatureWindow:
     """Restore one signature window from checkpoint-safe primitives."""
     raw_signatures = payload.get("signatures", [])
     signatures = [
-        [tuple(int(value) for value in signature) for signature in token]
+        [
+            _normalize_signature_tuple(signature, context="signature window token")
+            for signature in token  # type: ignore[union-attr]
+        ]
         for token in raw_signatures  # type: ignore[union-attr]
     ]
     return SignatureWindow(
@@ -194,7 +236,10 @@ def find_recurrent_signatures(
     for window in window_signatures:
         for token in window.signatures:
             for signature in token:
-                counts.setdefault(signature, []).append(
+                normalized_signature = _normalize_signature_tuple(
+                    signature, context="signature"
+                )
+                counts.setdefault(normalized_signature, []).append(
                     (window.entity_id, window.start, window.end)
                 )
     return {
@@ -213,9 +258,17 @@ def build_pnn_token_mask(
     recurrent_signatures: set[tuple[int, ...]],
     known_anomaly_mask: torch.Tensor,
 ) -> torch.Tensor:
+    normalized_recurrent_signatures = {
+        _normalize_signature_tuple(signature, context="recurrent signature")
+        for signature in recurrent_signatures
+    }
     mask = torch.tensor(
         [
-            [tuple(token) in recurrent_signatures for token in batch]
+            [
+                _normalize_signature_tuple(token, context="signature token")
+                in normalized_recurrent_signatures
+                for token in batch
+            ]
             for batch in signatures
         ],
         dtype=torch.bool,
