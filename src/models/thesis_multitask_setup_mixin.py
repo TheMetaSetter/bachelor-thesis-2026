@@ -18,7 +18,6 @@ import torch.nn.functional as F
 
 from src.core.console import (
     console_print,
-    print_parameter_summary,
     summarize_batch,
     summarize_label_distribution,
     summarize_tensor,
@@ -44,161 +43,15 @@ from src.models.thesis_multitask_components import (
     build_multilayer_perceptron,
 )
 from src.models.neural_blocks import _initialize_mlp_linear_layers
+from src.models.thesis_multitask_setup_helpers import (
+    print_thesis_multitask_model_summary,
+    store_thesis_multitask_config_values,
+)
 
 
 class ThesisMultitaskSetupMixin:
     def _store_config_values(self, config: ThesisMultitaskModelConfig) -> None:
-        # This constructor stores both the architecture and the experiment
-        # switches because the repository follows the one-model-one-file rule.
-        architecture = config.architecture
-        prototypes = config.prototypes
-        schedule = config.schedule
-        objective = config.objective
-        memory = config.memory
-        runtime = config.runtime
-        profiling = config.profiling
-        synthetic = config.synthetic
-
-        self.model_config = config
-        self.window_size = architecture.window_size
-        self.hidden_dim = architecture.hidden_dim
-        self.encoder_family = architecture.encoder_family
-        self.mlp_num_linear_layers = architecture.mlp_num_linear_layers
-        self.cnn_num_layers = architecture.cnn_num_layers
-        self.cnn_kernel_size = architecture.cnn_kernel_size
-        self.cnn_hidden_channels = architecture.cnn_hidden_channels
-        self.cnn_dropout = architecture.cnn_dropout
-        self.num_classes = architecture.num_classes
-        self.continuous_num_prototypes = prototypes.continuous_num_prototypes
-        self.discrete_codebook_size = prototypes.discrete_codebook_size
-        self.default_gumbel_temperature = prototypes.gumbel_temperature
-        self.gumbel_temperature = prototypes.gumbel_temperature
-        self.stochastic_inference = prototypes.stochastic_inference
-        self.monte_carlo_samples = prototypes.monte_carlo_samples
-        self.continuous_temperature = prototypes.continuous_temperature
-        self.discrete_temperature = prototypes.discrete_temperature
-        self.variance_correction = prototypes.variance_correction
-        self.return_mc_samples = prototypes.return_mc_samples
-        self.sample_retention_policy = prototypes.sample_retention_policy
-        self.temperature_start = schedule.temperature_start
-        self.temperature_end = schedule.temperature_end
-        self.temperature_anneal_fraction = schedule.temperature_anneal_fraction
-        self.temperature_hold_fraction = schedule.temperature_hold_fraction
-        self.use_label_refurbishment = objective.use_label_refurbishment
-        self.refurbishment_alpha = objective.refurbishment_alpha
-        self.refurbishment_beta = objective.refurbishment_beta
-        self.reconstruction_normal_only = objective.reconstruction_normal_only
-        self.lambda_recon = objective.lambda_recon
-        self.lambda_cls = objective.lambda_cls
-        self.enable_classification_path = objective.enable_classification_path
-        self.lambda_div = objective.lambda_div
-        self.lambda_var = objective.lambda_var
-        self.lambda_cov = objective.lambda_cov
-        self.lambda_use = objective.lambda_use
-        self.lambda_gate = objective.lambda_gate
-        self.usage_lambda_start = (
-            objective.lambda_use
-            if schedule.usage_lambda_start is None
-            else schedule.usage_lambda_start
-        )
-        self.usage_lambda_end = (
-            objective.lambda_use
-            if schedule.usage_lambda_end is None
-            else schedule.usage_lambda_end
-        )
-        self.usage_lambda_schedule_fraction = schedule.usage_lambda_schedule_fraction
-        self.current_usage_lambda = self.usage_lambda_start
-        self.enable_diversity_loss = objective.enable_diversity_loss
-        self.enable_variance_loss = objective.enable_variance_loss
-        self.enable_covariance_loss = objective.enable_covariance_loss
-        self.enable_usage_loss = objective.enable_usage_loss
-        self.enable_gate_loss = objective.enable_gate_loss
-        self.enable_score_loss = objective.enable_score_loss
-        self.score_loss_granularity = objective.score_loss_granularity
-        self.score_loss_type = objective.score_loss_type
-        self.score_loss_target = objective.score_loss_target
-        self.score_loss_normalization = objective.score_loss_normalization
-        self.score_loss_reduction = objective.score_loss_reduction
-        self.variance_floor_gamma = objective.variance_floor_gamma
-        self.gate_barrier_margin = objective.gate_barrier_margin
-        self.enable_two_view_contrastive = objective.enable_two_view_contrastive
-        self.contrastive_temperature = objective.contrastive_temperature
-        self.lambda_contrastive = objective.lambda_contrastive
-        self.enable_cka_gated_fusion = objective.enable_cka_gated_fusion
-        self.cka_eps = objective.cka_eps
-        self.bootstrap_encoder_epochs = memory.bootstrap_encoder_epochs
-        self.enable_gradient_conflict_profiling = (
-            profiling.enable_gradient_conflict_profiling
-        )
-        self.gradient_profiling_scope = profiling.gradient_profiling_scope
-        self.gradient_focus_layer_name = profiling.gradient_focus_layer_name
-        self.gradient_log_every_n_steps = profiling.gradient_log_every_n_steps
-        self.gradient_ema_alpha = profiling.gradient_ema_alpha
-        self.gradient_sma_window = profiling.gradient_sma_window
-        self.gradient_profile_include_bias = profiling.gradient_profile_include_bias
-        self._gradient_profile_train_step_count = 0
-        self._gradient_profile_ema_state: dict[str, float] = {}
-        self._gradient_profile_sma_buffers: dict[str, deque[float]] = {}
-        self.discrete_ema_decay = prototypes.discrete_ema_decay
-        self.memory_norm_epsilon = memory.memory_norm_epsilon
-        self.memory_initialization_batches = memory.memory_initialization_batches
-        self.memory_initialization_with_synthetic_windows = (
-            memory.memory_initialization_with_synthetic_windows
-        )
-        self.training_phase = runtime.training_phase
-        self.fusion_mode = runtime.fusion_mode
-        self.discrete_query_mode = runtime.discrete_query_mode
-        self.discrete_topk = runtime.discrete_topk
-        self.discrete_query_temperature = runtime.discrete_query_temperature
-        self.freeze_memories_after_initialization = (
-            runtime.freeze_memories_after_initialization
-        )
-        self.freeze_recovered_zipped_encoder_during_warmup = (
-            runtime.freeze_recovered_zipped_encoder_during_warmup
-        )
-        self.discrete_memory_label_source = runtime.discrete_memory_label_source
-        self.use_synthetic_augmentation = synthetic.use_synthetic_augmentation
-        self.use_synthetic_validation = synthetic.use_synthetic_validation
-        self.synthetic_train_seed = synthetic.synthetic_train_seed
-        self.synthetic_validation_seed = synthetic.synthetic_validation_seed
-        self.classification_label_mode = synthetic.classification_label_mode
-        self.freeze_fusion_for_epochs = schedule.freeze_fusion_for_epochs
-        self.warmup_alpha_value = schedule.warmup_alpha_value
-        self.warmup_beta_value = schedule.warmup_beta_value
-        self.epsilon = 1e-6
-        self.current_epoch_index = 0
-        self.current_total_epochs = 1
-        self.active_alpha_override: float | None = None
-        self.active_beta_override: float | None = None
-        self._score_loss_skipped_batches = 0
-        self.continuous_memory_enabled = (
-            prototypes.continuous_enabled and prototypes.continuous_num_prototypes > 0
-        )
-        self.discrete_memory_enabled = (
-            prototypes.discrete_enabled and prototypes.discrete_codebook_size > 0
-        )
-        self.memory_initialized = memory.bootstrap_encoder_epochs <= 0
-        self.memory_training_enabled = self.memory_initialized
-        if self.training_phase in TWO_STAGE_PHASE_NAMES:
-            self.memory_initialized = False
-            self.memory_training_enabled = False
-        self.memory_ready_for_initialization = False
-        self.memory_initialization_epoch: int | None = None
-        self.schedule_state = {
-            "epoch": 1,
-            "warmup_active": False,
-            "freeze_fusion_for_epochs": self.freeze_fusion_for_epochs,
-            "temperature": self.gumbel_temperature,
-            "usage_lambda": self.current_usage_lambda,
-        }
-        if (
-            self.use_label_refurbishment
-            and self.classification_label_mode == "binary"
-            and self.num_classes != 2
-        ):
-            raise ValueError(
-                "label refurbishment currently supports only binary classification"
-            )
+        store_thesis_multitask_config_values(self, config)
 
     def _phase_uses_prototype_path(self) -> bool:
         # Active two-stage runs only use the prototype path in Stage B.
@@ -581,77 +434,4 @@ class ThesisMultitaskSetupMixin:
         }
 
     def _print_model_summary(self, config: ThesisMultitaskModelConfig) -> None:
-        architecture = config.architecture
-        prototypes = config.prototypes
-        schedule = config.schedule
-        objective = config.objective
-        memory = config.memory
-        profiling = config.profiling
-        synthetic = config.synthetic
-        print_parameter_summary(
-            "MODEL",
-            "ThesisMultitaskModel",
-            self,
-            {
-                "encoder": self.encoder,
-                "continuous_prototype_bank": self.continuous_prototype_bank,
-                "discrete_assignment": self.discrete_assignment,
-                "discrete_codebook": self.discrete_codebook,
-                "continuous_update_gate": self.continuous_update_gate,
-                "reconstruction_head": self.reconstruction_head,
-                "classification_head": self.classification_head,
-                "alpha_logit": self.alpha_logit,
-                "beta_logit": self.beta_logit,
-            },
-            input_dim=architecture.input_dim,
-            window_size=architecture.window_size,
-            encoder_dim=architecture.encoder_dim,
-            hidden_dim=architecture.hidden_dim,
-            encoder_family=architecture.encoder_family,
-            mlp_num_linear_layers=architecture.mlp_num_linear_layers,
-            cnn_num_layers=architecture.cnn_num_layers,
-            cnn_kernel_size=architecture.cnn_kernel_size,
-            cnn_hidden_channels=architecture.cnn_hidden_channels,
-            num_classes=architecture.num_classes,
-            use_label_refurbishment=objective.use_label_refurbishment,
-            refurbishment_alpha=objective.refurbishment_alpha,
-            refurbishment_beta=objective.refurbishment_beta,
-            reconstruction_normal_only=objective.reconstruction_normal_only,
-            lambda_recon=objective.lambda_recon,
-            lambda_cls=objective.lambda_cls,
-            lambda_div=objective.lambda_div,
-            lambda_var=objective.lambda_var,
-            lambda_cov=objective.lambda_cov,
-            lambda_use=objective.lambda_use,
-            lambda_gate=objective.lambda_gate,
-            enable_score_loss=objective.enable_score_loss,
-            score_loss_granularity=objective.score_loss_granularity,
-            score_loss_type=objective.score_loss_type,
-            score_loss_target=objective.score_loss_target,
-            score_loss_normalization=objective.score_loss_normalization,
-            score_loss_reduction=objective.score_loss_reduction,
-            temperature_start=schedule.temperature_start,
-            temperature_end=schedule.temperature_end,
-            temperature_hold_fraction=schedule.temperature_hold_fraction,
-            usage_lambda_start=self.usage_lambda_start,
-            usage_lambda_end=self.usage_lambda_end,
-            usage_lambda_schedule_fraction=schedule.usage_lambda_schedule_fraction,
-            bootstrap_encoder_epochs=memory.bootstrap_encoder_epochs,
-            enable_gradient_conflict_profiling=(
-                profiling.enable_gradient_conflict_profiling
-            ),
-            gradient_profiling_scope=profiling.gradient_profiling_scope,
-            gradient_focus_layer_name=profiling.gradient_focus_layer_name,
-            gradient_log_every_n_steps=profiling.gradient_log_every_n_steps,
-            gradient_ema_alpha=profiling.gradient_ema_alpha,
-            gradient_sma_window=profiling.gradient_sma_window,
-            gradient_profile_include_bias=profiling.gradient_profile_include_bias,
-            discrete_ema_decay=prototypes.discrete_ema_decay,
-            memory_norm_epsilon=memory.memory_norm_epsilon,
-            memory_initialization_batches=memory.memory_initialization_batches,
-            memory_initialization_with_synthetic_windows=(
-                memory.memory_initialization_with_synthetic_windows
-            ),
-            use_synthetic_validation=synthetic.use_synthetic_validation,
-            synthetic_validation_seed=synthetic.synthetic_validation_seed,
-        )
+        print_thesis_multitask_model_summary(self, config)

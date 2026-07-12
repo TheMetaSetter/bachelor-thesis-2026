@@ -86,3 +86,46 @@ def test_stage_a_point_score_loss_is_enabled_only_for_point_score_variant() -> N
     assert point_score_step["loss_terms"]["score_loss"].item() > 0.0
     assert point_score_step["log"]["train_score_loss"] > 0.0
     assert point_score_step["log"]["train_score_loss_skipped_batches"] == 0.0
+
+
+def test_stage_a_point_score_loss_matches_manual_balanced_bce_definition() -> None:
+    # Mình khóa công thức ở mức rất cụ thể: normal và anomaly phải được cân
+    # bằng nhau sau khi chuẩn hoá trên phần normal của batch.
+    model = _build_model(enable_score_loss=True)
+    model.train()
+    batch = _build_batch()
+    outputs = {
+        "recon": torch.tensor(
+            [
+                [[0.0] * 38 for _ in range(20)],
+                [[1.0] * 38 for _ in range(20)],
+            ],
+            dtype=torch.float32,
+        ),
+    }
+
+    score_loss, diagnostics = model._compute_point_score_loss(outputs, batch)
+    assert score_loss is not None
+    assert diagnostics["point_score_normal_count"].item() > 0
+    assert diagnostics["point_score_anomaly_count"].item() > 0
+
+    pointwise_reconstruction_error = ((outputs["recon"] - batch["x"]) ** 2).mean(
+        dim=-1
+    )
+    anomaly_mask = batch["synthetic_anomaly_mask"].bool()
+    normal_mask = ~anomaly_mask
+    normal_scores = pointwise_reconstruction_error[normal_mask]
+    score_mean = normal_scores.mean()
+    score_std = normal_scores.std(unbiased=False).clamp_min(model.epsilon)
+    normalized_scores = (pointwise_reconstruction_error - score_mean) / score_std
+    expected = 0.5 * torch.nn.functional.binary_cross_entropy_with_logits(
+        normalized_scores[normal_mask],
+        torch.zeros_like(normalized_scores[normal_mask]),
+        reduction="mean",
+    ) + 0.5 * torch.nn.functional.binary_cross_entropy_with_logits(
+        normalized_scores[anomaly_mask],
+        torch.ones_like(normalized_scores[anomaly_mask]),
+        reduction="mean",
+    )
+
+    assert torch.allclose(score_loss, expected, atol=1e-6)

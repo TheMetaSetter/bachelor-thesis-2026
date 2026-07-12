@@ -285,6 +285,16 @@ def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode(
         3,
         10,
     )
+    assert torch.allclose(
+        outputs["point_scores"],
+        outputs["aux"]["stochastic_query"]["point_score_samples"].mean(dim=1),
+        atol=1e-6,
+    )
+    assert torch.allclose(
+        outputs["window_scores"],
+        outputs["aux"]["stochastic_query"]["window_score_samples"].mean(dim=1),
+        atol=1e-6,
+    )
     assert outputs["aux"]["uncertainty"]["point_anomaly_score_variance"].shape == (
         3,
         20,

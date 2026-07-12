@@ -1,6 +1,8 @@
 import pytest
 import torch
 
+from src.core.contracts import validate_online_batch
+from src.engine.online_tta.verification_adapter import build_entry_batch
 from src.engine.online_tta.signature_verification import PrototypeVerificationMetadata
 
 
@@ -87,3 +89,20 @@ def test_checkpoint_extra_state_rejects_malformed_verification_provenance() -> N
     state["verification_metadata_schema_version"] = 2
     with pytest.raises(ValueError, match="verification_metadata_schema_version"):
         model.load_checkpoint_extra_state(state)
+
+
+def test_verification_entry_batch_stays_label_free() -> None:
+    # Verification must never depend on point labels, because the buffer is
+    # supposed to contain only windows and metadata.
+    batch = build_entry_batch(
+        {
+            "window": torch.zeros(20, 3),
+            "entity_id": "machine-1-6",
+            "window_start": 4,
+            "window_end": 24,
+            "stream_step": 24,
+        },
+        "cpu",
+    )
+    validate_online_batch(batch)
+    assert batch["point_labels"] is None
