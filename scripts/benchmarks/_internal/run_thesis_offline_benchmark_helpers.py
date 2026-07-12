@@ -25,7 +25,7 @@ from typing import Any
 import numpy as np
 import yaml
 
-sys.path.append(str(Path(__file__).resolve().parents[2]))
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 from src.core.config import load_experiment_config
 from src.core.artifact_integrity import (
     build_retention_bundle_manifest,

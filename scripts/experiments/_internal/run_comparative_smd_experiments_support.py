@@ -40,7 +40,7 @@ import subprocess
 import sys
 from typing import Any
 
-sys.path.append(str(Path(__file__).resolve().parents[2]))
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 import yaml
 
@@ -50,7 +50,7 @@ from src.core.config import load_experiment_config
 # (๑•́ ω •̀๑) CONSTANTS - Runtime Configuration
 # ～～～～～～～～～～～～～～～～～～～～～～～～～～～
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SUPPORTED_BASELINE_MODEL_NAMES = {"redlamp_baseline"}
 
 

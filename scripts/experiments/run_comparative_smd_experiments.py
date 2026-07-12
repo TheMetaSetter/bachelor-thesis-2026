@@ -1,7 +1,7 @@
-from scripts.experiments import (
+from scripts.experiments._internal import (
     run_comparative_smd_experiments_support as comparative_support,
 )
-from scripts.experiments.run_comparative_smd_experiments_support import *  # noqa: F401,F403
+from scripts.experiments._internal.run_comparative_smd_experiments_support import *  # noqa: F401,F403
 
 _build_baseline_single_stage_commands = (
     comparative_support._build_baseline_single_stage_commands

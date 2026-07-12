@@ -16,7 +16,7 @@ import subprocess
 import sys
 from typing import Any
 
-sys.path.append(str(Path(__file__).resolve().parents[2]))
+sys.path.append(str(Path(__file__).resolve().parents[3]))
 
 import torch
 import torch.nn.functional as F
@@ -46,7 +46,7 @@ THREE_STAGE_PHASE_FIELD_ORDER: list[tuple[str, str]] = [
     ("multitask_pretraining", "multitask_pretraining_epochs"),
 ]
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 STAGE2_ZIPPING_ACTIVATION_BATCHES = 8
 STATISTICAL_PROCEDURE_NAMES = [
     "stage2_mtz_parameter_zipping",
@@ -172,5 +172,4 @@ def _resolve_repo_config_reference(config_reference: str) -> str:
     if reference_path.is_absolute():
         return str(reference_path)
     return str((REPOSITORY_ROOT / reference_path).resolve())
-
 

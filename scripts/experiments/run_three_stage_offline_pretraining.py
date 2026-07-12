@@ -1,5 +1,5 @@
-from scripts.experiments.run_three_stage_offline_pretraining_shared import *  # noqa: F401,F403
-from scripts.experiments.run_three_stage_offline_pretraining_support import *  # noqa: F401,F403
+from scripts.experiments._internal.run_three_stage_offline_pretraining_shared import *  # noqa: F401,F403
+from scripts.experiments._internal.run_three_stage_offline_pretraining_support import *  # noqa: F401,F403
 
 
 

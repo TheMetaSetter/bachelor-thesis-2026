@@ -1,4 +1,4 @@
-from scripts.experiments.run_three_stage_offline_pretraining_shared import *  # noqa: F401,F403
+from scripts.experiments._internal.run_three_stage_offline_pretraining_shared import *  # noqa: F401,F403
 
 def _build_stage_experiment_config(
     experiment_config: dict[str, Any],

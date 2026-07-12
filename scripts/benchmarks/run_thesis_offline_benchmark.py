@@ -400,7 +400,7 @@ def _export_offline_artifacts(
     }
 
 
-from scripts.benchmarks.run_thesis_offline_benchmark_helpers import (
+from scripts.benchmarks._internal.run_thesis_offline_benchmark_helpers import (
     _export_offline_retention_bundle,
 )
 
