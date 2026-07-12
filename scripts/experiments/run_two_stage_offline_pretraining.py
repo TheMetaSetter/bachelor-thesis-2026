@@ -293,14 +293,16 @@ def build_two_stage_execution_commands(manifest: dict[str, Any]) -> dict[str, An
         training_commands.append(
             [
                 sys.executable,
-                str(REPOSITORY_ROOT / "scripts" / "train.py"),
+                "-m",
+                "scripts.train",
                 "--experiment-config",
                 str(stage_record["config_path"]),
             ]
         )
     evaluation_command = [
         sys.executable,
-        str(REPOSITORY_ROOT / "scripts" / "evaluate.py"),
+        "-m",
+        "scripts.evaluate",
         "--experiment-config",
         str(manifest["evaluation"]["config_path"]),
         "--checkpoint-path",

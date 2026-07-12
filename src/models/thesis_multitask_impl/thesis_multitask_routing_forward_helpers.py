@@ -78,6 +78,7 @@ def forward(self: Any, batch: dict[str, Any], stage_name: str = "train") -> dict
     anomaly_mask = batch.get("synthetic_anomaly_mask")
     normal_token_mask = None
     anomaly_token_mask = None
+    monte_carlo_forward_outputs = None
     if anomaly_mask is not None and self.enable_two_view_contrastive:
         normal_token_mask = anomaly_mask == 0
         anomaly_token_mask = anomaly_mask == 1
@@ -128,7 +129,6 @@ def forward(self: Any, batch: dict[str, Any], stage_name: str = "train") -> dict
             paired_hidden=batch.get("paired_hidden_for_fusion"),
         )
         stochastic_query = None
-        monte_carlo_forward_outputs = None
         if self.stochastic_inference:
             query_bundle = self.build_stochastic_queries(
                 hidden,

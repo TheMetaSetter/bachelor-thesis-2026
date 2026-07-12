@@ -324,6 +324,39 @@ def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode(
     assert torch.isfinite(outputs["aux"]["uncertainty"]["reconstruction_variance_full"]).all()
 
 
+def test_multitask_model_eval_without_stochastic_inference_is_safe() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        stochastic_inference=False,
+        continuous_enabled=True,
+        continuous_num_prototypes=4,
+        discrete_enabled=True,
+        discrete_codebook_size=8,
+    )
+    model.memory_initialized = True
+    model.memory_training_enabled = False
+    model.eval()
+    batch = {
+        "x": torch.randn(2, 20, 38),
+        "point_labels": torch.zeros(2, 20, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": f"machine-{index}"} for index in range(2)],
+    }
+
+    outputs = model(batch)
+
+    assert outputs["recon"].shape == (2, 20, 38)
+    assert outputs["point_scores"].shape == (2, 20)
+    assert outputs["window_scores"].shape == (2,)
+    assert outputs["aux"]["stochastic_query"] is None
+    assert outputs["aux"]["uncertainty"] is None
+
+
 def test_multitask_model_handles_single_sample_monte_carlo_without_nan() -> None:
     model = ThesisMultitaskModel(
         input_dim=38,
