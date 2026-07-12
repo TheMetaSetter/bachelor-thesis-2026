@@ -26,16 +26,8 @@ import numpy as np
 import yaml
 
 sys.path.append(str(Path(__file__).parent.parent))
-
-from scripts.train import build_model_from_experiment_config
-from scripts.run_two_stage_offline_pretraining import (
-    execute_two_stage_plan,
-    materialize_two_stage_run_manifest,
-    validate_two_stage_epoch_budget,
-)
 from src.core.config import load_experiment_config
 from src.core.registry import build_dataset
-from src.core.runtime_components import register_evaluation_runtime_components
 from src.data.loaders import rebuild_dataset_bundle_with_scaler_state
 from src.engine.checkpoint import CheckpointManager
 from src.engine.evaluator import Evaluator
@@ -44,11 +36,66 @@ from src.engine.thresholding import (
     select_online_ewma_threshold,
 )
 from src.protocols.point_scores import ewma_scores
-from src.protocols.smd_benchmark_protocol import validate_protocol_config
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     write_threshold_artifact,
 )
+
+
+def build_model_from_experiment_config(experiment_config: dict[str, Any]) -> Any:
+    from scripts.train import build_model_from_experiment_config as _build_model_from_experiment_config
+
+    return _build_model_from_experiment_config(experiment_config)
+
+
+def materialize_two_stage_run_manifest(
+    experiment_config: dict[str, Any],
+) -> dict[str, Any]:
+    from scripts.run_two_stage_offline_pretraining import (
+        materialize_two_stage_run_manifest as _materialize_two_stage_run_manifest,
+    )
+
+    return _materialize_two_stage_run_manifest(experiment_config)
+
+
+def execute_two_stage_plan(
+    manifest: dict[str, Any],
+    dry_run: bool,
+    skip_completed: bool,
+) -> dict[str, Any]:
+    from scripts.run_two_stage_offline_pretraining import (
+        execute_two_stage_plan as _execute_two_stage_plan,
+    )
+
+    return _execute_two_stage_plan(
+        manifest,
+        dry_run=dry_run,
+        skip_completed=skip_completed,
+    )
+
+
+def validate_two_stage_epoch_budget(experiment_config: dict[str, Any]) -> None:
+    from scripts.run_two_stage_offline_pretraining import (
+        validate_two_stage_epoch_budget as _validate_two_stage_epoch_budget,
+    )
+
+    return _validate_two_stage_epoch_budget(experiment_config)
+
+
+def register_evaluation_runtime_components() -> None:
+    from src.core.runtime_components import (
+        register_evaluation_runtime_components as _register_evaluation_runtime_components,
+    )
+
+    return _register_evaluation_runtime_components()
+
+
+def validate_protocol_config(protocol_config: dict[str, Any]) -> None:
+    from src.protocols.smd_benchmark_protocol import (
+        validate_protocol_config as _validate_protocol_config,
+    )
+
+    return _validate_protocol_config(protocol_config)
 
 
 def _utc_now_iso() -> str:

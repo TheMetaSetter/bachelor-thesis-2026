@@ -30,10 +30,8 @@ from src.baselines.traditional import (
 )
 from src.core.config import load_yaml_config
 from src.core.registry import build_dataset
-from src.core.runtime_components import register_evaluation_runtime_components
 from src.metrics.pointwise import compute_pointwise_metrics
 from src.protocols.point_scores import ewma_scores
-from src.protocols.smd_benchmark_protocol import validate_protocol_config
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     write_threshold_artifact,
@@ -46,6 +44,22 @@ BASELINE_BUILDERS: dict[str, Callable[..., TraditionalBaselineProtocol]] = {
     "kmeans_ad": KMeansADWindowBaseline,
     "iforest": IForestWindowBaseline,
 }
+
+
+def register_evaluation_runtime_components() -> None:
+    from src.core.runtime_components import (
+        register_evaluation_runtime_components as _register_evaluation_runtime_components,
+    )
+
+    return _register_evaluation_runtime_components()
+
+
+def validate_protocol_config(protocol_config: dict[str, Any]) -> None:
+    from src.protocols.smd_benchmark_protocol import (
+        validate_protocol_config as _validate_protocol_config,
+    )
+
+    return _validate_protocol_config(protocol_config)
 
 
 def _utc_now_iso() -> str:

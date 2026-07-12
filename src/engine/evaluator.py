@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Evaluation loop that merges overlapping window scores back to entity timelines.
+r"""Evaluation loop that merges overlapping window scores back to entity timelines.
 
 This file is part of the final evaluation step in the anomaly detection pipeline.
 The model scores many short windows of time, and these window-level scores are
@@ -11,7 +11,7 @@ anomalies on the real timeline instead of just on short fragments.
 How the flow works in this codebase:
 
   data_loader -> batch of windows -> model.test_step -> point_scores
-               \___________________________________________/
+        \\___________________________________________/
                               merge back to full timeline
 
 Cute diagram for the flow:
