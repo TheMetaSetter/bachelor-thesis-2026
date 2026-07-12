@@ -7,9 +7,6 @@ _build_baseline_single_stage_commands = (
     comparative_support._build_baseline_single_stage_commands
 )
 _build_run_record = comparative_support._build_run_record
-_build_thesis_three_stage_commands = (
-    comparative_support._build_thesis_three_stage_commands
-)
 _build_thesis_two_stage_commands = comparative_support._build_thesis_two_stage_commands
 _load_run_records = comparative_support._load_run_records
 _normalize_artifact_path = comparative_support._normalize_artifact_path
@@ -262,12 +259,6 @@ def _run_has_required_artifacts(
             / "two_stage"
             / "two_stage_execution_report.json"
         )
-    elif str(run_record["stage_family"]) == "legacy_thesis_three_stage":
-        stage_execution_report_path = (
-            _normalize_artifact_path(run_record["output_dir"])
-            / "three_stage"
-            / "three_stage_execution_report.json"
-        )
     else:
         raise ValueError(f"Unsupported stage family: {run_record['stage_family']}")
     return all(
@@ -361,14 +352,10 @@ def execute_comparative_run_plan(
                 execution_report["executed_run_ids"].append(run_record["run_id"])
                 for command in run_record["commands"]:
                     command_to_run = list(command)
-                    # Add --skip-completed flag for multistage runs if resuming
+                    # Add --skip-completed flag when resuming the two-stage thesis run.
                     if (
                         skip_completed
-                        and str(run_record["stage_family"])
-                        in {
-                            "thesis_two_stage",
-                            "legacy_thesis_three_stage",
-                        }
+                        and str(run_record["stage_family"]) == "thesis_two_stage"
                         and "--skip-completed" not in command_to_run
                     ):
                         command_to_run.append("--skip-completed")

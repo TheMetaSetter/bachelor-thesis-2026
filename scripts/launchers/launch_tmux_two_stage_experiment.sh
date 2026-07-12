@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEFAULT_EXPERIMENT_CONFIG="configs/experiment/thesis/exp4/smd__thesis_multitask__offline-pretraining-three-stage-machine-3-4-window20__w20__seed11__rtx3090.yaml"
-DEFAULT_SESSION_NAME="three-stage-machine-3-4-seed11"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+DEFAULT_EXPERIMENT_CONFIG="configs/experiment/offline_benchmark/thesis/smd__thesis__offline__O0__machine_3_4__w20__seed6__main.yaml"
+DEFAULT_PROTOCOL_CONFIG="configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
+DEFAULT_SESSION_NAME="two-stage-benchmark-machine-3-4-seed6"
 DEFAULT_PYTHON_BIN=".venv/bin/python"
 DEFAULT_GPU_INDEX="0"
 DEFAULT_REQUIRED_GPU_NAME_SUBSTRING="RTX 3090"
 
 EXPERIMENT_CONFIG="${DEFAULT_EXPERIMENT_CONFIG}"
+PROTOCOL_CONFIG="${DEFAULT_PROTOCOL_CONFIG}"
 SESSION_NAME="${DEFAULT_SESSION_NAME}"
 PYTHON_BIN="${DEFAULT_PYTHON_BIN}"
 GPU_INDEX="${DEFAULT_GPU_INDEX}"
 REQUIRED_GPU_NAME_SUBSTRING="${DEFAULT_REQUIRED_GPU_NAME_SUBSTRING}"
+SKIP_COMPLETED=false
 DRY_RUN=false
-PREFLIGHT_ONLY=false
+PREVIEW_ONLY=false
 REPLACE_SESSION=false
 
 LOG_DIR="${REPO_ROOT}/outputs/tmux_logs"
@@ -22,14 +25,16 @@ LOG_PATH=""
 
 print_usage() {
   cat <<'EOF'
-Usage: scripts/launch_tmux_three_stage_experiment.sh [options]
+Usage: scripts/launch_tmux_two_stage_experiment.sh [options]
 
 Options:
   --experiment-config PATH
+  --protocol-config PATH
   --session-name NAME
   --python-bin PATH
   --gpu-index INDEX
   --required-gpu-name-substring TEXT
+  --skip-completed
   --dry-run
   --preflight-only
   --replace-session
@@ -55,12 +60,12 @@ join_display_args() {
   printf '%s' "${joined% }"
 }
 
-resolve_experiment_config_path() {
-  local config_path="$1"
-  if [[ "${config_path}" = /* ]]; then
-    printf '%s\n' "${config_path}"
+resolve_path() {
+  local path="$1"
+  if [[ "${path}" = /* ]]; then
+    printf '%s\n' "${path}"
   else
-    printf '%s/%s\n' "${REPO_ROOT}" "${config_path}"
+    printf '%s/%s\n' "${REPO_ROOT}" "${path}"
   fi
 }
 
@@ -85,6 +90,10 @@ while [[ $# -gt 0 ]]; do
       EXPERIMENT_CONFIG="$2"
       shift 2
       ;;
+    --protocol-config)
+      PROTOCOL_CONFIG="$2"
+      shift 2
+      ;;
     --session-name)
       SESSION_NAME="$2"
       shift 2
@@ -101,12 +110,16 @@ while [[ $# -gt 0 ]]; do
       REQUIRED_GPU_NAME_SUBSTRING="$2"
       shift 2
       ;;
+    --skip-completed)
+      SKIP_COMPLETED=true
+      shift
+      ;;
     --dry-run)
       DRY_RUN=true
       shift
       ;;
     --preflight-only)
-      PREFLIGHT_ONLY=true
+      PREVIEW_ONLY=true
       shift
       ;;
     --replace-session)
@@ -125,86 +138,58 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "${DRY_RUN}" == true && "${PREFLIGHT_ONLY}" == true ]]; then
-  printf '--dry-run and --preflight-only cannot be used together.\n' >&2
+if [[ "${DRY_RUN}" == true && "${PREVIEW_ONLY}" == true ]]; then
+  printf '%s\n' "--dry-run and --preflight-only cannot be used together." >&2
   exit 2
 fi
 
 mkdir -p "${LOG_DIR}"
 LOG_PATH="${LOG_DIR}/${SESSION_NAME}.log"
-RESOLVED_EXPERIMENT_CONFIG_PATH="$(resolve_experiment_config_path "${EXPERIMENT_CONFIG}")"
+RESOLVED_EXPERIMENT_CONFIG_PATH="$(resolve_path "${EXPERIMENT_CONFIG}")"
+RESOLVED_PROTOCOL_CONFIG_PATH="$(resolve_path "${PROTOCOL_CONFIG}")"
 RESOLVED_OUTPUT_DIR="$(resolve_output_dir_path "${RESOLVED_EXPERIMENT_CONFIG_PATH}")"
-PREFLIGHT_SUMMARY_PATH="${RESOLVED_OUTPUT_DIR}/three_stage/server_preflight_summary.json"
-RUN_VERIFICATION_SUMMARY_PATH="${RESOLVED_OUTPUT_DIR}/three_stage/three_stage_run_verification.json"
+BENCHMARK_REPORT_PATH="${RESOLVED_OUTPUT_DIR}/benchmark/thesis_offline_benchmark_report.json"
 
-PREFLIGHT_COMMAND=(
+BENCHMARK_COMMAND=(
   "${PYTHON_BIN}"
-  "scripts/preflight_three_stage_server.py"
+  "scripts/run_thesis_offline_benchmark.py"
   "--experiment-config"
   "${EXPERIMENT_CONFIG}"
-  "--gpu-index"
-  "${GPU_INDEX}"
-  "--required-gpu-name-substring"
-  "${REQUIRED_GPU_NAME_SUBSTRING}"
-  "--print-json"
+  "--protocol-config"
+  "${PROTOCOL_CONFIG}"
 )
-
-if [[ "${PREFLIGHT_ONLY}" != true ]]; then
-  PREFLIGHT_COMMAND+=("--require-launch-ready")
+if [[ "${SKIP_COMPLETED}" == true ]]; then
+  BENCHMARK_COMMAND+=("--skip-completed")
 fi
 
-TRAIN_COMMAND=(
-  "${PYTHON_BIN}"
-  "scripts/run_three_stage_offline_pretraining.py"
-  "--experiment-config"
-  "${EXPERIMENT_CONFIG}"
-)
-
-VERIFY_COMMAND=(
-  "${PYTHON_BIN}"
-  "scripts/verify_three_stage_run.py"
-  "--output-dir"
-  "${RESOLVED_OUTPUT_DIR}"
-  "--require-success"
-)
-
-PREFLIGHT_COMMAND_STRING="$(join_quoted_args "${PREFLIGHT_COMMAND[@]}")"
-TRAIN_COMMAND_STRING="$(join_quoted_args "${TRAIN_COMMAND[@]}")"
-VERIFY_COMMAND_STRING="$(join_quoted_args "${VERIFY_COMMAND[@]}")"
-PREFLIGHT_COMMAND_DISPLAY="$(join_display_args "${PREFLIGHT_COMMAND[@]}")"
-TRAIN_COMMAND_DISPLAY="$(join_display_args "${TRAIN_COMMAND[@]}")"
-VERIFY_COMMAND_DISPLAY="$(join_display_args "${VERIFY_COMMAND[@]}")"
+BENCHMARK_COMMAND_STRING="$(join_quoted_args "${BENCHMARK_COMMAND[@]}")"
+BENCHMARK_COMMAND_DISPLAY="$(join_display_args "${BENCHMARK_COMMAND[@]}")"
 
 printf -v REPO_ROOT_QUOTED '%q' "${REPO_ROOT}"
 printf -v LOG_PATH_QUOTED '%q' "${LOG_PATH}"
 printf -v GPU_INDEX_QUOTED '%q' "${GPU_INDEX}"
 
-TMUX_INNER_COMMAND="(cd ${REPO_ROOT_QUOTED} && ${PREFLIGHT_COMMAND_STRING} && CUDA_VISIBLE_DEVICES=${GPU_INDEX_QUOTED} ${TRAIN_COMMAND_STRING} && ${VERIFY_COMMAND_STRING}) > ${LOG_PATH_QUOTED} 2>&1"
+TMUX_INNER_COMMAND="(cd ${REPO_ROOT_QUOTED} && CUDA_VISIBLE_DEVICES=${GPU_INDEX_QUOTED} ${BENCHMARK_COMMAND_STRING}) > ${LOG_PATH_QUOTED} 2>&1"
 
 if [[ "${DRY_RUN}" == true ]]; then
   printf 'tmux session: %s\n' "${SESSION_NAME}"
   printf 'log path: %s\n' "${LOG_PATH}"
-  printf 'preflight summary path: %s\n' "${PREFLIGHT_SUMMARY_PATH}"
-  printf 'run verification summary path: %s\n' "${RUN_VERIFICATION_SUMMARY_PATH}"
+  printf 'benchmark report path: %s\n' "${BENCHMARK_REPORT_PATH}"
+  printf 'experiment config: %s\n' "${RESOLVED_EXPERIMENT_CONFIG_PATH}"
+  printf 'protocol config: %s\n' "${RESOLVED_PROTOCOL_CONFIG_PATH}"
   printf 'attach command: tmux attach -t %s\n' "${SESSION_NAME}"
-  printf 'optimizer training phases: %s\n' "stage1_classification, stage1_reconstruction, stage2_recovery, stage3_memory_initialization_and_fusion_warmup, multitask_pretraining"
-  printf 'statistical procedures: %s\n' "stage2_mtz_parameter_zipping, stage3_memory_initialization"
-  printf 'preflight command: %s\n' "${PREFLIGHT_COMMAND_DISPLAY}"
-  printf 'training command: CUDA_VISIBLE_DEVICES=%s %s\n' "${GPU_INDEX}" "${TRAIN_COMMAND_DISPLAY}"
-  printf 'verification command: %s\n' "${VERIFY_COMMAND_DISPLAY}"
-  printf 'tmux inner command: (cd %s && %s && CUDA_VISIBLE_DEVICES=%s %s && %s) > %s 2>&1\n' \
+  printf 'benchmark command: CUDA_VISIBLE_DEVICES=%s %s\n' "${GPU_INDEX}" "${BENCHMARK_COMMAND_DISPLAY}"
+  printf 'tmux inner command: (cd %s && CUDA_VISIBLE_DEVICES=%s %s) > %s 2>&1\n' \
     "${REPO_ROOT}" \
-    "${PREFLIGHT_COMMAND_DISPLAY}" \
     "${GPU_INDEX}" \
-    "${TRAIN_COMMAND_DISPLAY}" \
-    "${VERIFY_COMMAND_DISPLAY}" \
+    "${BENCHMARK_COMMAND_DISPLAY}" \
     "${LOG_PATH}"
   exit 0
 fi
 
-if [[ "${PREFLIGHT_ONLY}" == true ]]; then
+if [[ "${PREVIEW_ONLY}" == true ]]; then
   cd "${REPO_ROOT}"
-  exec "${PREFLIGHT_COMMAND[@]}"
+  exec env CUDA_VISIBLE_DEVICES="${GPU_INDEX}" "${BENCHMARK_COMMAND[@]}"
 fi
 
 if ! command -v tmux >/dev/null 2>&1; then
@@ -225,6 +210,5 @@ tmux new-session -d -s "${SESSION_NAME}" "bash -lc $(printf '%q' "${TMUX_INNER_C
 
 printf 'tmux session: %s\n' "${SESSION_NAME}"
 printf 'log path: %s\n' "${LOG_PATH}"
-printf 'preflight summary path: %s\n' "${PREFLIGHT_SUMMARY_PATH}"
-printf 'run verification summary path: %s\n' "${RUN_VERIFICATION_SUMMARY_PATH}"
+printf 'benchmark report path: %s\n' "${BENCHMARK_REPORT_PATH}"
 printf 'attach command: tmux attach -t %s\n' "${SESSION_NAME}"

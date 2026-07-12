@@ -212,7 +212,7 @@ def validate_unique_artifact_paths(
 # (✿◠‿◠) RUN FAMILY CLASSIFICATION - Type Detection
 # ～～～～～～～～～～～～～～～～～～～～～～～～～～～
 # Purpose: Route configs to correct training pipeline
-# Impact: One config → correct executor (two-stage, legacy three-stage, baseline)
+# Impact: One config → correct executor (two-stage, baseline)
 
 
 def resolve_stage_family(
@@ -221,7 +221,7 @@ def resolve_stage_family(
     """Determine which training pipeline to use.
 
     Returns:
-        One of: 'thesis_two_stage', 'legacy_thesis_three_stage', 'baseline_single_stage'
+        One of: 'thesis_two_stage', 'baseline_single_stage'
 
     Raises:
         ValueError: If model type is unsupported
@@ -229,13 +229,11 @@ def resolve_stage_family(
     model_name = str(resolved_experiment_config["model"]["model_name"])
     if model_name == "thesis_multitask" and "two_stage" in resolved_experiment_config:
         return "thesis_two_stage"
-    if model_name == "thesis_multitask" and "three_stage" in resolved_experiment_config:
-        return "legacy_thesis_three_stage"
     if model_name in SUPPORTED_BASELINE_MODEL_NAMES:
         return "baseline_single_stage"
     raise ValueError(
         "Unsupported comparative run family for model "
-        f"{model_name}. Expected thesis two-stage, legacy thesis three-stage, or supported baseline."
+        f"{model_name}. Expected thesis two-stage or supported baseline."
     )
 
 
@@ -282,24 +280,6 @@ def _build_thesis_two_stage_commands(
         [
             sys.executable,
             str(REPOSITORY_ROOT / "scripts" / "run_two_stage_offline_pretraining.py"),
-            "--experiment-config",
-            str(config_path),
-        ]
-    ]
-
-
-def _build_thesis_three_stage_commands(
-    config_path: Path,
-) -> list[list[str]]:  # (´◡`) Build three-stage pipeline
-    """Create command for legacy three-stage training.
-
-    Returns:
-        List of command lists, each ready for subprocess.run()
-    """
-    return [
-        [
-            sys.executable,
-            str(REPOSITORY_ROOT / "scripts" / "run_three_stage_offline_pretraining.py"),
             "--experiment-config",
             str(config_path),
         ]
@@ -370,8 +350,6 @@ def _build_run_record(
     output_dir = Path(str(resolved_experiment_config["output_dir"]))
     if stage_family == "thesis_two_stage":
         commands = _build_thesis_two_stage_commands(config_path)
-    elif stage_family == "legacy_thesis_three_stage":
-        commands = _build_thesis_three_stage_commands(config_path)
     else:
         commands = _build_baseline_single_stage_commands(
             config_path,

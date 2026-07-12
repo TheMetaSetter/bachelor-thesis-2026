@@ -25,7 +25,6 @@ def _build_stub_config(
     model_name: str,
     device: str,
     num_workers: int,
-    include_three_stage: bool,
 ) -> dict[str, object]:
     config: dict[str, object] = {
         "experiment_name": experiment_name,
@@ -47,10 +46,6 @@ def _build_stub_config(
             "expected_total_training_epochs": 30,
             "stage_a_multitask_epochs": 25,
             "stage_b_fusion_finetuning_epochs": 5,
-        }
-    if include_three_stage:
-        config["three_stage"] = {
-            "expected_total_training_epochs": 300,
         }
     return config
 
@@ -80,7 +75,6 @@ def test_comparative_preflight_summary_reports_launch_ready_for_valid_cuda_shard
             model_name="thesis_multitask",
             device="cuda",
             num_workers=4,
-            include_three_stage=True,
         ),
         baseline_config_path.resolve(): _build_stub_config(
             experiment_name="baseline_run",
@@ -92,7 +86,6 @@ def test_comparative_preflight_summary_reports_launch_ready_for_valid_cuda_shard
             model_name="redlamp_baseline",
             device="cuda",
             num_workers=4,
-            include_three_stage=False,
         ),
     }
 
@@ -161,7 +154,6 @@ def test_comparative_preflight_rejects_non_cuda_run_inside_gpu_shard(
             model_name="redlamp_baseline",
             device="cpu",
             num_workers=0,
-            include_three_stage=False,
         ),
     )
     monkeypatch.setattr(
@@ -206,7 +198,6 @@ def test_comparative_preflight_allows_cpu_functional_smoke_when_main_runs_are_cu
             model_name="redlamp_baseline",
             device="cpu",
             num_workers=0,
-            include_three_stage=False,
         ),
         main_config_path.resolve(): _build_stub_config(
             experiment_name="baseline_main",
@@ -218,7 +209,6 @@ def test_comparative_preflight_allows_cpu_functional_smoke_when_main_runs_are_cu
             model_name="redlamp_baseline",
             device="cuda",
             num_workers=4,
-            include_three_stage=False,
         ),
     }
 

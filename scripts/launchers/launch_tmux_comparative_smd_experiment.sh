@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DEFAULT_SESSION_NAME="benchmark-smd-top3-three-seeds"
 DEFAULT_PYTHON_BIN=".venv/bin/python"
 DEFAULT_REPORT_DIR="outputs/benchmark_smd_reports/top3-three-seeds"
@@ -26,12 +26,12 @@ LOG_PATH=""
 
 FUNCTIONAL_SMOKE_CONFIG_PATHS=(
   "configs/experiment/comparative/baseline/smd__redlamp_baseline__comparative-single-stage-machine_1_6__w20__seed6__smoke.yaml"
-  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-three-stage-machine_1_6__w20__seed6__smoke.yaml"
+  "configs/experiment/comparative/thesis/smd__thesis_multitask__comparative-two-stage-machine_1_6__w20__seed6__smoke.yaml"
 )
 
 STRESS_SMOKE_CONFIG_PATHS=(
   "configs/experiment/comparative_stress_smoke/baseline/smd__redlamp_baseline__comparative-single-stage-machine_1_6__w20__seed6__stress-smoke.yaml"
-  "configs/experiment/comparative_stress_smoke/thesis/smd__thesis_multitask__comparative-three-stage-machine_1_6__w20__seed6__stress-smoke.yaml"
+  "configs/experiment/comparative_stress_smoke/thesis/smd__thesis_multitask__comparative-two-stage-machine_1_6__w20__seed6__stress-smoke.yaml"
 )
 
 MAIN_CONFIG_PATHS=(

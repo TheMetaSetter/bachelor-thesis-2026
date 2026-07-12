@@ -27,7 +27,6 @@ def _build_stub_config(
     entity_id: str,
     seed: int,
     model_name: str,
-    include_legacy_three_stage: bool,
 ) -> dict[str, object]:
     config: dict[str, object] = {
         "experiment_name": experiment_name,
@@ -47,10 +46,6 @@ def _build_stub_config(
             "expected_total_training_epochs": 30,
             "stage_a_multitask_epochs": 25,
             "stage_b_fusion_finetuning_epochs": 5,
-        }
-    if include_legacy_three_stage:
-        config["three_stage"] = {
-            "expected_total_training_epochs": 300,
         }
     return config
 
@@ -78,7 +73,6 @@ def test_build_comparative_run_plan_dispatches_thesis_and_baseline_without_dupli
             entity_id="machine-3-9",
             seed=6,
             model_name="thesis_multitask",
-            include_legacy_three_stage=False,
         ),
         baseline_config_path.resolve(): _build_stub_config(
             experiment_name="baseline_run",
@@ -88,7 +82,6 @@ def test_build_comparative_run_plan_dispatches_thesis_and_baseline_without_dupli
             entity_id="machine-1-6",
             seed=36,
             model_name="redlamp_baseline",
-            include_legacy_three_stage=False,
         ),
     }
 
@@ -138,7 +131,6 @@ def test_build_comparative_run_plan_rejects_missing_dataset_root(
             entity_id="machine-3-1",
             seed=68,
             model_name="redlamp_baseline",
-            include_legacy_three_stage=False,
         ),
     )
 
@@ -169,7 +161,6 @@ def test_execute_comparative_run_plan_dry_run_writes_execution_report(
         entity_id="machine-1-6",
         seed=36,
         model_name="redlamp_baseline",
-        include_legacy_three_stage=False,
     )
     monkeypatch.setattr(
         "scripts.run_comparative_smd_experiments.load_experiment_config",
@@ -207,7 +198,6 @@ def test_execute_comparative_run_plan_records_failed_command_and_run(
         entity_id="machine-1-6",
         seed=36,
         model_name="redlamp_baseline",
-        include_legacy_three_stage=False,
     )
     monkeypatch.setattr(
         "scripts.run_comparative_smd_experiments.load_experiment_config",
@@ -260,7 +250,6 @@ def test_build_comparative_run_plan_can_generate_worker_override_configs(
         entity_id="machine-1-6",
         seed=36,
         model_name="redlamp_baseline",
-        include_legacy_three_stage=False,
     )
     stub_config["device"] = "cuda"
     stub_config["data"]["num_workers"] = 16
@@ -315,7 +304,6 @@ def test_execute_comparative_run_plan_skips_completed_runs_with_existing_artifac
         entity_id="machine-1-6",
         seed=36,
         model_name="redlamp_baseline",
-        include_legacy_three_stage=False,
     )
     monkeypatch.setattr(
         "scripts.run_comparative_smd_experiments.load_experiment_config",
