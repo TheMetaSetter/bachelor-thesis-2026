@@ -42,6 +42,12 @@ def _build_stub_config(
             "model_name": model_name,
         },
     }
+    if model_name == "thesis_multitask":
+        config["two_stage"] = {
+            "expected_total_training_epochs": 30,
+            "stage_a_multitask_epochs": 25,
+            "stage_b_fusion_finetuning_epochs": 5,
+        }
     if include_three_stage:
         config["three_stage"] = {
             "expected_total_training_epochs": 300,

@@ -262,12 +262,14 @@ def _run_has_required_artifacts(
             / "two_stage"
             / "two_stage_execution_report.json"
         )
-    else:
+    elif str(run_record["stage_family"]) == "legacy_thesis_three_stage":
         stage_execution_report_path = (
             _normalize_artifact_path(run_record["output_dir"])
             / "three_stage"
             / "three_stage_execution_report.json"
         )
+    else:
+        raise ValueError(f"Unsupported stage family: {run_record['stage_family']}")
     return all(
         path.exists()
         for path in [
@@ -365,7 +367,7 @@ def execute_comparative_run_plan(
                         and str(run_record["stage_family"])
                         in {
                             "thesis_two_stage",
-                            "thesis_three_stage",
+                            "legacy_thesis_three_stage",
                         }
                         and "--skip-completed" not in command_to_run
                     ):

@@ -1,15 +1,15 @@
 # group: comparative/thesis
-# stage: three-stage
+# stage: two-stage
 # status: smoke
 # owner: thesis_multitask
 
-experiment_name: smd_comparative_thesis_multitask_three_stage_machine_1_6_smoke_seed6
+experiment_name: smd_comparative_thesis_multitask_two_stage_machine_1_6_smoke_seed6
 seed: 6
 device: cpu
 output_dir: outputs/comparative/smd_smoke/thesis_multitask/machine_1_6/seed6
 checkpoint_dir: outputs/comparative/smd_smoke/thesis_multitask/machine_1_6/seed6/checkpoints
 data_config_path: configs/data/smd_rtx3090_machine_1_6_20_stride1.yaml
-model_config_path: configs/model/thesis_multitask_three_stage_comparative_smd.yaml
+model_config_path: configs/model/thesis_multitask_two_stage_comparative_smd.yaml
 task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20_comparative.yaml
 data_overrides:
   batch_size: 32
@@ -38,18 +38,14 @@ logging:
   wandb_mode: disabled
   wandb_tags:
     - comparative
-    - thesis-three-stage
+    - thesis-two-stage
     - smd
     - machine-1-6
     - smoke
-  wandb_run_name: smd_comparative_thesis_multitask_three_stage_machine_1_6_smoke_seed6
-three_stage:
-  expected_total_training_epochs: 5
-  stage1_classification_epochs: 1
-  stage1_reconstruction_epochs: 1
-  stage2_recovery_epochs: 1
-  stage3_memory_initialization_and_fusion_warmup_epochs: 1
-  multitask_pretraining_epochs: 1
+  wandb_run_name: smd_comparative_thesis_multitask_two_stage_machine_1_6_smoke_seed6
+two_stage:
+  expected_total_training_epochs: 30
+  stage_a_multitask_epochs: 25
+  stage_b_fusion_finetuning_epochs: 5
   discrete_memory_label_source: synthetic_train_labels
-  freeze_memories_after_initialization: true
-  freeze_recovered_zipped_encoder_during_warmup: true
+  freeze_encoder_and_memories_in_stage_b: true
