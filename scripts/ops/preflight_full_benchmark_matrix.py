@@ -59,6 +59,10 @@ def _validate_thesis_offline(paths: list[Path]) -> None:
     for path in paths:
         config = load_experiment_config(path)
         validate_experiment_config(config)
+        # The offline THESIS budget is 30 epochs in total.
+        # We split it into 25 epochs for Stage A and 5 epochs for Stage B so
+        # the preflight check can catch any config that still carries the old
+        # 10-epoch assumption.
         if config["epochs"] != 30:
             raise ValueError(f"THESIS offline must use 30 epochs: {path}")
         two_stage = config["two_stage"]

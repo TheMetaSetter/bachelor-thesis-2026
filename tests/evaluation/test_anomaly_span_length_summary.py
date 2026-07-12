@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from scripts.summarize_anomaly_span_lengths import (
+from scripts.analysis.summarize_anomaly_span_lengths import (
     build_anomaly_archive_span_rows,
     build_iops_span_rows,
     build_nasa_span_rows,

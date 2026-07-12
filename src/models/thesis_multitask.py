@@ -10,7 +10,7 @@ without changing behavior.
 from typing import Any
 
 from src.models.base_model import BaseModel
-from src.models.thesis_multitask_components import (
+from src.models.thesis_multitask_impl.thesis_multitask_components import (
     STAGE3_PHASE_CANONICAL_NAME,
     STAGE3_PHASE_LEGACY_NAME,
     TWO_STAGE_A_PHASE_NAME,
@@ -28,10 +28,18 @@ from src.models.thesis_multitask_components import (
     ThesisMultitaskModelConfig,
     build_multilayer_perceptron,
 )
-from src.models.thesis_multitask_loss_mixin import ThesisMultitaskLossMixin
-from src.models.thesis_multitask_routing_mixin import ThesisMultitaskRoutingMixin
-from src.models.thesis_multitask_setup_mixin import ThesisMultitaskSetupMixin
-from src.models.thesis_multitask_state_mixin import ThesisMultitaskStateMixin
+from src.models.thesis_multitask_impl.thesis_multitask_loss_mixin import (
+    ThesisMultitaskLossMixin,
+)
+from src.models.thesis_multitask_impl.thesis_multitask_routing_mixin import (
+    ThesisMultitaskRoutingMixin,
+)
+from src.models.thesis_multitask_impl.thesis_multitask_setup_mixin import (
+    ThesisMultitaskSetupMixin,
+)
+from src.models.thesis_multitask_impl.thesis_multitask_state_mixin import (
+    ThesisMultitaskStateMixin,
+)
 
 
 class ThesisMultitaskModel(
@@ -41,6 +49,9 @@ class ThesisMultitaskModel(
     ThesisMultitaskLossMixin,
     BaseModel,
 ):
+    # File comment for a younger reader:
+    # this class is the public door into the model, but the real steps are kept
+    # in small implementation modules so each phase is easier to read and test.
     def __init__(
         self,
         config: ThesisMultitaskModelConfig | None = None,

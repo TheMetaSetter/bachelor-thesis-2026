@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 
-from scripts.visualize_evaluation_results import (
+from scripts.visualization.visualize_evaluation_results import (
     build_visualization_payload,
     save_entity_evaluation_visualization,
 )

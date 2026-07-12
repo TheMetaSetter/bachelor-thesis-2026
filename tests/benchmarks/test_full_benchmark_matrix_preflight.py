@@ -1,4 +1,4 @@
-from scripts.preflight_full_benchmark_matrix import build_preflight_report
+from scripts.ops.preflight_full_benchmark_matrix import build_preflight_report
 
 
 def test_full_benchmark_matrix_preflight_is_complete_and_safe() -> None:

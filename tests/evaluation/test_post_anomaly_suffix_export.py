@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from scripts.export_post_anomaly_suffix_counts import (
+from scripts.analysis.export_post_anomaly_suffix_counts import (
     build_iops_suffix_row,
     build_label_based_suffix_row,
     build_swat_suffix_row,

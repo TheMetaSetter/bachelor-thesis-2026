@@ -4,7 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from scripts.preflight_comparative_smd_server import build_comparative_preflight_summary
+from scripts.ops.preflight_comparative_smd_server import (
+    build_comparative_preflight_summary,
+)
 
 
 def _write_placeholder_config(config_path: Path) -> None:
@@ -93,19 +95,19 @@ def test_comparative_preflight_summary_reports_launch_ready_for_valid_cuda_shard
         lambda config_path: stub_configs[Path(config_path).resolve()],
     )
     monkeypatch.setattr(
-        "scripts.preflight_comparative_smd_server.shutil.which",
+        "scripts.ops.preflight_comparative_smd_server.shutil.which",
         lambda executable: "/usr/bin/fake" if executable == "tmux" else None,
     )
     monkeypatch.setattr(
-        "scripts.preflight_comparative_smd_server.torch.cuda.is_available",
+        "scripts.ops.preflight_comparative_smd_server.torch.cuda.is_available",
         lambda: True,
     )
     monkeypatch.setattr(
-        "scripts.preflight_comparative_smd_server.torch.cuda.device_count",
+        "scripts.ops.preflight_comparative_smd_server.torch.cuda.device_count",
         lambda: 2,
     )
     monkeypatch.setattr(
-        "scripts.preflight_comparative_smd_server.torch.cuda.get_device_name",
+        "scripts.ops.preflight_comparative_smd_server.torch.cuda.get_device_name",
         lambda index: "NVIDIA GeForce RTX 3090",
     )
 
@@ -157,7 +159,7 @@ def test_comparative_preflight_rejects_non_cuda_run_inside_gpu_shard(
         ),
     )
     monkeypatch.setattr(
-        "scripts.preflight_comparative_smd_server.shutil.which",
+        "scripts.ops.preflight_comparative_smd_server.shutil.which",
         lambda executable: "/usr/bin/fake" if executable == "tmux" else None,
     )
 
@@ -219,19 +221,19 @@ def test_comparative_preflight_allows_cpu_functional_smoke_when_main_runs_are_cu
         lambda config_path: stub_configs[Path(config_path).resolve()],
     )
     monkeypatch.setattr(
-        "scripts.preflight_comparative_smd_server.shutil.which",
+        "scripts.ops.preflight_comparative_smd_server.shutil.which",
         lambda executable: "/usr/bin/fake" if executable == "tmux" else None,
     )
     monkeypatch.setattr(
-        "scripts.preflight_comparative_smd_server.torch.cuda.is_available",
+        "scripts.ops.preflight_comparative_smd_server.torch.cuda.is_available",
         lambda: True,
     )
     monkeypatch.setattr(
-        "scripts.preflight_comparative_smd_server.torch.cuda.device_count",
+        "scripts.ops.preflight_comparative_smd_server.torch.cuda.device_count",
         lambda: 1,
     )
     monkeypatch.setattr(
-        "scripts.preflight_comparative_smd_server.torch.cuda.get_device_name",
+        "scripts.ops.preflight_comparative_smd_server.torch.cuda.get_device_name",
         lambda index: "NVIDIA GeForce RTX 3090",
     )
 
