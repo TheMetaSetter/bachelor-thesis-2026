@@ -71,6 +71,10 @@ def _build_runtime_online_context(
     model = _build_model_from_experiment_config(experiment_config)
     optimizer = _build_optimizer_from_experiment_config(model, experiment_config)
     assert_only_projector_is_trainable(model)
+    # Calibration happens before the streaming loop, so the model must already
+    # live on the target device here; otherwise validation windows reach CUDA
+    # tensors while the encoder weights still sit on CPU.
+    model.to(str(experiment_config["device"]))
     checkpoint_manager = CheckpointManager(
         Path(str(experiment_config["checkpoint_dir"]))
     )
