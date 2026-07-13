@@ -145,7 +145,7 @@ def build_online_benchmark_config(
         ),
         "seed": seed,
         "experiment_variant": _variant_experiment_name(online_variant),
-        "device": "cpu" if smoke else "cuda",
+        "device": "cuda",
         "output_dir": _output_dir(
             entity_id=entity_id,
             offline_variant=offline_variant,

@@ -8,6 +8,9 @@ from scripts.generate_smd_benchmark_configs import (
     BENCHMARK_VARIANTS,
     generate_thesis_offline_benchmark_configs,
 )
+from scripts.generate_benchmark_smoke_configs import (
+    generate_benchmark_smoke_configs,
+)
 from src.core.config import load_experiment_config, validate_experiment_config
 
 
@@ -51,8 +54,24 @@ def test_generate_thesis_offline_benchmark_configs_writes_all_expected_files() -
                         "discrete_memory_label_source"
                     ] == ("synthetic_train_labels")
                     if smoke:
-                        assert loaded_config["device"] == "cpu"
-                        assert loaded_config["epochs"] == 2
+                        assert loaded_config["device"] == "cuda"
+                        assert loaded_config["epochs"] == 3
+                        assert (
+                            loaded_config["two_stage"][
+                                "expected_total_training_epochs"
+                            ]
+                            == 3
+                        )
+                        assert (
+                            loaded_config["two_stage"]["stage_a_multitask_epochs"]
+                            == 2
+                        )
+                        assert (
+                            loaded_config["two_stage"][
+                                "stage_b_fusion_finetuning_epochs"
+                            ]
+                            == 1
+                        )
                     else:
                         assert loaded_config["device"] == "cuda"
                         assert loaded_config["epochs"] == 30
@@ -77,3 +96,21 @@ def test_generate_thesis_offline_benchmark_configs_writes_all_expected_files() -
                             loaded_config["model_overrides"]["score_loss_target"]
                             == "synthetic_anomaly_mask"
                         )
+
+
+def test_generate_benchmark_smoke_configs_writes_all_expected_files() -> None:
+    generated_paths = generate_benchmark_smoke_configs()
+
+    assert len(generated_paths) == len(BENCHMARK_ENTITY_IDS) * len(BENCHMARK_SEEDS)
+    sample_path = Path(
+        "configs/experiment/benchmark_smoke/thesis/"
+        "smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed6__smoke.yaml"
+    )
+    assert sample_path.exists()
+    sample_config = load_experiment_config(sample_path)
+    validate_experiment_config(sample_config)
+    assert sample_config["device"] == "cuda"
+    assert sample_config["epochs"] == 3
+    assert sample_config["two_stage"]["expected_total_training_epochs"] == 3
+    assert sample_config["two_stage"]["stage_a_multitask_epochs"] == 2
+    assert sample_config["two_stage"]["stage_b_fusion_finetuning_epochs"] == 1

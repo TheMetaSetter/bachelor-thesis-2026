@@ -5,7 +5,7 @@
 
 experiment_name: smd_comparative_redlamp_baseline_single_stage_machine_1_6_smoke_seed6
 seed: 6
-device: cpu
+device: cuda
 output_dir: outputs/comparative/smd_smoke/redlamp_baseline/machine_1_6/seed6
 checkpoint_dir: outputs/comparative/smd_smoke/redlamp_baseline/machine_1_6/seed6/checkpoints
 data_config_path: configs/data/smd_rtx3090_machine_1_6_20_stride1.yaml

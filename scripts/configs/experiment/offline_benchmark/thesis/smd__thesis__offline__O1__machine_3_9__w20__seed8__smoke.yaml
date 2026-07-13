@@ -1,7 +1,7 @@
 experiment_name: smd__thesis__offline__O1__machine_3_9__w20__seed8__smoke
 seed: 8
 experiment_variant: two_stage_point_score_supervised_v1
-device: cpu
+device: cuda
 output_dir: outputs/benchmark_smoke/smd/thesis/O1/machine_3_9/seed8
 checkpoint_dir: outputs/benchmark_smoke/smd/thesis/O1/machine_3_9/seed8/checkpoints
 data_config_path: configs/data/smd_benchmark_machine_3_9_window20.yaml
@@ -19,7 +19,7 @@ optimizer:
     cosine_end_lr: 0.0
     cosine_after_warmup: true
 checkpoint_monitor_metric: val_synth_vus_pr
-epochs: 2
+epochs: 3
 evaluation:
   vus_max_buffer_size: 10
   vus_num_thresholds: 20
@@ -42,8 +42,8 @@ logging:
   - train
   - val_synth
 two_stage:
-  expected_total_training_epochs: 2
-  stage_a_multitask_epochs: 1
+  expected_total_training_epochs: 3
+  stage_a_multitask_epochs: 2
   stage_b_fusion_finetuning_epochs: 1
   discrete_memory_label_source: synthetic_train_labels
   freeze_encoder_and_memories_in_stage_b: true

@@ -29,7 +29,7 @@ optimizer:
     cosine_end_lr: 0.0
     cosine_after_warmup: true
 checkpoint_monitor_metric: val_synth_vus_pr
-epochs: 5
+epochs: 3
 evaluation:
   vus_max_buffer_size: 20
   vus_num_thresholds: 50
@@ -44,8 +44,8 @@ logging:
     - stress-smoke
   wandb_run_name: smd_comparative_thesis_multitask_two_stage_machine_1_6_stress_smoke_seed6
 two_stage:
-  expected_total_training_epochs: 30
-  stage_a_multitask_epochs: 25
-  stage_b_fusion_finetuning_epochs: 5
+  expected_total_training_epochs: 3
+  stage_a_multitask_epochs: 2
+  stage_b_fusion_finetuning_epochs: 1
   discrete_memory_label_source: synthetic_train_labels
   freeze_encoder_and_memories_in_stage_b: true

@@ -64,8 +64,8 @@ def _variant_output_dir(
 def _variant_epochs(smoke: bool) -> dict[str, int]:
     if smoke:
         return {
-            "epochs": 2,
-            "stage_a_multitask_epochs": 1,
+            "epochs": 3,
+            "stage_a_multitask_epochs": 2,
             "stage_b_fusion_finetuning_epochs": 1,
         }
     return {
@@ -141,7 +141,7 @@ def build_offline_benchmark_config(
             if variant == "O0"
             else "two_stage_point_score_supervised_v1"
         ),
-        "device": "cpu" if smoke else "cuda",
+        "device": "cuda",
         "output_dir": _variant_output_dir(
             variant=variant,
             entity_id=entity_id,

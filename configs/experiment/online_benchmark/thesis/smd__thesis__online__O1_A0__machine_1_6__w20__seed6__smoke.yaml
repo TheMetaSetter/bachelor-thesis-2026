@@ -1,7 +1,7 @@
 experiment_name: smd__thesis__online__O1_A0__machine_1_6__w20__seed6__smoke
 seed: 6
 experiment_variant: online_tta_a0_v1
-device: cpu
+device: cuda
 output_dir: outputs/benchmark_smoke/online/smd/thesis/O1_A0/machine_1_6/seed6
 checkpoint_dir: outputs/benchmark_smoke/online/smd/thesis/O1_A0/machine_1_6/seed6/checkpoints
 data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml

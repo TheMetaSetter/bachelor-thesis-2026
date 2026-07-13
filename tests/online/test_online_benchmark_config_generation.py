@@ -78,7 +78,7 @@ def test_generate_thesis_online_benchmark_configs_writes_all_expected_files() ->
                         )
                         assert "reference_checkpoint_path" not in loaded_config["task"]
                         if smoke:
-                            assert loaded_config["device"] == "cpu"
+                            assert loaded_config["device"] == "cuda"
                             assert loaded_config["task"]["max_online_steps"] == 16
                         else:
                             assert loaded_config["device"] == "cuda"
