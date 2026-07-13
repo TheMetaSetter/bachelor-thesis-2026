@@ -132,7 +132,6 @@ def test_run_training_experiment_emits_runtime_console_messages(
     captured = capsys.readouterr()
 
     assert training_outputs["best_checkpoint_path"] is not None
-    assert "[TRAIN] Starting training experiment" in captured.out
     assert "[TRAIN] Completed optimizer step" in captured.out
     assert "[CHECKPOINT] Saving checkpoint" in captured.out
     assert "[WANDB] Logged metrics to JSONL" in captured.out

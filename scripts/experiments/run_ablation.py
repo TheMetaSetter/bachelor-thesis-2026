@@ -87,14 +87,9 @@ def run_ablation_suite(
     summary_dir = Path(summary_output_dir)
     summary_dir.mkdir(parents=True, exist_ok=True)
     summary_rows: list[dict[str, Any]] = []
-    console_print(
-        "TRAIN",
-        "Starting ablation suite",
-        summary_output_dir=summary_dir,
-        experiment_config_paths=experiment_config_paths,
-    )
     first_experiment_config = load_experiment_config(experiment_config_paths[0])
     suite_logging_config = dict(first_experiment_config.get("logging", {}))
+    quiet_terminal = bool(suite_logging_config.get("quiet_terminal", False))
     suite_logging_config.setdefault("wandb_job_type", "ablation_summary")
     suite_logging_config.setdefault(
         "wandb_run_name",
@@ -109,22 +104,11 @@ def run_ablation_suite(
         summary_dir,
         experiment_config=suite_experiment_config,
         logging_config=suite_logging_config,
-    )
-    console_print(
-        "WANDB",
-        "Prepared ablation suite logger",
-        use_wandb=suite_logging_config.get("use_wandb", False),
-        wandb_run_name=suite_logging_config.get("wandb_run_name"),
-        wandb_job_type=suite_logging_config.get("wandb_job_type"),
+        quiet_terminal=quiet_terminal,
     )
 
     try:
         for experiment_config_path in experiment_config_paths:
-            console_print(
-                "TRAIN",
-                "Running ablation member",
-                experiment_config_path=experiment_config_path,
-            )
             experiment_config = load_experiment_config(experiment_config_path)
             training_outputs = run_training_experiment(experiment_config)
             evaluation_outputs = run_evaluation_experiment(
@@ -196,9 +180,6 @@ def run_ablation_suite(
         }
     finally:
         suite_logger.close()
-        console_print(
-            "TRAIN", "Closed ablation suite logger", summary_output_dir=summary_dir
-        )
 
 
 def main() -> None:

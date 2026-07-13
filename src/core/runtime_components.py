@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from src.core.console import console_print
 from src.core.registry import register_dataset, register_model
 from src.data.loaders import (
     build_anomaly_archive_dataset_bundle,
@@ -22,15 +21,12 @@ def register_shared_runtime_components() -> None:
 
 def register_offline_runtime_components() -> None:
     register_shared_runtime_components()
-    console_print("REGISTRY", "Registered offline training runtime components")
 
 
 def register_evaluation_runtime_components() -> None:
     register_shared_runtime_components()
-    console_print("REGISTRY", "Registered evaluation runtime components")
 
 
 def register_online_runtime_components() -> None:
     register_shared_runtime_components()
     register_model("online_adaptation", OnlineAdaptationModel)
-    console_print("REGISTRY", "Registered online adaptation runtime components")

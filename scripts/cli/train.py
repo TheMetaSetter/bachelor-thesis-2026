@@ -57,12 +57,6 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
         and "window_size" not in model_kwargs
     ):
         model_kwargs["window_size"] = experiment_config["data"]["window_size"]
-    console_print(
-        "MODEL",
-        "Building model from resolved experiment config",
-        model_name=model_name,
-        model_kwargs_keys=sorted(model_kwargs.keys()),
-    )
     return build_model(model_name, **model_kwargs)
 
 
@@ -95,11 +89,6 @@ def maybe_initialize_model_from_checkpoint(
     checkpoint_path = Path(str(initialization_checkpoint_path))
     checkpoint_manager = CheckpointManager(checkpoint_path.parent)
     checkpoint_manager.load_checkpoint(checkpoint_path, model)
-    console_print(
-        "TRAIN",
-        "Initialized model weights from checkpoint before training",
-        initialization_checkpoint_path=checkpoint_path,
-    )
 
 
 def _compute_cosine_learning_rate_without_warmup(
@@ -154,16 +143,12 @@ def build_scheduler_from_experiment_config(
     optimizer_config = experiment_config["optimizer"]
     scheduler_config = optimizer_config.get("scheduler")
     if scheduler_config is None:
-        console_print("TRAIN", "No learning rate scheduler configured")
+        if not bool(experiment_config.get("logging", {}).get("quiet_terminal", False)):
+            console_print("TRAIN", "No learning rate scheduler configured")
         return None, None
 
     scheduler_name = scheduler_config["scheduler_name"]
     if scheduler_name == "cosine":
-        console_print(
-            "TRAIN",
-            "Using arithmetic cosine learning rate policy",
-            scheduler_name=scheduler_name,
-        )
         return None, None
     if scheduler_name != "reduce_on_plateau":
         raise ValueError(f"Unsupported scheduler_name: {scheduler_name}")
@@ -189,19 +174,6 @@ def build_scheduler_from_experiment_config(
         cooldown=int(scheduler_config["cooldown"]),
         min_lr=float(scheduler_config["min_lr"]),
     )
-    console_print(
-        "TRAIN",
-        "Initialized learning rate scheduler",
-        scheduler_name=scheduler_name,
-        monitor_metric=monitor_metric,
-        scheduler_mode=scheduler_mode,
-        factor=scheduler_config["factor"],
-        patience=scheduler_config["patience"],
-        threshold=scheduler_config["threshold"],
-        threshold_mode=scheduler_config["threshold_mode"],
-        cooldown=scheduler_config["cooldown"],
-        min_lr=scheduler_config["min_lr"],
-    )
     return scheduler, monitor_metric
 
 
@@ -223,16 +195,8 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
     # Ensure reproducibility by seeding all RNG sources (Python, NumPy, PyTorch).
     # This must happen before any non-deterministic operations.
     seed_everything(int(experiment_config["seed"]))
-    console_print(
-        "TRAIN",
-        "Starting training experiment",
-        experiment_name=experiment_config["experiment_name"],
-        device=experiment_config["device"],
-        seed=experiment_config["seed"],
-        output_dir=experiment_config["output_dir"],
-        checkpoint_dir=experiment_config["checkpoint_dir"],
-        epochs=experiment_config["epochs"],
-    )
+    logging_config = dict(experiment_config.get("logging", {}))
+    quiet_terminal = bool(logging_config.get("quiet_terminal", False))
 
     # Register dataset and model builders into the global registry. This decouples
     # experiment configuration (which uses string names) from actual constructors,
@@ -244,14 +208,15 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
     data_bundle = build_dataset(
         experiment_config["data"]["dataset_name"], experiment_config["data"]
     )
-    console_print(
-        "DATA",
-        "Built dataset bundle for training",
-        dataset_name=experiment_config["data"]["dataset_name"],
-        train_windows=len(data_bundle["datasets"]["train"]),
-        val_windows=len(data_bundle["datasets"]["val"]),
-        test_windows=len(data_bundle["datasets"]["test"]),
-    )
+    if not quiet_terminal:
+        console_print(
+            "DATA",
+            "Built dataset bundle for training",
+            dataset_name=experiment_config["data"]["dataset_name"],
+            train_windows=len(data_bundle["datasets"]["train"]),
+            val_windows=len(data_bundle["datasets"]["val"]),
+            test_windows=len(data_bundle["datasets"]["test"]),
+        )
 
     # Construct the model architecture and task logic from config. This combines
     # model-specific parameters (layer sizes, etc.) with task-specific logic
@@ -261,14 +226,15 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
 
     optimizer = build_optimizer_from_experiment_config(model, experiment_config)
     optimizer_name = str(experiment_config["optimizer"].get("optimizer_name", "adam"))
-    console_print(
-        "TRAIN",
-        "Initialized optimizer",
-        optimizer_type=type(optimizer).__name__,
-        optimizer_name=optimizer_name,
-        learning_rate=experiment_config["optimizer"]["learning_rate"],
-        weight_decay=experiment_config["optimizer"]["weight_decay"],
-    )
+    if not quiet_terminal:
+        console_print(
+            "TRAIN",
+            "Initialized optimizer",
+            optimizer_type=type(optimizer).__name__,
+            optimizer_name=optimizer_name,
+            learning_rate=experiment_config["optimizer"]["learning_rate"],
+            weight_decay=experiment_config["optimizer"]["weight_decay"],
+        )
     scheduler, scheduler_monitor_metric = build_scheduler_from_experiment_config(
         optimizer, experiment_config
     )
@@ -288,26 +254,13 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
 
     # Initialize experiment logger for tracking metrics, hyperparameters, and
     # artifacts. Logs are written to output_dir; config validates logging format.
-    logging_config = dict(experiment_config.get("logging", {}))
     logging_config.setdefault("wandb_job_type", "train")
     logging_config.setdefault("wandb_run_name", experiment_config["experiment_name"])
     experiment_logger = ExperimentLogger(
         experiment_config["output_dir"],
         experiment_config=experiment_config,
         logging_config=logging_config,
-    )
-    console_print(
-        "WANDB",
-        "Prepared training logging config",
-        use_wandb=logging_config.get("use_wandb", False),
-        wandb_run_name=logging_config.get("wandb_run_name"),
-        wandb_job_type=logging_config.get("wandb_job_type"),
-        mirror_best_checkpoint_to_kaggle=logging_config.get(
-            "mirror_best_checkpoint_to_kaggle", False
-        ),
-        mirror_output_dir_to_kaggle=logging_config.get(
-            "mirror_output_dir_to_kaggle", False
-        ),
+        quiet_terminal=quiet_terminal,
     )
 
     # Initialize checkpoint manager for saving/loading model states, enabling
@@ -364,12 +317,6 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
             epochs=int(experiment_config["epochs"]),
         )
         best_checkpoint_path = training_outputs["best_checkpoint_path"]
-        console_print(
-            "TRAIN",
-            "Finished training experiment",
-            best_checkpoint_path=best_checkpoint_path,
-            num_logged_epochs=len(training_outputs["metric_history"]),
-        )
         experiment_logger.log_summary(
             {
                 "run/output_dir": str(experiment_config["output_dir"]),
@@ -432,11 +379,12 @@ def main() -> None:
         return
 
     experiment_config = load_experiment_config(args.experiment_config)
-    console_print(
-        "CONFIG",
-        "Loaded CLI training experiment config",
-        experiment_config_path=args.experiment_config,
-    )
+    if not bool(experiment_config.get("logging", {}).get("quiet_terminal", False)):
+        console_print(
+            "CONFIG",
+            "Loaded CLI training experiment config",
+            experiment_config_path=args.experiment_config,
+        )
     run_training_experiment(experiment_config)
 
 

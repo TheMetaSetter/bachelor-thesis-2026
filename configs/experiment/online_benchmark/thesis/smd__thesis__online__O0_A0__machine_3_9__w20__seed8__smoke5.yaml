@@ -61,6 +61,7 @@ logging:
   - smoke5
   log_hard_prediction_ratio: false
   log_row_normalized_confusion_matrix: false
+  quiet_terminal: true
   diagnostics_stages_for_classification:
   - train
   - val_synth

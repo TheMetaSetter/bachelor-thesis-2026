@@ -102,53 +102,24 @@ def run_online_adaptation_experiment(
 
     seed_everything(int(experiment_config["seed"]))
     public_register_runtime_components()
-    console_print(
-        "ONLINE",
-        "Starting online adaptation experiment",
-        experiment_name=experiment_config["experiment_name"],
-        device=experiment_config["device"],
-        seed=experiment_config["seed"],
-        output_dir=experiment_config["output_dir"],
-        checkpoint_dir=experiment_config["checkpoint_dir"],
-    )
 
     from scripts.run_online_adaptation import build_dataset as public_build_dataset
 
     data_bundle = public_build_dataset(
         experiment_config["data"]["dataset_name"], experiment_config["data"]
     )
-    console_print(
-        "DATA",
-        "Built dataset bundle for online adaptation",
-        dataset_name=experiment_config["data"]["dataset_name"],
-        test_sequences=len(data_bundle["scaled_sequences"]["test"]),
-    )
     model = public_build_model_from_experiment_config(experiment_config)
     optimizer = build_optimizer_from_experiment_config(model, experiment_config)
     optimizer_name = str(experiment_config["optimizer"].get("optimizer_name", "adam"))
-    console_print(
-        "ONLINE",
-        "Initialized online optimizer",
-        optimizer_type=type(optimizer).__name__,
-        optimizer_name=optimizer_name,
-        target_param_group=experiment_config["task"]["target_param_group"],
-        learning_rate=experiment_config["optimizer"]["learning_rate"],
-        weight_decay=experiment_config["optimizer"]["weight_decay"],
-    )
     logging_config = dict(experiment_config.get("logging", {}))
+    quiet_terminal = bool(logging_config.get("quiet_terminal", False))
     logging_config.setdefault("wandb_job_type", "online_adaptation")
     logging_config.setdefault("wandb_run_name", experiment_config["experiment_name"])
     experiment_logger = ExperimentLogger(
         experiment_config["output_dir"],
         experiment_config=experiment_config,
         logging_config=logging_config,
-    )
-    console_print(
-        "WANDB",
-        "Prepared online adaptation logging config",
-        use_wandb=logging_config.get("use_wandb", False),
-        wandb_run_name=logging_config.get("wandb_run_name"),
-        wandb_job_type=logging_config.get("wandb_job_type"),
+        quiet_terminal=quiet_terminal,
     )
     checkpoint_manager = CheckpointManager(
         experiment_config["checkpoint_dir"],
@@ -170,14 +141,6 @@ def run_online_adaptation_experiment(
             experiment_config["task"]["view_dropout_probability"]
         ),
     )
-    console_print(
-        "ONLINE",
-        "Prepared online stream and batcher",
-        online_windows=len(online_stream),
-        batch_size=experiment_config["data"]["batch_size"],
-        view_noise_std=experiment_config["task"]["view_noise_std"],
-        view_dropout_probability=experiment_config["task"]["view_dropout_probability"],
-    )
 
     online_loop = public_online_loop_class(
         model=model,
@@ -196,12 +159,6 @@ def run_online_adaptation_experiment(
             checkpoint_every_n_steps=int(
                 experiment_config["task"]["checkpoint_every_n_steps"]
             ),
-        )
-        console_print(
-            "ONLINE",
-            "Finished online adaptation experiment",
-            final_checkpoint_path=online_outputs["final_checkpoint_path"],
-            num_logged_steps=len(online_outputs["metric_history"]),
         )
         output_dir = Path(experiment_config["output_dir"])
         output_dir.mkdir(parents=True, exist_ok=True)

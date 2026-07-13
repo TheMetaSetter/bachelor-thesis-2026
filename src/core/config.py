@@ -725,6 +725,7 @@ def _validate_logging_config(logging_config: dict[str, Any]) -> None:
         "log_hard_prediction_ratio",
         "log_row_normalized_confusion_matrix",
         "log_focused_metrics_jsonl",
+        "quiet_terminal",
         "diagnostics_stages_for_classification",
         "focus_metrics",
         "focused_metrics_filename",
@@ -845,6 +846,7 @@ def _validate_logging_config(logging_config: dict[str, Any]) -> None:
         "log_hard_prediction_ratio",
         "log_row_normalized_confusion_matrix",
         "log_focused_metrics_jsonl",
+        "quiet_terminal",
     ]:
         field_value = logging_config.get(field_name)
         if field_value is not None and not isinstance(field_value, bool):

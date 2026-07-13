@@ -120,12 +120,6 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
     )
     if model_name == "redlamp_baseline":
         model_kwargs["window_size"] = experiment_config["data"]["window_size"]
-    console_print(
-        "MODEL",
-        "Building evaluation model from experiment config",
-        model_name=model_name,
-        model_kwargs_keys=sorted(model_kwargs.keys()),
-    )
     return build_model(model_name, **model_kwargs)
 
 
@@ -136,13 +130,6 @@ def run_evaluation_experiment(
     # Persisting both metrics and the resolved config makes later thesis figures
     # easier to reproduce without hidden notebook state.
     register_runtime_components()
-    console_print(
-        "EVAL",
-        "Starting evaluation experiment",
-        experiment_name=experiment_config["experiment_name"],
-        checkpoint_path=checkpoint_path,
-        device=experiment_config["device"],
-    )
 
     # `experiment_config["data"]` là load từ một trong các file
     # bên trong thư mục `configs/data`
@@ -150,12 +137,13 @@ def run_evaluation_experiment(
         experiment_config["data"]["dataset_name"], experiment_config["data"]
     )
 
-    console_print(
-        "DATA",
-        "Built dataset bundle for evaluation",
-        dataset_name=experiment_config["data"]["dataset_name"],
-        test_windows=len(data_bundle["datasets"]["test"]),
-    )
+    if not bool(experiment_config.get("logging", {}).get("quiet_terminal", False)):
+        console_print(
+            "DATA",
+            "Built dataset bundle for evaluation",
+            dataset_name=experiment_config["data"]["dataset_name"],
+            test_windows=len(data_bundle["datasets"]["test"]),
+        )
     model = build_model_from_experiment_config(experiment_config)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
@@ -175,12 +163,6 @@ def run_evaluation_experiment(
         )
 
     # In log
-    console_print(
-        "CHECKPOINT",
-        "Loaded checkpoint for evaluation",
-        checkpoint_path=checkpoint_path,
-    )
-
     # Gọi evaluator từ file src/engine/evaluator.py
     # Gọi phương thức evaluate của class Evaluator
     evaluation_config = dict(experiment_config.get("evaluation", {}))
@@ -209,6 +191,7 @@ def run_evaluation_experiment(
     )
 
     logging_config = dict(experiment_config.get("logging", {}))
+    quiet_terminal = bool(logging_config.get("quiet_terminal", False))
     logging_config.setdefault("wandb_job_type", "evaluate")
     logging_config.setdefault(
         "wandb_run_name", f"{experiment_config['experiment_name']}-evaluate"
@@ -219,13 +202,7 @@ def run_evaluation_experiment(
         logging_config=logging_config,
         write_run_start_record=False,
         write_resolved_config=False,
-    )
-    console_print(
-        "WANDB",
-        "Prepared evaluation logging config",
-        use_wandb=logging_config.get("use_wandb", False),
-        wandb_run_name=logging_config.get("wandb_run_name"),
-        wandb_job_type=logging_config.get("wandb_job_type"),
+        quiet_terminal=quiet_terminal,
     )
 
     output_dir = Path(experiment_config["output_dir"])

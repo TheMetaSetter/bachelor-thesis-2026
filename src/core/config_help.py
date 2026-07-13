@@ -24,6 +24,7 @@ def build_config_help_text(command_name: str) -> str:
         3) Wandb consistency rules (strict)
           - If logging.use_wandb is false, logging.wandb_mode must be 'disabled'
           - If logging.use_wandb is true, logging.wandb_mode must be 'online' or 'offline'
+          - logging.quiet_terminal=true reduces console noise but keeps files/W&B intact
 
         4) Synthetic multitask hints
           - classification_label_mode='redlamp_multiclass' requires num_classes=12
