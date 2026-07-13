@@ -3,11 +3,11 @@ baseline_name: m2n2
 online_variant: A2
 entity_id: machine_3_4
 seed: 8
+device: cpu
 window_size: 20
 data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
 protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
 output_dir: outputs/benchmark/online_streaming/smd/m2n2/A2/machine_3_4/seed8
-device: cuda
 baseline_kwargs:
   window_size: 20
   threshold_quantile: 0.99

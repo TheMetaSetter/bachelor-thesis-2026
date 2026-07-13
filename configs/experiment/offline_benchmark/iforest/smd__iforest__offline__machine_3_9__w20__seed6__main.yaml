@@ -2,6 +2,7 @@ benchmark_name: smd__iforest__offline__machine_3_9__w20__seed6__main
 baseline_name: iforest
 entity_id: machine-3-9
 seed: 6
+device: cpu
 window_size: 20
 data_config_path: configs/data/smd_benchmark_machine_3_9_window20.yaml
 protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml

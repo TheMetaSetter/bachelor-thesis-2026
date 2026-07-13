@@ -15,7 +15,7 @@ from typing import Any
 
 import yaml
 
-REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 OFFLINE_BENCHMARK_CONFIG_ROOT = (
     REPOSITORY_ROOT / "configs" / "experiment" / "offline_benchmark"
 )
@@ -98,6 +98,7 @@ def build_offline_benchmark_config(
         "baseline_name": method,
         "entity_id": entity_id,
         "seed": seed,
+        "device": "cpu",
         "window_size": WINDOW_SIZE,
         "data_config_path": _data_config_path(entity_id),
         "protocol_config_path": PROTOCOL_CONFIG_PATH,

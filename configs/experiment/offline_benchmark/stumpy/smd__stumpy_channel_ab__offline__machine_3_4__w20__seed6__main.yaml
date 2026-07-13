@@ -2,6 +2,7 @@ benchmark_name: smd__stumpy_channel_ab__offline__machine_3_4__w20__seed6__main
 baseline_name: stumpy_channel_ab
 entity_id: machine-3-4
 seed: 6
+device: cpu
 window_size: 20
 data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
 protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml

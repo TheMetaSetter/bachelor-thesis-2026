@@ -1,9 +1,14 @@
-experiment_name: smd__thesis__online__O0_A2__machine_3_9__w20__seed6__main
-seed: 6
-experiment_variant: online_tta_a2_v1
+# group: benchmark_smoke/online/thesis
+# stage: online_tta
+# status: smoke
+# owner: thesis_multitask
+
+experiment_name: smd__thesis__online__O0_A0__machine_3_9__w20__seed8__smoke_cuda
+seed: 8
+experiment_variant: online_tta_a0_v1
 device: cuda
-output_dir: outputs/benchmark/online/smd/thesis/O0_A2/machine_3_9/seed6
-checkpoint_dir: outputs/benchmark/online/smd/thesis/O0_A2/machine_3_9/seed6/checkpoints
+output_dir: outputs/benchmark_smoke/online/smd/thesis/O0_A0/machine_3_9/seed8_cuda
+checkpoint_dir: outputs/benchmark_smoke/online/smd/thesis/O0_A0/machine_3_9/seed8_cuda/checkpoints
 data_config_path: configs/data/smd_benchmark_machine_3_9_window20.yaml
 model_config_path: configs/model/online_adaptation.yaml
 task_config_path: configs/task/online_adaptation.yaml
@@ -15,7 +20,7 @@ data_overrides:
   test_stride: 20
   shuffle_train: false
   batch_size: 1
-  num_workers: 12
+  num_workers: 0
 model_overrides:
   input_dim: 38
   encoder_dim: 64
@@ -28,13 +33,13 @@ model_overrides:
   lambda_anchor: 0.001
   score_source: projected_hidden
 task_overrides:
-  reference_checkpoint_path: outputs/benchmark/smd/thesis/O0/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt
+  reference_checkpoint_path: outputs/benchmark_smoke/smd/thesis/O0/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt
   warm_start_projector: false
   target_param_group: projector_params
   clean_stream_only: true
-  max_online_steps: null
+  max_online_steps: 16
   log_every_n_steps: 1
-  checkpoint_every_n_steps: 50
+  checkpoint_every_n_steps: 8
   reset_policy: disabled
   reset_alignment_threshold: 0.0
 optimizer:
@@ -43,22 +48,23 @@ optimizer:
   weight_decay: 0.0
 epochs: 1
 evaluation:
-  vus_max_buffer_size: 20
-  vus_num_thresholds: 200
+  vus_max_buffer_size: 10
+  vus_num_thresholds: 20
 logging:
-  use_wandb: false
+  use_wandb: true
   wandb_project: bachelor-thesis-2026
-  wandb_mode: disabled
-  wandb_run_name: smd__thesis__online__O0_A2__machine_3_9__w20__seed6__main
+  wandb_mode: online
+  wandb_run_name: smd__thesis__online__O0_A0__machine_3_9__w20__seed8__smoke_cuda
   wandb_tags:
   - online-benchmark
   - thesis
   - o0
-  - a2
+  - a0
   - machine_3_9
-  - seed6
+  - seed8
   - window20
-  - main
+  - smoke
+  quiet_terminal: true
   log_hard_prediction_ratio: false
   log_row_normalized_confusion_matrix: false
   diagnostics_stages_for_classification:

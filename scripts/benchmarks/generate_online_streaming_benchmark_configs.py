@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 
 
-REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 ONLINE_STREAMING_BENCHMARK_CONFIG_ROOT = (
     REPOSITORY_ROOT / "configs" / "experiment" / "online_benchmark"
 )
@@ -142,11 +142,11 @@ def build_online_streaming_benchmark_config(
         "online_variant": online_variant,
         "entity_id": entity_id,
         "seed": seed,
+        "device": "cpu",
         "window_size": WINDOW_SIZE,
         "data_config_path": _data_config_path(entity_id),
         "protocol_config_path": PROTOCOL_CONFIG_PATH,
         "output_dir": _output_dir(method, online_variant, entity_id, seed, smoke),
-        "device": "cpu" if smoke else "cuda",
         "baseline_kwargs": _baseline_kwargs(method, seed, smoke),
         "benchmark_mode": _mode_name(smoke),
     }

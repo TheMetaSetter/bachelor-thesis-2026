@@ -3,11 +3,11 @@ baseline_name: kmeans_ad
 online_variant: main
 entity_id: machine_1_6
 seed: 6
+device: cpu
 window_size: 20
 data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml
 protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
 output_dir: outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_1_6/seed6
-device: cuda
 baseline_kwargs:
   window_size: 20
   n_clusters: 20

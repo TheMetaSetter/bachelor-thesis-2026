@@ -3,11 +3,11 @@ baseline_name: candi
 online_variant: A0
 entity_id: machine_3_4
 seed: 6
+device: cpu
 window_size: 20
 data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
 protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
 output_dir: outputs/benchmark/online_streaming/smd/candi/A0/machine_3_4/seed6
-device: cuda
 baseline_kwargs:
   window_size: 20
   threshold_quantile: 0.99

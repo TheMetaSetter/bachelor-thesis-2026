@@ -16,7 +16,7 @@ from typing import Any
 
 import yaml
 
-REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 ONLINE_BENCHMARK_CONFIG_DIR = (
     REPOSITORY_ROOT / "configs" / "experiment" / "online_benchmark" / "thesis"
 )
