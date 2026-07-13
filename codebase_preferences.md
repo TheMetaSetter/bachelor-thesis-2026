@@ -68,6 +68,10 @@ This is important so I will repeat 3 times.
   - A code file must not exceed 500 lines.
   - If a file grows past that size, split it into smaller files or move non-core helpers into a narrower boundary.
 
+- When writing CLI instructions or shell commands for the user, prefer one short command per line or per tmux `send-keys` step.
+  - Avoid bundling many actions into one long shell block unless the user explicitly asks for a scripted batch.
+  - Each command should be easy to inspect, rerun, and debug in isolation.
+
 - Do not write overly long `for` loops. When a loop starts handling many responsibilities at once, split the work into small, clearly named helper functions or methods so each step can be read, reused, tested, and modified independently.
 
 - Write explanatory comments to support user reading code. Comments should be updated in parallel with code or implementations.

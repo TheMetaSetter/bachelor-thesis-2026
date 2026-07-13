@@ -19,6 +19,9 @@ def test_stumpy_channel_ab_fits_calibrates_and_scores() -> None:
 
     calibration = baseline.calibrate(clean_validation)
     assert np.isfinite(calibration["threshold"])
+    assert calibration["method_metadata"]["point_calibration"] == (
+        "clean_validation_median_iqr"
+    )
     assert calibration["validation_point_scores"].shape == (95,)
     assert calibration["validation_covered_mask"].shape == (95,)
     assert calibration["validation_covered_mask"].all()

@@ -149,6 +149,7 @@ class StumpyChannelABCalibration:
     channel_median: np.ndarray
     channel_iqr: np.ndarray
     threshold: float
+    method_metadata: dict[str, Any]
     validation_point_scores: np.ndarray
     validation_covered_mask: np.ndarray
 
@@ -215,6 +216,13 @@ class StumpyChannelABFrozenTrainRef(TraditionalBaselineProtocol):
             channel_median=channel_median,
             channel_iqr=channel_iqr,
             threshold=threshold,
+            method_metadata={
+                "window_normalization": "per_window_row_zscore_ddof1"
+                if self.normalize
+                else "none",
+                "point_calibration": "clean_validation_median_iqr",
+                "anomaly_score_sign": "direct_distance",
+            },
             validation_point_scores=validation_point_scores,
             validation_covered_mask=validation_covered_mask,
         )
@@ -223,6 +231,7 @@ class StumpyChannelABFrozenTrainRef(TraditionalBaselineProtocol):
             "threshold": threshold,
             "channel_median": channel_median,
             "channel_iqr": channel_iqr,
+            "method_metadata": calibration.method_metadata,
             "validation_point_scores": validation_point_scores,
             "validation_covered_mask": validation_covered_mask,
         }
