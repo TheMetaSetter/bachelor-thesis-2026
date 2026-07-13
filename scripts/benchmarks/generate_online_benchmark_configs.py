@@ -25,6 +25,7 @@ BENCHMARK_ENTITY_IDS = ("machine_1_6", "machine_3_4", "machine_3_9")
 BENCHMARK_SEEDS = (6, 8, 36)
 BENCHMARK_OFFLINE_VARIANTS = ("O0", "O1")
 BENCHMARK_ONLINE_VARIANTS = ("A0", "A1", "A2")
+STAGE_B_CHECKPOINT_STAGE_NAME = "stage_b_fusion_finetuning"
 
 
 def _entity_token(entity_id: str) -> str:
@@ -65,20 +66,6 @@ def _output_dir(
     )
 
 
-def _reference_checkpoint_path(
-    *,
-    offline_variant: str,
-    entity_id: str,
-    seed: int,
-    smoke: bool,
-) -> str:
-    root_dir = "benchmark_smoke" if smoke else "benchmark"
-    return (
-        f"outputs/{root_dir}/smd/thesis/{offline_variant}/{_entity_token(entity_id)}"
-        f"/seed{seed}/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt"
-    )
-
-
 def _variant_experiment_name(online_variant: str) -> str:
     return f"online_tta_{online_variant.lower()}_v1"
 
@@ -112,12 +99,11 @@ def _task_overrides(
     max_online_steps = 16 if smoke else None
     checkpoint_every_n_steps = 8 if smoke else 50
     return {
-        "reference_checkpoint_path": _reference_checkpoint_path(
-            offline_variant=offline_variant,
-            entity_id=entity_id,
-            seed=seed,
-            smoke=smoke,
-        ),
+        "offline_variant": offline_variant,
+        "entity_id": entity_id,
+        "seed": seed,
+        "benchmark_mode": _benchmark_mode(smoke),
+        "stage_name": STAGE_B_CHECKPOINT_STAGE_NAME,
         "warm_start_projector": False,
         "target_param_group": "projector_params",
         "clean_stream_only": True,

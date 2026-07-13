@@ -6,6 +6,7 @@ import torch
 import pytest
 
 from src.engine.checkpoint import CheckpointManager
+from src.engine.online_tta import checkpoint_resolution
 from src.models.online_adaptation import (
     OnlineAdaptationModel,
     _resolve_reference_checkpoint_path,
@@ -30,6 +31,84 @@ def test_legacy_reference_path_resolves_two_stage_stage_b_checkpoint(
     resolved.write_bytes(b"checkpoint")
 
     assert _resolve_reference_checkpoint_path(requested) == resolved
+
+
+def test_stage_b_checkpoint_resolver_prefers_metadata_when_present(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(checkpoint_resolution, "REPOSITORY_ROOT", tmp_path)
+    resolved = (
+        tmp_path
+        / "outputs"
+        / "benchmark"
+        / "smd"
+        / "thesis"
+        / "O0"
+        / "machine_1_6"
+        / "seed6"
+        / "two_stage"
+        / "stage_b_fusion_finetuning"
+        / "checkpoints"
+        / "best.pt"
+    )
+    resolved.parent.mkdir(parents=True, exist_ok=True)
+    resolved.write_bytes(b"checkpoint")
+
+    config = {
+        "task": {
+            "offline_variant": "O0",
+            "entity_id": "machine_1_6",
+            "seed": 6,
+            "benchmark_mode": "main",
+            "stage_name": "stage_b_fusion_finetuning",
+        }
+    }
+
+    assert checkpoint_resolution.resolve_stage_b_checkpoint(config) == resolved
+
+
+def test_stage_b_checkpoint_resolver_fails_when_artifact_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(checkpoint_resolution, "REPOSITORY_ROOT", tmp_path)
+    config = {
+        "task": {
+            "offline_variant": "O0",
+            "entity_id": "machine_1_6",
+            "seed": 6,
+            "benchmark_mode": "main",
+            "stage_name": "stage_b_fusion_finetuning",
+        }
+    }
+
+    with pytest.raises(FileNotFoundError, match="No Stage B checkpoint matches"):
+        checkpoint_resolution.resolve_stage_b_checkpoint(config)
+
+
+def test_stage_b_checkpoint_resolver_fails_on_ambiguous_candidates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(checkpoint_resolution, "REPOSITORY_ROOT", tmp_path)
+    monkeypatch.setattr(
+        checkpoint_resolution,
+        "_find_stage_b_checkpoint_candidates",
+        lambda stage_root: [
+            tmp_path / "stage_b_fusion_finetuning" / "checkpoints" / "best.pt",
+            tmp_path / "stage_b_fusion_finetuning" / "checkpoints" / "best.pt",
+        ],
+    )
+    config = {
+        "task": {
+            "offline_variant": "O0",
+            "entity_id": "machine_1_6",
+            "seed": 6,
+            "benchmark_mode": "main",
+            "stage_name": "stage_b_fusion_finetuning",
+        }
+    }
+
+    with pytest.raises(ValueError, match="Ambiguous Stage B checkpoint metadata"):
+        checkpoint_resolution.resolve_stage_b_checkpoint(config)
 
 
 def test_online_model_rejects_reconstruction_reference_checkpoint(

@@ -17,7 +17,14 @@ def _write_online_config(path: Path, output_dir: Path) -> None:
         "device": "cpu",
         "data": {"dataset_name": "smd", "window_size": 20, "stride": 1},
         "model": {"model_name": "online_adaptation"},
-        "task": {"task_name": "online_adaptation"},
+        "task": {
+            "task_name": "online_adaptation",
+            "offline_variant": "O0",
+            "entity_id": "machine-1-6",
+            "seed": 6,
+            "benchmark_mode": "smoke",
+            "stage_name": "stage_b_fusion_finetuning",
+        },
         "optimizer": {"learning_rate": 0.001, "weight_decay": 0.0},
     }
     path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
@@ -50,6 +57,9 @@ def test_thesis_online_a0_wrapper_writes_protocol_report(tmp_path, monkeypatch) 
     )
 
     def fake_online_run(*, experiment_config, protocol_config, online_variant, dry_run):
+        assert experiment_config["task"]["reference_checkpoint_path"] == str(
+            final_checkpoint_path
+        )
         return {
             "final_checkpoint_path": str(final_checkpoint_path),
             "metric_history": [{"online/step": 1}],
@@ -63,6 +73,10 @@ def test_thesis_online_a0_wrapper_writes_protocol_report(tmp_path, monkeypatch) 
     monkeypatch.setattr(
         "scripts.run_thesis_online_benchmark.run_thesis_online_tta_experiment",
         fake_online_run,
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_online_benchmark.resolve_stage_b_checkpoint",
+        lambda experiment_config: final_checkpoint_path,
     )
 
     report = run_thesis_online_benchmark(
@@ -133,6 +147,9 @@ def test_thesis_online_a0_wrapper_can_reduce_retention_to_summary_only(
     )
 
     def fake_online_run(*, experiment_config, protocol_config, online_variant, dry_run):
+        assert experiment_config["task"]["reference_checkpoint_path"] == str(
+            final_checkpoint_path
+        )
         return {
             "final_checkpoint_path": str(final_checkpoint_path),
             "metric_history": [{"online/step": 1}],
@@ -146,6 +163,10 @@ def test_thesis_online_a0_wrapper_can_reduce_retention_to_summary_only(
     monkeypatch.setattr(
         "scripts.run_thesis_online_benchmark.run_thesis_online_tta_experiment",
         fake_online_run,
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_online_benchmark.resolve_stage_b_checkpoint",
+        lambda experiment_config: final_checkpoint_path,
     )
 
     report = run_thesis_online_benchmark(

@@ -66,11 +66,17 @@ def test_generate_thesis_online_benchmark_configs_writes_all_expected_files() ->
                         )
                         assert loaded_config["task"]["clean_stream_only"] is True
                         assert loaded_config["task"]["warm_start_projector"] is False
-                        assert loaded_config["task"][
-                            "reference_checkpoint_path"
-                        ].endswith(
-                            f"outputs/{'benchmark_smoke' if smoke else 'benchmark'}/smd/thesis/{offline_variant}/{entity_id.replace('-', '_')}/seed{seed}/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt"
+                        assert loaded_config["task"]["offline_variant"] == offline_variant
+                        assert loaded_config["task"]["entity_id"] == entity_id
+                        assert loaded_config["task"]["seed"] == seed
+                        assert loaded_config["task"]["benchmark_mode"] == (
+                            "smoke" if smoke else "main"
                         )
+                        assert (
+                            loaded_config["task"]["stage_name"]
+                            == "stage_b_fusion_finetuning"
+                        )
+                        assert "reference_checkpoint_path" not in loaded_config["task"]
                         if smoke:
                             assert loaded_config["device"] == "cpu"
                             assert loaded_config["task"]["max_online_steps"] == 16

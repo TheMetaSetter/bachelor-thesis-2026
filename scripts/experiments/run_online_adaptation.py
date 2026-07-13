@@ -25,6 +25,7 @@ from src.core.seed import seed_everything
 from src.data.stream import OnlineWindowBatcher, SMDOnlineStream
 from src.engine.checkpoint import CheckpointManager
 from src.engine.logger import ExperimentLogger
+from src.engine.online_tta.checkpoint_resolution import resolve_stage_b_checkpoint
 from src.engine.online_loop import OnlineLoop
 
 
@@ -53,6 +54,10 @@ def build_model_from_experiment_config(
         "reset_policy",
         "reset_alignment_threshold",
     }
+    if "reference_checkpoint_path" not in experiment_config["task"]:
+        model_kwargs["reference_checkpoint_path"] = str(
+            resolve_stage_b_checkpoint(experiment_config)
+        )
     model_kwargs.update(
         {
             key: value

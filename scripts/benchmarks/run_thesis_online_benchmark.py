@@ -34,6 +34,7 @@ from src.core.artifact_integrity import (
     write_artifact_manifest,
     write_retention_bundle_manifest,
 )
+from src.engine.online_tta.checkpoint_resolution import resolve_stage_b_checkpoint
 from src.engine.online_tta.online_engine import run_thesis_online_tta_experiment
 from src.engine.checkpoint import CheckpointManager
 from src.protocols.smd_benchmark_protocol import validate_protocol_config
@@ -228,6 +229,10 @@ def run_thesis_online_benchmark(
     protocol_config = _load_yaml_config(protocol_config_path)
     retention_policy = _resolve_retention_policy(experiment_config)
     validate_protocol_config(protocol_config)
+    resolved_checkpoint_path = resolve_stage_b_checkpoint(experiment_config)
+    experiment_config["task"]["reference_checkpoint_path"] = str(
+        resolved_checkpoint_path
+    )
 
     online_outputs = run_thesis_online_tta_experiment(
         experiment_config=experiment_config,

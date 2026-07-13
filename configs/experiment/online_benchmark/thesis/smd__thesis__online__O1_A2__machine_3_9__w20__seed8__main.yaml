@@ -28,7 +28,11 @@ model_overrides:
   lambda_anchor: 0.001
   score_source: projected_hidden
 task_overrides:
-  reference_checkpoint_path: outputs/benchmark/smd/thesis/O1/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt
+  offline_variant: O1
+  entity_id: machine_3_9
+  seed: 8
+  benchmark_mode: main
+  stage_name: stage_b_fusion_finetuning
   warm_start_projector: false
   target_param_group: projector_params
   clean_stream_only: true

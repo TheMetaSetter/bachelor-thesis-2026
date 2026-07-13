@@ -2,6 +2,44 @@ from __future__ import annotations
 
 from typing import Any
 
+from src.engine.online_tta.checkpoint_resolution import (
+    ONLINE_BENCHMARK_METADATA_FIELDS,
+)
+
+
+def _validate_online_adaptation_metadata(task_config: dict[str, Any]) -> None:
+    missing_fields = [
+        field_name
+        for field_name in ONLINE_BENCHMARK_METADATA_FIELDS
+        if field_name not in task_config
+    ]
+    if missing_fields:
+        raise ValueError(
+            "online_adaptation task config must define either "
+            "reference_checkpoint_path or all online benchmark metadata fields: "
+            f"{missing_fields}"
+        )
+
+    offline_variant = task_config["offline_variant"]
+    if not isinstance(offline_variant, str) or not offline_variant:
+        raise ValueError("offline_variant must be a non-empty string")
+
+    entity_id = task_config["entity_id"]
+    if not isinstance(entity_id, str) or not entity_id:
+        raise ValueError("entity_id must be a non-empty string")
+
+    seed = task_config["seed"]
+    if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
+        raise ValueError("seed must be a non-negative integer")
+
+    benchmark_mode = task_config["benchmark_mode"]
+    if benchmark_mode not in {"main", "smoke"}:
+        raise ValueError("benchmark_mode must be one of: main, smoke")
+
+    stage_name = task_config["stage_name"]
+    if not isinstance(stage_name, str) or not stage_name:
+        raise ValueError("stage_name must be a non-empty string")
+
 
 def _validate_model_and_task_config(
     *,
@@ -181,6 +219,11 @@ def _validate_model_and_task_config(
         "online_adaptation": {
             "task_name",
             "reference_checkpoint_path",
+            "offline_variant",
+            "entity_id",
+            "seed",
+            "benchmark_mode",
+            "stage_name",
             "warm_start_projector",
             "target_param_group",
             "clean_stream_only",
@@ -739,3 +782,11 @@ def _validate_model_and_task_semantics(
             )
         if task_config.get("reset_policy") not in {"disabled", "threshold"}:
             raise ValueError("reset_policy must be one of: disabled, threshold")
+        reference_checkpoint_path = task_config.get("reference_checkpoint_path")
+        if reference_checkpoint_path is not None:
+            if not isinstance(reference_checkpoint_path, str) or not reference_checkpoint_path:
+                raise ValueError(
+                    "reference_checkpoint_path must be a non-empty string when provided"
+                )
+        if reference_checkpoint_path is None:
+            _validate_online_adaptation_metadata(task_config)

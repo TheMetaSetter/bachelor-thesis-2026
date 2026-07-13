@@ -24,6 +24,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from src.core.config import load_experiment_config
 from src.core.config_experiment_validation import validate_experiment_config
+from src.engine.online_tta.checkpoint_resolution import resolve_stage_b_checkpoint
 from src.protocols.smd_benchmark_protocol import (
     SMD_BENCHMARK_ENTITIES,
     SMD_BENCHMARK_SEEDS,
@@ -81,14 +82,7 @@ def _validate_thesis_online(paths: list[Path]) -> None:
         raise ValueError(f"THESIS online variants are incomplete: {observed_variants}")
     for path in paths:
         config = load_experiment_config(path)
-        reference_path = str(config["task"]["reference_checkpoint_path"])
-        if not reference_path.endswith(
-            "two_stage/stage_b_fusion_finetuning/checkpoints/best.pt"
-        ):
-            raise ValueError(
-                "THESIS online configs must reference the offline Stage-B checkpoint: "
-                f"{path}"
-            )
+        resolve_stage_b_checkpoint(config)
 
 
 def _validate_wrapper_configs(

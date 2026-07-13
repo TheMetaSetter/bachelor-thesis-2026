@@ -22,6 +22,9 @@ from src.core.console import (
     summarize_tensor,
 )
 from src.core.contracts import validate_model_outputs, validate_online_batch
+from src.engine.online_tta.checkpoint_resolution import (
+    resolve_legacy_reference_checkpoint_path,
+)
 from src.engine.online_tta.signature_verification import (
     PrototypeVerificationMetadata,
 )
@@ -34,26 +37,14 @@ def _resolve_reference_checkpoint_path(checkpoint_path: str | Path) -> Path:
     requested = Path(checkpoint_path)
     if requested.exists():
         return requested
-    if requested.name == "best.pt" and requested.parent.name == "checkpoints":
-        stage_b_path = (
-            requested.parent.parent
-            / "two_stage"
-            / "stage_b_fusion_finetuning"
-            / "checkpoints"
-            / "best.pt"
-        )
-        if stage_b_path.exists():
-            console_print(
-                "MODEL",
-                "Resolved legacy online reference checkpoint path",
-                requested_path=requested,
-                resolved_path=stage_b_path,
-            )
-            return stage_b_path
-    raise FileNotFoundError(
-        "Online reference checkpoint does not exist: "
-        f"{requested}. Run the matching offline two-stage experiment first."
+    resolved = resolve_legacy_reference_checkpoint_path(requested)
+    console_print(
+        "MODEL",
+        "Resolved legacy online reference checkpoint path",
+        requested_path=requested,
+        resolved_path=resolved,
     )
+    return resolved
 
 
 from src.models.online_impl.online_adaptation_helpers import *  # noqa: F401,F403

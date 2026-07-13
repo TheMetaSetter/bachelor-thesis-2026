@@ -59,6 +59,11 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         raise ValueError(
             "initialization_checkpoint_path must be a non-empty string when provided"
         )
+    if task_config.get("task_name") == "online_adaptation" and task_config.get(
+        "seed"
+    ) is not None:
+        if task_config["seed"] != experiment_config["seed"]:
+            raise ValueError("online_adaptation task seed must match top-level seed")
 
     _resolve_thesis_model_window_size(experiment_config)
     _validate_data_config(data_config)
