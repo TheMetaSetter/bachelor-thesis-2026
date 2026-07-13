@@ -308,17 +308,22 @@ class ThesisMultitaskStateMemoryMixin:
     ) -> None:
         if not isinstance(self.discrete_codebook, torch.Tensor):
             return
+        codebook_device = self.discrete_codebook.device
         counts = [
             self.discrete_codebook_size // self.num_classes
             + (1 if index < self.discrete_codebook_size % self.num_classes else 0)
             for index in range(self.num_classes)
         ]
-        mask = torch.zeros(self.discrete_codebook_size, dtype=torch.bool)
+        mask = torch.zeros(
+            self.discrete_codebook_size, dtype=torch.bool, device=codebook_device
+        )
         codeword_class_ids = torch.zeros(
-            self.discrete_codebook_size, dtype=torch.long
+            self.discrete_codebook_size, dtype=torch.long, device=codebook_device
         )
         contributing_token_counts = torch.zeros(
-            self.discrete_codebook_size, dtype=torch.float32
+            self.discrete_codebook_size,
+            dtype=torch.float32,
+            device=codebook_device,
         )
         offset = 0
         for class_index, count in enumerate(counts):
@@ -326,14 +331,14 @@ class ThesisMultitaskStateMemoryMixin:
                 mask[offset : offset + count] = True
             codeword_class_ids[offset : offset + count] = class_index
             offset += count
-        radii = torch.zeros(self.discrete_codebook_size)
+        radii = torch.zeros(self.discrete_codebook_size, device=codebook_device)
         anomaly_groups = [
             values.reshape(-1, self.hidden_dim)
             for class_index, values in discrete_hidden_tokens_by_class.items()
             if class_index > 0 and values.numel() > 0
         ]
         if anomaly_groups:
-            anomaly_tokens = torch.cat(anomaly_groups, dim=0)
+            anomaly_tokens = torch.cat(anomaly_groups, dim=0).to(codebook_device)
             distances = (
                 1.0
                 - F.normalize(anomaly_tokens, dim=-1)
@@ -344,7 +349,7 @@ class ThesisMultitaskStateMemoryMixin:
             contributing_token_counts += torch.bincount(
                 nearest_ids,
                 minlength=self.discrete_codebook_size,
-            ).to(dtype=torch.float32)
+            ).to(device=codebook_device, dtype=torch.float32)
             for codeword_id in torch.unique(nearest_ids).tolist():
                 assigned = nearest_distances[nearest_ids == codeword_id]
                 radii[codeword_id] = torch.quantile(assigned, 0.99)

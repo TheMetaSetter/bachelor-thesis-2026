@@ -462,3 +462,32 @@ def test_multitask_model_uses_shared_three_layer_mlp_depth() -> None:
     assert len(encoder_linear_layers) == 3
     assert len(reconstruction_linear_layers) == 3
     assert len(classification_linear_layers) == 3
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required")
+def test_multitask_model_calibrates_memory_metadata_on_model_device() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=20,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=12,
+        continuous_enabled=False,
+        discrete_enabled=True,
+        discrete_codebook_size=8,
+    ).cuda()
+    model.discrete_codebook = torch.randn(8, 16, device="cuda")
+    discrete_hidden_tokens_by_class = {
+        0: torch.randn(4, 16, device="cuda"),
+        1: torch.randn(4, 16, device="cuda"),
+        2: torch.randn(4, 16, device="cuda"),
+    }
+
+    model._calibrate_anomaly_verification_metadata(
+        discrete_hidden_tokens_by_class=discrete_hidden_tokens_by_class
+    )
+
+    assert model.anomalous_codeword_mask.device.type == "cuda"
+    assert model.anomaly_radii.device.type == "cuda"
+    assert model.verification_codeword_class_ids.device.type == "cuda"
+    assert model.verification_contributing_token_counts.device.type == "cuda"
