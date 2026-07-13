@@ -36,6 +36,15 @@ def test_generate_online_streaming_benchmark_configs_writes_all_expected_files()
     assert sample_config["baseline_name"] == "candi"
     assert sample_config["online_variant"] == "A0"
     assert sample_config["window_size"] == 20
+    assert sample_config["task_overrides"]["max_online_steps"] is None
     assert sample_config["protocol_config_path"].endswith(
         "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
     )
+
+    smoke_path = Path(
+        "configs/experiment/online_benchmark/candi/"
+        "smd__candi__online_A0__machine_1_6__w20__seed6__smoke.yaml"
+    )
+    assert smoke_path.exists()
+    smoke_config = yaml.safe_load(smoke_path.read_text(encoding="utf-8"))
+    assert smoke_config["task_overrides"]["max_online_steps"] == 16

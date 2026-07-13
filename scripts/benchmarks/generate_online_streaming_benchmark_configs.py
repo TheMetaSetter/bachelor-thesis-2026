@@ -148,6 +148,9 @@ def build_online_streaming_benchmark_config(
         "protocol_config_path": PROTOCOL_CONFIG_PATH,
         "output_dir": _output_dir(method, online_variant, entity_id, seed, smoke),
         "baseline_kwargs": _baseline_kwargs(method, seed, smoke),
+        "task_overrides": {
+            "max_online_steps": 16 if smoke else None,
+        },
         "benchmark_mode": _mode_name(smoke),
     }
 
