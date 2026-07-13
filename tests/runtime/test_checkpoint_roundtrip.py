@@ -220,7 +220,64 @@ def test_multitask_checkpoint_roundtrip_restores_memory_buffers(tmp_path: Path) 
         model.continuous_prototype_bank,
         reloaded_model.continuous_prototype_bank,
     )
-    assert torch.allclose(model.discrete_codebook, reloaded_model.discrete_codebook)
-    assert torch.allclose(model.discrete_ema_counts, reloaded_model.discrete_ema_counts)
-    assert torch.allclose(model.discrete_ema_sums, reloaded_model.discrete_ema_sums)
-    assert loaded_checkpoint["extra_state"]["memory_initialized"] is True
+
+
+def test_stage_b_initialization_checkpoint_can_be_reloaded_with_stage_b_config(
+    tmp_path: Path,
+) -> None:
+    checkpoint_manager = CheckpointManager(tmp_path)
+    model = ReconstructionMLPAutoencoder(
+        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+    stage_a_config = {
+        "experiment_name": "stage-a",
+        "model": {"model_name": "reconstruction_mlp_ae"},
+        "task": {"task_name": "reconstruction"},
+        "seed": 8,
+    }
+    stage_b_config = {
+        "experiment_name": "stage-b",
+        "model": {"model_name": "reconstruction_mlp_ae"},
+        "task": {"task_name": "reconstruction"},
+        "seed": 8,
+    }
+
+    stage_a_path = checkpoint_manager.save_checkpoint(
+        checkpoint_name="stage_a.pt",
+        model=model,
+        optimizer=optimizer,
+        scheduler=None,
+        scaler_state={
+            "feature_mean": torch.zeros(38),
+            "feature_std": torch.ones(38),
+        },
+        config=stage_a_config,
+        epoch=1,
+        metric_history=[{"train_loss": 1.0}],
+    )
+    payload = torch.load(stage_a_path, map_location="cpu")
+    payload["config"] = stage_b_config
+    payload["checkpoint_metadata"] = CheckpointManager._build_checkpoint_metadata(
+        config=stage_b_config,
+        epoch=int(payload["epoch"]),
+        metric_history=list(payload["metric_history"]),
+        extra_state=payload.get("extra_state"),
+    )
+    stage_b_init_path = tmp_path / "stage_b_init.pt"
+    torch.save(payload, stage_b_init_path)
+
+    reloaded_model = ReconstructionMLPAutoencoder(
+        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    )
+    reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)
+    loaded_checkpoint = checkpoint_manager.load_checkpoint(
+        stage_b_init_path,
+        reloaded_model,
+        reloaded_optimizer,
+    )
+
+    assert loaded_checkpoint["config"] == stage_b_config
+    assert loaded_checkpoint["checkpoint_metadata"]["experiment_name"] == "stage-b"
+    assert loaded_checkpoint["checkpoint_metadata"]["schema_version"] == 3

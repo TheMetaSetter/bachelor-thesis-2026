@@ -11,6 +11,7 @@ from src.engine.online_tta.online_engine_step import execute_online_tta_step
 from src.engine.online_tta.online_engine_window_metrics import (
     _build_event_pnn_mask,
     _build_online_window_outputs,
+    _score_online_window,
     _update_online_window_buffers,
     _verify_and_adapt_entries,
 )

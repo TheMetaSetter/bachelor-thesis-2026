@@ -21,6 +21,7 @@ from src.engine.thresholding import (
     select_clean_validation_point_threshold,
     select_online_ewma_threshold,
 )
+from src.engine.online_tta.online_optimizer import collect_projector_parameters
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     write_threshold_artifact,

@@ -75,6 +75,17 @@ def _load_json_config(path_like: str | Path) -> dict[str, Any]:
     return load_yaml_config(path)
 
 
+def _apply_data_overrides(
+    data_config: dict[str, Any], data_overrides: dict[str, Any] | None
+) -> dict[str, Any]:
+    if not data_overrides:
+        return data_config
+    merged_data_config = dict(data_config)
+    for key, value in data_overrides.items():
+        merged_data_config[key] = value
+    return merged_data_config
+
+
 def _write_json(path: Path, payload: dict[str, Any]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", "utf-8")
@@ -242,6 +253,9 @@ def run_offline_benchmark(
 
     register_evaluation_runtime_components()
     data_config = _load_json_config(benchmark_config["data_config_path"])
+    data_config = _apply_data_overrides(
+        data_config, benchmark_config.get("data_overrides")
+    )
     data_bundle = build_dataset(data_config["dataset_name"], data_config)
 
     baseline_name = str(benchmark_config["baseline_name"])

@@ -64,6 +64,44 @@ def _load_json_config(path_like: str | Path) -> dict[str, Any]:
     return load_yaml_config(path)
 
 
+def _apply_data_overrides(
+    data_config: dict[str, Any], data_overrides: dict[str, Any] | None
+) -> dict[str, Any]:
+    if not data_overrides:
+        return data_config
+    merged_data_config = dict(data_config)
+    for key, value in data_overrides.items():
+        merged_data_config[key] = value
+    return merged_data_config
+
+
+def _truncate_sequence_to_max_online_steps(
+    sequence: dict[str, Any],
+    *,
+    window_size: int,
+    max_online_steps: int | None,
+) -> dict[str, Any]:
+    if max_online_steps is None or max_online_steps <= 0:
+        return sequence
+    sequence_x = _to_numpy(sequence["x"], dtype=np.float64)
+    if sequence_x.shape[0] <= window_size:
+        return sequence
+    max_points = min(sequence_x.shape[0], window_size + max_online_steps - 1)
+    truncated_sequence = dict(sequence)
+    truncated_sequence["x"] = sequence_x[:max_points]
+    if "point_labels" in sequence:
+        point_labels = _to_numpy(sequence["point_labels"], dtype=np.int64).reshape(-1)
+        truncated_sequence["point_labels"] = point_labels[:max_points]
+    if "mask" in sequence and sequence["mask"] is not None:
+        mask = _to_numpy(sequence["mask"], dtype=np.int64).reshape(-1)
+        truncated_sequence["mask"] = mask[:max_points]
+    if "timestamps" in sequence and sequence["timestamps"] is not None:
+        truncated_sequence["timestamps"] = np.asarray(sequence["timestamps"])[
+            :max_points
+        ]
+    return truncated_sequence
+
+
 def _write_json(path: Path, payload: Any) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -226,6 +264,9 @@ def run_online_streaming_benchmark(
 
     register_evaluation_runtime_components()
     data_config = _load_json_config(benchmark_config["data_config_path"])
+    data_config = _apply_data_overrides(
+        data_config, benchmark_config.get("data_overrides")
+    )
     data_bundle = build_dataset(data_config["dataset_name"], data_config)
 
     train_sequence = _single_sequence(
@@ -251,6 +292,15 @@ def run_online_streaming_benchmark(
     baseline = _instantiate_baseline(baseline_name, baseline_kwargs)
     if hasattr(baseline, "fit"):
         baseline.fit(_to_numpy(train_sequence["x"], dtype=np.float64))
+
+    max_online_steps_override = benchmark_config.get("task_overrides", {}).get(
+        "max_online_steps"
+    )
+    max_online_steps = (
+        int(max_online_steps_override)
+        if max_online_steps_override is not None
+        else None
+    )
 
     calibration = baseline.calibrate(
         clean_validation_sequences=clean_validation_sequences,
@@ -280,8 +330,13 @@ def run_online_streaming_benchmark(
     metric_history: list[dict[str, Any]] = []
     records: list[dict[str, Any]] = []
     for sequence in test_sequences:
+        limited_sequence = _truncate_sequence_to_max_online_steps(
+            sequence,
+            window_size=int(protocol_config["window_size"]),
+            max_online_steps=max_online_steps,
+        )
         sequence_metric_history, sequence_records = baseline.run_sequence(
-            sequence=sequence,
+            sequence=limited_sequence,
             threshold_value=float(calibration["threshold_value"]),
             protocol_config=protocol_config,
             device=str(benchmark_config.get("device", "cpu")),

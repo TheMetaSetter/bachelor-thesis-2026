@@ -110,6 +110,30 @@ class _FakeOnlineBaseline:
         )
 
 
+class _RecordingOnlineBaseline(_FakeOnlineBaseline):
+    def __init__(self) -> None:
+        super().__init__()
+        self.calibration_validation_lengths: list[int] = []
+        self.run_sequence_lengths: list[int] = []
+
+    def calibrate(self, clean_validation_sequences, protocol_config, device: str):
+        self.calibration_validation_lengths.append(len(clean_validation_sequences))
+        return super().calibrate(
+            clean_validation_sequences=clean_validation_sequences,
+            protocol_config=protocol_config,
+            device=device,
+        )
+
+    def run_sequence(self, sequence, threshold_value, protocol_config, device: str):
+        self.run_sequence_lengths.append(int(sequence["x"].shape[0]))
+        return super().run_sequence(
+            sequence=sequence,
+            threshold_value=threshold_value,
+            protocol_config=protocol_config,
+            device=device,
+        )
+
+
 def _build_sequence(entity_id: str) -> dict[str, object]:
     return {
         "x": torch.randn(40, 38),
@@ -212,3 +236,98 @@ def test_online_streaming_benchmark_writes_shared_report(tmp_path, monkeypatch) 
         )
     )
     assert threshold_payload["thresholds"]["online_ewma_point"]["value"] == 0.4
+
+
+def test_online_streaming_benchmark_applies_overrides_and_max_online_steps(
+    tmp_path, monkeypatch
+) -> None:
+    config_path = tmp_path / "online_benchmark.yaml"
+    protocol_path = tmp_path / "protocol.yaml"
+    output_dir = tmp_path / "outputs"
+
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "benchmark_name": "fake-online-benchmark",
+                "baseline_name": "fake",
+                "baseline_kwargs": {},
+                "data_config_path": "configs/data/smd_benchmark_machine_1_6_window20.yaml",
+                "output_dir": str(output_dir),
+                "protocol_config_path": str(protocol_path),
+                "data_overrides": {
+                    "batch_size": 8,
+                    "num_workers": 0,
+                    "max_train_windows": 3,
+                    "max_val_windows": 2,
+                    "max_test_windows": 2,
+                },
+                "task_overrides": {"max_online_steps": 2},
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    protocol_path.write_text(
+        yaml.safe_dump(
+            {
+                "protocol_name": "smd_window20_cleanval_q99_ewma09",
+                "window_size": 20,
+                "offline_tail_policy": "end_align",
+                "offline_threshold_split": "clean_validation",
+                "offline_threshold_quantile": 0.99,
+                "online_window_stride": 1,
+                "online_threshold_split": "clean_validation",
+                "online_threshold_quantile": 0.99,
+                "online_ewma_current_weight": 0.9,
+                "online_ewma_previous_weight": 0.1,
+                "test_label_usage": "metrics_only",
+                "point_adjustment": False,
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    fake_baseline = _RecordingOnlineBaseline()
+    captured_data_configs: list[dict[str, object]] = []
+
+    def _fake_build_dataset(name, config):
+        captured_data_configs.append(dict(config))
+        return {
+            "scaled_sequences": {
+                "train": [_build_sequence("machine-1-6")],
+                "val": [_build_sequence("machine-1-6")],
+                "test": [_build_sequence("machine-1-6")],
+            }
+        }
+
+    monkeypatch.setattr(
+        "scripts.run_online_streaming_benchmark.BASELINE_BUILDERS",
+        {"fake": lambda **kwargs: fake_baseline},
+    )
+    monkeypatch.setattr(
+        "scripts.run_online_streaming_benchmark.load_yaml_config",
+        lambda path: yaml.safe_load(Path(path).read_text(encoding="utf-8")),
+    )
+    monkeypatch.setattr(
+        "scripts.run_online_streaming_benchmark.build_dataset",
+        _fake_build_dataset,
+    )
+    monkeypatch.setattr(
+        "scripts.run_online_streaming_benchmark.register_evaluation_runtime_components",
+        lambda: None,
+    )
+
+    run_online_streaming_benchmark(
+        benchmark_config_path=str(config_path),
+        protocol_config_path=str(protocol_path),
+        dry_run=False,
+    )
+
+    assert captured_data_configs[0]["batch_size"] == 8
+    assert captured_data_configs[0]["num_workers"] == 0
+    assert captured_data_configs[0]["max_train_windows"] == 3
+    assert captured_data_configs[0]["max_val_windows"] == 2
+    assert captured_data_configs[0]["max_test_windows"] == 2
+    assert fake_baseline.calibration_validation_lengths == [1]
+    assert fake_baseline.run_sequence_lengths == [21]
