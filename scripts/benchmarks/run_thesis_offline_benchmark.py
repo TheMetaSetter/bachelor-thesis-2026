@@ -149,6 +149,113 @@ def _resolve_retention_policy(experiment_config: dict[str, Any]) -> str:
     return str(evaluation_config.get("retention_policy", "retain_for_eda"))
 
 
+def _summarize_loaded_checkpoint_contract(
+    *,
+    checkpoint_path: str,
+    loaded_checkpoint: dict[str, Any],
+    model: Any,
+) -> dict[str, Any]:
+    relevant_fields = [
+        "stochastic_inference",
+        "monte_carlo_samples",
+        "continuous_temperature",
+        "discrete_temperature",
+        "variance_correction",
+        "return_mc_samples",
+        "sample_retention_policy",
+    ]
+    checkpoint_metadata = dict(loaded_checkpoint.get("checkpoint_metadata") or {})
+    extra_state = dict(loaded_checkpoint.get("extra_state") or {})
+    model_flags = {
+        field_name: getattr(model, field_name, None) for field_name in relevant_fields
+    }
+    checkpoint_metadata_flags = {
+        field_name: checkpoint_metadata.get(field_name)
+        for field_name in relevant_fields
+        if field_name in checkpoint_metadata
+    }
+    extra_state_flags = {
+        field_name: extra_state.get(field_name)
+        for field_name in relevant_fields
+        if field_name in extra_state
+    }
+    return {
+        "checkpoint_path": str(checkpoint_path),
+        "has_checkpoint_metadata": bool(checkpoint_metadata),
+        "has_extra_state": bool(extra_state),
+        "checkpoint_metadata_flags": checkpoint_metadata_flags,
+        "extra_state_flags": extra_state_flags,
+        "model_flags": model_flags,
+        "metadata_mismatches": {
+            field_name: {
+                "checkpoint": checkpoint_metadata.get(field_name),
+                "model": model_flags[field_name],
+            }
+            for field_name in relevant_fields
+            if field_name in checkpoint_metadata
+            and checkpoint_metadata.get(field_name) != model_flags[field_name]
+        },
+        "extra_state_mismatches": {
+            field_name: {
+                "checkpoint": extra_state.get(field_name),
+                "model": model_flags[field_name],
+            }
+            for field_name in relevant_fields
+            if field_name in extra_state and extra_state.get(field_name) != model_flags[field_name]
+        },
+    }
+
+
+def _summarize_trace_payloads(trace_payloads: list[dict[str, Any]]) -> dict[str, Any]:
+    sample_keys = [
+        "point_score_samples",
+        "window_score_samples",
+        "reconstruction_samples",
+        "classification_probability_samples",
+    ]
+    mc_histories_non_null_count = {
+        key_name: sum(
+            1
+            for trace_payload in trace_payloads
+            if trace_payload.get("mc_sample_histories", {}).get(key_name) is not None
+        )
+        for key_name in sample_keys
+    }
+    return {
+        "num_traces": len(trace_payloads),
+        "any_uncertainty_history": any(
+            trace_payload.get("uncertainty_history") is not None
+            for trace_payload in trace_payloads
+        ),
+        "uncertainty_history_non_null_count": sum(
+            1
+            for trace_payload in trace_payloads
+            if trace_payload.get("uncertainty_history") is not None
+        ),
+        "mc_histories_non_null_count": mc_histories_non_null_count,
+        "any_mc_sample_history": any(
+            count > 0 for count in mc_histories_non_null_count.values()
+        ),
+        "first_sample_retention_policy": (
+            trace_payloads[0].get("sample_retention_policy")
+            if trace_payloads
+            else None
+        ),
+    }
+
+
+def _summarize_metric_variance_keys(metrics: dict[str, Any]) -> dict[str, Any]:
+    variance_metric_keys = sorted(
+        key_name
+        for key_name, value in metrics.items()
+        if "variance" in key_name and isinstance(value, (int, float))
+    )
+    return {
+        "has_variance_metrics": bool(variance_metric_keys),
+        "variance_metric_keys": variance_metric_keys,
+    }
+
+
 def collect_offline_artifact_inputs(
     *,
     experiment_config: dict[str, Any],
@@ -162,10 +269,16 @@ def collect_offline_artifact_inputs(
         experiment_config["data"],
     )
     model = build_model_from_experiment_config(experiment_config)
+    checkpoint_path = str(manifest["evaluation"]["checkpoint_path"])
     checkpoint_payload = _load_evaluation_checkpoint(
         experiment_config,
         manifest,
         model,
+    )
+    checkpoint_audit = _summarize_loaded_checkpoint_contract(
+        checkpoint_path=checkpoint_path,
+        loaded_checkpoint=checkpoint_payload,
+        model=model,
     )
     data_bundle = _maybe_rebuild_with_checkpoint_scaler(
         data_bundle,
@@ -195,6 +308,32 @@ def collect_offline_artifact_inputs(
         "test": _evaluation_outputs_to_score_payload(split_outputs["test"]),
         "test_traces": split_outputs["test"].get("traces", []),
         "offline_metrics": dict(split_outputs["test"]["metrics"]),
+        "variance_trace_audit": {
+            "checkpoint": checkpoint_audit,
+            "metrics": _summarize_metric_variance_keys(split_outputs["test"]["metrics"]),
+            "traces": {
+                "clean_validation": _summarize_trace_payloads(
+                    split_outputs["clean_validation"].get("traces", [])
+                ),
+                "synthetic_validation": _summarize_trace_payloads(
+                    split_outputs["synthetic_validation"].get("traces", [])
+                ),
+                "test": _summarize_trace_payloads(split_outputs["test"].get("traces", [])),
+            },
+            "retention": {
+                "retention_policy": str(
+                    experiment_config.get("evaluation", {}).get(
+                        "retention_policy", "retain_for_eda"
+                    )
+                ),
+                "inspection_ready": bool(
+                    experiment_config.get("evaluation", {}).get(
+                        "retention_policy", "retain_for_eda"
+                    )
+                    == "retain_for_eda"
+                ),
+            },
+        },
     }
 
 
@@ -412,22 +551,52 @@ def run_thesis_offline_benchmark(
     protocol_config_path: str,
     dry_run: bool,
     skip_completed: bool,
+    evaluation_only: bool = False,
+    checkpoint_path: str | None = None,
 ) -> dict[str, Any]:
     experiment_config = load_experiment_config(experiment_config_path)
     protocol_config = _load_yaml_config(protocol_config_path)
     retention_policy = _resolve_retention_policy(experiment_config)
 
     validate_protocol_config(protocol_config)
-    validate_two_stage_epoch_budget(experiment_config)
-
-    manifest = materialize_two_stage_run_manifest(experiment_config)
-    execution_report = execute_two_stage_plan(
-        manifest,
-        dry_run=dry_run,
-        skip_completed=skip_completed,
-    )
+    if evaluation_only:
+        if dry_run:
+            raise ValueError("--dry-run cannot be combined with --evaluation-only")
+        if checkpoint_path is None:
+            raise ValueError(
+                "--checkpoint-path is required when --evaluation-only is set"
+            )
+        manifest = {
+            "manifest_root": str(Path(experiment_config["output_dir"]) / "evaluation_only"),
+            "evaluation": {"checkpoint_path": checkpoint_path},
+            "evaluation_only": True,
+        }
+        execution_report = {
+            "manifest_path": None,
+            "execution_report_path": None,
+            "started_at_utc": _utc_now_iso(),
+            "finished_at_utc": _utc_now_iso(),
+            "dry_run": False,
+            "skip_completed": False,
+            "resumed_from_existing_report": False,
+            "status": "evaluation_only",
+            "executed_stage_names": [],
+            "completed_stage_names": [],
+            "skipped_stage_names": [],
+            "evaluation_only": True,
+            "checkpoint_path": checkpoint_path,
+        }
+    else:
+        validate_two_stage_epoch_budget(experiment_config)
+        manifest = materialize_two_stage_run_manifest(experiment_config)
+        execution_report = execute_two_stage_plan(
+            manifest,
+            dry_run=dry_run,
+            skip_completed=skip_completed,
+        )
     artifact_paths: dict[str, str] = {}
     retention_artifact_paths: dict[str, str] = {}
+    variance_trace_audit: dict[str, Any] | None = None
     if not dry_run:
         artifact_inputs = collect_offline_artifact_inputs(
             experiment_config=experiment_config,
@@ -435,6 +604,7 @@ def run_thesis_offline_benchmark(
             manifest=manifest,
             execution_report=execution_report,
         )
+        variance_trace_audit = artifact_inputs.get("variance_trace_audit")
         artifact_paths = _export_offline_artifacts(
             output_dir=Path(str(experiment_config["output_dir"])),
             artifact_inputs=artifact_inputs,
@@ -454,9 +624,12 @@ def run_thesis_offline_benchmark(
         )
     report = {
         "benchmark_status": "dry_run" if dry_run else execution_report["status"],
+        "evaluation_only": evaluation_only,
+        "checkpoint_path": checkpoint_path,
         "artifact_paths": artifact_paths,
         "retention_policy": retention_policy,
         "retention_artifact_paths": retention_artifact_paths,
+        "variance_trace_audit": variance_trace_audit,
         "created_at_utc": _utc_now_iso(),
         "experiment_config_path": experiment_config_path,
         "protocol_config_path": protocol_config_path,
@@ -478,12 +651,16 @@ def main() -> None:
     )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--skip-completed", action="store_true")
+    parser.add_argument("--evaluation-only", action="store_true")
+    parser.add_argument("--checkpoint-path")
     args = parser.parse_args()
     report = run_thesis_offline_benchmark(
         experiment_config_path=args.experiment_config,
         protocol_config_path=args.protocol_config,
         dry_run=args.dry_run,
         skip_completed=args.skip_completed,
+        evaluation_only=args.evaluation_only,
+        checkpoint_path=args.checkpoint_path,
     )
     print(json.dumps(report, indent=2, sort_keys=True))
 

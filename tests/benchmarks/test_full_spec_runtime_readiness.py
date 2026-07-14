@@ -46,20 +46,27 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
     )
     online_config_path.write_text(
         yaml.safe_dump(
-            {
-                "experiment_name": "online-readiness",
-                "output_dir": str(online_output_dir),
-                "checkpoint_dir": str(online_output_dir / "checkpoints"),
-                "seed": 6,
+                {
+                    "experiment_name": "online-readiness",
+                    "output_dir": str(online_output_dir),
+                    "checkpoint_dir": str(online_output_dir / "checkpoints"),
+                    "seed": 6,
                 "device": "cpu",
-                "data": {"dataset_name": "smd", "window_size": 20, "stride": 1},
-                "model": {"model_name": "online_adaptation"},
-                "task": {"task_name": "online_adaptation"},
-                "evaluation": {"retention_policy": "retain_for_eda"},
-                "optimizer": {"learning_rate": 0.001, "weight_decay": 0.0},
-            },
-            sort_keys=False,
-        ),
+                    "data": {"dataset_name": "smd", "window_size": 20, "stride": 1},
+                    "model": {"model_name": "online_adaptation"},
+                    "task": {
+                        "task_name": "online_adaptation",
+                        "offline_variant": "O0",
+                        "entity_id": "machine-1-6",
+                        "seed": 6,
+                        "benchmark_mode": "main",
+                        "stage_name": "stage_b_fusion_finetuning",
+                    },
+                    "evaluation": {"retention_policy": "retain_for_eda"},
+                    "optimizer": {"learning_rate": 0.001, "weight_decay": 0.0},
+                },
+                sort_keys=False,
+            ),
         encoding="utf-8",
     )
     protocol_path.write_text(
@@ -232,6 +239,10 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
                 "thresholds": {"online_ewma_point": {"value": 0.4}},
             },
         },
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_online_benchmark.resolve_stage_b_checkpoint",
+        lambda experiment_config: final_checkpoint_path,
     )
     monkeypatch.setattr(
         "scripts.run_thesis_online_benchmark.load_experiment_config",

@@ -288,6 +288,160 @@ def test_thesis_offline_wrapper_supports_summary_only_retention(
     )
 
 
+def test_thesis_offline_wrapper_supports_evaluation_only_checkpoint_rerun(
+    tmp_path, monkeypatch
+) -> None:
+    experiment_config_path = tmp_path / "experiment.yaml"
+    output_dir = tmp_path / "outputs"
+    _write_experiment_config(experiment_config_path, output_dir)
+    checkpoint_path = str(output_dir / "checkpoints" / "best.pt")
+    collected_checkpoint_paths: list[str] = []
+
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.materialize_two_stage_run_manifest",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("materialize_two_stage_run_manifest must not run")
+        ),
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.execute_two_stage_plan",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("execute_two_stage_plan must not run")
+        ),
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.validate_two_stage_epoch_budget",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("validate_two_stage_epoch_budget must not run")
+        ),
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.load_experiment_config",
+        lambda path: yaml.safe_load(Path(path).read_text(encoding="utf-8")),
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.collect_offline_artifact_inputs",
+        lambda **kwargs: (
+            collected_checkpoint_paths.append(kwargs["manifest"]["evaluation"]["checkpoint_path"])
+            or {
+                "entity_id": "machine-1-6",
+                "seed": 6,
+                "variant_name": "O0",
+                "clean_validation": {
+                    "point_scores": np.array([0.1, 0.2], dtype=float),
+                    "point_labels": np.array([0, 0], dtype=np.int64),
+                    "covered_point_mask": np.array([True, True]),
+                },
+                "synthetic_validation": {
+                    "point_scores": np.array([0.3, 0.4], dtype=float),
+                    "point_labels": np.array([0, 1], dtype=np.int64),
+                    "covered_point_mask": np.array([True, True]),
+                },
+                "test": {
+                    "point_scores": np.array([0.5, 0.6], dtype=float),
+                    "point_labels": np.array([0, 1], dtype=np.int64),
+                    "covered_point_mask": np.array([True, True]),
+                },
+                "clean_validation_traces": [
+                    {
+                        "batch_index": 1,
+                        "sample_retention_policy": "retain_for_eda",
+                        "mc_sample_histories": {
+                            "point_score_samples": [0.1, 0.2],
+                            "window_score_samples": [0.3, 0.4],
+                            "reconstruction_samples": [0.5, 0.6],
+                            "classification_probability_samples": [0.7, 0.8],
+                        },
+                        "uncertainty_history": {"point_anomaly_score_variance": [0.9]},
+                    }
+                ],
+                "synthetic_validation_traces": [{"batch_index": 2}],
+                "test_traces": [{"batch_index": 3}],
+                "offline_metrics": {
+                    "point_f1": 1.0,
+                    "diag/uncertainty/test_point_score_variance_mean": 0.42,
+                },
+                "variance_trace_audit": {
+                    "checkpoint": {"checkpoint_path": kwargs["manifest"]["evaluation"]["checkpoint_path"]},
+                    "metrics": {
+                        "has_variance_metrics": True,
+                        "variance_metric_keys": [
+                            "diag/uncertainty/test_point_score_variance_mean"
+                        ],
+                    },
+                    "traces": {
+                        "clean_validation": {
+                            "num_traces": 1,
+                            "any_uncertainty_history": True,
+                            "uncertainty_history_non_null_count": 1,
+                            "mc_histories_non_null_count": {
+                                "point_score_samples": 1,
+                                "window_score_samples": 1,
+                                "reconstruction_samples": 1,
+                                "classification_probability_samples": 1,
+                            },
+                            "any_mc_sample_history": True,
+                            "first_sample_retention_policy": "retain_for_eda",
+                        },
+                        "synthetic_validation": {
+                            "num_traces": 1,
+                            "any_uncertainty_history": False,
+                            "uncertainty_history_non_null_count": 0,
+                            "mc_histories_non_null_count": {
+                                "point_score_samples": 0,
+                                "window_score_samples": 0,
+                                "reconstruction_samples": 0,
+                                "classification_probability_samples": 0,
+                            },
+                            "any_mc_sample_history": False,
+                            "first_sample_retention_policy": None,
+                        },
+                        "test": {
+                            "num_traces": 1,
+                            "any_uncertainty_history": False,
+                            "uncertainty_history_non_null_count": 0,
+                            "mc_histories_non_null_count": {
+                                "point_score_samples": 0,
+                                "window_score_samples": 0,
+                                "reconstruction_samples": 0,
+                                "classification_probability_samples": 0,
+                            },
+                            "any_mc_sample_history": False,
+                            "first_sample_retention_policy": None,
+                        },
+                    },
+                    "retention": {
+                        "retention_policy": "retain_for_eda",
+                        "inspection_ready": True,
+                    },
+                },
+            }
+        ),
+    )
+
+    report = run_thesis_offline_benchmark(
+        experiment_config_path=str(experiment_config_path),
+        protocol_config_path="configs/protocol/smd_window20_cleanval_q99_ewma09.yaml",
+        dry_run=False,
+        skip_completed=True,
+        evaluation_only=True,
+        checkpoint_path=checkpoint_path,
+    )
+
+    assert collected_checkpoint_paths == [checkpoint_path]
+    assert report["evaluation_only"] is True
+    assert report["benchmark_status"] == "evaluation_only"
+    assert report["checkpoint_path"] == checkpoint_path
+    assert report["variance_trace_audit"]["checkpoint"]["checkpoint_path"] == checkpoint_path
+    assert (
+        output_dir
+        / "retention"
+        / "machine-1-6"
+        / "offline"
+        / "retention_summary.json"
+    ).exists()
+
+
 def test_collect_offline_artifact_inputs_uses_checkpoint_and_three_splits(
     tmp_path,
     monkeypatch,
