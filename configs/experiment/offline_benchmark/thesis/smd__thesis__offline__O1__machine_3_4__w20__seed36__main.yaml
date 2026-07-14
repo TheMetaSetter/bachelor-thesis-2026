@@ -23,6 +23,7 @@ epochs: 30
 evaluation:
   vus_max_buffer_size: 20
   vus_num_thresholds: 200
+  retention_policy: retain_for_eda
 logging:
   use_wandb: true
   wandb_project: bachelor-thesis-2026

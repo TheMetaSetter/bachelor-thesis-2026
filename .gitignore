@@ -222,4 +222,4 @@ outputs.zip
 /outputs
 
 *.png
-*.csv
+*.csvbackup-*.zip

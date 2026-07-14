@@ -184,6 +184,7 @@ def build_online_benchmark_config(
         "evaluation": {
             "vus_max_buffer_size": 10 if smoke else 20,
             "vus_num_thresholds": 20 if smoke else 200,
+            "retention_policy": "retain_for_eda",
         },
         "logging": {
             "use_wandb": False,

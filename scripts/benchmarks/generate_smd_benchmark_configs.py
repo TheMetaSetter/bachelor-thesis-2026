@@ -16,7 +16,7 @@ from typing import Any
 
 import yaml
 
-REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 OFFLINE_BENCHMARK_CONFIG_DIR = (
     REPOSITORY_ROOT / "configs" / "experiment" / "offline_benchmark" / "thesis"
 )
@@ -174,6 +174,7 @@ def build_offline_benchmark_config(
         "evaluation": {
             "vus_max_buffer_size": 10 if smoke else 20,
             "vus_num_thresholds": 20 if smoke else 200,
+            "retention_policy": "retain_for_eda",
         },
         "logging": _variant_logging(smoke, variant, entity_id, seed),
         "two_stage": {
