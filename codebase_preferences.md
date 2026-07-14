@@ -76,6 +76,8 @@ This is important so I will repeat 3 times.
   - Treat broad `rm -rf` cleanup as a last resort and only after confirming the target tree is safe to remove.
   - Before leaving the host, re-check that no unrelated jobs, logs, or temporary files were touched.
 
+- Before running a full benchmark batch, always execute the full experiment flow on 1 concrete combination from the development specification first. If the project has enough time, this first-pass check may expand to 3 combinations. For this project, keep the first-pass check to 1 combination unless the user explicitly requests more. Only after that first end-to-end pass succeeds should you launch all combinations.
+
 - Do not write overly long `for` loops. When a loop starts handling many responsibilities at once, split the work into small, clearly named helper functions or methods so each step can be read, reused, tested, and modified independently.
 
 - Write explanatory comments to support user reading code. Comments should be updated in parallel with code or implementations.
