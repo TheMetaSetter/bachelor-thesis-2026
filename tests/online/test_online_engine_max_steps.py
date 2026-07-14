@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from typing import Any, Iterator
+from pathlib import Path
 
 import torch
 import pytest
 
 from src.engine.online_tta.online_engine import _run_online_sequence
+from src.engine.online_tta import online_engine_run as online_engine_run_module
 from src.engine.online_tta.ttl_buffer import TTLBuffer
 from src.engine.online_tta.verification_buffer import VerificationBuffer
+from scripts.experiments.run_online_adaptation import _resolve_max_online_steps as resolve_online_adaptation_max_steps
 
 
 def _fake_batch_stream() -> Iterator[dict[str, Any]]:
@@ -124,3 +127,101 @@ def test_run_online_sequence_rejects_batched_causal_windows(monkeypatch) -> None
             ttl_buffer=TTLBuffer(ttl_steps=20),
             max_online_steps=1,
         )
+
+
+def test_resolve_max_online_steps_treats_none_as_unbounded() -> None:
+    assert online_engine_run_module._resolve_max_online_steps(None) is None
+    assert online_engine_run_module._resolve_max_online_steps(16) == 16
+    assert resolve_online_adaptation_max_steps(None) is None
+    assert resolve_online_adaptation_max_steps(16) == 16
+
+
+def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -> None:
+    class _DummyScaler:
+        def state_dict(self) -> dict[str, Any]:
+            return {"scale": 1.0}
+
+    class _DummyModel(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+
+        def to(self, *args: Any, **kwargs: Any) -> "_DummyModel":
+            return self
+
+    class _DummyCheckpointManager:
+        def __init__(self, checkpoint_dir: Path) -> None:
+            self.checkpoint_dir = checkpoint_dir
+
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "build_dataset",
+        lambda dataset_name, data_config: {
+            "scaled_sequences": {
+                "val": [{"meta": {"entity_id": "machine-1-6"}}],
+                "test": [{"meta": {"entity_id": "machine-1-6"}, "x": torch.zeros(1, 1, 1)}],
+            },
+            "scaler": _DummyScaler(),
+        },
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "_build_model_from_experiment_config",
+        lambda experiment_config: _DummyModel(),
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "_build_optimizer_from_experiment_config",
+        lambda model, experiment_config: object(),
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "assert_only_projector_is_trainable",
+        lambda model: None,
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "CheckpointManager",
+        _DummyCheckpointManager,
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "calibrate_entity_threshold_artifacts",
+        lambda **kwargs: {
+            "machine-1-6": {
+                "entity_id": "machine-1-6",
+                "thresholds": {"online_ewma_point": {"value": 0.5}},
+            }
+        },
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "write_threshold_artifact",
+        lambda artifact, path: None,
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "build_online_runtime_state",
+        lambda **kwargs: {"entity_id": "machine-1-6"},
+    )
+
+    context = online_engine_run_module._build_runtime_online_context(
+        experiment_config={
+            "data": {
+                "dataset_name": "smd",
+                "batch_size": 1,
+                "window_size": 20,
+            },
+            "task": {
+                "view_noise_std": 0.0,
+                "view_dropout_probability": 0.0,
+                "max_online_steps": None,
+            },
+            "device": "cpu",
+            "checkpoint_dir": "/tmp/checkpoints",
+            "output_dir": "/tmp/outputs",
+        },
+        protocol_config={"window_size": 20},
+        online_variant="A0",
+    )
+
+    assert context["max_online_steps"] is None

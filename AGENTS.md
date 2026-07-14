@@ -46,3 +46,9 @@ Pull requests should include a concise summary, testing notes, and links to rele
 ## Research Workflow Notes
 Follow the logging and planning conventions in `codebase_preferences.md`, including experiment tracking with Weights and Biases and the planned use of data version control for augmented datasets.
 All contributors and agents must strictly follow every requirement in `codebase_preferences.md`.
+
+## SSH Safety Note
+- When using SSH on a shared GPU server, keep the session read-only unless the user explicitly asks for writes.
+- Before cleanup, stop only the exact jobs you started and verify the target paths first.
+- Do not remove broad output trees or artifacts unless the user clearly asked for it.
+- Before leaving the remote host, confirm that only the intended logs, processes, and temporary files were touched.

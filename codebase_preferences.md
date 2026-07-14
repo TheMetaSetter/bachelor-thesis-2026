@@ -72,6 +72,10 @@ This is important so I will repeat 3 times.
   - Avoid bundling many actions into one long shell block unless the user explicitly asks for a scripted batch.
   - Each command should be easy to inspect, rerun, and debug in isolation.
 
+- When using SSH on a shared remote GPU, prefer a read-only check first, then scope any write or cleanup action to exact process IDs, exact run directories, or exact artifact paths.
+  - Treat broad `rm -rf` cleanup as a last resort and only after confirming the target tree is safe to remove.
+  - Before leaving the host, re-check that no unrelated jobs, logs, or temporary files were touched.
+
 - Do not write overly long `for` loops. When a loop starts handling many responsibilities at once, split the work into small, clearly named helper functions or methods so each step can be read, reused, tested, and modified independently.
 
 - Write explanatory comments to support user reading code. Comments should be updated in parallel with code or implementations.

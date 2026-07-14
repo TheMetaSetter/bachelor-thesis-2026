@@ -44,6 +44,15 @@ from src.engine.online_tta.online_optimizer import (
 from src.protocols.threshold_artifact import write_threshold_artifact
 
 
+def _resolve_max_online_steps(value: Any) -> int | None:
+    if value is None:
+        return None
+    resolved_value = int(value)
+    if resolved_value <= 0:
+        return None
+    return resolved_value
+
+
 def _build_dry_run_online_context(*, online_variant: str) -> dict[str, Any]:
     return {
         "benchmark_status": "dry_run",
@@ -130,7 +139,9 @@ def _build_runtime_online_context(
             experiment_config["task"].get("view_dropout_probability", 0.0)
         ),
         "device": str(experiment_config["device"]),
-        "max_online_steps": int(experiment_config["task"].get("max_online_steps", 0)),
+        "max_online_steps": _resolve_max_online_steps(
+            experiment_config["task"].get("max_online_steps")
+        ),
         "verification_buffer": VerificationBuffer(max_size=64, non_overlap_gap=0),
         "hard_old_guard": NonOverlapGuard(max_size=1),
         "signature_history": [],
@@ -250,8 +261,7 @@ def _run_online_execution_sequences(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     metric_history: list[dict[str, Any]] = []
     records: list[dict[str, Any]] = []
-    max_online_steps = int(context.get("max_online_steps", 0))
-    max_online_steps_limit = max_online_steps if max_online_steps > 0 else None
+    max_online_steps_limit = _resolve_max_online_steps(context.get("max_online_steps"))
     for sequence in context["data_bundle"]["scaled_sequences"]["test"]:
         if (
             max_online_steps_limit is not None
@@ -443,7 +453,7 @@ def run_thesis_online_tta_experiment(
         runtime_state=context.get("runtime_state"),
         hard_old_guard=context["hard_old_guard"],
         signature_history=context["signature_history"],
-        max_online_steps=context["max_online_steps"] if context["max_online_steps"] > 0 else None,
+        max_online_steps=_resolve_max_online_steps(context.get("max_online_steps")),
         threshold_artifact=context["threshold_artifact"],
     )
     return _finalize_online_execution(

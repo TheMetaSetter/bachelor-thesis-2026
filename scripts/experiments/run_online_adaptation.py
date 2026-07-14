@@ -29,6 +29,15 @@ from src.engine.online_tta.checkpoint_resolution import resolve_stage_b_checkpoi
 from src.engine.online_loop import OnlineLoop
 
 
+def _resolve_max_online_steps(value: Any) -> int | None:
+    if value is None:
+        return None
+    resolved_value = int(value)
+    if resolved_value <= 0:
+        return None
+    return resolved_value
+
+
 def register_runtime_components() -> None:
     # The online path reuses the shared registrations and adds only its own
     # adaptation model at the boundary.
@@ -136,7 +145,9 @@ def run_online_adaptation_experiment(
         window_size=int(experiment_config["data"]["window_size"]),
         stride=int(experiment_config["data"]["stride"]),
         clean_stream_only=bool(experiment_config["task"]["clean_stream_only"]),
-        max_windows=experiment_config["task"]["max_online_steps"],
+        max_windows=_resolve_max_online_steps(
+            experiment_config["task"]["max_online_steps"]
+        ),
     )
     online_batcher = OnlineWindowBatcher(
         stream=online_stream,
@@ -159,7 +170,9 @@ def run_online_adaptation_experiment(
             online_batcher=online_batcher,
             scaler_state=data_bundle["scaler"].state_dict(),
             config=experiment_config,
-            max_online_steps=int(experiment_config["task"]["max_online_steps"]),
+            max_online_steps=_resolve_max_online_steps(
+                experiment_config["task"]["max_online_steps"]
+            ),
             log_every_n_steps=int(experiment_config["task"]["log_every_n_steps"]),
             checkpoint_every_n_steps=int(
                 experiment_config["task"]["checkpoint_every_n_steps"]
