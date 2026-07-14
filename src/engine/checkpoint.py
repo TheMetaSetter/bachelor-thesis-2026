@@ -144,6 +144,18 @@ class CheckpointManager:
             if model_value is None:
                 continue
             if checkpoint_metadata[field_name] != model_value:
+                if field_name in {
+                    "return_mc_samples",
+                    "sample_retention_policy",
+                }:
+                    console_print(
+                        "CHECKPOINT",
+                        "Allowing compatibility mismatch for retention field",
+                        field_name=field_name,
+                        checkpoint_value=checkpoint_metadata[field_name],
+                        model_value=model_value,
+                    )
+                    continue
                 raise ValueError(
                     f"checkpoint_metadata {field_name} does not match model config"
                 )

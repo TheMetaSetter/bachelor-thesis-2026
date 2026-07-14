@@ -191,6 +191,9 @@ class ThesisMultitaskStateSerializationMixin:
                 raise ValueError("checkpoint variance_correction does not match model")
         if "sample_retention_policy" in extra_state:
             if str(extra_state["sample_retention_policy"]) != self.sample_retention_policy:
-                raise ValueError(
-                    "checkpoint sample_retention_policy does not match model"
+                console_print(
+                    "MODEL",
+                    "Allowing compatibility mismatch for sample_retention_policy",
+                    checkpoint_value=str(extra_state["sample_retention_policy"]),
+                    model_value=self.sample_retention_policy,
                 )
