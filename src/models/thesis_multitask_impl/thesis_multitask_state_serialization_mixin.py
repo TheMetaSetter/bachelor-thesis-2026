@@ -10,7 +10,22 @@ from src.core.console import console_print
 
 
 class ThesisMultitaskStateSerializationMixin:
+    def _normalize_verification_metadata_source(self) -> None:
+        if not bool(getattr(self, "memory_initialized", False)):
+            return
+        if not isinstance(self.anomalous_codeword_mask, torch.Tensor):
+            return
+        if not isinstance(self.anomaly_radii, torch.Tensor):
+            return
+        if getattr(self, "verification_metadata_source", "") in {
+            "",
+            "uninitialized",
+            "disabled",
+        }:
+            self.verification_metadata_source = "train_anomaly_tokens_q99"
+
     def get_checkpoint_extra_state(self) -> dict[str, Any]:
+        self._normalize_verification_metadata_source()
         state = self.get_memory_lifecycle_state()
         if isinstance(self.anomalous_codeword_mask, torch.Tensor):
             state["anomalous_codeword_mask"] = (
@@ -180,6 +195,7 @@ class ThesisMultitaskStateSerializationMixin:
             self.verification_metadata_initialization_seed = int(
                 extra_state.get("verification_metadata_initialization_seed", 0)
             )
+            self._normalize_verification_metadata_source()
         if "stochastic_inference" in extra_state:
             if bool(extra_state["stochastic_inference"]) != self.stochastic_inference:
                 raise ValueError("checkpoint stochastic_inference does not match model")

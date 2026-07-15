@@ -222,6 +222,51 @@ def test_multitask_checkpoint_roundtrip_restores_memory_buffers(tmp_path: Path) 
     )
 
 
+def test_multitask_checkpoint_roundtrip_repairs_verification_provenance(
+    tmp_path: Path,
+) -> None:
+    from src.engine.online_tta.signature_verification import (
+        PrototypeVerificationMetadata,
+    )
+
+    model = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        use_synthetic_augmentation=False,
+        bootstrap_encoder_epochs=1,
+    )
+    model._initialize_memory_buffers_from_token_pool(
+        continuous_hidden_tokens=torch.randn(4, 16),
+        discrete_hidden_tokens_by_class={
+            0: torch.randn(4, 16),
+            1: torch.randn(4, 16),
+        },
+    )
+    model.mark_memories_initialized(initialization_epoch=1)
+    stale_state = model.get_checkpoint_extra_state()
+    stale_state["verification_metadata_source"] = "uninitialized"
+
+    restored = ThesisMultitaskModel(
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        use_synthetic_augmentation=False,
+        bootstrap_encoder_epochs=1,
+    )
+    restored.load_checkpoint_extra_state(stale_state)
+
+    repaired_state = restored.get_checkpoint_extra_state()
+
+    assert restored.verification_metadata_source == "train_anomaly_tokens_q99"
+    assert repaired_state["verification_metadata_source"] == "train_anomaly_tokens_q99"
+
+    metadata = PrototypeVerificationMetadata.from_model(restored)
+    assert metadata.source_split == "synthetic_train"
+
+
 def test_stage_b_initialization_checkpoint_can_be_reloaded_with_stage_b_config(
     tmp_path: Path,
 ) -> None:
