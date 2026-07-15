@@ -123,6 +123,16 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
         raise ValueError(
             "threshold artifact provenance.calibration_split must match calibration_split"
         )
+    if provenance.get("checkpoint_sha256") != artifact.get("checkpoint_sha256"):
+        raise ValueError(
+            "threshold artifact provenance.checkpoint_sha256 must match checkpoint_sha256"
+        )
+    if provenance.get("resolved_config_sha256") != artifact.get(
+        "resolved_config_sha256"
+    ):
+        raise ValueError(
+            "threshold artifact provenance.resolved_config_sha256 must match resolved_config_sha256"
+        )
     if "checkpoint_sha256" in artifact and artifact["checkpoint_sha256"] is not None:
         if not isinstance(artifact["checkpoint_sha256"], str) or not artifact[
             "checkpoint_sha256"

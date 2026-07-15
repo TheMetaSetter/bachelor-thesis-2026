@@ -24,8 +24,57 @@ class ThesisMultitaskStateSerializationMixin:
         }:
             self.verification_metadata_source = "train_anomaly_tokens_q99"
 
+    def _validate_verification_metadata_state(self) -> None:
+        if not bool(getattr(self, "memory_initialized", False)):
+            return
+        if not isinstance(self.anomalous_codeword_mask, torch.Tensor):
+            raise ValueError("verification metadata requires anomalous_codeword_mask")
+        if not isinstance(self.anomaly_radii, torch.Tensor):
+            raise ValueError("verification metadata requires anomaly_radii")
+        if self.anomalous_codeword_mask.ndim != 1:
+            raise ValueError("anomalous_codeword_mask must be one-dimensional")
+        if self.anomaly_radii.ndim != 1:
+            raise ValueError("anomaly_radii must be one-dimensional")
+        if self.anomalous_codeword_mask.numel() == 0:
+            raise ValueError("anomalous_codeword_mask must be non-empty")
+        if self.anomaly_radii.numel() == 0:
+            raise ValueError("anomaly_radii must be non-empty")
+        if self.anomalous_codeword_mask.shape != self.anomaly_radii.shape:
+            raise ValueError("verification metadata mask and radii must have same shape")
+        if not torch.isfinite(self.anomaly_radii).all().item():
+            raise ValueError("anomaly_radii must contain only finite values")
+        if (self.anomaly_radii < 0).any().item():
+            raise ValueError("anomaly_radii must be non-negative")
+        if getattr(self, "verification_metadata_source", "") in {
+            "",
+            "uninitialized",
+            "disabled",
+        }:
+            raise ValueError(
+                "verification metadata source must be concrete when memory is initialized"
+            )
+        if isinstance(self.discrete_codebook, torch.Tensor):
+            expected_shape = (self.discrete_codebook.shape[0],)
+            if self.anomalous_codeword_mask.shape != expected_shape:
+                raise ValueError(
+                    "verification metadata mask must match discrete codebook size"
+                )
+            if self.verification_codeword_class_ids is not None and (
+                self.verification_codeword_class_ids.shape != expected_shape
+            ):
+                raise ValueError(
+                    "verification_codeword_class_ids checkpoint shape mismatch"
+                )
+            if self.verification_contributing_token_counts is not None and (
+                self.verification_contributing_token_counts.shape != expected_shape
+            ):
+                raise ValueError(
+                    "verification_contributing_token_counts checkpoint shape mismatch"
+                )
+
     def get_checkpoint_extra_state(self) -> dict[str, Any]:
         self._normalize_verification_metadata_source()
+        self._validate_verification_metadata_state()
         state = self.get_memory_lifecycle_state()
         if isinstance(self.anomalous_codeword_mask, torch.Tensor):
             state["anomalous_codeword_mask"] = (
@@ -183,9 +232,9 @@ class ThesisMultitaskStateSerializationMixin:
                     raise ValueError(
                         "verification_contributing_token_counts checkpoint shape mismatch"
                     )
-                self.verification_contributing_token_counts = (
-                    contributing_token_counts.detach().clone()
-                )
+            self.verification_contributing_token_counts = (
+                contributing_token_counts.detach().clone()
+            )
             self.verification_metadata_schema_version = int(
                 extra_state.get("verification_metadata_schema_version", 1)
             )
@@ -196,6 +245,7 @@ class ThesisMultitaskStateSerializationMixin:
                 extra_state.get("verification_metadata_initialization_seed", 0)
             )
             self._normalize_verification_metadata_source()
+            self._validate_verification_metadata_state()
         if "stochastic_inference" in extra_state:
             if bool(extra_state["stochastic_inference"]) != self.stochastic_inference:
                 raise ValueError("checkpoint stochastic_inference does not match model")

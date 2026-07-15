@@ -153,6 +153,7 @@ def _build_threshold_artifact_from_scores(
     experiment_config: dict[str, Any],
     protocol_config: dict[str, Any],
     window_size: int,
+    checkpoint_sha256: str | None = None,
 ) -> dict[str, Any]:
     offline_point_threshold = select_clean_validation_point_threshold(
         np.asarray(calibration_scores["offline_point"], dtype=float),
@@ -182,6 +183,7 @@ def _build_threshold_artifact_from_scores(
         ewma_previous_weight=float(protocol_config["online_ewma_previous_weight"]),
         created_by="src/engine/online_tta/online_engine.py",
         config_path=str(experiment_config.get("experiment_name", "unknown")),
+        checkpoint_sha256=checkpoint_sha256,
         resolved_config_sha256=CheckpointManager._stable_json_digest(experiment_config),
     )
 
@@ -194,6 +196,7 @@ def calibrate_online_threshold_artifact(
     protocol_config: dict[str, Any],
     online_variant: str,
     device: str,
+    checkpoint_sha256: str | None = None,
 ) -> dict[str, Any]:
     window_size = int(protocol_config["window_size"])
     batch_size = int(experiment_config["data"]["batch_size"])
@@ -224,6 +227,7 @@ def calibrate_online_threshold_artifact(
         experiment_config=experiment_config,
         protocol_config=protocol_config,
         window_size=window_size,
+        checkpoint_sha256=checkpoint_sha256,
     )
 
 
@@ -235,6 +239,7 @@ def calibrate_entity_thresholds(
     experiment_config: dict[str, Any],
     protocol_config: dict[str, Any],
     device: str,
+    checkpoint_sha256: str | None = None,
 ) -> dict[str, Any]:
     actual = str(clean_validation_sequence.get("meta", {}).get("entity_id", ""))
     if actual != entity_id:
@@ -246,6 +251,7 @@ def calibrate_entity_thresholds(
         protocol_config=protocol_config,
         online_variant=str(experiment_config.get("online_variant", "A0")),
         device=device,
+        checkpoint_sha256=checkpoint_sha256,
     )
 
 
@@ -257,6 +263,7 @@ def calibrate_entity_threshold_artifacts(
     protocol_config: dict[str, Any],
     online_variant: str,
     device: str,
+    checkpoint_sha256: str | None = None,
 ) -> dict[str, dict[str, Any]]:
     grouped: dict[str, dict[str, Any]] = {}
     for sequence in clean_validation_sequences:
@@ -272,5 +279,6 @@ def calibrate_entity_threshold_artifacts(
             experiment_config={**experiment_config, "online_variant": online_variant},
             protocol_config=protocol_config,
             device=device,
+            checkpoint_sha256=checkpoint_sha256,
         )
     return grouped

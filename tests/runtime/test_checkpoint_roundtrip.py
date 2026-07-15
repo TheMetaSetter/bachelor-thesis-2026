@@ -245,6 +245,10 @@ def test_multitask_checkpoint_roundtrip_repairs_verification_provenance(
         },
     )
     model.mark_memories_initialized(initialization_epoch=1)
+    assert (
+        model.get_checkpoint_extra_state()["verification_metadata_source"]
+        == "train_anomaly_tokens_q99"
+    )
     stale_state = model.get_checkpoint_extra_state()
     stale_state["verification_metadata_source"] = "uninitialized"
 

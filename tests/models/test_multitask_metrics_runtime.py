@@ -278,6 +278,29 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
                         "num_points": 2,
                     }
                 ],
+                "traces": [
+                    {
+                        "batch_index": 1,
+                        "entity_ids": ["machine-a"],
+                        "point_score_history": [0.1, 0.9],
+                        "window_score_history": [0.5],
+                        "uncertainty_history": {
+                            "point_anomaly_score_variance": [0.1, 0.2]
+                        },
+                        "stochastic_query": {
+                            "schema_version": 3,
+                            "enabled": True,
+                            "num_samples": 10,
+                        },
+                        "sample_retention_policy": "retain_for_eda",
+                        "mc_sample_histories": {
+                            "point_score_samples": [[0.1, 0.9]],
+                            "window_score_samples": [[0.5]],
+                            "reconstruction_samples": None,
+                            "classification_probability_samples": None,
+                        },
+                    }
+                ],
                 "curves": {
                     "roc_curve": {
                         "x": [0.0, 1.0],
@@ -313,13 +336,16 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
     curves_path = tmp_path / "outputs" / "evaluation_curves.json"
     metrics_path = tmp_path / "outputs" / "evaluation_metrics.json"
     records_path = tmp_path / "outputs" / "evaluation_records.json"
+    traces_path = tmp_path / "outputs" / "evaluation_traces.json"
     assert outputs["metrics"]["fpr"] == 0.25
     assert outputs["metrics"]["forward_pass_seconds_mean"] == 0.001
     assert curves_path.exists()
     assert metrics_path.exists()
+    assert traces_path.exists()
     saved_curves = json.loads(curves_path.read_text(encoding="utf-8"))
     saved_metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     saved_records = json.loads(records_path.read_text(encoding="utf-8"))
+    saved_traces = json.loads(traces_path.read_text(encoding="utf-8"))
     assert "roc_curve" in saved_curves
     assert "pr_curve" in saved_curves
     assert saved_metrics["benchmark_comparability"] == "non_comparable"
@@ -327,12 +353,17 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
     assert "label_regime" not in saved_metrics
     assert saved_metrics["threshold_source"] == "positive_support_quantile_0.99"
     assert saved_records[0]["covered_point_mask"] == [True, False]
+    assert saved_traces[0]["sample_retention_policy"] == "retain_for_eda"
     assert any(
         "evaluation/precision" in logged_metrics
         for logged_metrics in fake_run.logged_metrics
     )
     assert any(
         artifact.name == "evaluation-metrics-test-evaluation-curves"
+        for artifact, _ in fake_run.logged_artifacts
+    )
+    assert any(
+        artifact.name == "evaluation-metrics-test-evaluation-traces"
         for artifact, _ in fake_run.logged_artifacts
     )
 

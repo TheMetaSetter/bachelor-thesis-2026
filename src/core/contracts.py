@@ -179,6 +179,7 @@ def validate_stochastic_query_aux(stochastic_query: dict[str, Any]) -> None:
         stochastic_query["num_samples"] <= 0
     ):
         raise ValueError("stochastic_query.num_samples must be a positive integer")
+    num_samples = int(stochastic_query["num_samples"])
     for field_name in ["continuous_temperature", "discrete_temperature"]:
         field_value = stochastic_query.get(field_name)
         if field_value is not None and float(field_value) <= 0.0:
@@ -197,47 +198,38 @@ def validate_stochastic_query_aux(stochastic_query: dict[str, Any]) -> None:
             raise TypeError(
                 f"stochastic_query.{field_name} must be a torch.Tensor or null"
             )
-    if stochastic_query.get("continuous_retrieved_samples") is not None:
+    sample_rank_contracts = {
+        "continuous_retrieved_samples": 4,
+        "discrete_retrieved_samples": 4,
+        "discrete_topk_ids": 4,
+        "reconstruction_samples": 4,
+        "classification_probability_samples": 3,
+        "point_score_samples": 3,
+        "window_score_samples": 2,
+    }
+    for field_name, expected_rank in sample_rank_contracts.items():
+        field_value = stochastic_query.get(field_name)
+        if field_value is None:
+            continue
         _require_tensor_rank(
-            stochastic_query["continuous_retrieved_samples"],
-            4,
-            "outputs['aux']['stochastic_query']['continuous_retrieved_samples']",
+            field_value,
+            expected_rank,
+            f"outputs['aux']['stochastic_query']['{field_name}']",
         )
-    if stochastic_query.get("discrete_retrieved_samples") is not None:
-        _require_tensor_rank(
-            stochastic_query["discrete_retrieved_samples"],
-            4,
-            "outputs['aux']['stochastic_query']['discrete_retrieved_samples']",
-        )
-    if stochastic_query.get("discrete_topk_ids") is not None:
-        _require_tensor_rank(
-            stochastic_query["discrete_topk_ids"],
-            4,
-            "outputs['aux']['stochastic_query']['discrete_topk_ids']",
-        )
-    if stochastic_query.get("reconstruction_samples") is not None:
-        _require_tensor_rank(
-            stochastic_query["reconstruction_samples"],
-            4,
-            "outputs['aux']['stochastic_query']['reconstruction_samples']",
-        )
-    if stochastic_query.get("classification_probability_samples") is not None:
-        _require_tensor_rank(
-            stochastic_query["classification_probability_samples"],
-            3,
-            "outputs['aux']['stochastic_query']['classification_probability_samples']",
-        )
-    if stochastic_query.get("point_score_samples") is not None:
-        _require_tensor_rank(
-            stochastic_query["point_score_samples"],
-            3,
-            "outputs['aux']['stochastic_query']['point_score_samples']",
-        )
-    if stochastic_query.get("window_score_samples") is not None:
-        _require_tensor_rank(
-            stochastic_query["window_score_samples"],
-            2,
-            "outputs['aux']['stochastic_query']['window_score_samples']",
+        if int(field_value.shape[1]) != num_samples:
+            raise ValueError(
+                f"stochastic_query.{field_name} must have sample axis equal to num_samples"
+            )
+        if not torch.isfinite(field_value.float()).all().item():
+            raise ValueError(
+                f"stochastic_query.{field_name} must contain only finite values"
+            )
+    if not stochastic_query.get("enabled") and any(
+        stochastic_query.get(field_name) is not None
+        for field_name in sample_rank_contracts
+    ):
+        raise ValueError(
+            "stochastic_query sample tensors require stochastic_query.enabled=True"
         )
 
 
@@ -248,9 +240,14 @@ def validate_uncertainty_aux(uncertainty: dict[str, Any]) -> None:
         "discrete_retrieval_variance_point",
         "reconstruction_variance_point",
     ]:
+        tensor_value = uncertainty.get(field_name)
         _require_optional_tensor_rank(
-            uncertainty.get(field_name), 2, f"outputs['aux']['uncertainty']['{field_name}']"
+            tensor_value, 2, f"outputs['aux']['uncertainty']['{field_name}']"
         )
+        if tensor_value is not None and not torch.isfinite(tensor_value.float()).all().item():
+            raise ValueError(
+                f"outputs['aux']['uncertainty']['{field_name}'] must contain only finite values"
+            )
     for field_name in [
         "window_anomaly_score_variance",
         "continuous_retrieval_variance_window",
@@ -258,19 +255,40 @@ def validate_uncertainty_aux(uncertainty: dict[str, Any]) -> None:
         "reconstruction_variance_window",
         "classification_variance_mean",
     ]:
+        tensor_value = uncertainty.get(field_name)
         _require_optional_tensor_rank(
-            uncertainty.get(field_name), 1, f"outputs['aux']['uncertainty']['{field_name}']"
+            tensor_value, 1, f"outputs['aux']['uncertainty']['{field_name}']"
         )
+        if tensor_value is not None and not torch.isfinite(tensor_value.float()).all().item():
+            raise ValueError(
+                f"outputs['aux']['uncertainty']['{field_name}'] must contain only finite values"
+            )
     _require_optional_tensor_rank(
         uncertainty.get("reconstruction_variance_full"),
         3,
         "outputs['aux']['uncertainty']['reconstruction_variance_full']",
     )
+    reconstruction_variance_full = uncertainty.get("reconstruction_variance_full")
+    if reconstruction_variance_full is not None and not torch.isfinite(
+        reconstruction_variance_full.float()
+    ).all().item():
+        raise ValueError(
+            "outputs['aux']['uncertainty']['reconstruction_variance_full'] must contain only finite values"
+        )
     _require_optional_tensor_rank(
         uncertainty.get("classification_probability_variance"),
         2,
         "outputs['aux']['uncertainty']['classification_probability_variance']",
     )
+    classification_probability_variance = uncertainty.get(
+        "classification_probability_variance"
+    )
+    if classification_probability_variance is not None and not torch.isfinite(
+        classification_probability_variance.float()
+    ).all().item():
+        raise ValueError(
+            "outputs['aux']['uncertainty']['classification_probability_variance'] must contain only finite values"
+        )
 
 
 def validate_deterministic_geometry_aux(

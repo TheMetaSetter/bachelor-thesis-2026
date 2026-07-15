@@ -210,6 +210,7 @@ def run_evaluation_experiment(
     records_path = output_dir / "evaluation_records.json"
     metrics_path = output_dir / "evaluation_metrics.json"
     curves_path = output_dir / "evaluation_curves.json"
+    traces_path = output_dir / "evaluation_traces.json"
     protocol_audit_path = output_dir / "evaluation_protocol_audit.json"
     protocol_audit_markdown_path = output_dir / "evaluation_protocol_audit.md"
     resolved_config_path = output_dir / "resolved_experiment_config.json"
@@ -254,6 +255,11 @@ def run_evaluation_experiment(
     records_path.write_text(json.dumps(serializable_records), encoding="utf-8")
     metrics_path.write_text(json.dumps(evaluation_outputs["metrics"]), encoding="utf-8")
     curves_path.write_text(json.dumps(evaluation_outputs["curves"]), encoding="utf-8")
+    traces = evaluation_outputs.get("traces", [])
+    traces_path.write_text(
+        json.dumps(traces, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
     protocol_audit_path.write_text(
         json.dumps(protocol_audit_report, indent=2, sort_keys=True),
         encoding="utf-8",
@@ -309,6 +315,16 @@ def run_evaluation_experiment(
     experiment_logger.log_artifact_file(
         file_path=curves_path,
         artifact_name=f"{experiment_config['experiment_name']}-evaluation-curves",
+        artifact_type="evaluation",
+        aliases=["latest"],
+        metadata={
+            "experiment_name": experiment_config["experiment_name"],
+            "job_type": "evaluate",
+        },
+    )
+    experiment_logger.log_artifact_file(
+        file_path=traces_path,
+        artifact_name=f"{experiment_config['experiment_name']}-evaluation-traces",
         artifact_type="evaluation",
         aliases=["latest"],
         metadata={

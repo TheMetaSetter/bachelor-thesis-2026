@@ -8,6 +8,7 @@ from typing import Any
 from src.core.artifact_integrity import (
     build_artifact_manifest,
     verify_artifact_manifest,
+    sha256_file,
     write_artifact_manifest,
 )
 from src.core.registry import build_dataset
@@ -87,6 +88,12 @@ def _build_runtime_online_context(
     checkpoint_manager = CheckpointManager(
         Path(str(experiment_config["checkpoint_dir"]))
     )
+    reference_checkpoint_path = str(
+        experiment_config.get("task", {}).get("reference_checkpoint_path", "")
+    )
+    reference_checkpoint_sha256 = None
+    if reference_checkpoint_path and Path(reference_checkpoint_path).is_file():
+        reference_checkpoint_sha256 = sha256_file(reference_checkpoint_path)
     threshold_artifacts = calibrate_entity_threshold_artifacts(
         model=model,
         clean_validation_sequences=data_bundle["scaled_sequences"]["val"],
@@ -94,6 +101,7 @@ def _build_runtime_online_context(
         protocol_config=protocol_config,
         online_variant=online_variant,
         device=str(experiment_config["device"]),
+        checkpoint_sha256=reference_checkpoint_sha256,
     )
     output_dir = Path(str(experiment_config["output_dir"]))
     threshold_paths: dict[str, str] = {}
@@ -128,6 +136,8 @@ def _build_runtime_online_context(
         "threshold_artifacts": threshold_artifacts,
         "threshold_paths": threshold_paths,
         "threshold_artifact_path": str(threshold_path),
+        "reference_checkpoint_path": reference_checkpoint_path,
+        "reference_checkpoint_sha256": reference_checkpoint_sha256,
         "threshold_value": float(
             threshold_artifact["thresholds"]["online_ewma_point"]["value"]
         ),
@@ -373,6 +383,8 @@ def _finalize_online_execution(
                 experiment_config
             ),
             "online_variant": context["online_variant"],
+            "reference_checkpoint_path": context["reference_checkpoint_path"],
+            "reference_checkpoint_sha256": context["reference_checkpoint_sha256"],
         },
     )
     artifact_manifest_path = write_artifact_manifest(
