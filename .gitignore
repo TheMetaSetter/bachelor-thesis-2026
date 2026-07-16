@@ -217,3 +217,5 @@ data/
 *.png
 *.csvbackup-*.zip
 *.zip
+
+ssh-gpu.txt

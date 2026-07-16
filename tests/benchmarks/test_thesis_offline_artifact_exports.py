@@ -158,11 +158,7 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
     assert (output_dir / "metrics" / "offline_metrics.json").exists()
     assert (output_dir / "protocol" / "resolved_protocol.json").exists()
     assert (
-        output_dir
-        / "retention"
-        / "machine-1-6"
-        / "offline"
-        / "retention_summary.json"
+        output_dir / "retention" / "machine-1-6" / "offline" / "retention_summary.json"
     ).exists()
     assert (
         output_dir
@@ -322,7 +318,9 @@ def test_thesis_offline_wrapper_supports_evaluation_only_checkpoint_rerun(
     monkeypatch.setattr(
         "scripts.run_thesis_offline_benchmark.collect_offline_artifact_inputs",
         lambda **kwargs: (
-            collected_checkpoint_paths.append(kwargs["manifest"]["evaluation"]["checkpoint_path"])
+            collected_checkpoint_paths.append(
+                kwargs["manifest"]["evaluation"]["checkpoint_path"]
+            )
             or {
                 "entity_id": "machine-1-6",
                 "seed": 6,
@@ -362,7 +360,11 @@ def test_thesis_offline_wrapper_supports_evaluation_only_checkpoint_rerun(
                     "diag/uncertainty/test_point_score_variance_mean": 0.42,
                 },
                 "variance_trace_audit": {
-                    "checkpoint": {"checkpoint_path": kwargs["manifest"]["evaluation"]["checkpoint_path"]},
+                    "checkpoint": {
+                        "checkpoint_path": kwargs["manifest"]["evaluation"][
+                            "checkpoint_path"
+                        ]
+                    },
                     "metrics": {
                         "has_variance_metrics": True,
                         "variance_metric_keys": [
@@ -432,13 +434,12 @@ def test_thesis_offline_wrapper_supports_evaluation_only_checkpoint_rerun(
     assert report["evaluation_only"] is True
     assert report["benchmark_status"] == "evaluation_only"
     assert report["checkpoint_path"] == checkpoint_path
-    assert report["variance_trace_audit"]["checkpoint"]["checkpoint_path"] == checkpoint_path
     assert (
-        output_dir
-        / "retention"
-        / "machine-1-6"
-        / "offline"
-        / "retention_summary.json"
+        report["variance_trace_audit"]["checkpoint"]["checkpoint_path"]
+        == checkpoint_path
+    )
+    assert (
+        output_dir / "retention" / "machine-1-6" / "offline" / "retention_summary.json"
     ).exists()
 
 

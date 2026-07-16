@@ -27,6 +27,7 @@ from src.models.neural_blocks import SimpleWindowCnnEncoder, build_multilayer_pe
 
 from src.models.baseline_impl import redlamp_baseline_helpers as redlamp_helpers
 
+
 class RedLampBaseline(BaseModel):
     def __init__(
         self,

@@ -18,6 +18,7 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from src.core.console import console_print
 from src.core.config import load_experiment_config

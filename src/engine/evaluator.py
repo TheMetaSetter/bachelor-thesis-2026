@@ -374,7 +374,9 @@ class Evaluator:
             "batch_index": batch_index,
             "entity_ids": [meta["entity_id"] for meta in batch_meta],
             "point_score_summary": summarize_tensor(point_scores),
-            "window_score_summary": summarize_tensor(step_output["outputs"]["window_scores"]),
+            "window_score_summary": summarize_tensor(
+                step_output["outputs"]["window_scores"]
+            ),
             "point_score_history": _json_safe_value(point_scores),
             "window_score_history": _json_safe_value(
                 step_output["outputs"]["window_scores"]
@@ -386,9 +388,7 @@ class Evaluator:
                 step_output["outputs"]["aux"].get("deterministic_geometry")
             ),
             "stochastic_query": _json_safe_value(stochastic_query),
-            "sample_retention_policy": stochastic_query.get(
-                "sample_retention_policy"
-            ),
+            "sample_retention_policy": stochastic_query.get("sample_retention_policy"),
             "mc_sample_histories": {
                 "point_score_samples": _json_safe_value(
                     stochastic_query.get("point_score_samples")

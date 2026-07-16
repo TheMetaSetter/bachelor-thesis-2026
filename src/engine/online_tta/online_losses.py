@@ -93,7 +93,10 @@ def compute_token_multi_positive_info_nce(
     """Use source/same-signature positives and anomaly-memory negatives."""
     if reference_hidden.shape != projected_hidden.shape or reference_hidden.ndim != 3:
         raise ValueError("hidden tensors must share shape [B, L, H]")
-    if anomalous_codewords.ndim != 2 or anomalous_codewords.shape[1] != projected_hidden.shape[-1]:
+    if (
+        anomalous_codewords.ndim != 2
+        or anomalous_codewords.shape[1] != projected_hidden.shape[-1]
+    ):
         raise ValueError("anomalous_codewords must have shape [K_anom, H]")
     if anomalous_codewords.shape[0] == 0:
         raise ValueError("at least one anomalous codeword is required")
@@ -112,7 +115,10 @@ def compute_token_multi_positive_info_nce(
         recurrent_signature_ids = recurrent_signature_ids.to(
             device=projected_hidden.device
         )
-        if recurrent_signature_ids.ndim != 3 or recurrent_signature_ids.shape[:2] != projected_hidden.shape[:2]:
+        if (
+            recurrent_signature_ids.ndim != 3
+            or recurrent_signature_ids.shape[:2] != projected_hidden.shape[:2]
+        ):
             raise ValueError("recurrent_signature_ids must have shape [B, L, T]")
     if known_anomaly_mask is not None:
         known_anomaly_mask = _require_mask_shape(

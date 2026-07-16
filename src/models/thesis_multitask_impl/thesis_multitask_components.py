@@ -28,6 +28,7 @@ TWO_STAGE_A_PHASE_NAME = "stage_a_multitask_pretraining"
 TWO_STAGE_B_PHASE_NAME = "stage_b_fusion_finetuning"
 TWO_STAGE_PHASE_NAMES = {TWO_STAGE_A_PHASE_NAME, TWO_STAGE_B_PHASE_NAME}
 
+
 @dataclass(frozen=True)
 class MultitaskArchitectureConfig:
     input_dim: int
@@ -339,9 +340,7 @@ class ThesisMultitaskModelConfig:
     ) -> "ThesisMultitaskModelConfig":
         sections = split_thesis_multitask_flat_kwargs(flat_kwargs)
         return cls(
-            architecture=MultitaskArchitectureConfig(
-                **sections["architecture_values"]
-            ),
+            architecture=MultitaskArchitectureConfig(**sections["architecture_values"]),
             prototypes=PrototypeBranchConfig(**sections["prototype_values"]),
             schedule=ScheduleAndWarmupConfig(**sections["schedule_values"]),
             objective=ObjectiveConfig(**sections["objective_values"]),
@@ -353,4 +352,6 @@ class ThesisMultitaskModelConfig:
 
 
 # Compatibility re-export: existing mixins and public imports keep resolving.
-from src.models.thesis_multitask_impl.thesis_multitask_encoder import MultitaskWindowEncoder
+from src.models.thesis_multitask_impl.thesis_multitask_encoder import (
+    MultitaskWindowEncoder,
+)

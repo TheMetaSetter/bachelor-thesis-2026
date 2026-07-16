@@ -40,7 +40,9 @@ class ThesisMultitaskStateSerializationMixin:
         if self.anomaly_radii.numel() == 0:
             raise ValueError("anomaly_radii must be non-empty")
         if self.anomalous_codeword_mask.shape != self.anomaly_radii.shape:
-            raise ValueError("verification metadata mask and radii must have same shape")
+            raise ValueError(
+                "verification metadata mask and radii must have same shape"
+            )
         if not torch.isfinite(self.anomaly_radii).all().item():
             raise ValueError("anomaly_radii must contain only finite values")
         if (self.anomaly_radii < 0).any().item():
@@ -101,9 +103,7 @@ class ThesisMultitaskStateSerializationMixin:
                 self.verification_contributing_token_counts.detach().cpu().tolist()
             )
         state["verification_radius_quantile"] = 0.99
-        state["verification_metadata_label_source"] = (
-            self.discrete_memory_label_source
-        )
+        state["verification_metadata_label_source"] = self.discrete_memory_label_source
         state["stochastic_inference"] = self.stochastic_inference
         state["monte_carlo_samples"] = self.monte_carlo_samples
         state["continuous_temperature"] = self.continuous_temperature
@@ -154,28 +154,35 @@ class ThesisMultitaskStateSerializationMixin:
     def load_checkpoint_extra_state(self, extra_state: dict[str, Any] | None) -> None:
         if not extra_state:
             return
-        if "verification_metadata_schema_version" in extra_state and int(
-            extra_state["verification_metadata_schema_version"]
-        ) != 1:
+        if (
+            "verification_metadata_schema_version" in extra_state
+            and int(extra_state["verification_metadata_schema_version"]) != 1
+        ):
             raise ValueError("verification_metadata_schema_version must be 1")
-        if "verification_metadata_split" in extra_state and extra_state.get(
-            "verification_metadata_split"
-        ) != "synthetic_train":
+        if (
+            "verification_metadata_split" in extra_state
+            and extra_state.get("verification_metadata_split") != "synthetic_train"
+        ):
             raise ValueError("verification_metadata_split must be synthetic_train")
         if "verification_radius_quantile" in extra_state and not (
             0.0 < float(extra_state["verification_radius_quantile"]) <= 1.0
         ):
             raise ValueError("verification_radius_quantile must be in (0, 1]")
-        if "verification_metadata_label_source" in extra_state and extra_state.get(
-            "verification_metadata_label_source"
-        ) != self.discrete_memory_label_source:
+        if (
+            "verification_metadata_label_source" in extra_state
+            and extra_state.get("verification_metadata_label_source")
+            != self.discrete_memory_label_source
+        ):
             raise ValueError(
                 "verification_metadata_label_source must match discrete_memory_label_source"
             )
-        if "verification_metadata_initialization_seed" in extra_state and int(
-            extra_state["verification_metadata_initialization_seed"]
-        ) < 0:
-            raise ValueError("verification_metadata_initialization_seed must be non-negative")
+        if (
+            "verification_metadata_initialization_seed" in extra_state
+            and int(extra_state["verification_metadata_initialization_seed"]) < 0
+        ):
+            raise ValueError(
+                "verification_metadata_initialization_seed must be non-negative"
+            )
         self.memory_initialized = bool(
             extra_state.get("memory_initialized", self.memory_initialized)
         )
@@ -256,7 +263,10 @@ class ThesisMultitaskStateSerializationMixin:
             if int(extra_state["variance_correction"]) != self.variance_correction:
                 raise ValueError("checkpoint variance_correction does not match model")
         if "sample_retention_policy" in extra_state:
-            if str(extra_state["sample_retention_policy"]) != self.sample_retention_policy:
+            if (
+                str(extra_state["sample_retention_policy"])
+                != self.sample_retention_policy
+            ):
                 console_print(
                     "MODEL",
                     "Allowing compatibility mismatch for sample_retention_policy",

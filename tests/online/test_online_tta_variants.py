@@ -122,7 +122,9 @@ def _build_model(tmp_path: Path) -> OnlineAdaptationModel:
     reference.anomalous_codeword_mask = torch.zeros(
         reference.discrete_codebook.shape[0], dtype=torch.bool
     )
-    reference.anomalous_codeword_mask[reference.discrete_codebook.shape[0] // 2 :] = True
+    reference.anomalous_codeword_mask[reference.discrete_codebook.shape[0] // 2 :] = (
+        True
+    )
     reference.anomaly_radii = torch.ones(reference.discrete_codebook.shape[0])
     return model
 

@@ -72,7 +72,9 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
     if not isinstance(artifact["window_size"], int) or artifact["window_size"] <= 0:
         raise ValueError("threshold artifact window_size must be a positive integer")
     if artifact["calibration_split"] != "clean_validation":
-        raise ValueError("threshold artifact calibration_split must be clean_validation")
+        raise ValueError(
+            "threshold artifact calibration_split must be clean_validation"
+        )
     if not isinstance(artifact["stochastic_inference"], bool):
         raise TypeError("threshold artifact stochastic_inference must be boolean")
     if not isinstance(artifact["monte_carlo_samples"], int) or (
@@ -134,18 +136,28 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
             "threshold artifact provenance.resolved_config_sha256 must match resolved_config_sha256"
         )
     if "checkpoint_sha256" in artifact and artifact["checkpoint_sha256"] is not None:
-        if not isinstance(artifact["checkpoint_sha256"], str) or not artifact[
-            "checkpoint_sha256"
-        ]:
-            raise ValueError("threshold artifact checkpoint_sha256 must be a non-empty string")
-    if "resolved_config_sha256" in artifact and artifact["resolved_config_sha256"] is not None:
-        if not isinstance(artifact["resolved_config_sha256"], str) or not artifact[
-            "resolved_config_sha256"
-        ]:
+        if (
+            not isinstance(artifact["checkpoint_sha256"], str)
+            or not artifact["checkpoint_sha256"]
+        ):
+            raise ValueError(
+                "threshold artifact checkpoint_sha256 must be a non-empty string"
+            )
+    if (
+        "resolved_config_sha256" in artifact
+        and artifact["resolved_config_sha256"] is not None
+    ):
+        if (
+            not isinstance(artifact["resolved_config_sha256"], str)
+            or not artifact["resolved_config_sha256"]
+        ):
             raise ValueError(
                 "threshold artifact resolved_config_sha256 must be a non-empty string"
             )
-    if not isinstance(artifact["offline_stride"], int) or artifact["offline_stride"] <= 0:
+    if (
+        not isinstance(artifact["offline_stride"], int)
+        or artifact["offline_stride"] <= 0
+    ):
         raise ValueError("threshold artifact offline_stride must be a positive integer")
     if not isinstance(artifact["online_stride"], int) or artifact["online_stride"] <= 0:
         raise ValueError("threshold artifact online_stride must be a positive integer")
@@ -168,7 +180,9 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
                 raise ValueError(
                     f"threshold artifact threshold {threshold_name} is missing {threshold_key}"
                 )
-            if threshold_key == "quantile" and not (0.0 < float(threshold_record[threshold_key]) <= 1.0):
+            if threshold_key == "quantile" and not (
+                0.0 < float(threshold_record[threshold_key]) <= 1.0
+            ):
                 raise ValueError(
                     f"threshold artifact threshold {threshold_name} quantile must be in (0, 1]"
                 )
@@ -176,22 +190,32 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
             raise TypeError(
                 f"threshold artifact threshold {threshold_name} value must be numeric"
             )
-        if not isinstance(threshold_record["score_rule"], str) or not threshold_record["score_rule"]:
+        if (
+            not isinstance(threshold_record["score_rule"], str)
+            or not threshold_record["score_rule"]
+        ):
             raise ValueError(
                 f"threshold artifact threshold {threshold_name} score_rule must be a non-empty string"
             )
-        if not isinstance(threshold_record["source_split"], str) or not threshold_record["source_split"]:
+        if (
+            not isinstance(threshold_record["source_split"], str)
+            or not threshold_record["source_split"]
+        ):
             raise ValueError(
                 f"threshold artifact threshold {threshold_name} source_split must be a non-empty string"
             )
-        if "ewma_current_weight" in threshold_record or "ewma_previous_weight" in threshold_record:
+        if (
+            "ewma_current_weight" in threshold_record
+            or "ewma_previous_weight" in threshold_record
+        ):
             if threshold_name != "online_ewma_point":
                 raise ValueError(
                     "EWMA weights may only be attached to online_ewma_point threshold"
                 )
-            if float(threshold_record["ewma_current_weight"]) <= 0.0 or float(
-                threshold_record["ewma_previous_weight"]
-            ) <= 0.0:
+            if (
+                float(threshold_record["ewma_current_weight"]) <= 0.0
+                or float(threshold_record["ewma_previous_weight"]) <= 0.0
+            ):
                 raise ValueError("EWMA threshold weights must be positive")
 
 

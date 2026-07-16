@@ -16,7 +16,9 @@ from src.core.runtime_components import register_online_runtime_components
 from src.core.seed import seed_everything
 from src.engine.checkpoint import CheckpointManager
 from src.engine.online_tta.non_overlap_guard import NonOverlapGuard
-from src.engine.online_tta.online_calibration import build_online_stream as _build_online_stream
+from src.engine.online_tta.online_calibration import (
+    build_online_stream as _build_online_stream,
+)
 from src.engine.online_tta.online_engine_shared import (
     _build_model_from_experiment_config,
     _build_optimizer_from_experiment_config,
@@ -215,22 +217,24 @@ def _run_online_sequence(
             break
         from src.engine.online_tta import online_engine as public_online_engine
 
-        previous_ewma_score, metric, record = public_online_engine._process_online_window(
-            model=model,
-            optimizer=optimizer,
-            batch=batch,
-            online_variant=online_variant,
-            threshold_value=threshold_value,
-            ewma_current_weight=ewma_current_weight,
-            ewma_previous_weight=ewma_previous_weight,
-            triage_thresholds=triage_thresholds,
-            verification_buffer=verification_buffer,
-            ttl_buffer=ttl_buffer,
-            previous_ewma_score=previous_ewma_score,
-            device=device,
-            signature_history=signature_history,
-            verification_controller=verification_controller,
-            hard_old_guard=hard_old_guard,
+        previous_ewma_score, metric, record = (
+            public_online_engine._process_online_window(
+                model=model,
+                optimizer=optimizer,
+                batch=batch,
+                online_variant=online_variant,
+                threshold_value=threshold_value,
+                ewma_current_weight=ewma_current_weight,
+                ewma_previous_weight=ewma_previous_weight,
+                triage_thresholds=triage_thresholds,
+                verification_buffer=verification_buffer,
+                ttl_buffer=ttl_buffer,
+                previous_ewma_score=previous_ewma_score,
+                device=device,
+                signature_history=signature_history,
+                verification_controller=verification_controller,
+                hard_old_guard=hard_old_guard,
+            )
         )
         metric["online/step"] = len(metric_history) + 1
         _sync_online_runtime_state(
@@ -284,28 +288,32 @@ def _run_online_execution_sequences(
             raise KeyError(f"No threshold artifact for test entity {entity_id}")
         from src.engine.online_tta import online_engine as public_online_engine
 
-        sequence_metric_history, sequence_records = public_online_engine._run_online_sequence(
-            model=context["model"],
-            optimizer=context["optimizer"],
-            sequence=sequence,
-            online_variant=context["online_variant"],
-            threshold_value=float(artifact["thresholds"]["online_ewma_point"]["value"]),
-            protocol_config=protocol_config,
-            batch_size=context["batch_size"],
-            view_noise_std=context["view_noise_std"],
-            view_dropout_probability=context["view_dropout_probability"],
-            device=context["device"],
-            verification_buffer=context["verification_buffer"],
-            ttl_buffer=context["ttl_buffer"],
-            runtime_state=context.get("runtime_state"),
-            hard_old_guard=context["hard_old_guard"],
-            signature_history=context["signature_history"],
-            max_online_steps=(
-                None
-                if max_online_steps_limit is None
-                else max_online_steps_limit - len(metric_history)
-            ),
-            threshold_artifact=artifact,
+        sequence_metric_history, sequence_records = (
+            public_online_engine._run_online_sequence(
+                model=context["model"],
+                optimizer=context["optimizer"],
+                sequence=sequence,
+                online_variant=context["online_variant"],
+                threshold_value=float(
+                    artifact["thresholds"]["online_ewma_point"]["value"]
+                ),
+                protocol_config=protocol_config,
+                batch_size=context["batch_size"],
+                view_noise_std=context["view_noise_std"],
+                view_dropout_probability=context["view_dropout_probability"],
+                device=context["device"],
+                verification_buffer=context["verification_buffer"],
+                ttl_buffer=context["ttl_buffer"],
+                runtime_state=context.get("runtime_state"),
+                hard_old_guard=context["hard_old_guard"],
+                signature_history=context["signature_history"],
+                max_online_steps=(
+                    None
+                    if max_online_steps_limit is None
+                    else max_online_steps_limit - len(metric_history)
+                ),
+                threshold_artifact=artifact,
+            )
         )
         metric_history.extend(sequence_metric_history)
         records.extend(sequence_records)
@@ -331,9 +339,7 @@ def _finalize_online_execution(
         if smoke_limit is not None and int(smoke_limit) > 0
         else expected_windows
     )
-    coverage_status = (
-        "complete" if len(records) == expected_processed else "incomplete"
-    )
+    coverage_status = "complete" if len(records) == expected_processed else "incomplete"
     metrics_path = _write_json(output_dir / "online_metrics.json", metric_history)
     records_path = _write_json(output_dir / "online_records.json", records)
     final_checkpoint_path = context["checkpoint_manager"].save_checkpoint(

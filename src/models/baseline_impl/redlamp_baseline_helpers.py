@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
 
+
 def _build_refurbished_classification_targets(
     self,
     classification_labels: torch.Tensor,
@@ -29,13 +30,12 @@ def _build_refurbished_classification_targets(
         ),
         self.refurbishment_beta,
     )
-    target_probabilities[:, 0] = target_probabilities[:, 0] + (
-        self.refurbishment_alpha
-    )
+    target_probabilities[:, 0] = target_probabilities[:, 0] + (self.refurbishment_alpha)
     return target_probabilities / target_probabilities.sum(
         dim=-1,
         keepdim=True,
     ).clamp_min(self.epsilon)
+
 
 def _compute_classification_loss(
     self,
@@ -48,10 +48,9 @@ def _compute_classification_loss(
             outputs["logits"].dtype,
         )
         log_probabilities = F.log_softmax(outputs["logits"], dim=-1)
-        return torch.mean(
-            torch.sum(-target_probabilities * log_probabilities, dim=-1)
-        )
+        return torch.mean(torch.sum(-target_probabilities * log_probabilities, dim=-1))
     return F.cross_entropy(outputs["logits"], batch["classification_labels"].long())
+
 
 def _get_encoder_profiled_parameters(self) -> OrderedDict[str, nn.Parameter]:
     profiled_parameters: OrderedDict[str, nn.Parameter] = OrderedDict()
@@ -75,8 +74,10 @@ def _get_encoder_profiled_parameters(self) -> OrderedDict[str, nn.Parameter]:
         raise ValueError("No encoder parameters available for gradient profiling")
     return profiled_parameters
 
+
 def _flatten_tensor_for_metrics(self, tensor: torch.Tensor) -> torch.Tensor:
     return tensor.reshape(-1)
+
 
 def _compute_cosine_similarity(
     self,
@@ -91,23 +92,21 @@ def _compute_cosine_similarity(
     cosine_similarity = dot_product / ((norm_ce * norm_mse).clamp_min(1.0e-12))
     return float(cosine_similarity.detach().cpu())
 
+
 def _compute_preservation_ratio(
     self,
     gradient_ce: torch.Tensor,
     gradient_mse: torch.Tensor,
     gradient_total: torch.Tensor,
 ) -> float:
-    norm_ce = torch.linalg.vector_norm(
-        self._flatten_tensor_for_metrics(gradient_ce)
-    )
-    norm_mse = torch.linalg.vector_norm(
-        self._flatten_tensor_for_metrics(gradient_mse)
-    )
+    norm_ce = torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_ce))
+    norm_mse = torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_mse))
     norm_total = torch.linalg.vector_norm(
         self._flatten_tensor_for_metrics(gradient_total)
     )
     preservation_ratio = norm_total / (norm_ce + norm_mse).clamp_min(1.0e-12)
     return float(preservation_ratio.detach().cpu())
+
 
 def _extract_layerwise_gradients(
     self,
@@ -122,6 +121,7 @@ def _extract_layerwise_gradients(
     )
     return [gradient.detach().clone() for gradient in gradients]
 
+
 def _update_ema(self, metric_key: str, metric_value: float) -> float:
     previous_ema = self._gradient_profile_ema_state.get(metric_key)
     if previous_ema is None:
@@ -134,6 +134,7 @@ def _update_ema(self, metric_key: str, metric_value: float) -> float:
     self._gradient_profile_ema_state[metric_key] = updated_ema
     return updated_ema
 
+
 def _update_sma(self, metric_key: str, metric_value: float) -> float:
     if metric_key not in self._gradient_profile_sma_buffers:
         self._gradient_profile_sma_buffers[metric_key] = deque(
@@ -144,6 +145,7 @@ def _update_sma(self, metric_key: str, metric_value: float) -> float:
         self._gradient_profile_sma_buffers[metric_key]
     )
     return float(sma_value)
+
 
 def _profile_encoder_gradient_conflict(
     self,
@@ -184,15 +186,11 @@ def _profile_encoder_gradient_conflict(
             .cpu()
         )
         norm_total = float(
-            torch.linalg.vector_norm(
-                self._flatten_tensor_for_metrics(gradient_total)
-            )
+            torch.linalg.vector_norm(self._flatten_tensor_for_metrics(gradient_total))
             .detach()
             .cpu()
         )
-        cosine_similarity = self._compute_cosine_similarity(
-            gradient_ce, gradient_mse
-        )
+        cosine_similarity = self._compute_cosine_similarity(gradient_ce, gradient_mse)
         preservation_ratio = self._compute_preservation_ratio(
             gradient_ce=gradient_ce,
             gradient_mse=gradient_mse,
@@ -213,6 +211,7 @@ def _profile_encoder_gradient_conflict(
             raw_metrics[f"{focus_prefix}/norm_total"] = norm_total
     return self._build_gradient_conflict_log_dict(raw_metrics)
 
+
 def _resolve_focus_layer_parameter_name(self) -> str:
     if self.gradient_focus_layer_name in {
         "encoder_last_linear",
@@ -223,6 +222,7 @@ def _resolve_focus_layer_parameter_name(self) -> str:
     raise ValueError(
         f"Unsupported gradient_focus_layer_name: {self.gradient_focus_layer_name}"
     )
+
 
 def _build_gradient_conflict_log_dict(
     self,
@@ -237,6 +237,7 @@ def _build_gradient_conflict_log_dict(
         gradient_conflict_logs[ema_key] = self._update_ema(raw_key, raw_value)
         gradient_conflict_logs[sma_key] = self._update_sma(raw_key, raw_value)
     return gradient_conflict_logs
+
 
 def _shared_step(
     self,
@@ -264,9 +265,7 @@ def _shared_step(
     )
     log = {
         f"{stage_name}_loss": float(total_loss.detach().cpu()),
-        f"{stage_name}_reconstruction_loss": float(
-            reconstruction_loss.detach().cpu()
-        ),
+        f"{stage_name}_reconstruction_loss": float(reconstruction_loss.detach().cpu()),
     }
     if include_classification_metrics:
         log[f"{stage_name}_classification_loss"] = float(
@@ -301,8 +300,10 @@ def _shared_step(
         "batch": prepared_batch,
     }
 
+
 def training_step(self, batch: dict[str, Any]) -> dict[str, Any]:
     return self._shared_step(batch, "train", include_classification_metrics=True)
+
 
 def validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
     return self._shared_step(
@@ -312,12 +313,14 @@ def validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
         include_classification_metrics=False,
     )
 
+
 def synthetic_validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
     return self._shared_step(
         batch,
         "val_synth",
         include_classification_metrics=True,
     )
+
 
 def test_step(self, batch: dict[str, Any]) -> dict[str, Any]:
     return self._shared_step(

@@ -53,7 +53,7 @@ def _validate_single_window_online_batch(batch: dict[str, Any]) -> None:
 
 
 def _serialize_recurrent_signatures(
-    recurrent_signatures: set[tuple[int, ...]]
+    recurrent_signatures: set[tuple[int, ...]],
 ) -> list[dict[str, Any]]:
     return [
         {"signature": [int(value) for value in signature]}
@@ -171,7 +171,9 @@ def _build_threshold_artifact_from_scores(
         window_size=window_size,
         offline_point_threshold=offline_point_threshold,
         online_ewma_point_threshold=online_ewma_point_threshold,
-        input_window_threshold=float(np.quantile(calibration_scores["input_window"], 0.99)),
+        input_window_threshold=float(
+            np.quantile(calibration_scores["input_window"], 0.99)
+        ),
         latent_window_low_threshold=float(
             np.quantile(calibration_scores["latent_window"], 0.95)
         ),

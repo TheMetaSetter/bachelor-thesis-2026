@@ -1,5 +1,6 @@
 from scripts.analysis.compare_synthetic_profiles_shared import *  # noqa: F401,F403
 
+
 def _plot_first_sample(
     clean_batch: dict[str, Any],
     legacy_batch: dict[str, Any],

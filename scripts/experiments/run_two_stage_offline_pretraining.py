@@ -284,11 +284,13 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
     if hasattr(model, "get_memory_lifecycle_state"):
         initialization_payload["extra_state"] = model.get_memory_lifecycle_state()
     initialization_payload["config"] = stage_b_config
-    initialization_payload["checkpoint_metadata"] = CheckpointManager._build_checkpoint_metadata(
-        config=stage_b_config,
-        epoch=int(stage_a_checkpoint.get("epoch", 0)),
-        metric_history=list(stage_a_checkpoint.get("metric_history", [])),
-        extra_state=initialization_payload.get("extra_state"),
+    initialization_payload["checkpoint_metadata"] = (
+        CheckpointManager._build_checkpoint_metadata(
+            config=stage_b_config,
+            epoch=int(stage_a_checkpoint.get("epoch", 0)),
+            metric_history=list(stage_a_checkpoint.get("metric_history", [])),
+            extra_state=initialization_payload.get("extra_state"),
+        )
     )
     torch.save(initialization_payload, initialization_checkpoint_path)
     return initialization_checkpoint_path

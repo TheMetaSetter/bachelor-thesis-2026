@@ -57,14 +57,11 @@ def test_generate_thesis_offline_benchmark_configs_writes_all_expected_files() -
                         assert loaded_config["device"] == "cuda"
                         assert loaded_config["epochs"] == 3
                         assert (
-                            loaded_config["two_stage"][
-                                "expected_total_training_epochs"
-                            ]
+                            loaded_config["two_stage"]["expected_total_training_epochs"]
                             == 3
                         )
                         assert (
-                            loaded_config["two_stage"]["stage_a_multitask_epochs"]
-                            == 2
+                            loaded_config["two_stage"]["stage_a_multitask_epochs"] == 2
                         )
                         assert (
                             loaded_config["two_stage"][

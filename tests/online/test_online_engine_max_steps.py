@@ -10,7 +10,9 @@ from src.engine.online_tta.online_engine import _run_online_sequence
 from src.engine.online_tta import online_engine_run as online_engine_run_module
 from src.engine.online_tta.ttl_buffer import TTLBuffer
 from src.engine.online_tta.verification_buffer import VerificationBuffer
-from scripts.experiments.run_online_adaptation import _resolve_max_online_steps as resolve_online_adaptation_max_steps
+from scripts.experiments.run_online_adaptation import (
+    _resolve_max_online_steps as resolve_online_adaptation_max_steps,
+)
 
 
 def _fake_batch_stream() -> Iterator[dict[str, Any]]:
@@ -158,7 +160,9 @@ def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -
         lambda dataset_name, data_config: {
             "scaled_sequences": {
                 "val": [{"meta": {"entity_id": "machine-1-6"}}],
-                "test": [{"meta": {"entity_id": "machine-1-6"}, "x": torch.zeros(1, 1, 1)}],
+                "test": [
+                    {"meta": {"entity_id": "machine-1-6"}, "x": torch.zeros(1, 1, 1)}
+                ],
             },
             "scaler": _DummyScaler(),
         },

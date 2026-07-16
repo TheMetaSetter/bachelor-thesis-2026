@@ -7,7 +7,9 @@ from typing import Any
 import torch
 
 from src.engine.online_tta.non_overlap_guard import NonOverlapGuard
-from src.engine.online_tta.online_calibration import move_batch_to_device as _move_batch_to_device
+from src.engine.online_tta.online_calibration import (
+    move_batch_to_device as _move_batch_to_device,
+)
 from src.engine.online_tta.online_engine_step import execute_online_tta_step
 from src.engine.online_tta.online_optimizer import build_online_optimizer
 from src.engine.online_tta.signature_verification import (
@@ -52,8 +54,8 @@ def _verify_and_adapt_entries(
         batch = build_entry_batch(entry, device)
         batch["pnn_mask"] = candidate.pnn_mask.to(device)
         if candidate.recurrent_signature_ids is not None:
-            batch["recurrent_signature_ids"] = (
-                candidate.recurrent_signature_ids.to(device)
+            batch["recurrent_signature_ids"] = candidate.recurrent_signature_ids.to(
+                device
             )
         if candidate.known_anomaly_mask is not None:
             batch["known_anomaly_mask"] = candidate.known_anomaly_mask.to(device)

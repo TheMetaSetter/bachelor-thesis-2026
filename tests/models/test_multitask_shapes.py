@@ -227,7 +227,9 @@ def test_multitask_model_calls_encoder_once_per_forward(monkeypatch) -> None:
     assert call_count["count"] == 1
 
 
-def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode() -> None:
+def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode() -> (
+    None
+):
     model = ThesisMultitaskModel(
         input_dim=38,
         window_size=20,
@@ -271,7 +273,9 @@ def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode(
         20,
         38,
     )
-    assert outputs["aux"]["stochastic_query"]["classification_probability_samples"].shape == (
+    assert outputs["aux"]["stochastic_query"][
+        "classification_probability_samples"
+    ].shape == (
         3,
         10,
         2,
@@ -299,15 +303,15 @@ def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode(
         3,
         20,
     )
-    assert outputs["aux"]["uncertainty"]["window_anomaly_score_variance"].shape == (
-        3,
-    )
+    assert outputs["aux"]["uncertainty"]["window_anomaly_score_variance"].shape == (3,)
     assert outputs["aux"]["uncertainty"]["reconstruction_variance_full"].shape == (
         3,
         20,
         38,
     )
-    assert outputs["aux"]["uncertainty"]["classification_probability_variance"].shape == (
+    assert outputs["aux"]["uncertainty"][
+        "classification_probability_variance"
+    ].shape == (
         3,
         2,
     )
@@ -321,7 +325,9 @@ def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode(
         outputs["aux"]["class_probabilities"],
         atol=1e-6,
     )
-    assert torch.isfinite(outputs["aux"]["uncertainty"]["reconstruction_variance_full"]).all()
+    assert torch.isfinite(
+        outputs["aux"]["uncertainty"]["reconstruction_variance_full"]
+    ).all()
 
 
 def test_multitask_model_eval_without_stochastic_inference_is_safe() -> None:
@@ -393,7 +399,9 @@ def test_multitask_model_handles_single_sample_monte_carlo_without_nan() -> None
     )
     assert torch.equal(
         outputs["aux"]["uncertainty"]["window_anomaly_score_variance"],
-        torch.zeros_like(outputs["aux"]["uncertainty"]["window_anomaly_score_variance"]),
+        torch.zeros_like(
+            outputs["aux"]["uncertainty"]["window_anomaly_score_variance"]
+        ),
     )
 
 

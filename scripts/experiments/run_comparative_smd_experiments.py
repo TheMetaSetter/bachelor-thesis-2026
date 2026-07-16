@@ -11,10 +11,7 @@ _build_thesis_two_stage_commands = comparative_support._build_thesis_two_stage_c
 _load_run_records = comparative_support._load_run_records
 _normalize_artifact_path = comparative_support._normalize_artifact_path
 _utc_now_iso = comparative_support._utc_now_iso
-_validate_single_entity_contract = (
-    comparative_support._validate_single_entity_contract
-)
-
+_validate_single_entity_contract = comparative_support._validate_single_entity_contract
 
 
 # (´∀｀)♡ PARAMETER OVERRIDES - Config Customization

@@ -177,6 +177,7 @@ def _normalize_thesis_multitask_v3_aliases(experiment_config: dict[str, Any]) ->
     model_config = experiment_config.get("model")
     if not isinstance(model_config, dict):
         return
+
     def _normalize_variance_correction_value(value: Any) -> int:
         if isinstance(value, bool):
             return int(value)
@@ -191,12 +192,22 @@ def _normalize_thesis_multitask_v3_aliases(experiment_config: dict[str, Any]) ->
         raise ValueError(
             "variance_correction must be 0, 1, or one of: unbiased, sample, population"
         )
-    if "sample_variance_correction" in model_config and "variance_correction" in model_config:
-        if model_config["sample_variance_correction"] != model_config["variance_correction"]:
+
+    if (
+        "sample_variance_correction" in model_config
+        and "variance_correction" in model_config
+    ):
+        if (
+            model_config["sample_variance_correction"]
+            != model_config["variance_correction"]
+        ):
             raise ValueError(
                 "Config alias mismatch for variance_correction and sample_variance_correction"
             )
-    if "variance_correction" not in model_config and "sample_variance_correction" in model_config:
+    if (
+        "variance_correction" not in model_config
+        and "sample_variance_correction" in model_config
+    ):
         model_config["variance_correction"] = model_config["sample_variance_correction"]
     if "variance_correction" in model_config:
         model_config["variance_correction"] = _normalize_variance_correction_value(

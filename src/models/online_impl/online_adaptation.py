@@ -50,7 +50,6 @@ def _resolve_reference_checkpoint_path(checkpoint_path: str | Path) -> Path:
 from src.models.online_impl.online_adaptation_helpers import *  # noqa: F401,F403
 
 
-
 class OnlineAdaptationModel(BaseModel):
     def __init__(
         self,
@@ -369,9 +368,7 @@ class OnlineAdaptationModel(BaseModel):
                 "projector_drift": projector_drift,
                 "target_param_group": self.target_param_group,
                 "scoring": scored_outputs["aux"],
-                "latent_window_score": scored_outputs["aux"][
-                    "latent_window_score"
-                ],
+                "latent_window_score": scored_outputs["aux"]["latent_window_score"],
             },
         }
         validate_model_outputs(outputs)

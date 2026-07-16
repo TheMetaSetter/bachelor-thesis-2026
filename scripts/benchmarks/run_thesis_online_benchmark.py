@@ -169,7 +169,9 @@ def _export_online_retention_bundle(
         "inspection_ready": retention_policy == "retain_for_eda",
     }
     bundle_paths: dict[str, str] = {
-        "summary": _write_json(retention_root / "retention_summary.json", summary_payload)
+        "summary": _write_json(
+            retention_root / "retention_summary.json", summary_payload
+        )
     }
     if retention_policy == "retain_for_eda":
         bundle_paths["metrics"] = _write_json(

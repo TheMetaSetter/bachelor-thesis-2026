@@ -133,9 +133,7 @@ def test_run_offline_benchmark_writes_shared_artifacts(tmp_path, monkeypatch) ->
     assert (output_dir / "metrics" / "offline_metrics.json").exists()
 
 
-def test_run_offline_benchmark_applies_data_overrides(
-    tmp_path, monkeypatch
-) -> None:
+def test_run_offline_benchmark_applies_data_overrides(tmp_path, monkeypatch) -> None:
     config_path = tmp_path / "offline_benchmark.yaml"
     output_dir = tmp_path / "outputs"
     protocol_path = tmp_path / "protocol.yaml"

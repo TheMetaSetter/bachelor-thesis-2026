@@ -49,8 +49,12 @@ def classify_legacy_baseline_window(
     """Keep historical baseline regions isolated from THESIS full-spec triage."""
     strong = _resolve_threshold(thresholds, ("strong_anomaly_threshold",), 1.0)
     hard_old = _resolve_threshold(thresholds, ("hard_old_normality_threshold",), 0.0)
-    pnn_input = _resolve_threshold(thresholds, ("pnn_candidate_input_threshold",), strong)
-    pnn_latent = _resolve_threshold(thresholds, ("pnn_candidate_latent_threshold",), strong)
+    pnn_input = _resolve_threshold(
+        thresholds, ("pnn_candidate_input_threshold",), strong
+    )
+    pnn_latent = _resolve_threshold(
+        thresholds, ("pnn_candidate_latent_threshold",), strong
+    )
     if input_window_score >= strong or latent_window_score >= strong:
         return "strong_anomaly"
     if input_window_score <= hard_old and latent_window_score <= hard_old:

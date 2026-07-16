@@ -78,9 +78,11 @@ def sample_continuous_retrieval(
         or query_bundle.continuous_logits is None
         or query_bundle.memory_bypass_active
     ):
-        return query_bundle.hidden.unsqueeze(1).expand(
-            -1, num_samples, -1, -1
-        ).contiguous()
+        return (
+            query_bundle.hidden.unsqueeze(1)
+            .expand(-1, num_samples, -1, -1)
+            .contiguous()
+        )
 
     sampled_logits = query_bundle.continuous_logits.unsqueeze(1).expand(
         -1, num_samples, -1, -1
@@ -109,9 +111,11 @@ def sample_discrete_retrieval(
         or query_bundle.discrete_logits is None
         or query_bundle.memory_bypass_active
     ):
-        return query_bundle.hidden.unsqueeze(1).expand(
-            -1, num_samples, -1, -1
-        ).contiguous()
+        return (
+            query_bundle.hidden.unsqueeze(1)
+            .expand(-1, num_samples, -1, -1)
+            .contiguous()
+        )
 
     if query_bundle.discrete_query_mode == "cosine_topk":
         topk_value_count = min(
@@ -126,9 +130,7 @@ def sample_discrete_retrieval(
         topk_logits = topk_logits.unsqueeze(1).expand(-1, num_samples, -1, -1)
         topk_indices = topk_indices.unsqueeze(1).expand(-1, num_samples, -1, -1)
         assignment_probabilities = torch.zeros_like(
-            query_bundle.discrete_logits.unsqueeze(1).expand(
-                -1, num_samples, -1, -1
-            )
+            query_bundle.discrete_logits.unsqueeze(1).expand(-1, num_samples, -1, -1)
         )
         assignment_probabilities.scatter_(
             dim=-1,

@@ -14,7 +14,9 @@ import torch
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(REPOSITORY_ROOT))
 
-from scripts.experiments.run_comparative_smd_experiments import build_comparative_run_plan  # noqa: E402
+from scripts.experiments.run_comparative_smd_experiments import (
+    build_comparative_run_plan,
+)  # noqa: E402
 
 
 def _validate_gpu_requirements(

@@ -66,7 +66,9 @@ def test_generate_thesis_online_benchmark_configs_writes_all_expected_files() ->
                         )
                         assert loaded_config["task"]["clean_stream_only"] is True
                         assert loaded_config["task"]["warm_start_projector"] is False
-                        assert loaded_config["task"]["offline_variant"] == offline_variant
+                        assert (
+                            loaded_config["task"]["offline_variant"] == offline_variant
+                        )
                         assert loaded_config["task"]["entity_id"] == entity_id
                         assert loaded_config["task"]["seed"] == seed
                         assert loaded_config["task"]["benchmark_mode"] == (

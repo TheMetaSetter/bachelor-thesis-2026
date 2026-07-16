@@ -244,7 +244,10 @@ def validate_uncertainty_aux(uncertainty: dict[str, Any]) -> None:
         _require_optional_tensor_rank(
             tensor_value, 2, f"outputs['aux']['uncertainty']['{field_name}']"
         )
-        if tensor_value is not None and not torch.isfinite(tensor_value.float()).all().item():
+        if (
+            tensor_value is not None
+            and not torch.isfinite(tensor_value.float()).all().item()
+        ):
             raise ValueError(
                 f"outputs['aux']['uncertainty']['{field_name}'] must contain only finite values"
             )
@@ -259,7 +262,10 @@ def validate_uncertainty_aux(uncertainty: dict[str, Any]) -> None:
         _require_optional_tensor_rank(
             tensor_value, 1, f"outputs['aux']['uncertainty']['{field_name}']"
         )
-        if tensor_value is not None and not torch.isfinite(tensor_value.float()).all().item():
+        if (
+            tensor_value is not None
+            and not torch.isfinite(tensor_value.float()).all().item()
+        ):
             raise ValueError(
                 f"outputs['aux']['uncertainty']['{field_name}'] must contain only finite values"
             )
@@ -269,9 +275,10 @@ def validate_uncertainty_aux(uncertainty: dict[str, Any]) -> None:
         "outputs['aux']['uncertainty']['reconstruction_variance_full']",
     )
     reconstruction_variance_full = uncertainty.get("reconstruction_variance_full")
-    if reconstruction_variance_full is not None and not torch.isfinite(
-        reconstruction_variance_full.float()
-    ).all().item():
+    if (
+        reconstruction_variance_full is not None
+        and not torch.isfinite(reconstruction_variance_full.float()).all().item()
+    ):
         raise ValueError(
             "outputs['aux']['uncertainty']['reconstruction_variance_full'] must contain only finite values"
         )
@@ -283,17 +290,16 @@ def validate_uncertainty_aux(uncertainty: dict[str, Any]) -> None:
     classification_probability_variance = uncertainty.get(
         "classification_probability_variance"
     )
-    if classification_probability_variance is not None and not torch.isfinite(
-        classification_probability_variance.float()
-    ).all().item():
+    if (
+        classification_probability_variance is not None
+        and not torch.isfinite(classification_probability_variance.float()).all().item()
+    ):
         raise ValueError(
             "outputs['aux']['uncertainty']['classification_probability_variance'] must contain only finite values"
         )
 
 
-def validate_deterministic_geometry_aux(
-    deterministic_geometry: dict[str, Any]
-) -> None:
+def validate_deterministic_geometry_aux(deterministic_geometry: dict[str, Any]) -> None:
     for field_name in [
         "nearest_codeword_ids",
         "nearest_codeword_distances",

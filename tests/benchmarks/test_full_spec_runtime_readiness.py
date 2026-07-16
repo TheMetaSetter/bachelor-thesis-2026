@@ -46,27 +46,27 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
     )
     online_config_path.write_text(
         yaml.safe_dump(
-                {
-                    "experiment_name": "online-readiness",
-                    "output_dir": str(online_output_dir),
-                    "checkpoint_dir": str(online_output_dir / "checkpoints"),
-                    "seed": 6,
+            {
+                "experiment_name": "online-readiness",
+                "output_dir": str(online_output_dir),
+                "checkpoint_dir": str(online_output_dir / "checkpoints"),
+                "seed": 6,
                 "device": "cpu",
-                    "data": {"dataset_name": "smd", "window_size": 20, "stride": 1},
-                    "model": {"model_name": "online_adaptation"},
-                    "task": {
-                        "task_name": "online_adaptation",
-                        "offline_variant": "O0",
-                        "entity_id": "machine-1-6",
-                        "seed": 6,
-                        "benchmark_mode": "main",
-                        "stage_name": "stage_b_fusion_finetuning",
-                    },
-                    "evaluation": {"retention_policy": "retain_for_eda"},
-                    "optimizer": {"learning_rate": 0.001, "weight_decay": 0.0},
+                "data": {"dataset_name": "smd", "window_size": 20, "stride": 1},
+                "model": {"model_name": "online_adaptation"},
+                "task": {
+                    "task_name": "online_adaptation",
+                    "offline_variant": "O0",
+                    "entity_id": "machine-1-6",
+                    "seed": 6,
+                    "benchmark_mode": "main",
+                    "stage_name": "stage_b_fusion_finetuning",
                 },
-                sort_keys=False,
-            ),
+                "evaluation": {"retention_policy": "retain_for_eda"},
+                "optimizer": {"learning_rate": 0.001, "weight_decay": 0.0},
+            },
+            sort_keys=False,
+        ),
         encoding="utf-8",
     )
     protocol_path.write_text(
@@ -125,9 +125,7 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
             (),
             {
                 "__init__": lambda self, checkpoint_dir: None,
-                "_stable_json_digest": staticmethod(
-                    lambda value: "stable-json-digest"
-                ),
+                "_stable_json_digest": staticmethod(lambda value: "stable-json-digest"),
                 "load_checkpoint": lambda self, checkpoint_path, model, strict=False: {
                     "scaler_state_dict": {
                         "feature_mean": torch.zeros(1),
@@ -143,8 +141,15 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
             "FakeEvaluator",
             (),
             {
-                "__init__": lambda self, device, vus_max_buffer_size=None, vus_num_thresholds=200: None,
-                "evaluate": lambda self, model, data_loader, point_score_threshold=None, threshold_source=None: {
+                "__init__": lambda self,
+                device,
+                vus_max_buffer_size=None,
+                vus_num_thresholds=200: None,
+                "evaluate": lambda self,
+                model,
+                data_loader,
+                point_score_threshold=None,
+                threshold_source=None: {
                     "records": [
                         {
                             "entity_id": "machine-1-6",
@@ -199,7 +204,11 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
     )
 
     assert (
-        offline_output_dir / "retention" / "machine-1-6" / "offline" / "retention_summary.json"
+        offline_output_dir
+        / "retention"
+        / "machine-1-6"
+        / "offline"
+        / "retention_summary.json"
     ).exists()
     assert offline_report["retention_policy"] == "retain_for_eda"
     assert offline_report["retention_artifact_paths"]["summary"].endswith(
@@ -257,7 +266,11 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
     )
 
     assert (
-        online_output_dir / "retention" / "machine-1-6" / "A0" / "retention_summary.json"
+        online_output_dir
+        / "retention"
+        / "machine-1-6"
+        / "A0"
+        / "retention_summary.json"
     ).exists()
     assert online_report["retention_policy"] == "retain_for_eda"
     assert online_report["online_execution"]["records"][0]["did_update"] is False

@@ -30,6 +30,12 @@ def test_two_stage_tmux_launcher_dry_run_prints_expected_benchmark_command() -> 
     assert "thesis_offline_benchmark_report.json" in completed.stdout
     assert "attach command: tmux attach -t unit-two-stage-benchmark" in completed.stdout
     assert "run_thesis_offline_benchmark.py" in completed.stdout
-    assert "--experiment-config configs/experiment/offline_benchmark/thesis/smd__thesis__offline__O0__machine_3_4__w20__seed8__smoke.yaml" in completed.stdout
-    assert "--protocol-config configs/protocol/smd_window20_cleanval_q99_ewma09.yaml" in completed.stdout
+    assert (
+        "--experiment-config configs/experiment/offline_benchmark/thesis/smd__thesis__offline__O0__machine_3_4__w20__seed8__smoke.yaml"
+        in completed.stdout
+    )
+    assert (
+        "--protocol-config configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
+        in completed.stdout
+    )
     assert "CUDA_VISIBLE_DEVICES=2" in completed.stdout

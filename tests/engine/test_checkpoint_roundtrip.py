@@ -32,8 +32,9 @@ def test_checkpoint_metadata_includes_provenance_hashes(tmp_path: Path) -> None:
     )
     loaded = checkpoint_manager.load_checkpoint(checkpoint_path, model, optimizer)
 
-    assert loaded["checkpoint_metadata"]["resolved_config_sha256"] == (
-        loaded["checkpoint_metadata"]["config_sha256"]
+    assert (
+        loaded["checkpoint_metadata"]["resolved_config_sha256"]
+        == (loaded["checkpoint_metadata"]["config_sha256"])
     )
     assert loaded["checkpoint_metadata"]["extra_state_sha256"] is not None
     assert loaded["extra_state"] == extra_state

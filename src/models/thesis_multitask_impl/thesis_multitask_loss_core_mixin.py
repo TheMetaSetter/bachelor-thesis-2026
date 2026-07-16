@@ -8,7 +8,9 @@ from typing import Any, Callable
 import torch
 import torch.nn.functional as F
 
-from src.models.thesis_multitask_impl.thesis_multitask_components import TWO_STAGE_A_PHASE_NAME
+from src.models.thesis_multitask_impl.thesis_multitask_components import (
+    TWO_STAGE_A_PHASE_NAME,
+)
 
 
 class ThesisMultitaskLossCoreMixin:

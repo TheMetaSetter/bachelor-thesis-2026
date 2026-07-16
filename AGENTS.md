@@ -47,6 +47,7 @@ Pull requests should include a concise summary, testing notes, and links to rele
 Follow the logging and planning conventions in `codebase_preferences.md`, including experiment tracking with Weights and Biases and the planned use of data version control for augmented datasets.
 All contributors and agents must strictly follow every requirement in `codebase_preferences.md`.
 Before any large benchmark run, first execute the full experiment flow on 1 concrete combination from the development specification. If time allows, you may expand that first pass to 3 combinations. For this project, default to 1 combination only unless the user explicitly asks otherwise. Only after those first-end-to-end checks pass should you run all combinations.
+When writing CLI commands, do not rely on `--help` as the only source for defaults. Prefer the code parser, config schema, and explicit default assignments in source. Always state which arguments are intentional defaults versus explicit overrides.
 
 ## SSH Safety Note
 - When using SSH on a shared GPU server, keep the session read-only unless the user explicitly asks for writes.

@@ -333,7 +333,9 @@ def _benjamini_hochberg_adjustment(
     running_min = 1.0
     for reverse_rank, report_index in enumerate(reversed(sorted_indices), start=1):
         raw_p_value = reports[report_index].p_value
-        bh_value = min(raw_p_value * len(reports) / (len(reports) - reverse_rank + 1), 1.0)
+        bh_value = min(
+            raw_p_value * len(reports) / (len(reports) - reverse_rank + 1), 1.0
+        )
         running_min = min(running_min, bh_value)
         adjusted_p_values[report_index] = running_min
     return adjusted_p_values

@@ -26,9 +26,7 @@ def test_evaluator_trace_payload_keeps_histories_and_mc_samples() -> None:
                     "point_score_samples": torch.tensor([[0.1, 0.2], [0.3, 0.4]]),
                     "window_score_samples": torch.tensor([[0.5, 0.6], [0.7, 0.8]]),
                     "reconstruction_samples": torch.tensor([[[1.0, 2.0]]]),
-                    "classification_probability_samples": torch.tensor(
-                        [[[0.2, 0.8]]]
-                    ),
+                    "classification_probability_samples": torch.tensor([[[0.2, 0.8]]]),
                 },
             },
         }

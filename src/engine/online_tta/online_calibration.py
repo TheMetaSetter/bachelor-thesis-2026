@@ -9,7 +9,10 @@ import torch
 
 from src.data.stream import OnlineWindowBatcher, SMDOnlineStream
 from src.data.window import slice_sequence_into_windows
-from src.protocols.point_scores import ewma_scores, window_scores_to_causal_endpoint_scores
+from src.protocols.point_scores import (
+    ewma_scores,
+    window_scores_to_causal_endpoint_scores,
+)
 
 
 def build_online_stream(
@@ -56,7 +59,11 @@ def _collect_batch_scores(
     latent_scores = outputs["aux"].get("latent_window_score")
     if not isinstance(latent_scores, torch.Tensor):
         raise KeyError("online model must expose aux.latent_window_score")
-    return endpoint_scores, input_scores, latent_scores.reshape(-1).detach().cpu().tolist()
+    return (
+        endpoint_scores,
+        input_scores,
+        latent_scores.reshape(-1).detach().cpu().tolist(),
+    )
 
 
 def run_stride1_sequence_scores(
@@ -70,8 +77,11 @@ def run_stride1_sequence_scores(
     device: str,
 ) -> dict[str, list[float]]:
     batcher = build_online_stream(
-        sequences=[sequence], window_size=window_size, batch_size=batch_size,
-        view_noise_std=view_noise_std, view_dropout_probability=view_dropout_probability,
+        sequences=[sequence],
+        window_size=window_size,
+        batch_size=batch_size,
+        view_noise_std=view_noise_std,
+        view_dropout_probability=view_dropout_probability,
     )
     endpoint_scores: list[float] = []
     input_window_scores: list[float] = []
@@ -107,11 +117,20 @@ def _collect_offline_scores(
         sequence, window_size=window_size, stride=window_size, tail_policy="end_align"
     )
     for window in windows:
-        batch = {"x": window["x"].unsqueeze(0).to(device), "point_labels": None,
-                 "mask": None, "timestamps": None, "meta": [window["meta"]]}
+        batch = {
+            "x": window["x"].unsqueeze(0).to(device),
+            "point_labels": None,
+            "mask": None,
+            "timestamps": None,
+            "meta": [window["meta"]],
+        }
         model.eval()
         with torch.no_grad():
-            outputs = model.forward_source(batch) if hasattr(model, "forward_source") else model.forward(batch)
+            outputs = (
+                model.forward_source(batch)
+                if hasattr(model, "forward_source")
+                else model.forward(batch)
+            )
         collected.extend(outputs["point_scores"].reshape(-1).detach().cpu().tolist())
     return collected
 
@@ -143,9 +162,7 @@ def collect_stride1_online_scores(
     previous_weight: float,
 ) -> dict[str, list[float]]:
     """Collect stride-1 causal validation scores for online thresholding."""
-    collected = {
-        key: [] for key in ("point", "ewma", "input_window", "latent_window")
-    }
+    collected = {key: [] for key in ("point", "ewma", "input_window", "latent_window")}
     for sequence in clean_validation_sequences:
         scores = run_stride1_sequence_scores(
             model=model,
@@ -162,7 +179,9 @@ def collect_stride1_online_scores(
             previous_weight=previous_weight,
         )
         collected["point"].extend(scores["point"])
-        collected["ewma"].extend(float(score) for score in smoothed if not np.isnan(score))
+        collected["ewma"].extend(
+            float(score) for score in smoothed if not np.isnan(score)
+        )
         collected["input_window"].extend(scores["input_window"])
         collected["latent_window"].extend(scores["latent_window"])
     return collected

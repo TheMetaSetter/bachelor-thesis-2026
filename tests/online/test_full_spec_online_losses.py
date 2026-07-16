@@ -21,7 +21,9 @@ def test_token_info_nce_uses_anomalous_codeword_negatives() -> None:
     far_negative = torch.tensor([[-1.0, 0.0]])
     close_negative = torch.tensor([[1.0, 0.0]])
     far_loss = compute_token_multi_positive_info_nce(projected, source, far_negative)
-    close_loss = compute_token_multi_positive_info_nce(projected, source, close_negative)
+    close_loss = compute_token_multi_positive_info_nce(
+        projected, source, close_negative
+    )
     assert close_loss > far_loss
     far_loss.backward()
     assert projected.grad is not None

@@ -144,7 +144,9 @@ class ThesisMultitaskRoutingMixin:
         else:
             variance = sample_tensor.var(
                 dim=1,
-                correction=self.variance_correction if correction is None else correction,
+                correction=self.variance_correction
+                if correction is None
+                else correction,
             )
         return variance
 

@@ -32,7 +32,10 @@ def resolve_legacy_reference_checkpoint_path(checkpoint_path: str | Path) -> Pat
     requested_path = Path(checkpoint_path)
     if requested_path.is_file():
         return requested_path
-    if requested_path.name == STAGE_B_CHECKPOINT_NAME and requested_path.parent.name == "checkpoints":
+    if (
+        requested_path.name == STAGE_B_CHECKPOINT_NAME
+        and requested_path.parent.name == "checkpoints"
+    ):
         candidate_path = (
             requested_path.parent.parent
             / "two_stage"

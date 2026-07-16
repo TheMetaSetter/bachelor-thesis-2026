@@ -93,18 +93,10 @@ def test_thesis_online_a0_wrapper_writes_protocol_report(tmp_path, monkeypatch) 
     assert report["online_execution"]["records"][0]["did_update"] is False
     assert report["retention_policy"] == "retain_for_eda"
     assert (
-        output_dir
-        / "retention"
-        / "machine-1-6"
-        / "A0"
-        / "retention_summary.json"
+        output_dir / "retention" / "machine-1-6" / "A0" / "retention_summary.json"
     ).exists()
     assert (
-        output_dir
-        / "retention"
-        / "machine-1-6"
-        / "A0"
-        / "online_runtime_state.json"
+        output_dir / "retention" / "machine-1-6" / "A0" / "online_runtime_state.json"
     ).exists()
     assert (
         output_dir

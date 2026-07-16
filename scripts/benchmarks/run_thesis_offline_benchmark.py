@@ -48,7 +48,9 @@ from src.protocols.threshold_artifact import (
 
 
 def build_model_from_experiment_config(experiment_config: dict[str, Any]) -> Any:
-    from scripts.cli.train import build_model_from_experiment_config as _build_model_from_experiment_config
+    from scripts.cli.train import (
+        build_model_from_experiment_config as _build_model_from_experiment_config,
+    )
 
     return _build_model_from_experiment_config(experiment_config)
 
@@ -201,7 +203,8 @@ def _summarize_loaded_checkpoint_contract(
                 "model": model_flags[field_name],
             }
             for field_name in relevant_fields
-            if field_name in extra_state and extra_state.get(field_name) != model_flags[field_name]
+            if field_name in extra_state
+            and extra_state.get(field_name) != model_flags[field_name]
         },
     }
 
@@ -237,9 +240,7 @@ def _summarize_trace_payloads(trace_payloads: list[dict[str, Any]]) -> dict[str,
             count > 0 for count in mc_histories_non_null_count.values()
         ),
         "first_sample_retention_policy": (
-            trace_payloads[0].get("sample_retention_policy")
-            if trace_payloads
-            else None
+            trace_payloads[0].get("sample_retention_policy") if trace_payloads else None
         ),
     }
 
@@ -310,7 +311,9 @@ def collect_offline_artifact_inputs(
         "offline_metrics": dict(split_outputs["test"]["metrics"]),
         "variance_trace_audit": {
             "checkpoint": checkpoint_audit,
-            "metrics": _summarize_metric_variance_keys(split_outputs["test"]["metrics"]),
+            "metrics": _summarize_metric_variance_keys(
+                split_outputs["test"]["metrics"]
+            ),
             "traces": {
                 "clean_validation": _summarize_trace_payloads(
                     split_outputs["clean_validation"].get("traces", [])
@@ -318,7 +321,9 @@ def collect_offline_artifact_inputs(
                 "synthetic_validation": _summarize_trace_payloads(
                     split_outputs["synthetic_validation"].get("traces", [])
                 ),
-                "test": _summarize_trace_payloads(split_outputs["test"].get("traces", [])),
+                "test": _summarize_trace_payloads(
+                    split_outputs["test"].get("traces", [])
+                ),
             },
             "retention": {
                 "retention_policy": str(
@@ -544,7 +549,6 @@ from scripts.benchmarks._internal.run_thesis_offline_benchmark_helpers import (
 )
 
 
-
 def run_thesis_offline_benchmark(
     *,
     experiment_config_path: str,
@@ -567,7 +571,9 @@ def run_thesis_offline_benchmark(
                 "--checkpoint-path is required when --evaluation-only is set"
             )
         manifest = {
-            "manifest_root": str(Path(experiment_config["output_dir"]) / "evaluation_only"),
+            "manifest_root": str(
+                Path(experiment_config["output_dir"]) / "evaluation_only"
+            ),
             "evaluation": {"checkpoint_path": checkpoint_path},
             "evaluation_only": True,
         }

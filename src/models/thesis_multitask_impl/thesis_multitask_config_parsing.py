@@ -222,7 +222,9 @@ def split_thesis_multitask_flat_kwargs(
         # silently defaulting to a binary assumption.
         synthetic_values["classification_label_mode"] = "redlamp_multiclass"
     if "anomaly_families" in synthetic_values:
-        synthetic_values["anomaly_families"] = tuple(synthetic_values["anomaly_families"])
+        synthetic_values["anomaly_families"] = tuple(
+            synthetic_values["anomaly_families"]
+        )
 
     if remaining_kwargs:
         raise ValueError(

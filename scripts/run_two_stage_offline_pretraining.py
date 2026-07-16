@@ -1,6 +1,8 @@
 import sys as _sys
 
-from scripts.experiments import run_two_stage_offline_pretraining as _implementation_module
+from scripts.experiments import (
+    run_two_stage_offline_pretraining as _implementation_module,
+)
 
 _sys.modules[__name__] = _implementation_module
 

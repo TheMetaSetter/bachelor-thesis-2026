@@ -7,11 +7,18 @@ from typing import Any
 
 import torch
 
-from src.core.console import console_print, summarize_batch, summarize_label_distribution, summarize_tensor
+from src.core.console import (
+    console_print,
+    summarize_batch,
+    summarize_label_distribution,
+    summarize_tensor,
+)
 from src.core.contracts import validate_batch, validate_model_outputs
 
 
-def _prepare_clean_batch(self: Any, batch: dict[str, Any], stage_name: str) -> dict[str, Any]:
+def _prepare_clean_batch(
+    self: Any, batch: dict[str, Any], stage_name: str
+) -> dict[str, Any]:
     if (
         "classification_labels" in batch
         and "synthetic_anomaly_mask" in batch
@@ -57,7 +64,9 @@ def _prepare_clean_batch(self: Any, batch: dict[str, Any], stage_name: str) -> d
         for _ in range(batch_size)
     ]
     if prepared_batch["point_labels"] is None:
-        prepared_batch["point_labels"] = prepared_batch["synthetic_anomaly_mask"].clone()
+        prepared_batch["point_labels"] = prepared_batch[
+            "synthetic_anomaly_mask"
+        ].clone()
     console_print(
         stage_name.upper(),
         "Prepared clean multitask batch",
@@ -69,7 +78,9 @@ def _prepare_clean_batch(self: Any, batch: dict[str, Any], stage_name: str) -> d
     return prepared_batch
 
 
-def forward(self: Any, batch: dict[str, Any], stage_name: str = "train") -> dict[str, Any]:
+def forward(
+    self: Any, batch: dict[str, Any], stage_name: str = "train"
+) -> dict[str, Any]:
     validate_batch(batch)
     console_print("MODEL", "Multitask forward input batch", **summarize_batch(batch))
     forward_start_time = time.perf_counter()
@@ -83,7 +94,9 @@ def forward(self: Any, batch: dict[str, Any], stage_name: str = "train") -> dict
         normal_token_mask = anomaly_mask == 0
         anomaly_token_mask = anomaly_mask == 1
     if self._phase_uses_prototype_path():
-        if self.continuous_prototype_bank is not None and self._should_update_memory(stage_name):
+        if self.continuous_prototype_bank is not None and self._should_update_memory(
+            stage_name
+        ):
             active_continuous_memory_bank = self._update_continuous_memory_bank(
                 hidden,
                 token_mask=normal_token_mask,
@@ -94,18 +107,24 @@ def forward(self: Any, batch: dict[str, Any], stage_name: str = "train") -> dict
             )
         else:
             active_continuous_memory_bank = None
-        if self.discrete_codebook is not None and self._should_update_memory(stage_name):
+        if self.discrete_codebook is not None and self._should_update_memory(
+            stage_name
+        ):
             self._update_discrete_codebook_memory(
                 hidden,
                 token_mask=anomaly_token_mask,
             )
             active_assignment_logits = None
             active_assignment_probabilities = None
-            active_discrete_codebook = self._normalize_memory_vectors(self.discrete_codebook)
+            active_discrete_codebook = self._normalize_memory_vectors(
+                self.discrete_codebook
+            )
         elif self.discrete_codebook is not None:
             active_assignment_logits = None
             active_assignment_probabilities = None
-            active_discrete_codebook = self._normalize_memory_vectors(self.discrete_codebook)
+            active_discrete_codebook = self._normalize_memory_vectors(
+                self.discrete_codebook
+            )
         else:
             active_assignment_logits = None
             active_assignment_probabilities = None
@@ -170,7 +189,9 @@ def forward(self: Any, batch: dict[str, Any], stage_name: str = "train") -> dict
     else:
         active_continuous_memory_bank = None
         active_discrete_codebook = None
-        continuous_outputs, discrete_outputs, fusion_outputs = self._build_phase_passthrough_outputs(hidden)
+        continuous_outputs, discrete_outputs, fusion_outputs = (
+            self._build_phase_passthrough_outputs(hidden)
+        )
         stochastic_query = None
 
     hidden_reconstruction = fusion_outputs["hidden_reconstruction"]
@@ -195,7 +216,9 @@ def forward(self: Any, batch: dict[str, Any], stage_name: str = "train") -> dict
         logits = monte_carlo_forward_outputs["outputs"]["logits"]
         point_scores = monte_carlo_forward_outputs["outputs"]["point_scores"]
         window_scores = monte_carlo_forward_outputs["outputs"]["window_scores"]
-        class_probabilities = monte_carlo_forward_outputs["aux"].get("class_probabilities")
+        class_probabilities = monte_carlo_forward_outputs["aux"].get(
+            "class_probabilities"
+        )
         stochastic_query = monte_carlo_forward_outputs["aux"].get("stochastic_query")
         monte_carlo_uncertainty = monte_carlo_forward_outputs["aux"].get("uncertainty")
     elif self.enable_classification_path:

@@ -172,4 +172,3 @@ def _resolve_repo_config_reference(config_reference: str) -> str:
     if reference_path.is_absolute():
         return str(reference_path)
     return str((REPOSITORY_ROOT / reference_path).resolve())
-

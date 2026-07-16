@@ -39,7 +39,9 @@ def select_clean_validation_point_threshold(
     quantile: float,
 ) -> float:
     """Select the official offline point threshold from clean validation only."""
-    return _select_nan_safe_quantile(clean_validation_point_scores, _validate_quantile(quantile))
+    return _select_nan_safe_quantile(
+        clean_validation_point_scores, _validate_quantile(quantile)
+    )
 
 
 def select_online_ewma_threshold(
@@ -47,7 +49,9 @@ def select_online_ewma_threshold(
     quantile: float,
 ) -> float:
     """Select the online TTA threshold after clean-val stride-1 EWMA simulation."""
-    return _select_nan_safe_quantile(clean_validation_ewma_scores, _validate_quantile(quantile))
+    return _select_nan_safe_quantile(
+        clean_validation_ewma_scores, _validate_quantile(quantile)
+    )
 
 
 def resolve_evaluation_threshold(
@@ -58,7 +62,9 @@ def resolve_evaluation_threshold(
     quantile: float = 0.99,
 ) -> tuple[float, str]:
     if point_score_threshold is None:
-        threshold = select_point_score_threshold(point_scores, quantile=_validate_quantile(quantile))
+        threshold = select_point_score_threshold(
+            point_scores, quantile=_validate_quantile(quantile)
+        )
         return threshold, f"positive_support_quantile_{quantile}"
     return float(point_score_threshold), threshold_source or "provided_threshold"
 

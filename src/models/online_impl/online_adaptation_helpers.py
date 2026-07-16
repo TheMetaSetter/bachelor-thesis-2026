@@ -13,6 +13,7 @@ from src.engine.online_tta.signature_verification import (
 from src.models.neural_blocks import build_multilayer_perceptron
 from src.models.thesis_multitask import ThesisMultitaskModel
 
+
 class ThesisMultitaskEncoderAdapter(nn.Module):
     # The adapter keeps the online file readable by reusing the offline encoder
     # without forcing the rest of the online logic back into the multitask file.

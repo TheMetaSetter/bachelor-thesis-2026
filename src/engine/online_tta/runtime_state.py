@@ -175,8 +175,13 @@ def validate_resume_state(
         raise ValueError("checkpoint online variant does not match requested variant")
     if state.runtime_schema_version != int(runtime_schema_version):
         raise ValueError("checkpoint runtime schema does not match requested schema")
-    if threshold_artifact is not None and state.threshold_artifact != threshold_artifact:
-        raise ValueError("checkpoint threshold artifact does not match requested artifact")
+    if (
+        threshold_artifact is not None
+        and state.threshold_artifact != threshold_artifact
+    ):
+        raise ValueError(
+            "checkpoint threshold artifact does not match requested artifact"
+        )
     return state
 
 

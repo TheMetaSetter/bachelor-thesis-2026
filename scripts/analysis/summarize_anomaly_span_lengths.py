@@ -273,7 +273,6 @@ from scripts.analysis.summarize_anomaly_span_lengths_helpers import (
 )
 
 
-
 def _write_csv(
     output_path: Path, fieldnames: list[str], rows: list[dict[str, object]]
 ) -> None:

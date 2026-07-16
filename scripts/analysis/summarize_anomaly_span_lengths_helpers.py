@@ -266,7 +266,6 @@ def _register_zero_anomaly_series(
     }
 
 
-
 def collect_series_registry(
     data_root: Path, selected_datasets: Iterable[str]
 ) -> list[dict[str, object]]:

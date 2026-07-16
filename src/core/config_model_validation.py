@@ -784,7 +784,10 @@ def _validate_model_and_task_semantics(
             raise ValueError("reset_policy must be one of: disabled, threshold")
         reference_checkpoint_path = task_config.get("reference_checkpoint_path")
         if reference_checkpoint_path is not None:
-            if not isinstance(reference_checkpoint_path, str) or not reference_checkpoint_path:
+            if (
+                not isinstance(reference_checkpoint_path, str)
+                or not reference_checkpoint_path
+            ):
                 raise ValueError(
                     "reference_checkpoint_path must be a non-empty string when provided"
                 )

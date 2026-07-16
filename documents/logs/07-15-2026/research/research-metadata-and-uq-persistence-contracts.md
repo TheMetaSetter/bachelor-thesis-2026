@@ -102,3 +102,36 @@ For UQ fields, the pipeline should distinguish:
 - Should Stage-B benchmark output persist the full `trace_payload` directly under the run tree, or only inside a retention bundle?
 - Should checkpoint save/load reject `verification_metadata_source` values that are still placeholder-like even when the tensor payload is present?
 - Should `threshold_artifact.provenance.checkpoint_sha256` be mandatory for online runs, not optional?
+
+## Follow-up: Stage-B UQ persistence map
+
+For the current codebase, the UQ-related fields split into three groups:
+
+1. **Meaningful checkpoint metadata**
+   - `verification_metadata_source`
+   - `verification_metadata_schema_version`
+   - `verification_metadata_split`
+   - `verification_metadata_initialization_seed`
+   - `verification_codeword_class_ids`
+   - `verification_contributing_token_counts`
+   - `stochastic_inference`
+   - `monte_carlo_samples`
+   - `continuous_temperature`
+   - `discrete_temperature`
+   - `variance_correction`
+   - `return_mc_samples`
+   - `sample_retention_policy`
+   These are meaningful when they are non-placeholder and align with the loaded model state.
+
+2. **Runtime UQ payloads**
+   - `outputs["aux"]["stochastic_query"]`
+   - `outputs["aux"]["uncertainty"]`
+   - `outputs["aux"]["deterministic_geometry"]`
+   These are produced during evaluation and are not persisted inside the checkpoint itself.
+
+3. **Post-stage-B artifact files**
+   - `evaluation_traces.json` in `scripts/cli/evaluate.py`
+   - `traces/clean_validation_traces.json`
+   - `traces/synthetic_validation_traces.json`
+   - `traces/test_traces.json`
+   These are the files that should carry the trace payload after Stage B finishes.

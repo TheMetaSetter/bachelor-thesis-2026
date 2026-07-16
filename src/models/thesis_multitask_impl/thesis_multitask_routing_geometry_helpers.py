@@ -106,9 +106,7 @@ def _build_monte_carlo_uncertainty(
 
     discrete_variance_full = self._variance_from_samples(discrete_samples)
     discrete_retrieval_variance_point = discrete_variance_full.mean(dim=-1)
-    discrete_retrieval_variance_window = discrete_retrieval_variance_point.mean(
-        dim=-1
-    )
+    discrete_retrieval_variance_window = discrete_retrieval_variance_point.mean(dim=-1)
 
     point_anomaly_score_variance = self._variance_from_samples(point_score_samples)
     window_anomaly_score_variance = self._variance_from_samples(window_score_samples)
@@ -119,9 +117,7 @@ def _build_monte_carlo_uncertainty(
         classification_probability_variance = self._variance_from_samples(
             classification_probability_samples
         )
-        classification_variance_mean = classification_probability_variance.mean(
-            dim=-1
-        )
+        classification_variance_mean = classification_probability_variance.mean(dim=-1)
 
     return {
         "point_anomaly_score_variance": point_anomaly_score_variance,
@@ -193,9 +189,7 @@ def _build_monte_carlo_forward_outputs(
     if classification_probability_samples is not None:
         class_probabilities = classification_probability_samples.mean(dim=1)
         logits = torch.log(
-            class_probabilities.clamp_min(
-                torch.finfo(class_probabilities.dtype).eps
-            )
+            class_probabilities.clamp_min(torch.finfo(class_probabilities.dtype).eps)
         )
     else:
         class_probabilities = None
@@ -393,7 +387,11 @@ def _compute_fusion_outputs(
     beta = beta_scalar.expand(continuous_hidden.shape[0])
     cka_reconstruction = continuous_hidden.new_zeros(continuous_hidden.shape[0])
     cka_classification = continuous_hidden.new_zeros(continuous_hidden.shape[0])
-    if self.enable_cka_gated_fusion and base_hidden is not None and paired_hidden is not None:
+    if (
+        self.enable_cka_gated_fusion
+        and base_hidden is not None
+        and paired_hidden is not None
+    ):
         cka_reconstruction = self._compute_batch_linear_cka_scores(
             base_hidden,
             continuous_hidden,
@@ -428,15 +426,11 @@ def _compute_fusion_outputs(
             "beta_std": float(beta.std(unbiased=False).detach().cpu()),
             "alpha_logit": float(alpha_scalar.detach().cpu()),
             "beta_logit": float(beta_scalar.detach().cpu()),
-            "cka_reconstruction_mean": float(
-                cka_reconstruction.mean().detach().cpu()
-            ),
+            "cka_reconstruction_mean": float(cka_reconstruction.mean().detach().cpu()),
             "cka_reconstruction_std": float(
                 cka_reconstruction.std(unbiased=False).detach().cpu()
             ),
-            "cka_classification_mean": float(
-                cka_classification.mean().detach().cpu()
-            ),
+            "cka_classification_mean": float(cka_classification.mean().detach().cpu()),
             "cka_classification_std": float(
                 cka_classification.std(unbiased=False).detach().cpu()
             ),

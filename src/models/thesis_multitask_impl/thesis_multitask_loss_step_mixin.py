@@ -7,7 +7,9 @@ from typing import Any
 import torch
 
 from src.core.console import console_print, summarize_label_distribution
-from src.models.thesis_multitask_impl.thesis_multitask_components import TWO_STAGE_A_PHASE_NAME
+from src.models.thesis_multitask_impl.thesis_multitask_components import (
+    TWO_STAGE_A_PHASE_NAME,
+)
 
 
 class ThesisMultitaskLossStepMixin:
@@ -116,21 +118,23 @@ class ThesisMultitaskLossStepMixin:
         }
         uncertainty = outputs["aux"].get("uncertainty")
         if uncertainty is not None:
-            stage_log[f"diag/uncertainty/{stage_name}_point_score_variance_mean"] = float(
-                uncertainty["point_anomaly_score_variance"].mean().detach().cpu()
+            stage_log[f"diag/uncertainty/{stage_name}_point_score_variance_mean"] = (
+                float(uncertainty["point_anomaly_score_variance"].mean().detach().cpu())
             )
-            stage_log[f"diag/uncertainty/{stage_name}_window_score_variance_mean"] = float(
-                uncertainty["window_anomaly_score_variance"].mean().detach().cpu()
+            stage_log[f"diag/uncertainty/{stage_name}_window_score_variance_mean"] = (
+                float(
+                    uncertainty["window_anomaly_score_variance"].mean().detach().cpu()
+                )
             )
-            stage_log[f"diag/uncertainty/{stage_name}_reconstruction_variance_mean"] = float(
-                uncertainty["reconstruction_variance_full"].mean().detach().cpu()
+            stage_log[f"diag/uncertainty/{stage_name}_reconstruction_variance_mean"] = (
+                float(uncertainty["reconstruction_variance_full"].mean().detach().cpu())
             )
-            stage_log[
-                f"diag/uncertainty/{stage_name}_classification_variance_mean"
-            ] = float(
-                uncertainty["classification_variance_mean"].mean().detach().cpu()
-                if uncertainty.get("classification_variance_mean") is not None
-                else 0.0
+            stage_log[f"diag/uncertainty/{stage_name}_classification_variance_mean"] = (
+                float(
+                    uncertainty["classification_variance_mean"].mean().detach().cpu()
+                    if uncertainty.get("classification_variance_mean") is not None
+                    else 0.0
+                )
             )
         if stage_name in {"train", "val_synth"}:
             cka_reconstruction_mean = float(

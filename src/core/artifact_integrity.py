@@ -79,7 +79,10 @@ def verify_artifact_manifest(
     """Return whether identity and all named artifact checksums still match."""
     if expected_identity is not None and manifest.get("identity") != expected_identity:
         return False
-    if expected_provenance is not None and manifest.get("provenance") != expected_provenance:
+    if (
+        expected_provenance is not None
+        and manifest.get("provenance") != expected_provenance
+    ):
         return False
     if manifest.get("schema_version") != 1:
         return False
@@ -115,7 +118,10 @@ def verify_retention_bundle_manifest(
         return False
     if int(manifest.get("bundle_schema_version", 0)) != 1:
         return False
-    if retention_policy is not None and manifest.get("retention_policy") != retention_policy:
+    if (
+        retention_policy is not None
+        and manifest.get("retention_policy") != retention_policy
+    ):
         return False
     if compression is not None and manifest.get("compression") != compression:
         return False

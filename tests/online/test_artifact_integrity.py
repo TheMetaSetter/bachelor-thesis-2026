@@ -10,7 +10,9 @@ from src.core.artifact_integrity import (
 )
 
 
-def test_artifact_manifest_verifies_identity_and_detects_content_change(tmp_path) -> None:
+def test_artifact_manifest_verifies_identity_and_detects_content_change(
+    tmp_path,
+) -> None:
     checkpoint_path = tmp_path / "online_final.pt"
     records_path = tmp_path / "online_records.json"
     checkpoint_path.write_bytes(b"checkpoint-v1")

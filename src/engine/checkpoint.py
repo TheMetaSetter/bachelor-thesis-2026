@@ -114,7 +114,9 @@ class CheckpointManager:
         model_config = dict(config.get("model", {}))
         task_config = dict(config.get("task", {}))
         if checkpoint_metadata["experiment_name"] != config.get("experiment_name"):
-            raise ValueError("checkpoint_metadata experiment_name does not match config")
+            raise ValueError(
+                "checkpoint_metadata experiment_name does not match config"
+            )
         if checkpoint_metadata["model_name"] != model_config.get("model_name"):
             raise ValueError("checkpoint_metadata model_name does not match config")
         if checkpoint_metadata["task_name"] != task_config.get("task_name"):
@@ -249,8 +251,14 @@ class CheckpointManager:
     ) -> Path:
         checkpoint_path = self.checkpoint_dir / checkpoint_name
         checkpoint_payload = self._build_payload(
-            model, optimizer, scheduler, scaler_state, config, epoch,
-            metric_history, extra_state,
+            model,
+            optimizer,
+            scheduler,
+            scaler_state,
+            config,
+            epoch,
+            metric_history,
+            extra_state,
         )
         console_print(
             "CHECKPOINT",

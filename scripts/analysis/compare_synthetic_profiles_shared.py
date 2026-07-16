@@ -422,5 +422,3 @@ def _plot_family_gallery(
         anomaly_axis.set_xlabel("point index inside window")
     figure.savefig(output_path, dpi=150)
     plt.close(figure)
-
-

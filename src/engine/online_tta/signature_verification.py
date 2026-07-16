@@ -50,9 +50,7 @@ class PrototypeVerificationMetadata:
             if self.contributing_token_counts.shape != (codebook_size,):
                 raise ValueError("contributing_token_counts must have shape [K]")
             if not torch.is_floating_point(self.contributing_token_counts):
-                raise TypeError(
-                    "contributing_token_counts must use a floating dtype"
-                )
+                raise TypeError("contributing_token_counts must use a floating dtype")
         if not torch.isfinite(self.codebook).all().item():
             raise ValueError("codebook must contain only finite values")
         if not torch.isfinite(self.anomaly_radii).all().item():

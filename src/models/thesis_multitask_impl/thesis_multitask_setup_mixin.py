@@ -273,10 +273,17 @@ class ThesisMultitaskSetupMixin:
                     architecture.hidden_dim,
                 ),
             )
+
+            # khởi tạo ...
             self.anomalous_codeword_mask = torch.zeros(
                 prototypes.discrete_codebook_size, dtype=torch.bool
             )
+
+            # khởi tạo bán kính của các cụm abstract anomalous pattern
+            # hoặc abstract normal pattern
+            # mà có centroid nằm trong codebook
             self.anomaly_radii = torch.zeros(prototypes.discrete_codebook_size)
+
             self.verification_metadata_source = "uninitialized"
             self.verification_metadata_schema_version = 1
             self.verification_metadata_split = "synthetic_train"

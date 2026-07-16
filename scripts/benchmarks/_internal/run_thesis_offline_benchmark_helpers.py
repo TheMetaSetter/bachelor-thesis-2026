@@ -46,10 +46,14 @@ from src.protocols.threshold_artifact import (
     write_threshold_artifact,
 )
 
+
 def build_model_from_experiment_config(experiment_config: dict[str, Any]) -> Any:
-    from scripts.cli.train import build_model_from_experiment_config as _build_model_from_experiment_config
+    from scripts.cli.train import (
+        build_model_from_experiment_config as _build_model_from_experiment_config,
+    )
 
     return _build_model_from_experiment_config(experiment_config)
+
 
 def materialize_two_stage_run_manifest(
     experiment_config: dict[str, Any],
@@ -59,6 +63,7 @@ def materialize_two_stage_run_manifest(
     )
 
     return _materialize_two_stage_run_manifest(experiment_config)
+
 
 def execute_two_stage_plan(
     manifest: dict[str, Any],
@@ -75,12 +80,14 @@ def execute_two_stage_plan(
         skip_completed=skip_completed,
     )
 
+
 def validate_two_stage_epoch_budget(experiment_config: dict[str, Any]) -> None:
     from scripts.experiments.run_two_stage_offline_pretraining import (
         validate_two_stage_epoch_budget as _validate_two_stage_epoch_budget,
     )
 
     return _validate_two_stage_epoch_budget(experiment_config)
+
 
 def register_evaluation_runtime_components() -> None:
     from src.core.runtime_components import (
@@ -89,6 +96,7 @@ def register_evaluation_runtime_components() -> None:
 
     return _register_evaluation_runtime_components()
 
+
 def validate_protocol_config(protocol_config: dict[str, Any]) -> None:
     from src.protocols.smd_benchmark_protocol import (
         validate_protocol_config as _validate_protocol_config,
@@ -96,13 +104,16 @@ def validate_protocol_config(protocol_config: dict[str, Any]) -> None:
 
     return _validate_protocol_config(protocol_config)
 
+
 def _utc_now_iso() -> str:
     return (
         datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     )
 
+
 def _load_yaml_config(path: str) -> dict[str, Any]:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+
 
 def _write_report(output_dir: Path, report: dict[str, Any]) -> Path:
     report_dir = output_dir / "benchmark"
@@ -111,10 +122,12 @@ def _write_report(output_dir: Path, report: dict[str, Any]) -> Path:
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True), "utf-8")
     return report_path
 
+
 def _write_json(path: Path, payload: dict[str, Any]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", "utf-8")
     return str(path)
+
 
 def _write_score_npz(path: Path, payload: dict[str, Any]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -126,14 +139,17 @@ def _write_score_npz(path: Path, payload: dict[str, Any]) -> str:
     )
     return str(path)
 
+
 def _write_trace_json(path: Path, payload: Any) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", "utf-8")
     return str(path)
 
+
 def _resolve_retention_policy(experiment_config: dict[str, Any]) -> str:
     evaluation_config = dict(experiment_config.get("evaluation", {}))
     return str(evaluation_config.get("retention_policy", "retain_for_eda"))
+
 
 def collect_offline_artifact_inputs(
     *,
@@ -183,6 +199,7 @@ def collect_offline_artifact_inputs(
         "offline_metrics": dict(split_outputs["test"]["metrics"]),
     }
 
+
 def _load_evaluation_checkpoint(
     experiment_config: dict[str, Any],
     manifest: dict[str, Any],
@@ -191,6 +208,7 @@ def _load_evaluation_checkpoint(
     checkpoint_path = manifest["evaluation"]["checkpoint_path"]
     checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
     return checkpoint_manager.load_checkpoint(checkpoint_path, model, strict=False)
+
 
 def _maybe_rebuild_with_checkpoint_scaler(
     data_bundle: dict[str, Any],
@@ -208,6 +226,7 @@ def _maybe_rebuild_with_checkpoint_scaler(
         scaler_state_dict=scaler_state,
     )
 
+
 def _build_evaluator(experiment_config: dict[str, Any]) -> Evaluator:
     evaluation_config = dict(experiment_config.get("evaluation", {}))
     return Evaluator(
@@ -215,6 +234,7 @@ def _build_evaluator(experiment_config: dict[str, Any]) -> Evaluator:
         vus_max_buffer_size=evaluation_config.get("vus_max_buffer_size"),
         vus_num_thresholds=int(evaluation_config.get("vus_num_thresholds", 200)),
     )
+
 
 def _evaluate_offline_benchmark_splits(
     *,
@@ -250,6 +270,7 @@ def _evaluate_offline_benchmark_splits(
         "test": test_outputs,
     }
 
+
 def _evaluate_named_split(
     evaluator: Evaluator,
     model: Any,
@@ -266,6 +287,7 @@ def _evaluate_named_split(
         point_score_threshold=point_score_threshold,
         threshold_source="clean_validation_quantile",
     )
+
 
 def _evaluation_outputs_to_score_payload(
     evaluation_outputs: dict[str, Any],
@@ -284,11 +306,13 @@ def _evaluation_outputs_to_score_payload(
         "covered_point_mask": np.concatenate(mask_arrays),
     }
 
+
 def _first_entity_id(evaluation_outputs: dict[str, Any]) -> str:
     records = evaluation_outputs["records"]
     if not records:
         return "unknown"
     return str(records[0]["entity_id"])
+
 
 def _build_thresholds(
     artifact_inputs: dict[str, Any],
@@ -325,6 +349,7 @@ def _build_thresholds(
         created_by="scripts/run_thesis_offline_benchmark.py",
         config_path=experiment_config_path,
     )
+
 
 def _export_offline_artifacts(
     *,
@@ -375,6 +400,7 @@ def _export_offline_artifacts(
             protocol_config,
         ),
     }
+
 
 def _export_offline_retention_bundle(
     *,
@@ -481,7 +507,9 @@ def _export_offline_retention_bundle(
         manifest,
     )
     bundle_paths["manifest"] = str(manifest_path)
-    bundle_paths["checkpoint_sha256"] = str(checkpoint_sha256) if checkpoint_sha256 else ""
+    bundle_paths["checkpoint_sha256"] = (
+        str(checkpoint_sha256) if checkpoint_sha256 else ""
+    )
     bundle_paths["resolved_config_sha256"] = resolved_config_sha256
     bundle_paths["retention_root"] = str(retention_root)
     return bundle_paths

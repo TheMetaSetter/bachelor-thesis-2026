@@ -109,9 +109,7 @@ def test_stage_a_point_score_loss_matches_manual_balanced_bce_definition() -> No
     assert diagnostics["point_score_normal_count"].item() > 0
     assert diagnostics["point_score_anomaly_count"].item() > 0
 
-    pointwise_reconstruction_error = ((outputs["recon"] - batch["x"]) ** 2).mean(
-        dim=-1
-    )
+    pointwise_reconstruction_error = ((outputs["recon"] - batch["x"]) ** 2).mean(dim=-1)
     anomaly_mask = batch["synthetic_anomaly_mask"].bool()
     normal_mask = ~anomaly_mask
     normal_scores = pointwise_reconstruction_error[normal_mask]

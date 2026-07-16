@@ -9,7 +9,9 @@ import torch.nn as nn
 from src.models.neural_blocks import SimpleWindowCnnEncoder, build_multilayer_perceptron
 
 if TYPE_CHECKING:
-    from src.models.thesis_multitask_impl.thesis_multitask_components import MultitaskArchitectureConfig
+    from src.models.thesis_multitask_impl.thesis_multitask_components import (
+        MultitaskArchitectureConfig,
+    )
 
 
 class MultitaskWindowEncoder(nn.Module):

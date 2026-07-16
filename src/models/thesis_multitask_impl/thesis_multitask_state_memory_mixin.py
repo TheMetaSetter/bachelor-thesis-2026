@@ -303,17 +303,38 @@ class ThesisMultitaskStateMemoryMixin:
                 discrete_hidden_tokens_by_class=discrete_hidden_tokens_by_class
             )
 
+    # có cần thiết phải tính toán lại những thông tin metadata này hay không?
+    # có thể tính toán ngay trong quá trình khởi tạo memory
+    # sau khi stage A train xong có được không?
     def _calibrate_anomaly_verification_metadata(
         self, *, discrete_hidden_tokens_by_class: dict[int, torch.Tensor]
     ) -> None:
+        # Nếu model không có discrete codebook thì không có gì để calibrate.
         if not isinstance(self.discrete_codebook, torch.Tensor):
             return
+
+        # Lấy ra device hiện tại đang lưu codebook
+        # để mọi tensor mới sinh ra nằm cùng nơi với codebook.
         codebook_device = self.discrete_codebook.device
+
+        # Chia đều số codeword cho từng class.
+        # Mỗi class nhận một đoạn liên tiếp trong codebook.
         counts = [
             self.discrete_codebook_size // self.num_classes
+            # Nếu codebook không chia hết, các class đầu sẽ nhận thêm phần dư.
             + (1 if index < self.discrete_codebook_size % self.num_classes else 0)
             for index in range(self.num_classes)
         ]
+
+        # mask: đánh dấu codeword nào được xem là anomalous.
+        # codeword_class_ids: mỗi codeword thuộc class nào.
+        # contributing_token_counts: có bao nhiêu token anomaly
+        # đã "đóng góp" vào codeword đó,
+        # hay nói cách khác: có bao nhiêu token là "cư dân"
+        # trong cụm abstract anomalous pattern đó.
+
+        # mỗi codeword là centroid của một cụm token đại diện cho
+        # một abstract anomalous hoặc normal pattern.
         mask = torch.zeros(
             self.discrete_codebook_size, dtype=torch.bool, device=codebook_device
         )
@@ -325,46 +346,73 @@ class ThesisMultitaskStateMemoryMixin:
             dtype=torch.float32,
             device=codebook_device,
         )
+
+        # Duyệt từng class và gán vùng codeword tương ứng.
+        # Class 0 được xem như normal, các class > 0 được xem như anomaly.
         offset = 0
         for class_index, count in enumerate(counts):
             if class_index > 0:
                 mask[offset : offset + count] = True
             codeword_class_ids[offset : offset + count] = class_index
             offset += count
+
+        # Mặc định radius của mỗi codeword là 0.
+        # Chỉ những codeword có anomaly token gắn vào mới được cập nhật radius thật.
         radii = torch.zeros(self.discrete_codebook_size, device=codebook_device)
+
+        # Lấy toàn bộ hidden tokens thuộc các class anomaly (class > 0).
         anomaly_groups = [
             values.reshape(-1, self.hidden_dim)
             for class_index, values in discrete_hidden_tokens_by_class.items()
             if class_index > 0 and values.numel() > 0
         ]
+
         if anomaly_groups:
+            # Gom tất cả anomaly tokens lại để đo khoảng cách với toàn bộ codebook.
             anomaly_tokens = torch.cat(anomaly_groups, dim=0).to(codebook_device)
+
+            # Dùng cosine distance:
+            # distance = 1 - cosine_similarity(token, codeword)
             distances = (
                 1.0
                 - F.normalize(anomaly_tokens, dim=-1)
                 @ F.normalize(self.discrete_codebook, dim=-1).T
             )
+
+            # Với mỗi anomaly token, tìm codeword gần nhất.
             nearest_ids = distances.argmin(dim=-1)
             nearest_distances = distances.gather(1, nearest_ids[:, None]).squeeze(1)
+
+            # Đếm số token anomaly được gán cho từng codeword.
             contributing_token_counts += torch.bincount(
                 nearest_ids,
                 minlength=self.discrete_codebook_size,
             ).to(device=codebook_device, dtype=torch.float32)
+
+            # Radius của mỗi codeword là quantile 0.99 của các token đã gán cho nó.
+            # Ý nghĩa: lấy ngưỡng bao được phần lớn token anomaly gần codeword đó.
             for codeword_id in torch.unique(nearest_ids).tolist():
                 assigned = nearest_distances[nearest_ids == codeword_id]
                 radii[codeword_id] = torch.quantile(assigned, 0.99)
-        self.anomalous_codeword_mask = mask
-        self.anomaly_radii = radii
-        self.verification_codeword_class_ids = codeword_class_ids
-        self.verification_contributing_token_counts = contributing_token_counts
-        self.verification_metadata_source = "train_anomaly_tokens_q99"
-        self.verification_metadata_schema_version = 1
-        self.verification_metadata_split = "synthetic_train"
-        self.verification_metadata_initialization_seed = int(
-            self.synthetic_train_seed
-            if getattr(self, "synthetic_train_seed", None) is not None
-            else getattr(self, "synthetic_validation_seed", 0)
-        )
+
+    # Lưu toàn bộ metadata đã calibrate vào state của model.
+    self.anomalous_codeword_mask = mask
+    self.anomaly_radii = radii
+    self.verification_codeword_class_ids = codeword_class_ids
+    self.verification_contributing_token_counts = contributing_token_counts
+
+    # Đánh dấu provenance của metadata này.
+    # Nghĩa là: metadata được sinh từ luồng train anomaly tokens với q99.
+    self.verification_metadata_source = "train_anomaly_tokens_q99"
+    self.verification_metadata_schema_version = 1
+    self.verification_metadata_split = "synthetic_train"
+
+    # Lưu seed đã dùng để sinh metadata, ưu tiên synthetic_train_seed nếu có.
+    self.verification_metadata_initialization_seed = int(
+        self.synthetic_train_seed
+        if getattr(self, "synthetic_train_seed", None) is not None
+        else getattr(self, "synthetic_validation_seed", 0)
+    )
 
     def _update_continuous_memory_bank(
         self,
