@@ -144,12 +144,14 @@ def _run_online_variant_update(
         else:
             return None
         contrastive_loss = reconstruction_loss.new_zeros(())
+        
         if triage_decision in {"hard_old_normality", "pnn_verified"}:
             source_model = model.reference_encoder.model
             metadata = PrototypeVerificationMetadata.from_model(source_model)
             anomalous_codewords = metadata.codebook[
                 metadata.anomalous_codeword_mask
             ].to(reconstruction_loss.device)
+
             contrastive_loss = compute_token_multi_positive_info_nce(
                 training_outputs["aux"]["projected_hidden"],
                 training_outputs["aux"]["reference_hidden"],
@@ -160,6 +162,7 @@ def _run_online_variant_update(
                 recurrent_signature_ids=batch.get("recurrent_signature_ids"),
                 known_anomaly_mask=batch.get("known_anomaly_mask"),
             )
+
             loss_total = reconstruction_loss + 0.1 * contrastive_loss
         else:
             loss_total = reconstruction_loss

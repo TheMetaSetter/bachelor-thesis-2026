@@ -245,11 +245,13 @@ def test_execute_three_stage_plan_runs_training_stages_then_evaluation_in_order(
     )
     monkeypatch.setattr(
         "scripts.run_three_stage_offline_pretraining._prepare_stage2_recovery_initialization_checkpoint",
-        lambda manifest: tmp_path
-        / "outputs"
-        / "three_stage"
-        / "initializations"
-        / "stage2_recovery_init.pt",
+        lambda manifest: (
+            tmp_path
+            / "outputs"
+            / "three_stage"
+            / "initializations"
+            / "stage2_recovery_init.pt"
+        ),
     )
 
     execution_report = execute_three_stage_plan(manifest, dry_run=False)
@@ -353,11 +355,13 @@ def test_execute_three_stage_plan_can_skip_completed_stages_from_prior_report(
     )
     monkeypatch.setattr(
         "scripts.run_three_stage_offline_pretraining._prepare_stage2_recovery_initialization_checkpoint",
-        lambda manifest: tmp_path
-        / "outputs"
-        / "three_stage"
-        / "initializations"
-        / "stage2_recovery_init.pt",
+        lambda manifest: (
+            tmp_path
+            / "outputs"
+            / "three_stage"
+            / "initializations"
+            / "stage2_recovery_init.pt"
+        ),
     )
 
     execution_report = execute_three_stage_plan(

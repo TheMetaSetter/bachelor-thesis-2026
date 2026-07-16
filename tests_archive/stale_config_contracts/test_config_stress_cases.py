@@ -44,10 +44,10 @@ def test_all_repo_config_files_have_no_duplicate_root_keys() -> None:
         ),
         (
             "configs/experiment/smoke/smd__redlamp_baseline__redlamp-mlp-baseline-machine-2-1-window20-adamw-cosine-val-vus-pr-smoke__w20__seed11__smoke.yaml",
-            lambda cfg: cfg["task"].update(
-                {"classification_label_mode": "redlamp_multiclass"}
-            )
-            or cfg["model"].update({"num_classes": 2}),
+            lambda cfg: (
+                cfg["task"].update({"classification_label_mode": "redlamp_multiclass"})
+                or cfg["model"].update({"num_classes": 2})
+            ),
             "requires num_classes == 12",
         ),
         (

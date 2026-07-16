@@ -372,13 +372,15 @@ def test_online_benchmark_passes_reference_checkpoint_hash_to_threshold_calibrat
     )
     monkeypatch.setattr(
         "src.engine.online_tta.online_engine_run.calibrate_entity_threshold_artifacts",
-        lambda **kwargs: captured.update(kwargs)
-        or {
-            "machine-1-6": {
-                "entity_id": "machine-1-6",
-                "thresholds": {"online_ewma_point": {"value": 0.5}},
+        lambda **kwargs: (
+            captured.update(kwargs)
+            or {
+                "machine-1-6": {
+                    "entity_id": "machine-1-6",
+                    "thresholds": {"online_ewma_point": {"value": 0.5}},
+                }
             }
-        },
+        ),
     )
     monkeypatch.setattr(
         "src.engine.online_tta.online_engine_run.write_threshold_artifact",
