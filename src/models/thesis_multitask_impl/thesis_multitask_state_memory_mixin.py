@@ -403,34 +403,34 @@ class ThesisMultitaskStateMemoryMixin:
                 assigned = nearest_distances[nearest_ids == codeword_id]
                 radii[codeword_id] = torch.quantile(assigned, 0.99)
 
-    # Lưu toàn bộ metadata đã calibrate vào state của model.
-    self.anomalous_codeword_mask = mask
-    self.anomaly_radii = radii
-    self.verification_codeword_class_ids = codeword_class_ids
-    self.verification_contributing_token_counts = contributing_token_counts
+        # Lưu toàn bộ metadata đã calibrate vào state của model.
+        self.anomalous_codeword_mask = mask
+        self.anomaly_radii = radii
+        self.verification_codeword_class_ids = codeword_class_ids
+        self.verification_contributing_token_counts = contributing_token_counts
 
-    # Đánh dấu provenance của metadata này.
-    # Nghĩa là: metadata được sinh từ luồng train anomaly tokens với q99.
-    self.verification_metadata_source = "train_anomaly_tokens_q99"
-    self.verification_metadata_schema_version = 1
-    self.verification_metadata_split = "synthetic_train"
+        # Đánh dấu provenance của metadata này.
+        # Nghĩa là: metadata được sinh từ luồng train anomaly tokens với q99.
+        self.verification_metadata_source = "train_anomaly_tokens_q99"
+        self.verification_metadata_schema_version = 1
+        self.verification_metadata_split = "synthetic_train"
 
-    # Lưu seed đã dùng để sinh metadata, ưu tiên synthetic_train_seed nếu có.
-    self.verification_metadata_initialization_seed = int(
-        self.synthetic_train_seed
-        if getattr(self, "synthetic_train_seed", None) is not None
-        else getattr(self, "synthetic_validation_seed", 0)
-    )
-    debug_print(
-        "MODEL",
-        "Calibrated verification metadata",
-        mask_true_count=int(mask.sum().item()),
-        radii_positive_count=int((radii > 0).sum().item()),
-        radii_max=float(radii.max().item()) if radii.numel() > 0 else 0.0,
-        codeword_class_ids_unique=sorted({int(item) for item in codeword_class_ids.tolist()}),
-        contributing_token_count_sum=float(contributing_token_counts.sum().item()),
-        verification_metadata_source=self.verification_metadata_source,
-    )
+        # Lưu seed đã dùng để sinh metadata, ưu tiên synthetic_train_seed nếu có.
+        self.verification_metadata_initialization_seed = int(
+            self.synthetic_train_seed
+            if getattr(self, "synthetic_train_seed", None) is not None
+            else getattr(self, "synthetic_validation_seed", 0)
+        )
+        debug_print(
+            "MODEL",
+            "Calibrated verification metadata",
+            mask_true_count=int(mask.sum().item()),
+            radii_positive_count=int((radii > 0).sum().item()),
+            radii_max=float(radii.max().item()) if radii.numel() > 0 else 0.0,
+            codeword_class_ids_unique=sorted({int(item) for item in codeword_class_ids.tolist()}),
+            contributing_token_count_sum=float(contributing_token_counts.sum().item()),
+            verification_metadata_source=self.verification_metadata_source,
+        )
 
     def _update_continuous_memory_bank(
         self,
