@@ -261,9 +261,9 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
         stage_a_extra_state_keys=sorted(
             list(stage_a_checkpoint.get("extra_state", {}).keys())
         ),
-        stage_a_verification_metadata_source=stage_a_checkpoint.get("extra_state", {}).get(
-            "verification_metadata_source"
-        ),
+        stage_a_verification_metadata_source=stage_a_checkpoint.get(
+            "extra_state", {}
+        ).get("verification_metadata_source"),
     )
     _load_stage_a_state_into_stage_b_model(
         model=model,
@@ -293,7 +293,9 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
         "TWO_STAGE",
         "Stage B initialization checkpoint ready",
         memory_initialized=bool(getattr(model, "memory_initialized", False)),
-        verification_metadata_source=getattr(model, "verification_metadata_source", None),
+        verification_metadata_source=getattr(
+            model, "verification_metadata_source", None
+        ),
         anomalous_codeword_mask_true_count=(
             int(model.anomalous_codeword_mask.sum().item())
             if isinstance(model.anomalous_codeword_mask, torch.Tensor)
@@ -433,7 +435,9 @@ def execute_two_stage_plan(
                 "stage_b_initialization_checkpoint_path": str(
                     manifest_root / "initializations" / "stage_b_init.pt"
                 ),
-                "evaluation_checkpoint_path": str(manifest["evaluation"]["checkpoint_path"]),
+                "evaluation_checkpoint_path": str(
+                    manifest["evaluation"]["checkpoint_path"]
+                ),
             }
             execution_report_path.write_text(
                 json.dumps(execution_report, indent=2), encoding="utf-8"

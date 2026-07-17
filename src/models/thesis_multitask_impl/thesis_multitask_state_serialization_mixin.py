@@ -178,7 +178,9 @@ class ThesisMultitaskStateSerializationMixin:
             extra_state_keys=sorted(extra_state.keys()),
             has_mask="anomalous_codeword_mask" in extra_state,
             has_radii="anomaly_radii" in extra_state,
-            verification_metadata_source=extra_state.get("verification_metadata_source"),
+            verification_metadata_source=extra_state.get(
+                "verification_metadata_source"
+            ),
         )
         if (
             "verification_metadata_schema_version" in extra_state

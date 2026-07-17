@@ -139,7 +139,9 @@ class ThesisMultitaskStateMemoryMixin:
             pairwise_distances = torch.cdist(normalized_tokens, centers, p=2)
             assignments = torch.argmin(pairwise_distances, dim=1)
             cluster_sizes = torch.bincount(assignments, minlength=k)
-            empty_cluster_ids = torch.nonzero(cluster_sizes == 0, as_tuple=False).flatten()
+            empty_cluster_ids = torch.nonzero(
+                cluster_sizes == 0, as_tuple=False
+            ).flatten()
             if empty_cluster_ids.numel() > 0:
                 debug_print(
                     "MODEL",
@@ -227,9 +229,7 @@ class ThesisMultitaskStateMemoryMixin:
                     "Selected memory initialization batch",
                     batch_index=batch_index + 1,
                     batch_size=synthetic_batch_size,
-                    class_distribution=summarize_label_distribution(
-                        synthetic_labels
-                    ),
+                    class_distribution=summarize_label_distribution(synthetic_labels),
                     synthetic_windows=int(
                         torch.count_nonzero(synthetic_labels != 0).detach().cpu()
                     ),
@@ -523,9 +523,7 @@ class ThesisMultitaskStateMemoryMixin:
                 codebook_size=int(self.discrete_codebook_size),
                 radii_positive_count=int((radii > 0).sum().item()),
                 class_token_counts={
-                    str(class_index): int(
-                        values.reshape(-1, self.hidden_dim).shape[0]
-                    )
+                    str(class_index): int(values.reshape(-1, self.hidden_dim).shape[0])
                     for class_index, values in discrete_hidden_tokens_by_class.items()
                     if class_index > 0 and values.numel() > 0
                 },
@@ -536,7 +534,9 @@ class ThesisMultitaskStateMemoryMixin:
             mask_true_count=int(mask.sum().item()),
             radii_positive_count=int((radii > 0).sum().item()),
             radii_max=float(radii.max().item()) if radii.numel() > 0 else 0.0,
-            codeword_class_ids_unique=sorted({int(item) for item in codeword_class_ids.tolist()}),
+            codeword_class_ids_unique=sorted(
+                {int(item) for item in codeword_class_ids.tolist()}
+            ),
             contributing_token_count_sum=float(contributing_token_counts.sum().item()),
             verification_metadata_source=self.verification_metadata_source,
         )
