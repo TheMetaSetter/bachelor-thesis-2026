@@ -8,7 +8,11 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 
-from src.core.console import console_print, debug_print
+from src.core.console import (
+    console_print,
+    debug_print,
+    summarize_label_distribution,
+)
 from src.models.thesis_multitask_impl.thesis_multitask_state_memory_init_helpers import (
     move_initialization_batch_to_device as _move_initialization_batch_to_device,
     maybe_initialize_memories_from_loader as _maybe_initialize_memories_from_loader,
@@ -89,6 +93,13 @@ class ThesisMultitaskStateMemoryMixin:
 
         normalized_tokens = self._normalize_memory_vectors(tokens)
         num_tokens = int(normalized_tokens.shape[0])
+        debug_print(
+            "MODEL",
+            "Running memory bootstrap kmeans",
+            token_count=num_tokens,
+            centroid_count=k,
+            num_iterations=num_iterations,
+        )
         if num_tokens <= k:
             repeated_indices = (
                 torch.arange(k, device=normalized_tokens.device) % num_tokens
@@ -127,6 +138,18 @@ class ThesisMultitaskStateMemoryMixin:
         for _ in range(num_iterations):
             pairwise_distances = torch.cdist(normalized_tokens, centers, p=2)
             assignments = torch.argmin(pairwise_distances, dim=1)
+            cluster_sizes = torch.bincount(assignments, minlength=k)
+            empty_cluster_ids = torch.nonzero(cluster_sizes == 0, as_tuple=False).flatten()
+            if empty_cluster_ids.numel() > 0:
+                debug_print(
+                    "MODEL",
+                    "Kmeans encountered empty clusters",
+                    token_count=num_tokens,
+                    centroid_count=k,
+                    empty_cluster_count=int(empty_cluster_ids.numel()),
+                    empty_cluster_ids=empty_cluster_ids.tolist(),
+                    cluster_sizes=cluster_sizes.tolist(),
+                )
             updated_centers: list[torch.Tensor] = []
             for center_index in range(k):
                 cluster_mask = assignments == center_index
@@ -172,6 +195,19 @@ class ThesisMultitaskStateMemoryMixin:
                     self.memory_initialization_with_synthetic_windows
                     and self.use_synthetic_augmentation
                 ):
+                    debug_print(
+                        "MODEL",
+                        "Selected memory initialization batch",
+                        batch_index=batch_index + 1,
+                        batch_size=int(clean_windows.shape[0]),
+                        class_distribution={"0": int(clean_windows.shape[0])},
+                        synthetic_windows=0,
+                        normal_windows=int(clean_windows.shape[0]),
+                        train_balance_classes=bool(self.train_balance_classes),
+                        memory_initialization_with_synthetic_windows=bool(
+                            self.memory_initialization_with_synthetic_windows
+                        ),
+                    )
                     continuous_hidden_token_groups.append(clean_hidden)
                     discrete_hidden_tokens_by_class.setdefault(0, []).append(
                         clean_hidden
@@ -183,6 +219,25 @@ class ThesisMultitaskStateMemoryMixin:
                 )
                 synthetic_hidden = self.encoder(synthetic_batch)["hidden"]
                 synthetic_labels = synthetic_batch["classification_labels"].long()
+                debug_print(
+                    "MODEL",
+                    "Selected memory initialization batch",
+                    batch_index=batch_index + 1,
+                    batch_size=batch_size,
+                    class_distribution=summarize_label_distribution(
+                        synthetic_labels
+                    ),
+                    synthetic_windows=int(
+                        torch.count_nonzero(synthetic_labels != 0).detach().cpu()
+                    ),
+                    normal_windows=int(
+                        torch.count_nonzero(synthetic_labels == 0).detach().cpu()
+                    ),
+                    train_balance_classes=bool(self.train_balance_classes),
+                    memory_initialization_with_synthetic_windows=bool(
+                        self.memory_initialization_with_synthetic_windows
+                    ),
+                )
                 normal_window_mask = synthetic_labels == 0
                 normal_time_step_mask = synthetic_batch["synthetic_anomaly_mask"] == 0
                 if int(normal_window_mask.sum().item()) > 0:
@@ -439,6 +494,37 @@ class ThesisMultitaskStateMemoryMixin:
             if getattr(self, "synthetic_train_seed", None) is not None
             else getattr(self, "synthetic_validation_seed", 0)
         )
+        anomaly_token_count = int(
+            sum(
+                int(values.reshape(-1, self.hidden_dim).shape[0])
+                for class_index, values in discrete_hidden_tokens_by_class.items()
+                if class_index > 0 and values.numel() > 0
+            )
+        )
+        mask_true_count = int(mask.sum().item())
+        contributing_token_count_sum = int(contributing_token_counts.sum().item())
+        if (
+            mask_true_count == 0
+            or contributing_token_count_sum == 0
+            or contributing_token_count_sum != anomaly_token_count
+        ):
+            debug_print(
+                "MODEL",
+                "Verification metadata sanity check needs attention",
+                anomaly_token_count=anomaly_token_count,
+                mask_true_count=mask_true_count,
+                contributing_token_count_sum=contributing_token_count_sum,
+                expected_contributing_token_count=anomaly_token_count,
+                codebook_size=int(self.discrete_codebook_size),
+                radii_positive_count=int((radii > 0).sum().item()),
+                class_token_counts={
+                    str(class_index): int(
+                        values.reshape(-1, self.hidden_dim).shape[0]
+                    )
+                    for class_index, values in discrete_hidden_tokens_by_class.items()
+                    if class_index > 0 and values.numel() > 0
+                },
+            )
         debug_print(
             "MODEL",
             "Calibrated verification metadata",
