@@ -308,7 +308,9 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
 
     initialization_payload = dict(stage_a_checkpoint)
     initialization_payload["model_state_dict"] = model.state_dict()
-    if hasattr(model, "get_memory_lifecycle_state"):
+    if hasattr(model, "get_checkpoint_extra_state"):
+        initialization_payload["extra_state"] = model.get_checkpoint_extra_state()
+    elif hasattr(model, "get_memory_lifecycle_state"):
         initialization_payload["extra_state"] = model.get_memory_lifecycle_state()
     debug_print(
         "TWO_STAGE",
