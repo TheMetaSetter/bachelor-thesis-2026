@@ -15,7 +15,7 @@ data_overrides:
   test_stride: 20
   shuffle_train: false
   batch_size: 1
-  num_workers: 0
+  num_workers: 12
 model_overrides:
   input_dim: 38
   encoder_dim: 64
@@ -36,7 +36,7 @@ task_overrides:
   warm_start_projector: false
   target_param_group: projector_params
   clean_stream_only: true
-  max_online_steps: 16
+  max_online_steps: null
   log_every_n_steps: 1
   checkpoint_every_n_steps: 8
   reset_policy: disabled

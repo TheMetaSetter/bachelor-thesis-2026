@@ -56,8 +56,8 @@ model_overrides:
   score_loss_normalization: train_batch_normal_tokens_detached_mean_std
   score_loss_reduction: pointwise_binary_balanced_mean
 data_overrides:
-  batch_size: 8
-  num_workers: 0
-  max_train_windows: 16
-  max_val_windows: 8
-  max_test_windows: 16
+  batch_size: 256
+  num_workers: 12
+  max_train_windows: 2048
+  max_val_windows: 2048
+  max_test_windows: 2048

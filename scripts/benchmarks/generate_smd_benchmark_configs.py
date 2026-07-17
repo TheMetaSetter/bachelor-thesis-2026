@@ -192,11 +192,11 @@ def build_offline_benchmark_config(
         config["model_overrides"] = model_overrides
     if smoke:
         config["data_overrides"] = {
-            "batch_size": 8,
-            "num_workers": 0,
-            "max_train_windows": 16,
-            "max_val_windows": 8,
-            "max_test_windows": 16,
+            "batch_size": 256,
+            "num_workers": 12,
+            "max_train_windows": 2048,
+            "max_val_windows": 2048,
+            "max_test_windows": 2048,
         }
     return config
 

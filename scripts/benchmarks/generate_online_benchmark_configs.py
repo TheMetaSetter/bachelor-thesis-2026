@@ -96,7 +96,7 @@ def _task_overrides(
     seed: int,
     smoke: bool,
 ) -> dict[str, Any]:
-    max_online_steps = 16 if smoke else None
+    max_online_steps = None
     checkpoint_every_n_steps = 8 if smoke else 50
     return {
         "offline_variant": offline_variant,
@@ -119,7 +119,7 @@ def _data_overrides(smoke: bool) -> dict[str, Any]:
     if smoke:
         return {
             "batch_size": 1,
-            "num_workers": 0,
+            "num_workers": 12,
         }
     return {
         "batch_size": 1,

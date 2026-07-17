@@ -49,8 +49,8 @@ two_stage:
   discrete_memory_label_source: synthetic_train_labels
   freeze_encoder_and_memories_in_stage_b: true
 data_overrides:
-  batch_size: 8
-  num_workers: 0
-  max_train_windows: 16
-  max_val_windows: 8
-  max_test_windows: 16
+  batch_size: 256
+  num_workers: 12
+  max_train_windows: 2048
+  max_val_windows: 2048
+  max_test_windows: 2048
