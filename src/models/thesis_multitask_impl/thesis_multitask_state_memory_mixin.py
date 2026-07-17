@@ -203,7 +203,9 @@ class ThesisMultitaskStateMemoryMixin:
                         class_distribution={"0": int(clean_windows.shape[0])},
                         synthetic_windows=0,
                         normal_windows=int(clean_windows.shape[0]),
-                        train_balance_classes=bool(self.train_balance_classes),
+                        train_balance_classes=bool(
+                            getattr(self, "train_balance_classes", False)
+                        ),
                         memory_initialization_with_synthetic_windows=bool(
                             self.memory_initialization_with_synthetic_windows
                         ),
@@ -219,11 +221,12 @@ class ThesisMultitaskStateMemoryMixin:
                 )
                 synthetic_hidden = self.encoder(synthetic_batch)["hidden"]
                 synthetic_labels = synthetic_batch["classification_labels"].long()
+                synthetic_batch_size = int(synthetic_labels.shape[0])
                 debug_print(
                     "MODEL",
                     "Selected memory initialization batch",
                     batch_index=batch_index + 1,
-                    batch_size=batch_size,
+                    batch_size=synthetic_batch_size,
                     class_distribution=summarize_label_distribution(
                         synthetic_labels
                     ),
@@ -233,7 +236,9 @@ class ThesisMultitaskStateMemoryMixin:
                     normal_windows=int(
                         torch.count_nonzero(synthetic_labels == 0).detach().cpu()
                     ),
-                    train_balance_classes=bool(self.train_balance_classes),
+                    train_balance_classes=bool(
+                        getattr(self, "train_balance_classes", False)
+                    ),
                     memory_initialization_with_synthetic_windows=bool(
                         self.memory_initialization_with_synthetic_windows
                     ),
