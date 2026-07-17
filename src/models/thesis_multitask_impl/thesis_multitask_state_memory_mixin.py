@@ -402,6 +402,24 @@ class ThesisMultitaskStateMemoryMixin:
             for codeword_id in torch.unique(nearest_ids).tolist():
                 assigned = nearest_distances[nearest_ids == codeword_id]
                 radii[codeword_id] = torch.quantile(assigned, 0.99)
+            negative_radii = radii[radii < 0]
+            if negative_radii.numel() > 0:
+                negative_entries = [
+                    f"{int(codeword_id)}:{float(radius):.8e}"
+                    for codeword_id, radius in zip(
+                        torch.nonzero(radii < 0, as_tuple=False).flatten().tolist(),
+                        negative_radii.tolist(),
+                        strict=True,
+                    )
+                ]
+                debug_print(
+                    "MODEL",
+                    "Found negative anomaly radii before clamping",
+                    negative_count=int(negative_radii.numel()),
+                    most_negative=float(negative_radii.min().item()),
+                    negative_entries=negative_entries,
+                )
+            radii = radii.clamp_min(0.0)
 
         # Lưu toàn bộ metadata đã calibrate vào state của model.
         self.anomalous_codeword_mask = mask
