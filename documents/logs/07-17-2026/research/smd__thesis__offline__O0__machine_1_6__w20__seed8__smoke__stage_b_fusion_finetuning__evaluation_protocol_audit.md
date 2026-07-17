@@ -9,28 +9,28 @@
 
 ### train
 
-- Windows: 16
+- Windows: 2048
 - Label regime: `all_zero`
 - Positive ratio: 0.000000
-- Evaluated points: 35/18951
+- Evaluated points: 2067/18951
 - Truncated coverage: `True`
 - Truncation reason: `max_window_cap`
 
 ### val
 
-- Windows: 8
+- Windows: 236
 - Label regime: `all_zero`
 - Positive ratio: 0.000000
-- Evaluated points: 160/4737
+- Evaluated points: 4720/4737
 - Truncated coverage: `True`
 - Truncation reason: `max_window_cap`
 
 ### test
 
-- Windows: 16
+- Windows: 1184
 - Label regime: `mixed`
 - Positive ratio: 0.156528
-- Evaluated points: 320/23689
+- Evaluated points: 23680/23689
 - Truncated coverage: `True`
 - Truncation reason: `max_window_cap`
 
@@ -44,11 +44,11 @@ A benchmark-comparable run must evaluate a future test timeline that contains bo
 ## Warnings
 
 - Test split window coverage is truncated relative to the raw test timeline. Evaluation artifacts do not cover the full labeled timeline.
-- Configured max_test_windows=16 truncates the evaluated test timeline. Treat this as a truncated smoke evaluation, not a full-timeline test.
+- Configured max_test_windows=2048 truncates the evaluated test timeline. Treat this as a truncated smoke evaluation, not a full-timeline test.
 
 ## Evaluation Coverage
 
-- Evaluated points: 320/23689
+- Evaluated points: 23680/23689
 - Truncated evaluation artifact: `True`
 
 ## Metric Regime Interpretation
@@ -57,4 +57,4 @@ The evaluated test vector contains both normal and anomalous labels, so the poin
 
 - The remaining question is then whether evaluated coverage truly matches the intended raw test timeline.
 
-- The observed threshold was 2.123235.
+- The observed threshold was 10.872228.
