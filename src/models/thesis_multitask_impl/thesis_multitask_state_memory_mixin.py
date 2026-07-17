@@ -8,7 +8,7 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 
-from src.core.console import console_print
+from src.core.console import console_print, debug_print
 from src.models.thesis_multitask_impl.thesis_multitask_state_memory_init_helpers import (
     move_initialization_batch_to_device as _move_initialization_batch_to_device,
     maybe_initialize_memories_from_loader as _maybe_initialize_memories_from_loader,
@@ -299,6 +299,14 @@ class ThesisMultitaskStateMemoryMixin:
                 self.discrete_ema_counts.fill_(1.0)
             if self.discrete_ema_sums is not None:
                 self.discrete_ema_sums.copy_(discrete_seed_vectors)
+            debug_print(
+                "MODEL",
+                "Initialized discrete memory buffers",
+                available_class_indices=available_class_indices,
+                per_class_counts=per_class_counts,
+                codebook_size=int(self.discrete_codebook_size),
+                seed_vector_sum=float(discrete_seed_vectors.sum().item()),
+            )
             self._calibrate_anomaly_verification_metadata(
                 discrete_hidden_tokens_by_class=discrete_hidden_tokens_by_class
             )
@@ -412,6 +420,16 @@ class ThesisMultitaskStateMemoryMixin:
         self.synthetic_train_seed
         if getattr(self, "synthetic_train_seed", None) is not None
         else getattr(self, "synthetic_validation_seed", 0)
+    )
+    debug_print(
+        "MODEL",
+        "Calibrated verification metadata",
+        mask_true_count=int(mask.sum().item()),
+        radii_positive_count=int((radii > 0).sum().item()),
+        radii_max=float(radii.max().item()) if radii.numel() > 0 else 0.0,
+        codeword_class_ids_unique=sorted({int(item) for item in codeword_class_ids.tolist()}),
+        contributing_token_count_sum=float(contributing_token_counts.sum().item()),
+        verification_metadata_source=self.verification_metadata_source,
     )
 
     def _update_continuous_memory_bank(

@@ -8,6 +8,7 @@ debug context on every batch and step.
 """
 
 from pathlib import Path
+import os
 from typing import Any
 
 import torch
@@ -18,6 +19,10 @@ def _format_scalar(value: Any) -> str:
     if isinstance(value, float):
         return f"{value:.6f}"
     return str(value)
+
+
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def format_console_value(value: Any) -> str:
@@ -45,6 +50,8 @@ def format_console_value(value: Any) -> str:
 
 
 def console_print(prefix: str, message: str, **fields: Any) -> None:
+    if _env_flag("THESIS_CONSOLE_QUIET"):
+        return
     ordered_fields = ", ".join(
         f"{field_name}={format_console_value(field_value)}"
         for field_name, field_value in fields.items()
@@ -53,6 +60,19 @@ def console_print(prefix: str, message: str, **fields: Any) -> None:
         print(f"[{prefix}] {message} | {ordered_fields}")
         return
     print(f"[{prefix}] {message}")
+
+
+def debug_print(prefix: str, message: str, **fields: Any) -> None:
+    if not _env_flag("THESIS_DEBUG_VERIFICATION_INIT"):
+        return
+    ordered_fields = ", ".join(
+        f"{field_name}={format_console_value(field_value)}"
+        for field_name, field_value in fields.items()
+    )
+    if ordered_fields:
+        print(f"[{prefix}][DEBUG] {message} | {ordered_fields}")
+        return
+    print(f"[{prefix}][DEBUG] {message}")
 
 
 def summarize_tensor(tensor: torch.Tensor | None) -> str:

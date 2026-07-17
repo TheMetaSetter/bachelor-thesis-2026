@@ -6,7 +6,7 @@ from typing import Any
 
 import torch
 
-from src.core.console import console_print
+from src.core.console import console_print, debug_print
 
 
 class ThesisMultitaskStateSerializationMixin:
@@ -111,6 +111,24 @@ class ThesisMultitaskStateSerializationMixin:
         state["variance_correction"] = self.variance_correction
         state["return_mc_samples"] = self.return_mc_samples
         state["sample_retention_policy"] = self.sample_retention_policy
+        debug_print(
+            "MODEL",
+            "Serializing checkpoint extra state",
+            memory_initialized=bool(getattr(self, "memory_initialized", False)),
+            verification_metadata_source=getattr(
+                self, "verification_metadata_source", None
+            ),
+            anomalous_codeword_mask_true_count=(
+                int(self.anomalous_codeword_mask.sum().item())
+                if isinstance(self.anomalous_codeword_mask, torch.Tensor)
+                else None
+            ),
+            anomaly_radii_positive_count=(
+                int((self.anomaly_radii > 0).sum().item())
+                if isinstance(self.anomaly_radii, torch.Tensor)
+                else None
+            ),
+        )
         return state
 
     def get_memory_tensor_state(self) -> dict[str, torch.Tensor | None]:
@@ -154,6 +172,14 @@ class ThesisMultitaskStateSerializationMixin:
     def load_checkpoint_extra_state(self, extra_state: dict[str, Any] | None) -> None:
         if not extra_state:
             return
+        debug_print(
+            "MODEL",
+            "Loading checkpoint extra state",
+            extra_state_keys=sorted(extra_state.keys()),
+            has_mask="anomalous_codeword_mask" in extra_state,
+            has_radii="anomaly_radii" in extra_state,
+            verification_metadata_source=extra_state.get("verification_metadata_source"),
+        )
         if (
             "verification_metadata_schema_version" in extra_state
             and int(extra_state["verification_metadata_schema_version"]) != 1
@@ -253,6 +279,14 @@ class ThesisMultitaskStateSerializationMixin:
             )
             self._normalize_verification_metadata_source()
             self._validate_verification_metadata_state()
+            debug_print(
+                "MODEL",
+                "Loaded verification metadata from checkpoint",
+                verification_metadata_source=self.verification_metadata_source,
+                mask_true_count=int(self.anomalous_codeword_mask.sum().item()),
+                radii_positive_count=int((self.anomaly_radii > 0).sum().item()),
+                radii_max=float(self.anomaly_radii.max().item()),
+            )
         if "stochastic_inference" in extra_state:
             if bool(extra_state["stochastic_inference"]) != self.stochastic_inference:
                 raise ValueError("checkpoint stochastic_inference does not match model")

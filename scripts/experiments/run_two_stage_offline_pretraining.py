@@ -23,7 +23,7 @@ from src.core.config import (
     TWO_STAGE_B_EPOCHS_KEY,
     load_experiment_config,
 )
-from src.core.console import console_print
+from src.core.console import console_print, debug_print
 from src.core.registry import build_dataset
 from src.engine.checkpoint import CheckpointManager
 
@@ -254,6 +254,17 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
     register_runtime_components()
     model = build_model_from_experiment_config(stage_b_config)
     stage_a_checkpoint = _load_checkpoint_payload(stage_a_checkpoint_path)
+    debug_print(
+        "TWO_STAGE",
+        "Preparing Stage B initialization from Stage A checkpoint",
+        stage_a_checkpoint_path=stage_a_checkpoint_path,
+        stage_a_extra_state_keys=sorted(
+            list(stage_a_checkpoint.get("extra_state", {}).keys())
+        ),
+        stage_a_verification_metadata_source=stage_a_checkpoint.get("extra_state", {}).get(
+            "verification_metadata_source"
+        ),
+    )
     _load_stage_a_state_into_stage_b_model(
         model=model,
         stage_a_state_dict=stage_a_checkpoint["model_state_dict"],
@@ -278,11 +289,37 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
         raise RuntimeError(
             "Stage B initialization checkpoint could not initialize memories"
         )
+    debug_print(
+        "TWO_STAGE",
+        "Stage B initialization checkpoint ready",
+        memory_initialized=bool(getattr(model, "memory_initialized", False)),
+        verification_metadata_source=getattr(model, "verification_metadata_source", None),
+        anomalous_codeword_mask_true_count=(
+            int(model.anomalous_codeword_mask.sum().item())
+            if isinstance(model.anomalous_codeword_mask, torch.Tensor)
+            else None
+        ),
+        anomaly_radii_positive_count=(
+            int((model.anomaly_radii > 0).sum().item())
+            if isinstance(model.anomaly_radii, torch.Tensor)
+            else None
+        ),
+    )
 
     initialization_payload = dict(stage_a_checkpoint)
     initialization_payload["model_state_dict"] = model.state_dict()
     if hasattr(model, "get_memory_lifecycle_state"):
         initialization_payload["extra_state"] = model.get_memory_lifecycle_state()
+    debug_print(
+        "TWO_STAGE",
+        "Stage B init payload before save",
+        payload_extra_state_keys=sorted(
+            list(initialization_payload.get("extra_state", {}).keys())
+        ),
+        payload_verification_metadata_source=initialization_payload.get(
+            "extra_state", {}
+        ).get("verification_metadata_source"),
+    )
     initialization_payload["config"] = stage_b_config
     initialization_payload["checkpoint_metadata"] = (
         CheckpointManager._build_checkpoint_metadata(
@@ -324,6 +361,7 @@ def execute_two_stage_plan(
     manifest: dict[str, Any],
     dry_run: bool = False,
     skip_completed: bool = False,
+    stop_after_stage_b_init: bool = False,
 ) -> dict[str, Any]:
     command_plan = build_two_stage_execution_commands(manifest)
     manifest_root = Path(str(manifest["manifest_root"]))
@@ -376,6 +414,29 @@ def execute_two_stage_plan(
         executed_stage_names.append(first_stage_name)
         completed_stage_names.append(first_stage_name)
         _prepare_stage_b_initialization_checkpoint(manifest)
+        if stop_after_stage_b_init:
+            execution_report = {
+                "manifest_path": str(manifest_root / "two_stage_manifest.json"),
+                "execution_report_path": str(execution_report_path),
+                "started_at_utc": started_at_utc,
+                "finished_at_utc": _utc_now_iso(),
+                "dry_run": dry_run,
+                "skip_completed": skip_completed,
+                "stop_after_stage_b_init": stop_after_stage_b_init,
+                "resumed_from_existing_report": existing_execution_report is not None,
+                "status": "stopped_after_stage_b_init",
+                "executed_stage_names": executed_stage_names,
+                "completed_stage_names": completed_stage_names,
+                "skipped_stage_names": skipped_stage_names,
+                "stage_b_initialization_checkpoint_path": str(
+                    manifest_root / "initializations" / "stage_b_init.pt"
+                ),
+                "evaluation_checkpoint_path": str(manifest["evaluation"]["checkpoint_path"]),
+            }
+            execution_report_path.write_text(
+                json.dumps(execution_report, indent=2), encoding="utf-8"
+            )
+            return execution_report
         for stage_record, command in zip(
             training_stage_records[1:],
             training_commands[1:],
@@ -421,6 +482,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--experiment-config", required=True)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--skip-completed", action="store_true")
+    parser.add_argument("--stop-after-stage-b-init", action="store_true")
     return parser.parse_args()
 
 
@@ -432,6 +494,7 @@ def main() -> None:
         manifest,
         dry_run=args.dry_run,
         skip_completed=args.skip_completed,
+        stop_after_stage_b_init=args.stop_after_stage_b_init,
     )
     console_print(
         "TWO_STAGE",
