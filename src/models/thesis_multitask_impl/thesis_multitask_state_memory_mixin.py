@@ -203,9 +203,13 @@ class ThesisMultitaskStateMemoryMixin:
                         class_distribution={"0": int(clean_windows.shape[0])},
                         synthetic_windows=0,
                         normal_windows=int(clean_windows.shape[0]),
+<<<<<<< Updated upstream
                         train_balance_classes=bool(
                             getattr(self, "train_balance_classes", False)
                         ),
+=======
+                        train_balance_classes=bool(getattr(self, "train_balance_classes", False)),
+>>>>>>> Stashed changes
                         memory_initialization_with_synthetic_windows=bool(
                             self.memory_initialization_with_synthetic_windows
                         ),
