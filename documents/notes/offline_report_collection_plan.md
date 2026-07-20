@@ -16,7 +16,11 @@ Use these trees as raw inputs:
 
 - `outputs/eval18`
 - `outputs/benchmark/smd/offline_benchmark`
-- `outputs/comparative/smd/redlamp_baseline`
+- `outputs/benchmark/smd/redlamp_baseline`
+
+Important split:
+- RedLamp is collected on the local machine from `outputs/benchmark/smd/redlamp_baseline`.
+- Thesis and the other methods are collected on the remote machine from the matching `outputs/...` trees there.
 
 ## Collector script
 
@@ -51,8 +55,8 @@ By default the collector writes:
 
 ## Practical order
 
-1. Collect raw data from the completed runs.
+1. Collect RedLamp raw data locally.
+2. Collect thesis and other baseline raw data on the remote machine.
 2. Verify the metric table group means.
 3. Verify the validation/evaluation variance rows.
 4. Only then decide whether any artifact pruning is safe.
-

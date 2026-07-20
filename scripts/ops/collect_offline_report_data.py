@@ -19,7 +19,7 @@ from typing import Any
 DEFAULT_SCAN_ROOTS = (
     "outputs/eval18",
     "outputs/benchmark/smd/offline_benchmark",
-    "outputs/comparative/smd/redlamp_baseline",
+    "outputs/benchmark/smd/redlamp_baseline",
 )
 
 DEFAULT_OUTPUT_JSON = Path("outputs/reporting/offline_phase_tables/offline_report_data.json")
