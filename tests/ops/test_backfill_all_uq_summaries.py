@@ -107,6 +107,71 @@ def test_prune_raw_trace_artifacts_requires_summary(tmp_path: Path) -> None:
     trace_path.write_text("[]\n", encoding="utf-8")
 
     result = prune_raw_trace_artifacts(root_dir=root_dir, dry_run=True)
-    assert result["deleted_count"] == 0
+    assert result["compacted_count"] == 0
     assert trace_path.exists()
 
+
+def test_prune_raw_trace_artifacts_compacts_in_place_when_summary_exists(
+    tmp_path: Path,
+) -> None:
+    root_dir = tmp_path / "outputs"
+    benchmark_dir = root_dir / "benchmark_smoke" / "smd" / "thesis" / "O0" / "machine_3_9" / "seed8"
+    trace_path = benchmark_dir / "traces" / "test_traces.json"
+    summary_path = benchmark_dir / "metrics" / "uq_summary.json"
+    trace_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_text("{}\n", encoding="utf-8")
+    trace_path.write_text(
+        json.dumps(
+            [
+                {
+                    "batch_index": 1,
+                    "entity_ids": ["machine-3-9"],
+                    "point_score_history": [0.1, 0.2],
+                    "window_score_history": [0.3],
+                    "uncertainty_history": {
+                        "point_anomaly_score_variance": [0.4],
+                    },
+                    "stochastic_query": {
+                        "schema_version": 3,
+                        "enabled": True,
+                        "num_samples": 10,
+                        "continuous_temperature": 0.9,
+                        "discrete_temperature": 0.8,
+                        "return_mc_samples": False,
+                        "sample_retention_policy": "none",
+                        "point_score_samples": [1.0, 2.0],
+                    },
+                    "mc_sample_histories": {
+                        "point_score_samples": [1.0, 2.0],
+                    },
+                    "deterministic_geometry": {
+                        "hidden_reconstruction": [1.0],
+                    },
+                }
+            ],
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = prune_raw_trace_artifacts(root_dir=root_dir, dry_run=False)
+
+    assert result["compacted_count"] == 1
+    compacted_payload = json.loads(trace_path.read_text(encoding="utf-8"))
+    assert compacted_payload[0]["uncertainty_history"] == {
+        "point_anomaly_score_variance": [0.4]
+    }
+    assert "mc_sample_histories" not in compacted_payload[0]
+    assert "deterministic_geometry" not in compacted_payload[0]
+    assert compacted_payload[0]["stochastic_query"] == {
+        "schema_version": 3,
+        "enabled": True,
+        "num_samples": 10,
+        "continuous_temperature": 0.9,
+        "discrete_temperature": 0.8,
+        "return_mc_samples": False,
+        "sample_retention_policy": "none",
+    }

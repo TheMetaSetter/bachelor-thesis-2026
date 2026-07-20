@@ -32,6 +32,7 @@ from src.core.artifact_integrity import (
     sha256_file,
     write_retention_bundle_manifest,
 )
+from src.core.evaluation_trace_compaction import compact_evaluation_trace_payloads
 from src.core.uq_summary import (
     build_uq_summary_payload,
     write_uq_summary_json,
@@ -547,17 +548,26 @@ def _export_offline_retention_bundle(
         summary_payload,
     )
     if retention_policy == "retain_for_eda":
+        compacted_clean_validation_traces = compact_evaluation_trace_payloads(
+            artifact_inputs["clean_validation_traces"]
+        )
+        compacted_synthetic_validation_traces = compact_evaluation_trace_payloads(
+            artifact_inputs["synthetic_validation_traces"]
+        )
+        compacted_test_traces = compact_evaluation_trace_payloads(
+            artifact_inputs["test_traces"]
+        )
         bundle_paths["clean_validation_traces"] = _write_trace_json(
             retention_root / "clean_validation_traces.json",
-            artifact_inputs["clean_validation_traces"],
+            compacted_clean_validation_traces,
         )
         bundle_paths["synthetic_validation_traces"] = _write_trace_json(
             retention_root / "synthetic_validation_traces.json",
-            artifact_inputs["synthetic_validation_traces"],
+            compacted_synthetic_validation_traces,
         )
         bundle_paths["test_traces"] = _write_trace_json(
             retention_root / "test_traces.json",
-            artifact_inputs["test_traces"],
+            compacted_test_traces,
         )
         bundle_paths["clean_validation_scores"] = _write_score_npz(
             retention_root / "clean_validation_point_scores.npz",

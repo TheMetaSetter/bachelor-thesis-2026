@@ -26,6 +26,7 @@ from src.analysis.evaluation_protocol_audit import (
 from src.core.console import console_print
 from src.core.config import load_experiment_config
 from src.core.config_help import build_config_help_text
+from src.core.evaluation_trace_compaction import compact_evaluation_trace_payloads
 from src.core.registry import build_dataset, build_model
 from src.core.runtime_components import register_evaluation_runtime_components
 from src.data.loaders import (
@@ -217,6 +218,9 @@ def run_evaluation_experiment(
     thesis_log_protocol_audit_path = build_protocol_audit_log_path(
         experiment_name=str(experiment_config["experiment_name"])
     )
+    compacted_traces = compact_evaluation_trace_payloads(
+        evaluation_outputs.get("traces", [])
+    )
 
     serializable_records = [
         _serialize_evaluation_record(record) for record in evaluation_outputs["records"]
@@ -255,9 +259,8 @@ def run_evaluation_experiment(
     records_path.write_text(json.dumps(serializable_records), encoding="utf-8")
     metrics_path.write_text(json.dumps(evaluation_outputs["metrics"]), encoding="utf-8")
     curves_path.write_text(json.dumps(evaluation_outputs["curves"]), encoding="utf-8")
-    traces = evaluation_outputs.get("traces", [])
     traces_path.write_text(
-        json.dumps(traces, indent=2, sort_keys=True),
+        json.dumps(compacted_traces, indent=2, sort_keys=True),
         encoding="utf-8",
     )
     protocol_audit_path.write_text(

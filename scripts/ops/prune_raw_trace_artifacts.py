@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from src.core.evaluation_trace_compaction import compact_evaluation_trace_payloads
+
 
 def _iter_raw_trace_files(root_dir: Path) -> list[Path]:
     trace_files = sorted(root_dir.rglob("*traces.json"))
@@ -21,7 +23,7 @@ def prune_raw_trace_artifacts(
     dry_run: bool = True,
 ) -> dict[str, Any]:
     candidates = _iter_raw_trace_files(root_dir)
-    deleted: list[str] = []
+    compacted: list[str] = []
     skipped_missing_summary: list[str] = []
     skipped_non_matching: list[str] = []
     for path in candidates:
@@ -39,14 +41,21 @@ def prune_raw_trace_artifacts(
             skipped_missing_summary.append(str(path))
             continue
         if not dry_run:
-            path.unlink()
-        deleted.append(str(path))
+            trace_payloads = json.loads(path.read_text(encoding="utf-8"))
+            compacted_trace_payloads = compact_evaluation_trace_payloads(
+                list(trace_payloads)
+            )
+            path.write_text(
+                json.dumps(compacted_trace_payloads, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+        compacted.append(str(path))
     return {
         "root_dir": str(root_dir),
         "dry_run": dry_run,
         "candidates": len(candidates),
-        "deleted_count": len(deleted),
-        "deleted": deleted,
+        "compacted_count": len(compacted),
+        "compacted": compacted,
         "skipped_missing_summary": skipped_missing_summary,
         "skipped_non_matching": skipped_non_matching,
     }

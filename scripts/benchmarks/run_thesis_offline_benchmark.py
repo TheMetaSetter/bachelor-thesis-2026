@@ -32,6 +32,7 @@ from src.core.artifact_integrity import (
     sha256_file,
     write_retention_bundle_manifest,
 )
+from src.core.evaluation_trace_compaction import compact_evaluation_trace_payloads
 from src.core.uq_summary import (
     build_uq_summary_payload,
     write_uq_summary_json,
@@ -575,6 +576,15 @@ def _export_offline_artifacts(
     )
     uq_summary_path = output_dir / "metrics" / "uq_summary.json"
     write_uq_summary_json(uq_summary_path, uq_summary_payload)
+    compacted_clean_validation_traces = compact_evaluation_trace_payloads(
+        artifact_inputs["clean_validation_traces"]
+    )
+    compacted_synthetic_validation_traces = compact_evaluation_trace_payloads(
+        artifact_inputs["synthetic_validation_traces"]
+    )
+    compacted_test_traces = compact_evaluation_trace_payloads(
+        artifact_inputs["test_traces"]
+    )
     return {
         "thresholds": str(threshold_path),
         "uq_summary": str(uq_summary_path),
@@ -584,7 +594,7 @@ def _export_offline_artifacts(
         ),
         "clean_validation_traces": _write_trace_json(
             output_dir / "traces" / "clean_validation_traces.json",
-            artifact_inputs["clean_validation_traces"],
+            compacted_clean_validation_traces,
         ),
         "synthetic_validation_scores": _write_score_npz(
             output_dir / "scores" / "synthetic_validation_point_scores.npz",
@@ -592,7 +602,7 @@ def _export_offline_artifacts(
         ),
         "synthetic_validation_traces": _write_trace_json(
             output_dir / "traces" / "synthetic_validation_traces.json",
-            artifact_inputs["synthetic_validation_traces"],
+            compacted_synthetic_validation_traces,
         ),
         "test_scores": _write_score_npz(
             output_dir / "scores" / "test_point_scores.npz",
@@ -600,7 +610,7 @@ def _export_offline_artifacts(
         ),
         "test_traces": _write_trace_json(
             output_dir / "traces" / "test_traces.json",
-            artifact_inputs["test_traces"],
+            compacted_test_traces,
         ),
         "offline_metrics": _write_json(
             output_dir / "metrics" / "offline_metrics.json",
