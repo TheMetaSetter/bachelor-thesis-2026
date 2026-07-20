@@ -9,6 +9,7 @@ import torch
 
 from src.core.console import (
     console_print,
+    debug_print_if,
     summarize_batch,
     summarize_label_distribution,
     summarize_tensor,
@@ -186,6 +187,31 @@ def forward(
                     discrete_samples=discrete_retrieved_samples,
                     discrete_topk_ids=discrete_topk_ids,
                 )
+                debug_print_if(
+                    "THESIS_DEBUG_UQ_TRACE",
+                    "MODEL",
+                    "Built Monte Carlo forward outputs",
+                    stage_name=stage_name,
+                    training=bool(self.training),
+                    stochastic_inference=bool(self.stochastic_inference),
+                    phase_uses_prototype_path=bool(
+                        self._phase_uses_prototype_path()
+                    ),
+                    memory_initialized=bool(self.memory_initialized),
+                    memory_bypass_active=bool(query_bundle.memory_bypass_active),
+                    has_uncertainty=(
+                        monte_carlo_forward_outputs["aux"].get("uncertainty") is not None
+                    ),
+                    has_stochastic_query=(
+                        monte_carlo_forward_outputs["aux"].get("stochastic_query")
+                        is not None
+                    ),
+                    stochastic_query_keys=list(
+                        monte_carlo_forward_outputs["aux"].get(
+                            "stochastic_query", {}
+                        ).keys()
+                    ),
+                )
     else:
         active_continuous_memory_bank = None
         active_discrete_codebook = None
@@ -262,6 +288,23 @@ def forward(
         },
     }
     validate_model_outputs(outputs)
+    debug_print_if(
+        "THESIS_DEBUG_UQ_TRACE",
+        "MODEL",
+        "Forward output summary",
+        stage_name=stage_name,
+        training=bool(self.training),
+        stochastic_inference=bool(self.stochastic_inference),
+        phase_uses_prototype_path=bool(self._phase_uses_prototype_path()),
+        memory_initialized=bool(self.memory_initialized),
+        has_uncertainty=outputs["aux"].get("uncertainty") is not None,
+        has_stochastic_query=outputs["aux"].get("stochastic_query") is not None,
+        stochastic_query_keys=list(
+            outputs["aux"].get("stochastic_query", {}).keys()
+            if isinstance(outputs["aux"].get("stochastic_query"), dict)
+            else []
+        ),
+    )
     console_print(
         "MODEL",
         "Multitask forward outputs",

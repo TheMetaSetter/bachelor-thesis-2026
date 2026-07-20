@@ -75,6 +75,19 @@ def debug_print(prefix: str, message: str, **fields: Any) -> None:
     print(f"[{prefix}][DEBUG] {message}")
 
 
+def debug_print_if(flag_name: str, prefix: str, message: str, **fields: Any) -> None:
+    if not _env_flag(flag_name):
+        return
+    ordered_fields = ", ".join(
+        f"{field_name}={format_console_value(field_value)}"
+        for field_name, field_value in fields.items()
+    )
+    if ordered_fields:
+        print(f"[{prefix}][DEBUG] {message} | {ordered_fields}")
+        return
+    print(f"[{prefix}][DEBUG] {message}")
+
+
 def summarize_tensor(tensor: torch.Tensor | None) -> str:
     if tensor is None:
         return "None"

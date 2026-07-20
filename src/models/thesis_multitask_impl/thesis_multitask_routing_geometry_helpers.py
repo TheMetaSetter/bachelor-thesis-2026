@@ -7,6 +7,7 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 
+from src.core.console import debug_print_if
 from src.models.thesis_multitask_impl.thesis_multitask_components import QueryBundle
 
 
@@ -238,6 +239,21 @@ def _build_monte_carlo_forward_outputs(
         },
         "stochastic_query": stochastic_query,
     }
+    debug_print_if(
+        "THESIS_DEBUG_UQ_TRACE",
+        "MODEL",
+        "Monte Carlo payload details",
+        reconstruction_samples_shape=tuple(reconstruction_samples.shape),
+        continuous_samples_shape=tuple(continuous_samples.shape),
+        discrete_samples_shape=tuple(discrete_samples.shape),
+        point_score_samples_shape=tuple(point_score_samples.shape),
+        window_score_samples_shape=tuple(window_score_samples.shape),
+        has_classification_probability_samples=(
+            classification_probability_samples is not None
+        ),
+        uncertainty_keys=list(uncertainty.keys()),
+        stochastic_query_keys=list(stochastic_query.keys()),
+    )
     return {
         "outputs": outputs,
         "aux": aux,
