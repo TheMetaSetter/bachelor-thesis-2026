@@ -132,6 +132,70 @@ def test_backfill_uq_summary_writes_metrics_and_retention(tmp_path: Path) -> Non
     assert result["retention_summary_path"] == str(retention_path)
 
 
-def test_backfill_uq_summary_rejects_missing_report(tmp_path: Path) -> None:
+def test_backfill_uq_summary_uses_manifest_when_report_is_missing(tmp_path: Path) -> None:
+    output_dir = tmp_path / "outputs" / "benchmark_smoke" / "smd" / "thesis" / "O0" / "machine_3_9" / "seed8"
+    manifest_path = output_dir / "two_stage" / "two_stage_manifest.json"
+    stage_b_config_path = (
+        output_dir / "two_stage" / "generated_configs" / "02_stage_b_fusion_finetuning.yaml"
+    )
+    checkpoint_path = (
+        output_dir / "two_stage" / "stage_b_fusion_finetuning" / "checkpoints" / "best.pt"
+    )
+    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+    checkpoint_path.write_bytes(b"checkpoint-bytes")
+    stage_b_config_path.parent.mkdir(parents=True, exist_ok=True)
+    stage_b_config_path.write_text(
+        yaml.safe_dump(
+            {
+                "experiment_name": "smd__thesis__offline__O0__machine_3_9__w20__seed8__smoke__stage_b_fusion_finetuning",
+                "model": {
+                    "continuous_temperature": 0.9,
+                    "discrete_temperature": 0.9,
+                    "monte_carlo_samples": 10,
+                },
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "experiment_name": "smd__thesis__offline__O0__machine_3_9__w20__seed8__smoke",
+                "evaluation": {"checkpoint_path": str(checkpoint_path)},
+                "training_stages": [
+                    {
+                        "stage_name": "stage_a_multitask_pretraining",
+                        "config_path": str(
+                            output_dir
+                            / "two_stage"
+                            / "generated_configs"
+                            / "01_stage_a_multitask_pretraining.yaml"
+                        ),
+                    },
+                    {
+                        "stage_name": "stage_b_fusion_finetuning",
+                        "config_path": str(stage_b_config_path),
+                        "best_checkpoint_path": str(checkpoint_path),
+                    },
+                ],
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    _write_npz(output_dir / "scores" / "clean_validation_point_scores.npz", [0.1, 0.2])
+    _write_trace(output_dir / "traces" / "clean_validation_traces.json", 0.15)
+
+    result = backfill_uq_summary(benchmark_output_dir=output_dir, write_retention_copy=False)
+
+    assert (output_dir / "metrics" / "uq_summary.json").exists()
+    assert result["retention_summary_path"] is None
+
+
+def test_backfill_uq_summary_rejects_missing_report_and_manifest(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         backfill_uq_summary(benchmark_output_dir=tmp_path / "missing")

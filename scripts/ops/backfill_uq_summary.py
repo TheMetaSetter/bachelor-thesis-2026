@@ -116,17 +116,32 @@ def _default_stage_b_config_path(output_dir: Path) -> Path:
     return output_dir / "two_stage" / "generated_configs" / "02_stage_b_fusion_finetuning.yaml"
 
 
+def _load_run_context(benchmark_output_dir: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    report_path = (
+        benchmark_output_dir / "benchmark" / "thesis_offline_benchmark_report.json"
+    )
+    manifest_path = benchmark_output_dir / "two_stage" / "two_stage_manifest.json"
+    report: dict[str, Any] = {}
+    manifest: dict[str, Any] = {}
+    if report_path.exists():
+        report = _load_json(report_path)
+        manifest = dict(report.get("two_stage_manifest") or {})
+    elif manifest_path.exists():
+        manifest = _load_json(manifest_path)
+    else:
+        raise FileNotFoundError(
+            f"missing benchmark report and two-stage manifest under: {benchmark_output_dir}"
+        )
+    return report, manifest
+
+
 def backfill_uq_summary(
     *,
     benchmark_output_dir: Path,
     write_retention_copy: bool = True,
 ) -> dict[str, Any]:
-    report_path = benchmark_output_dir / "benchmark" / "thesis_offline_benchmark_report.json"
-    if not report_path.exists():
-        raise FileNotFoundError(f"missing benchmark report: {report_path}")
-    report = _load_json(report_path)
+    report, manifest = _load_run_context(benchmark_output_dir)
     identity = _infer_identity(benchmark_output_dir)
-    manifest = dict(report.get("two_stage_manifest") or {})
     experiment_name = str(
         manifest.get("experiment_name")
         or report.get("experiment_name")
@@ -156,7 +171,10 @@ def backfill_uq_summary(
         benchmark_output_dir,
     )
     protocol_config_path = _resolve_existing_path(
-        str(report.get("protocol_config_path") or "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"),
+        str(
+            report.get("protocol_config_path")
+            or "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
+        ),
         benchmark_output_dir,
     )
     split_inputs = {}
