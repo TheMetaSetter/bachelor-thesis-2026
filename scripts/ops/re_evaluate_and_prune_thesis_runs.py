@@ -71,6 +71,17 @@ def _load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _print_failure_diagnostics(payload: dict[str, Any]) -> None:
+    print(
+        json.dumps(
+            payload,
+            indent=2,
+            sort_keys=True,
+        ),
+        file=sys.stderr,
+    )
+
+
 def _run_command(command: list[str], *, cwd: Path, log_path: Path) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("w", encoding="utf-8") as log_file:
@@ -92,12 +103,24 @@ def _verify_run(run_root: Path) -> dict[str, Any]:
     )
     uq_summary_path = run_root / "metrics" / "uq_summary.json"
     report_path = run_root / "benchmark" / "thesis_offline_benchmark_report.json"
+    diagnostics: dict[str, Any] = {
+        "run_root": str(run_root),
+        "artifact_exists": {
+            "evaluation_metrics.json": metrics_path.exists(),
+            "uq_summary.json": uq_summary_path.exists(),
+            "thesis_offline_benchmark_report.json": report_path.exists(),
+        },
+    }
+
     missing_paths = [
         str(path)
         for path in (metrics_path, uq_summary_path, report_path)
         if not path.exists()
     ]
     if missing_paths:
+        diagnostics["failure_reason"] = "missing_required_artifact"
+        diagnostics["missing_paths"] = missing_paths
+        _print_failure_diagnostics(diagnostics)
         raise FileNotFoundError(f"missing required artifact(s): {missing_paths}")
 
     metrics = _load_json(metrics_path)
@@ -107,19 +130,43 @@ def _verify_run(run_root: Path) -> dict[str, Any]:
     trace_audit = dict(test_split.get("trace_audit", {}))
 
     metric_missing = [key for key in REQUIRED_METRIC_KEYS if key not in metrics]
-    if metric_missing:
-        raise ValueError(f"missing metric keys for {run_root}: {metric_missing}")
-
     uq_missing = [
         key for key in REQUIRED_UQ_KEYS if uncertainty_summary.get(key) is None
     ]
-    if uq_missing:
-        raise ValueError(f"missing UQ summary values for {run_root}: {uq_missing}")
+    trace_missing_flags = {
+        "any_uncertainty_history": not trace_audit.get(
+            "any_uncertainty_history", False
+        ),
+        "any_mc_sample_history": not trace_audit.get("any_mc_sample_history", False),
+    }
 
-    if not trace_audit.get("any_uncertainty_history", False):
-        raise ValueError(f"trace audit missing uncertainty history for {run_root}")
-    if not trace_audit.get("any_mc_sample_history", False):
-        raise ValueError(f"trace audit missing MC sample history for {run_root}")
+    diagnostics.update(
+        {
+            "failure_reason": None,
+            "metric_missing": metric_missing,
+            "uq_missing": uq_missing,
+            "trace_audit": trace_audit,
+            "trace_missing_flags": trace_missing_flags,
+            "metric_values": {key: metrics.get(key) for key in REQUIRED_METRIC_KEYS},
+            "uq_values": {key: uncertainty_summary.get(key) for key in REQUIRED_UQ_KEYS},
+        }
+    )
+
+    failure_messages: list[str] = []
+    if metric_missing:
+        failure_messages.append(f"missing metric keys: {metric_missing}")
+    if uq_missing:
+        failure_messages.append(f"missing UQ summary values: {uq_missing}")
+    if trace_missing_flags["any_uncertainty_history"]:
+        failure_messages.append("trace audit missing uncertainty history")
+    if trace_missing_flags["any_mc_sample_history"]:
+        failure_messages.append("trace audit missing MC sample history")
+
+    if failure_messages:
+        diagnostics["failure_reason"] = "verification_failed"
+        diagnostics["failure_messages"] = failure_messages
+        _print_failure_diagnostics(diagnostics)
+        raise ValueError(f"verification failed for {run_root}: {failure_messages}")
 
     return {
         "run_root": str(run_root),
