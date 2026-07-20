@@ -32,6 +32,10 @@ from src.core.artifact_integrity import (
     sha256_file,
     write_retention_bundle_manifest,
 )
+from src.core.uq_summary import (
+    build_uq_summary_payload,
+    write_uq_summary_json,
+)
 from src.core.registry import build_dataset
 from src.data.loaders import rebuild_dataset_bundle_with_scaler_state
 from src.engine.checkpoint import CheckpointManager
@@ -144,6 +148,41 @@ def _write_trace_json(path: Path, payload: Any) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", "utf-8")
     return str(path)
+
+
+def _build_run_scalar_logs(experiment_config: dict[str, Any]) -> dict[str, Any]:
+    model_config = dict(experiment_config.get("model", {}))
+    return {
+        "query/continuous_temperature": model_config.get("continuous_temperature"),
+        "query/discrete_temperature": model_config.get("discrete_temperature"),
+        "query/num_samples_train": model_config.get("monte_carlo_samples"),
+        "query/num_samples_eval": model_config.get("monte_carlo_samples"),
+        "query/continuous_weight_entropy_mean": model_config.get(
+            "continuous_weight_entropy_mean"
+        ),
+        "query/discrete_topk_weight_entropy_mean": model_config.get(
+            "discrete_topk_weight_entropy_mean"
+        ),
+    }
+
+
+def _build_uq_summary_inputs(
+    artifact_inputs: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    return {
+        "clean_validation": {
+            "point_scores": artifact_inputs["clean_validation"]["point_scores"],
+            "traces": artifact_inputs["clean_validation_traces"],
+        },
+        "synthetic_validation": {
+            "point_scores": artifact_inputs["synthetic_validation"]["point_scores"],
+            "traces": artifact_inputs["synthetic_validation_traces"],
+        },
+        "test": {
+            "point_scores": artifact_inputs["test"]["point_scores"],
+            "traces": artifact_inputs["test_traces"],
+        },
+    }
 
 
 def _resolve_retention_policy(experiment_config: dict[str, Any]) -> str:
@@ -497,8 +536,11 @@ def _export_offline_artifacts(
     *,
     output_dir: Path,
     artifact_inputs: dict[str, Any],
+    experiment_config: dict[str, Any],
     protocol_config: dict[str, Any],
     experiment_config_path: str,
+    protocol_config_path: str,
+    manifest: dict[str, Any],
 ) -> dict[str, str]:
     threshold_artifact = _build_thresholds(
         artifact_inputs,
@@ -507,8 +549,35 @@ def _export_offline_artifacts(
     )
     threshold_path = output_dir / "thresholds" / "thresholds.json"
     write_threshold_artifact(threshold_artifact, threshold_path)
+    checkpoint_path = manifest.get("evaluation", {}).get("checkpoint_path")
+    checkpoint_sha256 = None
+    if checkpoint_path and Path(str(checkpoint_path)).is_file():
+        checkpoint_sha256 = sha256_file(str(checkpoint_path))
+    uq_summary_payload = build_uq_summary_payload(
+        benchmark_kind="offline",
+        experiment_name=str(experiment_config.get("experiment_name")),
+        method_name="THESIS",
+        variant_name=str(artifact_inputs["variant_name"]),
+        entity_id=str(artifact_inputs["entity_id"]),
+        seed=int(artifact_inputs["seed"]),
+        stage_name=str(
+            experiment_config.get("stage_name")
+            or experiment_config.get("model", {}).get("stage_name")
+            or "stage_b_fusion_finetuning"
+        ),
+        checkpoint_path=str(checkpoint_path) if checkpoint_path else "",
+        checkpoint_sha256=checkpoint_sha256,
+        experiment_config_path=experiment_config_path,
+        protocol_config_path=protocol_config_path,
+        output_dir=str(output_dir),
+        run_scalar_logs=_build_run_scalar_logs(experiment_config),
+        split_inputs=_build_uq_summary_inputs(artifact_inputs),
+    )
+    uq_summary_path = output_dir / "metrics" / "uq_summary.json"
+    write_uq_summary_json(uq_summary_path, uq_summary_payload)
     return {
         "thresholds": str(threshold_path),
+        "uq_summary": str(uq_summary_path),
         "clean_validation_scores": _write_score_npz(
             output_dir / "scores" / "clean_validation_point_scores.npz",
             artifact_inputs["clean_validation"],
@@ -614,8 +683,11 @@ def run_thesis_offline_benchmark(
         artifact_paths = _export_offline_artifacts(
             output_dir=Path(str(experiment_config["output_dir"])),
             artifact_inputs=artifact_inputs,
+            experiment_config=experiment_config,
             protocol_config=protocol_config,
             experiment_config_path=experiment_config_path,
+            protocol_config_path=protocol_config_path,
+            manifest=manifest,
         )
         retention_artifact_paths = _export_offline_retention_bundle(
             output_dir=Path(str(experiment_config["output_dir"])),
@@ -624,6 +696,7 @@ def run_thesis_offline_benchmark(
             manifest=manifest,
             execution_report=execution_report,
             experiment_config=experiment_config,
+            experiment_config_path=experiment_config_path,
             protocol_config=protocol_config,
             protocol_config_path=protocol_config_path,
             retention_policy=retention_policy,

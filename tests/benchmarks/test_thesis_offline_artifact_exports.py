@@ -11,6 +11,7 @@ from scripts.run_thesis_offline_benchmark import (
     collect_offline_artifact_inputs,
     run_thesis_offline_benchmark,
 )
+from src.core.uq_summary import validate_uq_summary_payload
 
 
 def _write_experiment_config(path: Path, output_dir: Path) -> None:
@@ -156,6 +157,7 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
     assert (output_dir / "traces" / "synthetic_validation_traces.json").exists()
     assert (output_dir / "traces" / "test_traces.json").exists()
     assert (output_dir / "metrics" / "offline_metrics.json").exists()
+    assert (output_dir / "metrics" / "uq_summary.json").exists()
     assert (output_dir / "protocol" / "resolved_protocol.json").exists()
     assert (
         output_dir / "retention" / "machine-1-6" / "offline" / "retention_summary.json"
@@ -179,6 +181,8 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
     assert report["retention_artifact_paths"]["summary"].endswith(
         "retention_summary.json"
     )
+    assert report["artifact_paths"]["uq_summary"].endswith("uq_summary.json")
+    assert (output_dir / "retention" / "machine-1-6" / "offline" / "uq_summary.json").exists()
 
     threshold_payload = json.loads(
         (output_dir / "thresholds" / "thresholds.json").read_text(encoding="utf-8")
@@ -192,6 +196,10 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
     )
     clean_scores = np.load(output_dir / "scores" / "clean_validation_point_scores.npz")
     assert np.allclose(clean_scores["point_scores"], [0.1, 0.2, 0.3])
+    uq_summary_payload = json.loads(
+        (output_dir / "metrics" / "uq_summary.json").read_text(encoding="utf-8")
+    )
+    validate_uq_summary_payload(uq_summary_payload)
 
 
 def test_thesis_offline_wrapper_supports_summary_only_retention(
@@ -275,6 +283,7 @@ def test_thesis_offline_wrapper_supports_summary_only_retention(
 
     retention_root = output_dir / "retention" / "machine-1-6" / "offline"
     assert (retention_root / "retention_summary.json").exists()
+    assert (retention_root / "uq_summary.json").exists()
     assert (retention_root / "retention_bundle_manifest.json").exists()
     assert not (retention_root / "clean_validation_traces.json").exists()
     assert not (retention_root / "test_point_scores.npz").exists()
