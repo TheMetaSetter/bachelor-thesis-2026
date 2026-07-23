@@ -19,6 +19,18 @@ This repository is research-first and currently centers on notebooks, design doc
 - `bsc-thesis-ref-codebases/` contains external reference implementations (TSLib, CARLA, DALL-E, and others).
 - Root-level `*.ipynb` notebooks are used for exploratory analysis and visualization.
 
+Canonical experiment-result layout:
+
+```text
+outputs/<experiment_type>/<dataset_name>/<entity_name>/<seed_value>/<method_name>/<phase_name>/<stage_name>/
+```
+
+`benchmark` and `benchmark_smoke` are experiment types. A stage directory
+stores the artifacts for that stage. Keep disk usage minimal by computing
+intermediate values on-the-fly and persisting report-ready summary statistics,
+provenance, selected diagnostics, the stage initialization checkpoint, and the
+stage best checkpoint. Do not persist every forward-pass output by default.
+
 When adding new source code, follow the guidance in `codebase_preferences.md`: one model per file, with inference and training logic colocated for readability.
 
 ## Build, Test, and Development Commands

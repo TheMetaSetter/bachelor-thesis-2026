@@ -21,6 +21,32 @@
 
 - Use Weights & Biases to log artifacts and statistics from experiments, and history of experiments, to make sure each experiment in the history can be reproduced easily without effort.
 
+### Experimental result directory and artifact constraints
+- Treat top-level output directories such as `outputs/benchmark` and `outputs/benchmark_smoke` as experiment roots. The ideal result-path depth is 3 levels below the experiment root; keep paths shallow and within approximately 3–6 levels, with 6 levels as the absolute maximum. Six levels is a hard limit, not the usual target.
+- Design audit-facing outputs to minimize cognitive overload for other researchers. Persist the task-appropriate summary statistics, essential checkpoints, evaluation protocol, configuration, provenance, and explicitly selected diagnostics; do not retain large raw tensors, traces, intermediate logs, tool-generated internals, or duplicated artifacts by default unless a documented analysis or audit need requires them.
+
+### Canonical experiment-result hierarchy and storage policy
+
+- Use the canonical hierarchy:
+  `outputs/<experiment_type>/<dataset_name>/<entity_name>/<seed_value>/<method_name>/<phase_name>/<stage_name>/`.
+  For example, `outputs/benchmark/smd/machine_1_6/seed6/thesis/offline/stage_a/`.
+- `benchmark` and `benchmark_smoke` are experiment types. The folders below
+  them represent dataset, entity, seed, method, phase, and stage in that
+  order. Existing historical trees may differ; discovery and adapters must
+  handle them without redefining the canonical hierarchy.
+- A `[stage_name]` folder stores the artifacts for one stage of one phase of
+  one method, entity, dataset, and seed combination.
+- Minimize experiment data written to disk. Compute intermediate values
+  on-the-fly and persist only summary statistics required for final reports,
+  uncertainty analysis, provenance, reproducibility, and explicitly selected
+  diagnostics.
+- Do not persist every neural-network forward-pass output by default. Raw
+  per-pass traces, tensors, and duplicated retention bundles require an
+  explicit downstream analysis or audit justification.
+- Every stage must retain the checkpoint used to initialize the stage and the
+  best checkpoint selected by the stage's monitoring rule. Record their paths,
+  roles, and checksums in the stage provenance/manifest.
+
 ---
 
 ## 3. Planning and codebase workflow order
