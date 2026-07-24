@@ -15,7 +15,7 @@ data_overrides:
   test_stride: 20
   shuffle_train: false
   batch_size: 1
-  num_workers: 8
+  num_workers: 12
 model_overrides:
   input_dim: 38
   encoder_dim: 64

@@ -12,6 +12,21 @@ Giữ lại lượng artifact nhỏ nhất nhưng vẫn đủ để dựng lại
 Chính sách này áp dụng sau khi đã kiểm tra summary của từng run và đã tạo
 `offline_report_data.json` trên máy local.
 
+## Chính sách theo loại method
+
+Nhóm `offline_benchmark` gồm các method traditional machine learning. Nhóm này
+không bắt buộc phải có summary statistics về uncertainty quantification. Nếu
+`offline_metrics.json` có đủ `vus_pr`, `affiliation_f1`, và `vus_roc`, các metric
+hiện có được phép dùng cho bảng 1. Việc thiếu UQ không được ghi là lỗi thiếu
+artifact; provenance riêng của method vẫn phải được ghi là `partial` nếu thiếu
+protocol hoặc cấu hình audit.
+
+Nếu một run chỉ thiếu phần đuôi rất nhỏ vì chưa có end-aligned window, report có
+thể chấp nhận run đó với `coverage_policy=near_complete_tail_gap`. Canonical row
+phải giữ `raw_num_points`, `evaluated_num_points`, coverage ratio và diagnostic
+gốc. Không được đổi status trong artifact gốc thành
+`benchmark_comparable_full_timeline`.
+
 ## Cách hiểu hai thống kê UQ
 
 Với một split, một cửa sổ có `P` point và stochastic inference có `M` lần

@@ -28,8 +28,23 @@ Use:
 
 `scripts/ops/collect_offline_report_data.py`
 
-It scans every `evaluation_metrics.json` under the source roots, then pairs each
-run with the closest `metrics/uq_summary.json` if it exists.
+The older collector is suitable for local snapshots with the expected schema. It
+must not be used blindly on the fragmented remote tree because it can choose a
+run-level UQ file before the Stage B UQ file.
+
+For the current remote tree, use this read-only streamed workflow:
+
+```text
+scripts/ops/build_remote_offline_report_data.py
+        ↓ streamed through SSH, no remote file write
+scripts/ops/write_offline_report_bundle.py
+        ↓
+outputs/reporting/offline_phase_tables/offline_report_data.json
+```
+
+The streamed builder resolves identity from path, resolved config, experiment
+name, manifest and checkpoint binding before using threshold/UQ metadata. It
+also accepts `offline_benchmark` metrics for table 1 without requiring UQ.
 
 ## What gets preserved
 
