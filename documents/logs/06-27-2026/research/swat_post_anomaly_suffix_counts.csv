@@ -1,4 +1,0 @@
-series_id,source_file,total_length,annotation_type,anomaly_end_index,last_anomalous_index,post_anomaly_suffix_len,num_anomalous_points,notes
-attack.csv,/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/data/SWaT/attack.csv,54621,attack_label_column,,54620,0,54621,last_attack_label_in_csv
-merged.csv,/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/data/SWaT/merged.csv,1441719,attack_label_column,,1441718,0,54621,last_attack_label_in_csv
-normal.csv,/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/data/SWaT/normal.csv,1387098,attack_label_column,,,1387098,0,no_anomaly_in_series
