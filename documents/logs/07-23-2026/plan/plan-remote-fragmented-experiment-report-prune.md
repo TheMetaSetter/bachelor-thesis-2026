@@ -882,3 +882,51 @@ Ghi methods đã xử lý, methods bị block, số run giữ lại, số/dung l
 ### Stage 7.3 — Điều kiện hoàn tất
 
 Hoàn tất khi từng method có trạng thái rõ, hai bảng dựng được từ summary bundle, checkpoint khởi tạo/tốt nhất của mỗi stage còn tồn tại, và prune manifest phản ánh đúng trạng thái artifact sau cleanup.
+
+### Kết quả thực hiện Phase 7 — 2026-07-26
+
+Đã kiểm tra các artifact local trước khi đóng gói. Ban đầu đã có
+`offline_report_data.json`, `identity_reconciliation.json`,
+`prune_manifest.json` và bản Markdown của prune manifest. Hai artifact cần
+thêm cho audit là `canonical_run_manifest.json` và `coverage_gap_report.json`;
+đã tạo cả hai từ report bundle, reconciliation policy và prune manifest hiện
+có. `canonical_run_manifest.json` giữ identity đã chuẩn hóa, report fields,
+provenance, checkpoint evidence và diagnostics cho từng run. `coverage_gap_report.json`
+ghi riêng coverage gap, raw status, identity conflict, limitation và kết quả
+cleanup để không cần mở lại raw trace.
+
+Stage 7.2 đã ghi nhận trạng thái method như sau:
+
+1. Các method traditional machine learning trong `offline_benchmark`
+   (`iforest`, `kmeans_ad`, `stumpy_channel_ab`) có 27 run, đủ metric cho
+   bảng 1. UQ không áp dụng cho nhóm này nên bảng 2 không được xem là bị thiếu.
+2. `redlamp_baseline` có 9 run đủ metric cho bảng 1. Nhóm này không có UQ;
+   một số run có tail gap rất nhỏ và được chấp nhận theo
+   `near_complete_tail_gap`, đồng thời giữ diagnostic gốc.
+3. `THESIS` có 18 run đủ metric cho bảng 1 và đủ UQ cho bảng 2. Có 9 run có
+   metadata variant mâu thuẫn; tất cả đã được resolve bằng path, config,
+   manifest và checkpoint, còn raw conflict vẫn được giữ trong diagnostics.
+
+Không có method hoặc record nào bị `blocked`. Bảng 1 có 54/54 record đủ
+`VUS-PR`, `affiliation F1` và `VUS-ROC`. Bảng 2 có 18/18 record THESIS đủ
+`mean of means` và `mean of variances` cho `clean_validation` và `test`,
+đồng thời có 18 dòng so sánh validation–testing.
+
+Prune manifest hiện phản ánh cả kế hoạch và trạng thái sau cleanup: 216 raw
+trace đã xóa, giải phóng `7,395,484,474` bytes, khoảng `6.888 GiB`; còn 667
+artifact `keep` và 4.628 artifact `review`. Hậu kiểm read-only trên host
+`unstoppable-puma` ngày 2026-07-26 xác nhận cả ba loại raw trace còn 0 file,
+36 retention manifest, 36 retention summary, 233 retained artifact checksum
+khớp và `retention_issues=0`. Mỗi 18 THESIS run vẫn có checkpoint tốt nhất,
+checkpoint khởi tạo và SHA-256 của checkpoint tốt nhất khớp UQ summary.
+
+Các limitation vẫn phải hiển thị trong audit bundle: 27 record còn giữ raw
+label `protocol_status=truncated_smoke_evaluation` và
+`benchmark_comparability=non_comparable`; 27 run có tail gap gần hoàn chỉnh;
+`offline_benchmark` và `redlamp_baseline` không có UQ; 9 THESIS run có
+metadata conflict đã được resolve. Không được đổi các raw label này thành
+full-timeline comparable.
+
+Gate 7 đạt. Bốn artifact audit local cần giữ là
+`offline_report_data.json`, `canonical_run_manifest.json`,
+`prune_manifest.json` và `coverage_gap_report.json`.

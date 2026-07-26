@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Projector-first online adaptation model for the first accepted Phase 4 slice.
 
 This file should be read after the offline multitask model. The online path is
@@ -7,7 +5,8 @@ deliberately conservative: it reuses the offline encoder geometry, keeps the
 reference encoder frozen, and adapts only a small residual projector by default.
 """
 
-import copy
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
 
@@ -25,11 +24,12 @@ from src.core.contracts import validate_model_outputs, validate_online_batch
 from src.engine.online_tta.checkpoint_resolution import (
     resolve_legacy_reference_checkpoint_path,
 )
-from src.engine.online_tta.signature_verification import (
-    PrototypeVerificationMetadata,
-)
 from src.models.base_model import BaseModel
 from src.models.thesis_multitask import ThesisMultitaskModel
+from src.models.online_impl.online_adaptation_helpers import (
+    NearIdentityMLPProjector,
+    ThesisMultitaskEncoderAdapter,
+)
 
 
 def _resolve_reference_checkpoint_path(checkpoint_path: str | Path) -> Path:
@@ -45,10 +45,6 @@ def _resolve_reference_checkpoint_path(checkpoint_path: str | Path) -> Path:
         resolved_path=resolved,
     )
     return resolved
-
-
-from src.models.online_impl.online_adaptation_helpers import *  # noqa: F401,F403
-
 
 class OnlineAdaptationModel(BaseModel):
     def __init__(
@@ -192,6 +188,17 @@ class OnlineAdaptationModel(BaseModel):
             for parameter_name, parameter in state_dict.items()
         }
 
+    def _parameters_for_target_group(
+        self, target_param_group: str
+    ) -> list[nn.Parameter]:
+        if target_param_group == "projector_params":
+            return list(self.online_mlp_projector.parameters())
+        if target_param_group == "online_encoder_params":
+            return self.online_encoder.encoder_parameters()
+        raise ValueError(
+            "target_param_group must be either 'projector_params' or 'online_encoder_params'"
+        )
+
     def _set_trainable_parameter_group(self, target_param_group: str) -> None:
         # Parameter groups are explicit because the design docs treat the online
         # optimization boundary as part of the architecture, not a small detail.
@@ -202,36 +209,16 @@ class OnlineAdaptationModel(BaseModel):
         for parameter in self.online_mlp_projector.parameters():
             parameter.requires_grad = False
 
-        if target_param_group == "projector_params":
-            for parameter in self.online_mlp_projector.parameters():
-                parameter.requires_grad = True
-            console_print(
-                "MODEL",
-                "Set trainable parameter group",
-                target_param_group=target_param_group,
-            )
-            return
-        if target_param_group == "online_encoder_params":
-            for parameter in self.online_encoder.encoder_parameters():
-                parameter.requires_grad = True
-            console_print(
-                "MODEL",
-                "Set trainable parameter group",
-                target_param_group=target_param_group,
-            )
-            return
-        raise ValueError(
-            "target_param_group must be either 'projector_params' or 'online_encoder_params'"
+        for parameter in self._parameters_for_target_group(target_param_group):
+            parameter.requires_grad = True
+        console_print(
+            "MODEL",
+            "Set trainable parameter group",
+            target_param_group=target_param_group,
         )
 
     def get_parameter_group(self, target_param_group: str) -> list[nn.Parameter]:
-        if target_param_group == "projector_params":
-            return list(self.online_mlp_projector.parameters())
-        if target_param_group == "online_encoder_params":
-            return self.online_encoder.encoder_parameters()
-        raise ValueError(
-            "target_param_group must be either 'projector_params' or 'online_encoder_params'"
-        )
+        return self._parameters_for_target_group(target_param_group)
 
     def _replace_batch_x(
         self, batch: dict[str, Any], x_tensor: torch.Tensor
