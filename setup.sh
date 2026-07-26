@@ -21,11 +21,6 @@ export DEBIAN_FRONTEND=noninteractive
 
 log "Installing system packages"
 sudo apt-get update
-sudo apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    tzdata \
-    unzip
 
 log "Setting timezone"
 if command -v timedatectl >/dev/null &&
@@ -36,6 +31,12 @@ else
     printf '%s\n' Asia/Ho_Chi_Minh |
         sudo tee /etc/timezone >/dev/null
 fi
+
+sudo apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    tzdata \
+    unzip
 
 if ! command -v uv >/dev/null 2>&1; then
     log "Installing uv"
@@ -68,6 +69,9 @@ if [[ ! -d data ]]; then
     rm data.zip
 fi
 
+sudo apt install ztsd
+sudo apt installt tree
+
 log "Verifying installation"
 uv run python --version
 uv run python - <<'PY'
@@ -76,5 +80,10 @@ import torch
 print("torch:", torch.__version__)
 print("cuda_available:", torch.cuda.is_available())
 PY
+
+if [ -f "$HOME/.zshrc" ]; then
+    source "$HOME/.zshrc"
+    source ".venv/bin/activate"
+fi
 
 log "Setup complete"

@@ -210,6 +210,33 @@ def thesis_uq_summary(paths: dict[str, Path], uq_payload: dict[str, Any]) -> dic
     }
 
 
+def validation_testing_comparison(uq_summary: dict[str, Any]) -> dict[str, Any]:
+    validation = uq_summary["splits"]["clean_validation"]
+    test = uq_summary["splits"]["test"]
+    validation_mean = validation["mean_of_means"]
+    test_mean = test["mean_of_means"]
+    validation_variance = validation["mean_of_variances"]
+    test_variance = test["mean_of_variances"]
+    return {
+        "mean_of_means_validation": validation_mean,
+        "mean_of_means_test": test_mean,
+        "mean_of_variances_validation": validation_variance,
+        "mean_of_variances_test": test_variance,
+        "test_minus_validation": {
+            "mean_of_means": (
+                test_mean - validation_mean
+                if test_mean is not None and validation_mean is not None
+                else None
+            ),
+            "mean_of_variances": (
+                test_variance - validation_variance
+                if test_variance is not None and validation_variance is not None
+                else None
+            ),
+        },
+    }
+
+
 def thesis_provenance(
     metric_path: Path,
     paths: dict[str, Path],
@@ -255,6 +282,7 @@ def build_thesis_record(metric_path: Path) -> dict[str, Any]:
     coverage = thesis_coverage(metric)
     metric_values_by_name = metric_values(metric)
     path_variant = identity["variant_name"]
+    uq_summary = thesis_uq_summary(paths, uq_payload)
     return {
         "run_id": f"thesis/{identity['variant_name']}/{identity['entity_id']}/seed{identity['seed']}",
         "identity": {
@@ -267,7 +295,8 @@ def build_thesis_record(metric_path: Path) -> dict[str, Any]:
         },
         "metrics": metric_values_by_name,
         "coverage": coverage,
-        "uq_summary": thesis_uq_summary(paths, uq_payload),
+        "uq_summary": uq_summary,
+        "validation_testing_comparison": validation_testing_comparison(uq_summary),
         "provenance": thesis_provenance(
             metric_path, paths, expected_sha256, actual_sha256, diagnostics
         ),
