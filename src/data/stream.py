@@ -113,20 +113,14 @@ class SMDOnlineStream:
     def has_next(self) -> bool:
         return self.cursor.position < len(self.index_records)
 
-    def next_window(self) -> dict[str, Any]:
-        # Each yielded window still looks like an offline window, plus stream
-        # metadata that the online loop can serialize and resume later.
-        if not self.has_next():
-            raise StopIteration("No more windows remain in the online stream")
-
-        stream_step = self.cursor.position
-        sequence_index, start_index, end_index = self.index_records[
-            self.cursor.position
-        ]
-        sequence = self.sequences[sequence_index]
-        self.cursor.position += 1
-
-        window = {
+    def _build_window(
+        self,
+        sequence: dict[str, Any],
+        start_index: int,
+        end_index: int,
+        stream_step: int,
+    ) -> dict[str, Any]:
+        return {
             "x": sequence["x"][start_index:end_index].clone(),
             "point_labels": None
             if sequence["point_labels"] is None
@@ -164,6 +158,20 @@ class SMDOnlineStream:
                 "stream_window_mode": self.stream_window_mode,
             },
         }
+
+    def next_window(self) -> dict[str, Any]:
+        # Each yielded window still looks like an offline window, plus stream
+        # metadata that the online loop can serialize and resume later.
+        if not self.has_next():
+            raise StopIteration("No more windows remain in the online stream")
+
+        stream_step = self.cursor.position
+        sequence_index, start_index, end_index = self.index_records[
+            self.cursor.position
+        ]
+        sequence = self.sequences[sequence_index]
+        self.cursor.position += 1
+        window = self._build_window(sequence, start_index, end_index, stream_step)
         validate_window(window)
         console_print(
             "DATA",

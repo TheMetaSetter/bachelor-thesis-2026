@@ -13,6 +13,30 @@ from src.models.thesis_multitask_impl.thesis_multitask_components import (
 
 
 class ThesisMultitaskLossStepMixin:
+    def _resolve_score_and_classification_loss(
+        self,
+        classification_loss: torch.Tensor,
+        score_loss: torch.Tensor | None,
+        reference_tensor: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, bool]:
+        score_loss_was_skipped = score_loss is None
+        if score_loss is None:
+            score_loss = self._zero_loss(reference_tensor)
+
+        score_loss_is_active = (
+            self.enable_score_loss and self.training_phase == TWO_STAGE_A_PHASE_NAME
+        )
+        if not score_loss_is_active:
+            return score_loss, classification_loss, score_loss_was_skipped
+
+        if score_loss_was_skipped:
+            if not hasattr(self, "_score_loss_skipped_batches"):
+                self._score_loss_skipped_batches = 0
+            self._score_loss_skipped_batches += 1
+            return score_loss, classification_loss, True
+
+        return score_loss, 0.5 * (classification_loss + score_loss), False
+
     def _build_stage_log(
         self,
         stage_name: str,
@@ -224,23 +248,13 @@ class ThesisMultitaskLossStepMixin:
             outputs,
             prepared_batch,
         )
-        if score_loss is None:
-            score_loss = self._zero_loss(outputs["recon"])
-            score_loss_was_skipped = (
-                self.enable_score_loss and self.training_phase == TWO_STAGE_A_PHASE_NAME
+        score_loss, classification_branch_loss, score_loss_was_skipped = (
+            self._resolve_score_and_classification_loss(
+                classification_loss,
+                score_loss,
+                outputs["recon"],
             )
-        else:
-            score_loss_was_skipped = False
-        if self.enable_score_loss and self.training_phase == TWO_STAGE_A_PHASE_NAME:
-            if score_loss_was_skipped:
-                if not hasattr(self, "_score_loss_skipped_batches"):
-                    self._score_loss_skipped_batches = 0
-                self._score_loss_skipped_batches += 1
-                classification_branch_loss = classification_loss
-            else:
-                classification_branch_loss = 0.5 * (classification_loss + score_loss)
-        else:
-            classification_branch_loss = classification_loss
+        )
 
         total_loss = self._compute_total_loss(
             reconstruction_loss=reconstruction_loss,

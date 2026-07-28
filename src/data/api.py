@@ -11,11 +11,15 @@ from src.data.loaders import build_smd_dataset_bundle
 from src.data.public_types import PublicDataBundle
 
 
+PUBLIC_DEFAULT_WINDOW_SIZE = 100
+PUBLIC_DEFAULT_STRIDE = 10
+
+
 def _build_smd_data_config(
     *,
     root: str = "data/ServerMachineDataset",
-    window_size: int = 100,
-    stride: int = 10,
+    window_size: int = PUBLIC_DEFAULT_WINDOW_SIZE,
+    stride: int = PUBLIC_DEFAULT_STRIDE,
     train_stride: int | None = None,
     val_stride: int | None = None,
     test_stride: int | None = None,
@@ -46,18 +50,15 @@ def _build_smd_data_config(
         "skip_existing_download": skip_existing_download,
         "annotate_cleaning_metadata": annotate_cleaning_metadata,
     }
-    if train_stride is not None:
-        data_config["train_stride"] = train_stride
-    if val_stride is not None:
-        data_config["val_stride"] = val_stride
-    if test_stride is not None:
-        data_config["test_stride"] = test_stride
-    if max_train_windows is not None:
-        data_config["max_train_windows"] = max_train_windows
-    if max_val_windows is not None:
-        data_config["max_val_windows"] = max_val_windows
-    if max_test_windows is not None:
-        data_config["max_test_windows"] = max_test_windows
+    _add_optional_window_options(
+        data_config,
+        train_stride=train_stride,
+        val_stride=val_stride,
+        test_stride=test_stride,
+        max_train_windows=max_train_windows,
+        max_val_windows=max_val_windows,
+        max_test_windows=max_test_windows,
+    )
     return data_config
 
 
@@ -73,11 +74,38 @@ def _coerce_public_bundle(bundle: dict[str, Any]) -> PublicDataBundle:
     )
 
 
+def _add_optional_window_options(
+    data_config: dict[str, Any],
+    *,
+    train_stride: int | None,
+    val_stride: int | None,
+    test_stride: int | None,
+    max_train_windows: int | None,
+    max_val_windows: int | None,
+    max_test_windows: int | None,
+) -> None:
+    optional_values = {
+        "train_stride": train_stride,
+        "val_stride": val_stride,
+        "test_stride": test_stride,
+        "max_train_windows": max_train_windows,
+        "max_val_windows": max_val_windows,
+        "max_test_windows": max_test_windows,
+    }
+    data_config.update(
+        {
+            key: value
+            for key, value in optional_values.items()
+            if value is not None
+        }
+    )
+
+
 def _build_anomaly_archive_data_config(
     *,
     file_path: str,
-    window_size: int = 100,
-    stride: int = 10,
+    window_size: int = PUBLIC_DEFAULT_WINDOW_SIZE,
+    stride: int = PUBLIC_DEFAULT_STRIDE,
     train_stride: int | None = None,
     val_stride: int | None = None,
     test_stride: int | None = None,
@@ -103,26 +131,23 @@ def _build_anomaly_archive_data_config(
         "shuffle_train": shuffle_train,
         "annotate_cleaning_metadata": annotate_cleaning_metadata,
     }
-    if train_stride is not None:
-        data_config["train_stride"] = train_stride
-    if val_stride is not None:
-        data_config["val_stride"] = val_stride
-    if test_stride is not None:
-        data_config["test_stride"] = test_stride
-    if max_train_windows is not None:
-        data_config["max_train_windows"] = max_train_windows
-    if max_val_windows is not None:
-        data_config["max_val_windows"] = max_val_windows
-    if max_test_windows is not None:
-        data_config["max_test_windows"] = max_test_windows
+    _add_optional_window_options(
+        data_config,
+        train_stride=train_stride,
+        val_stride=val_stride,
+        test_stride=test_stride,
+        max_train_windows=max_train_windows,
+        max_val_windows=max_val_windows,
+        max_test_windows=max_test_windows,
+    )
     return data_config
 
 
 def load_smd_data(
     *,
     root: str = "data/ServerMachineDataset",
-    window_size: int = 100,
-    stride: int = 10,
+    window_size: int = PUBLIC_DEFAULT_WINDOW_SIZE,
+    stride: int = PUBLIC_DEFAULT_STRIDE,
     train_stride: int | None = None,
     val_stride: int | None = None,
     test_stride: int | None = None,
@@ -163,8 +188,8 @@ def load_smd_data(
 def load_anomaly_archive_data(
     *,
     file_path: str,
-    window_size: int = 100,
-    stride: int = 10,
+    window_size: int = PUBLIC_DEFAULT_WINDOW_SIZE,
+    stride: int = PUBLIC_DEFAULT_STRIDE,
     train_stride: int | None = None,
     val_stride: int | None = None,
     test_stride: int | None = None,

@@ -388,27 +388,23 @@ class ThesisMultitaskSetupMixin:
         # intended starting point is still only reconstruction plus
         # classification loss until observed failure modes justify more terms.
         self.branch_layer_norm = nn.LayerNorm(architecture.hidden_dim)
+        injector_kwargs = {
+            "anomaly_probability": synthetic.anomaly_probability,
+            "min_segment_fraction": synthetic.min_segment_fraction,
+            "max_segment_fraction": synthetic.max_segment_fraction,
+            "spike_scale": synthetic.spike_scale,
+            "anomaly_visibility_boost": synthetic.anomaly_visibility_boost,
+            "anomaly_families": synthetic.anomaly_families,
+            "train_balance_classes": synthetic.train_balance_classes,
+            "classification_label_mode": synthetic.classification_label_mode,
+        }
         self.synthetic_anomaly_injector = SyntheticAnomalyInjector(
-            anomaly_probability=synthetic.anomaly_probability,
-            min_segment_fraction=synthetic.min_segment_fraction,
-            max_segment_fraction=synthetic.max_segment_fraction,
-            spike_scale=synthetic.spike_scale,
-            anomaly_visibility_boost=synthetic.anomaly_visibility_boost,
-            anomaly_families=synthetic.anomaly_families,
-            train_balance_classes=synthetic.train_balance_classes,
+            **injector_kwargs,
             deterministic_seed=synthetic.synthetic_train_seed,
-            classification_label_mode=synthetic.classification_label_mode,
         )
         self.synthetic_validation_injector = SyntheticAnomalyInjector(
-            anomaly_probability=synthetic.anomaly_probability,
-            min_segment_fraction=synthetic.min_segment_fraction,
-            max_segment_fraction=synthetic.max_segment_fraction,
-            spike_scale=synthetic.spike_scale,
-            anomaly_visibility_boost=synthetic.anomaly_visibility_boost,
-            anomaly_families=synthetic.anomaly_families,
-            train_balance_classes=synthetic.train_balance_classes,
+            **injector_kwargs,
             deterministic_seed=synthetic.synthetic_validation_seed,
-            classification_label_mode=synthetic.classification_label_mode,
         )
 
     def _build_optional_loss_configs(self) -> None:

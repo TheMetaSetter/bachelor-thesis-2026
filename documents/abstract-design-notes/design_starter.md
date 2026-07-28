@@ -9,7 +9,9 @@ so datasets, models, and the trainer stay decoupled while each model file stays 
 
 ## SSOT synchronization note
 
-This design starter is synchronized with `documents/design/` as the single source of truth.
+This design starter is the active design note under `documents/abstract-design-notes/`.
+Runtime behavior and current experiment settings remain authoritative over older
+design drafts.
 
 Active window length for current thesis experiments is:
 
@@ -19,7 +21,7 @@ $$
 
 For the detailed offline pre-training phase two-view contrastive specification, see:
 
-- `documents/design/offline_pretraining_phase_two_view_contrastive_design.md`
+- `documents/abstract-design-notes/offline_pretraining_phase_two_view_contrastive_design.md`
 - The active implementation-facing anchors are:
   - `CKA-Gated Per-Sample Fusion`
   - `Experiment Protocol v2`

@@ -1,4 +1,4 @@
-Initialize the prompt set for this repository using the thesis context in `documents/design/idea.md` and the engineering guidance in `documents/design/design_starter.md`.
+Initialize the prompt set for this repository using the thesis context in `documents/abstract-design-notes/idea.md` and the engineering guidance in `documents/abstract-design-notes/design_starter.md`.
 
 Requirements:
 - Use formal, academic language and complete sentences.

@@ -14,7 +14,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-import yaml
+from scripts.benchmarks._config_generation_helpers import entity_token, write_yaml_config
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 ONLINE_BENCHMARK_CONFIG_DIR = (
@@ -29,7 +29,7 @@ STAGE_B_CHECKPOINT_STAGE_NAME = "stage_b_fusion_finetuning"
 
 
 def _entity_token(entity_id: str) -> str:
-    return entity_id.replace("-", "_")
+    return entity_token(entity_id)
 
 
 def _benchmark_mode(smoke: bool) -> str:
@@ -115,12 +115,7 @@ def _task_overrides(
     }
 
 
-def _data_overrides(smoke: bool) -> dict[str, Any]:
-    if smoke:
-        return {
-            "batch_size": 1,
-            "num_workers": 12,
-        }
+def _data_overrides() -> dict[str, Any]:
     return {
         "batch_size": 1,
         "num_workers": 12,
@@ -166,7 +161,7 @@ def build_online_benchmark_config(
             "val_stride": WINDOW_SIZE,
             "test_stride": WINDOW_SIZE,
             "shuffle_train": False,
-            **_data_overrides(smoke),
+            **_data_overrides(),
         },
         "model_overrides": _model_overrides(),
         "task_overrides": _task_overrides(
@@ -215,11 +210,6 @@ def build_online_benchmark_config(
     return config
 
 
-def _write_config(path: Path, config: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
-
-
 def generate_thesis_online_benchmark_configs() -> list[Path]:
     generated_paths: list[Path] = []
     for offline_variant in BENCHMARK_OFFLINE_VARIANTS:
@@ -239,7 +229,7 @@ def generate_thesis_online_benchmark_configs() -> list[Path]:
                             f"__{_entity_token(entity_id)}__w{WINDOW_SIZE}"
                             f"__seed{seed}__{_benchmark_mode(smoke)}.yaml"
                         )
-                        _write_config(config_path, config)
+                        write_yaml_config(config_path, config)
                         generated_paths.append(config_path)
     return generated_paths
 

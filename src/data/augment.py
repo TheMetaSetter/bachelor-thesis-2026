@@ -881,6 +881,24 @@ class SyntheticAnomalyInjector:
         shuffled_positions = self._randperm(batch_size, device=device)
         return ordered_label_tensor[shuffled_positions]
 
+    def _inject_target_class_window(
+        self,
+        clean_window: torch.Tensor,
+        target_class_label: int,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
+        if self.classification_label_mode != "redlamp_multiclass":
+            return self._inject_single_window(clean_window)
+
+        target_family = REDLAMP_MULTICLASS_CLASS_NAMES[target_class_label]
+        if target_family == "normal":
+            raise ValueError("target_class_label must not map to normal")
+        previous_families = self.anomaly_families
+        self.anomaly_families = (target_family,)
+        try:
+            return self._inject_single_window(clean_window)
+        finally:
+            self.anomaly_families = previous_families
+
     def augment_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         # The output batch keeps the original keys and only adds multitask
         # supervision fields, which is why the rest of the codepath stays small.
@@ -912,22 +930,11 @@ class SyntheticAnomalyInjector:
                 augmentation_metadata.append(self._build_clean_metadata())
                 continue
 
-            if self.classification_label_mode == "redlamp_multiclass":
-                target_family = REDLAMP_MULTICLASS_CLASS_NAMES[target_class_label]
-                if target_family == "normal":
-                    raise ValueError("target_class_label must not map to normal")
-                previous_families = self.anomaly_families
-                self.anomaly_families = (target_family,)
-                try:
-                    augmented_window, anomaly_mask, window_metadata = (
-                        self._inject_single_window(clean_windows[batch_index])
-                    )
-                finally:
-                    self.anomaly_families = previous_families
-            else:
-                augmented_window, anomaly_mask, window_metadata = (
-                    self._inject_single_window(clean_windows[batch_index])
+            augmented_window, anomaly_mask, window_metadata = (
+                self._inject_target_class_window(
+                    clean_windows[batch_index], target_class_label
                 )
+            )
             augmented_batch["x"][batch_index] = augmented_window
             anomaly_masks[batch_index] = anomaly_mask
             classification_labels[batch_index] = target_class_label

@@ -4,26 +4,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+from src.core.config_aliases import normalize_variance_correction_value
+
 
 THRESHOLD_ARTIFACT_SCHEMA_VERSION = 3
-
-
-def _normalize_variance_correction(value: Any) -> int:
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, int):
-        if value not in {0, 1}:
-            raise ValueError("variance_correction must be 0 or 1")
-        return value
-    if isinstance(value, str):
-        normalized_value = value.strip().lower()
-        if normalized_value in {"unbiased", "sample", "sample_unbiased"}:
-            return 1
-        if normalized_value in {"population", "biased", "none"}:
-            return 0
-    raise ValueError(
-        "variance_correction must be 0, 1, or one of: unbiased, sample, population"
-    )
 
 
 def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
@@ -253,7 +237,9 @@ def build_threshold_artifact(
 ) -> dict[str, Any]:
     if not 0.0 < float(quantile) <= 1.0:
         raise ValueError("quantile must be in (0, 1]")
-    variance_correction_value = _normalize_variance_correction(variance_correction)
+    variance_correction_value = normalize_variance_correction_value(
+        variance_correction
+    )
     thresholds = {
         "offline_point": {
             "value": float(offline_point_threshold),

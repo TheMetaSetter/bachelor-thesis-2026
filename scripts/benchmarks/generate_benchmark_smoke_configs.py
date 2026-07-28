@@ -7,7 +7,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-import yaml
+from scripts.benchmarks._config_generation_helpers import entity_token, write_yaml_config
 
 from scripts.benchmarks.generate_smd_benchmark_configs import (
     BENCHMARK_ENTITY_IDS,
@@ -24,7 +24,7 @@ BENCHMARK_SMOKE_CONFIG_DIR = (
 
 
 def _entity_token(entity_id: str) -> str:
-    return entity_id.replace("-", "_")
+    return entity_token(entity_id)
 
 
 def _experiment_name(entity_id: str, seed: int) -> str:
@@ -75,11 +75,6 @@ def build_benchmark_smoke_config(
     return config
 
 
-def _write_config(path: Path, config: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
-
-
 def generate_benchmark_smoke_configs() -> list[Path]:
     generated_paths: list[Path] = []
     for entity_id in BENCHMARK_ENTITY_IDS:
@@ -92,7 +87,7 @@ def generate_benchmark_smoke_configs() -> list[Path]:
                 f"smd__thesis_multitask__benchmark-two-stage-"
                 f"{_entity_token(entity_id)}__w{WINDOW_SIZE}__seed{seed}__smoke.yaml"
             )
-            _write_config(config_path, config)
+            write_yaml_config(config_path, config)
             generated_paths.append(config_path)
     return generated_paths
 

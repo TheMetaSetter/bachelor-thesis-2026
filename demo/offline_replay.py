@@ -13,7 +13,6 @@ from demo.loaders import (
     load_report_payload,
     load_sequence_labels,
     load_sequence_values,
-    resolve_output_root,
 )
 
 

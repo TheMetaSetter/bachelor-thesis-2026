@@ -30,6 +30,12 @@ _UNCERTAINTY_KEYS = (
     "classification_probability_variance",
     "classification_variance_mean",
 )
+_MC_SAMPLE_HISTORY_KEYS = (
+    "point_score_samples",
+    "window_score_samples",
+    "reconstruction_samples",
+    "classification_probability_samples",
+)
 
 
 def _utc_now_iso() -> str:
@@ -80,12 +86,7 @@ def _first_non_null(values: list[Any]) -> Any:
 
 
 def _split_trace_audit(traces: list[dict[str, Any]]) -> dict[str, Any]:
-    mc_histories_non_null_count = {
-        "point_score_samples": 0,
-        "window_score_samples": 0,
-        "reconstruction_samples": 0,
-        "classification_probability_samples": 0,
-    }
+    mc_histories_non_null_count = dict.fromkeys(_MC_SAMPLE_HISTORY_KEYS, 0)
     uncertainty_history_non_null_count = 0
     for trace in traces:
         uncertainty_history = trace.get("uncertainty_history")
@@ -134,7 +135,6 @@ def _split_uq_summary(
         for uncertainty_history in uncertainty_histories:
             if isinstance(uncertainty_history, dict):
                 field_values.append(uncertainty_history.get(field_name))
-        summary_suffix = "mean"
         if field_name == "point_anomaly_score_variance":
             field_summary = _summary_from_value(field_values)
             uncertainty_summary["point_anomaly_score_variance_mean"] = field_summary[
@@ -154,7 +154,7 @@ def _split_uq_summary(
                 field_values
             )["mean"]
             continue
-        uncertainty_summary[f"{field_name}_{summary_suffix}"] = _summary_from_value(
+        uncertainty_summary[f"{field_name}_mean"] = _summary_from_value(
             field_values
         )["mean"]
     return {
@@ -298,12 +298,7 @@ def validate_uq_summary_payload(payload: dict[str, Any]) -> None:
             raise TypeError(
                 f"uq_summary.splits['{split_name}'].trace_audit.mc_histories_non_null_count must be a mapping"
             )
-        for key_name in (
-            "point_score_samples",
-            "window_score_samples",
-            "reconstruction_samples",
-            "classification_probability_samples",
-        ):
+        for key_name in _MC_SAMPLE_HISTORY_KEYS:
             if key_name not in mc_histories_non_null_count:
                 raise ValueError(
                     f"uq_summary.splits['{split_name}'].trace_audit.mc_histories_non_null_count missing {key_name}"

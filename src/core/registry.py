@@ -30,23 +30,46 @@ def register_model(name: str, builder: Callable[..., Any]) -> None:
     )
 
 
+def _build_registered_component(
+    builders: dict[str, Callable[..., Any]],
+    component_name: str,
+    component_type: str,
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
+    if component_name not in builders:
+        raise KeyError(f"Unknown {component_type} builder: {component_name}")
+    console_print(
+        "REGISTRY",
+        f"Building {component_type}",
+        name=component_name,
+    )
+    return builders[component_name](*args, **kwargs)
+
+
 def build_dataset(name: str, *args: Any, **kwargs: Any) -> Any:
     """
     Hàm này có nhiệm vụ build
     Hàm này nhận vào tên của tập dữ liệu cần build
     và các tham số cấu hình tương ứng với tập dữ liệu đó.
     """
-    if name not in DATASET_BUILDERS:
-        raise KeyError(f"Unknown dataset builder: {name}")
-    console_print("REGISTRY", "Building dataset", name=name)
-    return DATASET_BUILDERS[name](*args, **kwargs)
+    return _build_registered_component(
+        DATASET_BUILDERS,
+        name,
+        "dataset",
+        *args,
+        **kwargs,
+    )
 
 
 def build_model(name: str, *args: Any, **kwargs: Any) -> Any:
-    if name not in MODEL_BUILDERS:
-        raise KeyError(f"Unknown model builder: {name}")
-    console_print("REGISTRY", "Building model", name=name)
-    return MODEL_BUILDERS[name](*args, **kwargs)
+    return _build_registered_component(
+        MODEL_BUILDERS,
+        name,
+        "model",
+        *args,
+        **kwargs,
+    )
 
 
 def clear_registry() -> None:

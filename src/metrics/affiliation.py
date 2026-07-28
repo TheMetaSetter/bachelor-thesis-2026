@@ -14,6 +14,10 @@ from operator import itemgetter
 import numpy as np
 
 
+def _as_flat_int_array(values: np.ndarray) -> np.ndarray:
+    return np.asarray(values).astype(np.int64).reshape(-1)
+
+
 def _convert_vector_to_events(binary_vector: np.ndarray) -> list[tuple[int, int]]:
     positive_indexes = [index for index, value in enumerate(binary_vector) if value > 0]
     events: list[tuple[int, int]] = []
@@ -416,8 +420,8 @@ def compute_affiliation_precision_recall(
     point_labels: np.ndarray,
     binary_predictions: np.ndarray,
 ) -> tuple[float, float]:
-    label_array = np.asarray(point_labels).astype(np.int64).reshape(-1)
-    prediction_array = np.asarray(binary_predictions).astype(np.int64).reshape(-1)
+    label_array = _as_flat_int_array(point_labels)
+    prediction_array = _as_flat_int_array(binary_predictions)
     if label_array.shape != prediction_array.shape:
         raise ValueError("point_labels and binary_predictions must have the same shape")
 

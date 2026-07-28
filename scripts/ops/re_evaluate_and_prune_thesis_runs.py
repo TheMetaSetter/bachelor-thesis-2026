@@ -67,6 +67,25 @@ def _default_run_roots(repo_root: Path) -> list[Path]:
     return [_resolve_path(run_root, repo_root) for run_root in DEFAULT_RUN_ROOTS]
 
 
+def _build_run_plan(run_root: Path) -> dict[str, str]:
+    return {
+        "run_root": str(run_root),
+        "experiment_config": str(
+            run_root
+            / "two_stage"
+            / "generated_configs"
+            / "02_stage_b_fusion_finetuning.yaml"
+        ),
+        "checkpoint_path": str(
+            run_root
+            / "two_stage"
+            / "stage_b_fusion_finetuning"
+            / "checkpoints"
+            / "best.pt"
+        ),
+    }
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -290,42 +309,14 @@ def main() -> None:
 
     if args.dry_run:
         for run_root in run_roots:
-            print(
-                json.dumps(
-                    {
-                        "run_root": str(run_root),
-                        "experiment_config": str(
-                            run_root
-                            / "two_stage"
-                            / "generated_configs"
-                            / "02_stage_b_fusion_finetuning.yaml"
-                        ),
-                        "checkpoint_path": str(
-                            run_root
-                            / "two_stage"
-                            / "stage_b_fusion_finetuning"
-                            / "checkpoints"
-                            / "best.pt"
-                        ),
-                    },
-                    indent=2,
-                    sort_keys=True,
-                )
-            )
+            print(json.dumps(_build_run_plan(run_root), indent=2, sort_keys=True))
         return
 
     summary: list[dict[str, Any]] = []
     for index, run_root in enumerate(run_roots, start=1):
-        experiment_config = (
-            run_root / "two_stage" / "generated_configs" / "02_stage_b_fusion_finetuning.yaml"
-        )
-        checkpoint_path = (
-            run_root
-            / "two_stage"
-            / "stage_b_fusion_finetuning"
-            / "checkpoints"
-            / "best.pt"
-        )
+        run_plan = _build_run_plan(run_root)
+        experiment_config = Path(run_plan["experiment_config"])
+        checkpoint_path = Path(run_plan["checkpoint_path"])
         eval_log = log_dir / f"re_eval_{run_root.as_posix().replace('/', '_')}.txt"
         print(f"[{index}/{len(run_roots)}] evaluating {run_root}")
         _run_command(

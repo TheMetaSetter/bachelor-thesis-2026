@@ -15,7 +15,7 @@ The preferred outcome is:
 - one registry-facing entrypoint per dataset family
 - no changes to trainer or evaluator semantics when a new dataset is added
 
-This design follows `documents/design/design_starter.md` and the repository rule that the data path should stay thin, readable, and configuration-driven.
+This design follows `documents/abstract-design-notes/design_starter.md` and the repository rule that the data path should stay thin, readable, and configuration-driven.
 
 ## Design Goals
 

@@ -628,6 +628,35 @@ from scripts.benchmarks._internal.run_thesis_offline_benchmark_helpers import (
 )
 
 
+def _build_evaluation_only_run(
+    experiment_config: dict[str, Any],
+    checkpoint_path: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    manifest = {
+        "manifest_root": str(
+            Path(experiment_config["output_dir"]) / "evaluation_only"
+        ),
+        "evaluation": {"checkpoint_path": checkpoint_path},
+        "evaluation_only": True,
+    }
+    execution_report = {
+        "manifest_path": None,
+        "execution_report_path": None,
+        "started_at_utc": _utc_now_iso(),
+        "finished_at_utc": _utc_now_iso(),
+        "dry_run": False,
+        "skip_completed": False,
+        "resumed_from_existing_report": False,
+        "status": "evaluation_only",
+        "executed_stage_names": [],
+        "completed_stage_names": [],
+        "skipped_stage_names": [],
+        "evaluation_only": True,
+        "checkpoint_path": checkpoint_path,
+    }
+    return manifest, execution_report
+
+
 def run_thesis_offline_benchmark(
     *,
     experiment_config_path: str,
@@ -649,28 +678,10 @@ def run_thesis_offline_benchmark(
             raise ValueError(
                 "--checkpoint-path is required when --evaluation-only is set"
             )
-        manifest = {
-            "manifest_root": str(
-                Path(experiment_config["output_dir"]) / "evaluation_only"
-            ),
-            "evaluation": {"checkpoint_path": checkpoint_path},
-            "evaluation_only": True,
-        }
-        execution_report = {
-            "manifest_path": None,
-            "execution_report_path": None,
-            "started_at_utc": _utc_now_iso(),
-            "finished_at_utc": _utc_now_iso(),
-            "dry_run": False,
-            "skip_completed": False,
-            "resumed_from_existing_report": False,
-            "status": "evaluation_only",
-            "executed_stage_names": [],
-            "completed_stage_names": [],
-            "skipped_stage_names": [],
-            "evaluation_only": True,
-            "checkpoint_path": checkpoint_path,
-        }
+        manifest, execution_report = _build_evaluation_only_run(
+            experiment_config,
+            checkpoint_path,
+        )
     else:
         validate_two_stage_epoch_budget(experiment_config)
         manifest = materialize_two_stage_run_manifest(experiment_config)

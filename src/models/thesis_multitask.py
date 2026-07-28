@@ -52,18 +52,26 @@ class ThesisMultitaskModel(
     # File comment for a younger reader:
     # this class is the public door into the model, but the real steps are kept
     # in small implementation modules so each phase is easier to read and test.
-    def __init__(
-        self,
-        config: ThesisMultitaskModelConfig | None = None,
-        **flat_kwargs: Any,
-    ) -> None:
-        super().__init__()
+    @staticmethod
+    def _resolve_model_config(
+        config: ThesisMultitaskModelConfig | None,
+        flat_kwargs: dict[str, Any],
+    ) -> ThesisMultitaskModelConfig:
         if config is not None and flat_kwargs:
             raise ValueError("Pass either config or flat keyword arguments, not both")
         if config is None:
             config = ThesisMultitaskModelConfig.from_flat_kwargs(flat_kwargs)
         if not isinstance(config, ThesisMultitaskModelConfig):
             raise TypeError("config must be a ThesisMultitaskModelConfig instance")
+        return config
+
+    def __init__(
+        self,
+        config: ThesisMultitaskModelConfig | None = None,
+        **flat_kwargs: Any,
+    ) -> None:
+        super().__init__()
+        config = self._resolve_model_config(config, flat_kwargs)
 
         self._store_config_values(config)
         self._build_encoder(config)

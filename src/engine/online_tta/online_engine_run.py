@@ -71,6 +71,18 @@ def _build_dry_run_online_context(*, online_variant: str) -> dict[str, Any]:
     }
 
 
+def _persist_threshold_artifacts(
+    threshold_artifacts: dict[str, dict[str, Any]],
+    output_dir: Path,
+) -> dict[str, str]:
+    threshold_paths: dict[str, str] = {}
+    for entity_id, artifact in threshold_artifacts.items():
+        path = output_dir / "thresholds" / entity_id / "online_thresholds.json"
+        write_threshold_artifact(artifact, path)
+        threshold_paths[entity_id] = str(path)
+    return threshold_paths
+
+
 def _build_runtime_online_context(
     *,
     experiment_config: dict[str, Any],
@@ -106,11 +118,7 @@ def _build_runtime_online_context(
         checkpoint_sha256=reference_checkpoint_sha256,
     )
     output_dir = Path(str(experiment_config["output_dir"]))
-    threshold_paths: dict[str, str] = {}
-    for entity_id, artifact in threshold_artifacts.items():
-        path = output_dir / "thresholds" / entity_id / "online_thresholds.json"
-        write_threshold_artifact(artifact, path)
-        threshold_paths[entity_id] = str(path)
+    threshold_paths = _persist_threshold_artifacts(threshold_artifacts, output_dir)
     first_entity = next(iter(threshold_artifacts))
     threshold_artifact = threshold_artifacts[first_entity]
     threshold_path = threshold_paths[first_entity]

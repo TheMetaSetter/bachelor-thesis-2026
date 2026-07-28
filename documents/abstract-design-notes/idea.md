@@ -3,11 +3,13 @@ Your thesis idea is coherent and modular enough to start implementation now. The
 
 ## SSOT synchronization note
 
-This file is synchronized with the active design source of truth under `documents/design/`.
+This file is an active design note under `documents/abstract-design-notes/`.
+Runtime behavior and current experiment settings remain authoritative over older
+design drafts.
 
 For the offline pre-training phase two-view contrastive design, use this companion specification as authoritative:
 
-- `documents/design/offline_pretraining_phase_two_view_contrastive_design.md`
+- `documents/abstract-design-notes/offline_pretraining_phase_two_view_contrastive_design.md`
 - In that document, treat these sections as the active implementation contract:
   - `CKA-Gated Per-Sample Fusion`
   - `Experiment Protocol v2`

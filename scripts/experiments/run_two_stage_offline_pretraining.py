@@ -337,27 +337,27 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
     return initialization_checkpoint_path
 
 
+def _build_module_command(module_name: str, *arguments: str) -> list[str]:
+    return [sys.executable, "-m", module_name, *arguments]
+
+
 def build_two_stage_execution_commands(manifest: dict[str, Any]) -> dict[str, Any]:
     training_commands: list[list[str]] = []
     for stage_record in manifest["training_stages"]:
         training_commands.append(
-            [
-                sys.executable,
-                "-m",
+            _build_module_command(
                 "scripts.train",
                 "--experiment-config",
                 str(stage_record["config_path"]),
-            ]
+            )
         )
-    evaluation_command = [
-        sys.executable,
-        "-m",
+    evaluation_command = _build_module_command(
         "scripts.evaluate",
         "--experiment-config",
         str(manifest["evaluation"]["config_path"]),
         "--checkpoint-path",
         str(manifest["evaluation"]["checkpoint_path"]),
-    ]
+    )
     return {"training": training_commands, "evaluation": evaluation_command}
 
 

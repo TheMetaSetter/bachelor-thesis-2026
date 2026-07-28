@@ -79,6 +79,49 @@ def _prepare_clean_batch(
     return prepared_batch
 
 
+def _build_contrastive_token_masks(
+    self: Any, batch: dict[str, Any]
+) -> tuple[torch.Tensor | None, torch.Tensor | None]:
+    anomaly_mask = batch.get("synthetic_anomaly_mask")
+    if anomaly_mask is None or not self.enable_two_view_contrastive:
+        return None, None
+    return anomaly_mask == 0, anomaly_mask == 1
+
+
+def _resolve_active_memory_banks(
+    self: Any,
+    hidden: torch.Tensor,
+    *,
+    normal_token_mask: torch.Tensor | None,
+    anomaly_token_mask: torch.Tensor | None,
+    stage_name: str,
+) -> tuple[torch.Tensor | None, torch.Tensor | None]:
+    active_continuous_memory_bank = None
+    if self.continuous_prototype_bank is not None:
+        if self._should_update_memory(stage_name):
+            active_continuous_memory_bank = self._update_continuous_memory_bank(
+                hidden,
+                token_mask=normal_token_mask,
+            )
+        else:
+            active_continuous_memory_bank = self._normalize_memory_vectors(
+                self.continuous_prototype_bank
+            )
+
+    active_discrete_codebook = None
+    if self.discrete_codebook is not None:
+        if self._should_update_memory(stage_name):
+            self._update_discrete_codebook_memory(
+                hidden,
+                token_mask=anomaly_token_mask,
+            )
+        active_discrete_codebook = self._normalize_memory_vectors(
+            self.discrete_codebook
+        )
+
+    return active_continuous_memory_bank, active_discrete_codebook
+
+
 def forward(
     self: Any, batch: dict[str, Any], stage_name: str = "train"
 ) -> dict[str, Any]:
@@ -87,49 +130,18 @@ def forward(
     forward_start_time = time.perf_counter()
     encoder_outputs = self.encoder(batch)
     hidden = encoder_outputs["hidden"]
-    anomaly_mask = batch.get("synthetic_anomaly_mask")
-    normal_token_mask = None
-    anomaly_token_mask = None
+    normal_token_mask, anomaly_token_mask = _build_contrastive_token_masks(self, batch)
     monte_carlo_forward_outputs = None
-    if anomaly_mask is not None and self.enable_two_view_contrastive:
-        normal_token_mask = anomaly_mask == 0
-        anomaly_token_mask = anomaly_mask == 1
     if self._phase_uses_prototype_path():
-        if self.continuous_prototype_bank is not None and self._should_update_memory(
-            stage_name
-        ):
-            active_continuous_memory_bank = self._update_continuous_memory_bank(
+        active_continuous_memory_bank, active_discrete_codebook = (
+            _resolve_active_memory_banks(
+                self,
                 hidden,
-                token_mask=normal_token_mask,
+                normal_token_mask=normal_token_mask,
+                anomaly_token_mask=anomaly_token_mask,
+                stage_name=stage_name,
             )
-        elif self.continuous_prototype_bank is not None:
-            active_continuous_memory_bank = self._normalize_memory_vectors(
-                self.continuous_prototype_bank
-            )
-        else:
-            active_continuous_memory_bank = None
-        if self.discrete_codebook is not None and self._should_update_memory(
-            stage_name
-        ):
-            self._update_discrete_codebook_memory(
-                hidden,
-                token_mask=anomaly_token_mask,
-            )
-            active_assignment_logits = None
-            active_assignment_probabilities = None
-            active_discrete_codebook = self._normalize_memory_vectors(
-                self.discrete_codebook
-            )
-        elif self.discrete_codebook is not None:
-            active_assignment_logits = None
-            active_assignment_probabilities = None
-            active_discrete_codebook = self._normalize_memory_vectors(
-                self.discrete_codebook
-            )
-        else:
-            active_assignment_logits = None
-            active_assignment_probabilities = None
-            active_discrete_codebook = None
+        )
         continuous_outputs = self._continuous_prototype_lookup(
             hidden,
             stage_name=stage_name,
@@ -139,8 +151,8 @@ def forward(
             hidden,
             stage_name=stage_name,
             active_codebook=active_discrete_codebook,
-            precomputed_assignment_logits=active_assignment_logits,
-            precomputed_assignment_probabilities=active_assignment_probabilities,
+            precomputed_assignment_logits=None,
+            precomputed_assignment_probabilities=None,
         )
         fusion_outputs = self._compute_fusion_outputs(
             continuous_hidden=continuous_outputs["prototype_context"],

@@ -16,6 +16,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from src.core.contracts import validate_batch, validate_model_outputs
+from src.core.config_aliases import resolve_balance_classes_setting
 from src.data.augment import (
     REDLAMP_ANOMALY_FAMILIES,
     REDLAMP_MULTICLASS_CLASS_NAMES,
@@ -187,38 +188,31 @@ class RedLampBaseline(BaseModel):
         )
         # The older alias is preserved for compatibility with binary-era call
         # sites, but the active contract is generic class balancing.
-        if balance_classes_within_batch is not None:
-            effective_balance_classes_within_batch = bool(balance_classes_within_batch)
-        else:
-            effective_balance_classes_within_batch = bool(
-                balance_binary_classes_within_batch or train_balance_classes
-            )
+        effective_balance_classes_within_batch = resolve_balance_classes_setting(
+            canonical_value=balance_classes_within_batch,
+            legacy_value=balance_binary_classes_within_batch,
+            default_value=train_balance_classes,
+        )
         self.train_balance_classes = effective_balance_classes_within_batch
-        self.synthetic_anomaly_injector = SyntheticAnomalyInjector(
-            anomaly_probability=anomaly_probability,
-            min_segment_fraction=min_segment_fraction,
-            max_segment_fraction=max_segment_fraction,
-            spike_scale=spike_scale,
-            anomaly_visibility_boost=anomaly_visibility_boost,
-            anomaly_families=anomaly_families,
-            balance_binary_classes_within_batch=(
+        injector_kwargs = {
+            "anomaly_probability": anomaly_probability,
+            "min_segment_fraction": min_segment_fraction,
+            "max_segment_fraction": max_segment_fraction,
+            "spike_scale": spike_scale,
+            "anomaly_visibility_boost": anomaly_visibility_boost,
+            "anomaly_families": anomaly_families,
+            "balance_binary_classes_within_batch": (
                 effective_balance_classes_within_batch
             ),
+            "classification_label_mode": "redlamp_multiclass",
+        }
+        self.synthetic_anomaly_injector = SyntheticAnomalyInjector(
+            **injector_kwargs,
             deterministic_seed=synthetic_train_seed,
-            classification_label_mode="redlamp_multiclass",
         )
         self.synthetic_validation_injector = SyntheticAnomalyInjector(
-            anomaly_probability=anomaly_probability,
-            min_segment_fraction=min_segment_fraction,
-            max_segment_fraction=max_segment_fraction,
-            spike_scale=spike_scale,
-            anomaly_visibility_boost=anomaly_visibility_boost,
-            anomaly_families=anomaly_families,
-            balance_binary_classes_within_batch=(
-                effective_balance_classes_within_batch
-            ),
+            **injector_kwargs,
             deterministic_seed=synthetic_validation_seed,
-            classification_label_mode="redlamp_multiclass",
         )
         self._encoder_profiled_parameters = self._get_encoder_profiled_parameters()
 

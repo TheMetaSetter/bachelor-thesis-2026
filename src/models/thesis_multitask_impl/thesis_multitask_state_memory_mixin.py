@@ -26,25 +26,11 @@ class ThesisMultitaskStateMemoryMixin:
     def _normalize_hidden_for_memory(self, hidden: torch.Tensor) -> torch.Tensor:
         return F.normalize(hidden, dim=-1, eps=self.memory_norm_epsilon)
 
-    def _select_covering_vectors(
+    def _select_farthest_covering_indices(
         self,
-        candidate_vectors: torch.Tensor,
+        normalized_vectors: torch.Tensor,
         num_vectors: int,
     ) -> torch.Tensor:
-        if candidate_vectors.shape[0] == 0:
-            raise ValueError("candidate_vectors must contain at least one token")
-
-        normalized_vectors = self._normalize_memory_vectors(candidate_vectors)
-        if normalized_vectors.shape[0] <= num_vectors:
-            repeated_indices = (
-                torch.arange(
-                    num_vectors,
-                    device=normalized_vectors.device,
-                )
-                % normalized_vectors.shape[0]
-            )
-            return normalized_vectors.index_select(0, repeated_indices)
-
         mean_vector = normalized_vectors.mean(dim=0, keepdim=True)
         squared_distances_to_mean = torch.sum(
             (normalized_vectors - mean_vector) ** 2,
@@ -69,9 +55,30 @@ class ThesisMultitaskStateMemoryMixin:
                 next_squared_distances,
             )
 
-        selected_index_tensor = torch.tensor(
-            selected_indices,
-            device=normalized_vectors.device,
+        return torch.tensor(selected_indices, device=normalized_vectors.device)
+
+    def _select_covering_vectors(
+        self,
+        candidate_vectors: torch.Tensor,
+        num_vectors: int,
+    ) -> torch.Tensor:
+        if candidate_vectors.shape[0] == 0:
+            raise ValueError("candidate_vectors must contain at least one token")
+
+        normalized_vectors = self._normalize_memory_vectors(candidate_vectors)
+        if normalized_vectors.shape[0] <= num_vectors:
+            repeated_indices = (
+                torch.arange(
+                    num_vectors,
+                    device=normalized_vectors.device,
+                )
+                % normalized_vectors.shape[0]
+            )
+            return normalized_vectors.index_select(0, repeated_indices)
+
+        selected_index_tensor = self._select_farthest_covering_indices(
+            normalized_vectors,
+            num_vectors,
         )
         return normalized_vectors.index_select(0, selected_index_tensor)
 
@@ -106,33 +113,13 @@ class ThesisMultitaskStateMemoryMixin:
             )
             return normalized_tokens.index_select(0, repeated_indices)
 
-        token_mean = normalized_tokens.mean(dim=0, keepdim=True)
-        squared_distances_to_mean = torch.sum(
-            (normalized_tokens - token_mean) ** 2,
-            dim=1,
+        initial_indices = self._select_farthest_covering_indices(
+            normalized_tokens,
+            k,
         )
-        first_index = int(torch.argmin(squared_distances_to_mean).item())
-        selected_indices = [first_index]
-
-        minimum_squared_distances = torch.sum(
-            (normalized_tokens - normalized_tokens[first_index]) ** 2,
-            dim=1,
-        )
-        while len(selected_indices) < k:
-            next_index = int(torch.argmax(minimum_squared_distances).item())
-            selected_indices.append(next_index)
-            next_squared_distances = torch.sum(
-                (normalized_tokens - normalized_tokens[next_index]) ** 2,
-                dim=1,
-            )
-            minimum_squared_distances = torch.minimum(
-                minimum_squared_distances,
-                next_squared_distances,
-            )
-
         centers = normalized_tokens.index_select(
             0,
-            torch.tensor(selected_indices, device=normalized_tokens.device),
+            initial_indices,
         )
 
         for _ in range(num_iterations):

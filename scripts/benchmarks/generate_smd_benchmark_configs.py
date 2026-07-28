@@ -14,7 +14,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-import yaml
+from scripts.benchmarks._config_generation_helpers import entity_token, write_yaml_config
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 OFFLINE_BENCHMARK_CONFIG_DIR = (
@@ -27,7 +27,7 @@ BENCHMARK_VARIANTS = ("O0", "O1")
 
 
 def _entity_token(entity_id: str) -> str:
-    return entity_id.replace("-", "_")
+    return entity_token(entity_id)
 
 
 def _data_config_path(entity_id: str) -> str:
@@ -201,11 +201,6 @@ def build_offline_benchmark_config(
     return config
 
 
-def _write_config(path: Path, config: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
-
-
 def generate_thesis_offline_benchmark_configs() -> list[Path]:
     generated_paths: list[Path] = []
     for variant in BENCHMARK_VARIANTS:
@@ -223,7 +218,7 @@ def generate_thesis_offline_benchmark_configs() -> list[Path]:
                         f"smd__thesis__offline__{variant}__{_entity_token(entity_id)}"
                         f"__w{WINDOW_SIZE}__seed{seed}__{mode}.yaml"
                     )
-                    _write_config(config_path, config)
+                    write_yaml_config(config_path, config)
                     generated_paths.append(config_path)
     return generated_paths
 

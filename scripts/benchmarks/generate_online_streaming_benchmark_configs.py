@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-import yaml
+from scripts.benchmarks._config_generation_helpers import entity_token, write_yaml_config
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -44,7 +44,7 @@ METHOD_DIRECTORY_NAMES = {
 
 
 def _entity_token(entity_id: str) -> str:
-    return entity_id.replace("-", "_")
+    return entity_token(entity_id)
 
 
 def _mode_name(smoke: bool) -> str:
@@ -155,11 +155,6 @@ def build_online_streaming_benchmark_config(
     }
 
 
-def _write_config(path: Path, config: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
-
-
 def generate_online_streaming_benchmark_configs() -> list[Path]:
     generated_paths: list[Path] = []
     for method in BENCHMARK_METHODS:
@@ -181,7 +176,7 @@ def generate_online_streaming_benchmark_configs() -> list[Path]:
                                 f"{_benchmark_name(method=method, online_variant=online_variant, entity_id=entity_id, seed=seed, smoke=smoke)}.yaml"
                             )
                         )
-                        _write_config(config_path, config)
+                        write_yaml_config(config_path, config)
                         generated_paths.append(config_path)
     return generated_paths
 

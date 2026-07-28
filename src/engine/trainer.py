@@ -502,22 +502,22 @@ class Trainer:
             reconstructed_records
         )
         threshold = select_point_score_threshold(concatenated_scores, quantile=0.99)
+        if self.validation_evaluator_config is None:
+            vus_max_buffer_size = 0
+            vus_num_thresholds = 200
+        else:
+            vus_max_buffer_size = self.validation_evaluator_config.get(
+                "vus_max_buffer_size"
+            )
+            vus_num_thresholds = int(
+                self.validation_evaluator_config.get("vus_num_thresholds", 200)
+            )
         pointwise_metrics = compute_pointwise_metrics(
             point_labels=concatenated_labels,
             point_scores=concatenated_scores,
             threshold=threshold,
-            vus_max_buffer_size=(
-                0
-                if self.validation_evaluator_config is None
-                else self.validation_evaluator_config.get("vus_max_buffer_size")
-            ),
-            vus_num_thresholds=(
-                200
-                if self.validation_evaluator_config is None
-                else int(
-                    self.validation_evaluator_config.get("vus_num_thresholds", 200)
-                )
-            ),
+            vus_max_buffer_size=vus_max_buffer_size,
+            vus_num_thresholds=vus_num_thresholds,
         )
         pointwise_metrics["threshold"] = threshold
         return {

@@ -13,6 +13,7 @@ from typing import Any
 
 import yaml
 
+from src.core.config_aliases import normalize_variance_correction_value
 from src.core.console import console_print
 from src.core.config_experiment_validation import validate_experiment_config
 
@@ -84,6 +85,37 @@ def _merge_config_section(
         override_keys=sorted(overrides.keys()),
     )
     return merged_config
+
+
+def _resolve_referenced_config_path(
+    config_reference: Path,
+    experiment_path: Path,
+) -> Path:
+    if config_reference.is_absolute():
+        return config_reference
+
+    candidate_reference = None
+    if config_reference.parts and config_reference.parts[0] == "configs":
+        repository_root = experiment_path.parent
+        while (
+            repository_root != repository_root.parent
+            and not (repository_root / "configs").exists()
+        ):
+            repository_root = repository_root.parent
+        repository_candidate = repository_root / config_reference
+        if repository_candidate.exists():
+            candidate_reference = repository_candidate
+    if candidate_reference is None:
+        sibling_candidate = experiment_path.parent / config_reference
+        if sibling_candidate.exists():
+            candidate_reference = sibling_candidate
+    if candidate_reference is None:
+        cwd_candidate = Path.cwd() / config_reference
+        if cwd_candidate.exists():
+            candidate_reference = cwd_candidate
+    if candidate_reference is not None:
+        return candidate_reference
+    return config_reference
 
 
 def _validate_non_negative_integer_fields(
@@ -178,21 +210,6 @@ def _normalize_thesis_multitask_v3_aliases(experiment_config: dict[str, Any]) ->
     if not isinstance(model_config, dict):
         return
 
-    def _normalize_variance_correction_value(value: Any) -> int:
-        if isinstance(value, bool):
-            return int(value)
-        if isinstance(value, int) and value in {0, 1}:
-            return value
-        if isinstance(value, str):
-            normalized_value = value.strip().lower()
-            if normalized_value in {"unbiased", "sample", "sample_unbiased"}:
-                return 1
-            if normalized_value in {"population", "biased", "none"}:
-                return 0
-        raise ValueError(
-            "variance_correction must be 0, 1, or one of: unbiased, sample, population"
-        )
-
     if (
         "sample_variance_correction" in model_config
         and "variance_correction" in model_config
@@ -210,7 +227,7 @@ def _normalize_thesis_multitask_v3_aliases(experiment_config: dict[str, Any]) ->
     ):
         model_config["variance_correction"] = model_config["sample_variance_correction"]
     if "variance_correction" in model_config:
-        model_config["variance_correction"] = _normalize_variance_correction_value(
+        model_config["variance_correction"] = normalize_variance_correction_value(
             model_config["variance_correction"]
         )
     model_config.pop("sample_variance_correction", None)
@@ -926,29 +943,10 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
         ("model", "model_config_path"),
         ("task", "task_config_path"),
     ]:
-        config_reference = Path(root_config[reference_field])
-        if not config_reference.is_absolute():
-            candidate_reference = None
-            if config_reference.parts and config_reference.parts[0] == "configs":
-                repository_root = experiment_path.parent
-                while (
-                    repository_root != repository_root.parent
-                    and not (repository_root / "configs").exists()
-                ):
-                    repository_root = repository_root.parent
-                repository_candidate = repository_root / config_reference
-                if repository_candidate.exists():
-                    candidate_reference = repository_candidate
-            if candidate_reference is None:
-                sibling_candidate = experiment_path.parent / config_reference
-                if sibling_candidate.exists():
-                    candidate_reference = sibling_candidate
-            if candidate_reference is None:
-                cwd_candidate = Path.cwd() / config_reference
-                if cwd_candidate.exists():
-                    candidate_reference = cwd_candidate
-            if candidate_reference is not None:
-                config_reference = candidate_reference
+        config_reference = _resolve_referenced_config_path(
+            Path(root_config[reference_field]),
+            experiment_path,
+        )
         console_print(
             "CONFIG",
             "Resolving referenced config",

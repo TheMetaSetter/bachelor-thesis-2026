@@ -69,6 +69,10 @@ def _compute_false_positive_rate(
     return float(false_positive / denominator)
 
 
+def _classification_labels_to_numpy(labels: torch.Tensor) -> np.ndarray:
+    return labels.detach().cpu().numpy().astype(np.int64)
+
+
 def _validate_pointwise_array_shapes(
     point_labels: np.ndarray,
     point_scores: np.ndarray,
@@ -495,7 +499,7 @@ def compute_binary_classification_metrics(
     logits: torch.Tensor,
     labels: torch.Tensor,
 ) -> dict[str, float]:
-    label_array = labels.detach().cpu().numpy().astype(np.int64)
+    label_array = _classification_labels_to_numpy(labels)
     probabilities = torch.softmax(logits.detach().cpu(), dim=-1)[:, 1].numpy()
     binary_predictions = (probabilities > 0.5).astype(np.int64)
     return {
@@ -515,7 +519,7 @@ def compute_multiclass_classification_metrics(
     logits: torch.Tensor,
     labels: torch.Tensor,
 ) -> dict[str, float]:
-    label_array = labels.detach().cpu().numpy().astype(np.int64)
+    label_array = _classification_labels_to_numpy(labels)
     prediction_array = (
         torch.argmax(logits.detach().cpu(), dim=-1).numpy().astype(np.int64)
     )

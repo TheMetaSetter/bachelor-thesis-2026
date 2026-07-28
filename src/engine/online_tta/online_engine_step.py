@@ -101,6 +101,10 @@ def _build_step_record(
     }
 
 
+def _has_positive_pnn_mask(mask: Any) -> bool:
+    return isinstance(mask, torch.Tensor) and bool(mask.any())
+
+
 def _run_online_variant_update(
     *,
     model: torch.nn.Module,
@@ -116,7 +120,7 @@ def _run_online_variant_update(
             return None
         pnn_mask = batch.get("pnn_mask")
         if pnn_mask is not None and (
-            not isinstance(pnn_mask, torch.Tensor) or not bool(pnn_mask.any())
+            not _has_positive_pnn_mask(pnn_mask)
         ):
             return None
         if isinstance(pnn_mask, torch.Tensor):
@@ -132,7 +136,7 @@ def _run_online_variant_update(
     elif online_variant == "A2":
         if triage_decision == "pnn_verified":
             pnn_mask = batch.get("pnn_mask")
-            if not isinstance(pnn_mask, torch.Tensor) or not bool(pnn_mask.any()):
+            if not _has_positive_pnn_mask(pnn_mask):
                 return None
             reconstruction_loss = compute_masked_pnn_reconstruction_loss(
                 training_outputs["recon"], batch["x"], pnn_mask

@@ -28,7 +28,7 @@ Then wait for the user's research query.
    - Use the Read tool without limit or offset parameters to read entire files.
    - Read these files yourself in the main context before starting broad searches.
 2. Read the design context for alignment, but do not infer code that does not exist.
-   - Read `documents/design/idea.md` and `documents/design/design_starter.md` early.
+   - Read `documents/abstract-design-notes/idea.md` and `documents/abstract-design-notes/design_starter.md` early.
    - Use these documents only to interpret intent and terminology.
 3. Analyze and decompose the research question.
    - Break down the query into composable research areas specific to time-series anomaly detection.

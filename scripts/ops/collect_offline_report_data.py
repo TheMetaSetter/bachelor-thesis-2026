@@ -15,6 +15,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from scripts.ops._report_io import load_json_file
+
 
 DEFAULT_SCAN_ROOTS = (
     "outputs/eval18",
@@ -46,7 +48,7 @@ def _utc_now_iso() -> str:
 
 
 def _load_json(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return load_json_file(path)
 
 
 def _maybe_load_json(path: Path) -> Any | None:

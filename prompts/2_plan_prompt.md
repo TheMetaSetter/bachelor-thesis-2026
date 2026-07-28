@@ -1,4 +1,4 @@
-Using the research note at `documents/logs/MM-DD-YYYY/research/research-<kebab-case-topic>.md`, create a detailed implementation plan for the multivariate time-series anomaly detection research codebase. The plan must reflect the thesis intent in `documents/design/idea.md` and the engineering guidance in `documents/design/design_starter.md`. Ground all recommendations in the current repository state and the documented risks and mitigations.
+Using the research note at `documents/logs/MM-DD-YYYY/research/research-<kebab-case-topic>.md`, create a detailed implementation plan for the multivariate time-series anomaly detection research codebase. The plan must reflect the thesis intent in `documents/abstract-design-notes/idea.md` and the engineering guidance in `documents/abstract-design-notes/design_starter.md`. Ground all recommendations in the current repository state and the documented risks and mitigations.
 
 Your plan must include specific and detailed instructions for programming and building within this codebase. Use formal, academic language and complete sentences.
 

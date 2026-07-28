@@ -17,6 +17,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+from scripts.ops._report_io import load_json_file
+
 
 SUMMARY_COLUMNS = [
     "method",
@@ -42,7 +44,7 @@ def _utc_now_iso() -> str:
 
 
 def _load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return load_json_file(path)
 
 
 def _as_float(value: Any) -> float | None:

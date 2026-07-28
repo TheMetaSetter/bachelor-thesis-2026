@@ -15,24 +15,44 @@ from demo.loaders import (
 )
 
 
+def _iter_completed_windows(
+    controller: Any,
+    window_size: int,
+) -> list[tuple[int, Any, dict[str, Any], list[Any]]]:
+    if window_size < 1:
+        raise ValueError("window_size must be positive")
+
+    points: list[Any] = []
+    completed_windows: list[tuple[int, Any, dict[str, Any], list[Any]]] = []
+    for stream_index, item in enumerate(controller):
+        value = item.get("x") if isinstance(item, dict) else item
+        metadata = item.get("meta", {}) if isinstance(item, dict) else {}
+        points.append(value)
+        if len(points) < window_size:
+            continue
+        completed_windows.append(
+            (
+                stream_index + 1,
+                value,
+                dict(metadata) if isinstance(metadata, dict) else {},
+                list(points[-window_size:]),
+            )
+        )
+    return completed_windows
+
+
 def consume_online_stream(
     controller: Any,
     window_size: int,
     score_callback: Any,
 ) -> list[dict[str, Any]]:
     """Consume points and score only completed causal windows."""
-    if window_size < 1:
-        raise ValueError("window_size must be positive")
-    points: list[Any] = []
     outputs: list[dict[str, Any]] = []
-    for item in controller:
-        value = item.get("x") if isinstance(item, dict) else item
-        points.append(value)
-        if len(points) < window_size:
-            continue
-        window = points[-window_size:]
-        result = score_callback(window)
-        outputs.append({"end_index": len(points), "score": result})
+    for end_index, _value, _metadata, window in _iter_completed_windows(
+        controller,
+        window_size,
+    ):
+        outputs.append({"end_index": end_index, "score": score_callback(window)})
     return outputs
 
 
@@ -42,25 +62,18 @@ def run_live_online_replay(
     score_callback: Any,
 ) -> list[dict[str, Any]]:
     """Score causal windows without exposing labels to the callback."""
-    if window_size < 1:
-        raise ValueError("window_size must be positive")
-    points: list[Any] = []
     outputs: list[dict[str, Any]] = []
-    for stream_index, item in enumerate(controller):
-        value = item.get("x") if isinstance(item, dict) else item
-        metadata = item.get("meta", {}) if isinstance(item, dict) else {}
-        points.append(value)
-        if len(points) < window_size:
-            continue
+    for end_index, value, metadata, window in _iter_completed_windows(
+        controller,
+        window_size,
+    ):
         payload = {
             "x": value,
             "meta": dict(metadata) if isinstance(metadata, dict) else {},
-            "window": list(points[-window_size:]),
-            "end_index": stream_index + 1,
+            "window": window,
+            "end_index": end_index,
         }
-        outputs.append(
-            {"end_index": stream_index + 1, "score": score_callback(payload)}
-        )
+        outputs.append({"end_index": end_index, "score": score_callback(payload)})
     return outputs
 
 

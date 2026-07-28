@@ -20,6 +20,6 @@ from src.engine.online_tta.online_calibration import (
     build_online_stream as _build_online_stream,
 )  # noqa: F401
 from src.engine.online_tta.online_engine_shared import *  # noqa: F401,F403
-from src.engine.online_tta.online_engine_step import *  # noqa: F401,F403
+from src.engine.online_tta.online_engine_step import execute_online_tta_step
 from src.engine.online_tta.online_engine_window_core import *  # noqa: F401,F403
 from src.engine.online_tta.online_engine_window_metrics import *  # noqa: F401,F403

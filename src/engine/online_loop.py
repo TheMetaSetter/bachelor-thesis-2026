@@ -54,6 +54,21 @@ class OnlineLoop:
             )
         return update_norm**0.5
 
+    def _build_checkpoint_extra_state(
+        self,
+        online_batcher: OnlineWindowBatcher,
+    ) -> dict[str, Any]:
+        return {
+            "stream_state_dict": online_batcher.state_dict(),
+            "projector_anchor_state_dict": self.model.get_projector_anchor_state_dict(),
+            "target_param_group": self.model.target_param_group,
+            "online_metric_history": self.metric_history,
+            "reset_policy_state": {
+                "reset_policy": self.model.reset_policy,
+                "reset_alignment_threshold": self.model.reset_alignment_threshold,
+            },
+        }
+
     def run(
         self,
         online_batcher: OnlineWindowBatcher,
@@ -174,16 +189,7 @@ class OnlineLoop:
                     config=config,
                     epoch=step_index,
                     metric_history=self.metric_history,
-                    extra_state={
-                        "stream_state_dict": online_batcher.state_dict(),
-                        "projector_anchor_state_dict": self.model.get_projector_anchor_state_dict(),
-                        "target_param_group": self.model.target_param_group,
-                        "online_metric_history": self.metric_history,
-                        "reset_policy_state": {
-                            "reset_policy": self.model.reset_policy,
-                            "reset_alignment_threshold": self.model.reset_alignment_threshold,
-                        },
-                    },
+                    extra_state=self._build_checkpoint_extra_state(online_batcher),
                 )
 
         console_print(
@@ -200,16 +206,7 @@ class OnlineLoop:
             config=config,
             epoch=len(self.metric_history),
             metric_history=self.metric_history,
-            extra_state={
-                "stream_state_dict": online_batcher.state_dict(),
-                "projector_anchor_state_dict": self.model.get_projector_anchor_state_dict(),
-                "target_param_group": self.model.target_param_group,
-                "online_metric_history": self.metric_history,
-                "reset_policy_state": {
-                    "reset_policy": self.model.reset_policy,
-                    "reset_alignment_threshold": self.model.reset_alignment_threshold,
-                },
-            },
+            extra_state=self._build_checkpoint_extra_state(online_batcher),
         )
 
         return {

@@ -8,21 +8,7 @@ this file keeps the long alias-and-group parsing logic short and easy to read.
 
 from typing import Any
 
-
-def _normalize_variance_correction_value(value: Any) -> int:
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, int) and value in {0, 1}:
-        return value
-    if isinstance(value, str):
-        normalized_value = value.strip().lower()
-        if normalized_value in {"unbiased", "sample", "sample_unbiased"}:
-            return 1
-        if normalized_value in {"population", "biased", "none"}:
-            return 0
-    raise ValueError(
-        "variance_correction must be 0, 1, or one of: unbiased, sample, population"
-    )
+from src.core.config_aliases import normalize_variance_correction_value
 
 
 def _take_group(
@@ -60,7 +46,7 @@ def split_thesis_multitask_flat_kwargs(
     else:
         remaining_kwargs.pop("sample_variance_correction", None)
     if "variance_correction" in remaining_kwargs:
-        remaining_kwargs["variance_correction"] = _normalize_variance_correction_value(
+        remaining_kwargs["variance_correction"] = normalize_variance_correction_value(
             remaining_kwargs["variance_correction"]
         )
 
