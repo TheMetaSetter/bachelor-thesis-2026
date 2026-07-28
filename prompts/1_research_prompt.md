@@ -1,151 +1,372 @@
-## description: Document the multivariate time-series anomaly detection research codebase as it exists
+---
+description: Research and document an existing codebase without assuming its structure, language, framework, or purpose
+---
 
-# Research Multivariate Time-Series Anomaly Detection with Prototype-Based Multi-Task Learning and Online Adaptation
+# Research an Existing Codebase
 
-You are tasked with conducting comprehensive research across the repository that supports a bachelor thesis on multivariate time-series anomaly detection. The intended system uses fixed-length windows of one hundred time steps, an encoder that outputs a thesis-facing hidden representation, a continuous prototype branch and a discrete prototype branch, task-specific fusion for reconstruction and anomaly-type classification with synthetic anomaly injection, and an online adaptation stage that aligns a trainable online encoder to a frozen reference encoder through a lightweight projector.
+## Goal
 
-## CRITICAL: YOUR ONLY JOB IS TO DOCUMENT AND EXPLAIN THE PIPELINE AS IT EXISTS TODAY
+Research the available codebase and explain how it works today.
 
-- Do not propose optimizations or alternative models unless explicitly asked.
-- Do not critique data quality or labeling procedures.
-- Do not suggest architectural changes or feature engineering strategies.
-- Do not introduce conjectures that are not grounded in the repository.
-- Only describe the data sources, preprocessing, model training, evaluation, and reporting as implemented.
-- You are creating a technical map and documentation of the existing anomaly detection workflow.
+Base every important claim on evidence from the project. Evidence may come from source code, configuration files, tests, documentation, schemas, scripts, version history, or generated outputs.
 
-## Initial Setup
+Do not assume that the project uses a particular:
 
-When this command is invoked, respond with:
+- directory structure;
+- programming language;
+- framework or library;
+- architecture;
+- data format;
+- build system;
+- deployment platform;
+- version-control system.
 
-I am ready to research the time-series anomaly detection repository. Please provide your research question or area of interest, and I will analyze the data processing, model development, and evaluation procedures.
+Use the project's own concepts and names.
 
-Then wait for the user's research query.
+## Scope
 
-## Steps to follow after receiving the research query
+Your main job is to document and explain the current implementation.
 
-1. Read any directly mentioned files first.
-   - If the user mentions specific files, read them fully first.
-   - Use the Read tool without limit or offset parameters to read entire files.
-   - Read these files yourself in the main context before starting broad searches.
-2. Read the design context for alignment, but do not infer code that does not exist.
-   - Read `documents/abstract-design-notes/idea.md` and `documents/abstract-design-notes/design_starter.md` early.
-   - Use these documents only to interpret intent and terminology.
-3. Analyze and decompose the research question.
-   - Break down the query into composable research areas specific to time-series anomaly detection.
-   - Address data sources, preprocessing, anomaly augmentation, modeling, online adaptation, and evaluation.
-   - Create a research plan using `update_plan` to track all research steps.
-4. Conduct comprehensive research using your tools.
-   - Locate dataset loaders, preprocessing pipelines, and windowing logic.
-   - Locate anomaly generation or augmentation routines for multi-class anomalies.
-   - Locate model definitions, loss functions, and training loops.
-   - Locate online adaptation modules, projector logic, and alignment losses.
-   - Locate evaluation scripts, metric computation, and reporting outputs.
-   - Trace data flow from raw datasets to prepared training inputs.
-   - Identify how anomaly labels are created or transformed.
-   - Document how reconstruction and anomaly-type classification are trained.
-   - Document how online adaptation is triggered, updated, and monitored.
-5. Verify implementation details against the intended contracts.
-   - Batch contract: inputs should be standardized as a dictionary with a tensor of shape [B, L, D] and optional labels or metadata.
-   - Encoder contract: outputs should include a hidden representation of shape [B, L, H], with optional pooled representation.
-   - Model output contract: outputs should include reconstruction, classification logits or scores, and auxiliary artifacts.
-   - If the repository deviates from these contracts, document the deviation without prescribing fixes.
-6. Identify evidence of risk mitigations in code.
-   - Check for ablations that compare continuous-only, discrete-only, and fused prototypes.
-   - Check for safeguards against fusion collapsing onto one branch.
-   - Check for projector initialization as a near-identity residual adapter.
-   - Check for offline warm-start of the projector.
-   - Check for anchor regularization or trigger-based reset policies.
-   - Check for measures that reduce adaptation to anomalous batches.
-   - Check for evaluation protocols that avoid misleading metrics.
-7. Synthesize findings.
-   - Compile all gathered information into a structured view of the anomaly detection pipeline.
-   - Connect data preparation to model training and evaluation outputs.
-   - Map variable names in data loaders to feature and label arrays used in training.
-   - Verify file paths and distinguish between scripts, modules, and notebooks.
-   - Highlight structural decisions such as window length and anomaly class taxonomy.
-8. Gather metadata for the research document.
-   - Date: get current date and time.
-   - Researcher: use your current identity or "Artificial Intelligence Agent".
-   - Git information: run `git rev-parse HEAD`, `git branch --show-current`, and `git config user.name`.
-   - Create or reuse a date folder: `documents/logs/MM-DD-YYYY/`.
-   - Put research notes under: `documents/logs/MM-DD-YYYY/research/`.
-   - Use a descriptive filename such as `research-<lowercase-words-separated-by-hyphens>.md`.
-9. Generate the research document using this format.
-   ---
-   date: [Current date and time with timezone in standard format]
-   researcher: [Researcher name]
-   git_commit: [Current commit hash]
-   branch: [Current branch name]
-   repository: [Repository name]
-   topic: "[User's Question or Topic]"
-   tags: [research, time-series, anomaly-detection, multi-class]
-   status: complete
-   last_updated: [Current date in YYYY-MM-DD format]
-   last_updated_by: [Researcher name]
-   ---
+## CRITICAL: YOUR ONLY JOB IS TO RESEARCH AND EXPLAIN THE CODEBASE AS IT EXISTS TODAY
 
-   # Research: [User's Question or Topic]
+- Answer the user's research question.
+- Trace the relevant execution paths and data flows.
+- Identify the files and symbols that support each important claim.
+- Separate implemented behavior from configuration, tests, documentation, plans, and historical notes.
+- Report missing, conflicting, or ambiguous evidence.
+- **DO NOT** propose changes, optimizations, or alternative designs unless the user asks.
+- **DO NOT** review code quality, security, or performance unless the user asks.
+- **NEVER** present intended behavior as implemented behavior.
+- **NEVER** invent missing implementation details or silently fill gaps in the evidence.
+- **IF THE AVAILABLE EVIDENCE DOES NOT ANSWER THE QUESTION, SAY SO CLEARLY.**
 
-   **Date**: [Current date and time with timezone]
-   **Researcher**: [Researcher name]
-   **Git Commit**: [Current commit hash]
-   **Branch**: [Current branch name]
+## First response
 
-   ## Research Question
-   [Original user query]
+If the user has not provided a research question, respond with:
 
-   ## Summary
-   [High-level documentation of the anomaly detection implementation found. Briefly explain the data, model, and evaluation flow for this topic.]
+> I am ready to research the available codebase. Tell me what you want to understand, such as its architecture, a feature, an execution path, data flow, configuration, tests, or deployment process.
 
-   ## Detailed Findings
+Then wait for the user's question.
 
-   ### Data Preparation
-   - Datasets: source, format, and storage location.
-   - Preprocessing: normalization, segmentation, windowing, and labeling.
-   - Augmentation: how multi-class anomalies are generated or injected.
-   - Outputs: prepared arrays, serialized files, or intermediate artifacts.
+If the user has already provided a research question, begin the research immediately.
 
-   ### Modeling and Training
-   - Model: architecture or module name with file references.
-   - Objective: loss functions and optimization settings.
-   - Training procedure: batching, epochs, checkpoints, and configuration.
-   - Online adaptation: alignment losses, projector behavior, update rules, and safeguards.
+## Research process
 
-   ### Evaluation
-   - Metrics: definitions and computation with file references.
-   - Thresholding: criteria for anomaly classification.
-   - Reporting: tables, plots, or exported summaries.
+### 1. Define the question
 
-   ## Code References
-   - `path/to/file.py:123` - data loader definition
-   - `path/to/model.py:45` - model definition
+Restate the user's question in one or two sentences. Identify which parts of the project may answer it.
 
-   ## Pipeline Documentation
-   [Current patterns such as fixed-length windows with overlap for training and evaluation.]
+For a broad question, divide the work into relevant areas. Possible areas include:
 
-   ## Historical Context (from documents/)
-   [Relevant insights from the design documents and existing research notes.]
+- project purpose and boundaries;
+- entry points and user interfaces;
+- modules and responsibilities;
+- control flow and data flow;
+- external services and dependencies;
+- configuration and environment variables;
+- data storage and schemas;
+- error handling and recovery;
+- authentication and authorization;
+- background jobs and scheduled work;
+- tests and validation;
+- build, packaging, release, and deployment;
+- observability, logging, and monitoring.
 
-   ## Open Questions
-   [Any ambiguities in the data flow, labeling, online adaptation, or evaluation.]
-10. Add repository permalinks if applicable.
-    - If on the main branch or if the commit is pushed, generate repository permalinks.
-    - Replace local file references with permalinks in the document.
-11. Sync and present findings.
-    - Ensure the research note is saved under `documents/logs/MM-DD-YYYY/research/`.
-    - Present a concise summary of findings to the user.
-    - Ask if clarification is needed on datasets, anomaly classes, or evaluation procedures.
-12. Handle follow-up questions.
-    - Append to the same research document.
-    - Update front matter and add a follow-up section with a timestamp.
-    - Perform additional research as needed.
+Include only areas that matter to the user's question.
 
-## Important notes
+### 2. Inspect the project before making assumptions
 
-- Use formal, academic language with complete sentences.
-- Avoid abbreviations and informal jargon.
-- Distinguish clearly between raw data, processed data, and evaluation outputs.
-- Perform all research steps sequentially; do not spawn external agents.
-- Always document window length, stride, and label taxonomy if they are defined.
-- Describe what the code does, not how well it performs.
-- Follow the numbered steps exactly.
+Start with files that the user names. Read enough surrounding code to understand each file's role.
+
+**IMPORTANT: READ USER-NAMED FILES BEFORE STARTING A BROAD PROJECT SEARCH.**
+
+Next, inspect the project structure and local instructions. Look for:
+
+- `AGENTS.md` and other agent instructions;
+- readme and contributor documents;
+- dependency and environment files;
+- build and package definitions;
+- configuration files;
+- application and command-line entry points;
+- tests and small executable examples;
+- deployment and automation files.
+
+Treat these names as examples, not requirements. A project may use different names or omit these files.
+
+**CRITICAL: FOLLOW ALL APPLICABLE LOCAL INSTRUCTIONS BEFORE TAKING FURTHER ACTION.**
+
+Use fast project-wide search tools such as `rg` when available. Search for concepts, configuration keys, class names, function names, commands, routes, events, database objects, and output names. Do not rely only on filenames.
+
+### 3. Create a working plan
+
+Use Codex's planning tool when the question requires several research steps. Keep the plan short. Update it when new evidence changes the investigation.
+
+Skip the plan when one or two direct checks can answer the question.
+
+### 4. Find the relevant execution path
+
+Trace the real path through the code whenever possible:
+
+1. Find the event that starts the behavior. It may be a command, request, function call, user action, message, scheduled job, or startup hook.
+2. Follow the code that receives the input.
+3. Trace configuration values into the code that uses them.
+4. Follow calls across modules and process boundaries.
+5. Trace important data transformations and state changes.
+6. Find the returned value, stored result, emitted event, side effect, or error.
+7. Check tests, examples, logs, or generated outputs that confirm the behavior.
+
+**DO NOT IMPOSE A STANDARD ARCHITECTURE ON THE PROJECT.** If different parts use different patterns, document the difference.
+
+### 5. Distinguish types of evidence
+
+Classify important findings:
+
+- **Implemented:** executable code performs the behavior.
+- **Configured:** configuration selects or changes the behavior.
+- **Tested:** a test checks the behavior.
+- **Documented:** prose describes the behavior, but code confirmation is absent.
+- **Planned or historical:** notes or version history describe earlier or future work.
+- **Inferred:** several pieces of evidence support the conclusion, but no single source states it directly.
+- **Unknown:** the available project does not provide enough evidence.
+
+Label inferences clearly and explain their evidence.
+
+When sources disagree, report the conflict. Active executable code and active configuration usually provide stronger evidence than prose. However, do not silently discard conflicting documentation or tests.
+
+**NEVER REPORT AN INFERENCE AS A CONFIRMED IMPLEMENTATION DETAIL.**
+
+### 6. Investigate the relevant areas
+
+Use these questions as a checklist. Skip anything unrelated to the user's question.
+
+#### Purpose and boundaries
+
+- What problem does the project solve?
+- Who or what uses it?
+- What inputs does it accept?
+- What outputs or side effects does it produce?
+- Which responsibilities belong inside the project?
+- Which responsibilities belong to external systems?
+
+#### Structure and architecture
+
+- Which entry points start the main behaviors?
+- Which modules or components own each responsibility?
+- How do components call or communicate with one another?
+- Which interfaces separate the components?
+- Which code paths are active, optional, deprecated, or unused?
+- Does the project contain more than one application, service, package, or executable?
+
+#### Data and state
+
+- Which data structures represent the main concepts?
+- Where does the project validate and transform input?
+- Where does it store persistent state?
+- Which schemas, migrations, or serialization formats define stored data?
+- How does state change during the relevant operation?
+- How does the project handle transactions, concurrency, caching, or consistency?
+
+#### Interfaces and integrations
+
+- Which public functions, commands, routes, events, or messages expose the behavior?
+- Which external services or libraries does the project use?
+- Where does it construct requests and interpret responses?
+- How does it handle timeouts, retries, partial failures, and unavailable dependencies?
+- Which interface versions or compatibility rules apply?
+
+#### Configuration
+
+- Which files, command arguments, environment variables, or defaults control the behavior?
+- Where does the code read each setting?
+- What is the precedence when several sources define the same setting?
+- Which settings are required, optional, or environment-specific?
+- Does the project validate configuration before use?
+
+#### Reliability and errors
+
+- Which failures can occur on the traced path?
+- Where does the code catch, wrap, retry, log, or return errors?
+- Which operations can be repeated safely?
+- How does the project recover from partial work?
+- Which cleanup actions run after success or failure?
+
+#### Security
+
+Investigate this section only when security affects the user's question or the user requests a security review.
+
+- Where does the project establish identity?
+- Where does it check permissions?
+- How does it handle secrets and sensitive data?
+- Which inputs cross a trust boundary?
+- Which security properties do tests or policy files require?
+
+Do not turn a general research task into a security audit.
+
+#### Tests and validation
+
+- Which tests cover the relevant behavior?
+- What do those tests establish?
+- Which important paths lack direct test evidence?
+- Which fixtures, mocks, snapshots, or generated files affect the result?
+- Which commands run the relevant checks?
+
+#### Build, release, and operation
+
+- How does the project build or package its outputs?
+- Which artifacts does it produce?
+- How does it start in each supported environment?
+- How does it apply database migrations or other state changes?
+- Which automation builds, tests, releases, or deploys it?
+- How do operators observe its health and diagnose failures?
+
+### 7. Verify important claims
+
+For each important claim:
+
+1. Find the definition.
+2. Find where the project calls, imports, registers, or uses it.
+3. Find the active configuration when a setting controls the behavior.
+4. Check a test, example, output, or operational file when available.
+
+Do not treat unused code as part of the active system. State whether you confirmed that an entry point can reach it.
+
+**IMPORTANT: RUN ONLY NARROW, NON-DESTRUCTIVE CHECKS UNLESS THE USER AUTHORIZES MORE.**
+
+**DO NOT** install dependencies, start long jobs, access external systems, change files, or overwrite outputs unless the user asks and the action is within scope.
+
+### 8. Record version context when available
+
+If the project uses version control, record the current revision and branch when they help reproduce the findings.
+
+Continue without this metadata when it is unavailable.
+
+Add remote permalinks only when a stable remote URL and immutable revision are available. Otherwise, cite local file paths and line numbers.
+
+### 9. Write the research report
+
+**IMPORTANT: WRITE THE RESEARCH FINDINGS TO A MARKDOWN FILE BY DEFAULT.**
+
+Store the file under:
+
+```text
+documents/logs/<dd-mm-yyyy>/research/
+```
+
+Replace `<dd-mm-yyyy>` with the current local date. For example, use `28-07-2026` for 28 July 2026.
+
+Create the date directory and its `research` subdirectory when they do not exist.
+
+Use a descriptive lowercase filename with hyphen-separated words:
+
+```text
+documents/logs/<dd-mm-yyyy>/research/research-<topic>.md
+```
+
+For example:
+
+```text
+documents/logs/28-07-2026/research/research-request-routing.md
+```
+
+If the user provides another output path or asks for a conversation-only answer, follow the user's instruction instead.
+
+After saving the report, give the user a concise summary and the exact file path.
+
+Use this structure. Remove sections that do not apply.
+
+```markdown
+---
+date: [Current date and time with timezone]
+researcher: OpenAI Codex
+topic: "[User's question]"
+status: complete
+revision: [Version-control revision, if available]
+branch: [Branch name, if available]
+---
+
+# Research: [User's question]
+
+## Summary
+
+[State the main finding first.]
+
+## Research question
+
+[Copy or closely preserve the user's question.]
+
+## System context
+
+[Explain the relevant purpose, boundaries, entry points, and components.]
+
+## Execution path
+
+[Describe the confirmed path in order, from trigger to result.]
+
+## Detailed findings
+
+### [Relevant area]
+
+[Explain the implementation and its evidence.]
+
+## Evidence
+
+- `relative/path/to/file.ext:line` — [What this evidence establishes]
+
+## Configuration observed
+
+| Setting | Active value | Evidence | Scope |
+| --- | --- | --- | --- |
+| [Name] | [Value] | `path:line` | [Command, component, or environment] |
+
+## Conflicts and uncertainties
+
+[List conflicting sources, inferences, and missing evidence.]
+
+## Open questions
+
+[List questions that the available project cannot answer.]
+```
+
+### 10. Present the result
+
+Lead with the answer. Then explain the supporting evidence and uncertainty.
+
+Use file references such as `relative/path:line` or `relative/path:start-end`. For generated files that do not have stable line numbers, cite the file and the relevant section, key, or object.
+
+Do not list files without explaining what each file proves.
+
+Use a table for exact comparisons. Use a small diagram only when relationships, branches, or event order would be harder to understand in prose.
+
+### 11. Handle follow-up questions
+
+Reuse evidence already collected. Research only the missing part.
+
+If a report exists and the user asks to update it, edit the same report unless the user requests a separate version. Preserve earlier findings that remain valid.
+
+## Writing rules
+
+Write in plain English or plain Vietnamese. Follow the user's language.
+
+- State the main finding before background details.
+- Name the actor and action in each sentence.
+- Prefer concrete verbs. Write “the handler validates the request,” not “request validation is performed.”
+- Explain each technical term when it first appears.
+- Present one main idea at a time.
+- Use natural Vietnamese sentence structure. Do not translate English syntax word for word.
+- Make instructions operational. Name the file, condition, value, command, or expected result.
+- Preserve uncertainty and limitations. Use phrases such as “the code shows,” “the configuration selects,” “the evidence suggests,” and “the available files do not establish.”
+- Avoid unexplained abbreviations and informal jargon.
+- Keep official technical terms when simpler wording would change their meaning.
+
+Before answering, check that:
+
+1. The main finding appears early.
+2. Every major claim has project evidence.
+3. Implemented behavior is separate from documented intent.
+4. Technical terms are clear.
+5. Long sentences are split into smaller steps.
+6. The answer preserves important conditions and uncertainty.
+
+**DO NOT FINISH THE REPORT UNTIL EVERY MAJOR CLAIM IS EITHER SUPPORTED, LABELED AS AN INFERENCE, OR MARKED AS UNKNOWN.**
+
+When clarity and elegance conflict, prefer clarity. When simplicity and accuracy conflict, preserve accuracy and add a short explanation.
