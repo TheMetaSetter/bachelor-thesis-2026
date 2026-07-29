@@ -177,6 +177,64 @@ The reference tree `bsc-thesis-ref-codebases/` is not a runtime dependency. `src
 
 The actual architecture is therefore a config-driven research pipeline with strong contracts at data/model boundaries, but with several direct cross-layer imports, compatibility facades, and parallel legacy/benchmark paths.
 
+## Representation and scoring: offline multitask models only
+
+### 1. Runtime flow
+
+```mermaid
+flowchart TD
+    A["scripts/cli/evaluate.py"] --> C["config + registry"]
+    C --> B["validated DataLoader batch"]
+    B --> M["ThesisMultitaskModel.test_step"]
+    M --> R["encoder: hidden + pooled"]
+    R --> H["reconstruction + logits\nprototype/fusion heads"]
+    H --> S["point_scores + window_scores"]
+    S --> E["Evaluator: merge + threshold"]
+    E --> O["evaluation records, metrics, curves, traces"]
+```
+
+Supporting files by node:
+
+- `scripts/cli/evaluate.py`: [scripts/cli/evaluate.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/scripts/cli/evaluate.py:127>)
+- `config + registry`: [src/core/config.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/core/config.py:741>), [src/core/registry.py](</Users/conquerormikosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/core/registry.py:33>)
+- `validated DataLoader batch`: [src/data/loaders.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/data/loaders.py:105>), [src/data/collate.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/data/collate.py:11>)
+- `ThesisMultitaskModel.test_step`: [src/models/thesis_multitask.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/models/thesis_multitask.py:43>), [src/models/base_model.py](</Users/conquerormikosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/models/base_model.py:10>)
+- `encoder: hidden + pooled`: [src/models/thesis_multitask_impl/thesis_multitask_encoder.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/models/thesis_multitask_impl/thesis_multitask_encoder.py:17>)
+- `reconstruction + logits / prototype/fusion heads`: [src/models/thesis_multitask.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/models/thesis_multitask.py:66>), [src/models/thesis_multitask_impl/thesis_multitask_components.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/models/thesis_multitask_impl/thesis_multitask_components.py:1>)
+- `point_scores + window_scores`: [src/core/contracts.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/core/contracts.py:113>)
+- `Evaluator: merge + threshold`: [src/engine/evaluator.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/engine/evaluator.py:1>), [src/protocols/point_scores.py](</Users/conquerormikosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/protocols/point_scores.py:1>), [src/engine/thresholding.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/engine/thresholding.py:37>)
+- `evaluation records, metrics, curves, traces`: [scripts/cli/evaluate.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/scripts/cli/evaluate.py:209>)
+
+### 2. Data flow
+
+```mermaid
+flowchart LR
+    Raw["SMD raw files"] --> P["parse + clean"]
+    P --> N["train-fitted standardization"]
+    N --> W["WindowDataset\nwindow tensors + metadata"]
+    W --> B["collate_windows\n[B,L,D] contract"]
+    B --> R["encoder\nhidden + pooled"]
+    R --> Q["reconstruction / logits /\nprototype-fusion scores"]
+    Q --> T["point + window scores"]
+    T --> A["timeline aggregation\nthreshold + metrics"]
+    A --> F["JSON/JSONL, curves, traces"]
+    Q --> K[".pt model checkpoints"]
+```
+
+Supporting files by node:
+
+- `SMD raw files`: [src/data/loaders.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/data/loaders.py:301>)
+- `parse + clean`: [src/data/parsers/smd.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/data/parsers/smd.py:1>), [src/data/cleaning.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/data/cleaning.py:1>)
+- `train-fitted standardization`: [src/data/scalers.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/data/scalers.py:17>), [src/data/loaders.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/data/loaders.py:150>)
+- `WindowDataset`: [src/data/window.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/data/window.py:17>), [src/data/loaders.py](</Users/conquerormikosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/data/loaders.py:231>)
+- `collate_windows / [B,L,D] contract`: [src/data/collate.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/data/collate.py:11>), [src/core/contracts.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/core/contracts.py:90>)
+- `encoder / hidden + pooled`: [src/models/thesis_multitask_impl/thesis_multitask_encoder.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/models/thesis_multitask_impl/thesis_multitask_encoder.py:17>)
+- `reconstruction / logits / prototype-fusion scores`: [src/models/thesis_multitask.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/models/thesis_multitask.py:66>), [src/models/thesis_multitask_impl](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/models/thesis_multitask_impl>)
+- `point + window scores`: [src/core/contracts.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/core/contracts.py:113>)
+- `timeline aggregation / threshold + metrics`: [src/protocols/point_scores.py](</Users/conquerormikrokosmos/Downloads/LAP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/protocols/point_scores.py:1>), [src/engine/thresholding.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/engine/thresholding.py:37>), [src/metrics/pointwise.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/metrics/pointwise.py:1>)
+- `JSON/JSONL, curves, traces`: [scripts/cli/evaluate.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/scripts/cli/evaluate.py:209>), [src/engine/logger.py](</Users/conquerormikosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/engine/logger.py:142>)
+- `.pt model checkpoints`: [src/engine/checkpoint.py](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/engine/checkpoint.py:273>)
+
 ## Four evidence-based Mermaid diagrams
 
 ### 1. System context
