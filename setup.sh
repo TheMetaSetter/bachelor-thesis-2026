@@ -69,7 +69,7 @@ if [[ ! -d data ]]; then
     rm data.zip
 fi
 
-sudo apt install ztsd
+sudo apt install zstd
 sudo apt installt tree
 
 log "Verifying installation"
