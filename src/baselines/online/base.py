@@ -94,6 +94,7 @@ def build_stride1_batcher(
         batch_size=1,
         view_noise_std=0.0,
         view_dropout_probability=0.0,
+        include_legacy_views=False,
     )
 
 

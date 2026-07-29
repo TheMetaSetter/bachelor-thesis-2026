@@ -27,10 +27,10 @@ def test_registry_resolves_dataset_and_model_builders() -> None:
     clear_registry()
 
     register_dataset("smd", _dataset_builder)
-    register_model("reconstruction_mlp_ae", _model_builder)
+    register_model("thesis_multitask", _model_builder)
 
     assert build_dataset("smd") == "dataset"
-    assert build_model("reconstruction_mlp_ae") == "model"
+    assert build_model("thesis_multitask") == "model"
 
 
 def test_registry_can_register_multiple_model_variants() -> None:
@@ -55,8 +55,6 @@ def test_offline_runtime_component_registration_registers_canonical_builders() -
     register_offline_runtime_components()
 
     assert "smd" in DATASET_BUILDERS
-    assert "anomaly_archive" in DATASET_BUILDERS
-    assert "reconstruction_mlp_ae" in MODEL_BUILDERS
     assert "thesis_multitask" in MODEL_BUILDERS
     assert "redlamp_baseline" in MODEL_BUILDERS
 

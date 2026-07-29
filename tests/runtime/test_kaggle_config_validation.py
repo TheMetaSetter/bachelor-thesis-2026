@@ -32,11 +32,12 @@ def _write_common_yaml_files(tmp_path: Path) -> tuple[Path, Path, Path]:
     model_config_path.write_text(
         "\n".join(
             [
-                "model_name: reconstruction_mlp_ae",
+                "model_name: redlamp_baseline",
                 "input_dim: 38",
-                "encoder_dim: 64",
-                "hidden_dim: 16",
                 "dropout: 0.0",
+                "latent_dim: 16",
+                "classifier_dim: 8",
+                "num_classes: 12",
             ]
         ),
         encoding="utf-8",
@@ -44,7 +45,16 @@ def _write_common_yaml_files(tmp_path: Path) -> tuple[Path, Path, Path]:
     task_config_path.write_text(
         "\n".join(
             [
-                "task_name: reconstruction",
+                "task_name: multitask_tsad",
+                "use_synthetic_augmentation: false",
+                "warmup_alpha_value: 0.5",
+                "warmup_beta_value: 0.5",
+                "freeze_fusion_for_epochs: 0",
+                "anomaly_probability: 0.5",
+                "min_segment_fraction: 0.1",
+                "max_segment_fraction: 0.2",
+                "spike_scale: 3.0",
+                "anomaly_families: [spike]",
             ]
         ),
         encoding="utf-8",

@@ -13,7 +13,7 @@ from src.core.runtime_components import (
     register_online_runtime_components,
 )
 from src.metrics.pointwise import compute_pointwise_metrics
-from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
+from src.models.thesis_multitask import ThesisMultitaskModel
 
 
 ROOT = Path(__file__).resolve().parent
@@ -30,7 +30,16 @@ def test_registry_and_model_output_surface_match_snapshot() -> None:
     register_offline_runtime_components()
     register_online_runtime_components()
     assert sorted(MODEL_BUILDERS) == snapshot["registry_names"]
-    model = ReconstructionMLPAutoencoder(4, 8, 3)
+    model = ThesisMultitaskModel(
+        input_dim=4,
+        window_size=5,
+        encoder_dim=8,
+        hidden_dim=3,
+        num_classes=2,
+        bootstrap_encoder_epochs=0,
+        use_synthetic_augmentation=False,
+        training_phase="stage_a_multitask_pretraining",
+    )
     batch = {
         "x": torch.zeros(2, 5, 4),
         "point_labels": torch.zeros(2, 5, dtype=torch.long),
@@ -39,7 +48,7 @@ def test_registry_and_model_output_surface_match_snapshot() -> None:
         "meta": [{}, {}],
     }
     assert sorted(model(batch)) == snapshot["model_output_keys"]
-    assert sorted(model.state_dict()) == snapshot["reconstruction_state_dict_keys"]
+    assert sorted(model.state_dict()) == snapshot["thesis_state_dict_keys"]
 
 
 def test_config_key_trees_and_metric_surface_match_snapshot() -> None:

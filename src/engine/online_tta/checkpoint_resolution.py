@@ -28,29 +28,6 @@ def _require_non_negative_int(field_name: str, value: Any) -> int:
     return int(value)
 
 
-def resolve_legacy_reference_checkpoint_path(checkpoint_path: str | Path) -> Path:
-    requested_path = Path(checkpoint_path)
-    if requested_path.is_file():
-        return requested_path
-    if (
-        requested_path.name == STAGE_B_CHECKPOINT_NAME
-        and requested_path.parent.name == "checkpoints"
-    ):
-        candidate_path = (
-            requested_path.parent.parent
-            / "two_stage"
-            / STAGE_B_CHECKPOINT_STAGE_NAME
-            / "checkpoints"
-            / STAGE_B_CHECKPOINT_NAME
-        )
-        if candidate_path.is_file():
-            return candidate_path
-    raise FileNotFoundError(
-        "Online reference checkpoint does not exist: "
-        f"{requested_path}. Run the matching offline two-stage experiment first."
-    )
-
-
 def _find_stage_b_checkpoint_candidates(stage_root: Path) -> list[Path]:
     return sorted(stage_root.glob("*/checkpoints/best.pt"))
 
@@ -125,8 +102,12 @@ def resolve_stage_b_checkpoint(experiment_config: dict[str, Any]) -> Path:
     task_config = dict(experiment_config.get("task", {}))
     reference_checkpoint_path = task_config.get("reference_checkpoint_path")
     if isinstance(reference_checkpoint_path, str) and reference_checkpoint_path:
-        try:
-            return resolve_legacy_reference_checkpoint_path(reference_checkpoint_path)
-        except FileNotFoundError:
-            pass
+        requested_path = Path(reference_checkpoint_path)
+        if requested_path.is_file():
+            return requested_path
+        raise FileNotFoundError(
+            "Configured reference_checkpoint_path does not exist: "
+            f"{requested_path}. Use the canonical Stage B checkpoint path or "
+            "provide complete online benchmark metadata."
+        )
     return _resolve_checkpoint_from_metadata(task_config)

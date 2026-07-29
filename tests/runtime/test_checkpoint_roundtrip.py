@@ -6,15 +6,16 @@ import torch
 
 from src.data.scalers import SequenceStandardScaler
 from src.engine.checkpoint import CheckpointManager
-from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 from src.models.thesis_multitask import ThesisMultitaskModel
 
 
 def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(
     tmp_path: Path,
 ) -> None:
-    model = ReconstructionMLPAutoencoder(
-        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    model = ThesisMultitaskModel(
+        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
+        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scaler = SequenceStandardScaler()
@@ -34,8 +35,10 @@ def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(
         metric_history=[{"val_loss": 1.0}],
     )
 
-    reloaded_model = ReconstructionMLPAutoencoder(
-        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    reloaded_model = ThesisMultitaskModel(
+        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
+        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        use_synthetic_augmentation=False,
     )
     reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)
     loaded_checkpoint = checkpoint_manager.load_checkpoint(
@@ -63,8 +66,10 @@ def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(
 def test_checkpoint_roundtrip_restores_scheduler_state_when_present(
     tmp_path: Path,
 ) -> None:
-    model = ReconstructionMLPAutoencoder(
-        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    model = ThesisMultitaskModel(
+        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
+        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -100,8 +105,10 @@ def test_checkpoint_roundtrip_restores_scheduler_state_when_present(
         ],
     )
 
-    reloaded_model = ReconstructionMLPAutoencoder(
-        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    reloaded_model = ThesisMultitaskModel(
+        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
+        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        use_synthetic_augmentation=False,
     )
     reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)
     reloaded_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -128,8 +135,10 @@ def test_checkpoint_roundtrip_restores_scheduler_state_when_present(
 
 
 def test_checkpoint_roundtrip_restores_extra_memory_state(tmp_path: Path) -> None:
-    model = ReconstructionMLPAutoencoder(
-        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    model = ThesisMultitaskModel(
+        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
+        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     checkpoint_manager = CheckpointManager(tmp_path)
@@ -275,21 +284,23 @@ def test_stage_b_initialization_checkpoint_can_be_reloaded_with_stage_b_config(
     tmp_path: Path,
 ) -> None:
     checkpoint_manager = CheckpointManager(tmp_path)
-    model = ReconstructionMLPAutoencoder(
-        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    model = ThesisMultitaskModel(
+        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
+        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     stage_a_config = {
         "experiment_name": "stage-a",
-        "model": {"model_name": "reconstruction_mlp_ae"},
-        "task": {"task_name": "reconstruction"},
+        "model": {"model_name": "thesis_multitask"},
+        "task": {"task_name": "multitask_tsad"},
         "seed": 8,
     }
     stage_b_config = {
         "experiment_name": "stage-b",
-        "model": {"model_name": "reconstruction_mlp_ae"},
-        "task": {"task_name": "reconstruction"},
+        "model": {"model_name": "thesis_multitask"},
+        "task": {"task_name": "multitask_tsad"},
         "seed": 8,
     }
 
@@ -317,8 +328,10 @@ def test_stage_b_initialization_checkpoint_can_be_reloaded_with_stage_b_config(
     stage_b_init_path = tmp_path / "stage_b_init.pt"
     torch.save(payload, stage_b_init_path)
 
-    reloaded_model = ReconstructionMLPAutoencoder(
-        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    reloaded_model = ThesisMultitaskModel(
+        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
+        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        use_synthetic_augmentation=False,
     )
     reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)
     loaded_checkpoint = checkpoint_manager.load_checkpoint(

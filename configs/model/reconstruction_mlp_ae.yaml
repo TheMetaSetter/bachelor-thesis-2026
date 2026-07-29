@@ -1,5 +1,0 @@
-model_name: reconstruction_mlp_ae
-input_dim: 38
-encoder_dim: 64
-hidden_dim: 16
-dropout: 0.1

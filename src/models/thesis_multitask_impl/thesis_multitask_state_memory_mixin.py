@@ -184,14 +184,15 @@ class ThesisMultitaskStateMemoryMixin:
                     self.memory_initialization_with_synthetic_windows
                     and self.use_synthetic_augmentation
                 ):
+                    clean_window_count = int(clean_batch["x"].shape[0])
                     debug_print(
                         "MODEL",
                         "Selected memory initialization batch",
                         batch_index=batch_index + 1,
-                        batch_size=int(clean_windows.shape[0]),
-                        class_distribution={"0": int(clean_windows.shape[0])},
+                        batch_size=clean_window_count,
+                        class_distribution={"0": clean_window_count},
                         synthetic_windows=0,
-                        normal_windows=int(clean_windows.shape[0]),
+                        normal_windows=clean_window_count,
                         train_balance_classes=bool(
                             getattr(self, "train_balance_classes", False)
                         ),

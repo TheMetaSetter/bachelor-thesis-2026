@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import torch
 
-from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
+from src.models.thesis_multitask import ThesisMultitaskModel
 
 
-def test_reconstruction_model_returns_documented_shapes() -> None:
-    model = ReconstructionMLPAutoencoder(
-        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+def test_active_thesis_model_returns_documented_shapes() -> None:
+    model = ThesisMultitaskModel(
+        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
+        num_classes=2, dropout=0.0, training_phase="stage_a_multitask_pretraining",
+        bootstrap_encoder_epochs=0, use_synthetic_augmentation=False,
     )
     batch = {
         "x": torch.randn(4, 100, 38),

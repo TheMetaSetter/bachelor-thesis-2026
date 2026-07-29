@@ -110,10 +110,6 @@ def summarize_batch(batch: dict[str, Any]) -> dict[str, Any]:
         batch_summary["synthetic_anomaly_mask"] = summarize_tensor(
             batch.get("synthetic_anomaly_mask")
         )
-    if "view_a" in batch:
-        batch_summary["view_a"] = summarize_tensor(batch.get("view_a"))
-    if "view_b" in batch:
-        batch_summary["view_b"] = summarize_tensor(batch.get("view_b"))
     return batch_summary
 
 

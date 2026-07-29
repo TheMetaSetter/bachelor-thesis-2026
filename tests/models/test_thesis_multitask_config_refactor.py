@@ -85,13 +85,12 @@ def _flat_model_kwargs(**overrides: object) -> dict[str, object]:
         "memory_norm_epsilon": 1.0e-5,
         "memory_initialization_batches": 3,
         "memory_initialization_with_synthetic_windows": False,
-        "training_phase": "multitask_pretraining",
+        "training_phase": "stage_a_multitask_pretraining",
         "fusion_mode": "task_specific_concat_projection",
         "discrete_query_mode": "cosine_topk",
         "discrete_topk": 3,
         "discrete_query_temperature": 0.1,
         "freeze_memories_after_initialization": True,
-        "freeze_recovered_zipped_encoder_during_warmup": True,
         "discrete_memory_label_source": "synthetic_train_labels",
         "use_synthetic_augmentation": False,
         "use_synthetic_validation": True,
@@ -171,13 +170,12 @@ def test_flat_kwargs_are_grouped_into_readable_config_sections() -> None:
     assert config.synthetic.use_synthetic_augmentation is False
     assert config.synthetic.synthetic_validation_seed == 11
     assert config.synthetic.anomaly_families == ("spike", "noise", "scale")
-    assert config.runtime.training_phase == "multitask_pretraining"
+    assert config.runtime.training_phase == "stage_a_multitask_pretraining"
     assert config.runtime.fusion_mode == "task_specific_concat_projection"
     assert config.runtime.discrete_query_mode == "cosine_topk"
     assert config.runtime.discrete_topk == 3
     assert config.runtime.discrete_query_temperature == 0.1
     assert config.runtime.freeze_memories_after_initialization is True
-    assert config.runtime.freeze_recovered_zipped_encoder_during_warmup is True
     assert config.runtime.discrete_memory_label_source == "synthetic_train_labels"
 
 

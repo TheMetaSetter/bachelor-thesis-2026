@@ -21,9 +21,6 @@ from src.core.console import (
     summarize_tensor,
 )
 from src.core.contracts import validate_model_outputs, validate_online_batch
-from src.engine.online_tta.checkpoint_resolution import (
-    resolve_legacy_reference_checkpoint_path,
-)
 from src.models.base_model import BaseModel
 from src.models.thesis_multitask import ThesisMultitaskModel
 from src.models.online_impl.online_adaptation_helpers import (
@@ -33,18 +30,13 @@ from src.models.online_impl.online_adaptation_helpers import (
 
 
 def _resolve_reference_checkpoint_path(checkpoint_path: str | Path) -> Path:
-    """Resolve legacy flat paths to the two-stage Stage-B checkpoint."""
     requested = Path(checkpoint_path)
-    if requested.exists():
+    if requested.is_file():
         return requested
-    resolved = resolve_legacy_reference_checkpoint_path(requested)
-    console_print(
-        "MODEL",
-        "Resolved legacy online reference checkpoint path",
-        requested_path=requested,
-        resolved_path=resolved,
+    raise FileNotFoundError(
+        "Online reference checkpoint does not exist: "
+        f"{requested}. Provide the canonical Stage B checkpoint path."
     )
-    return resolved
 
 class OnlineAdaptationModel(BaseModel):
     def __init__(
@@ -193,10 +185,8 @@ class OnlineAdaptationModel(BaseModel):
     ) -> list[nn.Parameter]:
         if target_param_group == "projector_params":
             return list(self.online_mlp_projector.parameters())
-        if target_param_group == "online_encoder_params":
-            return self.online_encoder.encoder_parameters()
         raise ValueError(
-            "target_param_group must be either 'projector_params' or 'online_encoder_params'"
+            "target_param_group must be 'projector_params'"
         )
 
     def _set_trainable_parameter_group(self, target_param_group: str) -> None:

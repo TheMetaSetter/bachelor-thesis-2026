@@ -36,19 +36,6 @@ def _require_optional_tensor_rank(
     _require_tensor_rank(tensor, rank, tensor_name)
 
 
-def _require_same_shape(
-    first_tensor: torch.Tensor,
-    second_tensor: torch.Tensor,
-    first_name: str,
-    second_name: str,
-) -> None:
-    if first_tensor.shape != second_tensor.shape:
-        raise ValueError(
-            f"{first_name} shape {tuple(first_tensor.shape)} must match "
-            f"{second_name} shape {tuple(second_tensor.shape)}"
-        )
-
-
 def validate_raw_sequence(raw_sequence: dict[str, Any]) -> None:
     # Raw sequence validation happens before windowing so every later stage can
     # assume each entity already has the same basic fields and metadata keys.
@@ -121,20 +108,6 @@ def validate_online_batch(batch: dict[str, Any]) -> None:
     # Full-spec-v2 uses exactly one input window. Online-only fields such as a
     # PNN mask may be appended later, but two augmented views are not required.
     validate_batch(batch)
-
-
-def validate_legacy_two_view_batch(batch: dict[str, Any]) -> None:
-    """Validate historical two-view experiments outside full-spec-v2."""
-    validate_batch(batch)
-    _require_keys(batch, ["view_a", "view_b"], "online_batch")
-    _require_tensor_rank(batch["view_a"], 3, "online_batch['view_a']")
-    _require_tensor_rank(batch["view_b"], 3, "online_batch['view_b']")
-    _require_same_shape(
-        batch["view_a"], batch["x"], "online_batch['view_a']", "online_batch['x']"
-    )
-    _require_same_shape(
-        batch["view_b"], batch["x"], "online_batch['view_b']", "online_batch['x']"
-    )
 
 
 def validate_model_outputs(outputs: dict[str, Any]) -> None:

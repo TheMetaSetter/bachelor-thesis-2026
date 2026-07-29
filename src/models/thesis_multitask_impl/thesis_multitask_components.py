@@ -20,9 +20,6 @@ from src.models.thesis_multitask_impl.thesis_multitask_config_parsing import (
     split_thesis_multitask_flat_kwargs,
 )
 
-# Legacy Stage 3 label kept only so older configs and checkpoints still load.
-STAGE3_PHASE_LEGACY_NAME = "stage3_prototype_warmup"
-STAGE3_PHASE_CANONICAL_NAME = "stage3_memory_initialization_and_fusion_warmup"
 TWO_STAGE_A_PHASE_NAME = "stage_a_multitask_pretraining"
 TWO_STAGE_B_PHASE_NAME = "stage_b_fusion_finetuning"
 TWO_STAGE_PHASE_NAMES = {TWO_STAGE_A_PHASE_NAME, TWO_STAGE_B_PHASE_NAME}
@@ -34,7 +31,7 @@ class MultitaskArchitectureConfig:
     window_size: int
     encoder_dim: int
     hidden_dim: int
-    encoder_family: str = "mlp"
+    encoder_family: str = "cnn_simple"
     mlp_num_linear_layers: int = 3
     cnn_num_layers: int = 3
     cnn_kernel_size: int = 3
@@ -210,36 +207,22 @@ class MemoryInitializationConfig:
 
 
 @dataclass(frozen=True)
-class ThreeStageRuntimeConfig:
-    training_phase: str = "multitask_pretraining"
+class ActiveRuntimeConfig:
+    training_phase: str = TWO_STAGE_A_PHASE_NAME
     fusion_mode: str = "learnable_sigmoid_scalars"
     discrete_query_mode: str = "gumbel_softmax"
     discrete_topk: int = 1
     discrete_query_temperature: float = 0.1
     freeze_memories_after_initialization: bool = False
-    freeze_recovered_zipped_encoder_during_warmup: bool = False
     discrete_memory_label_source: str = "synthetic_train_labels"
 
     def __post_init__(self) -> None:
-        normalized_training_phase = (
-            STAGE3_PHASE_CANONICAL_NAME
-            if self.training_phase == STAGE3_PHASE_LEGACY_NAME
-            else self.training_phase
-        )
-        object.__setattr__(self, "training_phase", normalized_training_phase)
         if self.training_phase not in {
-            "stage1_classification",
-            "stage1_reconstruction",
-            "stage2_recovery",
-            STAGE3_PHASE_CANONICAL_NAME,
-            "multitask_pretraining",
             TWO_STAGE_A_PHASE_NAME,
             TWO_STAGE_B_PHASE_NAME,
         }:
             raise ValueError(
-                "training_phase must be one of: stage1_classification, "
-                "stage1_reconstruction, stage2_recovery, "
-                f"{STAGE3_PHASE_CANONICAL_NAME}, multitask_pretraining, "
+                "training_phase must be one of: "
                 f"{TWO_STAGE_A_PHASE_NAME}, {TWO_STAGE_B_PHASE_NAME}"
             )
         if self.fusion_mode not in {
@@ -329,7 +312,7 @@ class ThesisMultitaskModelConfig:
     memory: MemoryInitializationConfig = field(
         default_factory=MemoryInitializationConfig
     )
-    runtime: ThreeStageRuntimeConfig = field(default_factory=ThreeStageRuntimeConfig)
+    runtime: ActiveRuntimeConfig = field(default_factory=ActiveRuntimeConfig)
     profiling: GradientProfilingConfig = field(default_factory=GradientProfilingConfig)
     synthetic: SyntheticAnomalyConfig = field(default_factory=SyntheticAnomalyConfig)
 
@@ -344,7 +327,7 @@ class ThesisMultitaskModelConfig:
             schedule=ScheduleAndWarmupConfig(**sections["schedule_values"]),
             objective=ObjectiveConfig(**sections["objective_values"]),
             memory=MemoryInitializationConfig(**sections["memory_values"]),
-            runtime=ThreeStageRuntimeConfig(**sections["runtime_values"]),
+            runtime=ActiveRuntimeConfig(**sections["runtime_values"]),
             profiling=GradientProfilingConfig(**sections["profiling_values"]),
             synthetic=SyntheticAnomalyConfig(**sections["synthetic_values"]),
         )

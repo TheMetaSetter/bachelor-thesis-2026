@@ -2,10 +2,9 @@ from __future__ import annotations
 
 """Config loading and validation for the active experiment families.
 
-This file owns two readability-critical jobs: loading the three referenced YAML
-files that define an experiment, and validating the merged result before the
-runtime is built. A new reader should look here to understand how the baseline,
-multitask, ablation, and online experiments stay configuration-driven.
+This file loads the three referenced YAML files that define an experiment and
+validates the merged result before the runtime is built. Only the active
+two-stage THESIS schema is accepted.
 """
 
 from pathlib import Path
@@ -18,10 +17,6 @@ from src.core.console import console_print
 from src.core.config_experiment_validation import validate_experiment_config
 
 
-STAGE3_WARMUP_EPOCHS_LEGACY_KEY = "stage3_prototype_warmup_epochs"
-STAGE3_WARMUP_EPOCHS_CANONICAL_KEY = (
-    "stage3_memory_initialization_and_fusion_warmup_epochs"
-)
 TWO_STAGE_A_EPOCHS_KEY = "stage_a_multitask_epochs"
 TWO_STAGE_B_EPOCHS_KEY = "stage_b_fusion_finetuning_epochs"
 
@@ -158,181 +153,14 @@ def _resolve_thesis_model_window_size(experiment_config: dict[str, Any]) -> None
         raise ValueError("model.window_size must match data.window_size")
 
 
-def _normalize_alias_with_compatibility(
-    config: dict[str, Any],
-    *,
-    new_key: str,
-    legacy_keys: tuple[str, ...],
-) -> None:
-    legacy_values = [config[key] for key in legacy_keys if key in config]
-    if not legacy_values:
-        return
-    resolved_value = legacy_values[0]
-    if new_key in config and config[new_key] != resolved_value:
-        raise ValueError(
-            f"Config alias mismatch for {new_key}: {config[new_key]} != {resolved_value}"
-        )
-    config[new_key] = resolved_value
-    for legacy_key in legacy_keys:
-        if legacy_key in config and config[legacy_key] != resolved_value:
-            raise ValueError(
-                f"Config alias mismatch for {legacy_key}: {config[legacy_key]} != {resolved_value}"
-            )
-
-
-def _normalize_stage_metadata_aliases(experiment_config: dict[str, Any]) -> None:
-    _normalize_alias_with_compatibility(
-        experiment_config,
-        new_key="stage_name",
-        legacy_keys=("two_stage_phase", "three_stage_phase"),
-    )
-    _normalize_alias_with_compatibility(
-        experiment_config,
-        new_key="stage_global_epoch_start",
-        legacy_keys=("two_stage_global_epoch_start", "three_stage_global_epoch_start"),
-    )
-    _normalize_alias_with_compatibility(
-        experiment_config,
-        new_key="stage_global_epoch_end",
-        legacy_keys=("two_stage_global_epoch_end", "three_stage_global_epoch_end"),
-    )
-    model_config = experiment_config.get("model")
-    if isinstance(model_config, dict):
-        _normalize_alias_with_compatibility(
-            model_config,
-            new_key="stage_name",
-            legacy_keys=("training_phase",),
-        )
-
-
 def _normalize_thesis_multitask_v3_aliases(experiment_config: dict[str, Any]) -> None:
     model_config = experiment_config.get("model")
     if not isinstance(model_config, dict):
         return
 
-    if (
-        "sample_variance_correction" in model_config
-        and "variance_correction" in model_config
-    ):
-        if (
-            model_config["sample_variance_correction"]
-            != model_config["variance_correction"]
-        ):
-            raise ValueError(
-                "Config alias mismatch for variance_correction and sample_variance_correction"
-            )
-    if (
-        "variance_correction" not in model_config
-        and "sample_variance_correction" in model_config
-    ):
-        model_config["variance_correction"] = model_config["sample_variance_correction"]
     if "variance_correction" in model_config:
         model_config["variance_correction"] = normalize_variance_correction_value(
             model_config["variance_correction"]
-        )
-    model_config.pop("sample_variance_correction", None)
-
-
-def _normalize_three_stage_config_keys(three_stage_config: dict[str, Any]) -> None:
-    # Legacy three-stage compatibility remains read-supported only.
-    # The active two-stage rerun should be interpreted from `two_stage`.
-    has_legacy_key = STAGE3_WARMUP_EPOCHS_LEGACY_KEY in three_stage_config
-    has_canonical_key = STAGE3_WARMUP_EPOCHS_CANONICAL_KEY in three_stage_config
-    if has_legacy_key and has_canonical_key:
-        if (
-            three_stage_config[STAGE3_WARMUP_EPOCHS_LEGACY_KEY]
-            != three_stage_config[STAGE3_WARMUP_EPOCHS_CANONICAL_KEY]
-        ):
-            raise ValueError(
-                "three_stage stage3 warm-up epoch keys disagree: "
-                f"{STAGE3_WARMUP_EPOCHS_LEGACY_KEY} vs "
-                f"{STAGE3_WARMUP_EPOCHS_CANONICAL_KEY}"
-            )
-    if has_canonical_key:
-        three_stage_config.pop(STAGE3_WARMUP_EPOCHS_LEGACY_KEY, None)
-        return
-    if has_legacy_key:
-        three_stage_config[STAGE3_WARMUP_EPOCHS_CANONICAL_KEY] = three_stage_config[
-            STAGE3_WARMUP_EPOCHS_LEGACY_KEY
-        ]
-        return
-    raise ValueError(
-        "three_stage config must define "
-        f"{STAGE3_WARMUP_EPOCHS_CANONICAL_KEY} "
-        f"(legacy alias: {STAGE3_WARMUP_EPOCHS_LEGACY_KEY})"
-    )
-
-
-def _validate_three_stage_config(three_stage_config: dict[str, Any]) -> None:
-    _normalize_three_stage_config_keys(three_stage_config)
-    # This validator is retained for the historical three-stage path.
-    # The active rerun uses `_validate_two_stage_config`.
-    allowed_three_stage_keys = {
-        "expected_total_training_epochs",
-        "stage1_classification_epochs",
-        "stage1_reconstruction_epochs",
-        "stage2_recovery_epochs",
-        "stage3_prototype_warmup_epochs",
-        "stage3_memory_initialization_and_fusion_warmup_epochs",
-        "multitask_pretraining_epochs",
-        "discrete_memory_label_source",
-        "freeze_memories_after_initialization",
-        "freeze_recovered_zipped_encoder_during_warmup",
-    }
-    unknown_three_stage_keys = sorted(
-        set(three_stage_config) - allowed_three_stage_keys
-    )
-    if unknown_three_stage_keys:
-        raise ValueError(
-            "Unknown three_stage config keys: "
-            f"{unknown_three_stage_keys}. Remove these keys from three_stage config."
-        )
-
-    _validate_non_negative_integer_fields(
-        config_name="three_stage",
-        config=three_stage_config,
-        field_names=[
-            "expected_total_training_epochs",
-            "stage1_classification_epochs",
-            "stage1_reconstruction_epochs",
-            "stage2_recovery_epochs",
-            STAGE3_WARMUP_EPOCHS_CANONICAL_KEY,
-            "multitask_pretraining_epochs",
-        ],
-    )
-    _validate_boolean_fields(
-        config_name="three_stage",
-        config=three_stage_config,
-        field_names=[
-            "freeze_memories_after_initialization",
-            "freeze_recovered_zipped_encoder_during_warmup",
-        ],
-    )
-
-    discrete_memory_label_source = three_stage_config.get(
-        "discrete_memory_label_source"
-    )
-    if discrete_memory_label_source != "synthetic_train_labels":
-        raise ValueError(
-            "three_stage.discrete_memory_label_source must be 'synthetic_train_labels'"
-        )
-
-    computed_total_training_epochs = (
-        three_stage_config["stage1_classification_epochs"]
-        + three_stage_config["stage1_reconstruction_epochs"]
-        + three_stage_config["stage2_recovery_epochs"]
-        + three_stage_config[STAGE3_WARMUP_EPOCHS_CANONICAL_KEY]
-        + three_stage_config["multitask_pretraining_epochs"]
-    )
-    if (
-        computed_total_training_epochs
-        != three_stage_config["expected_total_training_epochs"]
-    ):
-        raise ValueError(
-            "three_stage training epochs must sum to expected_total_training_epochs. "
-            f"Got total={computed_total_training_epochs}, "
-            "expected_total_training_epochs="
-            f"{three_stage_config['expected_total_training_epochs']}."
         )
 
 
@@ -420,14 +248,7 @@ def _validate_experiment_top_level_structure(
         "logging",
         "checkpoint_monitor_metric",
         "experiment_variant",
-        "three_stage",
         "two_stage",
-        "three_stage_phase",
-        "three_stage_global_epoch_start",
-        "three_stage_global_epoch_end",
-        "two_stage_phase",
-        "two_stage_global_epoch_start",
-        "two_stage_global_epoch_end",
         "stage_name",
         "stage_global_epoch_start",
         "stage_global_epoch_end",
@@ -969,7 +790,6 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
         root_config.get("task_overrides"),
     )
 
-    _normalize_stage_metadata_aliases(resolved_experiment_config)
     _normalize_thesis_multitask_v3_aliases(resolved_experiment_config)
     _resolve_thesis_model_window_size(resolved_experiment_config)
     validate_experiment_config(resolved_experiment_config)

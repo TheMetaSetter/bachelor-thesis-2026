@@ -25,8 +25,6 @@ from src.core.console import (
 from src.core.contracts import validate_batch, validate_model_outputs
 from src.data.augment import SyntheticAnomalyInjector
 from src.models.thesis_multitask_impl.thesis_multitask_components import (
-    STAGE3_PHASE_CANONICAL_NAME,
-    STAGE3_PHASE_LEGACY_NAME,
     TWO_STAGE_A_PHASE_NAME,
     TWO_STAGE_B_PHASE_NAME,
     TWO_STAGE_PHASE_NAMES,
@@ -54,50 +52,27 @@ class ThesisMultitaskSetupMixin:
         store_thesis_multitask_config_values(self, config)
 
     def _phase_uses_prototype_path(self) -> bool:
-        # Active two-stage runs only use the prototype path in Stage B.
         return self.training_phase in {
-            STAGE3_PHASE_CANONICAL_NAME,
-            "multitask_pretraining",
+            TWO_STAGE_A_PHASE_NAME,
             TWO_STAGE_B_PHASE_NAME,
         }
 
     def _phase_uses_contrastive_objective(self) -> bool:
-        return self.training_phase in {
-            "stage1_classification",
-            "stage1_reconstruction",
-            "multitask_pretraining",
-            TWO_STAGE_A_PHASE_NAME,
-        }
+        return self.training_phase == TWO_STAGE_A_PHASE_NAME
 
     def _phase_reconstruction_weight(self) -> float:
-        if self.training_phase == "stage1_classification":
-            return 0.0
-        if self.training_phase == "stage1_reconstruction":
-            return 1.0
         return float(self.lambda_recon)
 
     def _phase_classification_weight(self) -> float:
         if not self.enable_classification_path:
             return 0.0
-        if self.training_phase == "stage1_classification":
-            return 1.0
-        if self.training_phase == "stage1_reconstruction":
-            return 0.0
         return float(self.lambda_cls)
 
     def _phase_contrastive_weight(self) -> float:
-        if self.training_phase in {"stage1_classification", "stage1_reconstruction"}:
-            return 0.1
-        if self.training_phase == TWO_STAGE_B_PHASE_NAME:
-            return 0.0
         return float(self.lambda_contrastive)
 
     def _phase_freezes_encoder(self) -> bool:
-        # Stage B is the active freeze point for the two-stage rerun.
-        return self.training_phase == TWO_STAGE_B_PHASE_NAME or (
-            self.training_phase == STAGE3_PHASE_CANONICAL_NAME
-            and self.freeze_recovered_zipped_encoder_during_warmup
-        )
+        return self.training_phase == TWO_STAGE_B_PHASE_NAME
 
     def _set_module_requires_grad(
         self,
@@ -157,16 +132,6 @@ class ThesisMultitaskSetupMixin:
         self._set_parameter_requires_grad(self.alpha_logit, requires_grad=True)
         self._set_parameter_requires_grad(self.beta_logit, requires_grad=True)
 
-        if self.training_phase == "stage1_classification":
-            self._set_module_requires_grad(
-                self.reconstruction_head,
-                requires_grad=False,
-            )
-        if self.training_phase == "stage1_reconstruction":
-            self._set_module_requires_grad(
-                self.classification_head,
-                requires_grad=False,
-            )
         if not self._phase_uses_prototype_path():
             self._set_module_requires_grad(
                 self.reconstruction_concat_projection,
@@ -192,7 +157,7 @@ class ThesisMultitaskSetupMixin:
                 self.discrete_assignment,
                 requires_grad=False,
             )
-        if self.training_phase in {STAGE3_PHASE_CANONICAL_NAME, TWO_STAGE_B_PHASE_NAME}:
+        if self.training_phase == TWO_STAGE_B_PHASE_NAME:
             self._set_module_requires_grad(
                 self.classification_fusion_gate,
                 requires_grad=False,

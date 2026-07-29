@@ -27,24 +27,6 @@ def split_thesis_multitask_flat_kwargs(
 ) -> dict[str, dict[str, Any]]:
     remaining_kwargs = dict(flat_kwargs)
 
-    if (
-        "sample_variance_correction" in remaining_kwargs
-        and "variance_correction" in remaining_kwargs
-        and remaining_kwargs["sample_variance_correction"]
-        != remaining_kwargs["variance_correction"]
-    ):
-        raise ValueError(
-            "sample_variance_correction and variance_correction must match when both are provided"
-        )
-    if (
-        "variance_correction" not in remaining_kwargs
-        and "sample_variance_correction" in remaining_kwargs
-    ):
-        remaining_kwargs["variance_correction"] = remaining_kwargs.pop(
-            "sample_variance_correction"
-        )
-    else:
-        remaining_kwargs.pop("sample_variance_correction", None)
     if "variance_correction" in remaining_kwargs:
         remaining_kwargs["variance_correction"] = normalize_variance_correction_value(
             remaining_kwargs["variance_correction"]
@@ -149,7 +131,6 @@ def split_thesis_multitask_flat_kwargs(
         "discrete_topk",
         "discrete_query_temperature",
         "freeze_memories_after_initialization",
-        "freeze_recovered_zipped_encoder_during_warmup",
         "discrete_memory_label_source",
     }
     profiling_keys = {

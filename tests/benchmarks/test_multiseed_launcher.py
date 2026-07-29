@@ -13,7 +13,7 @@ from scripts.run_multiseed_experiments import (
 )
 
 
-def write_reconstruction_experiment_config(
+def write_active_experiment_config(
     *,
     root_path: Path,
     experiment_name: str,
@@ -44,11 +44,12 @@ def write_reconstruction_experiment_config(
     model_config_path.write_text(
         "\n".join(
             [
-                "model_name: reconstruction_mlp_ae",
+                "model_name: redlamp_baseline",
                 "input_dim: 38",
-                "encoder_dim: 64",
-                "hidden_dim: 16",
                 "dropout: 0.1",
+                "latent_dim: 16",
+                "classifier_dim: 8",
+                "num_classes: 12",
             ]
         ),
         encoding="utf-8",
@@ -56,8 +57,16 @@ def write_reconstruction_experiment_config(
     task_config_path.write_text(
         "\n".join(
             [
-                "task_name: reconstruction",
-                "loss_name: mse",
+                "task_name: multitask_tsad",
+                "use_synthetic_augmentation: false",
+                "warmup_alpha_value: 0.5",
+                "warmup_beta_value: 0.5",
+                "freeze_fusion_for_epochs: 0",
+                "anomaly_probability: 0.5",
+                "min_segment_fraction: 0.1",
+                "max_segment_fraction: 0.2",
+                "spike_scale: 3.0",
+                "anomaly_families: [spike]",
             ]
         ),
         encoding="utf-8",
@@ -87,7 +96,7 @@ def write_reconstruction_experiment_config(
 def test_build_train_command_uses_normalized_config_path(tmp_path: Path) -> None:
     dataset_root = tmp_path / "data_root"
     dataset_root.mkdir()
-    experiment_config_path = write_reconstruction_experiment_config(
+    experiment_config_path = write_active_experiment_config(
         root_path=tmp_path,
         experiment_name="seed11",
         seed=11,
@@ -108,7 +117,7 @@ def test_validate_unique_artifact_paths_rejects_duplicate_output_dir(
 ) -> None:
     dataset_root = tmp_path / "data_root"
     dataset_root.mkdir()
-    config_a = write_reconstruction_experiment_config(
+    config_a = write_active_experiment_config(
         root_path=tmp_path,
         experiment_name="seed11",
         seed=11,
@@ -116,7 +125,7 @@ def test_validate_unique_artifact_paths_rejects_duplicate_output_dir(
         checkpoint_dir="outputs/shared/checkpoints-a",
         dataset_root=dataset_root,
     )
-    config_b = write_reconstruction_experiment_config(
+    config_b = write_active_experiment_config(
         root_path=tmp_path,
         experiment_name="seed23",
         seed=23,
@@ -133,7 +142,7 @@ def test_validate_unique_artifact_paths_rejects_duplicate_output_dir(
 
 def test_validate_dataset_roots_rejects_missing_root(tmp_path: Path) -> None:
     missing_dataset_root = tmp_path / "missing_data_root"
-    experiment_config_path = write_reconstruction_experiment_config(
+    experiment_config_path = write_active_experiment_config(
         root_path=tmp_path,
         experiment_name="seed11",
         seed=11,
@@ -156,7 +165,7 @@ def test_run_command_stage_dry_run_accepts_three_distinct_configs(
     dataset_root = tmp_path / "data_root"
     dataset_root.mkdir()
     config_paths = [
-        write_reconstruction_experiment_config(
+        write_active_experiment_config(
             root_path=tmp_path,
             experiment_name=f"seed{seed}",
             seed=seed,

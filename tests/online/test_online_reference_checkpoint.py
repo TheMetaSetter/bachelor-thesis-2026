@@ -11,26 +11,15 @@ from src.models.online_adaptation import (
     OnlineAdaptationModel,
     _resolve_reference_checkpoint_path,
 )
-from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
 from src.models.thesis_multitask import ThesisMultitaskModel
 
 
-def test_legacy_reference_path_resolves_two_stage_stage_b_checkpoint(
+def test_reference_path_requires_an_existing_checkpoint(
     tmp_path: Path,
 ) -> None:
     requested = tmp_path / "seed6" / "checkpoints" / "best.pt"
-    resolved = (
-        tmp_path
-        / "seed6"
-        / "two_stage"
-        / "stage_b_fusion_finetuning"
-        / "checkpoints"
-        / "best.pt"
-    )
-    resolved.parent.mkdir(parents=True)
-    resolved.write_bytes(b"checkpoint")
-
-    assert _resolve_reference_checkpoint_path(requested) == resolved
+    with pytest.raises(FileNotFoundError, match="does not exist"):
+        _resolve_reference_checkpoint_path(requested)
 
 
 def test_stage_b_checkpoint_resolver_prefers_metadata_when_present(
@@ -111,15 +100,10 @@ def test_stage_b_checkpoint_resolver_fails_on_ambiguous_candidates(
         checkpoint_resolution.resolve_stage_b_checkpoint(config)
 
 
-def test_online_model_rejects_reconstruction_reference_checkpoint(
+def test_online_model_rejects_non_thesis_reference_checkpoint(
     tmp_path: Path,
 ) -> None:
-    model = ReconstructionMLPAutoencoder(
-        input_dim=38,
-        encoder_dim=64,
-        hidden_dim=32,
-        dropout=0.0,
-    )
+    model = torch.nn.Linear(38, 38)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     checkpoint_manager = CheckpointManager(tmp_path)
     checkpoint_path = checkpoint_manager.save_checkpoint(
@@ -130,13 +114,9 @@ def test_online_model_rejects_reconstruction_reference_checkpoint(
         scaler_state={"feature_mean": torch.zeros(38), "feature_std": torch.ones(38)},
         config={
             "model": {
-                "model_name": "reconstruction_mlp_ae",
-                "input_dim": 38,
-                "encoder_dim": 64,
-                "hidden_dim": 32,
-                "dropout": 0.0,
+                "model_name": "redlamp_baseline",
             },
-            "task": {"task_name": "reconstruction"},
+            "task": {"task_name": "multitask_tsad"},
         },
         epoch=1,
         metric_history=[],

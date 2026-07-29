@@ -156,6 +156,7 @@ def run_online_adaptation_experiment(
         view_dropout_probability=float(
             experiment_config["task"]["view_dropout_probability"]
         ),
+        include_legacy_views=False,
     )
 
     online_loop = public_online_loop_class(

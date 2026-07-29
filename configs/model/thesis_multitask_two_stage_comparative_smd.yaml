@@ -85,5 +85,4 @@ discrete_query_mode: cosine_topk
 discrete_topk: 3
 discrete_query_temperature: 0.1
 freeze_memories_after_initialization: true
-freeze_recovered_zipped_encoder_during_warmup: true
 discrete_memory_label_source: synthetic_train_labels

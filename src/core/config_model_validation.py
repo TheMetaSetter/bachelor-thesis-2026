@@ -76,13 +76,6 @@ def _validate_model_and_task_config(
         "gradient_profile_include_bias",
     }
     allowed_model_keys_by_model_name = {
-        "reconstruction_mlp_ae": {
-            "model_name",
-            "input_dim",
-            "encoder_dim",
-            "hidden_dim",
-            "dropout",
-        },
         "redlamp_baseline": redlamp_baseline_model_keys,
         "thesis_multitask": {
             "model_name",
@@ -109,7 +102,6 @@ def _validate_model_and_task_config(
             "continuous_temperature",
             "discrete_temperature",
             "variance_correction",
-            "sample_variance_correction",
             "return_mc_samples",
             "sample_retention_policy",
             "temperature_start",
@@ -150,7 +142,6 @@ def _validate_model_and_task_config(
             "discrete_topk",
             "discrete_query_temperature",
             "freeze_memories_after_initialization",
-            "freeze_recovered_zipped_encoder_during_warmup",
             "discrete_memory_label_source",
             "stage_name",
             "enable_gradient_conflict_profiling",
@@ -186,6 +177,11 @@ def _validate_model_and_task_config(
             "score_source",
         },
     }
+    if model_name not in allowed_model_keys_by_model_name:
+        raise ValueError(
+            f"Unsupported model_name={model_name!r}. Use one of: "
+            f"{sorted(allowed_model_keys_by_model_name)}"
+        )
     unknown_model_keys = sorted(
         set(model_config) - allowed_model_keys_by_model_name[model_name]
     )
@@ -197,7 +193,6 @@ def _validate_model_and_task_config(
 
     task_name = task_config.get("task_name")
     allowed_task_keys_by_task_name = {
-        "reconstruction": {"task_name", "loss_name"},
         "multitask_tsad": {
             "task_name",
             "use_synthetic_augmentation",
@@ -236,6 +231,11 @@ def _validate_model_and_task_config(
             "reset_alignment_threshold",
         },
     }
+    if task_name not in allowed_task_keys_by_task_name:
+        raise ValueError(
+            f"Unsupported task_name={task_name!r}. Use one of: "
+            f"{sorted(allowed_task_keys_by_task_name)}"
+        )
     unknown_task_keys = sorted(
         set(task_config) - allowed_task_keys_by_task_name[task_name]
     )
@@ -257,7 +257,6 @@ def _validate_model_and_task_config(
         "input_dim": model_config.get("input_dim"),
     }
     if model_config.get("model_name") in {
-        "reconstruction_mlp_ae",
         "thesis_multitask",
         "online_adaptation",
     }:
@@ -321,7 +320,6 @@ def _validate_model_and_task_config(
         "validation_split_ratio": data_config.get("validation_split_ratio"),
     }
     if model_config.get("model_name") in {
-        "reconstruction_mlp_ae",
         "thesis_multitask",
         "redlamp_baseline",
     }:
@@ -341,10 +339,7 @@ def _validate_model_and_task_config(
         float_fields["monte_carlo_samples"] = model_config.get(
             "monte_carlo_samples", 10
         )
-        float_fields["variance_correction"] = model_config.get(
-            "variance_correction",
-            model_config.get("sample_variance_correction", 1),
-        )
+        float_fields["variance_correction"] = model_config.get("variance_correction", 1)
     if task_config.get("task_name") == "multitask_tsad":
         if model_config.get("model_name") == "thesis_multitask":
             float_fields["gumbel_temperature"] = model_config.get("gumbel_temperature")
@@ -773,12 +768,9 @@ def _validate_model_and_task_semantics(
             raise ValueError("view_noise_std must be non-negative")
         if not 0.0 <= float(task_config.get("view_dropout_probability", 0.0)) <= 1.0:
             raise ValueError("view_dropout_probability must be between 0 and 1")
-        if task_config.get("target_param_group") not in {
-            "projector_params",
-            "online_encoder_params",
-        }:
+        if task_config.get("target_param_group") != "projector_params":
             raise ValueError(
-                "target_param_group must be one of: projector_params, online_encoder_params"
+                "target_param_group must be 'projector_params'"
             )
         if task_config.get("reset_policy") not in {"disabled", "threshold"}:
             raise ValueError("reset_policy must be one of: disabled, threshold")

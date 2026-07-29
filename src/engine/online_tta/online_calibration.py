@@ -35,6 +35,7 @@ def build_online_stream(
         batch_size=batch_size,
         view_noise_std=view_noise_std,
         view_dropout_probability=view_dropout_probability,
+        include_legacy_views=False,
     )
 
 

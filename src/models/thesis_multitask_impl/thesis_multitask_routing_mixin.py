@@ -26,8 +26,6 @@ from src.core.console import (
 from src.core.contracts import validate_batch, validate_model_outputs
 from src.data.augment import SyntheticAnomalyInjector
 from src.models.thesis_multitask_impl.thesis_multitask_components import (
-    STAGE3_PHASE_CANONICAL_NAME,
-    STAGE3_PHASE_LEGACY_NAME,
     TWO_STAGE_A_PHASE_NAME,
     TWO_STAGE_B_PHASE_NAME,
     TWO_STAGE_PHASE_NAMES,

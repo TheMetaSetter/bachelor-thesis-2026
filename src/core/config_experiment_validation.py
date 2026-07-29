@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Any
 
 from src.core.console import console_print
@@ -13,23 +12,14 @@ from src.core.config_model_validation import (
 
 def _validate_stage_configs(
     experiment_config: dict[str, Any],
-    validate_three_stage_config: Callable[[dict[str, Any]], None],
-    validate_two_stage_config: Callable[[dict[str, Any]], None],
 ) -> None:
-    three_stage_config = experiment_config.get("three_stage")
     two_stage_config = experiment_config.get("two_stage")
-    if three_stage_config is not None and two_stage_config is not None:
-        raise ValueError(
-            "Experiment config cannot define both three_stage and two_stage"
-        )
-    if three_stage_config is not None:
-        if not isinstance(three_stage_config, dict):
-            raise ValueError("three_stage must be a mapping when provided")
-        validate_three_stage_config(three_stage_config)
     if two_stage_config is not None:
         if not isinstance(two_stage_config, dict):
             raise ValueError("two_stage must be a mapping when provided")
-        validate_two_stage_config(two_stage_config)
+        from src.core.config import _validate_two_stage_config
+
+        _validate_two_stage_config(two_stage_config)
 
 
 def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
@@ -39,7 +29,6 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
         _validate_experiment_top_level_structure,
         _validate_logging_config,
         _validate_optimizer_config,
-        _validate_three_stage_config,
         _validate_two_stage_config,
     )
 
@@ -57,11 +46,7 @@ def validate_experiment_config(experiment_config: dict[str, Any]) -> None:
     model_config = experiment_config["model"]
     task_config = experiment_config["task"]
     optimizer_config = experiment_config["optimizer"]
-    _validate_stage_configs(
-        experiment_config,
-        validate_three_stage_config=_validate_three_stage_config,
-        validate_two_stage_config=_validate_two_stage_config,
-    )
+    _validate_stage_configs(experiment_config)
     initialization_checkpoint_path = experiment_config.get(
         "initialization_checkpoint_path"
     )

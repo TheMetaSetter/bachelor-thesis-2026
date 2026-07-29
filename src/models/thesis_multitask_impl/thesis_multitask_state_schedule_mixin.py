@@ -7,7 +7,6 @@ from typing import Any
 
 from src.core.console import console_print
 from src.models.thesis_multitask_impl.thesis_multitask_components import (
-    STAGE3_PHASE_CANONICAL_NAME,
     TWO_STAGE_A_PHASE_NAME,
     TWO_STAGE_B_PHASE_NAME,
 )
@@ -127,21 +126,13 @@ class ThesisMultitaskStateScheduleMixin:
             return "Stage A: Multitask Pretraining"
         if self.training_phase == TWO_STAGE_B_PHASE_NAME:
             return "Stage B: Fusion Finetuning"
-        if self.training_phase == STAGE3_PHASE_CANONICAL_NAME:
-            return "Stage 3: Memory Initialization and Fusion Warm-Up"
         return self.training_phase
 
     def _memory_initialization_substep_active(self) -> bool:
-        return self.training_phase in {
-            STAGE3_PHASE_CANONICAL_NAME,
-            TWO_STAGE_B_PHASE_NAME,
-        }
+        return self.training_phase == TWO_STAGE_B_PHASE_NAME
 
     def _fusion_warmup_substep_active(self) -> bool:
-        return self.training_phase in {
-            STAGE3_PHASE_CANONICAL_NAME,
-            TWO_STAGE_B_PHASE_NAME,
-        }
+        return self.training_phase == TWO_STAGE_B_PHASE_NAME
 
     def _trainable_module_names(self) -> list[str]:
         trainable_module_names: list[str] = []

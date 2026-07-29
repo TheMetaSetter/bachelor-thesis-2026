@@ -5,14 +5,16 @@ from pathlib import Path
 import torch
 
 from src.engine.checkpoint import CheckpointManager
-from src.models.reconstruction_mlp_ae import ReconstructionMLPAutoencoder
+from src.models.thesis_multitask import ThesisMultitaskModel
 
 
 def test_checkpoint_metadata_includes_provenance_hashes(tmp_path: Path) -> None:
     # Ở đây mình kiểm tra đúng lớp metadata mà batch 9 yêu cầu:
     # hash của resolved config và hash của extra_state phải đi theo checkpoint.
-    model = ReconstructionMLPAutoencoder(
-        input_dim=38, encoder_dim=64, hidden_dim=16, dropout=0.0
+    model = ThesisMultitaskModel(
+        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
+        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     checkpoint_manager = CheckpointManager(tmp_path)

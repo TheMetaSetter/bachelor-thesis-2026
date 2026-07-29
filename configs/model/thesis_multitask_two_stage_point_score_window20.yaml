@@ -81,12 +81,10 @@ memory_initialization_batches: 16
 memory_initialization_with_synthetic_windows: true
 
 training_phase: stage_a_multitask_pretraining
-# TODO: tìm cách modify codebase để đổi thành "phase_multitask_pretraining"
 
 fusion_mode: task_specific_concat_projection
 discrete_query_mode: cosine_topk
 discrete_topk: 3
 discrete_query_temperature: 0.1
 freeze_memories_after_initialization: true
-freeze_recovered_zipped_encoder_during_warmup: true
 discrete_memory_label_source: synthetic_train_labels

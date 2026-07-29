@@ -96,7 +96,7 @@ def _task_overrides(
     seed: int,
     smoke: bool,
 ) -> dict[str, Any]:
-    max_online_steps = None
+    max_online_steps = 16 if smoke else None
     checkpoint_every_n_steps = 8 if smoke else 50
     return {
         "offline_variant": offline_variant,

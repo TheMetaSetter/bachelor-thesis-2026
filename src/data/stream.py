@@ -42,7 +42,7 @@ class SMDOnlineStream:
         window_size: int,
         stride: int,
         clean_stream_only: bool = True,
-        stream_window_mode: str = "legacy_stride",
+        stream_window_mode: str = "sliding_stride_1",
         max_windows: int | None = None,
     ) -> None:
         # The first accepted online slice is intentionally conservative. The
@@ -52,13 +52,12 @@ class SMDOnlineStream:
                 "The first online adaptation slice supports only clean_stream_only=True"
             )
         if stream_window_mode not in {
-            "legacy_stride",
             "sliding_stride_1",
             "nonoverlap_tail",
         }:
             raise ValueError(
                 "stream_window_mode must be one of: "
-                "legacy_stride, sliding_stride_1, nonoverlap_tail"
+                "sliding_stride_1, nonoverlap_tail"
             )
         self.sequences = sequences
         self.window_size = window_size
@@ -77,10 +76,6 @@ class SMDOnlineStream:
                 start_indices = build_nonoverlap_tail_window_starts(
                     sequence_length=sequence_length,
                     window_size=window_size,
-                )
-            else:
-                start_indices = range(
-                    0, sequence_length - window_size + 1, stride
                 )
             for start_index in start_indices:
                 end_index = start_index + window_size
@@ -206,6 +201,7 @@ class OnlineWindowBatcher:
         batch_size: int,
         view_noise_std: float = 0.0,
         view_dropout_probability: float = 0.0,
+        include_legacy_views: bool = False,
     ) -> None:
         # The batcher adds only the two online views. Everything else is reused
         # from the same collated window structure as the offline pipeline.
@@ -213,6 +209,7 @@ class OnlineWindowBatcher:
         self.batch_size = batch_size
         self.view_noise_std = view_noise_std
         self.view_dropout_probability = view_dropout_probability
+        self.include_legacy_views = include_legacy_views
         console_print(
             "DATA",
             "Initialized online window batcher",
@@ -245,16 +242,18 @@ class OnlineWindowBatcher:
             raise StopIteration("No more batches remain in the online batcher")
 
         batch = collate_windows(windows)
-        batch["view_a"] = self._build_view(batch["x"])
-        batch["view_b"] = self._build_view(batch["x"])
+        if self.include_legacy_views:
+            batch["view_a"] = self._build_view(batch["x"])
+            batch["view_b"] = self._build_view(batch["x"])
         validate_online_batch(batch)
         console_print("DATA", "Built online batch", **summarize_batch(batch))
-        console_print(
-            "DATA",
-            "Built online contrastive views",
-            view_a=summarize_tensor(batch["view_a"]),
-            view_b=summarize_tensor(batch["view_b"]),
-        )
+        if self.include_legacy_views:
+            console_print(
+                "DATA",
+                "Built online contrastive views",
+                view_a=summarize_tensor(batch["view_a"]),
+                view_b=summarize_tensor(batch["view_b"]),
+            )
         return batch
 
     def __iter__(self) -> Any:
@@ -270,6 +269,7 @@ class OnlineWindowBatcher:
             "batch_size": self.batch_size,
             "view_noise_std": self.view_noise_std,
             "view_dropout_probability": self.view_dropout_probability,
+            "include_legacy_views": self.include_legacy_views,
         }
 
     def load_state_dict(self, state_dict: dict[str, Any]) -> None:

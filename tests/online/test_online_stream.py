@@ -74,8 +74,8 @@ def test_online_batcher_restores_stream_state() -> None:
     restored_batcher.load_state_dict(saved_state)
     restored_batch = restored_batcher.next_batch()
 
-    assert first_batch["view_a"].shape[-2:] == (100, 38)
-    assert first_batch["view_b"].shape[-2:] == (100, 38)
+    assert "view_a" not in first_batch
+    assert "view_b" not in first_batch
     assert (
         restored_batch["meta"][0]["stream_step"]
         == saved_state["stream_state_dict"]["cursor"]["position"]
