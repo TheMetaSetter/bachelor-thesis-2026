@@ -87,7 +87,6 @@ class _FakeOnlineBaseline:
                     "online/loss_total": None,
                     "online/triage_decision": "hard_old_normality",
                     "online/verification_buffer_size": 0,
-                    "online/ttl_buffer_size": 0,
                 }
             ],
             [

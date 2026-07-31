@@ -37,6 +37,7 @@ def test_multitask_model_returns_documented_shapes() -> None:
         gumbel_temperature=1.5,
         alpha_logit_init=0.0,
         beta_logit_init=0.0,
+        training_phase="stage_b_fusion_finetuning",
     )
     batch = {
         "x": torch.randn(4, 100, 38),
@@ -78,6 +79,7 @@ def test_multitask_model_supports_task_specific_concat_projection_fusion_mode() 
         hidden_dim=16,
         num_classes=12,
         fusion_mode="task_specific_concat_projection",
+        training_phase="stage_b_fusion_finetuning",
     )
     batch = {
         "x": torch.randn(2, 20, 38),
@@ -105,6 +107,7 @@ def test_multitask_model_supports_cosine_topk_discrete_query_mode() -> None:
         discrete_query_mode="cosine_topk",
         discrete_topk=3,
         discrete_query_temperature=0.1,
+        training_phase="stage_b_fusion_finetuning",
     )
     batch = {
         "x": torch.randn(2, 20, 38),
@@ -141,6 +144,7 @@ def test_multitask_model_builds_vectorized_stochastic_query_samples() -> None:
         gumbel_temperature=1.5,
         alpha_logit_init=0.0,
         beta_logit_init=0.0,
+        training_phase="stage_b_fusion_finetuning",
     )
     model.memory_initialized = True
     model.memory_training_enabled = False
@@ -197,6 +201,7 @@ def test_multitask_model_calls_encoder_once_per_forward(monkeypatch) -> None:
         gumbel_temperature=1.5,
         alpha_logit_init=0.0,
         beta_logit_init=0.0,
+        training_phase="stage_b_fusion_finetuning",
     )
     model.memory_initialized = True
     model.memory_training_enabled = False
@@ -242,6 +247,7 @@ def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode(
         continuous_num_prototypes=4,
         discrete_enabled=True,
         discrete_codebook_size=8,
+        training_phase="stage_b_fusion_finetuning",
         stochastic_inference=True,
         monte_carlo_samples=10,
         continuous_temperature=0.9,
@@ -376,6 +382,7 @@ def test_multitask_model_handles_single_sample_monte_carlo_without_nan() -> None
         continuous_num_prototypes=4,
         discrete_enabled=True,
         discrete_codebook_size=8,
+        training_phase="stage_b_fusion_finetuning",
     )
     model.memory_initialized = True
     model.memory_training_enabled = False

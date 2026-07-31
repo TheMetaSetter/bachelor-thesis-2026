@@ -8,7 +8,6 @@ import pytest
 
 from src.engine.online_tta.online_engine import _run_online_sequence
 from src.engine.online_tta import online_engine_run as online_engine_run_module
-from src.engine.online_tta.ttl_buffer import TTLBuffer
 from src.engine.online_tta.verification_buffer import VerificationBuffer
 from scripts.experiments.run_online_adaptation import (
     _resolve_max_online_steps as resolve_online_adaptation_max_steps,
@@ -68,7 +67,6 @@ def test_run_online_sequence_honors_max_online_steps(monkeypatch) -> None:
         view_dropout_probability=0.0,
         device="cpu",
         verification_buffer=VerificationBuffer(max_size=8, non_overlap_gap=0),
-        ttl_buffer=TTLBuffer(ttl_steps=20),
         max_online_steps=2,
     )
 
@@ -126,7 +124,6 @@ def test_run_online_sequence_rejects_batched_causal_windows(monkeypatch) -> None
             view_dropout_probability=0.0,
             device="cpu",
             verification_buffer=VerificationBuffer(max_size=8, non_overlap_gap=0),
-            ttl_buffer=TTLBuffer(ttl_steps=20),
             max_online_steps=1,
         )
 
@@ -229,3 +226,6 @@ def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -
     )
 
     assert context["max_online_steps"] is None
+    assert [key for key in context if key.endswith("_buffer")] == [
+        "verification_buffer"
+    ]

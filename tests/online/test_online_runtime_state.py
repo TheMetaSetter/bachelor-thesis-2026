@@ -3,6 +3,7 @@ import pytest
 from src.engine.online_tta.non_overlap_guard import NonOverlapGuard
 from src.engine.online_tta.runtime_state import (
     OnlineRuntimeState,
+    resume_online_runtime,
     restore_online_runtime_state,
     validate_resume_state,
 )
@@ -65,6 +66,42 @@ def test_runtime_state_restores_live_containers() -> None:
     restore_online_runtime_state(state, buffer, guard)
     assert len(buffer) == 1
     assert guard.intervals() == [(4, 6)]
+
+
+def test_resume_online_runtime_ignores_obsolete_ttl_buffer_size() -> None:
+    state = OnlineRuntimeState(
+        "machine-1-6",
+        "A2",
+        _artifact("machine-1-6"),
+        verification_entries=[{"entry_id": "e1", "window_start": 0, "window_end": 2}],
+    )
+
+    class _CheckpointManager:
+        def load_checkpoint(self, checkpoint_path, model, optimizer, scheduler):
+            return {
+                "extra_state": {
+                    "online_runtime_state": state.to_dict(),
+                    "threshold_artifact": _artifact("machine-1-6"),
+                    "ttl_buffer_size": 999,
+                }
+            }
+
+    buffer = VerificationBuffer()
+    guard = NonOverlapGuard()
+    resumed = resume_online_runtime(
+        checkpoint_manager=_CheckpointManager(),
+        checkpoint_path="/tmp/old_online_final.pt",
+        model=object(),
+        entity_id="machine-1-6",
+        online_variant="A2",
+        verification_buffer=buffer,
+        hard_old_guard=guard,
+    )
+
+    assert resumed.to_dict() == state.to_dict()
+    assert len(buffer) == 1
+    assert buffer.items()[0]["entry_id"] == "e1"
+    assert buffer.items()[0]["ttl_remaining"] == 2
 
 
 def test_runtime_state_restores_signature_history() -> None:

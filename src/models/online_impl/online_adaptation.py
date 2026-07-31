@@ -141,14 +141,21 @@ class OnlineAdaptationModel(BaseModel):
                 "reference_checkpoint_path must point to a thesis_multitask checkpoint, "
                 f"but found model_name={model_name!r}"
             )
+        checkpoint_only_keys = {
+            "model_name",
+            "task_name",
+            "freeze_recovered_zipped_encoder_during_warmup",
+        }
         model_kwargs = {
-            key: value for key, value in config["model"].items() if key != "model_name"
+            key: value
+            for key, value in config["model"].items()
+            if key not in checkpoint_only_keys
         }
         model_kwargs.update(
             {
                 key: value
                 for key, value in config.get("task", {}).items()
-                if key != "task_name"
+                if key not in checkpoint_only_keys
             }
         )
         reference_model = ThesisMultitaskModel(**model_kwargs)

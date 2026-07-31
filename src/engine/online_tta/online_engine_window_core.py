@@ -18,7 +18,7 @@ from src.engine.online_tta.online_engine_window_metrics import (
 from src.engine.online_tta.signature_verification import (
     find_recurrent_signatures,
 )
-from src.engine.online_tta.ttl_buffer import TTLBuffer
+from src.engine.online_tta.timing_debug import OnlineTtaTimingLogger
 from src.engine.online_tta.verification_buffer import VerificationBuffer
 from src.engine.online_tta.verification_cycle import VerificationCycleController
 
@@ -61,49 +61,49 @@ def _process_online_window(
     ewma_previous_weight: float,
     triage_thresholds: dict[str, float],
     verification_buffer: VerificationBuffer,
-    ttl_buffer: TTLBuffer,
     previous_ewma_score: float | None,
     device: str,
     signature_history: list[Any],
     verification_controller: VerificationCycleController,
     hard_old_guard: NonOverlapGuard,
+    timing_logger: OnlineTtaTimingLogger | None = None,
 ) -> tuple[float, dict[str, Any], dict[str, Any]]:
-    event = _prepare_online_window_event(
-        model=model,
-        batch=batch,
-        online_variant=online_variant,
-        previous_ewma_score=previous_ewma_score,
-        ewma_current_weight=ewma_current_weight,
-        ewma_previous_weight=ewma_previous_weight,
-        triage_thresholds=triage_thresholds,
-        signature_history=signature_history,
-        hard_old_guard=hard_old_guard,
-        device=device,
+    timing_logger = timing_logger or OnlineTtaTimingLogger(enabled=False, device=device)
+    timing_logger.set_window(batch)
+    event = timing_logger.measure(
+        "prepare_event",
+        lambda: _prepare_online_window_event(
+            model=model, batch=batch, online_variant=online_variant,
+            previous_ewma_score=previous_ewma_score,
+            ewma_current_weight=ewma_current_weight,
+            ewma_previous_weight=ewma_previous_weight,
+            triage_thresholds=triage_thresholds,
+            signature_history=signature_history, hard_old_guard=hard_old_guard,
+            device=device, timing_logger=timing_logger,
+        ),
     )
-    admitted, rejected = _admit_and_verify_online_window(
-        model=model,
-        event=event,
-        online_variant=online_variant,
-        threshold_value=threshold_value,
-        verification_buffer=verification_buffer,
-        ttl_buffer=ttl_buffer,
-        verification_controller=verification_controller,
-        device=device,
+    admitted, rejected = timing_logger.measure(
+        "buffer_and_verification",
+        lambda: _admit_and_verify_online_window(
+            model=model, event=event, online_variant=online_variant,
+            threshold_value=threshold_value, verification_buffer=verification_buffer,
+            verification_controller=verification_controller,
+            device=device,
+        ),
     )
-    step_result = _execute_window_event_step(
-        model=model,
-        optimizer=optimizer,
-        event=event,
-        online_variant=online_variant,
-        threshold_value=threshold_value,
-        hard_old_guard=hard_old_guard,
+    step_result = timing_logger.measure(
+        "adaptation_step",
+        lambda: _execute_window_event_step(
+            model=model, optimizer=optimizer, event=event,
+            online_variant=online_variant, threshold_value=threshold_value,
+            hard_old_guard=hard_old_guard,
+        ),
     )
-    record, metric = _build_event_window_outputs(
-        step_result,
-        event,
-        threshold_value,
-        verification_buffer,
-        ttl_buffer,
+    record, metric = timing_logger.measure(
+        "build_outputs",
+        lambda: _build_event_window_outputs(
+            step_result, event, threshold_value, verification_buffer
+        ),
     )
     return _finalize_window_result(event, metric, record, admitted, rejected)
 
@@ -126,7 +126,6 @@ def _build_event_window_outputs(
     event: dict[str, Any],
     threshold_value: float,
     verification_buffer: VerificationBuffer,
-    ttl_buffer: TTLBuffer,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     return _build_online_window_outputs(
         step_result=step_result,
@@ -136,7 +135,6 @@ def _build_event_window_outputs(
         ewma_point_score=event["ewma_point_score"],
         triage_decision=event["triage_decision"],
         verification_buffer=verification_buffer,
-        ttl_buffer=ttl_buffer,
     )
 
 
@@ -152,6 +150,7 @@ def _prepare_online_window_event(
     signature_history: list[Any],
     hard_old_guard: NonOverlapGuard,
     device: str,
+    timing_logger: OnlineTtaTimingLogger,
 ) -> dict[str, Any]:
     (
         batch_on_device,
@@ -168,9 +167,13 @@ def _prepare_online_window_event(
         ewma_current_weight=ewma_current_weight,
         ewma_previous_weight=ewma_previous_weight,
         device=device,
+        timing_logger=timing_logger,
     )
-    signature_diagnostics, recurrent_signatures = _attach_event_pnn_mask(
-        model, scoring_outputs, batch_on_device, online_variant, signature_history
+    signature_diagnostics, recurrent_signatures = timing_logger.measure(
+        "pnn_mask",
+        lambda: _attach_event_pnn_mask(
+            model, scoring_outputs, batch_on_device, online_variant, signature_history
+        ),
     )
     triage_decision = _classify_event_window(
         input_window_score=input_window_score,
@@ -198,7 +201,6 @@ def _admit_and_verify_online_window(
     online_variant: str,
     threshold_value: float,
     verification_buffer: VerificationBuffer,
-    ttl_buffer: TTLBuffer,
     verification_controller: VerificationCycleController,
     device: str,
 ) -> tuple[int, int]:
@@ -209,7 +211,6 @@ def _admit_and_verify_online_window(
         latent_window_score=event["latent_window_score"],
         triage_decision=event["triage_decision"],
         verification_buffer=verification_buffer,
-        ttl_buffer=ttl_buffer,
     )
     verification_controller.maybe_run(
         lambda entries: _verify_and_adapt_entries(

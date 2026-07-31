@@ -31,6 +31,7 @@ def _build_initialization_model() -> ThesisMultitaskModel:
         lambda_use=0.0,
         lambda_gate=0.0,
         bootstrap_encoder_epochs=1,
+        training_phase="stage_b_fusion_finetuning",
         memory_initialization_batches=1,
         memory_initialization_with_synthetic_windows=True,
         use_synthetic_augmentation=True,

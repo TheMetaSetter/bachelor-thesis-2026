@@ -10,6 +10,7 @@ from src.engine.online_tta.non_overlap_guard import NonOverlapGuard
 from src.engine.online_tta.online_calibration import (
     move_batch_to_device as _move_batch_to_device,
 )
+from src.engine.online_tta.timing_debug import OnlineTtaTimingLogger
 from src.engine.online_tta.online_engine_step import execute_online_tta_step
 from src.engine.online_tta.online_optimizer import build_online_optimizer
 from src.engine.online_tta.signature_verification import (
@@ -20,7 +21,6 @@ from src.engine.online_tta.signature_verification import (
     find_recurrent_signatures,
     ordered_continuous_signature,
 )
-from src.engine.online_tta.ttl_buffer import TTLBuffer
 from src.engine.online_tta.verification_adapter import (
     VerificationResult,
     build_entry_batch,
@@ -88,21 +88,19 @@ def _score_online_window(
     ewma_current_weight: float,
     ewma_previous_weight: float,
     device: str,
+    timing_logger: OnlineTtaTimingLogger | None = None,
 ) -> tuple[dict[str, Any], float, float, float, float, dict[str, Any]]:
-    batch_on_device = _move_batch_to_device(batch, device)
+    timing_logger = timing_logger or OnlineTtaTimingLogger(enabled=False, device=device)
+    batch_on_device = timing_logger.measure(
+        "host_to_cuda", lambda: _move_batch_to_device(batch, device)
+    )
     model.eval()
-    with torch.no_grad():
-        if online_variant == "A0" and hasattr(model, "forward_source"):
-            pre_outputs = model.forward_source(batch_on_device)
-        else:
-            pre_outputs = model.forward(batch_on_device)
-    raw_point_score = float(pre_outputs["point_scores"][0, -1].detach().cpu())
-    latent_value = pre_outputs["aux"].get("latent_window_score")
-    if latent_value is None:
-        latent_value = pre_outputs["window_scores"]
-    latent_window_score = float(torch.as_tensor(latent_value).mean().detach().cpu())
-    input_window_score = float(
-        torch.mean((pre_outputs["recon"] - batch_on_device["x"]) ** 2).detach().cpu()
+    pre_outputs = timing_logger.measure(
+        "model_forward",
+        lambda: _forward_online_window(model, batch_on_device, online_variant),
+    )
+    raw_point_score, input_window_score, latent_window_score = timing_logger.measure(
+        "score_extraction", lambda: _extract_online_window_scores(pre_outputs, batch_on_device)
     )
     if previous_ewma_score is None:
         ewma_point_score = raw_point_score
@@ -119,6 +117,31 @@ def _score_online_window(
         ewma_point_score,
         pre_outputs,
     )
+
+
+def _forward_online_window(
+    model: torch.nn.Module,
+    batch_on_device: dict[str, Any],
+    online_variant: str,
+) -> dict[str, Any]:
+    with torch.no_grad():
+        if online_variant == "A0" and hasattr(model, "forward_source"):
+            return model.forward_source(batch_on_device)
+        return model.forward(batch_on_device)
+
+
+def _extract_online_window_scores(
+    outputs: dict[str, Any], batch_on_device: dict[str, Any]
+) -> tuple[float, float, float]:
+    raw_point_score = float(outputs["point_scores"][0, -1].detach().cpu())
+    latent_value = outputs["aux"].get("latent_window_score")
+    if latent_value is None:
+        latent_value = outputs["window_scores"]
+    latent_window_score = float(torch.as_tensor(latent_value).mean().detach().cpu())
+    input_window_score = float(
+        torch.mean((outputs["recon"] - batch_on_device["x"]) ** 2).detach().cpu()
+    )
+    return raw_point_score, input_window_score, latent_window_score
 
 
 def _build_event_pnn_mask(
@@ -176,7 +199,6 @@ def _update_online_window_buffers(
     latent_window_score: float,
     triage_decision: str,
     verification_buffer: VerificationBuffer,
-    ttl_buffer: TTLBuffer,
 ) -> tuple[bool, bool]:
     admitted = False
     rejected = False
@@ -195,11 +217,6 @@ def _update_online_window_buffers(
             }
         )
         rejected = not admitted
-    if triage_decision != "strong_anomaly":
-        ttl_buffer.add(
-            item=int(batch_on_device["meta"][0]["end_index"]) - 1,
-            current_step=int(batch_on_device["meta"][0]["stream_step"]),
-        )
     return admitted, rejected
 
 
@@ -212,7 +229,6 @@ def _build_online_window_outputs(
     ewma_point_score: float,
     triage_decision: str,
     verification_buffer: VerificationBuffer,
-    ttl_buffer: TTLBuffer,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     record = dict(step_result["record"])
     record["threshold"] = float(threshold_value)
@@ -250,6 +266,5 @@ def _build_online_window_outputs(
         "online/recon_head_grad_norm": 0.0,
         "online/classification_head_grad_norm": 0.0,
         "online/verification_buffer_size": len(verification_buffer),
-        "online/ttl_buffer_size": len(ttl_buffer),
     }
     return record, metric

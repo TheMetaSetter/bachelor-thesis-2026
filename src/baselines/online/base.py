@@ -169,7 +169,6 @@ def build_online_record_schema(
     did_update: bool,
     loss_total: float | None,
     verification_buffer_size: int = 0,
-    ttl_buffer_size: int = 0,
 ) -> dict[str, Any]:
     return {
         "entity_id": entity_id,
@@ -187,5 +186,4 @@ def build_online_record_schema(
         "did_update": bool(did_update),
         "loss_total": None if loss_total is None else float(loss_total),
         "online/verification_buffer_size": int(verification_buffer_size),
-        "online/ttl_buffer_size": int(ttl_buffer_size),
     }

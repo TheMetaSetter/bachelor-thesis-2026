@@ -185,6 +185,7 @@ def test_multitask_checkpoint_roundtrip_restores_memory_buffers(tmp_path: Path) 
         hidden_dim=16,
         use_synthetic_augmentation=False,
         bootstrap_encoder_epochs=1,
+        training_phase="stage_b_fusion_finetuning",
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     initialization_batch = {
@@ -229,6 +230,84 @@ def test_multitask_checkpoint_roundtrip_restores_memory_buffers(tmp_path: Path) 
         model.continuous_prototype_bank,
         reloaded_model.continuous_prototype_bank,
     )
+
+
+def test_stage_a_checkpoint_allows_stage_b_memory_initialization(
+    tmp_path: Path,
+) -> None:
+    checkpoint_manager = CheckpointManager(tmp_path)
+    initialization_batch = {
+        "x": torch.randn(2, 3, 4),
+        "point_labels": torch.zeros(2, 3, dtype=torch.long),
+        "mask": None,
+        "timestamps": None,
+        "meta": [{"entity_id": "machine-a"}, {"entity_id": "machine-b"}],
+    }
+    stage_a_model = ThesisMultitaskModel(
+        input_dim=4,
+        window_size=3,
+        encoder_dim=4,
+        hidden_dim=4,
+        num_classes=2,
+        dropout=0.0,
+        continuous_enabled=True,
+        continuous_num_prototypes=2,
+        discrete_enabled=True,
+        discrete_codebook_size=4,
+        bootstrap_encoder_epochs=0,
+        training_phase="stage_a_multitask_pretraining",
+        use_synthetic_augmentation=False,
+    )
+    stage_a_optimizer = torch.optim.Adam(stage_a_model.parameters(), lr=1e-3)
+
+    stage_a_path = checkpoint_manager.save_checkpoint(
+        checkpoint_name="stage_a_lifecycle.pt",
+        model=stage_a_model,
+        optimizer=stage_a_optimizer,
+        scheduler=None,
+        scaler_state={
+            "feature_mean": torch.zeros(4),
+            "feature_std": torch.ones(4),
+        },
+        config={"experiment_name": "stage-a-lifecycle"},
+        epoch=1,
+        metric_history=[],
+        extra_state=stage_a_model.get_checkpoint_extra_state(),
+    )
+    stage_a_payload = torch.load(stage_a_path, map_location="cpu")
+
+    stage_b_model = ThesisMultitaskModel(
+        input_dim=4,
+        window_size=3,
+        encoder_dim=4,
+        hidden_dim=4,
+        num_classes=2,
+        dropout=0.0,
+        continuous_enabled=True,
+        continuous_num_prototypes=2,
+        discrete_enabled=True,
+        discrete_codebook_size=4,
+        bootstrap_encoder_epochs=0,
+        training_phase="stage_b_fusion_finetuning",
+        freeze_memories_after_initialization=True,
+        use_synthetic_augmentation=False,
+    )
+    stage_b_model.load_state_dict(stage_a_payload["model_state_dict"])
+    stage_b_model.load_checkpoint_extra_state(stage_a_payload["extra_state"])
+    stage_b_model.set_epoch_context(epoch_index=0, total_epochs=1)
+
+    was_initialized = stage_b_model.maybe_initialize_memories_from_loader(
+        [initialization_batch],
+        device="cpu",
+    )
+
+    assert stage_a_payload["extra_state"]["memory_initialized"] is False
+    assert was_initialized is True
+    assert stage_b_model.memory_initialized is True
+    assert stage_b_model.memory_training_enabled is False
+    assert stage_b_model.memory_ready_for_initialization is False
+    assert stage_b_model.continuous_prototype_bank.shape == (2, 4)
+    assert stage_b_model.discrete_codebook.shape == (4, 4)
 
 
 def test_multitask_checkpoint_roundtrip_repairs_verification_provenance(

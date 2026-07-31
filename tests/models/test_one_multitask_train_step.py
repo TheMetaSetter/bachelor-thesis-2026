@@ -41,6 +41,7 @@ def test_one_multitask_forward_and_backward_step_runs_with_optional_losses_enabl
         max_segment_fraction=0.2,
         spike_scale=3.0,
         classification_label_mode="binary",
+        training_phase="stage_b_fusion_finetuning",
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     batch = {
@@ -59,8 +60,10 @@ def test_one_multitask_forward_and_backward_step_runs_with_optional_losses_enabl
     assert step_output["loss"].item() >= 0.0
     assert step_output["loss_terms"]["classification_loss"].item() >= 0.0
     assert step_output["batch"]["classification_labels"].sum().item() == 2
-    assert model.alpha_logit.grad is not None
-    assert model.beta_logit.grad is not None
+    assert model.alpha_logit.requires_grad is False
+    assert model.beta_logit.requires_grad is False
+    assert model.alpha_logit.grad is None
+    assert model.beta_logit.grad is None
 
 
 def test_one_multitask_train_step_with_exp2_logs_contrastive_and_gate_stats() -> None:

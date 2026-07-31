@@ -1,4 +1,10 @@
 task_name: online_adaptation
+# Enable only while diagnosing runtime. It prints component timings per window.
+debug_timing: false
+# Restrict a diagnostic stream to [start, end) in entity-global coordinates.
+# Keep both values null for the full test sequence used in performance reports.
+absolute_start_index: null
+absolute_end_index: null
 warm_start_projector: false
 target_param_group: projector_params
 clean_stream_only: true

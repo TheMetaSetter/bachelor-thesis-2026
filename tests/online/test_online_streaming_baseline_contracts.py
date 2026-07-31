@@ -106,3 +106,9 @@ def test_online_streaming_baselines_calibrate_and_run() -> None:
         assert metric_history
         assert records
         assert records[0]["online_variant"] == expected_variant
+        for metric in metric_history:
+            assert "online/verification_buffer_size" in metric
+            assert "online/ttl_buffer_size" not in metric
+            assert "online/raw_point_score" in metric
+            assert "online/prediction" in metric
+            assert "online/did_update" in metric

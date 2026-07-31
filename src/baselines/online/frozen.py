@@ -242,7 +242,6 @@ class _FrozenStreamingBaseline(OnlineStreamingBaselineProtocol):
                     "online/loss_total": None,
                     "online/triage_decision": triage_decision,
                     "online/verification_buffer_size": 0,
-                    "online/ttl_buffer_size": 0,
                 }
             )
             records.append(record)

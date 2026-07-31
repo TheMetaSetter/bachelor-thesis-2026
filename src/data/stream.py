@@ -115,6 +115,9 @@ class SMDOnlineStream:
         end_index: int,
         stream_step: int,
     ) -> dict[str, Any]:
+        absolute_offset = int(sequence["meta"].get("absolute_start_index", 0))
+        absolute_start_index = absolute_offset + start_index
+        absolute_end_index = absolute_offset + end_index
         return {
             "x": sequence["x"][start_index:end_index].clone(),
             "point_labels": None
@@ -130,8 +133,8 @@ class SMDOnlineStream:
                 "dataset_name": sequence["meta"]["dataset_name"],
                 "entity_id": sequence["meta"]["entity_id"],
                 "split": sequence["meta"]["split"],
-                "start_index": start_index,
-                "end_index": end_index,
+                "start_index": absolute_start_index,
+                "end_index": absolute_end_index,
                 "window_size": self.window_size,
                 "series_id": sequence["meta"].get(
                     "series_id",
@@ -141,8 +144,8 @@ class SMDOnlineStream:
                         f"{sequence['meta']['entity_id']}"
                     ),
                 ),
-                "absolute_start_index": start_index,
-                "absolute_end_index": end_index,
+                "absolute_start_index": absolute_start_index,
+                "absolute_end_index": absolute_end_index,
                 "source_sequence_length": int(
                     sequence["meta"].get(
                         "source_sequence_length",

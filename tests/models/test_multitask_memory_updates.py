@@ -40,6 +40,8 @@ def _build_initialized_model() -> ThesisMultitaskModel:
         lambda_use=0.0,
         lambda_gate=0.0,
         bootstrap_encoder_epochs=1,
+        training_phase="stage_b_fusion_finetuning",
+        freeze_memories_after_initialization=False,
         use_synthetic_augmentation=False,
         use_synthetic_validation=False,
         anomaly_probability=0.5,

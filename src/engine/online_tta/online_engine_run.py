@@ -37,7 +37,7 @@ from src.engine.online_tta.signature_verification import (
     SignatureWindow,
     find_recurrent_signatures,
 )
-from src.engine.online_tta.ttl_buffer import TTLBuffer
+from src.engine.online_tta.timing_debug import OnlineTtaTimingLogger
 from src.engine.online_tta.verification_buffer import VerificationBuffer
 from src.engine.online_tta.verification_cycle import VerificationCycleController
 from src.engine.online_tta.runtime_state import build_online_runtime_state
@@ -54,6 +54,43 @@ def _resolve_max_online_steps(value: Any) -> int | None:
     if resolved_value <= 0:
         return None
     return resolved_value
+
+
+def _select_online_stream_sequence(
+    sequence: dict[str, Any],
+    *,
+    absolute_start_index: int | None,
+    absolute_end_index: int | None,
+) -> dict[str, Any]:
+    if absolute_start_index is None and absolute_end_index is None:
+        return sequence
+    if absolute_start_index is None or absolute_end_index is None:
+        raise ValueError(
+            "absolute_start_index and absolute_end_index must be set together"
+        )
+    source_length = int(sequence["x"].shape[0])
+    if not 0 <= absolute_start_index < absolute_end_index <= source_length:
+        raise ValueError(
+            "Online stream range must satisfy "
+            f"0 <= start < end <= {source_length}, got "
+            f"[{absolute_start_index}, {absolute_end_index})"
+        )
+    selected_sequence = dict(sequence)
+    for field_name in ("x", "point_labels", "mask", "timestamps"):
+        value = sequence.get(field_name)
+        selected_sequence[field_name] = (
+            None
+            if value is None
+            else value[absolute_start_index:absolute_end_index].clone()
+        )
+    selected_sequence["meta"] = {
+        **sequence["meta"],
+        "sequence_length": absolute_end_index - absolute_start_index,
+        "source_sequence_length": source_length,
+        "absolute_start_index": absolute_start_index,
+        "absolute_end_index": absolute_end_index,
+    }
+    return selected_sequence
 
 
 def _build_dry_run_online_context(*, online_variant: str) -> dict[str, Any]:
@@ -162,10 +199,10 @@ def _build_runtime_online_context(
         "max_online_steps": _resolve_max_online_steps(
             experiment_config["task"].get("max_online_steps")
         ),
+        "debug_timing": bool(experiment_config["task"].get("debug_timing", False)),
         "verification_buffer": VerificationBuffer(max_size=64, non_overlap_gap=0),
         "hard_old_guard": NonOverlapGuard(max_size=1),
         "signature_history": [],
-        "ttl_buffer": TTLBuffer(ttl_steps=int(protocol_config["window_size"])),
     }
 
 
@@ -182,12 +219,12 @@ def _run_online_sequence(
     view_dropout_probability: float,
     device: str,
     verification_buffer: VerificationBuffer,
-    ttl_buffer: TTLBuffer,
     runtime_state=None,
     max_online_steps: int | None,
     hard_old_guard: NonOverlapGuard | None = None,
     signature_history: list[SignatureWindow] | None = None,
     threshold_artifact: dict[str, Any] | None = None,
+    timing_logger: OnlineTtaTimingLogger | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if hard_old_guard is None:
         hard_old_guard = NonOverlapGuard(max_size=1)
@@ -218,6 +255,8 @@ def _run_online_sequence(
     ewma_current_weight = float(protocol_config["online_ewma_current_weight"])
     ewma_previous_weight = float(protocol_config["online_ewma_previous_weight"])
     triage_thresholds = _build_triage_thresholds(threshold_value, threshold_artifact)
+    if timing_logger is None:
+        timing_logger = OnlineTtaTimingLogger(enabled=False, device=device)
 
     for batch in batcher:
         _validate_single_window_online_batch(batch)
@@ -225,6 +264,7 @@ def _run_online_sequence(
             break
         from src.engine.online_tta import online_engine as public_online_engine
 
+        timing_logger.set_window(batch)
         previous_ewma_score, metric, record = (
             public_online_engine._process_online_window(
                 model=model,
@@ -236,12 +276,12 @@ def _run_online_sequence(
                 ewma_previous_weight=ewma_previous_weight,
                 triage_thresholds=triage_thresholds,
                 verification_buffer=verification_buffer,
-                ttl_buffer=ttl_buffer,
                 previous_ewma_score=previous_ewma_score,
                 device=device,
                 signature_history=signature_history,
                 verification_controller=verification_controller,
                 hard_old_guard=hard_old_guard,
+                timing_logger=timing_logger,
             )
         )
         metric["online/step"] = len(metric_history) + 1
@@ -311,7 +351,6 @@ def _run_online_execution_sequences(
                 view_dropout_probability=context["view_dropout_probability"],
                 device=context["device"],
                 verification_buffer=context["verification_buffer"],
-                ttl_buffer=context["ttl_buffer"],
                 runtime_state=context.get("runtime_state"),
                 hard_old_guard=context["hard_old_guard"],
                 signature_history=context["signature_history"],
@@ -321,6 +360,10 @@ def _run_online_execution_sequences(
                     else max_online_steps_limit - len(metric_history)
                 ),
                 threshold_artifact=artifact,
+                timing_logger=OnlineTtaTimingLogger(
+                    enabled=bool(context.get("debug_timing", False)),
+                    device=context["device"],
+                ),
             )
         )
         metric_history.extend(sequence_metric_history)
@@ -368,7 +411,6 @@ def _finalize_online_execution(
             "signature_history": context["runtime_state"].signature_history,
             "recurrent_signatures": context["runtime_state"].recurrent_signatures,
             "verification_buffer_size": len(context["verification_buffer"]),
-            "ttl_buffer_size": len(context["ttl_buffer"]),
             "verification_buffer_entries": context["verification_buffer"].items(),
             "verification_history": context["runtime_state"].verification_history,
             "hard_old_guard_intervals": context["hard_old_guard"].intervals(),
@@ -463,10 +505,16 @@ def run_thesis_online_tta_experiment(
     if context["benchmark_status"] == "dry_run":
         return context
 
+    sequence = _select_online_stream_sequence(
+        context["data_bundle"]["scaled_sequences"]["test"][0],
+        absolute_start_index=experiment_config["task"].get("absolute_start_index"),
+        absolute_end_index=experiment_config["task"].get("absolute_end_index"),
+    )
+    context["data_bundle"]["scaled_sequences"]["test"] = [sequence]
     metric_history, records = _run_online_sequence(
         model=context["model"],
         optimizer=context["optimizer"],
-        sequence=context["data_bundle"]["scaled_sequences"]["test"][0],
+        sequence=sequence,
         online_variant=context["online_variant"],
         threshold_value=context["threshold_value"],
         protocol_config=protocol_config,
@@ -475,12 +523,15 @@ def run_thesis_online_tta_experiment(
         view_dropout_probability=context["view_dropout_probability"],
         device=context["device"],
         verification_buffer=context["verification_buffer"],
-        ttl_buffer=context["ttl_buffer"],
         runtime_state=context.get("runtime_state"),
         hard_old_guard=context["hard_old_guard"],
         signature_history=context["signature_history"],
         max_online_steps=_resolve_max_online_steps(context.get("max_online_steps")),
         threshold_artifact=context["threshold_artifact"],
+        timing_logger=OnlineTtaTimingLogger(
+            enabled=bool(context["debug_timing"]),
+            device=context["device"],
+        ),
     )
     return _finalize_online_execution(
         context=context,

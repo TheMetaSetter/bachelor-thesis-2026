@@ -213,6 +213,9 @@ def _validate_model_and_task_config(
         },
         "online_adaptation": {
             "task_name",
+            "debug_timing",
+            "absolute_start_index",
+            "absolute_end_index",
             "reference_checkpoint_path",
             "offline_variant",
             "entity_id",
@@ -504,6 +507,19 @@ def _validate_model_and_task_config(
                 continue
             if not isinstance(field_value, int) or field_value <= 0:
                 raise ValueError(f"{field_name} must be a positive integer")
+        start_index = task_config.get("absolute_start_index")
+        end_index = task_config.get("absolute_end_index")
+        if (start_index is None) != (end_index is None):
+            raise ValueError(
+                "absolute_start_index and absolute_end_index must be set together"
+            )
+        if start_index is not None:
+            if not isinstance(start_index, int) or start_index < 0:
+                raise ValueError("absolute_start_index must be a non-negative integer")
+            if not isinstance(end_index, int) or end_index <= start_index:
+                raise ValueError(
+                    "absolute_end_index must be an integer greater than absolute_start_index"
+                )
 
 
 def _validate_data_runtime_config(data_config: dict[str, Any]) -> None:

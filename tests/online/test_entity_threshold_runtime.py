@@ -40,7 +40,6 @@ def test_execution_selects_a_distinct_artifact_for_each_entity(monkeypatch) -> N
         "view_dropout_probability": 0.0,
         "device": "cpu",
         "verification_buffer": object(),
-        "ttl_buffer": object(),
         "hard_old_guard": object(),
         "signature_history": [],
         "max_online_steps": 0,

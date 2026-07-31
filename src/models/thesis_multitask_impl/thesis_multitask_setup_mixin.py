@@ -52,10 +52,7 @@ class ThesisMultitaskSetupMixin:
         store_thesis_multitask_config_values(self, config)
 
     def _phase_uses_prototype_path(self) -> bool:
-        return self.training_phase in {
-            TWO_STAGE_A_PHASE_NAME,
-            TWO_STAGE_B_PHASE_NAME,
-        }
+        return self.training_phase == TWO_STAGE_B_PHASE_NAME
 
     def _phase_uses_contrastive_objective(self) -> bool:
         return self.training_phase == TWO_STAGE_A_PHASE_NAME

@@ -91,7 +91,7 @@ def test_usage_lambda_schedule_is_exposed_through_epoch_context() -> None:
 @pytest.mark.filterwarnings(
     "ignore:No positive class found in y_true, recall is set to one for all thresholds."
 )
-def test_trainer_keeps_warmup_alpha_and_beta_fixed_for_configured_epochs(
+def test_trainer_keeps_stage_a_passthrough_alpha_and_beta_fixed(
     tmp_path: Path,
 ) -> None:
     model = ThesisMultitaskModel(
@@ -135,5 +135,5 @@ def test_trainer_keeps_warmup_alpha_and_beta_fixed_for_configured_epochs(
     assert outputs["metric_history"][0]["train_alpha"] == 0.0
     assert outputs["metric_history"][0]["train_beta"] == 0.0
     assert outputs["metric_history"][1]["train_warmup_active"] == 0.0
-    assert outputs["metric_history"][1]["train_alpha"] != 0.0
-    assert outputs["metric_history"][1]["train_beta"] != 0.0
+    assert outputs["metric_history"][1]["train_alpha"] == 0.0
+    assert outputs["metric_history"][1]["train_beta"] == 0.0

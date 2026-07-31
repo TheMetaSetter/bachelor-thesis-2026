@@ -41,7 +41,11 @@ def _build_batch(batch_size: int = 2) -> dict[str, object]:
     }
 
 
-def _build_model(*, bootstrap_encoder_epochs: int) -> ThesisMultitaskModel:
+def _build_model(
+    *,
+    bootstrap_encoder_epochs: int,
+    training_phase: str = "stage_a_multitask_pretraining",
+) -> ThesisMultitaskModel:
     return ThesisMultitaskModel(
         input_dim=38,
         window_size=100,
@@ -67,6 +71,7 @@ def _build_model(*, bootstrap_encoder_epochs: int) -> ThesisMultitaskModel:
         lambda_use=0.0,
         lambda_gate=0.0,
         bootstrap_encoder_epochs=bootstrap_encoder_epochs,
+        training_phase=training_phase,
         use_synthetic_augmentation=False,
         use_synthetic_validation=False,
         anomaly_probability=0.5,
@@ -104,10 +109,13 @@ def test_bootstrap_epochs_bypass_memory_and_keep_state_unchanged() -> None:
     )
 
 
-def test_trainer_initializes_memory_after_bootstrap_window(
+def test_stage_a_trainer_does_not_initialize_memory_after_bootstrap_window(
     tmp_path: Path,
 ) -> None:
-    model = _build_model(bootstrap_encoder_epochs=1)
+    model = _build_model(
+        bootstrap_encoder_epochs=1,
+        training_phase="stage_a_multitask_pretraining",
+    )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     trainer = Trainer(
         model=model,
@@ -131,8 +139,28 @@ def test_trainer_initializes_memory_after_bootstrap_window(
     best_checkpoint = torch.load(training_outputs["best_checkpoint_path"])
 
     assert training_outputs["metric_history"][0]["train_memory_mode"] == 0.0
-    assert training_outputs["metric_history"][1]["train_memory_mode"] == 1.0
-    assert training_outputs["metric_history"][1]["train_memory_initialized"] == 1.0
+    assert training_outputs["metric_history"][1]["train_memory_mode"] == 0.0
+    assert training_outputs["metric_history"][1]["train_memory_initialized"] == 0.0
     assert model.memory_ready_for_initialization is False
+    assert model.memory_initialized is False
+    assert best_checkpoint["extra_state"]["memory_initialized"] is False
+
+
+def test_stage_b_initializer_runs_when_memory_is_uninitialized() -> None:
+    model = _build_model(
+        bootstrap_encoder_epochs=0,
+        training_phase="stage_b_fusion_finetuning",
+    )
+    model.set_epoch_context(epoch_index=0, total_epochs=1)
+
+    was_initialized = model.maybe_initialize_memories_from_loader(
+        [_build_batch()],
+        device="cpu",
+    )
+
+    assert was_initialized is True
     assert model.memory_initialized is True
-    assert best_checkpoint["extra_state"]["memory_initialized"] is True
+    assert model.memory_training_enabled is True
+    assert model.memory_ready_for_initialization is False
+    assert model.continuous_prototype_bank is not None
+    assert model.discrete_codebook is not None

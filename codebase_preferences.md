@@ -55,6 +55,15 @@
 
 - Traverse the codebase using the directory tree inside `documents/abstract-design-notes/design_starter.md`. This tree is planned to be fixed most of the time. But if you really need to change the structure of the directory, please remember to update the tree.
 
+### Specification terminology across versions
+
+- Before writing, reviewing, or implementing a new experiment specification version, compare it with all relevant earlier versions. Do not treat the newest file as sufficient context by itself.
+- Create an explicit terminology mapping with at least: old object name, new object name, semantic status (`unchanged`, `renamed`, `split`, `merged`, `new`, or `deprecated`), runtime owner, and supporting evidence.
+- One runtime object should keep one canonical name across specification versions. When a rename is intentional, the new specification must state the old name, the new name, whether semantics are equivalent, and which source, config, checkpoint, metric, and artifact names must migrate.
+- Similar names do not prove semantic identity. Compare object schema, methods, stored values, lifecycle, ownership, callers, decisions influenced, and serialization contract before mapping two names.
+- If two nearby names could refer to the same object but the evidence is incomplete, stop before planning or implementation and ask the human developer to clarify. Never guess that names such as `TTLBuffer` and `VerificationBuffer` are interchangeable.
+- Every new specification version must contain a terminology-change section. If no names changed, state that explicitly.
+
 ---
 
 ## 4. Model file organization and self-contained design
