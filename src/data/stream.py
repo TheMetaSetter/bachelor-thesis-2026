@@ -77,6 +77,8 @@ class SMDOnlineStream:
                     sequence_length=sequence_length,
                     window_size=window_size,
                 )
+
+            # Build `index_records`
             for start_index in start_indices:
                 end_index = start_index + window_size
                 self.index_records.append((sequence_index, start_index, end_index))

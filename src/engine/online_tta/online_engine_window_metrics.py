@@ -102,6 +102,7 @@ def _score_online_window(
     raw_point_score, input_window_score, latent_window_score = timing_logger.measure(
         "score_extraction", lambda: _extract_online_window_scores(pre_outputs, batch_on_device)
     )
+
     if previous_ewma_score is None:
         ewma_point_score = raw_point_score
     else:
@@ -109,6 +110,7 @@ def _score_online_window(
             ewma_current_weight * raw_point_score
             + ewma_previous_weight * previous_ewma_score
         )
+
     return (
         batch_on_device,
         raw_point_score,
