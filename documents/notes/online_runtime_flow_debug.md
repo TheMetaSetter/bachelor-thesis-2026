@@ -13,7 +13,7 @@ B_point_high
 <tr>
 <td valign="top" width="50%">
 
-### 1. Flow mình mong muốn
+### 1. Flow người dùng mong muốn
 
 ```text
 BEGIN ONLINE_STEP(W_t)
@@ -67,8 +67,6 @@ BEGIN ONLINE_STEP(W_t)
         DO NOT UPDATE online_mlp_projector
 
     ELSE IF triage_decision = "hard_old_normality" THEN
-
-        IF hard_old_guard ACCEPTS W_t THEN
             COMPUTE HARD-OLD LOSS
 
             IF online_variant = "A2" THEN

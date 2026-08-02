@@ -64,9 +64,9 @@ Spec v3 dùng hard_old trong bảng điều kiện. Code dùng hard_old_normalit
 
 Code và spec v3 đều dùng strong_anomaly. Tài liệu không tự đổi cụm strong normal thành tên khác vì đây không phải tên đang có trong code hoặc spec.
 
-## 1. Pseudocode nguyên bản của anh
+## 1. Pseudocode nguyên bản của người dùng
 
-Khối dưới đây giữ nguyên pseudocode anh đã gửi. Khối này chỉ dùng để so sánh, không phải specification chuẩn.
+Khối dưới đây được đồng bộ theo “Flow mình mong muốn” trong `documents/notes/online_runtime_flow_debug.md`. Khối này chỉ dùng để so sánh, không phải specification chuẩn.
 
 ~~~text
 BEGIN ONLINE_STEP(W_t)
@@ -119,16 +119,14 @@ BEGIN ONLINE_STEP(W_t)
         DO NOT UPDATE online_mlp_projector
 
     ELSE IF triage_decision = "hard_old_normality" THEN
-        IF hard_old_guard ACCEPTS W_t THEN
-            COMPUTE HARD-OLD LOSS
+        COMPUTE HARD-OLD LOSS
 
-            IF online_variant = "A2" THEN
-                COMPUTE SRC-ON LOSS
+        IF online_variant = "A2" THEN
+            COMPUTE SRC-ON LOSS
 
-            COMPUTE TOTAL HARD-OLD LOSS
-            BACKPROPAGATE
-            UPDATE online_mlp_projector ONLY
-        ENDIF
+        COMPUTE TOTAL HARD-OLD LOSS
+        BACKPROPAGATE
+        UPDATE online_mlp_projector ONLY
 
     ELSE IF triage_decision = "gray_zone" THEN
         verification_buffer.try_admit(W_t)
@@ -177,7 +175,7 @@ END ONLINE_STEP
 
 ## 2. Pseudocode dùng tên theo full-spec-v3
 
-Bản này giữ ý tưởng anh muốn nhưng dùng tên và điều kiện của v3. Đây là workflow mục tiêu, không phải mô tả code hiện tại.
+Bản này giữ ý tưởng người dùng muốn nhưng dùng tên và điều kiện của v3. Đây là workflow mục tiêu, không phải mô tả code hiện tại.
 
 ~~~text
 BEGIN ONLINE_STEP(W_c, online_variant)
