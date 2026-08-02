@@ -23,8 +23,7 @@ class OnlineTtaTimingLogger:
         start_index = meta.get("start_index", "?")
         end_index = meta.get("end_index", "?")
         self._window_label = (
-            f"entity={meta['entity_id']} "
-            f"window=[{start_index},{end_index})"
+            f"entity={meta['entity_id']} window=[{start_index},{end_index})"
         )
 
     def measure(self, component: str, action: Callable[[], Result]) -> Result:

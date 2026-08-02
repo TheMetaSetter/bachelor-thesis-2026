@@ -59,7 +59,12 @@ def main() -> None:
         augmented = injector.augment_batch(clean_batch)
         metadata = augmented["augmentation_metadata"][0]
         entries.append(
-            (family, augmented["x"][0].detach().cpu().numpy(), metadata, metadata.get("affected_channels", []))
+            (
+                family,
+                augmented["x"][0].detach().cpu().numpy(),
+                metadata,
+                metadata.get("affected_channels", []),
+            )
         )
 
     # Prioritize channels affected by speedup/cutoff so those two families remain
@@ -84,14 +89,28 @@ def main() -> None:
         axes = axes.ravel()
         for axis, (name, window, metadata, affected) in zip(axes, entries[start:end]):
             for color_index, channel in enumerate(channels):
-                axis.plot(window[:, channel], color=colors[color_index], linewidth=1.5, label=f"ch {channel}")
+                axis.plot(
+                    window[:, channel],
+                    color=colors[color_index],
+                    linewidth=1.5,
+                    label=f"ch {channel}",
+                )
             if name != "normal":
                 changed = metadata.get("family_parameters_by_channel", {})
                 for channel in channels:
-                    positions = changed.get(str(channel), {}).get("changed_positions", [])
+                    positions = changed.get(str(channel), {}).get(
+                        "changed_positions", []
+                    )
                     if positions:
-                        axis.scatter(positions, window[positions, channel], s=18, color=colors[channels.index(channel)])
-            label_index = 0 if name == "normal" else REDLAMP_MULTICLASS_CLASS_NAMES.index(name)
+                        axis.scatter(
+                            positions,
+                            window[positions, channel],
+                            s=18,
+                            color=colors[channels.index(channel)],
+                        )
+            label_index = (
+                0 if name == "normal" else REDLAMP_MULTICLASS_CLASS_NAMES.index(name)
+            )
             axis.set_title(f"class {label_index}: {name}", loc="left", fontsize=10)
             axis.set_ylabel("value")
             axis.grid(alpha=0.25)
@@ -104,7 +123,9 @@ def main() -> None:
         figure.savefig(output, dpi=180)
         plt.close(figure)
         print(f"Saved: {output.resolve()}")
-    print(f"Source: entity={ENTITY_ID}, train_window_index={window_index}, channels={channels}")
+    print(
+        f"Source: entity={ENTITY_ID}, train_window_index={window_index}, channels={channels}"
+    )
 
 
 if __name__ == "__main__":

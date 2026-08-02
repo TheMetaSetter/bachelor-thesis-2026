@@ -7,9 +7,15 @@ from src.models.thesis_multitask import ThesisMultitaskModel
 
 def test_one_forward_and_backward_step_runs() -> None:
     model = ThesisMultitaskModel(
-        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
-        num_classes=2, dropout=0.0, training_phase="stage_a_multitask_pretraining",
-        bootstrap_encoder_epochs=0, use_synthetic_augmentation=False,
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        dropout=0.0,
+        training_phase="stage_a_multitask_pretraining",
+        bootstrap_encoder_epochs=0,
+        use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     batch = {

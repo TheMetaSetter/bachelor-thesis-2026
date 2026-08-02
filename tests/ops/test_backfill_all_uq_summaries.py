@@ -74,9 +74,22 @@ def _write_report(path: Path, checkpoint_path: Path, stage_b_config_path: Path) 
 
 def test_backfill_all_uq_summaries_processes_reports(tmp_path: Path) -> None:
     root_dir = tmp_path / "outputs"
-    benchmark_dir = root_dir / "benchmark_smoke" / "smd" / "thesis" / "O0" / "machine_3_9" / "seed8"
-    checkpoint_path = benchmark_dir / "two_stage" / "stage_b_fusion_finetuning" / "checkpoints" / "best.pt"
-    stage_b_config_path = benchmark_dir / "two_stage" / "generated_configs" / "02_stage_b_fusion_finetuning.yaml"
+    benchmark_dir = (
+        root_dir / "benchmark_smoke" / "smd" / "thesis" / "O0" / "machine_3_9" / "seed8"
+    )
+    checkpoint_path = (
+        benchmark_dir
+        / "two_stage"
+        / "stage_b_fusion_finetuning"
+        / "checkpoints"
+        / "best.pt"
+    )
+    stage_b_config_path = (
+        benchmark_dir
+        / "two_stage"
+        / "generated_configs"
+        / "02_stage_b_fusion_finetuning.yaml"
+    )
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     checkpoint_path.write_bytes(b"ckpt")
     stage_b_config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -84,9 +97,17 @@ def test_backfill_all_uq_summaries_processes_reports(tmp_path: Path) -> None:
         "model:\n  continuous_temperature: 0.9\n  discrete_temperature: 0.9\n  monte_carlo_samples: 10\n",
         encoding="utf-8",
     )
-    _write_report(benchmark_dir / "benchmark" / "thesis_offline_benchmark_report.json", checkpoint_path, stage_b_config_path)
-    _write_npz(benchmark_dir / "scores" / "clean_validation_point_scores.npz", [0.1, 0.2, 0.3])
-    _write_npz(benchmark_dir / "scores" / "synthetic_validation_point_scores.npz", [0.4, 0.5])
+    _write_report(
+        benchmark_dir / "benchmark" / "thesis_offline_benchmark_report.json",
+        checkpoint_path,
+        stage_b_config_path,
+    )
+    _write_npz(
+        benchmark_dir / "scores" / "clean_validation_point_scores.npz", [0.1, 0.2, 0.3]
+    )
+    _write_npz(
+        benchmark_dir / "scores" / "synthetic_validation_point_scores.npz", [0.4, 0.5]
+    )
     _write_npz(benchmark_dir / "scores" / "test_point_scores.npz", [0.6, 0.7])
     _write_trace(benchmark_dir / "traces" / "clean_validation_traces.json")
     _write_trace(benchmark_dir / "traces" / "synthetic_validation_traces.json")
@@ -96,12 +117,16 @@ def test_backfill_all_uq_summaries_processes_reports(tmp_path: Path) -> None:
 
     assert result["report_count"] == 1
     assert (benchmark_dir / "metrics" / "uq_summary.json").exists()
-    assert (benchmark_dir / "retention" / "machine-3-9" / "offline" / "uq_summary.json").exists()
+    assert (
+        benchmark_dir / "retention" / "machine-3-9" / "offline" / "uq_summary.json"
+    ).exists()
 
 
 def test_prune_raw_trace_artifacts_requires_summary(tmp_path: Path) -> None:
     root_dir = tmp_path / "outputs"
-    benchmark_dir = root_dir / "benchmark_smoke" / "smd" / "thesis" / "O0" / "machine_3_9" / "seed8"
+    benchmark_dir = (
+        root_dir / "benchmark_smoke" / "smd" / "thesis" / "O0" / "machine_3_9" / "seed8"
+    )
     trace_path = benchmark_dir / "traces" / "test_traces.json"
     trace_path.parent.mkdir(parents=True, exist_ok=True)
     trace_path.write_text("[]\n", encoding="utf-8")
@@ -115,7 +140,9 @@ def test_prune_raw_trace_artifacts_compacts_in_place_when_summary_exists(
     tmp_path: Path,
 ) -> None:
     root_dir = tmp_path / "outputs"
-    benchmark_dir = root_dir / "benchmark_smoke" / "smd" / "thesis" / "O0" / "machine_3_9" / "seed8"
+    benchmark_dir = (
+        root_dir / "benchmark_smoke" / "smd" / "thesis" / "O0" / "machine_3_9" / "seed8"
+    )
     trace_path = benchmark_dir / "traces" / "test_traces.json"
     summary_path = benchmark_dir / "metrics" / "uq_summary.json"
     trace_path.parent.mkdir(parents=True, exist_ok=True)

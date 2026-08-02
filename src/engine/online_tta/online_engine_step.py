@@ -119,9 +119,7 @@ def _run_online_variant_update(
         if triage_decision != "pnn_verified":
             return None
         pnn_mask = batch.get("pnn_mask")
-        if pnn_mask is not None and (
-            not _has_positive_pnn_mask(pnn_mask)
-        ):
+        if pnn_mask is not None and (not _has_positive_pnn_mask(pnn_mask)):
             return None
         if isinstance(pnn_mask, torch.Tensor):
             loss_total = compute_masked_pnn_reconstruction_loss(

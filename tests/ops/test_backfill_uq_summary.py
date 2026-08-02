@@ -52,13 +52,29 @@ def _write_trace(path: Path, score: float) -> None:
 
 
 def test_backfill_uq_summary_writes_metrics_and_retention(tmp_path: Path) -> None:
-    output_dir = tmp_path / "outputs" / "benchmark_smoke" / "smd" / "thesis" / "O0" / "machine_3_9" / "seed8"
+    output_dir = (
+        tmp_path
+        / "outputs"
+        / "benchmark_smoke"
+        / "smd"
+        / "thesis"
+        / "O0"
+        / "machine_3_9"
+        / "seed8"
+    )
     report_path = output_dir / "benchmark" / "thesis_offline_benchmark_report.json"
     stage_b_config_path = (
-        output_dir / "two_stage" / "generated_configs" / "02_stage_b_fusion_finetuning.yaml"
+        output_dir
+        / "two_stage"
+        / "generated_configs"
+        / "02_stage_b_fusion_finetuning.yaml"
     )
     checkpoint_path = (
-        output_dir / "two_stage" / "stage_b_fusion_finetuning" / "checkpoints" / "best.pt"
+        output_dir
+        / "two_stage"
+        / "stage_b_fusion_finetuning"
+        / "checkpoints"
+        / "best.pt"
     )
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     checkpoint_path.write_bytes(b"checkpoint-bytes")
@@ -111,17 +127,25 @@ def test_backfill_uq_summary_writes_metrics_and_retention(tmp_path: Path) -> Non
         + "\n",
         encoding="utf-8",
     )
-    _write_npz(output_dir / "scores" / "clean_validation_point_scores.npz", [0.1, 0.2, 0.3])
-    _write_npz(output_dir / "scores" / "synthetic_validation_point_scores.npz", [0.4, 0.5])
+    _write_npz(
+        output_dir / "scores" / "clean_validation_point_scores.npz", [0.1, 0.2, 0.3]
+    )
+    _write_npz(
+        output_dir / "scores" / "synthetic_validation_point_scores.npz", [0.4, 0.5]
+    )
     _write_npz(output_dir / "scores" / "test_point_scores.npz", [0.6, 0.7])
     _write_trace(output_dir / "traces" / "clean_validation_traces.json", 0.15)
     _write_trace(output_dir / "traces" / "synthetic_validation_traces.json", 0.25)
     _write_trace(output_dir / "traces" / "test_traces.json", 0.35)
 
-    result = backfill_uq_summary(benchmark_output_dir=output_dir, write_retention_copy=True)
+    result = backfill_uq_summary(
+        benchmark_output_dir=output_dir, write_retention_copy=True
+    )
 
     metrics_path = output_dir / "metrics" / "uq_summary.json"
-    retention_path = output_dir / "retention" / "machine-3-9" / "offline" / "uq_summary.json"
+    retention_path = (
+        output_dir / "retention" / "machine-3-9" / "offline" / "uq_summary.json"
+    )
     assert metrics_path.exists()
     assert retention_path.exists()
     payload = json.loads(metrics_path.read_text(encoding="utf-8"))
@@ -132,14 +156,32 @@ def test_backfill_uq_summary_writes_metrics_and_retention(tmp_path: Path) -> Non
     assert result["retention_summary_path"] == str(retention_path)
 
 
-def test_backfill_uq_summary_uses_manifest_when_report_is_missing(tmp_path: Path) -> None:
-    output_dir = tmp_path / "outputs" / "benchmark_smoke" / "smd" / "thesis" / "O0" / "machine_3_9" / "seed8"
+def test_backfill_uq_summary_uses_manifest_when_report_is_missing(
+    tmp_path: Path,
+) -> None:
+    output_dir = (
+        tmp_path
+        / "outputs"
+        / "benchmark_smoke"
+        / "smd"
+        / "thesis"
+        / "O0"
+        / "machine_3_9"
+        / "seed8"
+    )
     manifest_path = output_dir / "two_stage" / "two_stage_manifest.json"
     stage_b_config_path = (
-        output_dir / "two_stage" / "generated_configs" / "02_stage_b_fusion_finetuning.yaml"
+        output_dir
+        / "two_stage"
+        / "generated_configs"
+        / "02_stage_b_fusion_finetuning.yaml"
     )
     checkpoint_path = (
-        output_dir / "two_stage" / "stage_b_fusion_finetuning" / "checkpoints" / "best.pt"
+        output_dir
+        / "two_stage"
+        / "stage_b_fusion_finetuning"
+        / "checkpoints"
+        / "best.pt"
     )
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     checkpoint_path.write_bytes(b"checkpoint-bytes")
@@ -190,12 +232,16 @@ def test_backfill_uq_summary_uses_manifest_when_report_is_missing(tmp_path: Path
     _write_npz(output_dir / "scores" / "clean_validation_point_scores.npz", [0.1, 0.2])
     _write_trace(output_dir / "traces" / "clean_validation_traces.json", 0.15)
 
-    result = backfill_uq_summary(benchmark_output_dir=output_dir, write_retention_copy=False)
+    result = backfill_uq_summary(
+        benchmark_output_dir=output_dir, write_retention_copy=False
+    )
 
     assert (output_dir / "metrics" / "uq_summary.json").exists()
     assert result["retention_summary_path"] is None
 
 
-def test_backfill_uq_summary_rejects_missing_report_and_manifest(tmp_path: Path) -> None:
+def test_backfill_uq_summary_rejects_missing_report_and_manifest(
+    tmp_path: Path,
+) -> None:
     with pytest.raises(FileNotFoundError):
         backfill_uq_summary(benchmark_output_dir=tmp_path / "missing")

@@ -279,7 +279,7 @@ def _run_online_sequence(
         from src.engine.online_tta import online_engine as public_online_engine
 
         timing_logger.set_window(batch)
-        
+
         previous_ewma_score, metric, record = (
             public_online_engine._process_online_window(
                 model=model,
@@ -408,6 +408,7 @@ def _finalize_online_execution(
     coverage_status = "complete" if len(records) == expected_processed else "incomplete"
     metrics_path = _write_json(output_dir / "online_metrics.json", metric_history)
     records_path = _write_json(output_dir / "online_records.json", records)
+
     final_checkpoint_path = context["checkpoint_manager"].save_checkpoint(
         checkpoint_name="online_final.pt",
         model=context["model"],
@@ -417,6 +418,8 @@ def _finalize_online_execution(
         config=experiment_config,
         epoch=len(metric_history),
         metric_history=metric_history,
+        # Các state phụ của checkpoint
+        # TODO: Có vẻ hơi nhiều?
         extra_state={
             "threshold_artifact": context["threshold_artifact"],
             "threshold_artifact_path": context["threshold_artifact_path"],
@@ -432,11 +435,13 @@ def _finalize_online_execution(
             "online_runtime_state": context["runtime_state"].to_dict(),
         },
     )
+
     artifact_identity = {
         "entity_id": str(context["threshold_artifact"]["entity_id"]),
         "online_variant": str(context["online_variant"]),
         "experiment_name": str(experiment_config["experiment_name"]),
     }
+
     artifact_manifest = build_artifact_manifest(
         {
             "checkpoint": final_checkpoint_path,
@@ -458,10 +463,13 @@ def _finalize_online_execution(
             "reference_checkpoint_sha256": context["reference_checkpoint_sha256"],
         },
     )
+
     artifact_manifest_path = write_artifact_manifest(
         output_dir / "online_artifact_manifest.json", artifact_manifest
     )
+
     expected_provenance = artifact_manifest.get("provenance")
+
     artifact_integrity_status = (
         "verified"
         if verify_artifact_manifest(
@@ -471,28 +479,36 @@ def _finalize_online_execution(
         )
         else "failed"
     )
+
     execution_complete = (
         coverage_status == "complete" and artifact_integrity_status == "verified"
     )
+
     return {
+        # Completion and required benchmark/protocol status fields.
         "benchmark_status": "completed" if execution_complete else "failed",
         "experiment_status": "complete" if execution_complete else "incomplete",
         "matrix_status": "matrix_ready",
         "runtime_protocol_status": "full_spec_v2",
         "stream_coverage_status": coverage_status,
+        # Artifact manifest and integrity verification.
         "artifact_integrity_status": artifact_integrity_status,
         "artifact_manifest": artifact_manifest,
         "artifact_manifest_path": str(artifact_manifest_path),
+        # Stream coverage and metric availability counts.
         "metric_availability_status": "recorded",
         "expected_windows": expected_windows,
         "processed_windows": len(records),
+        # Runtime identity and threshold artifacts.
         "created_at_utc": context["created_at_utc"],
         "online_variant": context["online_variant"],
         "threshold_artifact": context["threshold_artifact"],
         "threshold_artifact_path": context["threshold_artifact_path"],
+        # Final checkpoint and online result data.
         "final_checkpoint_path": str(final_checkpoint_path),
         "metric_history": metric_history,
         "records": records,
+        # Output file paths and threshold provenance.
         "online_metrics_path": metrics_path,
         "online_records_path": records_path,
         "threshold_source": "clean_validation_stride1_ewma",
@@ -506,7 +522,6 @@ def run_thesis_online_tta_experiment(
     online_variant: str,
     dry_run: bool,
 ) -> dict[str, Any]:
-
     # TODO: Làm sao để không cần gán cứng tên biến thể của thí nghiệm nữa?
     # online hay offline variant là các biến thể.
     if online_variant not in {"A0", "A1", "A2"}:
@@ -541,27 +556,22 @@ def run_thesis_online_tta_experiment(
         # Mô hình và cơ chế cập nhật tham số.
         model=context["model"],
         optimizer=context["optimizer"],
-
         # Chuỗi dữ liệu đầu vào và cách tạo batch.
         sequence=sequence,
         batch_size=context["batch_size"],
-
         # Biến thể, giao thức và ngưỡng quyết định online.
         online_variant=context["online_variant"],
         threshold_value=context["threshold_value"],
         threshold_artifact=context["threshold_artifact"],
         protocol_config=protocol_config,
-
         # Cấu hình tạo hai view của mỗi cửa sổ.
         view_noise_std=context["view_noise_std"],
         view_dropout_probability=context["view_dropout_probability"],
-
         # Trạng thái có thể thay đổi trong quá trình chạy online.
         verification_buffer=context["verification_buffer"],
         runtime_state=context.get("runtime_state"),
         hard_old_guard=context["hard_old_guard"],
         signature_history=context["signature_history"],
-
         # Môi trường, giới hạn thực thi và đo thời gian.
         device=context["device"],
         max_online_steps=_resolve_max_online_steps(context.get("max_online_steps")),

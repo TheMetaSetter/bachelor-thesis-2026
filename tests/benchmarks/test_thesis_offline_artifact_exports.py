@@ -182,7 +182,9 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
         "retention_summary.json"
     )
     assert report["artifact_paths"]["uq_summary"].endswith("uq_summary.json")
-    assert (output_dir / "retention" / "machine-1-6" / "offline" / "uq_summary.json").exists()
+    assert (
+        output_dir / "retention" / "machine-1-6" / "offline" / "uq_summary.json"
+    ).exists()
 
     threshold_payload = json.loads(
         (output_dir / "thresholds" / "thresholds.json").read_text(encoding="utf-8")

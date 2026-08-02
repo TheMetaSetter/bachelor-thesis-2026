@@ -75,21 +75,21 @@ def test_build_uq_summary_payload_compacts_split_statistics() -> None:
     assert payload["schema_version"] == 1
     assert payload["run"]["variant_name"] == "O0"
     assert payload["splits"]["clean_validation"]["num_traces"] == 1
-    assert payload["splits"]["clean_validation"]["trace_audit"][
-        "uncertainty_history_non_null_count"
-    ] == 1
-    assert payload["splits"]["clean_validation"]["point_score_summary"]["mean"] == pytest.approx(
-        0.2
-    )
-    assert payload["splits"]["clean_validation"]["window_score_summary"]["mean"] == pytest.approx(
-        0.45
-    )
     assert (
-        payload["splits"]["clean_validation"]["uncertainty_summary"][
-            "point_anomaly_score_variance_mean"
+        payload["splits"]["clean_validation"]["trace_audit"][
+            "uncertainty_history_non_null_count"
         ]
-        == pytest.approx(0.15)
+        == 1
     )
+    assert payload["splits"]["clean_validation"]["point_score_summary"][
+        "mean"
+    ] == pytest.approx(0.2)
+    assert payload["splits"]["clean_validation"]["window_score_summary"][
+        "mean"
+    ] == pytest.approx(0.45)
+    assert payload["splits"]["clean_validation"]["uncertainty_summary"][
+        "point_anomaly_score_variance_mean"
+    ] == pytest.approx(0.15)
 
 
 def test_validate_uq_summary_payload_rejects_raw_trace_fields() -> None:

@@ -13,7 +13,10 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from scripts.benchmarks._config_generation_helpers import entity_token, write_yaml_config
+from scripts.benchmarks._config_generation_helpers import (
+    entity_token,
+    write_yaml_config,
+)
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 OFFLINE_BENCHMARK_CONFIG_ROOT = (

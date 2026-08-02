@@ -113,10 +113,17 @@ def _build_run_scalar_logs(config_path: Path | None) -> dict[str, Any]:
 
 
 def _default_stage_b_config_path(output_dir: Path) -> Path:
-    return output_dir / "two_stage" / "generated_configs" / "02_stage_b_fusion_finetuning.yaml"
+    return (
+        output_dir
+        / "two_stage"
+        / "generated_configs"
+        / "02_stage_b_fusion_finetuning.yaml"
+    )
 
 
-def _load_run_context(benchmark_output_dir: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+def _load_run_context(
+    benchmark_output_dir: Path,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     report_path = (
         benchmark_output_dir / "benchmark" / "thesis_offline_benchmark_report.json"
     )
@@ -166,7 +173,12 @@ def backfill_uq_summary(
     experiment_config_path = _resolve_existing_path(
         str(
             stage_b_entry.get("config_path")
-            or (benchmark_output_dir / "two_stage" / "generated_configs" / "02_stage_b_fusion_finetuning.yaml")
+            or (
+                benchmark_output_dir
+                / "two_stage"
+                / "generated_configs"
+                / "02_stage_b_fusion_finetuning.yaml"
+            )
         ),
         benchmark_output_dir,
     )
@@ -200,7 +212,9 @@ def backfill_uq_summary(
         stage_name=str(stage_b_entry.get("stage_name") or "stage_b_fusion_finetuning"),
         checkpoint_path=str(checkpoint_path) if checkpoint_path else "",
         checkpoint_sha256=None,
-        experiment_config_path=str(experiment_config_path) if experiment_config_path else "",
+        experiment_config_path=str(experiment_config_path)
+        if experiment_config_path
+        else "",
         protocol_config_path=str(protocol_config_path) if protocol_config_path else "",
         output_dir=str(benchmark_output_dir),
         run_scalar_logs=_build_run_scalar_logs(experiment_config_path),
@@ -216,10 +230,7 @@ def backfill_uq_summary(
     retention_summary_path: Path | None = None
     if write_retention_copy:
         retention_root = (
-            benchmark_output_dir
-            / "retention"
-            / str(identity["entity_id"])
-            / "offline"
+            benchmark_output_dir / "retention" / str(identity["entity_id"]) / "offline"
         )
         retention_summary_path = retention_root / "uq_summary.json"
         write_uq_summary_json(retention_summary_path, payload)

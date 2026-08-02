@@ -237,9 +237,7 @@ def build_threshold_artifact(
 ) -> dict[str, Any]:
     if not 0.0 < float(quantile) <= 1.0:
         raise ValueError("quantile must be in (0, 1]")
-    variance_correction_value = normalize_variance_correction_value(
-        variance_correction
-    )
+    variance_correction_value = normalize_variance_correction_value(variance_correction)
     thresholds = {
         "offline_point": {
             "value": float(offline_point_threshold),

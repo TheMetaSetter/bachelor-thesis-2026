@@ -154,9 +154,9 @@ def _split_uq_summary(
                 field_values
             )["mean"]
             continue
-        uncertainty_summary[f"{field_name}_mean"] = _summary_from_value(
-            field_values
-        )["mean"]
+        uncertainty_summary[f"{field_name}_mean"] = _summary_from_value(field_values)[
+            "mean"
+        ]
     return {
         "num_traces": len(traces),
         "sample_retention_policy": _first_non_null(
@@ -259,7 +259,9 @@ def validate_uq_summary_payload(payload: dict[str, Any]) -> None:
         if not isinstance(split, dict):
             raise TypeError(f"uq_summary.splits['{split_name}'] must be a mapping")
         if int(split.get("num_traces", 0)) < 0:
-            raise ValueError(f"uq_summary.splits['{split_name}'].num_traces must be >= 0")
+            raise ValueError(
+                f"uq_summary.splits['{split_name}'].num_traces must be >= 0"
+            )
         if not isinstance(split.get("trace_audit"), dict):
             raise TypeError(
                 f"uq_summary.splits['{split_name}'].trace_audit must be a mapping"
@@ -269,7 +271,11 @@ def validate_uq_summary_payload(payload: dict[str, Any]) -> None:
                 raise ValueError(
                     f"uq_summary.splits['{split_name}'] must not contain raw key {raw_key}"
                 )
-        for summary_name in ("point_score_summary", "window_score_summary", "uncertainty_summary"):
+        for summary_name in (
+            "point_score_summary",
+            "window_score_summary",
+            "uncertainty_summary",
+        ):
             summary = split.get(summary_name)
             if not isinstance(summary, dict):
                 raise TypeError(

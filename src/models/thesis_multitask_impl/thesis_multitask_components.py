@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from src.data.augment import (
-    REDLAMP_ANOMALY_FAMILIES,       # not contain "normal"
-    REDLAMP_MULTICLASS_CLASS_NAMES, # contain "normal"
+    REDLAMP_ANOMALY_FAMILIES,  # not contain "normal"
+    REDLAMP_MULTICLASS_CLASS_NAMES,  # contain "normal"
 )
 from src.models.neural_blocks import SimpleWindowCnnEncoder, build_multilayer_perceptron
 from src.models.thesis_multitask_impl.thesis_multitask_config_parsing import (

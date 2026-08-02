@@ -12,8 +12,13 @@ def test_checkpoint_metadata_includes_provenance_hashes(tmp_path: Path) -> None:
     # Ở đây mình kiểm tra đúng lớp metadata mà batch 9 yêu cầu:
     # hash của resolved config và hash của extra_state phải đi theo checkpoint.
     model = ThesisMultitaskModel(
-        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
-        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        dropout=0.0,
+        bootstrap_encoder_epochs=0,
         use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)

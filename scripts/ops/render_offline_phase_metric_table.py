@@ -43,7 +43,9 @@ def load_rows() -> dict[tuple[str, str, str], dict[str, float]]:
     for key, values in grouped.items():
         if len(values) != 3:
             raise ValueError(f"Expected 3 seeds for {key}, found {len(values)}")
-        result[key] = {metric: mean(row[metric] for row in values) for metric, _ in METRICS}
+        result[key] = {
+            metric: mean(row[metric] for row in values) for metric, _ in METRICS
+        }
     return result
 
 
@@ -68,7 +70,9 @@ def render() -> str:
                 },
                 reverse=True,
             )
-            value_ranks = {value: rank for rank, value in enumerate(unique_values, start=1)}
+            value_ranks = {
+                value: rank for rank, value in enumerate(unique_values, start=1)
+            }
             for method, variant, _ in METHOD_ORDER:
                 value = values[(method, variant, entity)][metric]
                 ranks[(method, variant, entity, metric)] = value_ranks[value]

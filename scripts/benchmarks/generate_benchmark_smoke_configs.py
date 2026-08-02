@@ -7,7 +7,10 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from scripts.benchmarks._config_generation_helpers import entity_token, write_yaml_config
+from scripts.benchmarks._config_generation_helpers import (
+    entity_token,
+    write_yaml_config,
+)
 
 from scripts.benchmarks.generate_smd_benchmark_configs import (
     BENCHMARK_ENTITY_IDS,

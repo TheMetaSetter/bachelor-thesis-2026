@@ -206,22 +206,21 @@ def forward(
                     stage_name=stage_name,
                     training=bool(self.training),
                     stochastic_inference=bool(self.stochastic_inference),
-                    phase_uses_prototype_path=bool(
-                        self._phase_uses_prototype_path()
-                    ),
+                    phase_uses_prototype_path=bool(self._phase_uses_prototype_path()),
                     memory_initialized=bool(self.memory_initialized),
                     memory_bypass_active=bool(query_bundle.memory_bypass_active),
                     has_uncertainty=(
-                        monte_carlo_forward_outputs["aux"].get("uncertainty") is not None
+                        monte_carlo_forward_outputs["aux"].get("uncertainty")
+                        is not None
                     ),
                     has_stochastic_query=(
                         monte_carlo_forward_outputs["aux"].get("stochastic_query")
                         is not None
                     ),
                     stochastic_query_keys=list(
-                        monte_carlo_forward_outputs["aux"].get(
-                            "stochastic_query", {}
-                        ).keys()
+                        monte_carlo_forward_outputs["aux"]
+                        .get("stochastic_query", {})
+                        .keys()
                     ),
                 )
     else:

@@ -167,7 +167,9 @@ def _verify_run(run_root: Path) -> dict[str, Any]:
             "trace_audit": trace_audit,
             "trace_missing_flags": trace_missing_flags,
             "metric_values": {key: metrics.get(key) for key in REQUIRED_METRIC_KEYS},
-            "uq_values": {key: uncertainty_summary.get(key) for key in REQUIRED_UQ_KEYS},
+            "uq_values": {
+                key: uncertainty_summary.get(key) for key in REQUIRED_UQ_KEYS
+            },
         }
     )
 
@@ -205,7 +207,9 @@ def _delete_path(path: Path) -> bool:
     return True
 
 
-def _cleanup_heavy_artifacts(run_root: Path, *, keep_compact_traces: bool) -> dict[str, Any]:
+def _cleanup_heavy_artifacts(
+    run_root: Path, *, keep_compact_traces: bool
+) -> dict[str, Any]:
     removed: list[str] = []
     if keep_compact_traces:
         compaction_report = prune_raw_trace_artifacts(root_dir=run_root, dry_run=False)
@@ -294,18 +298,20 @@ def main() -> None:
         else _default_run_roots(repo_root)
     )
 
-    print(json.dumps(
-        {
-            "repo_root": str(repo_root),
-            "python_bin": str(python_bin),
-            "protocol_config": str(protocol_config),
-            "run_count": len(run_roots),
-            "keep_compact_traces": bool(args.keep_compact_traces),
-            "dry_run": bool(args.dry_run),
-        },
-        indent=2,
-        sort_keys=True,
-    ))
+    print(
+        json.dumps(
+            {
+                "repo_root": str(repo_root),
+                "python_bin": str(python_bin),
+                "protocol_config": str(protocol_config),
+                "run_count": len(run_roots),
+                "keep_compact_traces": bool(args.keep_compact_traces),
+                "dry_run": bool(args.dry_run),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
 
     if args.dry_run:
         for run_root in run_roots:
@@ -350,7 +356,9 @@ def main() -> None:
 
     summary_path = log_dir / "re_evaluate_and_prune_thesis_runs_summary.json"
     summary_path.parent.mkdir(parents=True, exist_ok=True)
-    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    summary_path.write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(f"wrote summary: {summary_path}")
 
 

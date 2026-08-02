@@ -35,7 +35,15 @@ def main() -> int:
         ]
     )
     OUTPUT_MARKDOWN.write_text(markdown, encoding="utf-8")
-    print(json.dumps({"json": str(OUTPUT_JSON), "markdown": str(OUTPUT_MARKDOWN), "summary": summary}))
+    print(
+        json.dumps(
+            {
+                "json": str(OUTPUT_JSON),
+                "markdown": str(OUTPUT_MARKDOWN),
+                "summary": summary,
+            }
+        )
+    )
     return 0
 
 

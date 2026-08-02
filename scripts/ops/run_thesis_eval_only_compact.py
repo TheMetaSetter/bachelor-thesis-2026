@@ -20,9 +20,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 from scripts.ops.prune_raw_trace_artifacts import prune_raw_trace_artifacts
 
 
-DEFAULT_PROTOCOL_CONFIG = Path(
-    "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
-)
+DEFAULT_PROTOCOL_CONFIG = Path("configs/protocol/smd_window20_cleanval_q99_ewma09.yaml")
 DEFAULT_PYTHON_BIN = Path(".venv/bin/python")
 DEFAULT_OUTPUT_ROOT = Path("outputs/eval18")
 DEFAULT_RUN_ROOTS = (
@@ -99,7 +97,12 @@ def _source_run_identity(run_root: Path) -> tuple[str, str, int]:
         raise ValueError(f"run root must contain outputs/: {run_root}") from exc
 
     tail = parts[outputs_index + 1 :]
-    if len(tail) < 6 or tail[0] != "benchmark" or tail[1] != "smd" or tail[2] != "thesis":
+    if (
+        len(tail) < 6
+        or tail[0] != "benchmark"
+        or tail[1] != "smd"
+        or tail[2] != "thesis"
+    ):
         raise ValueError(
             "run root must look like outputs/benchmark/smd/thesis/<variant>/<entity>/seed<seed>"
         )
@@ -160,7 +163,9 @@ def _verify_compact_run(
         / "evaluation_metrics.json"
     )
     uq_summary_path = compact_output_root / "metrics" / "uq_summary.json"
-    report_path = compact_output_root / "benchmark" / "thesis_offline_benchmark_report.json"
+    report_path = (
+        compact_output_root / "benchmark" / "thesis_offline_benchmark_report.json"
+    )
     trace_path = compact_output_root / "traces" / "test_traces.json"
 
     report: dict[str, Any] = {
@@ -263,16 +268,30 @@ def main() -> int:
     )
     if args.skip_run_roots:
         skip_run_roots = {
-            _resolve_path(run_root, repo_root).resolve() for run_root in args.skip_run_roots
+            _resolve_path(run_root, repo_root).resolve()
+            for run_root in args.skip_run_roots
         }
-        run_roots = [run_root for run_root in run_roots if run_root.resolve() not in skip_run_roots]
+        run_roots = [
+            run_root
+            for run_root in run_roots
+            if run_root.resolve() not in skip_run_roots
+        ]
 
     compact_entries: list[dict[str, Any]] = []
     for run_root in run_roots:
         alias = _alias_for_run(run_root)
-        source_config = run_root / "two_stage" / "generated_configs" / "02_stage_b_fusion_finetuning.yaml"
+        source_config = (
+            run_root
+            / "two_stage"
+            / "generated_configs"
+            / "02_stage_b_fusion_finetuning.yaml"
+        )
         source_checkpoint = (
-            run_root / "two_stage" / "stage_b_fusion_finetuning" / "checkpoints" / "best.pt"
+            run_root
+            / "two_stage"
+            / "stage_b_fusion_finetuning"
+            / "checkpoints"
+            / "best.pt"
         )
         compact_run_root = _compact_output_root(output_root, alias)
         compact_config_path = _compact_config_path(output_root, alias)

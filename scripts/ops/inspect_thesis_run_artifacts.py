@@ -36,7 +36,9 @@ def main() -> int:
     args = parser.parse_args()
 
     run_root = Path(args.run_root)
-    metrics_path = run_root / "two_stage" / "stage_b_fusion_finetuning" / "evaluation_metrics.json"
+    metrics_path = (
+        run_root / "two_stage" / "stage_b_fusion_finetuning" / "evaluation_metrics.json"
+    )
     uq_path = run_root / "metrics" / "uq_summary.json"
     trace_path = run_root / "traces" / "test_traces.json"
 
@@ -54,13 +56,21 @@ def main() -> int:
         json.dumps(
             {
                 "run_root": str(run_root),
-                "metrics": {k: metrics.get(k) for k in ("vus_pr", "affiliation_f1", "vus_roc")}
+                "metrics": {
+                    k: metrics.get(k) for k in ("vus_pr", "affiliation_f1", "vus_roc")
+                }
                 if isinstance(metrics, dict)
                 else None,
-                "uq_missing": [k for k in UQ_KEYS if uncertainty_summary.get(k) is None],
-                "uq_non_null": [k for k in UQ_KEYS if uncertainty_summary.get(k) is not None],
+                "uq_missing": [
+                    k for k in UQ_KEYS if uncertainty_summary.get(k) is None
+                ],
+                "uq_non_null": [
+                    k for k in UQ_KEYS if uncertainty_summary.get(k) is not None
+                ],
                 "trace_audit": {
-                    "any_uncertainty_history": trace_audit.get("any_uncertainty_history"),
+                    "any_uncertainty_history": trace_audit.get(
+                        "any_uncertainty_history"
+                    ),
                     "any_mc_sample_history": trace_audit.get("any_mc_sample_history"),
                     "uncertainty_history_non_null_count": trace_audit.get(
                         "uncertainty_history_non_null_count"
@@ -70,12 +80,17 @@ def main() -> int:
                     ),
                 },
                 "trace_first": {
-                    "keys": sorted(first_trace.keys()) if isinstance(first_trace, dict) else None,
-                    "stochastic_query_keys": sorted(first_trace.get("stochastic_query", {}).keys())
+                    "keys": sorted(first_trace.keys())
+                    if isinstance(first_trace, dict)
+                    else None,
+                    "stochastic_query_keys": sorted(
+                        first_trace.get("stochastic_query", {}).keys()
+                    )
                     if isinstance(first_trace, dict)
                     and isinstance(first_trace.get("stochastic_query"), dict)
                     else None,
-                    "has_uncertainty_history": first_trace.get("uncertainty_history") is not None
+                    "has_uncertainty_history": first_trace.get("uncertainty_history")
+                    is not None
                     if isinstance(first_trace, dict)
                     else None,
                 },

@@ -103,7 +103,9 @@ def variant_from_config(payload: dict[str, Any] | None) -> str | None:
     return value if isinstance(value, str) else None
 
 
-def choose_variant(evidence: list[tuple[str, str | None]]) -> tuple[str | None, list[str]]:
+def choose_variant(
+    evidence: list[tuple[str, str | None]],
+) -> tuple[str | None, list[str]]:
     usable = [(source, value) for source, value in evidence if value]
     if not usable:
         return None, ["no trusted variant evidence"]
@@ -120,7 +122,9 @@ def compact_split(split_payload: dict[str, Any] | None) -> dict[str, Any]:
     return {
         "mean_of_means": point_summary.get("mean"),
         "mean_of_variances": uncertainty.get("point_anomaly_score_variance_mean"),
-        "window_score_mean": (split_payload.get("window_score_summary") or {}).get("mean"),
+        "window_score_mean": (split_payload.get("window_score_summary") or {}).get(
+            "mean"
+        ),
         "window_variance_mean": uncertainty.get("window_anomaly_score_variance_mean"),
         "trace_audit": split_payload.get("trace_audit"),
     }
@@ -137,7 +141,10 @@ def thesis_artifact_paths(metric_path: Path) -> dict[str, Path]:
         "threshold": stage_root / "thresholds" / "thresholds.json",
         "protocol": stage_root / "protocol" / "resolved_protocol.json",
         "best": stage_root / "checkpoints" / "best.pt",
-        "initialization": run_root / "two_stage" / "initializations" / "stage_b_init.pt",
+        "initialization": run_root
+        / "two_stage"
+        / "initializations"
+        / "stage_b_init.pt",
     }
 
 
@@ -153,9 +160,18 @@ def resolve_thesis_identity(
     trusted_evidence = [
         ("path", path_variant),
         ("resolved_config", variant_from_config(config)),
-        ("manifest_experiment_name", variant_from_experiment_name(manifest.get("experiment_name"))),
-        ("uq_experiment_name", variant_from_experiment_name(uq_run.get("experiment_name"))),
-        ("checkpoint_path", variant_from_experiment_name(str(uq_run.get("checkpoint_path")))),
+        (
+            "manifest_experiment_name",
+            variant_from_experiment_name(manifest.get("experiment_name")),
+        ),
+        (
+            "uq_experiment_name",
+            variant_from_experiment_name(uq_run.get("experiment_name")),
+        ),
+        (
+            "checkpoint_path",
+            variant_from_experiment_name(str(uq_run.get("checkpoint_path"))),
+        ),
     ]
     resolved_variant, conflict_diagnostics = choose_variant(trusted_evidence)
     raw_metadata_variants = {
@@ -163,10 +179,15 @@ def resolve_thesis_identity(
         "thresholds": threshold.get("variant_name"),
     }
     diagnostics = list(conflict_diagnostics)
-    if any(value and value != resolved_variant for value in raw_metadata_variants.values()):
+    if any(
+        value and value != resolved_variant for value in raw_metadata_variants.values()
+    ):
         diagnostics.append("low_trust_variant_metadata_conflict")
     config_path_value = uq_run.get("experiment_config_path")
-    if isinstance(config_path_value, str) and config_path_value.count("outputs/benchmark") > 1:
+    if (
+        isinstance(config_path_value, str)
+        and config_path_value.count("outputs/benchmark") > 1
+    ):
         diagnostics.append("duplicated_experiment_config_path_prefix")
     if (uq_payload.get("run_scalar_logs") or {}).get("query/num_samples_eval") is None:
         diagnostics.append("missing_query_num_samples_eval")
@@ -178,7 +199,8 @@ def thesis_coverage(metric: dict[str, Any]) -> dict[str, Any]:
     evaluated_points = metric.get("evaluated_num_points")
     missing_points = (
         int(raw_points - evaluated_points)
-        if isinstance(raw_points, (int, float)) and isinstance(evaluated_points, (int, float))
+        if isinstance(raw_points, (int, float))
+        and isinstance(evaluated_points, (int, float))
         else None
     )
     return {
@@ -192,7 +214,7 @@ def thesis_coverage(metric: dict[str, Any]) -> dict[str, Any]:
 
 
 def thesis_report_eligibility(uq_payload: dict[str, Any]) -> bool:
-    split_payloads = (uq_payload.get("splits") or {})
+    split_payloads = uq_payload.get("splits") or {}
     for split_name in ("clean_validation", "test"):
         compact = compact_split(split_payloads.get(split_name))
         if compact["mean_of_means"] is None or compact["mean_of_variances"] is None:
@@ -200,13 +222,13 @@ def thesis_report_eligibility(uq_payload: dict[str, Any]) -> bool:
     return True
 
 
-def thesis_uq_summary(paths: dict[str, Path], uq_payload: dict[str, Any]) -> dict[str, Any]:
+def thesis_uq_summary(
+    paths: dict[str, Path], uq_payload: dict[str, Any]
+) -> dict[str, Any]:
     splits = uq_payload.get("splits") or {}
     return {
         "source_path": str(paths["uq"]),
-        "splits": {
-            split: compact_split(splits.get(split)) for split in SPLIT_NAMES
-        },
+        "splits": {split: compact_split(splits.get(split)) for split in SPLIT_NAMES},
     }
 
 
@@ -300,7 +322,9 @@ def build_thesis_record(metric_path: Path) -> dict[str, Any]:
         "provenance": thesis_provenance(
             metric_path, paths, expected_sha256, actual_sha256, diagnostics
         ),
-        "table_1_eligible": all(value is not None for value in metric_values_by_name.values()),
+        "table_1_eligible": all(
+            value is not None for value in metric_values_by_name.values()
+        ),
         "table_2_eligible": thesis_report_eligibility(uq_payload),
     }
 
@@ -325,9 +349,15 @@ def build_simple_record(metric_path: Path) -> dict[str, Any]:
         "identity": {**identity, "resolution": "path", "identity_conflict": False},
         "metrics": metric_values(metric),
         "coverage": coverage,
-        "uq_summary": {"status": "not_applicable" if source_kind.startswith("traditional") else "not_available"},
+        "uq_summary": {
+            "status": "not_applicable"
+            if source_kind.startswith("traditional")
+            else "not_available"
+        },
         "provenance": {"metric_path": str(metric_path), "source_kind": source_kind},
-        "table_1_eligible": all(value is not None for value in metric_values(metric).values()),
+        "table_1_eligible": all(
+            value is not None for value in metric_values(metric).values()
+        ),
         "table_2_eligible": table_2_eligible,
     }
 
@@ -355,9 +385,15 @@ def build_payload(root: Path) -> dict[str, Any]:
         "records": records,
         "summary": {
             "record_count": len(records),
-            "table_1_eligible_count": sum(record["table_1_eligible"] for record in records),
-            "table_2_eligible_count": sum(record["table_2_eligible"] for record in records),
-            "identity_conflict_count": sum(record["identity"].get("identity_conflict", False) for record in records),
+            "table_1_eligible_count": sum(
+                record["table_1_eligible"] for record in records
+            ),
+            "table_2_eligible_count": sum(
+                record["table_2_eligible"] for record in records
+            ),
+            "identity_conflict_count": sum(
+                record["identity"].get("identity_conflict", False) for record in records
+            ),
         },
     }
 

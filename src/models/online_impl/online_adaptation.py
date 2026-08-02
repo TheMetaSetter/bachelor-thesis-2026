@@ -38,6 +38,7 @@ def _resolve_reference_checkpoint_path(checkpoint_path: str | Path) -> Path:
         f"{requested}. Provide the canonical Stage B checkpoint path."
     )
 
+
 class OnlineAdaptationModel(BaseModel):
     def __init__(
         self,
@@ -192,9 +193,7 @@ class OnlineAdaptationModel(BaseModel):
     ) -> list[nn.Parameter]:
         if target_param_group == "projector_params":
             return list(self.online_mlp_projector.parameters())
-        raise ValueError(
-            "target_param_group must be 'projector_params'"
-        )
+        raise ValueError("target_param_group must be 'projector_params'")
 
     def _set_trainable_parameter_group(self, target_param_group: str) -> None:
         # Parameter groups are explicit because the design docs treat the online

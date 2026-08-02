@@ -73,20 +73,27 @@ def _process_online_window(
     event = timing_logger.measure(
         "prepare_event",
         lambda: _prepare_online_window_event(
-            model=model, batch=batch, online_variant=online_variant,
+            model=model,
+            batch=batch,
+            online_variant=online_variant,
             previous_ewma_score=previous_ewma_score,
             ewma_current_weight=ewma_current_weight,
             ewma_previous_weight=ewma_previous_weight,
             triage_thresholds=triage_thresholds,
-            signature_history=signature_history, hard_old_guard=hard_old_guard,
-            device=device, timing_logger=timing_logger,
+            signature_history=signature_history,
+            hard_old_guard=hard_old_guard,
+            device=device,
+            timing_logger=timing_logger,
         ),
     )
     admitted, rejected = timing_logger.measure(
         "buffer_and_verification",
         lambda: _admit_and_verify_online_window(
-            model=model, event=event, online_variant=online_variant,
-            threshold_value=threshold_value, verification_buffer=verification_buffer,
+            model=model,
+            event=event,
+            online_variant=online_variant,
+            threshold_value=threshold_value,
+            verification_buffer=verification_buffer,
             verification_controller=verification_controller,
             device=device,
         ),
@@ -94,8 +101,11 @@ def _process_online_window(
     step_result = timing_logger.measure(
         "adaptation_step",
         lambda: _execute_window_event_step(
-            model=model, optimizer=optimizer, event=event,
-            online_variant=online_variant, threshold_value=threshold_value,
+            model=model,
+            optimizer=optimizer,
+            event=event,
+            online_variant=online_variant,
+            threshold_value=threshold_value,
             hard_old_guard=hard_old_guard,
         ),
     )
@@ -152,7 +162,6 @@ def _prepare_online_window_event(
     device: str,
     timing_logger: OnlineTtaTimingLogger,
 ) -> dict[str, Any]:
-    
     (
         batch_on_device,
         raw_point_score,
@@ -188,6 +197,9 @@ def _prepare_online_window_event(
         ),
     )
 
+    # TODO: Bước này cũng đang ở sai thứ tự so với ý tưởng gốc.
+    # Phân luồng window phải diễn ra trước
+    # việc phát hiện pseudo-new-normality.
     triage_decision = _classify_event_window(
         input_window_score=input_window_score,
         latent_window_score=latent_window_score,

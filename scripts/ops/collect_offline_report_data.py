@@ -24,8 +24,12 @@ DEFAULT_SCAN_ROOTS = (
     "outputs/benchmark/smd/redlamp_baseline",
 )
 
-DEFAULT_OUTPUT_JSON = Path("outputs/reporting/offline_phase_tables/offline_report_data.json")
-DEFAULT_OUTPUT_MD = Path("outputs/reporting/offline_phase_tables/offline_report_data.md")
+DEFAULT_OUTPUT_JSON = Path(
+    "outputs/reporting/offline_phase_tables/offline_report_data.json"
+)
+DEFAULT_OUTPUT_MD = Path(
+    "outputs/reporting/offline_phase_tables/offline_report_data.md"
+)
 
 METRIC_KEYS = ("vus_pr", "affiliation_f1", "vus_roc")
 UQ_SPLIT_NAMES = ("clean_validation", "synthetic_validation", "test")
@@ -58,7 +62,9 @@ def _maybe_load_json(path: Path) -> Any | None:
 
 
 def _mean(values: list[float | int | None]) -> float | None:
-    numeric_values = [float(value) for value in values if isinstance(value, (int, float))]
+    numeric_values = [
+        float(value) for value in values if isinstance(value, (int, float))
+    ]
     if not numeric_values:
         return None
     return float(sum(numeric_values) / len(numeric_values))
@@ -142,7 +148,11 @@ def _resolve_run_root_from_metric_path(metric_path: Path) -> Path:
 def _candidate_uq_paths(run_root: Path, metric_path: Path) -> list[Path]:
     return [
         run_root / "metrics" / "uq_summary.json",
-        run_root / "two_stage" / "stage_b_fusion_finetuning" / "metrics" / "uq_summary.json",
+        run_root
+        / "two_stage"
+        / "stage_b_fusion_finetuning"
+        / "metrics"
+        / "uq_summary.json",
         metric_path.parent / "metrics" / "uq_summary.json",
         metric_path.parent / "uq_summary.json",
     ]
@@ -231,7 +241,9 @@ def _iter_metric_paths(scan_root: Path) -> list[Path]:
 
 
 def _aggregate_metric_rows(run_records: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    grouped: dict[tuple[str, str | None, str | None], list[dict[str, Any]]] = defaultdict(list)
+    grouped: dict[tuple[str, str | None, str | None], list[dict[str, Any]]] = (
+        defaultdict(list)
+    )
     for record in run_records:
         identity = record["identity"]
         grouped[
@@ -245,7 +257,11 @@ def _aggregate_metric_rows(run_records: list[dict[str, Any]]) -> list[dict[str, 
     rows: list[dict[str, Any]] = []
     for (method_group, variant_name, entity_id), records in sorted(grouped.items()):
         seeds = sorted(
-            [record["identity"]["seed"] for record in records if record["identity"]["seed"] is not None]
+            [
+                record["identity"]["seed"]
+                for record in records
+                if record["identity"]["seed"] is not None
+            ]
         )
         rows.append(
             {
@@ -267,7 +283,9 @@ def _aggregate_metric_rows(run_records: list[dict[str, Any]]) -> list[dict[str, 
 
 
 def _aggregate_uq_rows(run_records: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    grouped: dict[tuple[str, str | None, str | None], list[dict[str, Any]]] = defaultdict(list)
+    grouped: dict[tuple[str, str | None, str | None], list[dict[str, Any]]] = (
+        defaultdict(list)
+    )
     for record in run_records:
         identity = record["identity"]
         if identity["method_group"] != "thesis_main":
@@ -294,8 +312,7 @@ def _aggregate_uq_rows(run_records: list[dict[str, Any]]) -> list[dict[str, Any]
         split_means: dict[str, Any] = {}
         for split_name in split_names:
             split_payloads = [
-                record["uq_summary"]["splits"].get(split_name, {})
-                for record in records
+                record["uq_summary"]["splits"].get(split_name, {}) for record in records
             ]
             uncertainty_keys = sorted(
                 {
@@ -307,20 +324,26 @@ def _aggregate_uq_rows(run_records: list[dict[str, Any]]) -> list[dict[str, Any]
             split_means[split_name] = {
                 "trace_audit": {
                     "any_uncertainty_history": any(
-                        bool((split_payload.get("trace_audit") or {}).get("any_uncertainty_history"))
+                        bool(
+                            (split_payload.get("trace_audit") or {}).get(
+                                "any_uncertainty_history"
+                            )
+                        )
                         for split_payload in split_payloads
                     ),
                     "any_mc_sample_history": any(
-                        bool((split_payload.get("trace_audit") or {}).get("any_mc_sample_history"))
+                        bool(
+                            (split_payload.get("trace_audit") or {}).get(
+                                "any_mc_sample_history"
+                            )
+                        )
                         for split_payload in split_payloads
                     ),
                 },
                 "uncertainty_summary_mean": {
                     key: _mean(
                         [
-                            (
-                                split_payload.get("uncertainty_summary") or {}
-                            ).get(key)
+                            (split_payload.get("uncertainty_summary") or {}).get(key)
                             for split_payload in split_payloads
                         ]
                     )

@@ -13,8 +13,13 @@ def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(
     tmp_path: Path,
 ) -> None:
     model = ThesisMultitaskModel(
-        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
-        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        dropout=0.0,
+        bootstrap_encoder_epochs=0,
         use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -36,8 +41,13 @@ def test_checkpoint_roundtrip_restores_model_optimizer_scaler_and_config(
     )
 
     reloaded_model = ThesisMultitaskModel(
-        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
-        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        dropout=0.0,
+        bootstrap_encoder_epochs=0,
         use_synthetic_augmentation=False,
     )
     reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)
@@ -67,8 +77,13 @@ def test_checkpoint_roundtrip_restores_scheduler_state_when_present(
     tmp_path: Path,
 ) -> None:
     model = ThesisMultitaskModel(
-        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
-        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        dropout=0.0,
+        bootstrap_encoder_epochs=0,
         use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -106,8 +121,13 @@ def test_checkpoint_roundtrip_restores_scheduler_state_when_present(
     )
 
     reloaded_model = ThesisMultitaskModel(
-        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
-        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        dropout=0.0,
+        bootstrap_encoder_epochs=0,
         use_synthetic_augmentation=False,
     )
     reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)
@@ -136,8 +156,13 @@ def test_checkpoint_roundtrip_restores_scheduler_state_when_present(
 
 def test_checkpoint_roundtrip_restores_extra_memory_state(tmp_path: Path) -> None:
     model = ThesisMultitaskModel(
-        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
-        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        dropout=0.0,
+        bootstrap_encoder_epochs=0,
         use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -364,8 +389,13 @@ def test_stage_b_initialization_checkpoint_can_be_reloaded_with_stage_b_config(
 ) -> None:
     checkpoint_manager = CheckpointManager(tmp_path)
     model = ThesisMultitaskModel(
-        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
-        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        dropout=0.0,
+        bootstrap_encoder_epochs=0,
         use_synthetic_augmentation=False,
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -408,8 +438,13 @@ def test_stage_b_initialization_checkpoint_can_be_reloaded_with_stage_b_config(
     torch.save(payload, stage_b_init_path)
 
     reloaded_model = ThesisMultitaskModel(
-        input_dim=38, window_size=100, encoder_dim=64, hidden_dim=16,
-        num_classes=2, dropout=0.0, bootstrap_encoder_epochs=0,
+        input_dim=38,
+        window_size=100,
+        encoder_dim=64,
+        hidden_dim=16,
+        num_classes=2,
+        dropout=0.0,
+        bootstrap_encoder_epochs=0,
         use_synthetic_augmentation=False,
     )
     reloaded_optimizer = torch.optim.Adam(reloaded_model.parameters(), lr=1e-3)

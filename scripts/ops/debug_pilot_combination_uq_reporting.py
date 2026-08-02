@@ -58,9 +58,17 @@ def _first_existing_path(paths: list[Path]) -> Path | None:
 def _find_trace_path(run_root: Path) -> Path | None:
     return _first_existing_path(
         [
-            run_root / "two_stage" / "stage_b_fusion_finetuning" / "traces" / "test_traces.json",
+            run_root
+            / "two_stage"
+            / "stage_b_fusion_finetuning"
+            / "traces"
+            / "test_traces.json",
             run_root / "traces" / "test_traces.json",
-            run_root / "two_stage" / "stage_b_fusion_finetuning" / "traces" / "evaluation_traces.json",
+            run_root
+            / "two_stage"
+            / "stage_b_fusion_finetuning"
+            / "traces"
+            / "evaluation_traces.json",
             run_root / "traces" / "evaluation_traces.json",
         ]
     )
@@ -83,7 +91,8 @@ def _summarize_trace(trace: dict[str, Any]) -> dict[str, Any]:
         else [],
         "sample_retention_policy": trace.get("sample_retention_policy"),
         "mc_sample_histories_non_null": {
-            key_name: value is not None for key_name, value in mc_sample_histories.items()
+            key_name: value is not None
+            for key_name, value in mc_sample_histories.items()
         },
     }
 
@@ -137,18 +146,28 @@ def main() -> int:
     experiment_config = (
         _resolve_path(args.experiment_config, repo_root)
         if args.experiment_config
-        else run_root / "two_stage" / "generated_configs" / "02_stage_b_fusion_finetuning.yaml"
+        else run_root
+        / "two_stage"
+        / "generated_configs"
+        / "02_stage_b_fusion_finetuning.yaml"
     )
     checkpoint_path = (
         _resolve_path(args.checkpoint_path, repo_root)
         if args.checkpoint_path
-        else run_root / "two_stage" / "stage_b_fusion_finetuning" / "checkpoints" / "best.pt"
+        else run_root
+        / "two_stage"
+        / "stage_b_fusion_finetuning"
+        / "checkpoints"
+        / "best.pt"
     )
     protocol_config = _resolve_path(args.protocol_config, repo_root)
     log_path = (
         _resolve_path(args.log_path, repo_root)
         if args.log_path
-        else repo_root / "outputs" / "tmux_logs" / "debug_pilot_combination_uq_reporting.txt"
+        else repo_root
+        / "outputs"
+        / "tmux_logs"
+        / "debug_pilot_combination_uq_reporting.txt"
     )
 
     command = [
@@ -242,7 +261,9 @@ def main() -> int:
         trace_payloads = _load_json(trace_path)
         report["trace_file"] = {
             "path": str(trace_path),
-            "num_traces": len(trace_payloads) if isinstance(trace_payloads, list) else None,
+            "num_traces": len(trace_payloads)
+            if isinstance(trace_payloads, list)
+            else None,
             "first_trace": (
                 _summarize_trace(trace_payloads[0])
                 if isinstance(trace_payloads, list) and trace_payloads

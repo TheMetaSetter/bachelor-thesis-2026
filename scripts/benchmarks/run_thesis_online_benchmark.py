@@ -55,7 +55,6 @@ def _load_experiment_config_with_compatibility(
 ) -> dict[str, Any]:
     raw_config = _load_yaml_config(experiment_config_path)
 
-
     has_config_references = all(
         key in raw_config
         for key in ("data_config_path", "model_config_path", "task_config_path")

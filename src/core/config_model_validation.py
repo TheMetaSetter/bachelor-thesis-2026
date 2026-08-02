@@ -785,9 +785,7 @@ def _validate_model_and_task_semantics(
         if not 0.0 <= float(task_config.get("view_dropout_probability", 0.0)) <= 1.0:
             raise ValueError("view_dropout_probability must be between 0 and 1")
         if task_config.get("target_param_group") != "projector_params":
-            raise ValueError(
-                "target_param_group must be 'projector_params'"
-            )
+            raise ValueError("target_param_group must be 'projector_params'")
         if task_config.get("reset_policy") not in {"disabled", "threshold"}:
             raise ValueError("reset_policy must be one of: disabled, threshold")
         reference_checkpoint_path = task_config.get("reference_checkpoint_path")

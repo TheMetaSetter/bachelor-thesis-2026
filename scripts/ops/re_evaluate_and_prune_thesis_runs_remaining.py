@@ -100,7 +100,10 @@ def main() -> int:
     run_roots = (
         [_resolve_path(run_root, repo_root) for run_root in args.run_roots]
         if args.run_roots
-        else [_resolve_path(run_root, repo_root) for run_root in DEFAULT_REMAINING_RUN_ROOTS]
+        else [
+            _resolve_path(run_root, repo_root)
+            for run_root in DEFAULT_REMAINING_RUN_ROOTS
+        ]
     )
 
     command = [

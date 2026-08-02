@@ -93,9 +93,13 @@ def method_status(method: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
         "method": method,
         "run_count": len(rows),
         "status": status,
-        "table_1_eligible_count": sum(row.get("table_1_eligible", False) for row in rows),
+        "table_1_eligible_count": sum(
+            row.get("table_1_eligible", False) for row in rows
+        ),
         "table_2_expected": table_2_expected,
-        "table_2_eligible_count": sum(row.get("table_2_eligible", False) for row in rows),
+        "table_2_eligible_count": sum(
+            row.get("table_2_eligible", False) for row in rows
+        ),
         "identity_conflict_count": conflicts,
         "tail_gap_run_count": len(tail_gaps),
         "tail_gaps": tail_gaps,
@@ -131,13 +135,21 @@ def canonical_record(row: dict[str, Any]) -> dict[str, Any]:
         },
         "artifact_paths": provenance,
         "checkpoint_evidence": {
-            "best_checkpoint_sha256_matches": provenance.get("best_checkpoint_sha256_matches"),
-            "best_checkpoint_sha256_expected": provenance.get("best_checkpoint_sha256_expected"),
-            "best_checkpoint_sha256_actual": provenance.get("best_checkpoint_sha256_actual"),
+            "best_checkpoint_sha256_matches": provenance.get(
+                "best_checkpoint_sha256_matches"
+            ),
+            "best_checkpoint_sha256_expected": provenance.get(
+                "best_checkpoint_sha256_expected"
+            ),
+            "best_checkpoint_sha256_actual": provenance.get(
+                "best_checkpoint_sha256_actual"
+            ),
         },
         "diagnostics": {
             "missing_points": missing,
-            "raw_protocol_status": (row.get("coverage") or {}).get("protocol_status_raw"),
+            "raw_protocol_status": (row.get("coverage") or {}).get(
+                "protocol_status_raw"
+            ),
             "raw_benchmark_comparability": (row.get("coverage") or {}).get(
                 "benchmark_comparability_raw"
             ),
@@ -154,7 +166,9 @@ def build_canonical_manifest(
     grouped = {}
     for row in rows:
         grouped.setdefault(row["identity"]["method_name"], []).append(row)
-    method_reports = [method_status(method, grouped[method]) for method in sorted(grouped)]
+    method_reports = [
+        method_status(method, grouped[method]) for method in sorted(grouped)
+    ]
     return {
         "schema_version": 1,
         "created_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -163,13 +177,21 @@ def build_canonical_manifest(
             "It records the chosen identity, report fields, provenance and diagnostics."
         ),
         "source_root": report["source_root"],
-        "source_report": str(Path("outputs/reporting/offline_phase_tables/offline_report_data.json").resolve()),
+        "source_report": str(
+            Path(
+                "outputs/reporting/offline_phase_tables/offline_report_data.json"
+            ).resolve()
+        ),
         "identity_reconciliation": str(reconciliation_path.resolve()),
         "summary": {
             "record_count": len(rows),
             "method_count": len(grouped),
-            "table_1_eligible_count": sum(row.get("table_1_eligible", False) for row in rows),
-            "table_2_eligible_count": sum(row.get("table_2_eligible", False) for row in rows),
+            "table_1_eligible_count": sum(
+                row.get("table_1_eligible", False) for row in rows
+            ),
+            "table_2_eligible_count": sum(
+                row.get("table_2_eligible", False) for row in rows
+            ),
             "blocked_record_count": sum(
                 canonical_record(row)["status"]["overall"] == "blocked" for row in rows
             ),
@@ -191,7 +213,9 @@ def build_coverage_gap_report(
     grouped = {}
     for row in rows:
         grouped.setdefault(row["identity"]["method_name"], []).append(row)
-    method_reports = [method_status(method, grouped[method]) for method in sorted(grouped)]
+    method_reports = [
+        method_status(method, grouped[method]) for method in sorted(grouped)
+    ]
     tail_gap_rows = [
         {"run_id": row["run_id"], "missing_points": coverage_status(row)[1]}
         for row in rows
@@ -214,12 +238,20 @@ def build_coverage_gap_report(
             "Make accepted coverage gaps, raw protocol labels and identity diagnostics "
             "visible without reopening deleted raw traces."
         ),
-        "source_report": str(Path("outputs/reporting/offline_phase_tables/offline_report_data.json").resolve()),
+        "source_report": str(
+            Path(
+                "outputs/reporting/offline_phase_tables/offline_report_data.json"
+            ).resolve()
+        ),
         "canonical_manifest": str(canonical_path.resolve()),
         "summary": {
             "record_count": len(rows),
-            "table_1_eligible_count": sum(row.get("table_1_eligible", False) for row in rows),
-            "table_2_eligible_count": sum(row.get("table_2_eligible", False) for row in rows),
+            "table_1_eligible_count": sum(
+                row.get("table_1_eligible", False) for row in rows
+            ),
+            "table_2_eligible_count": sum(
+                row.get("table_2_eligible", False) for row in rows
+            ),
             "table_1_complete": all(row.get("table_1_eligible", False) for row in rows),
             "table_2_complete_for_expected_methods": all(
                 row.get("table_2_eligible", False)
@@ -237,7 +269,9 @@ def build_coverage_gap_report(
             "raw_benchmark_comparability_counts": dict(
                 sorted(raw_comparability_counts.items())
             ),
-            "prune_delete_count": prune_manifest["summary"]["action_counts"].get("delete", 0),
+            "prune_delete_count": prune_manifest["summary"]["action_counts"].get(
+                "delete", 0
+            ),
             "prune_delete_bytes": prune_manifest["summary"]["delete_bytes"],
         },
         "method_status": method_reports,
@@ -250,7 +284,9 @@ def build_coverage_gap_report(
             ),
         },
         "identity_diagnostics": {
-            "count": sum(bool(row["identity"].get("identity_conflict")) for row in rows),
+            "count": sum(
+                bool(row["identity"].get("identity_conflict")) for row in rows
+            ),
             "source": "canonical records preserve raw metadata and reconciliation diagnostics",
         },
         "limitations": [
@@ -280,7 +316,17 @@ def main() -> int:
     canonical["resolution_policy"] = reconciliation.get("resolution_strategy", {})
     write_json(canonical_path, canonical)
     write_json(coverage_path, coverage)
-    print(json.dumps({"canonical": str(canonical_path), "coverage": str(coverage_path), "summary": coverage["summary"]}, ensure_ascii=False, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "canonical": str(canonical_path),
+                "coverage": str(coverage_path),
+                "summary": coverage["summary"],
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
     return 0
 
 

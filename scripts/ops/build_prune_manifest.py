@@ -13,9 +13,7 @@ from typing import Any
 
 REMOTE_ROOT = "/root/bachelor-thesis-2026"
 REPORT_PATH = Path("outputs/reporting/offline_phase_tables/offline_report_data.json")
-DEFAULT_OUTPUT = Path(
-    "outputs/reporting/offline_phase_tables/prune_manifest.json"
-)
+DEFAULT_OUTPUT = Path("outputs/reporting/offline_phase_tables/prune_manifest.json")
 RAW_TRACE_NAMES = {
     "clean_validation_traces.json",
     "synthetic_validation_traces.json",
@@ -129,7 +127,9 @@ def is_raw_trace(path: str) -> bool:
     return Path(path).name in RAW_TRACE_NAMES
 
 
-def action_for(path: str, identity: dict[str, Any], row: dict[str, Any] | None) -> tuple[str, str, str]:
+def action_for(
+    path: str, identity: dict[str, Any], row: dict[str, Any] | None
+) -> tuple[str, str, str]:
     name = Path(path).name
     method = identity["method"]
     if is_raw_trace(path):
@@ -138,7 +138,11 @@ def action_for(path: str, identity: dict[str, Any], row: dict[str, Any] | None) 
         if not row.get("table_1_eligible"):
             return "review", "table 1 summary is not eligible", "raw_trace"
         if method != "offline_benchmark" and not row.get("table_2_eligible"):
-            return "review", "required UQ summary is unavailable or invalid", "raw_trace"
+            return (
+                "review",
+                "required UQ summary is unavailable or invalid",
+                "raw_trace",
+            )
         row_identity = row["identity"]
         conflict_is_resolved = bool(
             row_identity.get("variant_name")
@@ -155,12 +159,22 @@ def action_for(path: str, identity: dict[str, Any], row: dict[str, Any] | None) 
     role = protected_role(path)
     if role:
         if name == "offline_metrics.json":
-            return "review", "retain until fallback metric source discrepancy is formally closed", role
+            return (
+                "review",
+                "retain until fallback metric source discrepancy is formally closed",
+                role,
+            )
         return "keep", f"required or selected audit artifact: {role}", role
-    return "review", "artifact was inventoried but has no Phase 5 deletion rule", "unclassified"
+    return (
+        "review",
+        "artifact was inventoried but has no Phase 5 deletion rule",
+        "unclassified",
+    )
 
 
-def build_entries(inventory: list[dict[str, Any]], report: dict[str, Any]) -> list[dict[str, Any]]:
+def build_entries(
+    inventory: list[dict[str, Any]], report: dict[str, Any]
+) -> list[dict[str, Any]]:
     rows = report_index(report)
     entries: list[dict[str, Any]] = []
     for item in inventory:

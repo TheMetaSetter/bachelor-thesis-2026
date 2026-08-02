@@ -100,7 +100,8 @@ def _score_online_window(
         lambda: _forward_online_window(model, batch_on_device, online_variant),
     )
     raw_point_score, input_window_score, latent_window_score = timing_logger.measure(
-        "score_extraction", lambda: _extract_online_window_scores(pre_outputs, batch_on_device)
+        "score_extraction",
+        lambda: _extract_online_window_scores(pre_outputs, batch_on_device),
     )
 
     if previous_ewma_score is None:

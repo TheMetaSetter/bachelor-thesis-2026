@@ -38,7 +38,10 @@ def load_values(report_path: Path) -> dict[tuple[str, str], dict[str, float]]:
         for entity in ENTITIES:
             row = {}
             for split in ("clean_validation", "test"):
-                seed_values = [grouped[(variant, entity, seed, split)][0] for seed in EXPECTED_SEEDS]
+                seed_values = [
+                    grouped[(variant, entity, seed, split)][0]
+                    for seed in EXPECTED_SEEDS
+                ]
                 row[split] = mean(seed_values)
             values[(variant, entity)] = row
     return values
@@ -73,7 +76,12 @@ def render_table(values: dict[tuple[str, str], dict[str, float]]) -> str:
         cells = []
         for entity in ENTITIES:
             row = values[(variant, entity)]
-            cells.extend((f"      <td>{row['clean_validation']:.3f}</td>", f"      <td>{row['test']:.3f}</td>"))
+            cells.extend(
+                (
+                    f"      <td>{row['clean_validation']:.3f}</td>",
+                    f"      <td>{row['test']:.3f}</td>",
+                )
+            )
         lines.append("    <tr>")
         lines.append(f"      <th>THESIS + {variant}</th>")
         lines.extend(cells)

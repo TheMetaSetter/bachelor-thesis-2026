@@ -633,9 +633,7 @@ def _build_evaluation_only_run(
     checkpoint_path: str,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     manifest = {
-        "manifest_root": str(
-            Path(experiment_config["output_dir"]) / "evaluation_only"
-        ),
+        "manifest_root": str(Path(experiment_config["output_dir"]) / "evaluation_only"),
         "evaluation": {"checkpoint_path": checkpoint_path},
         "evaluation_only": True,
     }
