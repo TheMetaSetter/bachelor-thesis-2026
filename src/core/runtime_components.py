@@ -22,6 +22,7 @@ def register_evaluation_runtime_components() -> None:
 
 
 def register_online_runtime_components() -> None:
+    # Đăng ký (register) builder cho để build dataset, model chính và baseline
     register_shared_runtime_components()
     register_model("online_adaptation", OnlineAdaptationModel)
 

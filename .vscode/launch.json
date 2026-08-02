@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug THESIS online A2",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "scripts.run_thesis_online_benchmark",
+      "args": [
+        "--experiment-config",
+        "configs/experiment/online_diagnostic/thesis/smd__thesis__online__O1_A2__machine_1_6__w20__seed6__transfer_timing_5608_5909.yaml",
+        "--protocol-config",
+        "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml",
+        "--online-variant",
+        "A2"
+      ],
+      "cwd": "${workspaceFolder}",
+      "justMyCode": false,
+      "console": "integratedTerminal"
+    }
+  ]
+}

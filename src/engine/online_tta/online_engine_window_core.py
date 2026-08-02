@@ -152,6 +152,7 @@ def _prepare_online_window_event(
     device: str,
     timing_logger: OnlineTtaTimingLogger,
 ) -> dict[str, Any]:
+    
     (
         batch_on_device,
         raw_point_score,
@@ -169,12 +170,24 @@ def _prepare_online_window_event(
         device=device,
         timing_logger=timing_logger,
     )
+
+    # TODO: Bước này đang ở sai thứ tự.
+    # Phân luồng window.
+    # Xác định các window thuộc luồng gray zone.
+    # Thêm các window luồng gray zone vào verification buffer.
+    # Tính signature cho từng point trong buffer.
+    # Xác định recurrent signatures nếu có.
+    # Gọi các point có recurrent signatures là pseudo-new-normal points.
+    # Tạo binary mask để tính loss.
+    # chỉ trên các point là pseudo-new-normal.
+    # Tui là INTP. Nhìn mỗi câu đều có dấu "." là biết nha. =))
     signature_diagnostics, recurrent_signatures = timing_logger.measure(
         "pnn_mask",
         lambda: _attach_event_pnn_mask(
             model, scoring_outputs, batch_on_device, online_variant, signature_history
         ),
     )
+
     triage_decision = _classify_event_window(
         input_window_score=input_window_score,
         latent_window_score=latent_window_score,
@@ -182,6 +195,7 @@ def _prepare_online_window_event(
         batch=batch_on_device,
         hard_old_guard=hard_old_guard,
     )
+
     return {
         "batch": batch_on_device,
         "raw_point_score": raw_point_score,

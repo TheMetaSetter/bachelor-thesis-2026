@@ -54,12 +54,16 @@ def _load_experiment_config_with_compatibility(
     experiment_config_path: str,
 ) -> dict[str, Any]:
     raw_config = _load_yaml_config(experiment_config_path)
+
+
     has_config_references = all(
         key in raw_config
         for key in ("data_config_path", "model_config_path", "task_config_path")
     )
+
     if not has_config_references:
         return raw_config
+
     try:
         return load_experiment_config(experiment_config_path)
     except (FileNotFoundError, ValueError):
@@ -70,7 +74,11 @@ def _normalize_online_records(
     records: list[dict[str, Any]],
     online_variant: str,
 ) -> list[dict[str, Any]]:
+    # Number of online records (debug)
+    print("Number of online records:", len(records))
+
     normalized_records: list[dict[str, Any]] = []
+
     for record in records:
         normalized_record = dict(record)
         normalized_record.setdefault("online_variant", online_variant)
@@ -79,6 +87,7 @@ def _normalize_online_records(
         else:
             normalized_record.setdefault("did_update", True)
         normalized_records.append(normalized_record)
+
     return normalized_records
 
 
@@ -228,9 +237,13 @@ def run_thesis_online_benchmark(
     experiment_config = _load_experiment_config_with_compatibility(
         experiment_config_path
     )
+
     protocol_config = _load_yaml_config(protocol_config_path)
     retention_policy = _resolve_retention_policy(experiment_config)
     validate_protocol_config(protocol_config)
+
+    # Checkpoint from stage B of offline phase
+    # Có thể là offline variant (biển thể thí nghiệm) O0 hoặc O1.
     resolved_checkpoint_path = resolve_stage_b_checkpoint(experiment_config)
     experiment_config["task"]["reference_checkpoint_path"] = str(
         resolved_checkpoint_path

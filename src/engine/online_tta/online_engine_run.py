@@ -68,6 +68,7 @@ def _select_online_stream_sequence(
         raise ValueError(
             "absolute_start_index and absolute_end_index must be set together"
         )
+
     source_length = int(sequence["x"].shape[0])
     if not 0 <= absolute_start_index < absolute_end_index <= source_length:
         raise ValueError(
@@ -75,7 +76,10 @@ def _select_online_stream_sequence(
             f"0 <= start < end <= {source_length}, got "
             f"[{absolute_start_index}, {absolute_end_index})"
         )
+
     selected_sequence = dict(sequence)
+
+    # TODO: Giải thích vòng for này. ==> Tối ưu thêm.
     for field_name in ("x", "point_labels", "mask", "timestamps"):
         value = sequence.get(field_name)
         selected_sequence[field_name] = (
@@ -83,6 +87,7 @@ def _select_online_stream_sequence(
             if value is None
             else value[absolute_start_index:absolute_end_index].clone()
         )
+
     selected_sequence["meta"] = {
         **sequence["meta"],
         "sequence_length": absolute_end_index - absolute_start_index,
@@ -90,6 +95,7 @@ def _select_online_stream_sequence(
         "absolute_start_index": absolute_start_index,
         "absolute_end_index": absolute_end_index,
     }
+
     return selected_sequence
 
 
@@ -131,11 +137,14 @@ def _build_runtime_online_context(
     )
     model = _build_model_from_experiment_config(experiment_config)
     optimizer = _build_optimizer_from_experiment_config(model, experiment_config)
+
     assert_only_projector_is_trainable(model)
+
     # Calibration happens before the streaming loop, so the model must already
     # live on the target device here; otherwise validation windows reach CUDA
     # tensors while the encoder weights still sit on CPU.
     model.to(str(experiment_config["device"]))
+
     checkpoint_manager = CheckpointManager(
         Path(str(experiment_config["checkpoint_dir"]))
     )
@@ -145,6 +154,7 @@ def _build_runtime_online_context(
     reference_checkpoint_sha256 = None
     if reference_checkpoint_path and Path(reference_checkpoint_path).is_file():
         reference_checkpoint_sha256 = sha256_file(reference_checkpoint_path)
+
     threshold_artifacts = calibrate_entity_threshold_artifacts(
         model=model,
         clean_validation_sequences=data_bundle["scaled_sequences"]["val"],
@@ -159,11 +169,13 @@ def _build_runtime_online_context(
     first_entity = next(iter(threshold_artifacts))
     threshold_artifact = threshold_artifacts[first_entity]
     threshold_path = threshold_paths[first_entity]
+
     batch_size = int(experiment_config["data"]["batch_size"])
     if batch_size != 1:
         raise ValueError(
             "online benchmark startup expects batch_size=1 so each step is one causal window"
         )
+
     runtime_state = build_online_runtime_state(
         entity_id=str(threshold_artifact["entity_id"]),
         online_variant=online_variant,
@@ -171,6 +183,8 @@ def _build_runtime_online_context(
         checkpoint_path=str(checkpoint_manager.checkpoint_dir / "online_final.pt"),
         threshold_artifact_path=str(threshold_path),
     )
+
+    # TODO: Có hơi nhiều field quá không?
     return {
         "benchmark_status": "completed",
         "created_at_utc": _utc_now_iso(),
@@ -265,6 +279,7 @@ def _run_online_sequence(
         from src.engine.online_tta import online_engine as public_online_engine
 
         timing_logger.set_window(batch)
+        
         previous_ewma_score, metric, record = (
             public_online_engine._process_online_window(
                 model=model,
@@ -491,10 +506,14 @@ def run_thesis_online_tta_experiment(
     online_variant: str,
     dry_run: bool,
 ) -> dict[str, Any]:
+
+    # TODO: Làm sao để không cần gán cứng tên biến thể của thí nghiệm nữa?
+    # online hay offline variant là các biến thể.
     if online_variant not in {"A0", "A1", "A2"}:
         raise ValueError("online_variant must be one of: A0, A1, A2")
 
     seed_everything(int(experiment_config["seed"]))
+
     register_online_runtime_components()
     context = _build_online_execution_context(
         experiment_config=experiment_config,
@@ -505,34 +524,53 @@ def run_thesis_online_tta_experiment(
     if context["benchmark_status"] == "dry_run":
         return context
 
+    # Chọn đoạn con của test series mà thí nghiệm online
+    # sẽ stream trên đó.
+    # Thường là đoạn có chứa anomaly spans.
     sequence = _select_online_stream_sequence(
         context["data_bundle"]["scaled_sequences"]["test"][0],
         absolute_start_index=experiment_config["task"].get("absolute_start_index"),
         absolute_end_index=experiment_config["task"].get("absolute_end_index"),
     )
+
     context["data_bundle"]["scaled_sequences"]["test"] = [sequence]
+
+    # TODO: Đơn giản hoá lời gọi hàm này lại.
+    # Số lượng argument đang quá nhiều.
     metric_history, records = _run_online_sequence(
+        # Mô hình và cơ chế cập nhật tham số.
         model=context["model"],
         optimizer=context["optimizer"],
+
+        # Chuỗi dữ liệu đầu vào và cách tạo batch.
         sequence=sequence,
+        batch_size=context["batch_size"],
+
+        # Biến thể, giao thức và ngưỡng quyết định online.
         online_variant=context["online_variant"],
         threshold_value=context["threshold_value"],
+        threshold_artifact=context["threshold_artifact"],
         protocol_config=protocol_config,
-        batch_size=context["batch_size"],
+
+        # Cấu hình tạo hai view của mỗi cửa sổ.
         view_noise_std=context["view_noise_std"],
         view_dropout_probability=context["view_dropout_probability"],
-        device=context["device"],
+
+        # Trạng thái có thể thay đổi trong quá trình chạy online.
         verification_buffer=context["verification_buffer"],
         runtime_state=context.get("runtime_state"),
         hard_old_guard=context["hard_old_guard"],
         signature_history=context["signature_history"],
+
+        # Môi trường, giới hạn thực thi và đo thời gian.
+        device=context["device"],
         max_online_steps=_resolve_max_online_steps(context.get("max_online_steps")),
-        threshold_artifact=context["threshold_artifact"],
         timing_logger=OnlineTtaTimingLogger(
             enabled=bool(context["debug_timing"]),
             device=context["device"],
         ),
     )
+
     return _finalize_online_execution(
         context=context,
         experiment_config=experiment_config,

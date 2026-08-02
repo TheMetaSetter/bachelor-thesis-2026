@@ -142,11 +142,14 @@ def _validate_boolean_fields(
 def _resolve_thesis_model_window_size(experiment_config: dict[str, Any]) -> None:
     model_config = experiment_config["model"]
     data_config = experiment_config["data"]
+
+    # Tên model chính thức theo config là "thesis_multitask". [^_^]
     if model_config.get("model_name") != "thesis_multitask":
         return
 
     data_window_size = data_config.get("window_size")
     model_window_size = model_config.get("window_size")
+
     if model_window_size is None:
         model_config["window_size"] = data_window_size
     elif model_window_size != data_window_size:
@@ -155,9 +158,12 @@ def _resolve_thesis_model_window_size(experiment_config: dict[str, Any]) -> None
 
 def _normalize_thesis_multitask_v3_aliases(experiment_config: dict[str, Any]) -> None:
     model_config = experiment_config.get("model")
+
+    # Config phải là một đối tượng dictionary.
     if not isinstance(model_config, dict):
         return
 
+    # TODO: variance_correction là gì?
     if "variance_correction" in model_config:
         model_config["variance_correction"] = normalize_variance_correction_value(
             model_config["variance_correction"]
@@ -747,6 +753,10 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
     )
     root_config = load_yaml_config(experiment_path)
 
+    # The code has checked existence of these fields
+    # inside `def _load_experiment_config_with_compatibility`
+    # of `run_thesis_online_benchmark.py`.
+    # TODO: Tell me if lines below are necessary or not.
     required_reference_fields = [
         "data_config_path",
         "model_config_path",
@@ -759,6 +769,8 @@ def load_experiment_config(experiment_config_path: str | Path) -> dict[str, Any]
             )
 
     resolved_experiment_config = dict(root_config)
+
+    # Duyệt qua 3 tệp cấu hình thí nghiệm
     for section_name, reference_field in [
         ("data", "data_config_path"),
         ("model", "model_config_path"),
