@@ -1346,7 +1346,8 @@ V3 is implementation-complete only when:
 The following are not newly decided by stochastic uncertainty and MUST retain their validated v2/entity-specific definitions:
 
 ```text
-exact quantiles or estimators for A_low and A_high
+A_low = Q_0.75(s_latent_window on clean validation). This supersedes the Q_0.95 value in full-spec-v2.
+exact A_high quantile or estimator
 exact B_window quantile if not already locked by entity config
 final entity list and seed count for the published benchmark
 whether A1 appears in the final paper beyond diagnostic reporting

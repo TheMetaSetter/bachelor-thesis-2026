@@ -10,7 +10,7 @@ online_threshold_quantile: 0.99
 online_ewma_current_weight: 0.9
 online_ewma_previous_weight: 0.1
 B_window_quantile: 0.99
-A_low_quantile: 0.95
+A_low_quantile: 0.75
 A_high_quantile: 0.99
 test_label_usage: metrics_only
 point_adjustment: false

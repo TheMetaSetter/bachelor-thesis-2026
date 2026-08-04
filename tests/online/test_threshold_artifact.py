@@ -75,7 +75,7 @@ def test_threshold_artifact_keeps_independent_window_thresholds() -> None:
     )
     thresholds = artifact["thresholds"]
     assert thresholds["input_window"]["value"] == 3.0
-    assert thresholds["latent_window_low"]["quantile"] == 0.95
+    assert thresholds["latent_window_low"]["quantile"] == 0.75
     assert thresholds["latent_window_high"]["value"] == 5.0
     assert artifact["offline_point_threshold_nonoverlap"] == 1.0
     assert artifact["online_point_threshold_ewma"] == 2.0

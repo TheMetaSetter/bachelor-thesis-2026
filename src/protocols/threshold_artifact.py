@@ -263,6 +263,7 @@ def build_threshold_artifact(
     input_window_threshold: float | None = None,
     latent_window_low_threshold: float | None = None,
     latent_window_high_threshold: float | None = None,
+    latent_window_low_quantile: float = 0.75,
 ) -> dict[str, Any]:
     if not 0.0 < float(quantile) <= 1.0:
         raise ValueError("quantile must be in (0, 1]")
@@ -314,7 +315,7 @@ def build_threshold_artifact(
         "value": float(latent_window_low_threshold),
         "source_split": calibration_split,
         "score_rule": "latent_memory_distance",
-        "quantile": 0.95,
+        "quantile": float(latent_window_low_quantile),
         }
         thresholds["latent_window_high"] = {
         "value": float(latent_window_high_threshold),

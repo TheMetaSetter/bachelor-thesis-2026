@@ -562,6 +562,7 @@ def _build_thresholds(
                 float(protocol_config["A_high_quantile"]),
             )
         ),
+        latent_window_low_quantile=float(protocol_config["A_low_quantile"]),
     )
 
 
