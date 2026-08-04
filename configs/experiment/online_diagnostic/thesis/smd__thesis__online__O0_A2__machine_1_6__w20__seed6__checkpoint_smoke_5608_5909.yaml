@@ -1,0 +1,43 @@
+experiment_name: smd__thesis__online__O0_A2__machine_1_6__w20__seed6__checkpoint_smoke_5608_5909
+seed: 6
+experiment_variant: online_tta_a2_checkpoint_smoke
+device: cuda
+output_dir: outputs/benchmark_smoke/online/smd/thesis/O0_A2/machine_1_6/seed6/checkpoint_smoke_5608_5909
+checkpoint_dir: outputs/benchmark_smoke/online/smd/thesis/O0_A2/machine_1_6/seed6/checkpoint_smoke_5608_5909/checkpoints
+
+data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml
+model_config_path: configs/model/online_adaptation_smoke_o0_machine_1_6_seed6.yaml
+task_config_path: configs/task/online_adaptation_smoke_o0_a2_machine_1_6_seed6.yaml
+data_overrides:
+  window_size: 20
+  stride: 1
+  train_stride: 1
+  val_stride: 20
+  test_stride: 20
+  batch_size: 1
+  num_workers: 0
+  shuffle_train: false
+
+optimizer:
+  optimizer_name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0
+epochs: 1
+evaluation:
+  vus_max_buffer_size: 10
+  vus_num_thresholds: 20
+  retention_policy: retain_for_eda
+logging:
+  use_wandb: false
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: disabled
+  wandb_run_name: smd__thesis__online__O0_A2__machine_1_6__w20__seed6__checkpoint_smoke_5608_5909
+  wandb_tags:
+    - online-smoke
+    - thesis
+    - o0
+    - a2
+    - machine_1_6
+    - seed6
+    - window20
+    - checkpoint

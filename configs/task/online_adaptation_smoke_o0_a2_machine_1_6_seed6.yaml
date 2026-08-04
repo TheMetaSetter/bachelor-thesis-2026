@@ -1,0 +1,31 @@
+task_name: online_adaptation
+
+# Offline identity and the exact Stage B checkpoint used by this online smoke.
+offline_variant: O0
+entity_id: machine_1_6
+seed: 6
+benchmark_mode: main
+stage_name: stage_b_fusion_finetuning
+reference_checkpoint_path: outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt
+
+# This file must be a schema-v4 artifact calibrated from the checkpoint above.
+# The existing thresholds.json is schema v3 and cannot run the current runtime.
+threshold_artifact_path: outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/thresholds/thresholds_v4_online_tta.json
+
+warm_start_projector: false
+target_param_group: projector_params
+clean_stream_only: true
+
+# Stream the short test interval [5608, 5909): 301 points and 282 causal windows.
+# Do not cap the stream: A2 needs enough windows to exercise triage, adaptation,
+# and a verification cycle when the data admits gray-zone entries.
+absolute_start_index: 5608
+absolute_end_index: 5909
+max_online_steps: null
+
+# Timing output changes synchronization behavior. Keep it off for this smoke.
+debug_timing: false
+log_every_n_steps: 1
+checkpoint_every_n_steps: 50
+reset_policy: disabled
+reset_alignment_threshold: 0.0
