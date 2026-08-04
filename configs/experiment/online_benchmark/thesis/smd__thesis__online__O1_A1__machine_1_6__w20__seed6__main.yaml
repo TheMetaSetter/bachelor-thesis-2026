@@ -29,11 +29,11 @@ model_overrides:
   score_source: projected_hidden
 task_overrides:
   offline_variant: O1
-  entity_id: machine_1_6
+  entity_id: machine-1-6
   seed: 6
   benchmark_mode: main
   stage_name: stage_b_fusion_finetuning
-  threshold_artifact_path: outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/thresholds/thresholds.json
+  threshold_artifact_path: outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/thresholds/thresholds_v4_recalibrated.json
   warm_start_projector: false
   target_param_group: projector_params
   clean_stream_only: true
@@ -61,7 +61,7 @@ logging:
   - thesis
   - o1
   - a1
-  - machine_1_6
+  - machine-1-6
   - seed6
   - window20
   - main

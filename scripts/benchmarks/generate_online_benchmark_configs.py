@@ -24,7 +24,7 @@ ONLINE_BENCHMARK_CONFIG_DIR = (
     REPOSITORY_ROOT / "configs" / "experiment" / "online_benchmark" / "thesis"
 )
 WINDOW_SIZE = 20
-BENCHMARK_ENTITY_IDS = ("machine_1_6", "machine_3_4", "machine_3_9")
+BENCHMARK_ENTITY_IDS = ("machine-1-6", "machine-3-4", "machine-3-9")
 BENCHMARK_SEEDS = (6, 8, 36)
 BENCHMARK_OFFLINE_VARIANTS = ("O0", "O1")
 BENCHMARK_ONLINE_VARIANTS = ("A0", "A1", "A2")
@@ -77,14 +77,17 @@ def _threshold_artifact_path(
     *, offline_variant: str, entity_id: str, seed: int, smoke: bool
 ) -> str:
     root_dir = "benchmark_smoke" if smoke else "benchmark"
+    artifact_filename = (
+        "thresholds.json" if smoke else "thresholds_v4_recalibrated.json"
+    )
     return (
         f"outputs/{root_dir}/smd/thesis/{offline_variant}/"
-        f"{_entity_token(entity_id)}/seed{seed}/thresholds/thresholds.json"
+        f"{_entity_token(entity_id)}/seed{seed}/thresholds/{artifact_filename}"
     )
 
 
 def _variant_data_config_path(entity_id: str) -> str:
-    return f"configs/data/smd_benchmark_{entity_id}_window20.yaml"
+    return f"configs/data/smd_benchmark_{_entity_token(entity_id)}_window20.yaml"
 
 
 def _model_overrides() -> dict[str, Any]:

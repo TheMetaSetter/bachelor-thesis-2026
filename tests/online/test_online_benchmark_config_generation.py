@@ -79,6 +79,17 @@ def test_generate_thesis_online_benchmark_configs_writes_all_expected_files() ->
                             == "stage_b_fusion_finetuning"
                         )
                         assert "reference_checkpoint_path" not in loaded_config["task"]
+                        artifact_filename = (
+                            "thresholds.json"
+                            if smoke
+                            else "thresholds_v4_recalibrated.json"
+                        )
+                        assert loaded_config["task"]["threshold_artifact_path"] == (
+                            f"outputs/benchmark{'_smoke' if smoke else ''}/"
+                            f"smd/thesis/{offline_variant}/"
+                            f"{entity_id.replace('-', '_')}/seed{seed}/thresholds/"
+                            f"{artifact_filename}"
+                        )
                         if smoke:
                             assert loaded_config["device"] == "cuda"
                             assert loaded_config["task"]["max_online_steps"] == 16

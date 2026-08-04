@@ -29,7 +29,7 @@ model_overrides:
   score_source: projected_hidden
 task_overrides:
   offline_variant: O0
-  entity_id: machine_3_4
+  entity_id: machine-3-4
   seed: 8
   benchmark_mode: smoke
   stage_name: stage_b_fusion_finetuning
@@ -61,7 +61,7 @@ logging:
   - thesis
   - o0
   - a2
-  - machine_3_4
+  - machine-3-4
   - seed8
   - window20
   - smoke
