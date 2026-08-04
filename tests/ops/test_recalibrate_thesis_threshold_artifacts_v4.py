@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 from scripts.ops.recalibrate_thesis_threshold_artifacts_v4 import (
     StageBInventoryEntry,
+    _validate_checkpoint_identity,
     _validate_v3_identity,
     build_v4_threshold_artifact,
     discover_stage_b_inventory,
@@ -37,7 +40,23 @@ def _v3_artifact() -> dict:
     return artifact
 
 
-def test_build_v4_artifact_recalibrates_vector_ewma_and_triage_thresholds() -> None:
+def _entry(tmp_path: Path, offline_variant: str) -> StageBInventoryEntry:
+    return StageBInventoryEntry(
+        experiment_config_path=tmp_path / "config.yaml",
+        offline_variant=offline_variant,
+        entity_id="machine-1-6",
+        seed=6,
+        threshold_artifact_v3_path=tmp_path / "thresholds.json",
+        stage_b_best_checkpoint_path=tmp_path / "best.pt",
+        threshold_artifact_v4_path=tmp_path / "thresholds_v4_recalibrated.json",
+        audit_path=tmp_path / "audit.json",
+    )
+
+
+def test_build_v4_artifact_recalibrates_vector_ewma_and_triage_thresholds(
+    tmp_path: Path,
+) -> None:
+    entry = _entry(tmp_path, offline_variant="O1")
     artifact_v4, audit = build_v4_threshold_artifact(
         artifact_v3=_v3_artifact(),
         checkpoint_sha256="checkpoint-sha",
@@ -56,12 +75,14 @@ def test_build_v4_artifact_recalibrates_vector_ewma_and_triage_thresholds() -> N
             "A_high_quantile": 0.99,
         },
         experiment_config_path=__file__,
+        entry=entry,
     )
 
     validate_threshold_artifact(artifact_v4)
     thresholds = artifact_v4["thresholds"]
     assert artifact_v4["schema_version"] == 4
     assert artifact_v4["checkpoint_sha256"] == "checkpoint-sha"
+    assert artifact_v4["variant_name"] == "O1"
     assert thresholds["online_ewma_point"]["score_rule"] == (
         "stride1_causal_window_vector_ewma"
     )
@@ -76,22 +97,46 @@ def test_build_v4_artifact_recalibrates_vector_ewma_and_triage_thresholds() -> N
         np.quantile([2.0, 4.0, 6.0, 8.0], 0.75)
     )
     assert audit["clean_validation_window_count"] == 4
+    assert audit["artifact_v3_variant_name"] == "O0"
+    assert audit["artifact_v4_variant_name"] == "O1"
+    assert audit["variant_name_resolution"] == "checkpoint_and_config_verified_recovery"
+    assert artifact_v4["provenance"]["artifact_v3_variant_name"] == "O0"
 
 
-def test_v3_identity_rejects_wrong_offline_variant(tmp_path) -> None:
-    entry = StageBInventoryEntry(
-        experiment_config_path=tmp_path / "config.yaml",
-        offline_variant="O1",
-        entity_id="machine-1-6",
-        seed=6,
-        threshold_artifact_v3_path=tmp_path / "thresholds.json",
-        stage_b_best_checkpoint_path=tmp_path / "best.pt",
-        threshold_artifact_v4_path=tmp_path / "thresholds_v4_recalibrated.json",
-        audit_path=tmp_path / "audit.json",
+def test_v3_identity_accepts_the_known_o0_to_o1_recovery(tmp_path: Path) -> None:
+    _validate_v3_identity(_v3_artifact(), _entry(tmp_path, offline_variant="O1"))
+
+
+def test_v3_identity_rejects_an_unapproved_variant_mismatch(tmp_path: Path) -> None:
+    artifact_v3 = _v3_artifact()
+    artifact_v3["variant_name"] = "O1"
+
+    with pytest.raises(ValueError, match="no approved recovery rule"):
+        _validate_v3_identity(artifact_v3, _entry(tmp_path, offline_variant="O0"))
+
+
+def test_checkpoint_identity_requires_o1_experiment_and_output_paths(tmp_path: Path) -> None:
+    entry = _entry(tmp_path, offline_variant="O1")
+    expected_name = (
+        "smd__thesis__offline__O1__machine_1_6__w20__seed6__main"
+        "__stage_b_fusion_finetuning"
     )
+    checkpoint_payload = {
+        "config": {
+            "experiment_name": expected_name,
+            "output_dir": (
+                "outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/two_stage/"
+                "stage_b_fusion_finetuning"
+            ),
+        },
+        "checkpoint_metadata": {"experiment_name": expected_name},
+    }
 
-    with pytest.raises(ValueError, match="variant_name"):
-        _validate_v3_identity(_v3_artifact(), entry)
+    _validate_checkpoint_identity(checkpoint_payload, entry, window_size=20)
+
+    checkpoint_payload["config"]["output_dir"] = "outputs/benchmark/smd/thesis/O0"
+    with pytest.raises(ValueError, match="output_dir"):
+        _validate_checkpoint_identity(checkpoint_payload, entry, window_size=20)
 
 
 def test_discovery_requires_the_18_official_thesis_main_configs(tmp_path) -> None:
@@ -116,16 +161,7 @@ def test_discovery_requires_the_18_official_thesis_main_configs(tmp_path) -> Non
 
 
 def test_preflight_refuses_to_overwrite_an_existing_v4_artifact(tmp_path) -> None:
-    entry = StageBInventoryEntry(
-        experiment_config_path=tmp_path / "config.yaml",
-        offline_variant="O0",
-        entity_id="machine-1-6",
-        seed=6,
-        threshold_artifact_v3_path=tmp_path / "thresholds.json",
-        stage_b_best_checkpoint_path=tmp_path / "best.pt",
-        threshold_artifact_v4_path=tmp_path / "thresholds_v4_recalibrated.json",
-        audit_path=tmp_path / "audit.json",
-    )
+    entry = _entry(tmp_path, offline_variant="O0")
     write_threshold_artifact(_v3_artifact(), entry.threshold_artifact_v3_path)
     entry.stage_b_best_checkpoint_path.write_bytes(b"checkpoint")
     entry.threshold_artifact_v4_path.write_text("already exists\n", encoding="utf-8")

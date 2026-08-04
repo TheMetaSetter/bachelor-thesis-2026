@@ -145,20 +145,61 @@ def discover_stage_b_inventory(
 def _validate_v3_identity(
     artifact_v3: dict[str, Any], entry: StageBInventoryEntry
 ) -> None:
-    expected_identity = {
+    required_identity = {
         "method_name": "THESIS",
-        "variant_name": entry.offline_variant,
         "entity_id": entry.entity_id,
         "seed": entry.seed,
     }
     if int(artifact_v3["schema_version"]) != 3:
         raise ValueError("threshold artifact is not schema version 3")
-    for field_name, expected_value in expected_identity.items():
+    for field_name, expected_value in required_identity.items():
         if artifact_v3[field_name] != expected_value:
             raise ValueError(
                 f"threshold artifact {field_name} does not match inventory: "
                 f"{artifact_v3[field_name]!r} != {expected_value!r}"
             )
+    artifact_variant = str(artifact_v3["variant_name"])
+    if artifact_variant == entry.offline_variant:
+        return
+    if artifact_variant == "O0" and entry.offline_variant == "O1":
+        return
+    raise ValueError(
+        "threshold artifact variant_name has no approved recovery rule: "
+        f"{artifact_variant!r} != {entry.offline_variant!r}"
+    )
+
+
+def _validate_checkpoint_identity(
+    checkpoint_payload: dict[str, Any],
+    entry: StageBInventoryEntry,
+    window_size: int,
+) -> None:
+    entity_token = entry.entity_id.replace("-", "_")
+    expected_name = (
+        f"smd__thesis__offline__{entry.offline_variant}__{entity_token}"
+        f"__w{window_size}__seed{entry.seed}__main__stage_b_fusion_finetuning"
+    )
+    expected_output_dir = (
+        "outputs/benchmark/smd/thesis/"
+        f"{entry.offline_variant}/{entity_token}/seed{entry.seed}/two_stage/"
+        "stage_b_fusion_finetuning"
+    )
+    checkpoint_config = checkpoint_payload.get("config")
+    checkpoint_metadata = checkpoint_payload.get("checkpoint_metadata")
+    if not isinstance(checkpoint_config, dict) or not isinstance(
+        checkpoint_metadata, dict
+    ):
+        raise ValueError("Stage-B checkpoint has no config or checkpoint_metadata")
+    if checkpoint_config.get("experiment_name") != expected_name:
+        raise ValueError(
+            "Stage-B checkpoint config experiment_name does not match inventory"
+        )
+    if checkpoint_metadata.get("experiment_name") != expected_name:
+        raise ValueError(
+            "Stage-B checkpoint metadata experiment_name does not match inventory"
+        )
+    if checkpoint_config.get("output_dir") != expected_output_dir:
+        raise ValueError("Stage-B checkpoint config output_dir does not match inventory")
 
 
 def preflight_inventory(entries: list[StageBInventoryEntry]) -> list[dict[str, str]]:
@@ -205,7 +246,6 @@ def _collect_clean_validation_scores(
         raise ValueError("data window_size does not match protocol window_size")
 
     register_evaluation_runtime_components()
-    data_bundle = build_dataset(data_config["dataset_name"], data_config)
     model = build_model_from_experiment_config(experiment_config)
     checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
     checkpoint_payload = checkpoint_manager.load_checkpoint(
@@ -213,6 +253,12 @@ def _collect_clean_validation_scores(
         model,
         strict=False,
     )
+    _validate_checkpoint_identity(
+        checkpoint_payload,
+        entry,
+        window_size=int(protocol_config["window_size"]),
+    )
+    data_bundle = build_dataset(data_config["dataset_name"], data_config)
     scaler_state = checkpoint_payload.get("scaler_state_dict")
     if scaler_state is not None and "raw_sequences" in data_bundle:
         data_bundle = rebuild_dataset_bundle_with_scaler_state(
@@ -276,12 +322,13 @@ def _v4_artifact_fields(
     checkpoint_sha256: str,
     experiment_config_path: Path,
     protocol_config: dict[str, Any],
+    entry: StageBInventoryEntry,
 ) -> dict[str, Any]:
     return {
         "method_name": "THESIS",
-        "variant_name": str(artifact_v3["variant_name"]),
-        "entity_id": str(artifact_v3["entity_id"]),
-        "seed": int(artifact_v3["seed"]),
+        "variant_name": entry.offline_variant,
+        "entity_id": entry.entity_id,
+        "seed": entry.seed,
         "window_size": int(artifact_v3["window_size"]),
         "offline_point_threshold": float(
             artifact_v3["offline_point_threshold_nonoverlap"]
@@ -315,13 +362,18 @@ def build_v4_threshold_artifact(
     calibration_scores: dict[str, list[float]],
     protocol_config: dict[str, Any],
     experiment_config_path: Path,
-) -> tuple[dict[str, Any], dict[str, float | int]]:
+    entry: StageBInventoryEntry,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     threshold_values = _calibrate_threshold_values(
         calibration_scores, protocol_config
     )
     artifact_v4 = build_threshold_artifact(
         **_v4_artifact_fields(
-            artifact_v3, checkpoint_sha256, experiment_config_path, protocol_config
+            artifact_v3,
+            checkpoint_sha256,
+            experiment_config_path,
+            protocol_config,
+            entry,
         ),
         online_ewma_point_threshold=threshold_values["online_ewma_point_threshold"],
         input_window_threshold=threshold_values["input_window_threshold"],
@@ -329,9 +381,21 @@ def build_v4_threshold_artifact(
         latent_window_high_threshold=threshold_values["latent_window_high_threshold"],
         latent_window_low_quantile=threshold_values["latent_window_low_quantile"],
     )
+    variant_name_resolution = (
+        "checkpoint_and_config_verified_recovery"
+        if artifact_v3["variant_name"] != entry.offline_variant
+        else "artifact_v3_identity_match"
+    )
+    artifact_v4["provenance"]["artifact_v3_variant_name"] = str(
+        artifact_v3["variant_name"]
+    )
+    artifact_v4["provenance"]["variant_name_resolution"] = variant_name_resolution
     audit = {
         "clean_validation_window_count": len(calibration_scores["input_window"]),
         "checkpoint_sha256": checkpoint_sha256,
+        "artifact_v3_variant_name": str(artifact_v3["variant_name"]),
+        "artifact_v4_variant_name": entry.offline_variant,
+        "variant_name_resolution": variant_name_resolution,
         **threshold_values,
     }
     return artifact_v4, audit
@@ -349,6 +413,7 @@ def recalibrate_entry(
         calibration_scores=calibration_scores,
         protocol_config=protocol_config,
         experiment_config_path=entry.experiment_config_path,
+        entry=entry,
     )
     write_threshold_artifact(artifact_v4, entry.threshold_artifact_v4_path)
     entry.audit_path.write_text(
