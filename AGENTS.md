@@ -46,6 +46,17 @@ When adding new source code, follow the guidance in `codebase_preferences.md`: o
 - Keep model logic self-contained in a single file. Avoid fragmented class hierarchies.
 - Prefer adapter-style wrappers when integrating reference codebases.
 
+## Simplicity-First Requirement
+Always start with the simplest solution that correctly satisfies the current requirement. Apply this rule to research, specifications, architecture, implementation, tests, debugging, and explanations.
+
+- Use the existing data flow and natural control flow when they already produce the required behavior.
+- Do not add explicit state, flags, guards, abstractions, classes, configuration options, or lifecycle steps unless a concrete requirement or observed failure needs them.
+- Do not design for hypothetical future cases before the current case requires that support.
+- Prefer a small extension of the current code path over a parallel framework or a general-purpose redesign.
+- Add complexity only after identifying the specific problem it solves. Record that reason where future readers can verify it.
+- When two solutions are both correct, choose the one with fewer concepts, fewer state transitions, and fewer code paths.
+- Reconsider a proposed mechanism when the runtime's natural behavior already enforces the intended result. For example, if a point stops changing because later sliding windows no longer contain it, do not add a separate point-finalization mechanism.
+
 ## Testing Guidelines
 Tests should use `pytest` and remain minimal and focused. Expected coverage includes data loader shapes, one forward and backward pass, checkpoint save and load, and synthetic anomaly injection behavior as described in `codebase_preferences.md`.
 
@@ -54,6 +65,18 @@ Tests should be minimal and focused while also being extra skeptical.
 ## Commit and Pull Request Guidelines
 Commit messages in history use short, imperative summaries (for example, “Add data loaders”, “Fix type errors”). Follow the same pattern without prefixes or scopes.
 Pull requests should include a concise summary, testing notes, and links to relevant design documents or notebooks. If data changes are introduced, describe the dataset versioning strategy.
+
+## Plain Language Requirements for Documentation
+Every document must follow the Plain Language Guide, whether it is written in English or Vietnamese. This requirement applies to specifications, research logs, notes, plans, reports, READMEs, and all other project documentation.
+
+- Lead with the main point.
+- Name the actor and action, and use concrete verbs.
+- Explain each technical term when it first appears.
+- Put one main idea in each sentence.
+- Write natural Vietnamese instead of translating English word for word.
+- Make instructions concrete enough that the reader knows what to do.
+- Preserve important conditions, limitations, and uncertainty.
+- Prefer clarity over elegance and accuracy over oversimplification.
 
 ## Research Workflow Notes
 Follow the logging and planning conventions in `codebase_preferences.md`, including experiment tracking with Weights and Biases and the planned use of data version control for augmented datasets.

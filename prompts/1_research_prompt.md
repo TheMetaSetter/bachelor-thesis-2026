@@ -249,23 +249,23 @@ Add remote permalinks only when a stable remote URL and immutable revision are a
 Store the file under:
 
 ```text
-documents/logs/<dd-mm-yyyy>/research/
+documents/logs/<yyyy-mm-dd>/research/
 ```
 
-Replace `<dd-mm-yyyy>` with the current local date. For example, use `28-07-2026` for 28 July 2026.
+Replace `<yyyy-mm-dd>` with the current local date. For example, use `2026-07-28` for 28 July 2026.
 
 Create the date directory and its `research` subdirectory when they do not exist.
 
 Use a descriptive lowercase filename with hyphen-separated words:
 
 ```text
-documents/logs/<dd-mm-yyyy>/research/research-<topic>.md
+documents/logs/<yyyy-mm-dd>/research/research-<topic>.md
 ```
 
 For example:
 
 ```text
-documents/logs/28-07-2026/research/research-request-routing.md
+documents/logs/2026-07-28/research/research-request-routing.md
 ```
 
 If the user provides another output path or asks for a conversation-only answer, follow the user's instruction instead.

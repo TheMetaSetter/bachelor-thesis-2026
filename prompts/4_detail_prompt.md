@@ -75,12 +75,12 @@ Read enough context to preserve the full requirement. Read a short or central do
 If the user does not provide all required documents, search these default locations:
 
 ```text
-documents/logs/<dd-mm-yyyy>/structure/
-documents/logs/<dd-mm-yyyy>/plan/
-documents/logs/<dd-mm-yyyy>/research/
+documents/logs/<yyyy-mm-dd>/structure/
+documents/logs/<yyyy-mm-dd>/plan/
+documents/logs/<yyyy-mm-dd>/research/
 ```
 
-Replace `<dd-mm-yyyy>` with the relevant local date.
+Replace `<yyyy-mm-dd>` with the relevant local date.
 
 Search in this order:
 
@@ -315,23 +315,23 @@ Non-blocking uncertainty may remain when it does not change the implementation p
 Store the document under:
 
 ```text
-documents/logs/<dd-mm-yyyy>/detail/
+documents/logs/<yyyy-mm-dd>/detail/
 ```
 
-Replace `<dd-mm-yyyy>` with the current local date. For example, use `28-07-2026` for 28 July 2026.
+Replace `<yyyy-mm-dd>` with the current local date. For example, use `2026-07-28` for 28 July 2026.
 
 Create the date directory and its `detail` subdirectory when they do not exist.
 
 Use a descriptive lowercase filename with hyphen-separated words:
 
 ```text
-documents/logs/<dd-mm-yyyy>/detail/detail-<topic>.md
+documents/logs/<yyyy-mm-dd>/detail/detail-<topic>.md
 ```
 
 For example:
 
 ```text
-documents/logs/28-07-2026/detail/detail-request-routing.md
+documents/logs/2026-07-28/detail/detail-request-routing.md
 ```
 
 If the user provides another output path or asks for a conversation-only document, follow the user's instruction instead.

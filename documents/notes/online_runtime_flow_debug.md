@@ -100,7 +100,6 @@ PROCEDURE RUN_ONLINE_TTA_PHASE(
             <- current_window_ewma_point_scores
                > online_point_ewma_threshold
 
-        FINALISE window_point_predictions FOR CURRENT ABSOLUTE INDICES
         SAVE window_point_predictions
 
         IF demo_ui_is_enabled THEN
@@ -134,8 +133,6 @@ PROCEDURE RUN_ONLINE_TTA_PHASE(
                    latent_window_low_threshold,
                    latent_window_high_threshold
                )
-
-        verification_outcome <- NOT_RUN
 
         IF triage_region = normal THEN
             DO NOT UPDATE online_mlp_projector
@@ -212,8 +209,6 @@ PROCEDURE RUN_ONLINE_TTA_PHASE(
                 IF pnn_mask FOR verification_entry
                    HAS AT LEAST ONE TRUE VALUE THEN
 
-                    verification_outcome <- pnn_verified
-
                     pnn_reconstruction_loss
                         <- COMPUTE_PNN_RECONSTRUCTION_LOSS(
                                verification_entry.x,
@@ -256,8 +251,7 @@ PROCEDURE RUN_ONLINE_TTA_PHASE(
                    window_point_scores,
                    current_window_ewma_point_scores,
                    window_point_predictions,
-                   triage_region,
-                   verification_outcome
+                   triage_region
                )
 
         SAVE online_event_record
@@ -405,12 +399,12 @@ END PROCESS_ONLINE_WINDOW
 | --- | --- | --- |
 | Point score | `window_point_scores` vector cho toàn bộ points | `endpoint_point_score` scalar; runtime field `raw_point_score` |
 | EWMA state | `previous_window_ewma_point_scores` vector | `previous_endpoint_ewma_point_score` scalar; runtime field `previous_ewma_score` |
-| Point prediction | `window_point_predictions` vector, finalise trước adaptation | `endpoint_point_prediction` scalar; runtime field `prediction` |
+| Point prediction | `window_point_predictions` vector, cập nhật khi point còn nằm trong sliding window | `endpoint_point_prediction` scalar; runtime field `prediction` |
 | Point threshold | `online_point_ewma_threshold` trên vector EWMA | Cùng threshold semantics trên scalar EWMA endpoint |
 | Triage | Chạy trước gray-zone PNN work | Preliminary PNN computation chạy trước triage |
 | PNN | Chỉ tính trên admitted `verification_entries` khi cycle sẵn sàng | Preliminary PNN trước triage, rồi verification recompute |
 | Signature history | Chỉ dựa trên selected/admitted windows | Preliminary path append current window trước triage |
-| Triage versus verification | `triage_region` tách khỏi `verification_outcome` | Runtime compatibility path dùng `triage_decision = pnn_verified` |
+| PNN update gate | `pnn_mask` không rỗng | Runtime compatibility path dùng `triage_decision = pnn_verified` |
 | Gray zone | Chỉ admission, chưa adaptation | Chỉ admission, chưa adaptation |
 | Hard old | A2 update khi `hard_old_interval_guard` chấp nhận | A2 có hard-old branch và guard trong engine |
 | Mutable module | Chỉ `online_mlp_projector` | Chỉ `online_mlp_projector` |

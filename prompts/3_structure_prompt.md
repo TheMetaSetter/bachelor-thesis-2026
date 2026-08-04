@@ -82,11 +82,11 @@ Read enough context to understand the complete requirement. Read a short or cent
 If the user does not provide all required context, search the default document locations:
 
 ```text
-documents/logs/<dd-mm-yyyy>/research/
-documents/logs/<dd-mm-yyyy>/plan/
+documents/logs/<yyyy-mm-dd>/research/
+documents/logs/<yyyy-mm-dd>/plan/
 ```
 
-Replace `<dd-mm-yyyy>` with the relevant local date.
+Replace `<yyyy-mm-dd>` with the relevant local date.
 
 Look for documents that match the task topic. Prefer content and evidence over filename similarity.
 
@@ -229,23 +229,23 @@ If the user already approved the structure or explicitly asks to skip review, co
 Store the structure under:
 
 ```text
-documents/logs/<dd-mm-yyyy>/structure/
+documents/logs/<yyyy-mm-dd>/structure/
 ```
 
-Replace `<dd-mm-yyyy>` with the current local date. For example, use `28-07-2026` for 28 July 2026.
+Replace `<yyyy-mm-dd>` with the current local date. For example, use `2026-07-28` for 28 July 2026.
 
 Create the date directory and its `structure` subdirectory when they do not exist.
 
 Use a descriptive lowercase filename with hyphen-separated words:
 
 ```text
-documents/logs/<dd-mm-yyyy>/structure/structure-<topic>.md
+documents/logs/<yyyy-mm-dd>/structure/structure-<topic>.md
 ```
 
 For example:
 
 ```text
-documents/logs/28-07-2026/structure/structure-request-routing.md
+documents/logs/2026-07-28/structure/structure-request-routing.md
 ```
 
 If the user provides another output path or asks for a conversation-only outline, follow the user's instruction instead.

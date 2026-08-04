@@ -96,10 +96,10 @@ Treat these names as examples, not requirements.
 Look for a research note related to the task. The default research location is:
 
 ```text
-documents/logs/<dd-mm-yyyy>/research/
+documents/logs/<yyyy-mm-dd>/research/
 ```
 
-Replace `<dd-mm-yyyy>` with the relevant local date.
+Replace `<yyyy-mm-dd>` with the relevant local date.
 
 If the user names a research note, use that file. If several notes may apply, select them by topic and evidence rather than filename alone.
 
@@ -286,23 +286,23 @@ Do not turn a normal implementation plan into a full security or performance rev
 Store the plan under:
 
 ```text
-documents/logs/<dd-mm-yyyy>/plan/
+documents/logs/<yyyy-mm-dd>/plan/
 ```
 
-Replace `<dd-mm-yyyy>` with the current local date. For example, use `28-07-2026` for 28 July 2026.
+Replace `<yyyy-mm-dd>` with the current local date. For example, use `2026-07-28` for 28 July 2026.
 
 Create the date directory and its `plan` subdirectory when they do not exist.
 
 Use a descriptive lowercase filename with hyphen-separated words:
 
 ```text
-documents/logs/<dd-mm-yyyy>/plan/plan-<topic>.md
+documents/logs/<yyyy-mm-dd>/plan/plan-<topic>.md
 ```
 
 For example:
 
 ```text
-documents/logs/28-07-2026/plan/plan-request-routing.md
+documents/logs/2026-07-28/plan/plan-request-routing.md
 ```
 
 If the user provides another output path or asks for a conversation-only plan, follow the user's instruction instead.

@@ -64,7 +64,7 @@ Các mapping types giữ nguyên nghĩa từ offline ontology: `canonical`, `exa
 
 ### 3.1 `online_tta_phase`
 
-Pha xử lý causal stream sau offline pre-training. Mỗi prediction phải được finalise trước adaptation của event hiện tại; update chỉ ảnh hưởng future causal windows.
+Pha xử lý causal stream sau offline pre-training. Mỗi khi một point xuất hiện trong `causal_window`, code cập nhật EWMA score, prediction và dữ liệu hiển thị của point đó. Khi các window sau không còn chứa point, prediction gần nhất được giữ nguyên.
 
 | Tên gặp trong repo | Mapping |
 | --- | --- |
@@ -335,11 +335,7 @@ Một cycle bắt đầu khi buffer đạt capacity, có entry mới kể từ c
 
 `recurrent_signatures` là exact runtime alias của `recurrent_signature_set`. `recurrent_signature_ids` không phải alias; runtime field này có thể chứa tensor aligned với selected tokens.
 
-### 8.5 `verification_outcome`
-
-Kết quả verification tách biệt với `triage_region`. `pnn_verified` là outcome cho entry có non-empty `pnn_mask` và được phép đi vào PNN update path.
-
-`triage_region = pnn_verified` là overloaded runtime compatibility behavior. Nó không được dùng trong contract mới vì `pnn_verified` không phải một trong four triage regions.
+`pnn_verified` chỉ là giá trị điều khiển nội bộ của compatibility path. Code dùng nó để chọn PNN update path khi `pnn_mask` không rỗng. Nó không phải một object canonical và không phải một trong bốn giá trị của `triage_region`.
 
 ## 9. Adaptation objects and losses
 
@@ -401,7 +397,6 @@ online_point_ewma_threshold
 point prediction
 online_variant
 triage_region
-verification_outcome
 did_update
 online_total_loss
 ```
@@ -427,7 +422,7 @@ Resumable state chứa entity identity, offline/online variant identity, thresho
 | `triage_region` | `depends on` | `input_window_score`, `latent_window_score`, and triage thresholds |
 | `gray_zone` | `may create` | `verification_entry` |
 | `verification_buffer` | `contains` | `verification_entry` |
-| `verification_cycle` | `produces` | `verification_outcome` and `pnn_mask` |
+| `verification_cycle` | `produces` | `pnn_mask` and per-entry `VerificationResult` |
 | `pnn_mask` | `selects positions for` | `pnn_reconstruction_loss` |
 | `hard_old_interval_guard` | `gates` | A2 hard-old update |
 | `online_update_event` | `mutates only` | `online_mlp_projector` |
@@ -440,7 +435,7 @@ Resumable state chứa entity identity, offline/online variant identity, thresho
 | EWMA state | `previous_window_ewma_point_scores [L]` | `previous_endpoint_ewma_point_score` scalar |
 | Prediction | `window_point_predictions [L]` | `endpoint_point_prediction` scalar |
 | PNN order | Triage, gray-zone admission, rồi verification | Preliminary PNN computation trước triage, sau đó verification recompute |
-| Verification outcome | Tách khỏi `triage_region` | Compatibility path truyền `pnn_verified` qua `triage_decision` argument |
+| PNN update gate | `pnn_mask` không rỗng | Compatibility path truyền `pnn_verified` qua `triage_decision` argument |
 | Signature history | Chỉ selected/admitted protocol windows | Preliminary path append current window trước triage |
 
 Tài liệu pseudocode “Flow người dùng mong muốn” phải dùng desired-contract names. Phần “Flow code hiện tại” phải giữ implemented names. Không sửa một bên bằng tên của bên kia vì chúng là các object contracts khác nhau.
@@ -461,7 +456,6 @@ Tài liệu pseudocode “Flow người dùng mong muốn” phải dùng desire
 | `A_low` | `latent_window_low_threshold` | exact mathematical alias normalization | threshold artifact/triage | Pseudocode/docs |
 | `A_high` | `latent_window_high_threshold` | exact mathematical alias normalization | threshold artifact/triage | Pseudocode/docs |
 | `triage_decision` | `triage_region` | renamed for object type | triage | New contracts |
-| `decision = pnn_verified` | `verification_outcome = pnn_verified` | split | verification cycle | New contracts |
 | `entries` | `verification_entries` | renamed for ownership | verification buffer | Pseudocode |
 | `P_known_anomaly` | `known_anomaly_mask` | replaced set-like prose with tensor object | verification | Pseudocode |
 | `P_pseudo_new_normality` | `pnn_mask` | replaced set-like prose with tensor object | verification | Pseudocode |
@@ -488,7 +482,6 @@ Không được map tự động:
 
 - `offline_point_threshold` với `online_point_ewma_threshold`;
 - `input_window_threshold` với point thresholds;
-- `triage_region` với `verification_outcome`;
 - `verification_buffer` với `verification_entry`;
 - `window_point_scores` vector với `endpoint_point_score` scalar;
 - `frozen_source_model` với `online_mlp_projector`;
