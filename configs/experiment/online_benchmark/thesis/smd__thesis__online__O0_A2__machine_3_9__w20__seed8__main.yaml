@@ -33,6 +33,7 @@ task_overrides:
   seed: 8
   benchmark_mode: main
   stage_name: stage_b_fusion_finetuning
+  threshold_artifact_path: outputs/benchmark/smd/thesis/O0/machine_3_9/seed8/thresholds/thresholds.json
   warm_start_projector: false
   target_param_group: projector_params
   clean_stream_only: true

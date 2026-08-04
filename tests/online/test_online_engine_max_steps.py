@@ -74,6 +74,51 @@ def test_run_online_sequence_honors_max_online_steps(monkeypatch) -> None:
     assert len(records) == 2
 
 
+def test_online_event_callback_receives_an_isolated_record(monkeypatch) -> None:
+    model = torch.nn.Linear(1, 1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    record = {
+        "causal_window": {"absolute_indices": [0, 1]},
+        "window_point_predictions": [0, 1],
+    }
+
+    monkeypatch.setattr(
+        "src.engine.online_tta.online_engine._build_online_stream",
+        lambda **kwargs: _fake_batch_stream(),
+    )
+    monkeypatch.setattr(
+        "src.engine.online_tta.online_engine._process_online_window",
+        lambda **kwargs: (None, {"online/step": 1}, record),
+    )
+
+    def mutate_and_fail(callback_record: dict[str, Any]) -> None:
+        callback_record["causal_window"]["absolute_indices"].clear()
+        raise RuntimeError("demo is unavailable")
+
+    _, records = _run_online_sequence(
+        model=model,
+        optimizer=optimizer,
+        sequence={"meta": {"entity_id": "machine-1-6"}},
+        online_variant="A0",
+        threshold_value=0.0,
+        protocol_config={
+            "window_size": 20,
+            "online_ewma_current_weight": 0.9,
+            "online_ewma_previous_weight": 0.1,
+        },
+        batch_size=1,
+        view_noise_std=0.0,
+        view_dropout_probability=0.0,
+        device="cpu",
+        verification_buffer=VerificationBuffer(max_size=8, non_overlap_gap=0),
+        max_online_steps=1,
+        event_callback=mutate_and_fail,
+    )
+
+    assert records == [record]
+    assert record["causal_window"]["absolute_indices"] == [0, 1]
+
+
 def test_run_online_sequence_rejects_batched_causal_windows(monkeypatch) -> None:
     def _batched_stream() -> Iterator[dict[str, Any]]:
         yield {
@@ -171,11 +216,6 @@ def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -
     )
     monkeypatch.setattr(
         online_engine_run_module,
-        "_build_optimizer_from_experiment_config",
-        lambda model, experiment_config: object(),
-    )
-    monkeypatch.setattr(
-        online_engine_run_module,
         "assert_only_projector_is_trainable",
         lambda model: None,
     )
@@ -184,20 +224,17 @@ def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -
         "CheckpointManager",
         _DummyCheckpointManager,
     )
+    monkeypatch.setattr(online_engine_run_module, "resolve_threshold_artifact", lambda _: Path("/tmp/thresholds.json"))
+    monkeypatch.setattr(online_engine_run_module, "sha256_file", lambda _: "checkpoint-sha")
     monkeypatch.setattr(
         online_engine_run_module,
-        "calibrate_entity_threshold_artifacts",
-        lambda **kwargs: {
-            "machine-1-6": {
-                "entity_id": "machine-1-6",
-                "thresholds": {"online_ewma_point": {"value": 0.5}},
-            }
+        "load_threshold_artifact",
+        lambda _: {
+            "entity_id": "machine-1-6", "variant_name": "O0", "seed": 6,
+            "window_size": 20, "checkpoint_sha256": "checkpoint-sha",
+            "ewma_current_weight": 0.9, "ewma_previous_weight": 0.1,
+            "thresholds": {"online_ewma_point": {"value": 0.5}},
         },
-    )
-    monkeypatch.setattr(
-        online_engine_run_module,
-        "write_threshold_artifact",
-        lambda artifact, path: None,
     )
     monkeypatch.setattr(
         online_engine_run_module,
@@ -216,12 +253,17 @@ def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -
                 "view_noise_std": 0.0,
                 "view_dropout_probability": 0.0,
                 "max_online_steps": None,
+                "reference_checkpoint_path": "/tmp/reference.pt",
+                "threshold_artifact_path": "/tmp/thresholds.json",
+                "offline_variant": "O0",
+                "entity_id": "machine-1-6",
+                "seed": 6,
             },
             "device": "cpu",
             "checkpoint_dir": "/tmp/checkpoints",
             "output_dir": "/tmp/outputs",
         },
-        protocol_config={"window_size": 20},
+        protocol_config={"window_size": 20, "online_ewma_current_weight": 0.9, "online_ewma_previous_weight": 0.1},
         online_variant="A0",
     )
 

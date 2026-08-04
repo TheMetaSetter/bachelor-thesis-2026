@@ -13,6 +13,7 @@ from src.protocols.point_scores import (
     ewma_scores,
     window_scores_to_causal_endpoint_scores,
 )
+from src.engine.online_tta.point_ewma import update_window_point_ewma
 
 
 def build_online_stream(
@@ -48,8 +49,8 @@ def move_batch_to_device(batch: dict[str, Any], device: str) -> dict[str, Any]:
 
 def _collect_batch_scores(
     outputs: dict[str, Any], batch_on_device: dict[str, Any]
-) -> tuple[list[float], list[float], list[float]]:
-    endpoint_scores = outputs["point_scores"][:, -1].detach().cpu().tolist()
+) -> tuple[torch.Tensor, list[float], list[float]]:
+    point_scores = outputs["point_scores"].detach()
     input_scores = (
         ((outputs["recon"] - batch_on_device["x"]) ** 2)
         .mean(dim=(1, 2))
@@ -61,7 +62,7 @@ def _collect_batch_scores(
     if not isinstance(latent_scores, torch.Tensor):
         raise KeyError("online model must expose aux.latent_window_score")
     return (
-        endpoint_scores,
+        point_scores,
         input_scores,
         latent_scores.reshape(-1).detach().cpu().tolist(),
     )
@@ -76,6 +77,8 @@ def run_stride1_sequence_scores(
     view_noise_std: float,
     view_dropout_probability: float,
     device: str,
+    current_weight: float,
+    previous_weight: float,
 ) -> dict[str, list[float]]:
     batcher = build_online_stream(
         sequences=[sequence],
@@ -84,7 +87,8 @@ def run_stride1_sequence_scores(
         view_noise_std=view_noise_std,
         view_dropout_probability=view_dropout_probability,
     )
-    endpoint_scores: list[float] = []
+    active_ewma_point_scores: dict[int, float] = {}
+    point_scores: list[float] = []
     input_window_scores: list[float] = []
     latent_window_scores: list[float] = []
     for batch in batcher:
@@ -92,19 +96,23 @@ def run_stride1_sequence_scores(
         model.eval()
         with torch.no_grad():
             outputs = model.forward(batch_on_device)
-        endpoint, input_scores, latent_scores = _collect_batch_scores(
+        current_point_scores, input_scores, latent_scores = _collect_batch_scores(
             outputs, batch_on_device
         )
-        endpoint_scores.extend(endpoint)
+        if current_point_scores.shape[0] != 1:
+            raise ValueError("online threshold calibration requires batch_size=1")
+        current_ewma_scores, active_ewma_point_scores = update_window_point_ewma(
+            previous_scores=active_ewma_point_scores,
+            absolute_indices=batch_on_device["absolute_indices"][0],
+            window_point_scores=current_point_scores[0],
+            current_weight=current_weight,
+            previous_weight=previous_weight,
+        )
+        point_scores.extend(float(value) for value in current_ewma_scores.tolist())
         input_window_scores.extend(input_scores)
         latent_window_scores.extend(latent_scores)
-    causal_scores = window_scores_to_causal_endpoint_scores(
-        window_scores=endpoint_scores,
-        sequence_length=int(sequence["x"].shape[0]),
-        window_size=window_size,
-    )
     return {
-        "point": [float(value) for value in causal_scores if not np.isnan(value)],
+        "point": point_scores,
         "input_window": [float(value) for value in input_window_scores],
         "latent_window": [float(value) for value in latent_window_scores],
     }
@@ -173,16 +181,11 @@ def collect_stride1_online_scores(
             view_noise_std=view_noise_std,
             view_dropout_probability=view_dropout_probability,
             device=device,
-        )
-        smoothed = ewma_scores(
-            np.asarray(scores["point"], dtype=float),
             current_weight=current_weight,
             previous_weight=previous_weight,
         )
         collected["point"].extend(scores["point"])
-        collected["ewma"].extend(
-            float(score) for score in smoothed if not np.isnan(score)
-        )
+        collected["ewma"].extend(scores["point"])
         collected["input_window"].extend(scores["input_window"])
         collected["latent_window"].extend(scores["latent_window"])
     return collected

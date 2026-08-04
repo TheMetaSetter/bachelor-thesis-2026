@@ -111,3 +111,17 @@ def resolve_stage_b_checkpoint(experiment_config: dict[str, Any]) -> Path:
             "provide complete online benchmark metadata."
         )
     return _resolve_checkpoint_from_metadata(task_config)
+
+
+def resolve_threshold_artifact(experiment_config: dict[str, Any]) -> Path:
+    """Resolve the explicit offline artifact selected for this online run."""
+    task_config = dict(experiment_config.get("task", {}))
+    configured_path = task_config.get("threshold_artifact_path")
+    if not isinstance(configured_path, str) or not configured_path:
+        raise ValueError("task.threshold_artifact_path must be a non-empty string")
+    artifact_path = Path(configured_path)
+    if not artifact_path.is_file():
+        raise FileNotFoundError(
+            "Configured threshold_artifact_path does not exist: " f"{artifact_path}"
+        )
+    return artifact_path

@@ -49,6 +49,7 @@ class OnlineReplayState:
     point_rule: str
     smoothing_rule: str
     raw_values: np.ndarray
+    score_indices: np.ndarray
     raw_point_scores: np.ndarray
     ewma_point_scores: np.ndarray
     predicted_mask: np.ndarray

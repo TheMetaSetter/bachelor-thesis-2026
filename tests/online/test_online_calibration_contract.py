@@ -66,7 +66,7 @@ def test_collect_nonoverlap_offline_scores_respects_window_stride() -> None:
     assert scores == [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
 
 
-def test_collect_stride1_online_scores_respects_endpoint_alignment() -> None:
+def test_collect_stride1_online_scores_keeps_overlapping_window_points() -> None:
     model = _CalibrationModel()
     scores = collect_stride1_online_scores(
         model=model,
@@ -81,7 +81,7 @@ def test_collect_stride1_online_scores_respects_endpoint_alignment() -> None:
     )
     assert model.forward_source_calls == 0
     assert model.forward_calls > 0
-    assert scores["point"] == [11.0, 12.0, 13.0, 14.0, 15.0]
+    assert scores["point"] == [10.0, 11.0, 11.0, 12.0, 12.0, 13.0, 13.0, 14.0, 14.0, 15.0]
     assert len(scores["ewma"]) == len(scores["point"])
     assert all(np.isfinite(np.asarray(scores["input_window"], dtype=float)))
     assert all(np.isfinite(np.asarray(scores["latent_window"], dtype=float)))

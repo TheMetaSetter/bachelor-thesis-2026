@@ -73,6 +73,16 @@ def _variant_experiment_name(online_variant: str) -> str:
     return f"online_tta_{online_variant.lower()}_v1"
 
 
+def _threshold_artifact_path(
+    *, offline_variant: str, entity_id: str, seed: int, smoke: bool
+) -> str:
+    root_dir = "benchmark_smoke" if smoke else "benchmark"
+    return (
+        f"outputs/{root_dir}/smd/thesis/{offline_variant}/"
+        f"{_entity_token(entity_id)}/seed{seed}/thresholds/thresholds.json"
+    )
+
+
 def _variant_data_config_path(entity_id: str) -> str:
     return f"configs/data/smd_benchmark_{entity_id}_window20.yaml"
 
@@ -107,6 +117,12 @@ def _task_overrides(
         "seed": seed,
         "benchmark_mode": _benchmark_mode(smoke),
         "stage_name": STAGE_B_CHECKPOINT_STAGE_NAME,
+        "threshold_artifact_path": _threshold_artifact_path(
+            offline_variant=offline_variant,
+            entity_id=entity_id,
+            seed=seed,
+            smoke=smoke,
+        ),
         "warm_start_projector": False,
         "target_param_group": "projector_params",
         "clean_stream_only": True,

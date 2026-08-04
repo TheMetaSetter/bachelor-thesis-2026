@@ -66,7 +66,7 @@ def plot_online_replay(state: OnlineReplayState, output_path: str | Path) -> Pat
         )
     axes[0].set_title(f"{state.entity_id} | online replay")
     axes[0].legend(loc="upper right")
-    score_time = np.arange(state.ewma_point_scores.shape[0])
+    score_time = state.score_indices
     axes[1].plot(
         score_time,
         state.raw_point_scores,
@@ -93,6 +93,6 @@ def plot_online_replay(state: OnlineReplayState, output_path: str | Path) -> Pat
         alpha=0.2,
     )
     axes[1].set_ylabel("score")
-    axes[1].set_xlabel("stream step")
+    axes[1].set_xlabel("absolute index")
     axes[1].legend(loc="upper right")
     return _save_figure(figure, output_path)

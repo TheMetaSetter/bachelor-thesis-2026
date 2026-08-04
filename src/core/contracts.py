@@ -108,6 +108,14 @@ def validate_online_batch(batch: dict[str, Any]) -> None:
     # Full-spec-v2 uses exactly one input window. Online-only fields such as a
     # PNN mask may be appended later, but two augmented views are not required.
     validate_batch(batch)
+    _require_keys(batch, ["absolute_indices"], "batch")
+    _require_tensor_rank(batch["absolute_indices"], 2, "batch['absolute_indices']")
+    if batch["absolute_indices"].shape != batch["x"].shape[:2]:
+        raise ValueError("absolute_indices must align with the causal-window points")
+    if batch["absolute_indices"].dtype != torch.long:
+        raise TypeError("absolute_indices must use torch.long dtype")
+    if not bool(torch.all(torch.diff(batch["absolute_indices"], dim=1) > 0)):
+        raise ValueError("absolute_indices must be strictly increasing per window")
 
 
 def validate_model_outputs(outputs: dict[str, Any]) -> None:

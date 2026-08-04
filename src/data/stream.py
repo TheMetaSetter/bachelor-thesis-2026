@@ -122,6 +122,9 @@ class SMDOnlineStream:
         absolute_end_index = absolute_offset + end_index
         return {
             "x": sequence["x"][start_index:end_index].clone(),
+            "absolute_indices": torch.arange(
+                absolute_start_index, absolute_end_index, dtype=torch.long
+            ),
             "point_labels": None
             if sequence["point_labels"] is None
             else sequence["point_labels"][start_index:end_index].clone(),
@@ -247,6 +250,9 @@ class OnlineWindowBatcher:
             raise StopIteration("No more batches remain in the online batcher")
 
         batch = collate_windows(windows)
+        batch["absolute_indices"] = torch.stack(
+            [window["absolute_indices"] for window in windows], dim=0
+        )
         if self.include_legacy_views:
             batch["view_a"] = self._build_view(batch["x"])
             batch["view_b"] = self._build_view(batch["x"])

@@ -79,6 +79,7 @@ def _build_online_batch(batch_size: int = 2) -> dict[str, Any]:
     x_tensor = torch.randn(batch_size, window_size, num_channels)
     return {
         "x": x_tensor,
+        "absolute_indices": torch.arange(window_size).repeat(batch_size, 1),
         "view_a": x_tensor.clone(),
         "view_b": x_tensor.clone() + 0.01,
         "point_labels": torch.zeros(batch_size, window_size, dtype=torch.long),

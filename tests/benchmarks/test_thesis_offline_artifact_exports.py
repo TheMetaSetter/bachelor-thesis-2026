@@ -33,6 +33,20 @@ def _write_experiment_config(path: Path, output_dir: Path) -> None:
     path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
 
 
+def _write_stage_b_checkpoint(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"pytest-stage-b-checkpoint")
+
+
+def _vector_online_calibration(**_kwargs) -> dict[str, list[float]]:
+    return {
+        "point": [0.1, 0.2, 0.3],
+        "ewma": [0.1, 0.15, 0.2],
+        "input_window": [0.2, 0.3, 0.4],
+        "latent_window": [0.3, 0.4, 0.5],
+    }
+
+
 def test_thesis_offline_wrapper_writes_dry_run_report(tmp_path, monkeypatch) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     output_dir = tmp_path / "outputs"
@@ -104,6 +118,9 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
             "entity_id": "machine-1-6",
             "seed": 6,
             "variant_name": "O0",
+            "model": object(),
+            "clean_validation_sequences": [],
+            "device": "cpu",
             "clean_validation": {
                 "point_scores": np.array([0.1, 0.2, 0.3], dtype=float),
                 "point_labels": np.array([0, 0, 0], dtype=np.int64),
@@ -141,6 +158,11 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
         "scripts.run_thesis_offline_benchmark.collect_offline_artifact_inputs",
         fake_collect,
     )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.collect_stride1_online_scores",
+        _vector_online_calibration,
+    )
+    _write_stage_b_checkpoint(output_dir / "best.pt")
 
     report = run_thesis_offline_benchmark(
         experiment_config_path=str(experiment_config_path),
@@ -254,6 +276,9 @@ def test_thesis_offline_wrapper_supports_summary_only_retention(
             "entity_id": "machine-1-6",
             "seed": 6,
             "variant_name": "O0",
+            "model": object(),
+            "clean_validation_sequences": [],
+            "device": "cpu",
             "clean_validation": {
                 "point_scores": np.array([0.1, 0.2], dtype=float),
                 "point_labels": np.array([0, 0], dtype=np.int64),
@@ -275,6 +300,11 @@ def test_thesis_offline_wrapper_supports_summary_only_retention(
             "offline_metrics": {"point_f1": 1.0},
         },
     )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.collect_stride1_online_scores",
+        _vector_online_calibration,
+    )
+    _write_stage_b_checkpoint(output_dir / "best.pt")
 
     report = run_thesis_offline_benchmark(
         experiment_config_path=str(experiment_config_path),
@@ -336,6 +366,9 @@ def test_thesis_offline_wrapper_supports_evaluation_only_checkpoint_rerun(
                 "entity_id": "machine-1-6",
                 "seed": 6,
                 "variant_name": "O0",
+                "model": object(),
+                "clean_validation_sequences": [],
+                "device": "cpu",
                 "clean_validation": {
                     "point_scores": np.array([0.1, 0.2], dtype=float),
                     "point_labels": np.array([0, 0], dtype=np.int64),
@@ -431,6 +464,11 @@ def test_thesis_offline_wrapper_supports_evaluation_only_checkpoint_rerun(
             }
         ),
     )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.collect_stride1_online_scores",
+        _vector_online_calibration,
+    )
+    _write_stage_b_checkpoint(Path(checkpoint_path))
 
     report = run_thesis_offline_benchmark(
         experiment_config_path=str(experiment_config_path),

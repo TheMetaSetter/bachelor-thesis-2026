@@ -42,12 +42,12 @@ Config mẫu dùng `O1`, `A2`, entity `machine_1_6`, và stream `[5608,5909)`. C
 Các breakpoint dưới đây là điểm kiểm tra gợi ý. Anh có thể tự đặt thêm breakpoint ở bất kỳ hàm hoặc dòng nào. Điều này hữu ích khi cần xem một tensor, một nhánh `if`, hoặc một lần gọi hàm cụ thể. Sau mỗi lần dừng, nhấn `F10` để đi qua dòng hiện tại hoặc `F5` để chạy tới breakpoint kế tiếp.
 
 1. [Benchmark entrypoint](../../scripts/benchmarks/run_thesis_online_benchmark.py#L218-L243): kiểm tra `online_variant`, config, checkpoint Stage B và lời gọi vào online experiment.
-2. [`run_thesis_online_tta_experiment`](../../src/engine/online_tta/online_engine_run.py#L487-L545): kiểm tra model, device, `verification_buffer`, `signature_history` và đoạn stream đã được chọn.
+2. [`run_thesis_online_tta_experiment`](../../src/engine/online_tta/online_engine_run.py#L526-L590): kiểm tra model, device, `verification_buffer`, `active_ewma_point_scores` và đoạn stream đã được chọn.
 3. Vòng lặp từng cửa sổ trong [`_run_online_sequence`](../../src/engine/online_tta/online_engine_run.py#L261-L284): kiểm tra `batch`, `meta[0]`, `start_index`, `end_index` và `stream_step`.
-4. [`_process_online_window`](../../src/engine/online_tta/online_engine_window_core.py#L53-L108): đây là điểm bao quanh bốn nhóm việc chính: chuẩn bị event, buffer/verification, adaptation step và tạo output.
-5. [`_prepare_online_window_event`](../../src/engine/online_tta/online_engine_window_core.py#L141-L194): kiểm tra thứ tự thực tế. Code hiện tại tính preliminary `pnn_mask` trước khi gọi `_classify_event_window`.
-6. [`_build_event_pnn_mask`](../../src/engine/online_tta/online_engine_window_metrics.py#L149-L193): kiểm tra `hidden`, `known_anomaly`, `signatures`, `signature_history` và số point trong `pnn_mask`.
-7. [`_update_online_window_buffers`](../../src/engine/online_tta/online_engine_window_metrics.py#L196-L222): chỉ cửa sổ có `triage_decision == "gray_zone"` mới được thêm vào `verification_buffer`.
+4. [`_process_online_window`](../../src/engine/online_tta/online_engine_window_core.py#L163-L214): đây là điểm bao quanh chuẩn bị event, current action, verification cycle và output.
+5. [`_prepare_online_window_event`](../../src/engine/online_tta/online_engine_window_core.py#L41-L84): kiểm tra `window_point_scores`, vector EWMA/prediction và `triage_region`. PNN chưa tồn tại ở đây.
+6. [`_run_current_window_action`](../../src/engine/online_tta/online_engine_window_core.py#L87-L115): kiểm tra A2 hard-old update và outcome của guard.
+7. [`_admit_and_verify_gray_zone`](../../src/engine/online_tta/online_engine_window_core.py#L118-L141): chỉ `gray_zone` mới được admit. Khi cycle sẵn sàng, verification mới tạo `pnn_mask` từ buffered entries.
 8. [`_verify_and_adapt_entries`](../../src/engine/online_tta/online_engine_window_metrics.py#L33-L79): kiểm tra nhánh verification có chạy hay không và dữ liệu được tính lại cho các entry trong buffer.
 9. [`_run_online_variant_update`](../../src/engine/online_tta/online_engine_step.py#L108-L184): kiểm tra điều kiện update của A1/A2, loss, `pnn_mask`, backward và `optimizer.step()`.
 
@@ -57,14 +57,13 @@ Khi chương trình dừng, thêm các biểu thức sau vào `Watch`:
 
 ```text
 batch["meta"][0]
-event["triage_decision"]
+event["triage_region"]
 event["input_window_score"]
 event["latent_window_score"]
-event["ewma_point_score"]
-batch.get("pnn_mask")
-len(signature_history)
-len(verification_buffer.entries)
-step_result["did_update"]
+event["current_window_ewma_point_scores"]
+event["active_ewma_point_scores"]
+len(verification_buffer)
+step["did_update"]
 ```
 
 Ở bước verification, xem thêm:
@@ -84,8 +83,8 @@ Nếu tên biến không tồn tại tại breakpoint đó, bỏ qua biến đó
 Với mỗi cửa sổ, kiểm tra theo bốn câu hỏi:
 
 - Cửa sổ bắt đầu và kết thúc ở index nào?
-- `triage_decision` là `normal`, `hard_old_normality`, `gray_zone` hay `strong_anomaly`?
-- Có preliminary `pnn_mask` trước triage hay không?
+- `triage_region` là `normal`, `hard_old_normality`, `gray_zone` hay `strong_anomaly`?
+- Có `pnn_mask` chỉ khi verification cycle chạy hay không?
 - Có entry mới trong `verification_buffer` hoặc có adaptation step hay không?
 
 Với A2, chỉ xem là có update khi `step_result["did_update"]` là `True`. Sau đó kiểm tra `reconstruction_loss`, `contrastive_loss` và `projector_grad_norm` trong `model._last_online_diagnostics`.

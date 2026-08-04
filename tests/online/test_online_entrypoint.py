@@ -235,10 +235,12 @@ def test_online_benchmark_moves_model_to_device_before_calibration(
                 "thresholds": {"online_ewma_point": {"value": 0.5}},
             }
         },
+        raising=False,
     )
     monkeypatch.setattr(
         "src.engine.online_tta.online_engine_run.write_threshold_artifact",
         lambda artifact, path: path,
+        raising=False,
     )
     monkeypatch.setattr(
         "src.engine.online_tta.online_engine_run.build_online_runtime_state",
@@ -256,6 +258,17 @@ def test_online_benchmark_moves_model_to_device_before_calibration(
                 "to_dict": lambda self: {"stream_cursor": 0},
             },
         )(),
+    )
+    monkeypatch.setattr("src.engine.online_tta.online_engine_run.resolve_threshold_artifact", lambda _: tmp_path / "thresholds.json")
+    monkeypatch.setattr("src.engine.online_tta.online_engine_run.sha256_file", lambda _: "checkpoint-sha")
+    monkeypatch.setattr(
+        "src.engine.online_tta.online_engine_run.load_threshold_artifact",
+        lambda _: {
+            "entity_id": "machine-1-6", "variant_name": "O0", "seed": 7,
+            "window_size": 20, "checkpoint_sha256": "checkpoint-sha",
+            "ewma_current_weight": 0.9, "ewma_previous_weight": 0.1,
+            "thresholds": {"online_ewma_point": {"value": 0.5}},
+        },
     )
     monkeypatch.setattr(
         "src.engine.online_tta.online_engine_run.CheckpointManager",
@@ -283,6 +296,11 @@ def test_online_benchmark_moves_model_to_device_before_calibration(
                 "target_param_group": "projector_params",
                 "clean_stream_only": True,
                 "max_online_steps": 1,
+                "reference_checkpoint_path": str(tmp_path / "reference.pt"),
+                "threshold_artifact_path": str(tmp_path / "thresholds.json"),
+                "offline_variant": "O0",
+                "entity_id": "machine-1-6",
+                "seed": 7,
             },
             "optimizer": {"learning_rate": 0.001, "weight_decay": 0.0},
         },
@@ -300,7 +318,7 @@ def test_online_benchmark_moves_model_to_device_before_calibration(
     assert context["device"] == "cuda"
 
 
-def test_online_benchmark_passes_reference_checkpoint_hash_to_threshold_calibration(
+def test_online_benchmark_validates_reference_checkpoint_hash_before_streaming(
     monkeypatch, tmp_path: Path
 ) -> None:
     reference_checkpoint_path = tmp_path / "reference.pt"
@@ -381,10 +399,12 @@ def test_online_benchmark_passes_reference_checkpoint_hash_to_threshold_calibrat
                 }
             }
         ),
+        raising=False,
     )
     monkeypatch.setattr(
         "src.engine.online_tta.online_engine_run.write_threshold_artifact",
         lambda artifact, path: path,
+        raising=False,
     )
     monkeypatch.setattr(
         "src.engine.online_tta.online_engine_run.build_online_runtime_state",
@@ -402,6 +422,16 @@ def test_online_benchmark_passes_reference_checkpoint_hash_to_threshold_calibrat
                 "to_dict": lambda self: {"stream_cursor": 0},
             },
         )(),
+    )
+    monkeypatch.setattr("src.engine.online_tta.online_engine_run.resolve_threshold_artifact", lambda _: tmp_path / "thresholds.json")
+    monkeypatch.setattr(
+        "src.engine.online_tta.online_engine_run.load_threshold_artifact",
+        lambda _: {
+            "entity_id": "machine-1-6", "variant_name": "O0", "seed": 7,
+            "window_size": 20, "checkpoint_sha256": __import__("hashlib").sha256(reference_checkpoint_path.read_bytes()).hexdigest(),
+            "ewma_current_weight": 0.9, "ewma_previous_weight": 0.1,
+            "thresholds": {"online_ewma_point": {"value": 0.5}},
+        },
     )
     monkeypatch.setattr(
         "src.engine.online_tta.online_engine_run._run_online_sequence",
@@ -422,6 +452,10 @@ def test_online_benchmark_passes_reference_checkpoint_hash_to_threshold_calibrat
                 "clean_stream_only": True,
                 "max_online_steps": 1,
                 "reference_checkpoint_path": str(reference_checkpoint_path),
+                "threshold_artifact_path": str(tmp_path / "thresholds.json"),
+                "offline_variant": "O0",
+                "entity_id": "machine-1-6",
+                "seed": 7,
             },
             "optimizer": {"learning_rate": 0.001, "weight_decay": 0.0},
         },
@@ -435,5 +469,5 @@ def test_online_benchmark_passes_reference_checkpoint_hash_to_threshold_calibrat
         online_variant="A0",
     )
 
-    assert captured["checkpoint_sha256"] is not None
-    assert captured["checkpoint_sha256"] == context["reference_checkpoint_sha256"]
+    assert context["reference_checkpoint_sha256"] is not None
+    assert context["threshold_artifact"]["checkpoint_sha256"] == context["reference_checkpoint_sha256"]

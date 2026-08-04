@@ -2,8 +2,9 @@ from __future__ import annotations
 
 """End-to-end online benchmark execution for THESIS."""
 
+from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from src.core.artifact_integrity import (
     build_artifact_manifest,
@@ -22,20 +23,14 @@ from src.engine.online_tta.online_calibration import (
 from src.engine.online_tta.online_engine_shared import (
     _build_model_from_experiment_config,
     _build_optimizer_from_experiment_config,
-    _build_threshold_artifact_from_scores,
     _sync_online_runtime_state,
     _utc_now_iso,
     _validate_single_window_online_batch,
     _write_json,
-    calibrate_entity_threshold_artifacts,
 )
 from src.engine.online_tta.online_engine_window_core import (
     _build_triage_thresholds,
     _process_online_window,
-)
-from src.engine.online_tta.signature_verification import (
-    SignatureWindow,
-    find_recurrent_signatures,
 )
 from src.engine.online_tta.timing_debug import OnlineTtaTimingLogger
 from src.engine.online_tta.verification_buffer import VerificationBuffer
@@ -44,7 +39,8 @@ from src.engine.online_tta.runtime_state import build_online_runtime_state
 from src.engine.online_tta.online_optimizer import (
     assert_only_projector_is_trainable,
 )
-from src.protocols.threshold_artifact import write_threshold_artifact
+from src.engine.online_tta.checkpoint_resolution import resolve_threshold_artifact
+from src.protocols.threshold_artifact import load_threshold_artifact
 
 
 def _resolve_max_online_steps(value: Any) -> int | None:
@@ -114,16 +110,31 @@ def _build_dry_run_online_context(*, online_variant: str) -> dict[str, Any]:
     }
 
 
-def _persist_threshold_artifacts(
-    threshold_artifacts: dict[str, dict[str, Any]],
-    output_dir: Path,
-) -> dict[str, str]:
-    threshold_paths: dict[str, str] = {}
-    for entity_id, artifact in threshold_artifacts.items():
-        path = output_dir / "thresholds" / entity_id / "online_thresholds.json"
-        write_threshold_artifact(artifact, path)
-        threshold_paths[entity_id] = str(path)
-    return threshold_paths
+def _validate_online_artifact_identity(
+    *,
+    artifact: dict[str, Any],
+    experiment_config: dict[str, Any],
+    protocol_config: dict[str, Any],
+    checkpoint_sha256: str,
+) -> None:
+    task = experiment_config["task"]
+    expected_values = {
+        "entity_id": str(task["entity_id"]),
+        "variant_name": str(task["offline_variant"]),
+        "seed": int(task["seed"]),
+        "window_size": int(experiment_config["data"]["window_size"]),
+        "checkpoint_sha256": checkpoint_sha256,
+    }
+    for field_name, expected_value in expected_values.items():
+        if artifact.get(field_name) != expected_value:
+            raise ValueError(
+                "threshold artifact identity mismatch for "
+                f"{field_name}: expected {expected_value!r}, got {artifact.get(field_name)!r}"
+            )
+    for field_name in ("ewma_current_weight", "ewma_previous_weight"):
+        expected_weight = float(protocol_config[f"online_{field_name}"])
+        if float(artifact[field_name]) != expected_weight:
+            raise ValueError(f"threshold artifact identity mismatch for {field_name}")
 
 
 def _build_runtime_online_context(
@@ -132,13 +143,29 @@ def _build_runtime_online_context(
     protocol_config: dict[str, Any],
     online_variant: str,
 ) -> dict[str, Any]:
+    threshold_path = resolve_threshold_artifact(experiment_config)
+    threshold_artifact = load_threshold_artifact(threshold_path)
+    reference_checkpoint_path = str(experiment_config["task"]["reference_checkpoint_path"])
+    reference_checkpoint_sha256 = sha256_file(reference_checkpoint_path)
+    _validate_online_artifact_identity(
+        artifact=threshold_artifact,
+        experiment_config=experiment_config,
+        protocol_config=protocol_config,
+        checkpoint_sha256=reference_checkpoint_sha256,
+    )
     data_bundle = build_dataset(
         experiment_config["data"]["dataset_name"], experiment_config["data"]
     )
-    model = _build_model_from_experiment_config(experiment_config)
-    optimizer = _build_optimizer_from_experiment_config(model, experiment_config)
-
-    assert_only_projector_is_trainable(model)
+    model = _build_model_from_experiment_config(
+        {**experiment_config, "online_variant": online_variant}
+    )
+    optimizer = (
+        None
+        if online_variant == "A0"
+        else _build_optimizer_from_experiment_config(model, experiment_config)
+    )
+    if online_variant != "A0":
+        assert_only_projector_is_trainable(model)
 
     # Calibration happens before the streaming loop, so the model must already
     # live on the target device here; otherwise validation windows reach CUDA
@@ -148,27 +175,7 @@ def _build_runtime_online_context(
     checkpoint_manager = CheckpointManager(
         Path(str(experiment_config["checkpoint_dir"]))
     )
-    reference_checkpoint_path = str(
-        experiment_config.get("task", {}).get("reference_checkpoint_path", "")
-    )
-    reference_checkpoint_sha256 = None
-    if reference_checkpoint_path and Path(reference_checkpoint_path).is_file():
-        reference_checkpoint_sha256 = sha256_file(reference_checkpoint_path)
-
-    threshold_artifacts = calibrate_entity_threshold_artifacts(
-        model=model,
-        clean_validation_sequences=data_bundle["scaled_sequences"]["val"],
-        experiment_config=experiment_config,
-        protocol_config=protocol_config,
-        online_variant=online_variant,
-        device=str(experiment_config["device"]),
-        checkpoint_sha256=reference_checkpoint_sha256,
-    )
     output_dir = Path(str(experiment_config["output_dir"]))
-    threshold_paths = _persist_threshold_artifacts(threshold_artifacts, output_dir)
-    first_entity = next(iter(threshold_artifacts))
-    threshold_artifact = threshold_artifacts[first_entity]
-    threshold_path = threshold_paths[first_entity]
 
     batch_size = int(experiment_config["data"]["batch_size"])
     if batch_size != 1:
@@ -194,8 +201,6 @@ def _build_runtime_online_context(
         "optimizer": optimizer,
         "checkpoint_manager": checkpoint_manager,
         "threshold_artifact": threshold_artifact,
-        "threshold_artifacts": threshold_artifacts,
-        "threshold_paths": threshold_paths,
         "threshold_artifact_path": str(threshold_path),
         "reference_checkpoint_path": reference_checkpoint_path,
         "reference_checkpoint_sha256": reference_checkpoint_sha256,
@@ -216,7 +221,6 @@ def _build_runtime_online_context(
         "debug_timing": bool(experiment_config["task"].get("debug_timing", False)),
         "verification_buffer": VerificationBuffer(max_size=64, non_overlap_gap=0),
         "hard_old_guard": NonOverlapGuard(max_size=1),
-        "signature_history": [],
     }
 
 
@@ -236,14 +240,12 @@ def _run_online_sequence(
     runtime_state=None,
     max_online_steps: int | None,
     hard_old_guard: NonOverlapGuard | None = None,
-    signature_history: list[SignatureWindow] | None = None,
     threshold_artifact: dict[str, Any] | None = None,
     timing_logger: OnlineTtaTimingLogger | None = None,
+    event_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if hard_old_guard is None:
         hard_old_guard = NonOverlapGuard(max_size=1)
-    if signature_history is None:
-        signature_history = []
     if runtime_state is None:
         runtime_state = build_online_runtime_state(
             entity_id=str(sequence["meta"]["entity_id"]),
@@ -264,11 +266,15 @@ def _run_online_sequence(
     )
     metric_history: list[dict[str, Any]] = []
     records: list[dict[str, Any]] = []
-    previous_ewma_score: float | None = None
+    active_ewma_point_scores: dict[int, float] = {}
     verification_controller = VerificationCycleController(verification_buffer)
     ewma_current_weight = float(protocol_config["online_ewma_current_weight"])
     ewma_previous_weight = float(protocol_config["online_ewma_previous_weight"])
-    triage_thresholds = _build_triage_thresholds(threshold_value, threshold_artifact)
+    triage_thresholds = (
+        None
+        if online_variant == "A0"
+        else _build_triage_thresholds(threshold_value, threshold_artifact)
+    )
     if timing_logger is None:
         timing_logger = OnlineTtaTimingLogger(enabled=False, device=device)
 
@@ -280,7 +286,7 @@ def _run_online_sequence(
 
         timing_logger.set_window(batch)
 
-        previous_ewma_score, metric, record = (
+        active_ewma_point_scores, metric, record = (
             public_online_engine._process_online_window(
                 model=model,
                 optimizer=optimizer,
@@ -291,26 +297,29 @@ def _run_online_sequence(
                 ewma_previous_weight=ewma_previous_weight,
                 triage_thresholds=triage_thresholds,
                 verification_buffer=verification_buffer,
-                previous_ewma_score=previous_ewma_score,
+                previous_ewma_point_scores=active_ewma_point_scores,
                 device=device,
-                signature_history=signature_history,
                 verification_controller=verification_controller,
                 hard_old_guard=hard_old_guard,
                 timing_logger=timing_logger,
             )
         )
+        active_ewma_point_scores = active_ewma_point_scores or {}
         metric["online/step"] = len(metric_history) + 1
         _sync_online_runtime_state(
             runtime_state=runtime_state,
-            previous_ewma_score=previous_ewma_score,
-            signature_history=signature_history,
-            recurrent_signatures=find_recurrent_signatures(signature_history),
+            active_ewma_point_scores=active_ewma_point_scores,
             record=record,
             hard_old_guard=hard_old_guard,
             verification_buffer=verification_buffer,
         )
         records.append(record)
         metric_history.append(metric)
+        if event_callback is not None:
+            try:
+                event_callback(deepcopy(record))
+            except Exception as error:
+                print(f"Online event callback failed and was ignored: {error}")
 
     return metric_history, records
 
@@ -346,9 +355,11 @@ def _run_online_execution_sequences(
         ):
             break
         entity_id = str(sequence["meta"]["entity_id"])
-        artifact = context["threshold_artifacts"].get(entity_id)
-        if artifact is None:
-            raise KeyError(f"No threshold artifact for test entity {entity_id}")
+        artifact_map = context.get("threshold_artifacts")
+        if artifact_map is None:
+            artifact = context["threshold_artifact"]
+        else:
+            artifact = artifact_map[entity_id]
         from src.engine.online_tta import online_engine as public_online_engine
 
         sequence_metric_history, sequence_records = (
@@ -368,7 +379,6 @@ def _run_online_execution_sequences(
                 verification_buffer=context["verification_buffer"],
                 runtime_state=context.get("runtime_state"),
                 hard_old_guard=context["hard_old_guard"],
-                signature_history=context["signature_history"],
                 max_online_steps=(
                     None
                     if max_online_steps_limit is None
@@ -425,9 +435,9 @@ def _finalize_online_execution(
             "threshold_artifact_path": context["threshold_artifact_path"],
             "online_variant": context["online_variant"],
             "stream_cursor": context["runtime_state"].stream_cursor,
-            "previous_ewma_score": context["runtime_state"].previous_ewma_score,
-            "signature_history": context["runtime_state"].signature_history,
-            "recurrent_signatures": context["runtime_state"].recurrent_signatures,
+            "active_ewma_point_scores": context[
+                "runtime_state"
+            ].active_ewma_point_scores,
             "verification_buffer_size": len(context["verification_buffer"]),
             "verification_buffer_entries": context["verification_buffer"].items(),
             "verification_history": context["runtime_state"].verification_history,
@@ -521,6 +531,7 @@ def run_thesis_online_tta_experiment(
     protocol_config: dict[str, Any],
     online_variant: str,
     dry_run: bool,
+    event_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     # TODO: Làm sao để không cần gán cứng tên biến thể của thí nghiệm nữa?
     # online hay offline variant là các biến thể.
@@ -571,7 +582,6 @@ def run_thesis_online_tta_experiment(
         verification_buffer=context["verification_buffer"],
         runtime_state=context.get("runtime_state"),
         hard_old_guard=context["hard_old_guard"],
-        signature_history=context["signature_history"],
         # Môi trường, giới hạn thực thi và đo thời gian.
         device=context["device"],
         max_online_steps=_resolve_max_online_steps(context.get("max_online_steps")),
@@ -579,6 +589,7 @@ def run_thesis_online_tta_experiment(
             enabled=bool(context["debug_timing"]),
             device=context["device"],
         ),
+        event_callback=event_callback,
     )
 
     return _finalize_online_execution(

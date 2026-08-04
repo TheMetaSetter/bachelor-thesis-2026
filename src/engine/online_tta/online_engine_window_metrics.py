@@ -13,14 +13,7 @@ from src.engine.online_tta.online_calibration import (
 from src.engine.online_tta.timing_debug import OnlineTtaTimingLogger
 from src.engine.online_tta.online_engine_step import execute_online_tta_step
 from src.engine.online_tta.online_optimizer import build_online_optimizer
-from src.engine.online_tta.signature_verification import (
-    PrototypeVerificationMetadata,
-    SignatureWindow,
-    build_pnn_token_mask,
-    filter_known_anomaly_tokens,
-    find_recurrent_signatures,
-    ordered_continuous_signature,
-)
+from src.engine.online_tta.point_ewma import update_window_point_ewma
 from src.engine.online_tta.verification_adapter import (
     VerificationResult,
     build_entry_batch,
@@ -37,8 +30,14 @@ def _verify_and_adapt_entries(
     online_variant: str,
     threshold_value: float,
     device: str,
+    source_hidden_by_entry_id: dict[str, torch.Tensor] | None = None,
 ) -> dict[str, VerificationResult]:
-    candidates = verify_buffer_entries(model, entries, device)
+    candidates = verify_buffer_entries(
+        model,
+        entries,
+        device,
+        source_hidden_by_entry_id=source_hidden_by_entry_id,
+    )
     finalized: dict[str, VerificationResult] = {}
     for entry in entries:
         entry_id = str(entry["entry_id"])
@@ -84,12 +83,12 @@ def _score_online_window(
     model: torch.nn.Module,
     batch: dict[str, Any],
     online_variant: str,
-    previous_ewma_score: float | None,
+    previous_ewma_point_scores: dict[int, float],
     ewma_current_weight: float,
     ewma_previous_weight: float,
     device: str,
     timing_logger: OnlineTtaTimingLogger | None = None,
-) -> tuple[dict[str, Any], float, float, float, float, dict[str, Any]]:
+) -> tuple[dict[str, Any], torch.Tensor, float, float, torch.Tensor, dict[int, float], dict[str, Any]]:
     timing_logger = timing_logger or OnlineTtaTimingLogger(enabled=False, device=device)
     batch_on_device = timing_logger.measure(
         "host_to_cuda", lambda: _move_batch_to_device(batch, device)
@@ -99,25 +98,26 @@ def _score_online_window(
         "model_forward",
         lambda: _forward_online_window(model, batch_on_device, online_variant),
     )
-    raw_point_score, input_window_score, latent_window_score = timing_logger.measure(
+    window_point_scores, input_window_score, latent_window_score = timing_logger.measure(
         "score_extraction",
         lambda: _extract_online_window_scores(pre_outputs, batch_on_device),
     )
 
-    if previous_ewma_score is None:
-        ewma_point_score = raw_point_score
-    else:
-        ewma_point_score = (
-            ewma_current_weight * raw_point_score
-            + ewma_previous_weight * previous_ewma_score
-        )
+    current_window_ewma_point_scores, active_ewma_point_scores = update_window_point_ewma(
+        previous_scores=previous_ewma_point_scores,
+        absolute_indices=batch_on_device["absolute_indices"][0],
+        window_point_scores=window_point_scores,
+        current_weight=ewma_current_weight,
+        previous_weight=ewma_previous_weight,
+    )
 
     return (
         batch_on_device,
-        raw_point_score,
+        window_point_scores,
         input_window_score,
         latent_window_score,
-        ewma_point_score,
+        current_window_ewma_point_scores,
+        active_ewma_point_scores,
         pre_outputs,
     )
 
@@ -135,8 +135,8 @@ def _forward_online_window(
 
 def _extract_online_window_scores(
     outputs: dict[str, Any], batch_on_device: dict[str, Any]
-) -> tuple[float, float, float]:
-    raw_point_score = float(outputs["point_scores"][0, -1].detach().cpu())
+) -> tuple[torch.Tensor, float, float]:
+    window_point_scores = outputs["point_scores"][0].detach()
     latent_value = outputs["aux"].get("latent_window_score")
     if latent_value is None:
         latent_value = outputs["window_scores"]
@@ -144,54 +144,7 @@ def _extract_online_window_scores(
     input_window_score = float(
         torch.mean((outputs["recon"] - batch_on_device["x"]) ** 2).detach().cpu()
     )
-    return raw_point_score, input_window_score, latent_window_score
-
-
-def _build_event_pnn_mask(
-    *,
-    model: torch.nn.Module,
-    scoring_outputs: dict[str, Any],
-    batch: dict[str, Any],
-    signature_history: list[SignatureWindow],
-) -> tuple[torch.Tensor | None, dict[str, int]]:
-    hidden = scoring_outputs["aux"].get("reference_hidden")
-    if hidden is None:
-        hidden = scoring_outputs["hidden"]
-    if not isinstance(hidden, torch.Tensor):
-        raise ValueError("online scoring outputs must expose frozen source hidden")
-    hidden = hidden.detach()
-    reference = getattr(model, "reference_encoder", None)
-    inner_model = getattr(reference, "model", None)
-    metadata = PrototypeVerificationMetadata.from_model(inner_model)
-    codebook = metadata.codebook
-    prototypes = getattr(inner_model, "continuous_prototype_bank", None)
-    if not isinstance(prototypes, torch.Tensor):
-        raise ValueError("online reference model lacks continuous prototype bank")
-    known_anomaly = filter_known_anomaly_tokens(
-        hidden,
-        codebook.to(hidden.device),
-        metadata.anomalous_codeword_mask.to(hidden.device),
-        metadata.anomaly_radii.to(hidden.device),
-    )
-    signatures = ordered_continuous_signature(hidden, prototypes, topk=3)
-    meta = batch["meta"][0]
-    window = SignatureWindow(
-        str(meta["entity_id"]),
-        int(meta["start_index"]),
-        int(meta["end_index"]),
-        signatures,
-    )
-    recurrent = find_recurrent_signatures([*signature_history, window])
-    signature_history.append(window)
-    mask = build_pnn_token_mask(signatures, recurrent, known_anomaly)
-    return mask, {
-        "online/num_points_removed_by_discrete_anom_filter": int(
-            known_anomaly.sum().item()
-        ),
-        "online/num_points_remaining_for_signature": int((~known_anomaly).sum().item()),
-        "online/num_recurrent_signatures": len(recurrent),
-        "online/num_pseudo_new_normality_points": int(mask.sum().item()),
-    }
+    return window_point_scores, input_window_score, latent_window_score
 
 
 def _update_online_window_buffers(
@@ -209,6 +162,8 @@ def _update_online_window_buffers(
         admitted = verification_buffer.try_admit(
             {
                 "entry_id": f"window-{int(batch_on_device['meta'][0]['stream_step'])}",
+                "start_index": int(batch_on_device["meta"][0]["start_index"]),
+                "end_index": int(batch_on_device["meta"][0]["end_index"]),
                 "window_start": int(batch_on_device["meta"][0]["start_index"]),
                 "window_end": int(batch_on_device["meta"][0]["end_index"]),
                 "point_score": raw_point_score,
@@ -217,6 +172,8 @@ def _update_online_window_buffers(
                 "entity_id": str(batch_on_device["meta"][0]["entity_id"]),
                 "stream_step": int(batch_on_device["meta"][0]["stream_step"]),
                 "window": batch_on_device["x"][0].detach().cpu().tolist(),
+                "x": batch_on_device["x"][0].detach().cpu().tolist(),
+                "admitted_at_cursor": int(batch_on_device["meta"][0]["stream_step"]),
             }
         )
         rejected = not admitted
@@ -227,20 +184,38 @@ def _build_online_window_outputs(
     *,
     step_result: dict[str, Any],
     threshold_value: float,
-    raw_point_score: float,
+    absolute_indices: torch.Tensor,
+    window_point_scores: torch.Tensor,
     input_window_score: float,
-    ewma_point_score: float,
+    current_window_ewma_point_scores: torch.Tensor,
     triage_decision: str,
     verification_buffer: VerificationBuffer,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     record = dict(step_result["record"])
+    record["causal_window"] = {
+        "absolute_indices": [
+            int(index) for index in absolute_indices.detach().cpu().tolist()
+        ]
+    }
+    record["window_point_scores"] = [
+        float(score) for score in window_point_scores.detach().cpu().tolist()
+    ]
+    record["current_window_ewma_point_scores"] = [
+        float(score) for score in current_window_ewma_point_scores.detach().cpu().tolist()
+    ]
+    record["window_point_predictions"] = [
+        int(score > threshold_value)
+        for score in current_window_ewma_point_scores.detach().cpu().tolist()
+    ]
     record["threshold"] = float(threshold_value)
     record["input_window_score"] = float(input_window_score)
     record["verification_cycle_ready"] = verification_buffer.should_verify()
     metric = {
         "online/step": 0,
-        "online/raw_point_score": raw_point_score,
-        "online/ewma_point_score": ewma_point_score,
+        "online/raw_point_score": float(window_point_scores[-1].detach().cpu()),
+        "online/ewma_point_score": float(
+            current_window_ewma_point_scores[-1].detach().cpu()
+        ),
         "online/threshold": float(threshold_value),
         "online/prediction": record["prediction"],
         "online/did_update": record["did_update"],

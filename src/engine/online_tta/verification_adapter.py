@@ -31,18 +31,23 @@ class VerificationResult:
 
 def build_entry_batch(entry: dict[str, Any], device: str) -> dict[str, Any]:
     """Rebuild an unlabeled online batch from one serialized buffer entry."""
-    x_tensor = torch.as_tensor(entry["window"], dtype=torch.float32, device=device)
+    x_value = entry["x"] if "x" in entry else entry["window"]
+    x_tensor = torch.as_tensor(x_value, dtype=torch.float32, device=device)
     if x_tensor.ndim != 2:
         raise ValueError("verification entry window must have shape [L, C]")
     x_tensor = x_tensor.unsqueeze(0)
     meta = {
         "entity_id": str(entry["entity_id"]),
-        "start_index": int(entry["window_start"]),
-        "end_index": int(entry["window_end"]),
-        "stream_step": int(entry["stream_step"]),
+        "start_index": int(entry["start_index"] if "start_index" in entry else entry["window_start"]),
+        "end_index": int(entry["end_index"] if "end_index" in entry else entry["window_end"]),
+        "stream_step": int(entry["admitted_at_cursor"] if "admitted_at_cursor" in entry else entry["stream_step"]),
     }
     return {
         "x": x_tensor,
+        "absolute_indices": torch.arange(
+            int(entry["start_index"] if "start_index" in entry else entry["window_start"]),
+            int(entry["end_index"] if "end_index" in entry else entry["window_end"]), device=device
+        ).unsqueeze(0),
         "point_labels": None,
         "mask": None,
         "timestamps": None,
@@ -51,20 +56,32 @@ def build_entry_batch(entry: dict[str, Any], device: str) -> dict[str, Any]:
 
 
 def _score_verification_entry(
-    model: torch.nn.Module, entry: dict[str, Any], device: str
+    model: torch.nn.Module,
+    entry: dict[str, Any],
+    device: str,
+    source_hidden: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, list[list[tuple[int, ...]]]]:
-    batch = build_entry_batch(entry, device)
-    model.eval()
-    with torch.no_grad():
-        if hasattr(model, "forward_source"):
-            outputs = model.forward_source(batch)
-        else:
-            outputs = model.forward(batch)
-    hidden = outputs.get("aux", {}).get("reference_hidden")
-    if hidden is None:
-        hidden = outputs.get("hidden")
+    if source_hidden is None:
+        batch = build_entry_batch(entry, device)
+        model.eval()
+        with torch.no_grad():
+            if hasattr(model, "forward_source"):
+                outputs = model.forward_source(batch)
+            else:
+                outputs = model.forward(batch)
+        hidden = outputs.get("aux", {}).get("reference_hidden")
+        if hidden is None:
+            hidden = outputs.get("hidden")
+    else:
+        hidden = source_hidden
     if not isinstance(hidden, torch.Tensor):
         raise ValueError("verification path must expose frozen source hidden states")
+    if hidden.ndim != 3 or int(hidden.shape[0]) != 1:
+        raise ValueError("verification source hidden must have shape [1, L, H]")
+    start_index = int(entry["start_index"] if "start_index" in entry else entry["window_start"])
+    end_index = int(entry["end_index"] if "end_index" in entry else entry["window_end"])
+    if int(hidden.shape[1]) != end_index - start_index:
+        raise ValueError("verification source hidden must align with entry interval")
     hidden = hidden.detach()
     reference_model = model.reference_encoder.model
     metadata = PrototypeVerificationMetadata.from_model(reference_model)
@@ -80,19 +97,28 @@ def _score_verification_entry(
 
 
 def verify_buffer_entries(
-    model: torch.nn.Module, entries: list[dict[str, Any]], device: str
+    model: torch.nn.Module,
+    entries: list[dict[str, Any]],
+    device: str,
+    source_hidden_by_entry_id: dict[str, torch.Tensor] | None = None,
 ) -> dict[str, VerificationResult]:
     """Run discrete-radius then recurrent-signature filters over all entries."""
     scored: list[tuple[dict[str, Any], torch.Tensor, list[list[tuple[int, ...]]]]] = []
     signature_windows: list[SignatureWindow] = []
     for entry in entries:
-        known_anomaly, signatures = _score_verification_entry(model, entry, device)
+        entry_id = str(entry["entry_id"])
+        source_hidden = None
+        if source_hidden_by_entry_id is not None:
+            source_hidden = source_hidden_by_entry_id.get(entry_id)
+        known_anomaly, signatures = _score_verification_entry(
+            model, entry, device, source_hidden
+        )
         scored.append((entry, known_anomaly, signatures))
         signature_windows.append(
             SignatureWindow(
                 str(entry["entity_id"]),
-                int(entry["window_start"]),
-                int(entry["window_end"]),
+                int(entry["start_index"] if "start_index" in entry else entry["window_start"]),
+                int(entry["end_index"] if "end_index" in entry else entry["window_end"]),
                 signatures,
             )
         )

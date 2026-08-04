@@ -41,6 +41,10 @@ def clip_projector_gradients(model: torch.nn.Module, max_norm: float = 0.5) -> f
 
 
 def assert_only_projector_is_trainable(model: torch.nn.Module) -> None:
+    if getattr(model, "online_variant", None) == "A0":
+        if any(parameter.requires_grad for parameter in model.parameters()):
+            raise ValueError("A0 must not expose trainable online parameters")
+        return
     projector_parameter_ids = {
         id(parameter) for parameter in collect_projector_parameters(model)
     }

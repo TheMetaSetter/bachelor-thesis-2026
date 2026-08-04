@@ -795,16 +795,32 @@ means and variances aggregated
 ```
 
 The source encoder MUST NOT be repeated for each Monte Carlo sample.
+If a gray-zone causal window is admitted and verified in the same event, the
+verification cycle MUST reuse that event's `reference_hidden` for the new
+entry. It may encode older buffered entries independently. The cached tensor is
+event-local and MUST NOT be serialized into `verification_buffer` or runtime
+state.
 
 ### 12.2 Point prediction
 
-The official point score is the Monte Carlo mean score. Overlapping online windows are mapped to absolute indices and aggregated using the existing EWMA rule. The uncertainty timeline MUST use the same absolute indices; its aggregation rule MUST be explicit. Default:
+The official point score is the Monte Carlo mean score. Each causal window
+stores `absolute_indices [L]`, `window_point_scores [L]`,
+`current_window_ewma_point_scores [L]`, and `window_point_predictions [L]`.
+For a newly seen point, EWMA equals the current score. For a point that appears
+again in an overlapping window, EWMA uses the previous value for that same
+absolute index. Runtime state keeps only the active point map needed for the
+next causal window.
+
+The uncertainty timeline MUST use the same absolute indices; its aggregation
+rule MUST be explicit. Default:
 
 ```yaml
 online_uncertainty_overlap_aggregation: same_ewma_as_score
 ```
 
-Predictions finalized before adaptation are immutable. Adaptation only affects future causal windows.
+The record of one event is immutable after emission. A later overlapping causal
+window may refresh its own prediction for a shared absolute index. Adaptation
+only affects future causal windows.
 
 ### 12.3 Four-region triage
 
@@ -824,8 +840,14 @@ Required event order:
 ```text
 score -> uncertainty aggregation -> EWMA -> triage
       -> permitted update/admission -> verification if due
-      -> future-only finalization -> event record -> runtime checkpoint
+      -> event record -> runtime checkpoint
 ```
+
+Online reads `task.threshold_artifact_path`. That file MUST be schema version 4
+and MUST match the Stage B checkpoint hash, entity, offline variant, seed,
+window size, and EWMA weights. Online MUST NOT calibrate thresholds from its
+test stream. A new vector runtime MUST reject older scalar artifact and runtime
+state schemas.
 
 ---
 
@@ -876,6 +898,10 @@ Tokens inside anomalous codeword radii are excluded. A remaining signature becom
 ### 13.4 TTL
 
 Adapted entries are removed after a successful atomic update. Unresolved entries lose exactly one TTL only when a verification cycle completes; remove them at zero. A failed adaptation MUST NOT mark an entry adapted or consume an adaptation success.
+
+`ttl_remaining` belongs to a `verification_entry` inside
+`verification_buffer`. It is not the TTL of an endpoint, point, absolute index,
+or causal window outside the buffer.
 
 ---
 
@@ -1146,6 +1172,17 @@ Labels are optional post-prediction overlays. The demo MUST NOT tune thresholds,
 - mean point scores are means of per-sample MSE values, not MSE of mean reconstruction.
 - `return_mc_samples=false` preserves all required summaries.
 
+### 17.2 Online vector records and state
+
+THESIS `online_event_record` stores `absolute_indices` only under
+`causal_window`. It stores the three point vectors with the same length. Legacy
+endpoint fields may remain only as compatibility fields for scalar readers.
+
+`online_runtime_state` stores `active_ewma_point_scores`, verification entries,
+verification history, hard-old intervals, and a `stream_cursor` equal to the
+number of processed causal windows. It does not store a cross-cycle
+`recurrent_signature_set`.
+
 ### 20.3 Deterministic geometry
 
 - changing Gumbel RNG does not change nearest codeword, known-anomaly mask, radii decision, or continuous signatures.
@@ -1170,6 +1207,7 @@ Labels are optional post-prediction overlays. The demo MUST NOT tune thresholds,
 - offline and online threshold artifacts cannot be interchanged.
 - labels are absent until metrics join.
 - absolute-index aggregation preserves entity length and ordering.
+- online point vectors preserve their causal-window ordering.
 
 ### 20.6 Online
 
@@ -1182,6 +1220,7 @@ Labels are optional post-prediction overlays. The demo MUST NOT tune thresholds,
 - one cycle decrements TTL exactly once.
 - failed atomic update commits no state.
 - predictions are not rewritten retroactively.
+- an overlapping later causal window may emit a newer value for its shared point.
 - expected causal forwards equal `max(0,T-20+1)`.
 
 ### 20.7 Artifacts/resume/demo

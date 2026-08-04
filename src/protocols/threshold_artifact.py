@@ -7,7 +7,14 @@ from typing import Any
 from src.core.config_aliases import normalize_variance_correction_value
 
 
-THRESHOLD_ARTIFACT_SCHEMA_VERSION = 3
+THRESHOLD_ARTIFACT_SCHEMA_VERSION = 4
+
+_REQUIRED_ONLINE_THRESHOLDS = {
+    "online_ewma_point",
+    "input_window",
+    "latent_window_low",
+    "latent_window_high",
+}
 
 
 def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
@@ -40,11 +47,17 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
     missing_keys = sorted(required_keys - set(artifact))
     if missing_keys:
         raise ValueError(f"threshold artifact is missing required keys: {missing_keys}")
-    if int(artifact["schema_version"]) != THRESHOLD_ARTIFACT_SCHEMA_VERSION:
+    schema_version = int(artifact["schema_version"])
+    if schema_version not in {3, THRESHOLD_ARTIFACT_SCHEMA_VERSION}:
         raise ValueError(
             "threshold artifact schema_version must be "
             f"{THRESHOLD_ARTIFACT_SCHEMA_VERSION}"
         )
+    if schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION and (
+        not isinstance(artifact.get("checkpoint_sha256"), str)
+        or not artifact["checkpoint_sha256"]
+    ):
+        raise ValueError("threshold artifact checkpoint_sha256 must be a non-empty string")
     if not isinstance(artifact["entity_id"], str) or not artifact["entity_id"]:
         raise ValueError("threshold artifact entity_id must be a non-empty string")
     if not isinstance(artifact["method_name"], str) or not artifact["method_name"]:
@@ -154,6 +167,12 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
     thresholds = artifact["thresholds"]
     if not isinstance(thresholds, dict) or not thresholds:
         raise TypeError("threshold artifact thresholds must be a non-empty mapping")
+    missing_thresholds = sorted(_REQUIRED_ONLINE_THRESHOLDS - set(thresholds))
+    if schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION and missing_thresholds:
+        raise ValueError(
+            "threshold artifact is missing required online thresholds: "
+            f"{missing_thresholds}"
+        )
     for threshold_name, threshold_record in thresholds.items():
         if not isinstance(threshold_record, dict):
             raise TypeError(
@@ -201,6 +220,16 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
                 or float(threshold_record["ewma_previous_weight"]) <= 0.0
             ):
                 raise ValueError("EWMA threshold weights must be positive")
+    if schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION and thresholds[
+        "online_ewma_point"
+    ]["score_rule"] != "stride1_causal_window_vector_ewma":
+        raise ValueError(
+            "online_ewma_point must use stride1_causal_window_vector_ewma"
+        )
+    if schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION and float(thresholds["latent_window_low"]["value"]) > float(
+        thresholds["latent_window_high"]["value"]
+    ):
+        raise ValueError("latent window low threshold must not exceed high threshold")
 
 
 def build_threshold_artifact(
@@ -237,6 +266,21 @@ def build_threshold_artifact(
 ) -> dict[str, Any]:
     if not 0.0 < float(quantile) <= 1.0:
         raise ValueError("quantile must be in (0, 1]")
+    is_thesis_v4 = method_name == "THESIS"
+    if is_thesis_v4 and (not isinstance(checkpoint_sha256, str) or not checkpoint_sha256):
+        raise ValueError("checkpoint_sha256 must be a non-empty string")
+    if is_thesis_v4 and (
+        input_window_threshold is None
+        or latent_window_low_threshold is None
+        or latent_window_high_threshold is None
+    ):
+        raise ValueError("THESIS schema version 4 requires all triage thresholds")
+    if (
+        latent_window_low_threshold is not None
+        and latent_window_high_threshold is not None
+        and latent_window_low_threshold > latent_window_high_threshold
+    ):
+        raise ValueError("latent window low threshold must not exceed high threshold")
     variance_correction_value = normalize_variance_correction_value(variance_correction)
     thresholds = {
         "offline_point": {
@@ -248,7 +292,11 @@ def build_threshold_artifact(
         "online_ewma_point": {
             "value": float(online_ewma_point_threshold),
             "source_split": calibration_split,
-            "score_rule": "stride1_causal_endpoint_ewma",
+            "score_rule": (
+                "stride1_causal_window_vector_ewma"
+                if is_thesis_v4
+                else "stride1_causal_endpoint_ewma"
+            ),
             "quantile": float(quantile),
             "ewma_current_weight": float(ewma_current_weight),
             "ewma_previous_weight": float(ewma_previous_weight),
@@ -256,36 +304,27 @@ def build_threshold_artifact(
     }
     if input_window_threshold is not None:
         thresholds["input_window"] = {
-            "value": float(input_window_threshold),
-            "source_split": calibration_split,
-            "score_rule": "window_mean_squared_error",
-            "quantile": 0.99,
+        "value": float(input_window_threshold),
+        "source_split": calibration_split,
+        "score_rule": "window_mean_squared_error",
+        "quantile": 0.99,
         }
-    if (
-        latent_window_low_threshold is not None
-        or latent_window_high_threshold is not None
-    ):
-        if latent_window_low_threshold is None or latent_window_high_threshold is None:
-            raise ValueError("latent window thresholds must be supplied together")
-        if latent_window_low_threshold > latent_window_high_threshold:
-            raise ValueError(
-                "latent window low threshold must not exceed high threshold"
-            )
+    if latent_window_low_threshold is not None and latent_window_high_threshold is not None:
         thresholds["latent_window_low"] = {
-            "value": float(latent_window_low_threshold),
-            "source_split": calibration_split,
-            "score_rule": "latent_memory_distance",
-            "quantile": 0.95,
+        "value": float(latent_window_low_threshold),
+        "source_split": calibration_split,
+        "score_rule": "latent_memory_distance",
+        "quantile": 0.95,
         }
         thresholds["latent_window_high"] = {
-            "value": float(latent_window_high_threshold),
-            "source_split": calibration_split,
-            "score_rule": "latent_memory_distance",
-            "quantile": 0.99,
+        "value": float(latent_window_high_threshold),
+        "source_split": calibration_split,
+        "score_rule": "latent_memory_distance",
+        "quantile": 0.99,
         }
     return {
-        "artifact_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION,
-        "schema_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION,
+        "artifact_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION if is_thesis_v4 else 3,
+        "schema_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION if is_thesis_v4 else 3,
         "method_name": method_name,
         "variant_name": variant_name,
         "entity_id": entity_id,

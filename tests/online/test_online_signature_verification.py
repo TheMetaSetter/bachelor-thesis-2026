@@ -114,6 +114,40 @@ def test_verify_buffer_entries_uses_frozen_source_latents_only() -> None:
     assert model.forward_calls == 0
 
 
+def test_verify_buffer_entries_reuses_current_event_source_hidden() -> None:
+    model = _VerificationModel()
+    entries = [
+        {
+            "entry_id": "w0",
+            "entity_id": "machine-1",
+            "window_start": 0,
+            "window_end": 2,
+            "stream_step": 0,
+            "window": [[1.0, 0.0], [0.0, 1.0]],
+        },
+        {
+            "entry_id": "w1",
+            "entity_id": "machine-1",
+            "window_start": 2,
+            "window_end": 4,
+            "stream_step": 1,
+            "window": [[1.0, 0.0], [0.0, 1.0]],
+        },
+    ]
+
+    verify_buffer_entries(
+        model,
+        entries,
+        "cpu",
+        source_hidden_by_entry_id={
+            "w1": torch.tensor([[[1.0, 0.0], [0.0, 1.0]]])
+        },
+    )
+
+    assert model.forward_source_calls == 1
+    assert model.forward_calls == 0
+
+
 def test_ordered_continuous_signature_breaks_ties_deterministically() -> None:
     hidden = torch.tensor([[[1.0, 0.0]]])
     prototypes = torch.tensor([[1.0, 0.0], [1.0, 0.0], [0.0, 1.0]])

@@ -45,6 +45,7 @@ from src.engine.thresholding import (
     select_clean_validation_point_threshold,
     select_online_ewma_threshold,
 )
+from src.engine.online_tta.online_calibration import collect_stride1_online_scores
 from src.protocols.point_scores import ewma_scores
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
@@ -337,6 +338,11 @@ def collect_offline_artifact_inputs(
         "entity_id": _first_entity_id(split_outputs["test"]),
         "seed": int(experiment_config.get("seed", 0)),
         "variant_name": str(experiment_config.get("offline_variant", "O0")),
+        "model": model,
+        "clean_validation_sequences": data_bundle.get("scaled_sequences", {}).get(
+            "val", []
+        ),
+        "device": str(experiment_config["device"]),
         "clean_validation": split_outputs["clean_validation_payload"],
         "clean_validation_traces": split_outputs["clean_validation"].get("traces", []),
         "synthetic_validation": _evaluation_outputs_to_score_payload(
@@ -500,14 +506,21 @@ def _build_thresholds(
     artifact_inputs: dict[str, Any],
     protocol_config: dict[str, Any],
     experiment_config_path: str,
+    checkpoint_sha256: str,
 ) -> dict[str, Any]:
     clean_scores = np.asarray(
         artifact_inputs["clean_validation"]["point_scores"],
         dtype=float,
     )
     quantile = float(protocol_config["offline_threshold_quantile"])
-    online_scores = ewma_scores(
-        clean_scores,
+    online_calibration = collect_stride1_online_scores(
+        model=artifact_inputs["model"],
+        clean_validation_sequences=artifact_inputs["clean_validation_sequences"],
+        window_size=int(protocol_config["window_size"]),
+        batch_size=1,
+        view_noise_std=0.0,
+        view_dropout_probability=0.0,
+        device=artifact_inputs["device"],
         current_weight=float(protocol_config["online_ewma_current_weight"]),
         previous_weight=float(protocol_config["online_ewma_previous_weight"]),
     )
@@ -522,7 +535,7 @@ def _build_thresholds(
             quantile=quantile,
         ),
         online_ewma_point_threshold=select_online_ewma_threshold(
-            online_scores,
+            np.asarray(online_calibration["ewma"], dtype=float),
             quantile=float(protocol_config["online_threshold_quantile"]),
         ),
         quantile=quantile,
@@ -530,6 +543,25 @@ def _build_thresholds(
         ewma_previous_weight=float(protocol_config["online_ewma_previous_weight"]),
         created_by="scripts/run_thesis_offline_benchmark.py",
         config_path=experiment_config_path,
+        checkpoint_sha256=checkpoint_sha256,
+        input_window_threshold=float(
+            np.quantile(
+                np.asarray(online_calibration["input_window"], dtype=float),
+                float(protocol_config["B_window_quantile"]),
+            )
+        ),
+        latent_window_low_threshold=float(
+            np.quantile(
+                np.asarray(online_calibration["latent_window"], dtype=float),
+                float(protocol_config["A_low_quantile"]),
+            )
+        ),
+        latent_window_high_threshold=float(
+            np.quantile(
+                np.asarray(online_calibration["latent_window"], dtype=float),
+                float(protocol_config["A_high_quantile"]),
+            )
+        ),
     )
 
 
@@ -543,17 +575,18 @@ def _export_offline_artifacts(
     protocol_config_path: str,
     manifest: dict[str, Any],
 ) -> dict[str, str]:
+    checkpoint_path = manifest.get("evaluation", {}).get("checkpoint_path")
+    if not checkpoint_path or not Path(str(checkpoint_path)).is_file():
+        raise FileNotFoundError("offline artifact export requires Stage B best checkpoint")
+    checkpoint_sha256 = sha256_file(str(checkpoint_path))
     threshold_artifact = _build_thresholds(
         artifact_inputs,
         protocol_config,
         experiment_config_path,
+        checkpoint_sha256,
     )
     threshold_path = output_dir / "thresholds" / "thresholds.json"
     write_threshold_artifact(threshold_artifact, threshold_path)
-    checkpoint_path = manifest.get("evaluation", {}).get("checkpoint_path")
-    checkpoint_sha256 = None
-    if checkpoint_path and Path(str(checkpoint_path)).is_file():
-        checkpoint_sha256 = sha256_file(str(checkpoint_path))
     uq_summary_payload = build_uq_summary_payload(
         benchmark_kind="offline",
         experiment_name=str(experiment_config.get("experiment_name")),

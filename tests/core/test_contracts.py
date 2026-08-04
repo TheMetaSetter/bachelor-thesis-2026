@@ -57,12 +57,27 @@ def test_validate_online_batch_requires_single_window_and_no_secondary_views() -
         "point_labels": None,
         "mask": None,
         "timestamps": torch.arange(20).unsqueeze(0),
+        "absolute_indices": torch.arange(20).unsqueeze(0),
         "meta": [{"entity_id": "machine-1-6", "start_index": 0, "end_index": 20}],
     }
 
     validate_online_batch(batch)
     assert "view_a" not in batch
     assert "view_b" not in batch
+
+
+def test_validate_online_batch_rejects_non_causal_absolute_indices() -> None:
+    batch = {
+        "x": torch.zeros(1, 3, 1),
+        "point_labels": None,
+        "mask": None,
+        "timestamps": torch.arange(3).unsqueeze(0),
+        "absolute_indices": torch.tensor([[3, 3, 4]]),
+        "meta": [{"entity_id": "machine-1-6", "start_index": 3, "end_index": 6}],
+    }
+
+    with pytest.raises(ValueError, match="strictly increasing"):
+        validate_online_batch(batch)
 
 
 def test_validate_model_outputs_rejects_mismatched_sample_axis() -> None:

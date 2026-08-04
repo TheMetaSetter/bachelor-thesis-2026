@@ -9,6 +9,7 @@ import yaml
 
 from demo.offline_replay import build_offline_replay_state
 from demo.online_replay import build_online_replay_state
+from demo.online_replay import _thesis_vector_series
 
 
 def _build_sequence(entity_id: str) -> dict[str, object]:
@@ -342,13 +343,15 @@ def test_demo_state_builders_accept_runner_report_shape_without_benchmark_config
                     "threshold_source": "clean_validation_stride1_ewma",
                     "threshold_value": 0.6,
                     "metric_history": [{"online/step": 1}],
-                    "records": [
-                        {
-                            "raw_point_score": 0.1,
-                            "ewma_point_score": 0.1,
-                            "did_update": False,
-                        }
-                    ],
+                        "records": [
+                            {
+                                "causal_window": {"absolute_indices": [0, 1]},
+                                "window_point_scores": [0.1, 0.1],
+                                "current_window_ewma_point_scores": [0.1, 0.1],
+                                "window_point_predictions": [0, 0],
+                                "did_update": False,
+                            }
+                        ],
                 },
             },
             indent=2,
@@ -377,3 +380,27 @@ def test_demo_state_builders_accept_runner_report_shape_without_benchmark_config
     assert offline_state.variant == "O0"
     assert online_state.method == "THESIS"
     assert online_state.variant == "A0"
+
+
+def test_thesis_vector_series_keeps_latest_value_for_overlapping_points() -> None:
+    indices, raw_scores, ewma_scores, predictions = _thesis_vector_series(
+        [
+            {
+                "causal_window": {"absolute_indices": [10, 11, 12]},
+                "window_point_scores": [0.1, 0.2, 0.3],
+                "current_window_ewma_point_scores": [0.1, 0.2, 0.3],
+                "window_point_predictions": [0, 0, 1],
+            },
+            {
+                "causal_window": {"absolute_indices": [11, 12, 13]},
+                "window_point_scores": [0.4, 0.5, 0.6],
+                "current_window_ewma_point_scores": [0.35, 0.45, 0.6],
+                "window_point_predictions": [0, 1, 1],
+            },
+        ]
+    )
+
+    assert indices.tolist() == [10, 11, 12, 13]
+    assert raw_scores.tolist() == [0.1, 0.4, 0.5, 0.6]
+    assert ewma_scores.tolist() == [0.1, 0.35, 0.45, 0.6]
+    assert predictions.tolist() == [False, False, True, True]

@@ -13,6 +13,7 @@ def _one_window_batch() -> dict[str, object]:
         "point_labels": None,
         "mask": None,
         "timestamps": torch.arange(20).unsqueeze(0),
+        "absolute_indices": torch.arange(20).unsqueeze(0),
         "meta": [{"entity_id": "machine-1-6", "start_index": 0, "end_index": 20}],
     }
 

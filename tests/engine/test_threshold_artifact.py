@@ -29,6 +29,9 @@ def test_threshold_artifact_preserves_checkpoint_and_config_provenance(
         resolved_config_sha256="config-sha",
         return_mc_samples=False,
         sample_retention_policy="retain_for_eda",
+        input_window_threshold=3.0,
+        latent_window_low_threshold=4.0,
+        latent_window_high_threshold=5.0,
     )
     output_path = tmp_path / "thresholds.json"
     write_threshold_artifact(artifact, output_path)

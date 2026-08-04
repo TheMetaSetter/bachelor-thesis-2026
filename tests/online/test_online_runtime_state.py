@@ -25,16 +25,7 @@ def test_runtime_state_roundtrip_validates_identity() -> None:
         "A2",
         _artifact("machine-1-6"),
         stream_cursor=7,
-        previous_ewma_score=2.5,
-        signature_history=[
-            {
-                "entity_id": "machine-1-6",
-                "start": 0,
-                "end": 2,
-                "signatures": [[[0, 1, 2]]],
-            }
-        ],
-        recurrent_signatures=[{"signature": [0, 1, 2]}],
+        active_ewma_point_scores={"5": 2.5, "6": 3.5},
         verification_history=[{"step": 1, "decision": "gray_zone"}],
         checkpoint_path="/tmp/online_final.pt",
         threshold_artifact_path="/tmp/thresholds/machine-1-6.json",
@@ -42,8 +33,7 @@ def test_runtime_state_roundtrip_validates_identity() -> None:
     restored = validate_resume_state(state.to_dict(), "machine-1-6", "A2")
     assert restored.to_dict() == state.to_dict()
     assert restored.stream_cursor == 7
-    assert restored.previous_ewma_score == 2.5
-    assert restored.recurrent_signatures == [{"signature": [0, 1, 2]}]
+    assert restored.active_ewma_point_scores == {"5": 2.5, "6": 3.5}
     assert restored.verification_history == [{"step": 1, "decision": "gray_zone"}]
 
 
@@ -104,36 +94,10 @@ def test_resume_online_runtime_ignores_obsolete_ttl_buffer_size() -> None:
     assert buffer.items()[0]["ttl_remaining"] == 2
 
 
-def test_runtime_state_restores_signature_history() -> None:
-    state = OnlineRuntimeState(
-        "machine-1-6",
-        "A2",
-        _artifact("machine-1-6"),
-        signature_history=[
-            {
-                "entity_id": "machine-1-6",
-                "start": 0,
-                "end": 2,
-                "signatures": [[[0, 1, 2], [1, 2, 3]]],
-            }
-        ],
-    )
-    history: list[SignatureWindow] = []
-    restore_online_runtime_state(
-        state,
-        VerificationBuffer(),
-        NonOverlapGuard(),
-        history,
-        recurrent_signatures=[],
-        verification_history=[],
-    )
-    assert history[0].signatures == [[(0, 1, 2), (1, 2, 3)]]
-
-
 def test_runtime_state_rejects_schema_mismatch() -> None:
     state = OnlineRuntimeState("machine-1-6", "A2", _artifact("machine-1-6"))
     payload = state.to_dict()
-    payload["runtime_schema_version"] = 2
+    payload["runtime_schema_version"] = 1
     with pytest.raises(ValueError, match="runtime schema"):
         validate_resume_state(payload, "machine-1-6", "A2")
 

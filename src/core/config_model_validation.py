@@ -217,6 +217,7 @@ def _validate_model_and_task_config(
             "absolute_start_index",
             "absolute_end_index",
             "reference_checkpoint_path",
+            "threshold_artifact_path",
             "offline_variant",
             "entity_id",
             "seed",
@@ -799,3 +800,6 @@ def _validate_model_and_task_semantics(
                 )
         if reference_checkpoint_path is None:
             _validate_online_adaptation_metadata(task_config)
+        threshold_artifact_path = task_config.get("threshold_artifact_path")
+        if not isinstance(threshold_artifact_path, str) or not threshold_artifact_path:
+            raise ValueError("threshold_artifact_path must be a non-empty string")

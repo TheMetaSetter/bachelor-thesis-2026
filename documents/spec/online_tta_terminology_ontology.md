@@ -30,6 +30,7 @@ online_tta_phase
 Vì vậy:
 
 - `reference_checkpoint_path` là field trỏ đến `stage_b_best_checkpoint`; nó không định nghĩa một checkpoint type mới.
+- `task.threshold_artifact_path` là field config canonical trỏ đến một `threshold_artifact` của đúng offline run. Online phải đọc file này; online không tự calibrate artifact từ test stream.
 - `frozen_source_model` là `offline_source_model` sau khi nạp Stage B checkpoint và freeze.
 - `continuous_prototype_bank`, `discrete_codebook`, `anomaly_verification_metadata`, `reconstruction_head` và `classification_head` giữ nguyên tên từ offline ontology.
 - `online_point_ewma_threshold` thuộc `threshold_artifact` do offline tạo. Online chỉ đọc, không calibrate lại từ test stream.
@@ -130,6 +131,12 @@ EWMA weights
 
 Artifact runtime có nested field names như `thresholds.online_ewma_point.value`. Field serialization có thể khác canonical name, nhưng object semantics không đổi.
 
+`task.threshold_artifact_path` là canonical reference field. Field này phải trỏ
+đến một artifact schema version 4 có identity khớp với
+`reference_checkpoint_path`. Runtime mới reject schema cũ. Đây là migration
+boundary cho online vector-EWMA contract; không suy diễn artifact endpoint cũ
+thành artifact vector mới.
+
 ## 5. Online input, score, and prediction objects
 
 ### 5.1 `causal_window`
@@ -155,21 +162,25 @@ Inherited model output vector `[B,L]`. Mỗi value là point-wise reconstruction
 
 `raw_point_scores` là exact alias trong desired-flow draft. Canonical name nói rõ container thuộc một window.
 
-### 5.3 Desired vector prediction objects
+### 5.3 Vector prediction objects
 
-Các object sau thuộc `desired-contract` hiện có trong “Flow người dùng mong muốn”:
+Các object sau là contract runtime hiện hành:
 
 | Canonical name | Shape | Meaning |
 | --- | --- | --- |
-| `previous_window_ewma_point_scores` | `[L]` | EWMA vector lưu từ online step trước |
+| `active_ewma_point_scores` | `map[absolute_index, float]` | EWMA state chỉ cho points trong causal window active gần nhất |
 | `current_window_ewma_point_scores` | `[L]` | EWMA vector của current causal window |
 | `window_point_predictions` | `[L]` | Binary prediction vector sau threshold |
 
 `point_level_binary_predictions` là exact alias của `window_point_predictions`. Không gọi vector này là `prediction` vì runtime record hiện dùng `prediction` cho một scalar endpoint prediction.
 
-### 5.4 Implemented endpoint prediction objects
+Point mới trong map dùng `window_point_scores` hiện tại. Point xuất hiện lại trong
+window overlap dùng EWMA weights. Runtime thay toàn bộ map bằng các point của
+current causal window, nên không có finalized-point table.
 
-Runtime hiện hành lấy point cuối của `window_point_scores`:
+### 5.4 Endpoint compatibility fields
+
+Runtime record vẫn ghi point cuối của vector để các reader scalar cũ đọc được:
 
 | Canonical name | Runtime name | Shape |
 | --- | --- | --- |
@@ -178,7 +189,8 @@ Runtime hiện hành lấy point cuối của `window_point_scores`:
 | `current_endpoint_ewma_point_score` | `ewma_point_score` | scalar |
 | `endpoint_point_prediction` | `prediction` | scalar binary |
 
-Các scalar endpoint objects không phải aliases của desired vector objects. Đây là contract difference, không chỉ là naming difference.
+Các scalar endpoint objects không phải aliases của vector objects. Chúng là
+compatibility fields; chúng không được dùng để triage, verification hoặc update.
 
 ### 5.5 `online_point_ewma_threshold`
 
@@ -333,7 +345,13 @@ Một cycle bắt đầu khi buffer đạt capacity, có entry mới kể từ c
 | `recurrent_signature_set` | set of signature tuples | Signatures xuất hiện trong hơn một non-overlapping window |
 | `pnn_mask` | `[N,L]` | Pseudo-new-normal tokens còn lại sau known-anomaly filtering và recurrence check |
 
-`recurrent_signatures` là exact runtime alias của `recurrent_signature_set`. `recurrent_signature_ids` không phải alias; runtime field này có thể chứa tensor aligned với selected tokens.
+`recurrent_signatures` là historical runtime alias của `recurrent_signature_set`.
+`recurrent_signature_ids` không phải alias; runtime field này có thể chứa tensor
+aligned với selected tokens.
+
+Nếu current gray-zone entry vừa được admit và cycle chạy ngay, cycle dùng lại
+`reference_hidden` của event cho entry đó. Tensor này chỉ sống trong event. Nó
+không phải field của `verification_entry` và không được serialize.
 
 `pnn_verified` chỉ là giá trị điều khiển nội bộ của compatibility path. Code dùng nó để chọn PNN update path khi `pnn_mask` không rỗng. Nó không phải một object canonical và không phải một trong bốn giá trị của `triage_region`.
 
@@ -384,28 +402,31 @@ Một atomic update gồm fresh optimizer, zero gradients, one finite loss, back
 
 ### 10.1 `online_event_record`
 
-Per-window immutable record sau scoring và optional update:
+Per-window immutable record sau scoring và optional update. Vectors dùng cùng
+length `L` với `causal_window.absolute_indices`:
 
 ```text
 entity_id
-point_index
-start_index
-end_index
-endpoint_point_score or window_point_scores
-current endpoint/vector EWMA point score
+causal_window.absolute_indices
+window_point_scores
+current_window_ewma_point_scores
+window_point_predictions
 online_point_ewma_threshold
-point prediction
 online_variant
 triage_region
 did_update
 online_total_loss
 ```
 
-Desired vector flow và implemented scalar flow phải dùng field names khác nhau như Section 5 quy định.
+`raw_point_score`, `ewma_point_score` và `prediction` có thể được giữ bên cạnh
+vector như compatibility fields. Không có root-level `absolute_indices` copy.
 
 ### 10.2 `online_runtime_state`
 
-Resumable state chứa entity identity, offline/online variant identity, threshold artifact identity, cursor, EWMA state, projector state, verification buffer state, signature history và hard-old guard state. Nó không chứa optimizer moments.
+Resumable state chứa entity identity, offline/online variant identity, threshold
+artifact identity, stream cursor theo số causal window đã xử lý,
+`active_ewma_point_scores`, verification buffer state và hard-old guard state.
+Nó không chứa optimizer moments hay `recurrent_signature_set`.
 
 ## 11. Quan hệ chuẩn giữa các object
 
@@ -417,8 +438,7 @@ Resumable state chứa entity identity, offline/online variant identity, thresho
 | `frozen_source_model.shared_encoder` | `produces` | `source_hidden` |
 | `online_mlp_projector` | `maps` | `source_hidden` to `projected_hidden` |
 | `frozen_source_model` | `produces` | `window_point_scores` |
-| desired EWMA step | `maps` | `window_point_scores` to `current_window_ewma_point_scores` |
-| implemented EWMA step | `maps` | `endpoint_point_score` to `current_endpoint_ewma_point_score` |
+| online EWMA step | `maps` | `window_point_scores` to `current_window_ewma_point_scores` |
 | `triage_region` | `depends on` | `input_window_score`, `latent_window_score`, and triage thresholds |
 | `gray_zone` | `may create` | `verification_entry` |
 | `verification_buffer` | `contains` | `verification_entry` |
@@ -427,30 +447,31 @@ Resumable state chứa entity identity, offline/online variant identity, thresho
 | `hard_old_interval_guard` | `gates` | A2 hard-old update |
 | `online_update_event` | `mutates only` | `online_mlp_projector` |
 
-## 12. Desired contract versus implemented runtime
+## 12. Runtime contract and compatibility fields
 
 | Concern | Desired contract | Implemented runtime |
 | --- | --- | --- |
-| Point-score object | `window_point_scores [L]` | `endpoint_point_score` lấy point cuối |
-| EWMA state | `previous_window_ewma_point_scores [L]` | `previous_endpoint_ewma_point_score` scalar |
-| Prediction | `window_point_predictions [L]` | `endpoint_point_prediction` scalar |
-| PNN order | Triage, gray-zone admission, rồi verification | Preliminary PNN computation trước triage, sau đó verification recompute |
-| PNN update gate | `pnn_mask` không rỗng | Compatibility path truyền `pnn_verified` qua `triage_decision` argument |
-| Signature history | Chỉ selected/admitted protocol windows | Preliminary path append current window trước triage |
+| Point-score object | `window_point_scores [L]` | `raw_point_score` endpoint compatibility field |
+| EWMA state | `active_ewma_point_scores` + `current_window_ewma_point_scores [L]` | `ewma_point_score` endpoint compatibility field |
+| Prediction | `window_point_predictions [L]` | `prediction` endpoint compatibility field |
+| PNN order | Triage, gray-zone admission, rồi verification | Cùng thứ tự |
+| PNN update gate | `pnn_mask` không rỗng | `pnn_verified` chỉ là internal step control |
+| Signature set | Local verification cycle | Không serialize vào runtime state |
 
-Tài liệu pseudocode “Flow người dùng mong muốn” phải dùng desired-contract names. Phần “Flow code hiện tại” phải giữ implemented names. Không sửa một bên bằng tên của bên kia vì chúng là các object contracts khác nhau.
+Pseudocode và source phải dùng canonical vector names cho runtime behavior. Chỉ
+compatibility reader mới dùng scalar endpoint fields.
 
 ## 13. Terminology changes
 
 | Old name | New canonical name | Status | Runtime owner | Migration boundary |
 | --- | --- | --- | --- | --- |
 | `raw_point_scores` | `window_point_scores` | renamed for container clarity | model output | Desired pseudocode |
-| `previous_ewma_point_scores` | `previous_window_ewma_point_scores` | renamed for scope | desired online state | Desired pseudocode |
+| `previous_ewma_point_scores` | `active_ewma_point_scores` | replaced because state is keyed by absolute index | online runtime state | vector runtime |
 | `current_ewma_point_scores` | `current_window_ewma_point_scores` | renamed for scope | desired online state | Desired pseudocode |
 | `point_level_binary_predictions` | `window_point_predictions` | renamed for container clarity | desired output | Desired pseudocode |
-| `raw_point_score` | `endpoint_point_score` | renamed for scalar meaning | current online engine | Docs first; source migration separate |
-| `previous_ewma_score` | `previous_endpoint_ewma_point_score` | renamed for scalar meaning | current online engine | Docs first |
-| `ewma_point_score` | `current_endpoint_ewma_point_score` | renamed for scalar meaning | current online engine | Docs first |
+| `raw_point_score` | `endpoint_point_score` | renamed for scalar meaning | compatibility record | source keeps field |
+| `previous_ewma_score` | `not an alias` | removed scalar state | historical runtime | runtime state schema v2 rejects it |
+| `ewma_point_score` | `current_endpoint_ewma_point_score` | renamed for scalar meaning | compatibility record | source keeps field |
 | `B_point_high`, `T_point_EWMA` | `online_point_ewma_threshold` | exact alias normalization | threshold artifact | Pseudocode/docs |
 | `B_window` | `input_window_threshold` | exact mathematical alias normalization | threshold artifact/triage | Pseudocode/docs |
 | `A_low` | `latent_window_low_threshold` | exact mathematical alias normalization | threshold artifact/triage | Pseudocode/docs |

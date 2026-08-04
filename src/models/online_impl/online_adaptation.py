@@ -58,6 +58,7 @@ class OnlineAdaptationModel(BaseModel):
         clean_stream_only: bool,
         reset_policy: str = "disabled",
         reset_alignment_threshold: float = 0.0,
+        online_variant: str = "A2",
     ) -> None:
         super().__init__()
         # The first online slice is intentionally narrow so that a new reader
@@ -70,6 +71,8 @@ class OnlineAdaptationModel(BaseModel):
             raise ValueError(
                 "The first online adaptation slice supports only score_source='projected_hidden'"
             )
+        if online_variant not in {"A0", "A1", "A2"}:
+            raise ValueError("online_variant must be A0, A1, or A2")
 
         self.input_dim = input_dim
         self.encoder_dim = encoder_dim
@@ -80,6 +83,7 @@ class OnlineAdaptationModel(BaseModel):
         self.lambda_anchor = lambda_anchor
         self.score_source = score_source
         self.reference_checkpoint_path = str(reference_checkpoint_path)
+        self.online_variant = online_variant
         self.warm_start_projector = warm_start_projector
         self.target_param_group = target_param_group
         self.clean_stream_only = clean_stream_only
@@ -96,14 +100,15 @@ class OnlineAdaptationModel(BaseModel):
         self.online_encoder = ThesisMultitaskEncoderAdapter(
             frozen_multitask_model, freeze_parameters=True
         )
-        self.online_mlp_projector = NearIdentityMLPProjector(
-            hidden_dim=hidden_dim,
-            projector_hidden_dim=projector_hidden_dim,
-            dropout=projector_dropout,
-        )
-        self.projector = self.online_mlp_projector
-        self.projector_anchor_state_dict = self._clone_projector_state_dict()
-        self._set_trainable_parameter_group(target_param_group)
+        if online_variant != "A0":
+            self.online_mlp_projector = NearIdentityMLPProjector(
+                hidden_dim=hidden_dim,
+                projector_hidden_dim=projector_hidden_dim,
+                dropout=projector_dropout,
+            )
+            self.projector = self.online_mlp_projector
+            self.projector_anchor_state_dict = self._clone_projector_state_dict()
+            self._set_trainable_parameter_group(target_param_group)
         print_parameter_summary(
             "MODEL",
             "OnlineAdaptationModel",
@@ -111,7 +116,11 @@ class OnlineAdaptationModel(BaseModel):
             {
                 "reference_encoder": self.reference_encoder,
                 "online_encoder": self.online_encoder,
-                "online_mlp_projector": self.online_mlp_projector,
+                **(
+                    {"online_mlp_projector": self.online_mlp_projector}
+                    if online_variant != "A0"
+                    else {}
+                ),
             },
             input_dim=input_dim,
             encoder_dim=encoder_dim,
@@ -122,9 +131,10 @@ class OnlineAdaptationModel(BaseModel):
             lambda_proto=lambda_proto,
             lambda_anchor=lambda_anchor,
             target_param_group=target_param_group,
-            trainable_group_parameters=sum(
-                parameter.numel()
-                for parameter in self.get_parameter_group(target_param_group)
+            trainable_group_parameters=(
+                sum(parameter.numel() for parameter in self.get_parameter_group(target_param_group))
+                if online_variant != "A0"
+                else 0
             ),
         )
 
@@ -175,6 +185,8 @@ class OnlineAdaptationModel(BaseModel):
         }
 
     def get_projector_anchor_state_dict(self) -> dict[str, torch.Tensor]:
+        if self.online_variant == "A0":
+            return {}
         return {
             parameter_name: parameter.clone()
             for parameter_name, parameter in self.projector_anchor_state_dict.items()
@@ -183,6 +195,8 @@ class OnlineAdaptationModel(BaseModel):
     def load_projector_anchor_state_dict(
         self, state_dict: dict[str, torch.Tensor]
     ) -> None:
+        if self.online_variant == "A0":
+            raise ValueError("A0 has no projector anchor state")
         self.projector_anchor_state_dict = {
             parameter_name: parameter.detach().cpu().clone()
             for parameter_name, parameter in state_dict.items()
@@ -191,6 +205,8 @@ class OnlineAdaptationModel(BaseModel):
     def _parameters_for_target_group(
         self, target_param_group: str
     ) -> list[nn.Parameter]:
+        if self.online_variant == "A0":
+            return []
         if target_param_group == "projector_params":
             return list(self.online_mlp_projector.parameters())
         raise ValueError("target_param_group must be 'projector_params'")
@@ -315,6 +331,8 @@ class OnlineAdaptationModel(BaseModel):
         # One frozen source encoding feeds the residual projector. This keeps
         # calibration and adaptation in the same latent geometry.
         validate_online_batch(batch)
+        if self.online_variant == "A0":
+            raise RuntimeError("A0 must use forward_source and has no online projector")
         console_print(
             "MODEL", "Online adaptation forward input batch", **summarize_batch(batch)
         )

@@ -18,7 +18,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import yaml
 import torch
@@ -84,7 +84,7 @@ def _normalize_online_records(
         if online_variant == "A0":
             normalized_record["did_update"] = False
         else:
-            normalized_record.setdefault("did_update", True)
+            normalized_record.setdefault("did_update", False)
         normalized_records.append(normalized_record)
 
     return normalized_records
@@ -159,7 +159,7 @@ def _export_online_retention_bundle(
     runtime_state = _load_runtime_state_snapshot(checkpoint_path)
     summary_payload = {
         "bundle_type": "online_thesis_retention",
-        "bundle_schema_version": 1,
+        "bundle_schema_version": 2,
         "entity_id": entity_id,
         "online_variant": online_variant,
         "retention_policy": retention_policy,
@@ -229,6 +229,7 @@ def run_thesis_online_benchmark(
     protocol_config_path: str,
     online_variant: str,
     dry_run: bool,
+    event_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     if online_variant not in {"A0", "A1", "A2"}:
         raise ValueError("online_variant must be one of: A0, A1, A2")
@@ -248,12 +249,15 @@ def run_thesis_online_benchmark(
         resolved_checkpoint_path
     )
 
-    online_outputs = run_thesis_online_tta_experiment(
-        experiment_config=experiment_config,
-        protocol_config=protocol_config,
-        online_variant=online_variant,
-        dry_run=dry_run,
-    )
+    run_kwargs: dict[str, Any] = {
+        "experiment_config": experiment_config,
+        "protocol_config": protocol_config,
+        "online_variant": online_variant,
+        "dry_run": dry_run,
+    }
+    if event_callback is not None:
+        run_kwargs["event_callback"] = event_callback
+    online_outputs = run_thesis_online_tta_experiment(**run_kwargs)
     online_outputs = dict(online_outputs)
     online_outputs["records"] = _normalize_online_records(
         list(online_outputs.get("records", [])),

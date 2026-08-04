@@ -1,9 +1,8 @@
 # THESIS Online TTA: Desired Flow and Current Runtime
 
-Hai pseudocode dưới đây cố ý mô tả hai contracts khác nhau:
-
-- “Flow người dùng mong muốn” dùng vector point scores cho cả causal window;
-- “Flow code hiện tại” dùng scalar score của endpoint point.
+Hai pseudocode dưới đây cùng dùng vector point scores cho cả `causal_window`.
+Khối bên trái mô tả ý tưởng đã chốt. Khối bên phải mô tả runtime hiện tại sau
+implementation. Các scalar endpoint trong record chỉ là compatibility fields.
 
 Tên object tuân theo [`online_tta_terminology_ontology.md`](../spec/online_tta_terminology_ontology.md), và online ontology kế thừa [`offline_pretraining_terminology_ontology.md`](../spec/offline_pretraining_terminology_ontology.md).
 
@@ -53,8 +52,7 @@ PROCEDURE RUN_ONLINE_TTA_PHASE(
 
     verification_buffer <- CREATE_VERIFICATION_BUFFER()
     hard_old_interval_guard <- CREATE_NON_OVERLAP_GUARD()
-    recurrent_signature_set <- EMPTY_SET
-    previous_window_ewma_point_scores <- NOT_CREATED
+    active_ewma_point_scores <- EMPTY_MAP
 
     FOR EACH causal_window IN causal_stream
         RECEIVE causal_window
@@ -76,25 +74,17 @@ PROCEDURE RUN_ONLINE_TTA_PHASE(
         window_point_scores
             <- online_model_outputs.window_point_scores
 
-        IF previous_window_ewma_point_scores DOES NOT EXIST THEN
-            previous_window_ewma_point_scores
-                <- ARRAY OF ZEROS WITH LENGTH window_size
-        ENDIF
+        current_window_ewma_point_scores,
+        active_ewma_point_scores
+            <- UPDATE_WINDOW_POINT_EWMA(
+                   causal_window.absolute_indices,
+                   window_point_scores,
+                   active_ewma_point_scores,
+                   ewma_current_weight,
+                   ewma_previous_weight
+               )
 
-        aligned_window_point_scores
-            <- ALIGN window_point_scores TO causal_window.absolute_indices
-               WITH ZERO PADDING FOR UNAVAILABLE POSITIONS
-
-        aligned_previous_window_ewma_point_scores
-            <- ALIGN previous_window_ewma_point_scores
-               TO causal_window.absolute_indices
-               WITH ZERO PADDING FOR UNAVAILABLE POSITIONS
-
-        current_window_ewma_point_scores
-            <- ewma_previous_weight
-               * aligned_previous_window_ewma_point_scores
-               + ewma_current_weight
-               * aligned_window_point_scores
+        # Point mới giữ score hiện tại. Point overlap dùng EWMA.
 
         window_point_predictions
             <- current_window_ewma_point_scores
@@ -107,8 +97,6 @@ PROCEDURE RUN_ONLINE_TTA_PHASE(
         ENDIF
 
         IF online_variant = A0 THEN
-            previous_window_ewma_point_scores
-                <- current_window_ewma_point_scores
             SAVE online_runtime_state
             CONTINUE TO NEXT causal_window
         ENDIF
@@ -256,9 +244,6 @@ PROCEDURE RUN_ONLINE_TTA_PHASE(
 
         SAVE online_event_record
 
-        previous_window_ewma_point_scores
-            <- current_window_ewma_point_scores
-
         SAVE online_runtime_state
     NEXT causal_window
 ENDPROCEDURE
@@ -272,120 +257,33 @@ ENDPROCEDURE
 ```text
 BEGIN PROCESS_ONLINE_WINDOW(batch)
 
-    RECEIVE batch
+    event <- prepare_event(batch)
+        MOVE batch tensors to device
+        FORWARD source-only model for A0; otherwise FORWARD online model
+        EXTRACT window_point_scores [L], input_window_score, latent_window_score
+        UPDATE current_window_ewma_point_scores [L]
+            BY causal_window.absolute_indices
+        CREATE window_point_predictions [L]
+        IF A1 OR A2 THEN CLASSIFY triage_region ENDIF
 
-    CALL prepare_event
+    step <- run_current_window_action(event)
+        A2 hard_old_normality AND accepted guard -> update projector
+        every other current action -> no update
 
-        batch_on_device
-            <- MOVE batch TENSORS TO DEVICE
-
-        model_outputs
-            <- FORWARD MODEL
-
-        raw_point_score
-            <- TAKE SCORE OF LAST POINT ONLY
-
-        input_window_score
-            <- MEAN SQUARED ERROR BETWEEN recon AND x
-
-        latent_window_score
-            <- GET latent_window_score
-               OR FALL BACK TO window_scores
-
-        IF previous_ewma_score DOES NOT EXIST THEN
-            ewma_point_score <- raw_point_score
-        ELSE
-            ewma_point_score
-                <- ewma_current_weight * raw_point_score
-                   + ewma_previous_weight * previous_ewma_score
+    IF A1 OR A2 THEN
+        ADMIT only gray_zone event into verification_buffer
+        IF verification cycle is due THEN
+            ENCODE buffered verification_entries with frozen source model
+            BUILD known_anomaly_mask, recurrent_signature_set, and pnn_mask
+            UPDATE projector only for each verified non-empty pnn_mask
+            FINISH verification cycle and apply TTL
         ENDIF
+    ENDIF
 
-        IF online_variant != A0 THEN
-            known_anomaly_mask
-                <- FILTER KNOWN ANOMALY TOKENS
-
-            continuous_signature_ids
-                <- COMPUTE TOP-3 SIGNATURE
-                   FOR EACH TOKEN
-
-            recurrent_signatures
-                <- FIND RECURRENT SIGNATURES
-
-            APPEND CURRENT WINDOW TO signature_history
-
-            pnn_mask
-                <- BUILD PNN MASK
-
-            ATTACH pnn_mask TO batch
-        ENDIF
-
-        triage_decision
-            <- CLASSIFY WINDOW
-
-    CALL buffer_and_verification
-
-        IF triage_decision = gray_zone THEN
-            admitted
-                <- verification_buffer.try_admit(entry)
-        ENDIF
-
-        IF verification_buffer IS READY THEN
-            entries
-                <- verification_buffer.items()
-
-            RECOMPUTE frozen-source HIDDEN STATES
-            RECOMPUTE known anomaly filtering
-            RECOMPUTE continuous signatures
-            FIND recurrent signatures
-            RECOMPUTE pnn_mask
-
-            IF pnn_mask HAS AT LEAST ONE TRUE VALUE THEN
-                decision <- pnn_verified
-                RUN PNN ADAPTATION
-            ENDIF
-        ENDIF
-
-    CALL adaptation_step
-
-        CREATE online optimizer FOR A1 OR A2
-
-        IF online_variant = A0 THEN
-            DO NOT UPDATE
-
-        ELSE IF online_variant = A1 THEN
-            IF triage_decision = pnn_verified THEN
-                COMPUTE MASKED PNN RECONSTRUCTION LOSS
-                UPDATE online_mlp_projector
-            ELSE
-                DO NOT UPDATE
-            ENDIF
-
-        ELSE IF online_variant = A2 THEN
-            IF triage_decision = pnn_verified THEN
-                COMPUTE PNN RECONSTRUCTION LOSS
-                ADD CONTRASTIVE LOSS
-                UPDATE online_mlp_projector
-
-            ELSE IF triage_decision = hard_old_normality THEN
-                COMPUTE HARD-OLD LOSS
-                ADD CONTRASTIVE LOSS
-                UPDATE online_mlp_projector
-
-            ELSE
-                DO NOT UPDATE
-            ENDIF
-        ENDIF
-
-    BUILD RECORD AND METRICS
-
-        SAVE ewma_point_score
-        SAVE prediction
-        SAVE triage_decision
-        SAVE buffer metrics
-        SAVE adaptation metrics
-
-    previous_ewma_score <- ewma_point_score
-
+    online_event_record <- BUILD record with causal_window.absolute_indices,
+        three point vectors, triage_region, did_update, and loss summary
+    SAVE runtime state with active_ewma_point_scores, buffer, and guard
+    EMIT a deep copy to optional event callback
 END PROCESS_ONLINE_WINDOW
 ```
 
@@ -397,22 +295,22 @@ END PROCESS_ONLINE_WINDOW
 
 | Concern | Flow người dùng mong muốn | Code hiện tại |
 | --- | --- | --- |
-| Point score | `window_point_scores` vector cho toàn bộ points | `endpoint_point_score` scalar; runtime field `raw_point_score` |
-| EWMA state | `previous_window_ewma_point_scores` vector | `previous_endpoint_ewma_point_score` scalar; runtime field `previous_ewma_score` |
-| Point prediction | `window_point_predictions` vector, cập nhật khi point còn nằm trong sliding window | `endpoint_point_prediction` scalar; runtime field `prediction` |
-| Point threshold | `online_point_ewma_threshold` trên vector EWMA | Cùng threshold semantics trên scalar EWMA endpoint |
-| Triage | Chạy trước gray-zone PNN work | Preliminary PNN computation chạy trước triage |
-| PNN | Chỉ tính trên admitted `verification_entries` khi cycle sẵn sàng | Preliminary PNN trước triage, rồi verification recompute |
-| Signature history | Chỉ dựa trên selected/admitted windows | Preliminary path append current window trước triage |
-| PNN update gate | `pnn_mask` không rỗng | Runtime compatibility path dùng `triage_decision = pnn_verified` |
+| Point score | `window_point_scores` vector cho toàn bộ points | Cùng vector; `raw_point_score` chỉ giữ endpoint compatibility |
+| EWMA state | Active map theo absolute index; point mới giữ current score | Cùng active map; state chỉ giữ point trong current causal window |
+| Point prediction | `window_point_predictions` vector, cập nhật khi point còn nằm trong sliding window | Cùng vector; `prediction` chỉ giữ endpoint compatibility |
+| Point threshold | `online_point_ewma_threshold` trên vector EWMA | Cùng semantics |
+| Triage | Chạy trước gray-zone PNN work | Cùng thứ tự |
+| PNN | Chỉ tính trên admitted `verification_entries` khi cycle sẵn sàng | Cùng owner là verification cycle |
+| Signature set | Local trong một verification cycle | Cùng lifecycle; không serialize vào runtime state |
+| PNN update gate | `pnn_mask` không rỗng | `pnn_verified` chỉ là control value nội bộ cho step API |
 | Gray zone | Chỉ admission, chưa adaptation | Chỉ admission, chưa adaptation |
 | Hard old | A2 update khi `hard_old_interval_guard` chấp nhận | A2 có hard-old branch và guard trong engine |
 | Mutable module | Chỉ `online_mlp_projector` | Chỉ `online_mlp_projector` |
 
 Các điểm code chính:
 
-- Scoring và scalar endpoint EWMA: [`src/engine/online_tta/online_engine_window_metrics.py#L82-L119`](../../src/engine/online_tta/online_engine_window_metrics.py#L82-L119)
-- Preliminary PNN trước triage: [`src/engine/online_tta/online_engine_window_core.py#L155-L211`](../../src/engine/online_tta/online_engine_window_core.py#L155-L211)
-- Gray-zone admission: [`src/engine/online_tta/online_engine_window_metrics.py#L194-L220`](../../src/engine/online_tta/online_engine_window_metrics.py#L194-L220)
+- Vector scoring and EWMA: [`src/engine/online_tta/online_engine_window_metrics.py#L76-L115`](../../src/engine/online_tta/online_engine_window_metrics.py#L76-L115)
+- Triage then current action then verification: [`src/engine/online_tta/online_engine_window_core.py#L41-L214`](../../src/engine/online_tta/online_engine_window_core.py#L41-L214)
+- Gray-zone admission: [`src/engine/online_tta/online_engine_window_metrics.py#L144-L175`](../../src/engine/online_tta/online_engine_window_metrics.py#L144-L175)
 - A1/A2 update branches: [`src/engine/online_tta/online_engine_step.py#L118-L170`](../../src/engine/online_tta/online_engine_step.py#L118-L170)
 - Verification buffer lifecycle: [`src/engine/online_tta/verification_buffer.py#L7-L82`](../../src/engine/online_tta/verification_buffer.py#L7-L82)

@@ -96,6 +96,69 @@ def _load_threshold_artifact(
     )
 
 
+def _thesis_vector_series(
+    records: list[dict[str, Any]],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    latest_values: dict[int, tuple[float, float, bool]] = {}
+    for record in records:
+        causal_window = record.get("causal_window")
+        if not isinstance(causal_window, dict):
+            raise ValueError("THESIS record is missing causal_window")
+        absolute_indices = causal_window.get("absolute_indices")
+        point_scores = record.get("window_point_scores")
+        ewma_scores = record.get("current_window_ewma_point_scores")
+        predictions = record.get("window_point_predictions")
+        if not all(isinstance(values, list) for values in (
+            absolute_indices, point_scores, ewma_scores, predictions
+        )):
+            raise ValueError("THESIS record is missing a required point vector")
+        if not (
+            len(absolute_indices)
+            == len(point_scores)
+            == len(ewma_scores)
+            == len(predictions)
+        ):
+            raise ValueError("THESIS point vectors must have one shared length")
+        for index, point_score, ewma_score, prediction in zip(
+            absolute_indices, point_scores, ewma_scores, predictions
+        ):
+            latest_values[int(index)] = (
+                float(point_score),
+                float(ewma_score),
+                bool(prediction),
+            )
+    indices = np.asarray(sorted(latest_values), dtype=np.int64)
+    raw_scores = np.asarray(
+        [latest_values[int(index)][0] for index in indices], dtype=np.float64
+    )
+    ewma_scores = np.asarray(
+        [latest_values[int(index)][1] for index in indices], dtype=np.float64
+    )
+    predictions = np.asarray(
+        [latest_values[int(index)][2] for index in indices], dtype=bool
+    )
+    return indices, raw_scores, ewma_scores, predictions
+
+
+def _baseline_endpoint_series(
+    records: list[dict[str, Any]], threshold: float
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    raw_scores = np.asarray(
+        [record.get("raw_point_score", 0.0) for record in records],
+        dtype=np.float64,
+    )
+    ewma_scores = np.asarray(
+        [record.get("ewma_point_score", 0.0) for record in records],
+        dtype=np.float64,
+    )
+    return (
+        np.arange(ewma_scores.shape[0], dtype=np.int64),
+        raw_scores,
+        ewma_scores,
+        np.asarray(ewma_scores > threshold, dtype=bool),
+    )
+
+
 def build_online_replay_state(report_path: str | Path) -> OnlineReplayState:
     path = Path(report_path)
     report = load_report_payload(path)
@@ -107,15 +170,15 @@ def build_online_replay_state(report_path: str | Path) -> OnlineReplayState:
     test_sequence = load_demo_test_sequence(path)
     raw_values = load_sequence_values(test_sequence)
     records = list(online_execution.get("records", []))
-    raw_point_scores = np.asarray(
-        [record.get("raw_point_score", 0.0) for record in records],
-        dtype=np.float64,
-    )
-    ewma_point_scores = np.asarray(
-        [record.get("ewma_point_score", 0.0) for record in records],
-        dtype=np.float64,
-    )
-    predicted_mask = ewma_point_scores > threshold
+    method = str(online_execution.get("baseline_name", report.get("baseline_name", "unknown")))
+    if method == "THESIS":
+        score_indices, raw_point_scores, ewma_point_scores, predicted_mask = (
+            _thesis_vector_series(records)
+        )
+    else:
+        score_indices, raw_point_scores, ewma_point_scores, predicted_mask = (
+            _baseline_endpoint_series(records, threshold)
+        )
     metrics = {
         "num_records": len(records),
         "num_metric_rows": len(online_execution.get("metric_history", [])),
@@ -124,11 +187,7 @@ def build_online_replay_state(report_path: str | Path) -> OnlineReplayState:
     }
     return OnlineReplayState(
         report_path=path,
-        method=str(
-            online_execution.get(
-                "baseline_name", report.get("baseline_name", "unknown")
-            )
-        ),
+        method=method,
         variant=str(
             online_execution.get(
                 "online_variant", report.get("online_variant", "unknown")
@@ -151,6 +210,7 @@ def build_online_replay_state(report_path: str | Path) -> OnlineReplayState:
             )
         ),
         raw_values=raw_values,
+        score_indices=score_indices,
         raw_point_scores=raw_point_scores,
         ewma_point_scores=ewma_point_scores,
         predicted_mask=np.asarray(predicted_mask, dtype=bool),

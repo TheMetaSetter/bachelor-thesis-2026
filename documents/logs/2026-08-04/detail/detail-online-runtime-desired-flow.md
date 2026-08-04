@@ -19,6 +19,43 @@ Tài liệu này chia structure thành các atomic step. Mỗi step nói rõ ng�
 hiện phải kiểm tra hoặc thay đổi gì, ở file và symbol nào, và phải kiểm tra kết
 quả ra sao. Tài liệu chưa sửa source code.
 
+## Design decisions accepted on 2026-08-04
+
+Anh đã chọn Option 1 cho mọi điểm còn mơ hồ. Các decision dưới đây là input
+đã chốt cho implementation. Chúng thay thế các lựa chọn mở trong plan này.
+
+| Decision | Contract đã chọn |
+| --- | --- |
+| Resolve `threshold_artifact` | Online config có field tường minh `task.threshold_artifact_path`. Ontology phải ghi field này là canonical reference field trước khi source dùng nó. |
+| Artifact schema | Dùng schema version 4. Artifact bắt buộc có bốn threshold canonical và quy tắc EWMA vector. |
+| Legacy artifact và runtime state | Runtime mới reject legacy artifact/state. Run cũ chỉ được resume bằng legacy runtime đã gắn nhãn. |
+| A0 triage | A0 chỉ score, cập nhật EWMA vector, tạo prediction vector rồi return. A0 không triage, admission, verification hay adaptation. |
+| Entry mới và verification cycle | Runtime admit gray-zone entry trước. Nếu buffer vừa đủ capacity, cycle cùng event được phép dùng entry mới. |
+| Vị trí `absolute_indices` | Chỉ lưu trong `causal_window`; record tham chiếu nested field này, không duplicate root field. |
+| Point-state lifecycle | Runtime chỉ giữ EWMA map cho point còn active. Prediction hiển thị dùng giá trị mới nhất trong event record. |
+| Nghĩa `stream_cursor` | `stream_cursor` là số causal window đã xử lý. |
+| UI callback | Public runner sở hữu optional read-only callback. Callback lỗi được log, nhưng không làm hỏng thí nghiệm. |
+| `runtime_protocol_status` | Chỉ đổi static status thành `full_spec_v3` sau khi toàn bộ implementation, focused tests và một smoke path pass. |
+
+Quyết định A0 ở bảng trên giải quyết mâu thuẫn trong draft: flow tổng quát có
+triage chỉ áp dụng cho A1/A2. A0 dừng sau prediction vector.
+
+## Implementation status on 2026-08-04
+
+Phase 1 đến Phase 6 đã được thực hiện trong source, config generation, tests,
+retention và demo reader. Phase 7.1 đã pass focused validation. Phase 7.2 chưa
+thể chạy: artifact local duy nhất tìm thấy cho Stage B smoke là schema version
+3 và không có checkpoint hash. Nó không thể chứng minh vector runtime schema
+version 4. Vì vậy `runtime_protocol_status` vẫn giữ `full_spec_v2`.
+
+Evidence hiện có:
+
+- `93 passed` cho `tests/online`, `tests/demo`, và hai wrapper artifact;
+- `tests/core/test_contracts.py` pass cho absolute-index contract;
+- source compile pass cho online engine, artifact producer, runner, và demo;
+- chưa có một A2 smoke run thật với Stage B checkpoint và artifact cùng offline
+  run.
+
 Luồng đích là:
 
 ```text
