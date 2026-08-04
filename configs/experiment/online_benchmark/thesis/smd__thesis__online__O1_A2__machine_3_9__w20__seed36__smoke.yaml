@@ -31,9 +31,9 @@ task_overrides:
   offline_variant: O1
   entity_id: machine-3-9
   seed: 36
-  benchmark_mode: smoke
+  benchmark_mode: main
   stage_name: stage_b_fusion_finetuning
-  threshold_artifact_path: outputs/benchmark_smoke/smd/thesis/O1/machine_3_9/seed36/thresholds/thresholds.json
+  threshold_artifact_path: outputs/benchmark/smd/thesis/O1/machine_3_9/seed36/thresholds/thresholds_v4_recalibrated.json
   warm_start_projector: false
   target_param_group: projector_params
   clean_stream_only: true

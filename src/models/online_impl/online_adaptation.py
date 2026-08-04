@@ -1,4 +1,4 @@
-"""Projector-first online adaptation model for the first accepted Phase 4 slice.
+"""Projector-first online adaptation model.
 
 This file should be read after the offline multitask model. The online path is
 deliberately conservative: it reuses the offline encoder geometry, keeps the
