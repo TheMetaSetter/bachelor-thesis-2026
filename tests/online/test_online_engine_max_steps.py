@@ -224,15 +224,25 @@ def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -
         "CheckpointManager",
         _DummyCheckpointManager,
     )
-    monkeypatch.setattr(online_engine_run_module, "resolve_threshold_artifact", lambda _: Path("/tmp/thresholds.json"))
-    monkeypatch.setattr(online_engine_run_module, "sha256_file", lambda _: "checkpoint-sha")
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "resolve_threshold_artifact",
+        lambda _: Path("/tmp/thresholds.json"),
+    )
+    monkeypatch.setattr(
+        online_engine_run_module, "sha256_file", lambda _: "checkpoint-sha"
+    )
     monkeypatch.setattr(
         online_engine_run_module,
         "load_threshold_artifact",
         lambda _: {
-            "entity_id": "machine-1-6", "variant_name": "O0", "seed": 6,
-            "window_size": 20, "checkpoint_sha256": "checkpoint-sha",
-            "ewma_current_weight": 0.9, "ewma_previous_weight": 0.1,
+            "entity_id": "machine-1-6",
+            "variant_name": "O0",
+            "seed": 6,
+            "window_size": 20,
+            "checkpoint_sha256": "checkpoint-sha",
+            "ewma_current_weight": 0.9,
+            "ewma_previous_weight": 0.1,
             "thresholds": {"online_ewma_point": {"value": 0.5}},
         },
     )
@@ -263,7 +273,11 @@ def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -
             "checkpoint_dir": "/tmp/checkpoints",
             "output_dir": "/tmp/outputs",
         },
-        protocol_config={"window_size": 20, "online_ewma_current_weight": 0.9, "online_ewma_previous_weight": 0.1},
+        protocol_config={
+            "window_size": 20,
+            "online_ewma_current_weight": 0.9,
+            "online_ewma_previous_weight": 0.1,
+        },
         online_variant="A0",
     )
 

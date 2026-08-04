@@ -205,7 +205,9 @@ def resume_online_runtime(
     extra_state = checkpoint.get("extra_state", {})
     state_payload = extra_state.get("online_runtime_state")
     if state_payload is None:
-        raise ValueError("legacy online runtime state is not supported by schema version 2")
+        raise ValueError(
+            "legacy online runtime state is not supported by schema version 2"
+        )
     state = validate_resume_state(
         state_payload,
         entity_id,

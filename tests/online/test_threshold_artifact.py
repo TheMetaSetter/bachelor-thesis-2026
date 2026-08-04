@@ -105,7 +105,9 @@ def test_threshold_artifact_rejects_invalid_stride_contract() -> None:
         write_threshold_artifact(artifact, Path("/tmp/threshold.json"))
 
 
-def test_online_config_requires_an_explicit_threshold_artifact_path(tmp_path: Path) -> None:
+def test_online_config_requires_an_explicit_threshold_artifact_path(
+    tmp_path: Path,
+) -> None:
     artifact_path = tmp_path / "thresholds.json"
     artifact_path.write_text("{}", encoding="utf-8")
     resolved = resolve_threshold_artifact(

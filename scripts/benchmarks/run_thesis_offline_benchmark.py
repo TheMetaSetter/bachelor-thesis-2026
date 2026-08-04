@@ -578,7 +578,9 @@ def _export_offline_artifacts(
 ) -> dict[str, str]:
     checkpoint_path = manifest.get("evaluation", {}).get("checkpoint_path")
     if not checkpoint_path or not Path(str(checkpoint_path)).is_file():
-        raise FileNotFoundError("offline artifact export requires Stage B best checkpoint")
+        raise FileNotFoundError(
+            "offline artifact export requires Stage B best checkpoint"
+        )
     checkpoint_sha256 = sha256_file(str(checkpoint_path))
     threshold_artifact = _build_thresholds(
         artifact_inputs,

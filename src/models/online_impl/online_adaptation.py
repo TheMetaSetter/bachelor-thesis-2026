@@ -132,7 +132,10 @@ class OnlineAdaptationModel(BaseModel):
             lambda_anchor=lambda_anchor,
             target_param_group=target_param_group,
             trainable_group_parameters=(
-                sum(parameter.numel() for parameter in self.get_parameter_group(target_param_group))
+                sum(
+                    parameter.numel()
+                    for parameter in self.get_parameter_group(target_param_group)
+                )
                 if online_variant != "A0"
                 else 0
             ),

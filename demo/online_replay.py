@@ -108,9 +108,10 @@ def _thesis_vector_series(
         point_scores = record.get("window_point_scores")
         ewma_scores = record.get("current_window_ewma_point_scores")
         predictions = record.get("window_point_predictions")
-        if not all(isinstance(values, list) for values in (
-            absolute_indices, point_scores, ewma_scores, predictions
-        )):
+        if not all(
+            isinstance(values, list)
+            for values in (absolute_indices, point_scores, ewma_scores, predictions)
+        ):
             raise ValueError("THESIS record is missing a required point vector")
         if not (
             len(absolute_indices)
@@ -170,7 +171,9 @@ def build_online_replay_state(report_path: str | Path) -> OnlineReplayState:
     test_sequence = load_demo_test_sequence(path)
     raw_values = load_sequence_values(test_sequence)
     records = list(online_execution.get("records", []))
-    method = str(online_execution.get("baseline_name", report.get("baseline_name", "unknown")))
+    method = str(
+        online_execution.get("baseline_name", report.get("baseline_name", "unknown"))
+    )
     if method == "THESIS":
         score_indices, raw_point_scores, ewma_point_scores, predicted_mask = (
             _thesis_vector_series(records)

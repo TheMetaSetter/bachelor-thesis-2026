@@ -29,7 +29,9 @@ def _build_triage_thresholds(
     return {
         "input_window_threshold": float(thresholds["input_window"]["value"]),
         "latent_window_low_threshold": float(thresholds["latent_window_low"]["value"]),
-        "latent_window_high_threshold": float(thresholds["latent_window_high"]["value"]),
+        "latent_window_high_threshold": float(
+            thresholds["latent_window_high"]["value"]
+        ),
     }
 
 
@@ -75,7 +77,9 @@ def _prepare_online_window_event(
     if online_variant != "A0":
         if triage_thresholds is None:
             raise ValueError("A1/A2 require triage thresholds")
-        triage_region = classify_online_window(input_score, latent_score, triage_thresholds)
+        triage_region = classify_online_window(
+            input_score, latent_score, triage_thresholds
+        )
         hard_old_is_admissible = (
             triage_region == "hard_old_normality"
             and hard_old_guard.accept(_window_interval(batch_on_device))
@@ -199,19 +203,27 @@ def _process_online_window(
     event = timing_logger.measure(
         "prepare_event",
         lambda: _prepare_online_window_event(
-            model=model, batch=batch, online_variant=online_variant,
+            model=model,
+            batch=batch,
+            online_variant=online_variant,
             previous_ewma_point_scores=previous_ewma_point_scores,
             ewma_current_weight=ewma_current_weight,
             ewma_previous_weight=ewma_previous_weight,
-            triage_thresholds=triage_thresholds, hard_old_guard=hard_old_guard,
-            device=device, timing_logger=timing_logger,
+            triage_thresholds=triage_thresholds,
+            hard_old_guard=hard_old_guard,
+            device=device,
+            timing_logger=timing_logger,
         ),
     )
     step = timing_logger.measure(
         "adaptation_step",
         lambda: _run_current_window_action(
-            model=model, optimizer=optimizer, event=event, online_variant=online_variant,
-            threshold_value=threshold_value, hard_old_guard=hard_old_guard,
+            model=model,
+            optimizer=optimizer,
+            event=event,
+            online_variant=online_variant,
+            threshold_value=threshold_value,
+            hard_old_guard=hard_old_guard,
         ),
     )
     admitted, rejected = (0, 0)
@@ -219,12 +231,18 @@ def _process_online_window(
         admitted, rejected = timing_logger.measure(
             "buffer_and_verification",
             lambda: _admit_and_verify_gray_zone(
-                model=model, event=event, online_variant=online_variant,
-                threshold_value=threshold_value, verification_buffer=verification_buffer,
-                verification_controller=verification_controller, device=device,
+                model=model,
+                event=event,
+                online_variant=online_variant,
+                threshold_value=threshold_value,
+                verification_buffer=verification_buffer,
+                verification_controller=verification_controller,
+                device=device,
             ),
         )
-    record, metric = _build_event_outputs(event, step, threshold_value, verification_buffer)
+    record, metric = _build_event_outputs(
+        event, step, threshold_value, verification_buffer
+    )
     metric["online/num_buffer_admitted_windows"] = admitted
     metric["online/num_buffer_rejected_overlap_windows"] = rejected
     return event["active_ewma_point_scores"], metric, record

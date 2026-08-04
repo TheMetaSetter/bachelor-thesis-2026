@@ -259,14 +259,24 @@ def test_online_benchmark_moves_model_to_device_before_calibration(
             },
         )(),
     )
-    monkeypatch.setattr("src.engine.online_tta.online_engine_run.resolve_threshold_artifact", lambda _: tmp_path / "thresholds.json")
-    monkeypatch.setattr("src.engine.online_tta.online_engine_run.sha256_file", lambda _: "checkpoint-sha")
+    monkeypatch.setattr(
+        "src.engine.online_tta.online_engine_run.resolve_threshold_artifact",
+        lambda _: tmp_path / "thresholds.json",
+    )
+    monkeypatch.setattr(
+        "src.engine.online_tta.online_engine_run.sha256_file",
+        lambda _: "checkpoint-sha",
+    )
     monkeypatch.setattr(
         "src.engine.online_tta.online_engine_run.load_threshold_artifact",
         lambda _: {
-            "entity_id": "machine-1-6", "variant_name": "O0", "seed": 7,
-            "window_size": 20, "checkpoint_sha256": "checkpoint-sha",
-            "ewma_current_weight": 0.9, "ewma_previous_weight": 0.1,
+            "entity_id": "machine-1-6",
+            "variant_name": "O0",
+            "seed": 7,
+            "window_size": 20,
+            "checkpoint_sha256": "checkpoint-sha",
+            "ewma_current_weight": 0.9,
+            "ewma_previous_weight": 0.1,
             "thresholds": {"online_ewma_point": {"value": 0.5}},
         },
     )
@@ -423,13 +433,22 @@ def test_online_benchmark_validates_reference_checkpoint_hash_before_streaming(
             },
         )(),
     )
-    monkeypatch.setattr("src.engine.online_tta.online_engine_run.resolve_threshold_artifact", lambda _: tmp_path / "thresholds.json")
+    monkeypatch.setattr(
+        "src.engine.online_tta.online_engine_run.resolve_threshold_artifact",
+        lambda _: tmp_path / "thresholds.json",
+    )
     monkeypatch.setattr(
         "src.engine.online_tta.online_engine_run.load_threshold_artifact",
         lambda _: {
-            "entity_id": "machine-1-6", "variant_name": "O0", "seed": 7,
-            "window_size": 20, "checkpoint_sha256": __import__("hashlib").sha256(reference_checkpoint_path.read_bytes()).hexdigest(),
-            "ewma_current_weight": 0.9, "ewma_previous_weight": 0.1,
+            "entity_id": "machine-1-6",
+            "variant_name": "O0",
+            "seed": 7,
+            "window_size": 20,
+            "checkpoint_sha256": __import__("hashlib")
+            .sha256(reference_checkpoint_path.read_bytes())
+            .hexdigest(),
+            "ewma_current_weight": 0.9,
+            "ewma_previous_weight": 0.1,
             "thresholds": {"online_ewma_point": {"value": 0.5}},
         },
     )
@@ -470,4 +489,7 @@ def test_online_benchmark_validates_reference_checkpoint_hash_before_streaming(
     )
 
     assert context["reference_checkpoint_sha256"] is not None
-    assert context["threshold_artifact"]["checkpoint_sha256"] == context["reference_checkpoint_sha256"]
+    assert (
+        context["threshold_artifact"]["checkpoint_sha256"]
+        == context["reference_checkpoint_sha256"]
+    )

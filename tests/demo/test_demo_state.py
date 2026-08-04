@@ -343,15 +343,15 @@ def test_demo_state_builders_accept_runner_report_shape_without_benchmark_config
                     "threshold_source": "clean_validation_stride1_ewma",
                     "threshold_value": 0.6,
                     "metric_history": [{"online/step": 1}],
-                        "records": [
-                            {
-                                "causal_window": {"absolute_indices": [0, 1]},
-                                "window_point_scores": [0.1, 0.1],
-                                "current_window_ewma_point_scores": [0.1, 0.1],
-                                "window_point_predictions": [0, 0],
-                                "did_update": False,
-                            }
-                        ],
+                    "records": [
+                        {
+                            "causal_window": {"absolute_indices": [0, 1]},
+                            "window_point_scores": [0.1, 0.1],
+                            "current_window_ewma_point_scores": [0.1, 0.1],
+                            "window_point_predictions": [0, 0],
+                            "did_update": False,
+                        }
+                    ],
                 },
             },
             indent=2,

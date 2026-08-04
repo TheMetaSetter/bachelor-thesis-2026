@@ -34,7 +34,9 @@ from src.core.runtime_components import register_online_runtime_components
 from src.core.seed import seed_everything
 from src.data.loaders import rebuild_dataset_bundle_with_scaler_state
 from src.engine.online_tta.online_calibration import collect_stride1_online_scores
-from src.engine.online_tta.online_engine_shared import _build_model_from_experiment_config
+from src.engine.online_tta.online_engine_shared import (
+    _build_model_from_experiment_config,
+)
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     load_threshold_artifact,
@@ -45,7 +47,9 @@ from src.protocols.threshold_artifact import (
 DEFAULT_EXPERIMENT_CONFIG_DIRECTORY = Path(
     "configs/experiment/offline_benchmark/thesis"
 )
-DEFAULT_PROTOCOL_CONFIG_PATH = Path("configs/protocol/smd_window20_cleanval_q99_ewma09.yaml")
+DEFAULT_PROTOCOL_CONFIG_PATH = Path(
+    "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
+)
 DEFAULT_V4_FILENAME = "thresholds_v4_recalibrated.json"
 DEFAULT_AUDIT_FILENAME = "thresholds_v4_recalibration_audit.json"
 DEFAULT_REPORT_PATH = Path(
@@ -66,7 +70,9 @@ def _load_yaml_mapping(path: Path) -> dict[str, Any]:
 def _identity_from_config_filename(config_path: Path) -> tuple[str, str, int]:
     name_parts = config_path.stem.split("__")
     if len(name_parts) != 8 or name_parts[:3] != ["smd", "thesis", "offline"]:
-        raise ValueError(f"Unexpected THESIS offline config filename: {config_path.name}")
+        raise ValueError(
+            f"Unexpected THESIS offline config filename: {config_path.name}"
+        )
     offline_variant = name_parts[3]
     entity_id = name_parts[4].replace("_", "-")
     seed_text = name_parts[6]
@@ -178,7 +184,9 @@ def _validate_checkpoint_identity(
             "Stage-B checkpoint metadata experiment_name does not match inventory"
         )
     if checkpoint_config.get("output_dir") != expected_output_dir:
-        raise ValueError("Stage-B checkpoint config output_dir does not match inventory")
+        raise ValueError(
+            "Stage-B checkpoint config output_dir does not match inventory"
+        )
 
 
 def preflight_inventory(entries: list[StageBInventoryEntry]) -> list[dict[str, str]]:
@@ -342,9 +350,7 @@ def build_v4_threshold_artifact(
     experiment_config_path: Path,
     entry: StageBInventoryEntry,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    threshold_values = _calibrate_threshold_values(
-        calibration_scores, protocol_config
-    )
+    threshold_values = _calibrate_threshold_values(calibration_scores, protocol_config)
     artifact_v4 = build_threshold_artifact(
         **_v4_artifact_fields(
             artifact_v3,

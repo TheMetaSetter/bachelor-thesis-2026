@@ -88,7 +88,15 @@ def _score_online_window(
     ewma_previous_weight: float,
     device: str,
     timing_logger: OnlineTtaTimingLogger | None = None,
-) -> tuple[dict[str, Any], torch.Tensor, float, float, torch.Tensor, dict[int, float], dict[str, Any]]:
+) -> tuple[
+    dict[str, Any],
+    torch.Tensor,
+    float,
+    float,
+    torch.Tensor,
+    dict[int, float],
+    dict[str, Any],
+]:
     timing_logger = timing_logger or OnlineTtaTimingLogger(enabled=False, device=device)
     batch_on_device = timing_logger.measure(
         "host_to_cuda", lambda: _move_batch_to_device(batch, device)
@@ -98,17 +106,21 @@ def _score_online_window(
         "model_forward",
         lambda: _forward_online_window(model, batch_on_device, online_variant),
     )
-    window_point_scores, input_window_score, latent_window_score = timing_logger.measure(
-        "score_extraction",
-        lambda: _extract_online_window_scores(pre_outputs, batch_on_device),
+    window_point_scores, input_window_score, latent_window_score = (
+        timing_logger.measure(
+            "score_extraction",
+            lambda: _extract_online_window_scores(pre_outputs, batch_on_device),
+        )
     )
 
-    current_window_ewma_point_scores, active_ewma_point_scores = update_window_point_ewma(
-        previous_scores=previous_ewma_point_scores,
-        absolute_indices=batch_on_device["absolute_indices"][0],
-        window_point_scores=window_point_scores,
-        current_weight=ewma_current_weight,
-        previous_weight=ewma_previous_weight,
+    current_window_ewma_point_scores, active_ewma_point_scores = (
+        update_window_point_ewma(
+            previous_scores=previous_ewma_point_scores,
+            absolute_indices=batch_on_device["absolute_indices"][0],
+            window_point_scores=window_point_scores,
+            current_weight=ewma_current_weight,
+            previous_weight=ewma_previous_weight,
+        )
     )
 
     return (
@@ -201,7 +213,8 @@ def _build_online_window_outputs(
         float(score) for score in window_point_scores.detach().cpu().tolist()
     ]
     record["current_window_ewma_point_scores"] = [
-        float(score) for score in current_window_ewma_point_scores.detach().cpu().tolist()
+        float(score)
+        for score in current_window_ewma_point_scores.detach().cpu().tolist()
     ]
     record["window_point_predictions"] = [
         int(score > threshold_value)

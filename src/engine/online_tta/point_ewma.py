@@ -24,8 +24,10 @@ def update_window_point_ewma(
         point_index = int(index)
         current_score = float(score)
         previous_score = previous_scores.get(point_index)
-        ewma_score = current_score if previous_score is None else (
-            previous_weight * previous_score + current_weight * current_score
+        ewma_score = (
+            current_score
+            if previous_score is None
+            else (previous_weight * previous_score + current_weight * current_score)
         )
         current_values.append(ewma_score)
         active_scores[point_index] = ewma_score

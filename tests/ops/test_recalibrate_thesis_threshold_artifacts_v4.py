@@ -116,7 +116,9 @@ def test_v3_identity_rejects_an_unapproved_variant_mismatch(tmp_path: Path) -> N
         _validate_v3_identity(artifact_v3, _entry(tmp_path, offline_variant="O0"))
 
 
-def test_checkpoint_identity_requires_o1_experiment_and_output_paths(tmp_path: Path) -> None:
+def test_checkpoint_identity_requires_o1_experiment_and_output_paths(
+    tmp_path: Path,
+) -> None:
     entry = _entry(tmp_path, offline_variant="O1")
     expected_name = (
         "smd__thesis__offline__O1__machine_1_6__w20__seed6__main"
@@ -158,7 +160,9 @@ def test_discovery_requires_the_18_official_thesis_main_configs(tmp_path) -> Non
 
     assert len(entries) == 18
     assert entries[0].threshold_artifact_v3_path.name == "thresholds.json"
-    assert entries[0].threshold_artifact_v4_path.name == "thresholds_v4_recalibrated.json"
+    assert (
+        entries[0].threshold_artifact_v4_path.name == "thresholds_v4_recalibrated.json"
+    )
 
 
 def test_preflight_refuses_to_overwrite_an_existing_v4_artifact(tmp_path) -> None:

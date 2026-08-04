@@ -122,6 +122,6 @@ def resolve_threshold_artifact(experiment_config: dict[str, Any]) -> Path:
     artifact_path = Path(configured_path)
     if not artifact_path.is_file():
         raise FileNotFoundError(
-            "Configured threshold_artifact_path does not exist: " f"{artifact_path}"
+            f"Configured threshold_artifact_path does not exist: {artifact_path}"
         )
     return artifact_path

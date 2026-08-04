@@ -140,11 +140,20 @@ def test_online_projector_forward_shape_is_preserved(tmp_path: Path) -> None:
 def test_a0_has_no_projector_or_trainable_online_parameters(tmp_path: Path) -> None:
     checkpoint_path = _build_reference_checkpoint(tmp_path)
     model = OnlineAdaptationModel(
-        input_dim=38, encoder_dim=64, hidden_dim=32, projector_hidden_dim=48,
-        projector_dropout=0.0, enable_prototype_alignment=False, lambda_align=1.0,
-        lambda_proto=0.1, lambda_anchor=0.001, score_source="projected_hidden",
-        reference_checkpoint_path=str(checkpoint_path), warm_start_projector=False,
-        target_param_group="projector_params", clean_stream_only=True,
+        input_dim=38,
+        encoder_dim=64,
+        hidden_dim=32,
+        projector_hidden_dim=48,
+        projector_dropout=0.0,
+        enable_prototype_alignment=False,
+        lambda_align=1.0,
+        lambda_proto=0.1,
+        lambda_anchor=0.001,
+        score_source="projected_hidden",
+        reference_checkpoint_path=str(checkpoint_path),
+        warm_start_projector=False,
+        target_param_group="projector_params",
+        clean_stream_only=True,
         online_variant="A0",
     )
 

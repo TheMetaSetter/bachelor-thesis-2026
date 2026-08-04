@@ -145,7 +145,9 @@ def _build_runtime_online_context(
 ) -> dict[str, Any]:
     threshold_path = resolve_threshold_artifact(experiment_config)
     threshold_artifact = load_threshold_artifact(threshold_path)
-    reference_checkpoint_path = str(experiment_config["task"]["reference_checkpoint_path"])
+    reference_checkpoint_path = str(
+        experiment_config["task"]["reference_checkpoint_path"]
+    )
     reference_checkpoint_sha256 = sha256_file(reference_checkpoint_path)
     _validate_online_artifact_identity(
         artifact=threshold_artifact,

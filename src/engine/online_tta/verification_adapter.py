@@ -38,15 +38,28 @@ def build_entry_batch(entry: dict[str, Any], device: str) -> dict[str, Any]:
     x_tensor = x_tensor.unsqueeze(0)
     meta = {
         "entity_id": str(entry["entity_id"]),
-        "start_index": int(entry["start_index"] if "start_index" in entry else entry["window_start"]),
-        "end_index": int(entry["end_index"] if "end_index" in entry else entry["window_end"]),
-        "stream_step": int(entry["admitted_at_cursor"] if "admitted_at_cursor" in entry else entry["stream_step"]),
+        "start_index": int(
+            entry["start_index"] if "start_index" in entry else entry["window_start"]
+        ),
+        "end_index": int(
+            entry["end_index"] if "end_index" in entry else entry["window_end"]
+        ),
+        "stream_step": int(
+            entry["admitted_at_cursor"]
+            if "admitted_at_cursor" in entry
+            else entry["stream_step"]
+        ),
     }
     return {
         "x": x_tensor,
         "absolute_indices": torch.arange(
-            int(entry["start_index"] if "start_index" in entry else entry["window_start"]),
-            int(entry["end_index"] if "end_index" in entry else entry["window_end"]), device=device
+            int(
+                entry["start_index"]
+                if "start_index" in entry
+                else entry["window_start"]
+            ),
+            int(entry["end_index"] if "end_index" in entry else entry["window_end"]),
+            device=device,
         ).unsqueeze(0),
         "point_labels": None,
         "mask": None,
@@ -78,7 +91,9 @@ def _score_verification_entry(
         raise ValueError("verification path must expose frozen source hidden states")
     if hidden.ndim != 3 or int(hidden.shape[0]) != 1:
         raise ValueError("verification source hidden must have shape [1, L, H]")
-    start_index = int(entry["start_index"] if "start_index" in entry else entry["window_start"])
+    start_index = int(
+        entry["start_index"] if "start_index" in entry else entry["window_start"]
+    )
     end_index = int(entry["end_index"] if "end_index" in entry else entry["window_end"])
     if int(hidden.shape[1]) != end_index - start_index:
         raise ValueError("verification source hidden must align with entry interval")
@@ -117,8 +132,14 @@ def verify_buffer_entries(
         signature_windows.append(
             SignatureWindow(
                 str(entry["entity_id"]),
-                int(entry["start_index"] if "start_index" in entry else entry["window_start"]),
-                int(entry["end_index"] if "end_index" in entry else entry["window_end"]),
+                int(
+                    entry["start_index"]
+                    if "start_index" in entry
+                    else entry["window_start"]
+                ),
+                int(
+                    entry["end_index"] if "end_index" in entry else entry["window_end"]
+                ),
                 signatures,
             )
         )

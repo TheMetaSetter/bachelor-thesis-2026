@@ -57,7 +57,9 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
         not isinstance(artifact.get("checkpoint_sha256"), str)
         or not artifact["checkpoint_sha256"]
     ):
-        raise ValueError("threshold artifact checkpoint_sha256 must be a non-empty string")
+        raise ValueError(
+            "threshold artifact checkpoint_sha256 must be a non-empty string"
+        )
     if not isinstance(artifact["entity_id"], str) or not artifact["entity_id"]:
         raise ValueError("threshold artifact entity_id must be a non-empty string")
     if not isinstance(artifact["method_name"], str) or not artifact["method_name"]:
@@ -220,15 +222,15 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
                 or float(threshold_record["ewma_previous_weight"]) <= 0.0
             ):
                 raise ValueError("EWMA threshold weights must be positive")
-    if schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION and thresholds[
-        "online_ewma_point"
-    ]["score_rule"] != "stride1_causal_window_vector_ewma":
-        raise ValueError(
-            "online_ewma_point must use stride1_causal_window_vector_ewma"
-        )
-    if schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION and float(thresholds["latent_window_low"]["value"]) > float(
-        thresholds["latent_window_high"]["value"]
+    if (
+        schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION
+        and thresholds["online_ewma_point"]["score_rule"]
+        != "stride1_causal_window_vector_ewma"
     ):
+        raise ValueError("online_ewma_point must use stride1_causal_window_vector_ewma")
+    if schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION and float(
+        thresholds["latent_window_low"]["value"]
+    ) > float(thresholds["latent_window_high"]["value"]):
         raise ValueError("latent window low threshold must not exceed high threshold")
 
 
@@ -268,7 +270,9 @@ def build_threshold_artifact(
     if not 0.0 < float(quantile) <= 1.0:
         raise ValueError("quantile must be in (0, 1]")
     is_thesis_v4 = method_name == "THESIS"
-    if is_thesis_v4 and (not isinstance(checkpoint_sha256, str) or not checkpoint_sha256):
+    if is_thesis_v4 and (
+        not isinstance(checkpoint_sha256, str) or not checkpoint_sha256
+    ):
         raise ValueError("checkpoint_sha256 must be a non-empty string")
     if is_thesis_v4 and (
         input_window_threshold is None
@@ -305,23 +309,26 @@ def build_threshold_artifact(
     }
     if input_window_threshold is not None:
         thresholds["input_window"] = {
-        "value": float(input_window_threshold),
-        "source_split": calibration_split,
-        "score_rule": "window_mean_squared_error",
-        "quantile": 0.99,
+            "value": float(input_window_threshold),
+            "source_split": calibration_split,
+            "score_rule": "window_mean_squared_error",
+            "quantile": 0.99,
         }
-    if latent_window_low_threshold is not None and latent_window_high_threshold is not None:
+    if (
+        latent_window_low_threshold is not None
+        and latent_window_high_threshold is not None
+    ):
         thresholds["latent_window_low"] = {
-        "value": float(latent_window_low_threshold),
-        "source_split": calibration_split,
-        "score_rule": "latent_memory_distance",
-        "quantile": float(latent_window_low_quantile),
+            "value": float(latent_window_low_threshold),
+            "source_split": calibration_split,
+            "score_rule": "latent_memory_distance",
+            "quantile": float(latent_window_low_quantile),
         }
         thresholds["latent_window_high"] = {
-        "value": float(latent_window_high_threshold),
-        "source_split": calibration_split,
-        "score_rule": "latent_memory_distance",
-        "quantile": 0.99,
+            "value": float(latent_window_high_threshold),
+            "source_split": calibration_split,
+            "score_rule": "latent_memory_distance",
+            "quantile": 0.99,
         }
     return {
         "artifact_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION if is_thesis_v4 else 3,

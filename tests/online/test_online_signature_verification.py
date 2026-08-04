@@ -139,9 +139,7 @@ def test_verify_buffer_entries_reuses_current_event_source_hidden() -> None:
         model,
         entries,
         "cpu",
-        source_hidden_by_entry_id={
-            "w1": torch.tensor([[[1.0, 0.0], [0.0, 1.0]]])
-        },
+        source_hidden_by_entry_id={"w1": torch.tensor([[[1.0, 0.0], [0.0, 1.0]]])},
     )
 
     assert model.forward_source_calls == 1
