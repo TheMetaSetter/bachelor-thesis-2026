@@ -1,8 +1,8 @@
 """Create safe THESIS V4 threshold artifacts from the 18 Stage-B checkpoints.
 
 The script never overwrites a V3 artifact. It recreates clean-validation
-windows with the checkpoint scaler, then uses the same stride-1 calibration
-helper as the offline benchmark wrapper.
+windows with the checkpoint scaler, then scores them through the frozen A0
+online path that defines the latent-window score used at runtime.
 """
 
 from __future__ import annotations
@@ -10,27 +10,31 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+import torch
 import yaml
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from scripts.benchmarks.run_thesis_offline_benchmark import (
-    build_model_from_experiment_config,
-    register_evaluation_runtime_components,
     validate_protocol_config,
+)
+from scripts.ops.threshold_artifact_v4_online_scoring import (
+    StageBInventoryEntry,
+    entry_as_report_value,
+    load_a0_scoring_config,
 )
 from src.core.artifact_integrity import sha256_file
 from src.core.config import load_experiment_config
 from src.core.registry import build_dataset
+from src.core.runtime_components import register_online_runtime_components
 from src.core.seed import seed_everything
 from src.data.loaders import rebuild_dataset_bundle_with_scaler_state
-from src.engine.checkpoint import CheckpointManager
 from src.engine.online_tta.online_calibration import collect_stride1_online_scores
+from src.engine.online_tta.online_engine_shared import _build_model_from_experiment_config
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     load_threshold_artifact,
@@ -52,18 +56,6 @@ EXPECTED_ENTITY_IDS = ("machine-1-6", "machine-3-4", "machine-3-9")
 EXPECTED_SEEDS = (6, 8, 36)
 
 
-@dataclass(frozen=True)
-class StageBInventoryEntry:
-    experiment_config_path: Path
-    offline_variant: str
-    entity_id: str
-    seed: int
-    threshold_artifact_v3_path: Path
-    stage_b_best_checkpoint_path: Path
-    threshold_artifact_v4_path: Path
-    audit_path: Path
-
-
 def _load_yaml_mapping(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -81,19 +73,6 @@ def _identity_from_config_filename(config_path: Path) -> tuple[str, str, int]:
     if not seed_text.startswith("seed"):
         raise ValueError(f"Config filename has no seed: {config_path.name}")
     return offline_variant, entity_id, int(seed_text.removeprefix("seed"))
-
-
-def _entry_as_report_value(entry: StageBInventoryEntry) -> dict[str, str | int]:
-    return {
-        "experiment_config_path": str(entry.experiment_config_path),
-        "offline_variant": entry.offline_variant,
-        "entity_id": entry.entity_id,
-        "seed": entry.seed,
-        "threshold_artifact_v3_path": str(entry.threshold_artifact_v3_path),
-        "stage_b_best_checkpoint_path": str(entry.stage_b_best_checkpoint_path),
-        "threshold_artifact_v4_path": str(entry.threshold_artifact_v4_path),
-        "audit_path": str(entry.audit_path),
-    }
 
 
 def _expected_identities() -> set[tuple[str, str, int]]:
@@ -242,22 +221,21 @@ def _collect_clean_validation_scores(
 ) -> dict[str, list[float]]:
     experiment_config = load_experiment_config(entry.experiment_config_path)
     data_config = experiment_config["data"]
-    if int(data_config["window_size"]) != int(protocol_config["window_size"]):
+    window_size = int(protocol_config["window_size"])
+    if int(data_config["window_size"]) != window_size:
         raise ValueError("data window_size does not match protocol window_size")
 
-    register_evaluation_runtime_components()
-    model = build_model_from_experiment_config(experiment_config)
-    checkpoint_manager = CheckpointManager(experiment_config["checkpoint_dir"])
-    checkpoint_payload = checkpoint_manager.load_checkpoint(
-        entry.stage_b_best_checkpoint_path,
-        model,
-        strict=False,
+    checkpoint_payload = torch.load(
+        entry.stage_b_best_checkpoint_path, map_location="cpu"
     )
     _validate_checkpoint_identity(
         checkpoint_payload,
         entry,
-        window_size=int(protocol_config["window_size"]),
+        window_size=window_size,
     )
+    register_online_runtime_components()
+    online_config = load_a0_scoring_config(entry, window_size)
+    model = _build_model_from_experiment_config(online_config)
     data_bundle = build_dataset(data_config["dataset_name"], data_config)
     scaler_state = checkpoint_payload.get("scaler_state_dict")
     if scaler_state is not None and "raw_sequences" in data_bundle:
@@ -267,14 +245,14 @@ def _collect_clean_validation_scores(
             scaler_state_dict=scaler_state,
         )
 
-    device = str(experiment_config["device"])
+    device = str(online_config["device"])
     model.to(device)
     seed_everything(entry.seed)
     clean_validation_sequences = data_bundle.get("scaled_sequences", {}).get("val", [])
     return collect_stride1_online_scores(
         model=model,
         clean_validation_sequences=clean_validation_sequences,
-        window_size=int(protocol_config["window_size"]),
+        window_size=window_size,
         batch_size=1,
         view_noise_std=0.0,
         view_dropout_probability=0.0,
@@ -437,7 +415,7 @@ def recalibrate_entry(
     )
     return {
         "status": "created",
-        "entry": _entry_as_report_value(entry),
+        "entry": entry_as_report_value(entry),
         "checkpoint_sha256": audit["checkpoint_sha256"],
         "clean_validation_window_count": audit["clean_validation_window_count"],
     }
@@ -472,7 +450,7 @@ def run_recalibration(
             report["results"].append(
                 {
                     "status": "failed",
-                    "entry": _entry_as_report_value(entry),
+                    "entry": entry_as_report_value(entry),
                     "reason": str(error),
                 }
             )

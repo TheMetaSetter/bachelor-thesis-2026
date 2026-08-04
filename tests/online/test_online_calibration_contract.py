@@ -85,3 +85,23 @@ def test_collect_stride1_online_scores_keeps_overlapping_window_points() -> None
     assert len(scores["ewma"]) == len(scores["point"])
     assert all(np.isfinite(np.asarray(scores["input_window"], dtype=float)))
     assert all(np.isfinite(np.asarray(scores["latent_window"], dtype=float)))
+
+
+def test_collect_stride1_online_scores_uses_a0_source_path() -> None:
+    model = _CalibrationModel()
+    model.online_variant = "A0"
+
+    collect_stride1_online_scores(
+        model=model,
+        clean_validation_sequences=[_sequence()],
+        window_size=2,
+        batch_size=1,
+        view_noise_std=0.0,
+        view_dropout_probability=0.0,
+        device="cpu",
+        current_weight=0.9,
+        previous_weight=0.1,
+    )
+
+    assert model.forward_source_calls > 0
+    assert model.forward_calls == 0

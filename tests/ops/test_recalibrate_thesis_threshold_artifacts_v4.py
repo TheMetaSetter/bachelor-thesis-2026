@@ -13,6 +13,7 @@ from scripts.ops.recalibrate_thesis_threshold_artifacts_v4 import (
     discover_stage_b_inventory,
     preflight_inventory,
 )
+from scripts.ops.threshold_artifact_v4_online_scoring import load_a0_scoring_config
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     validate_threshold_artifact,
@@ -169,3 +170,29 @@ def test_preflight_refuses_to_overwrite_an_existing_v4_artifact(tmp_path) -> Non
     failures = preflight_inventory([entry])
 
     assert failures[0]["reason"] == "V4 output already exists; refusing to overwrite"
+
+
+def test_a0_scoring_config_uses_the_matching_stage_b_checkpoint(
+    tmp_path: Path, monkeypatch
+) -> None:
+    entry = _entry(tmp_path, offline_variant="O1")
+    captured: dict[str, Path] = {}
+
+    def fake_load(config_path: Path) -> dict:
+        captured["path"] = config_path
+        return {"task": {}, "device": "cpu"}
+
+    monkeypatch.setattr(
+        "scripts.ops.threshold_artifact_v4_online_scoring.load_experiment_config",
+        fake_load,
+    )
+
+    config = load_a0_scoring_config(entry, window_size=20)
+
+    assert captured["path"].name == (
+        "smd__thesis__online__O1_A0__machine_1_6__w20__seed6__main.yaml"
+    )
+    assert config["task"]["reference_checkpoint_path"] == str(
+        entry.stage_b_best_checkpoint_path
+    )
+    assert config["online_variant"] == "A0"

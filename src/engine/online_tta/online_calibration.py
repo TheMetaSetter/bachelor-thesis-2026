@@ -47,6 +47,17 @@ def move_batch_to_device(batch: dict[str, Any], device: str) -> dict[str, Any]:
     }
 
 
+def _forward_calibration_window(
+    model: torch.nn.Module, batch_on_device: dict[str, Any]
+) -> dict[str, Any]:
+    """Use the frozen source path when calibrating an A0 online model."""
+    if getattr(model, "online_variant", None) == "A0" and hasattr(
+        model, "forward_source"
+    ):
+        return model.forward_source(batch_on_device)
+    return model.forward(batch_on_device)
+
+
 def _collect_batch_scores(
     outputs: dict[str, Any], batch_on_device: dict[str, Any]
 ) -> tuple[torch.Tensor, list[float], list[float]]:
@@ -95,7 +106,7 @@ def run_stride1_sequence_scores(
         batch_on_device = move_batch_to_device(batch, device)
         model.eval()
         with torch.no_grad():
-            outputs = model.forward(batch_on_device)
+            outputs = _forward_calibration_window(model, batch_on_device)
         current_point_scores, input_scores, latent_scores = _collect_batch_scores(
             outputs, batch_on_device
         )
