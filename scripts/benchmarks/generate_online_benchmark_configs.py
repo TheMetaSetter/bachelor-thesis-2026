@@ -151,7 +151,7 @@ def _task_overrides(
 def _data_overrides() -> dict[str, Any]:
     return {
         "batch_size": 1,
-        "num_workers": 12,
+        "num_workers": 8,
     }
 
 
