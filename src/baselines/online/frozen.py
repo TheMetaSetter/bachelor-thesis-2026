@@ -65,7 +65,7 @@ class _FrozenStreamingBaseline(OnlineStreamingBaselineProtocol):
         train_sequence: np.ndarray,
         window_size: int = 20,
         threshold_quantile: float = 0.99,
-        online_variant: str = "A0",
+        online_variant: str = "main",
         seed: int = 0,
     ) -> None:
         if window_size <= 0:
@@ -250,7 +250,14 @@ class _FrozenStreamingBaseline(OnlineStreamingBaselineProtocol):
         return metric_history, records
 
     def _method_metadata(self) -> dict[str, Any]:
-        return {"method": self.method_name, "online_variant": self.online_variant}
+        return {
+            "method": self.method_name,
+            "online_variant": self.online_variant,
+            "seed": self.seed,
+            "window_size": self.window_size,
+            "threshold_quantile": self.threshold_quantile,
+            "update_policy": "frozen",
+        }
 
 
 class StumpyChannelABStreamingBaseline(_FrozenStreamingBaseline):
@@ -264,7 +271,7 @@ class StumpyChannelABStreamingBaseline(_FrozenStreamingBaseline):
         normalize: bool = True,
         p: float = 2.0,
         threshold_quantile: float = 0.99,
-        online_variant: str = "A0",
+        online_variant: str = "main",
         seed: int = 0,
     ) -> None:
         self.normalize = bool(normalize)
@@ -303,6 +310,10 @@ class StumpyChannelABStreamingBaseline(_FrozenStreamingBaseline):
             "p": self.p,
             "aggregation": "channel_max",
             "online_variant": self.online_variant,
+            "seed": self.seed,
+            "window_size": self.window_size,
+            "threshold_quantile": self.threshold_quantile,
+            "update_policy": "frozen",
         }
 
 
@@ -317,7 +328,7 @@ class KMeansADStreamingBaseline(_FrozenStreamingBaseline):
         n_clusters: int = 20,
         normalize_windows: bool = True,
         threshold_quantile: float = 0.99,
-        online_variant: str = "A0",
+        online_variant: str = "main",
         seed: int = 0,
     ) -> None:
         self.n_clusters = int(n_clusters)
@@ -366,7 +377,13 @@ class KMeansADStreamingBaseline(_FrozenStreamingBaseline):
             "window_normalization": (
                 "per_window_row_zscore_ddof1" if self.normalize_windows else "none"
             ),
+            "n_clusters": self.n_clusters,
+            "n_init": 10,
             "online_variant": self.online_variant,
+            "seed": self.seed,
+            "window_size": self.window_size,
+            "threshold_quantile": self.threshold_quantile,
+            "update_policy": "frozen",
         }
 
 
@@ -384,7 +401,7 @@ class IForestStreamingBaseline(_FrozenStreamingBaseline):
         contamination: str | float = "auto",
         normalize_windows: bool = True,
         threshold_quantile: float = 0.99,
-        online_variant: str = "A0",
+        online_variant: str = "main",
         seed: int = 0,
     ) -> None:
         self.n_estimators = int(n_estimators)
@@ -439,5 +456,13 @@ class IForestStreamingBaseline(_FrozenStreamingBaseline):
                 "per_window_row_zscore_ddof1" if self.normalize_windows else "none"
             ),
             "anomaly_score_sign": "negative_decision_function",
+            "n_estimators": self.n_estimators,
+            "max_samples": self.max_samples,
+            "max_features": self.max_features,
+            "contamination": self.contamination,
             "online_variant": self.online_variant,
+            "seed": self.seed,
+            "window_size": self.window_size,
+            "threshold_quantile": self.threshold_quantile,
+            "update_policy": "frozen",
         }

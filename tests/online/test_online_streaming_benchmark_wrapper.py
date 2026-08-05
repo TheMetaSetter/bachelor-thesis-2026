@@ -71,6 +71,12 @@ class _FakeOnlineBaseline:
             },
             "threshold_value": 0.4,
             "threshold_source": "clean_validation_stride1_ewma",
+            "method_metadata": {
+                "method": "fake",
+                "online_variant": "main",
+                "checkpoint_role": "pretrained_encoder",
+                "checkpoint_sha256": "fixture-sha256",
+            },
         }
 
     def run_sequence(self, sequence, threshold_value, protocol_config, device: str):
@@ -222,6 +228,10 @@ def test_online_streaming_benchmark_writes_shared_report(tmp_path, monkeypatch) 
     assert fake_baseline.run_calls == 1
     assert report["online_execution"]["threshold_source"] == (
         "clean_validation_stride1_ewma"
+    )
+    assert report["method_metadata"]["checkpoint_role"] == "pretrained_encoder"
+    assert report["online_execution"]["method_metadata"]["checkpoint_sha256"] == (
+        "fixture-sha256"
     )
     assert (
         output_dir / "benchmark" / "online_streaming_benchmark_report.json"

@@ -360,10 +360,19 @@ Absolute range contract đã có trong
 và được runner dùng trước windowization. Các test range cũng kiểm tra offset
 entity-global.
 
-Tại thời điểm chốt tài liệu, code baseline online vẫn còn đường chạy tự tạo
-`SimpleWindowCnnAutoencoder` và train backbone ngắn trong `adaptive.py`. Đường
-chạy đó chưa đáp ứng đầy đủ quyết định RedLamp checkpoint ở mục 2.4. Vì vậy,
-trước benchmark chính thức cần kiểm tra các điều kiện sau:
+Implementation update ngày 2026-08-05 đã thay đường chạy main của M2N2 và CANDI
+bằng loader RedLamp encoder tại
+[`src/baselines/online/redlamp_encoder_checkpoint.py`](../../src/baselines/online/redlamp_encoder_checkpoint.py).
+Loader đọc `model_state_dict`, chỉ lấy key `encoder.*`, kiểm tra strict key và
+shape, rồi ghi SHA-256. Runtime giữ decoder thuộc baseline và không train
+fresh encoder khi config có checkpoint.
+
+Các generator đã ghi absolute range cho THESIS và baseline. Generator baseline
+chỉ tạo variant `main`, dùng latent 128 và path RedLamp theo entity/seed.
+Runner ghi `method_metadata` vào report. Preflight hiện kiểm tra 54 THESIS và
+45 baseline configs.
+
+Các điều kiện còn lại trước benchmark chính thức là:
 
 - M2N2 và CANDI đọc đúng `pretrained_encoder_checkpoint`.
 - Loader xác nhận shape encoder là `38 -> 64 -> 64 -> 128` theo các Conv1d.
@@ -375,8 +384,11 @@ trước benchmark chính thức cần kiểm tra các điều kiện sau:
 - Generator và YAML chính thức tạo đúng một config `main` cho mỗi baseline,
   entity và seed; không chạy các config baseline cũ mang nhãn `A0/A1/A2`.
 
-Chỉ sau khi một combination chạy end-to-end và các điều kiện trên pass mới
-chạy toàn bộ matrix.
+Chỉ sau khi một combination chạy end-to-end với checkpoint RedLamp thật và
+các điều kiện trên pass mới chạy toàn bộ matrix. Remote inventory ngày
+2026-08-05 xác nhận đủ 9 RedLamp `best.pt`, nhưng môi trường Python hệ thống
+trên remote không có `torch`; vì vậy smoke thật cần chạy bằng environment có
+PyTorch trước khi mở full matrix.
 
 ## 7. Terminology changes
 

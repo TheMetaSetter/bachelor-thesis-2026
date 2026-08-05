@@ -10,9 +10,10 @@ source_runtime_detail: documents/logs/2026-08-04/detail/detail-online-runtime-de
 
 ## Main point
 
-The official matrix has 18 THESIS offline runs and 72 online runs. The online
-runs are 54 THESIS runs, 9 M2N2 runs, and 9 CANDI runs. Therefore the full
-program has 90 run units.
+The official matrix has 18 THESIS offline runs and 99 online runs. The online
+runs are 54 THESIS runs, 9 M2N2 runs, 9 CANDI runs, and 9 runs for each of
+Stumpy, KMeansAD, and Isolation Forest. Therefore the full program has 117 run
+units.
 
 A0, A1, and A2 are online variants of THESIS only. M2N2 and CANDI each have
 one baseline online method without a THESIS A-variant. Their `online_variant`
@@ -32,8 +33,11 @@ runtime requires V4.
 | THESIS online | 2 offline variants × 3 online variants × 3 entities × 3 seeds | 54 |
 | M2N2 online | 3 entities × 3 seeds | 9 |
 | CANDI online | 3 entities × 3 seeds | 9 |
-| Total online | 54 + 9 + 9 | 72 |
-| Total run units | 18 offline + 72 online | 90 |
+| Stumpy online | 3 entities × 3 seeds | 9 |
+| KMeansAD online | 3 entities × 3 seeds | 9 |
+| Isolation Forest online | 3 entities × 3 seeds | 9 |
+| Total online | 54 + 9 + 9 + 9 + 9 + 9 | 99 |
+| Total run units | 18 offline + 99 online | 117 |
 
 ## Verified THESIS offline combinations and Stage-B checkpoints
 
@@ -65,6 +69,23 @@ needs a V4 threshold artifact from the same offline run.
 See the revalidated source inventory in
 [detail-remote-gpu-checkpoints-inventory.md](detail-remote-gpu-checkpoints-inventory.md).
 
+## Verified RedLamp encoder checkpoints
+
+Read-only SSH revalidation on 2026-08-05 found all 9 RedLamp checkpoints. The
+runtime uses the same checkpoint for M2N2 and CANDI at one entity/seed cell.
+
+| Entity | Seed | Checkpoint | SHA-256 |
+| --- | ---: | --- | --- |
+| `machine_1_6` | 6 | `outputs/benchmark/smd/redlamp_baseline/machine_1_6/seed6/checkpoints/best.pt` | `fedd31ea0aa2dcf8c59f60e62d1d6f39f5874c99f267fe0df6eb8091a1d7f1b9` |
+| `machine_1_6` | 8 | `outputs/benchmark/smd/redlamp_baseline/machine_1_6/seed8/checkpoints/best.pt` | `4352761ffafe68742e13d9a9f42db2e7652ceb43feeec96d9faef1419b5f082b` |
+| `machine_1_6` | 36 | `outputs/benchmark/smd/redlamp_baseline/machine_1_6/seed36/checkpoints/best.pt` | `aa80365c25891a7d6713d8bbb41c5ccf08454c83f367e8f207d0b77ee3f3d1bc` |
+| `machine_3_4` | 6 | `outputs/benchmark/smd/redlamp_baseline/machine_3_4/seed6/checkpoints/best.pt` | `2044365ede44925d5b589913c58bdf6920051762901d49857b62c25168eb4696` |
+| `machine_3_4` | 8 | `outputs/benchmark/smd/redlamp_baseline/machine_3_4/seed8/checkpoints/best.pt` | `3f48a47ef8dbefb2897c871e903ef5f488ca4716bc89d2ef87dd1482a4122467` |
+| `machine_3_4` | 36 | `outputs/benchmark/smd/redlamp_baseline/machine_3_4/seed36/checkpoints/best.pt` | `c141554bdee76ba5266558cf4a67a0de4836732629c24aea1f64779245f3cbe2` |
+| `machine_3_9` | 6 | `outputs/benchmark/smd/redlamp_baseline/machine_3_9/seed6/checkpoints/best.pt` | `6ed8c806b36a1191ce2ad157c4b1700f424399d0ea451a70688a5fe17bf3cbce` |
+| `machine_3_9` | 8 | `outputs/benchmark/smd/redlamp_baseline/machine_3_9/seed8/checkpoints/best.pt` | `7ddbe318db63fc4ad18950edc3936bb45b02517ae81343abce4751dca3fe6f67` |
+| `machine_3_9` | 36 | `outputs/benchmark/smd/redlamp_baseline/machine_3_9/seed36/checkpoints/best.pt` | `9f08215e3ab255d384480a4951e7cf71f6227e89fdb570ebd431bc25a3a57d5b` |
+
 ## Full combination matrix
 
 Every non-header cell is one concrete combination. A THESIS online cell uses
@@ -89,26 +110,31 @@ and seed.
 | O1 / A1 | `THESIS/O1/A1/machine_1_6/seed6` | `THESIS/O1/A1/machine_1_6/seed8` | `THESIS/O1/A1/machine_1_6/seed36` | `THESIS/O1/A1/machine_3_4/seed6` | `THESIS/O1/A1/machine_3_4/seed8` | `THESIS/O1/A1/machine_3_4/seed36` | `THESIS/O1/A1/machine_3_9/seed6` | `THESIS/O1/A1/machine_3_9/seed8` | `THESIS/O1/A1/machine_3_9/seed36` |
 | O1 / A2 | `THESIS/O1/A2/machine_1_6/seed6` | `THESIS/O1/A2/machine_1_6/seed8` | `THESIS/O1/A2/machine_1_6/seed36` | `THESIS/O1/A2/machine_3_4/seed6` | `THESIS/O1/A2/machine_3_4/seed8` | `THESIS/O1/A2/machine_3_4/seed36` | `THESIS/O1/A2/machine_3_9/seed6` | `THESIS/O1/A2/machine_3_9/seed8` | `THESIS/O1/A2/machine_3_9/seed36` |
 
-### M2N2 and CANDI online: 18 combinations
+### Deep-learning baselines online: 18 combinations
 
 | Baseline method | `machine_1_6` / seed6 | `machine_1_6` / seed8 | `machine_1_6` / seed36 | `machine_3_4` / seed6 | `machine_3_4` / seed8 | `machine_3_4` / seed36 | `machine_3_9` / seed6 | `machine_3_9` / seed8 | `machine_3_9` / seed36 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | M2N2 | `M2N2/machine_1_6/seed6` | `M2N2/machine_1_6/seed8` | `M2N2/machine_1_6/seed36` | `M2N2/machine_3_4/seed6` | `M2N2/machine_3_4/seed8` | `M2N2/machine_3_4/seed36` | `M2N2/machine_3_9/seed6` | `M2N2/machine_3_9/seed8` | `M2N2/machine_3_9/seed36` |
 | CANDI | `CANDI/machine_1_6/seed6` | `CANDI/machine_1_6/seed8` | `CANDI/machine_1_6/seed36` | `CANDI/machine_3_4/seed6` | `CANDI/machine_3_4/seed8` | `CANDI/machine_3_4/seed36` | `CANDI/machine_3_9/seed6` | `CANDI/machine_3_9/seed8` | `CANDI/machine_3_9/seed36` |
 
+### Traditional ML baselines online: 27 combinations
+
+Stumpy, KMeansAD, and Isolation Forest each use one `main` config for every
+entity and seed. They use the same absolute stream ranges as the deep-learning
+methods and remain frozen during the test stream.
+
+| Baseline method | Count | Variant |
+| --- | ---: | --- |
+| Stumpy Channel AB | 9 | `main` |
+| KMeansAD | 9 | `main` |
+| Isolation Forest | 9 | `main` |
+
 ## Config status and required correction
 
-The THESIS generator correctly creates 54 main configurations. The current
-baseline generator instead creates 27 main configurations for M2N2 and 27 for
-CANDI because it assigns A0, A1, and A2 to each baseline. This conflicts with
-the decision above. Do not launch those 54 baseline configs as the official
-matrix.
-
-Before the official benchmark, the baseline configuration contract needs one
-clear correction: produce one main config per baseline/entity/seed, or state a
-separate baseline-specific variant name. Do not silently use the THESIS A0/A1/A2
-names for baselines. This document records the matrix decision only; it does
-not modify source code or configs.
+The generators now create 54 THESIS main configurations and 45 baseline main
+configurations. M2N2, CANDI, Stumpy, KMeansAD, and Isolation Forest all use the
+canonical `main` label. Older baseline files with `A0`, `A1`, or `A2` remain
+outside the official launch allow-list until an explicit cleanup is reviewed.
 
 ## Checklist: prepare one smoke run for the new THESIS online runtime
 

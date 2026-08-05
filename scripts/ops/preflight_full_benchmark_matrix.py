@@ -37,6 +37,11 @@ WINDOW_SIZE = 20
 OFFLINE_TRADITIONAL_METHODS = ("stumpy", "kmeans_ad", "iforest")
 ONLINE_TRADITIONAL_METHODS = ("stumpy", "kmeans_ad", "iforest")
 ONLINE_NEURAL_METHODS = ("candi", "m2n2")
+ONLINE_STREAM_RANGES = {
+    "machine_1_6": (146, 2200),
+    "machine_3_4": (2634, 6116),
+    "machine_3_9": (1099, 10807),
+}
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -99,6 +104,29 @@ def _validate_wrapper_configs(
             raise ValueError(f"Window size must be 20: {path}")
 
 
+def _validate_online_baseline_configs(paths: list[Path], method: str) -> None:
+    _validate_wrapper_configs(paths, 9, f"online {method} configs")
+    for path in paths:
+        config = _load_yaml(path)
+        if config.get("online_variant") != "main":
+            raise ValueError(f"Online baseline must use variant main: {path}")
+        entity_id = str(config["entity_id"])
+        expected_range = ONLINE_STREAM_RANGES[entity_id]
+        task_overrides = config.get("task_overrides", {})
+        observed_range = (
+            task_overrides.get("absolute_start_index"),
+            task_overrides.get("absolute_end_index"),
+        )
+        if observed_range != expected_range:
+            raise ValueError(f"Online range is incorrect: {path}")
+        if method in ONLINE_NEURAL_METHODS:
+            baseline_kwargs = config.get("baseline_kwargs", {})
+            if baseline_kwargs.get("encoder_dim") != 128:
+                raise ValueError(f"RedLamp latent dimension must be 128: {path}")
+            if not baseline_kwargs.get("pretrained_encoder_checkpoint"):
+                raise ValueError(f"RedLamp checkpoint is missing: {path}")
+
+
 def _validate_redlamp_configs() -> None:
     paths = _paths(
         REPOSITORY_ROOT / "configs/experiment/benchmark/baseline",
@@ -132,12 +160,8 @@ def build_preflight_report() -> dict[str, Any]:
             f"offline {method} configs",
         )
     for method in ONLINE_TRADITIONAL_METHODS + ONLINE_NEURAL_METHODS:
-        variant_count = 1 if method in ONLINE_TRADITIONAL_METHODS else 3
-        pattern = "*online_main*__main.yaml" if variant_count == 1 else "*__main.yaml"
-        _validate_wrapper_configs(
-            _paths(online_root / method, pattern),
-            9 * variant_count,
-            f"online {method} configs",
+        _validate_online_baseline_configs(
+            _paths(online_root / method, "*online_main*__main.yaml"), method
         )
     return {
         "status": "ready",
@@ -145,7 +169,7 @@ def build_preflight_report() -> dict[str, Any]:
         "entities": list(SMD_BENCHMARK_ENTITIES),
         "seeds": list(SMD_BENCHMARK_SEEDS),
         "offline": {"thesis": len(thesis_offline), "redlamp": 9, "traditional": 27},
-        "online": {"thesis": len(thesis_online), "baselines": 81},
+        "online": {"thesis": len(thesis_online), "baselines": 45},
         "threshold_safety": {
             "offline_source": protocol["offline_threshold_split"],
             "online_source": protocol["online_threshold_split"],

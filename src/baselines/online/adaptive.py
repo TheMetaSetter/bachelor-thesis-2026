@@ -12,11 +12,11 @@ train sequence
 """
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 
 from src.baselines.online.base import (
     OnlineStreamingBaselineProtocol,
@@ -29,6 +29,13 @@ from src.baselines.online.base import (
 from src.engine.online_tta.triage import classify_legacy_baseline_window
 from src.models.simple_window_cnn_autoencoder import SimpleWindowCnnAutoencoder
 from src.protocols.threshold_artifact import build_threshold_artifact
+from src.baselines.online.redlamp_encoder_checkpoint import (
+    RedLampEncoderCheckpoint,
+    load_redlamp_encoder_checkpoint,
+)
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 
 
 def _sequence_metadata(sequence: dict[str, Any]) -> dict[str, Any]:
@@ -60,19 +67,16 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         input_dim: int | None = None,
         window_size: int = 20,
         threshold_quantile: float = 0.99,
-        online_variant: str = "A0",
+        online_variant: str = "main",
         seed: int = 0,
         adaptation_momentum: float = 0.02,
         encoder_family: str = "cnn_simple",
-        encoder_dim: int = 64,
+        encoder_dim: int = 128,
         cnn_num_layers: int = 3,
         cnn_kernel_size: int = 3,
         cnn_hidden_channels: int = 64,
         cnn_dropout: float = 0.1,
-        backbone_epochs: int = 1,
-        backbone_batch_size: int = 256,
-        backbone_learning_rate: float = 1.0e-3,
-        backbone_device: str = "cpu",
+        pretrained_encoder_checkpoint: str | Path | None = None,
     ) -> None:
         if window_size <= 0:
             raise ValueError("window_size must be positive")
@@ -90,10 +94,10 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             raise ValueError("CNN dimensions must be positive")
         if not 0.0 <= cnn_dropout <= 1.0:
             raise ValueError("cnn_dropout must be between 0 and 1")
-        if backbone_epochs <= 0 or backbone_batch_size <= 0:
-            raise ValueError("backbone_epochs and backbone_batch_size must be positive")
-        if backbone_learning_rate <= 0.0:
-            raise ValueError("backbone_learning_rate must be positive")
+        if pretrained_encoder_checkpoint is None:
+            raise ValueError(
+                "pretrained_encoder_checkpoint is required for M2N2 and CANDI"
+            )
         self.window_size = int(window_size)
         self.input_dim = None if input_dim is None else int(input_dim)
         self.threshold_quantile = float(threshold_quantile)
@@ -106,10 +110,9 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         self.cnn_kernel_size = int(cnn_kernel_size)
         self.cnn_hidden_channels = int(cnn_hidden_channels)
         self.cnn_dropout = float(cnn_dropout)
-        self.backbone_epochs = int(backbone_epochs)
-        self.backbone_batch_size = int(backbone_batch_size)
-        self.backbone_learning_rate = float(backbone_learning_rate)
-        self.backbone_device = str(backbone_device)
+        self.pretrained_encoder_checkpoint = str(pretrained_encoder_checkpoint)
+        self.checkpoint_identity_: RedLampEncoderCheckpoint | None = None
+        self.backbone_device = "cpu"
         self.backbone_: SimpleWindowCnnAutoencoder | None = None
         self.reference_mean_: np.ndarray | None = None
         self.reference_std_: np.ndarray | None = None
@@ -118,6 +121,8 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
 
     def fit(self, train_sequence: np.ndarray) -> "AdaptiveStreamingBaselineBase":
         train_array = as_2d_sequence(train_sequence)
+        if self.input_dim is None:
+            self.input_dim = int(train_array.shape[1])
         self.reference_mean_ = np.mean(train_array, axis=0)
         self.reference_std_ = np.maximum(np.std(train_array, axis=0, ddof=1), 1.0e-3)
         self._fit_backbone(train_array)
@@ -144,35 +149,15 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             num_layers=self.cnn_num_layers,
             dropout=self.cnn_dropout,
         ).to(self.backbone_device)
-        optimizer = torch.optim.Adam(
-            self.backbone_.parameters(), lr=self.backbone_learning_rate
+        checkpoint_path = Path(self.pretrained_encoder_checkpoint)
+        if not checkpoint_path.is_absolute():
+            checkpoint_path = REPOSITORY_ROOT / checkpoint_path
+        self.checkpoint_identity_ = load_redlamp_encoder_checkpoint(
+            encoder=self.backbone_.encoder,
+            checkpoint_path=checkpoint_path,
         )
-        windows = np.stack(
-            [
-                train_sequence[start : start + self.window_size]
-                for start in range(train_sequence.shape[0] - self.window_size + 1)
-            ],
-            axis=0,
-        )
-        windows = (windows - self.reference_mean_[None, None, :]) / self.reference_std_[
-            None, None, :
-        ]
-        window_tensor = torch.as_tensor(windows, dtype=torch.float32)
-        self.backbone_.train()
-        for _ in range(self.backbone_epochs):
-            permutation = torch.randperm(window_tensor.shape[0])
-            for batch_start in range(
-                0, window_tensor.shape[0], self.backbone_batch_size
-            ):
-                batch_indices = permutation[
-                    batch_start : batch_start + self.backbone_batch_size
-                ]
-                batch = window_tensor[batch_indices].to(self.backbone_device)
-                reconstruction, _ = self.backbone_(batch)
-                loss = F.mse_loss(reconstruction, batch)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+        for parameter in self.backbone_.encoder.parameters():
+            parameter.requires_grad_(False)
         self.backbone_.eval()
 
     def _score_backbone_windows(
@@ -274,6 +259,8 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         }
 
     def _backbone_metadata(self) -> dict[str, Any]:
+        if self.checkpoint_identity_ is None:
+            raise RuntimeError("RedLamp encoder checkpoint has not been loaded")
         return {
             "encoder_family": self.encoder_family,
             "input_dim": self.input_dim,
@@ -282,9 +269,12 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             "cnn_kernel_size": self.cnn_kernel_size,
             "cnn_hidden_channels": self.cnn_hidden_channels,
             "cnn_dropout": self.cnn_dropout,
-            "backbone_epochs": self.backbone_epochs,
-            "backbone_batch_size": self.backbone_batch_size,
-            "backbone_learning_rate": self.backbone_learning_rate,
+            "encoder_source": "RedLamp",
+            "pretrained_encoder_checkpoint": self.pretrained_encoder_checkpoint,
+            "resolved_checkpoint_path": self.checkpoint_identity_.checkpoint_path,
+            "checkpoint_role": self.checkpoint_identity_.checkpoint_role,
+            "checkpoint_sha256": self.checkpoint_identity_.checkpoint_sha256,
+            "checkpoint_epoch": self.checkpoint_identity_.epoch,
         }
 
     def calibrate(
@@ -350,6 +340,11 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             quantile=self.threshold_quantile,
             ewma_current_weight=current_weight,
             ewma_previous_weight=previous_weight,
+            checkpoint_sha256=(
+                self.checkpoint_identity_.checkpoint_sha256
+                if self.checkpoint_identity_ is not None
+                else None
+            ),
             created_by=f"{__name__}:{type(self).__name__}",
             config_path="configs/protocol/smd_window20_cleanval_q99_ewma09.yaml",
         )

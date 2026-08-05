@@ -65,6 +65,15 @@ def test_generate_thesis_online_benchmark_configs_writes_all_expected_files() ->
                             "projector_params"
                         )
                         assert loaded_config["task"]["clean_stream_only"] is True
+                        expected_ranges = {
+                            "machine-1-6": (146, 2200),
+                            "machine-3-4": (2634, 6116),
+                            "machine-3-9": (1099, 10807),
+                        }
+                        assert (
+                            loaded_config["task"]["absolute_start_index"],
+                            loaded_config["task"]["absolute_end_index"],
+                        ) == expected_ranges[entity_id]
                         assert loaded_config["task"]["warm_start_projector"] is False
                         assert (
                             loaded_config["task"]["offline_variant"] == offline_variant

@@ -37,6 +37,8 @@ task_overrides:
   warm_start_projector: false
   target_param_group: projector_params
   clean_stream_only: true
+  absolute_start_index: 146
+  absolute_end_index: 2200
   max_online_steps: null
   log_every_n_steps: 1
   checkpoint_every_n_steps: 50

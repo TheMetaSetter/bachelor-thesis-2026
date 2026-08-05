@@ -3,6 +3,7 @@ from __future__ import annotations
 """Lightweight online M2N2-style streaming baseline."""
 
 from typing import Any
+from pathlib import Path
 
 import numpy as np
 
@@ -19,19 +20,16 @@ class M2N2StreamingBaseline(AdaptiveStreamingBaselineBase):
         input_dim: int | None = None,
         window_size: int = 20,
         threshold_quantile: float = 0.99,
-        online_variant: str = "A0",
+        online_variant: str = "main",
         seed: int = 0,
         adaptation_momentum: float = 0.01,
         encoder_family: str = "cnn_simple",
-        encoder_dim: int = 64,
+        encoder_dim: int = 128,
         cnn_num_layers: int = 3,
         cnn_kernel_size: int = 3,
         cnn_hidden_channels: int = 64,
         cnn_dropout: float = 0.1,
-        backbone_epochs: int = 1,
-        backbone_batch_size: int = 256,
-        backbone_learning_rate: float = 1.0e-3,
-        backbone_device: str = "cpu",
+        pretrained_encoder_checkpoint: str | Path | None = None,
     ) -> None:
         super().__init__(
             train_sequence=train_sequence,
@@ -47,10 +45,7 @@ class M2N2StreamingBaseline(AdaptiveStreamingBaselineBase):
             cnn_kernel_size=cnn_kernel_size,
             cnn_hidden_channels=cnn_hidden_channels,
             cnn_dropout=cnn_dropout,
-            backbone_epochs=backbone_epochs,
-            backbone_batch_size=backbone_batch_size,
-            backbone_learning_rate=backbone_learning_rate,
-            backbone_device=backbone_device,
+            pretrained_encoder_checkpoint=pretrained_encoder_checkpoint,
         )
 
     def _should_update(
@@ -72,5 +67,9 @@ class M2N2StreamingBaseline(AdaptiveStreamingBaselineBase):
             "policy": "update_on_non_anomalous_windows",
             "adaptation_momentum": self.adaptation_momentum,
             "online_variant": self.online_variant,
+            "seed": self.seed,
+            "window_size": self.window_size,
+            "threshold_quantile": self.threshold_quantile,
+            "update_policy": "adaptive_reference_statistics",
             **self._backbone_metadata(),
         }

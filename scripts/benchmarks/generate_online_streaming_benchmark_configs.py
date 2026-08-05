@@ -26,8 +26,8 @@ ONLINE_STREAM_RANGES = {
 }
 BENCHMARK_METHODS = ("candi", "m2n2", "stumpy", "kmeans_ad", "iforest")
 BENCHMARK_METHOD_VARIANTS = {
-    "candi": ("A0", "A1", "A2"),
-    "m2n2": ("A0", "A1", "A2"),
+    "candi": ("main",),
+    "m2n2": ("main",),
     "stumpy": ("main",),
     "kmeans_ad": ("main",),
     "iforest": ("main",),
@@ -95,7 +95,13 @@ def _online_stream_range(entity_id: str) -> dict[str, int]:
     }
 
 
-def _baseline_kwargs(method: str, seed: int, smoke: bool) -> dict[str, Any]:
+def _baseline_kwargs(
+    method: str, entity_id: str, seed: int, smoke: bool
+) -> dict[str, Any]:
+    pretrained_encoder_checkpoint = (
+        f"outputs/benchmark/smd/redlamp_baseline/{entity_id}/seed{seed}"
+        "/checkpoints/best.pt"
+    )
     if method == "candi":
         return {
             "input_dim": 38,
@@ -104,15 +110,12 @@ def _baseline_kwargs(method: str, seed: int, smoke: bool) -> dict[str, Any]:
             "adaptation_momentum": 0.02 if smoke else 0.02,
             "seed": seed,
             "encoder_family": "cnn_simple",
-            "encoder_dim": 64,
+            "encoder_dim": 128,
             "cnn_num_layers": 3,
             "cnn_kernel_size": 3,
             "cnn_hidden_channels": 64,
             "cnn_dropout": 0.1,
-            "backbone_epochs": 1,
-            "backbone_batch_size": 256,
-            "backbone_learning_rate": 1.0e-3,
-            "backbone_device": "cpu",
+            "pretrained_encoder_checkpoint": pretrained_encoder_checkpoint,
         }
     if method == "m2n2":
         return {
@@ -122,15 +125,12 @@ def _baseline_kwargs(method: str, seed: int, smoke: bool) -> dict[str, Any]:
             "adaptation_momentum": 0.01 if smoke else 0.01,
             "seed": seed,
             "encoder_family": "cnn_simple",
-            "encoder_dim": 64,
+            "encoder_dim": 128,
             "cnn_num_layers": 3,
             "cnn_kernel_size": 3,
             "cnn_hidden_channels": 64,
             "cnn_dropout": 0.1,
-            "backbone_epochs": 1,
-            "backbone_batch_size": 256,
-            "backbone_learning_rate": 1.0e-3,
-            "backbone_device": "cpu",
+            "pretrained_encoder_checkpoint": pretrained_encoder_checkpoint,
         }
     if method == "stumpy":
         return {
@@ -185,7 +185,7 @@ def build_online_streaming_benchmark_config(
         "data_config_path": _data_config_path(entity_id),
         "protocol_config_path": PROTOCOL_CONFIG_PATH,
         "output_dir": _output_dir(method, online_variant, entity_id, seed, smoke),
-        "baseline_kwargs": _baseline_kwargs(method, seed, smoke),
+        "baseline_kwargs": _baseline_kwargs(method, entity_id, seed, smoke),
         "task_overrides": {
             **_online_stream_range(entity_id),
             "max_online_steps": 16 if smoke else None,

@@ -283,7 +283,7 @@ def run_online_streaming_benchmark(
     test_sequences = _resolve_split_sequences(data_bundle, "test")
 
     baseline_name = str(benchmark_config["baseline_name"])
-    online_variant = str(benchmark_config.get("online_variant", "A0"))
+    online_variant = str(benchmark_config.get("online_variant", "main"))
     seed = int(benchmark_config.get("seed", 0))
     baseline_kwargs = dict(benchmark_config.get("baseline_kwargs", {}))
     baseline_kwargs.setdefault(
@@ -389,6 +389,7 @@ def run_online_streaming_benchmark(
     report["seed"] = seed
     report["baseline_name"] = baseline_name
     report["online_variant"] = online_variant
+    report["method_metadata"] = calibration.get("method_metadata", {})
     report["online_execution"] = {
         "benchmark_status": "completed",
         "created_at_utc": _utc_now_iso(),
@@ -398,6 +399,7 @@ def run_online_streaming_benchmark(
         "threshold_artifact_path": str(threshold_path),
         "threshold_value": float(calibration["threshold_value"]),
         "threshold_source": calibration["threshold_source"],
+        "method_metadata": calibration.get("method_metadata", {}),
         "stream_selections": stream_selections,
         "metric_history": metric_history,
         "records": normalized_records,

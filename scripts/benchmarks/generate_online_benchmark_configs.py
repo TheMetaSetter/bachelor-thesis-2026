@@ -29,6 +29,11 @@ BENCHMARK_SEEDS = (6, 8, 36)
 BENCHMARK_OFFLINE_VARIANTS = ("O0", "O1")
 BENCHMARK_ONLINE_VARIANTS = ("A0", "A1", "A2")
 STAGE_B_CHECKPOINT_STAGE_NAME = "stage_b_fusion_finetuning"
+ONLINE_STREAM_RANGES = {
+    "machine-1-6": (146, 2200),
+    "machine-3-4": (2634, 6116),
+    "machine-3-9": (1099, 10807),
+}
 
 
 def _entity_token(entity_id: str) -> str:
@@ -112,6 +117,10 @@ def _task_overrides(
     seed: int,
     smoke: bool,
 ) -> dict[str, Any]:
+    try:
+        absolute_start_index, absolute_end_index = ONLINE_STREAM_RANGES[entity_id]
+    except KeyError as error:
+        raise ValueError(f"Unknown THESIS online benchmark entity: {entity_id}") from error
     max_online_steps = 16 if smoke else None
     checkpoint_every_n_steps = 8 if smoke else 50
     return {
@@ -129,6 +138,8 @@ def _task_overrides(
         "warm_start_projector": False,
         "target_param_group": "projector_params",
         "clean_stream_only": True,
+        "absolute_start_index": absolute_start_index,
+        "absolute_end_index": absolute_end_index,
         "max_online_steps": max_online_steps,
         "log_every_n_steps": 1,
         "checkpoint_every_n_steps": checkpoint_every_n_steps,

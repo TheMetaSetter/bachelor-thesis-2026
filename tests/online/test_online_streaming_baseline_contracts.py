@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import numpy as np
+import torch
 
 from src.baselines.online import (
     CANDIStreamingBaseline,
@@ -11,6 +13,7 @@ from src.baselines.online import (
     M2N2StreamingBaseline,
     StumpyChannelABStreamingBaseline,
 )
+from src.models.simple_window_cnn_autoencoder import SimpleWindowCnnAutoencoder
 from src.protocols.online_stream_range import select_online_stream_sequence
 
 
@@ -49,24 +52,43 @@ def _protocol_config() -> dict[str, Any]:
     }
 
 
-def test_online_streaming_baselines_calibrate_and_run() -> None:
+def _write_redlamp_fixture(tmp_path: Path) -> Path:
+    model = SimpleWindowCnnAutoencoder(
+        input_dim=3,
+        latent_dim=128,
+        hidden_channels=64,
+        kernel_size=3,
+        num_layers=3,
+        dropout=0.1,
+    )
+    checkpoint_path = tmp_path / "redlamp_best.pt"
+    torch.save(
+        {"model_state_dict": model.state_dict(), "epoch": 100}, checkpoint_path
+    )
+    return checkpoint_path
+
+
+def test_online_streaming_baselines_calibrate_and_run(tmp_path: Path) -> None:
     train_sequence = _build_sequence("machine-1-6", seed=0)["x"]
     clean_validation_sequences = [_build_sequence("machine-1-6", seed=1)]
     test_sequence = _build_sequence("machine-1-6", seed=2)
     protocol_config = _protocol_config()
+    checkpoint_path = _write_redlamp_fixture(tmp_path)
 
     baselines = [
         CANDIStreamingBaseline(
             train_sequence=train_sequence,
             window_size=8,
-            online_variant="A0",
+            online_variant="main",
             seed=7,
+            pretrained_encoder_checkpoint=checkpoint_path,
         ),
         M2N2StreamingBaseline(
             train_sequence=train_sequence,
             window_size=8,
-            online_variant="A0",
+            online_variant="main",
             seed=7,
+            pretrained_encoder_checkpoint=checkpoint_path,
         ),
         StumpyChannelABStreamingBaseline(
             train_sequence=train_sequence,
@@ -104,13 +126,15 @@ def test_online_streaming_baselines_calibrate_and_run() -> None:
             device="cpu",
         )
         assert calibration["threshold_source"] == "clean_validation_stride1_ewma"
+        if baseline.method_name in {"candi", "m2n2"}:
+            assert calibration["threshold_artifact"]["checkpoint_sha256"]
         assert metric_history
         assert records
         assert records[0]["online_variant"] == expected_variant
         if baseline.method_name in {"candi", "m2n2"}:
             metadata = calibration["method_metadata"]
             assert metadata["encoder_family"] == "cnn_simple"
-            assert metadata["encoder_dim"] == 64
+            assert metadata["encoder_dim"] == 128
             assert metadata["cnn_num_layers"] == 3
             assert metadata["cnn_kernel_size"] == 3
             assert metadata["cnn_hidden_channels"] == 64
@@ -122,7 +146,7 @@ def test_online_streaming_baselines_calibrate_and_run() -> None:
             assert "online/did_update" in metric
 
 
-def test_online_streaming_baselines_emit_entity_global_indices() -> None:
+def test_online_streaming_baselines_emit_entity_global_indices(tmp_path: Path) -> None:
     train_sequence = _build_sequence("machine-1-6", seed=3)["x"]
     clean_validation_sequences = [_build_sequence("machine-1-6", seed=4)]
     test_sequence = select_online_stream_sequence(
@@ -131,10 +155,19 @@ def test_online_streaming_baselines_emit_entity_global_indices() -> None:
         absolute_end_index=32,
     )
     protocol_config = _protocol_config()
+    checkpoint_path = _write_redlamp_fixture(tmp_path)
 
     baselines = [
-        CANDIStreamingBaseline(train_sequence=train_sequence, window_size=8),
-        M2N2StreamingBaseline(train_sequence=train_sequence, window_size=8),
+        CANDIStreamingBaseline(
+            train_sequence=train_sequence,
+            window_size=8,
+            pretrained_encoder_checkpoint=checkpoint_path,
+        ),
+        M2N2StreamingBaseline(
+            train_sequence=train_sequence,
+            window_size=8,
+            pretrained_encoder_checkpoint=checkpoint_path,
+        ),
         StumpyChannelABStreamingBaseline(train_sequence=train_sequence, window_size=8),
         KMeansADStreamingBaseline(
             train_sequence=train_sequence, window_size=8, n_clusters=2
