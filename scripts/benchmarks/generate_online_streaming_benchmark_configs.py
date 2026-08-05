@@ -191,6 +191,22 @@ def build_online_streaming_benchmark_config(
             "max_online_steps": 16 if smoke else None,
         },
         "benchmark_mode": _mode_name(smoke),
+        "logging": {
+            "use_wandb": not smoke,
+            "wandb_project": "bachelor-thesis-2026",
+            "wandb_mode": "disabled" if smoke else "online",
+            "wandb_job_type": "online_benchmark",
+            "wandb_run_name": benchmark_name,
+            "wandb_tags": [
+                "online-benchmark",
+                method,
+                online_variant,
+                entity_id,
+                f"seed{seed}",
+                f"window{WINDOW_SIZE}",
+                _mode_name(smoke),
+            ],
+        },
     }
 
 

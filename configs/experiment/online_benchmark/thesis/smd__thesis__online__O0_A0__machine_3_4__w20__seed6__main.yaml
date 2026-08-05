@@ -54,9 +54,10 @@ evaluation:
   vus_num_thresholds: 200
   retention_policy: retain_for_eda
 logging:
-  use_wandb: false
+  use_wandb: true
   wandb_project: bachelor-thesis-2026
-  wandb_mode: disabled
+  wandb_mode: online
+  wandb_job_type: online_benchmark
   wandb_run_name: smd__thesis__online__O0_A0__machine_3_4__w20__seed6__main
   wandb_tags:
   - online-benchmark

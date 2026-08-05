@@ -16,6 +16,7 @@ import argparse
 import json
 import sys
 from datetime import datetime, timezone
+from numbers import Real
 from pathlib import Path
 from typing import Any, Callable
 
@@ -34,6 +35,7 @@ from src.baselines.online import (
 from src.core.config import load_yaml_config
 from src.core.registry import build_dataset
 from src.core.runtime_components import register_evaluation_runtime_components
+from src.engine.logger import ExperimentLogger
 from src.protocols.online_stream_range import select_online_stream_sequence
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
@@ -120,6 +122,16 @@ def _to_numpy(array_like: Any, *, dtype: Any) -> np.ndarray:
     if hasattr(array_like, "detach"):
         array_like = array_like.detach().cpu().numpy()
     return np.asarray(array_like, dtype=dtype)
+
+
+def _scalar_online_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
+    scalar_metrics: dict[str, Any] = {}
+    for key, value in metrics.items():
+        if isinstance(value, bool):
+            scalar_metrics[f"online/{key}"] = int(value)
+        elif isinstance(value, Real):
+            scalar_metrics[f"online/{key}"] = float(value)
+    return scalar_metrics
 
 
 def _resolve_split_sequences(
@@ -254,6 +266,20 @@ def run_online_streaming_benchmark(
     if not output_dir.is_absolute():
         output_dir = (REPOSITORY_ROOT / output_dir).resolve()
 
+    experiment_logger: ExperimentLogger | None = None
+    if not dry_run:
+        logging_config = dict(benchmark_config.get("logging", {}))
+        if logging_config.get("use_wandb", False):
+            logging_config.setdefault("wandb_job_type", "online_benchmark")
+            logging_config.setdefault(
+                "wandb_run_name", benchmark_config["benchmark_name"]
+            )
+            experiment_logger = ExperimentLogger(
+                output_dir,
+                experiment_config=benchmark_config,
+                logging_config=logging_config,
+            )
+
     report: dict[str, Any] = {
         "benchmark_status": "dry_run" if dry_run else "completed",
         "created_at_utc": _utc_now_iso(),
@@ -378,6 +404,11 @@ def run_online_streaming_benchmark(
         )
         metric_history.extend(sequence_metric_history)
         records.extend(sequence_records)
+        if experiment_logger is not None:
+            for metrics in sequence_metric_history:
+                scalar_metrics = _scalar_online_metrics(metrics)
+                if scalar_metrics:
+                    experiment_logger.log_metrics(scalar_metrics)
 
     normalized_records = _normalize_online_records(records, online_variant)
     metrics_path = output_dir / "online_metrics.json"
@@ -412,6 +443,16 @@ def run_online_streaming_benchmark(
         "records": str(records_path),
     }
     report["report_path"] = str(_write_report(output_dir, report))
+    if experiment_logger is not None:
+        experiment_logger.log_summary(
+            {
+                "benchmark_status": report["benchmark_status"],
+                "baseline_name": baseline_name,
+                "online_variant": online_variant,
+                "processed_windows": len(normalized_records),
+            }
+        )
+        experiment_logger.close()
     return report
 
 

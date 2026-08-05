@@ -215,9 +215,10 @@ def build_online_benchmark_config(
             "retention_policy": "retain_for_eda",
         },
         "logging": {
-            "use_wandb": False,
+            "use_wandb": not smoke,
             "wandb_project": "bachelor-thesis-2026",
-            "wandb_mode": "disabled",
+            "wandb_mode": "disabled" if smoke else "online",
+            "wandb_job_type": "online_benchmark",
             "wandb_run_name": _experiment_name(
                 offline_variant=offline_variant,
                 online_variant=online_variant,

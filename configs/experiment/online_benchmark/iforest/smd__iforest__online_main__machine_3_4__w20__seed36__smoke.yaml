@@ -19,3 +19,17 @@ task_overrides:
   absolute_end_index: 6116
   max_online_steps: 16
 benchmark_mode: smoke
+logging:
+  use_wandb: false
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: disabled
+  wandb_job_type: online_benchmark
+  wandb_run_name: smd__iforest__online_main__machine_3_4__w20__seed36__smoke
+  wandb_tags:
+  - online-benchmark
+  - iforest
+  - main
+  - machine_3_4
+  - seed36
+  - window20
+  - smoke

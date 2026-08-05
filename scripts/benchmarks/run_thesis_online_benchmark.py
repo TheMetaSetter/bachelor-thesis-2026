@@ -17,6 +17,7 @@ import argparse
 import json
 import sys
 from datetime import datetime, timezone
+from numbers import Real
 from pathlib import Path
 from typing import Any, Callable
 
@@ -37,6 +38,7 @@ from src.core.artifact_integrity import (
 from src.engine.online_tta.checkpoint_resolution import resolve_stage_b_checkpoint
 from src.engine.online_tta.online_engine import run_thesis_online_tta_experiment
 from src.engine.checkpoint import CheckpointManager
+from src.engine.logger import ExperimentLogger
 from src.protocols.smd_benchmark_protocol import validate_protocol_config
 
 
@@ -113,6 +115,34 @@ def _write_json(path: Path, payload: Any) -> str:
 def _resolve_retention_policy(experiment_config: dict[str, Any]) -> str:
     evaluation_config = dict(experiment_config.get("evaluation", {}))
     return str(evaluation_config.get("retention_policy", "retain_for_eda"))
+
+
+def _online_wandb_metrics(record: dict[str, Any]) -> dict[str, Any]:
+    metrics: dict[str, Any] = {}
+    for key, value in record.items():
+        if isinstance(value, bool):
+            metrics[f"online/{key}"] = int(value)
+        elif isinstance(value, Real):
+            metrics[f"online/{key}"] = float(value)
+    return metrics
+
+
+def _build_online_event_callback(
+    experiment_logger: ExperimentLogger | None,
+    event_callback: Callable[[dict[str, Any]], None] | None,
+) -> Callable[[dict[str, Any]], None] | None:
+    if experiment_logger is None and event_callback is None:
+        return None
+
+    def callback(record: dict[str, Any]) -> None:
+        if experiment_logger is not None:
+            metrics = _online_wandb_metrics(record)
+            if metrics:
+                experiment_logger.log_metrics(metrics)
+        if event_callback is not None:
+            event_callback(record)
+
+    return callback
 
 
 def _load_runtime_state_snapshot(checkpoint_path: str | None) -> dict[str, Any] | None:
@@ -249,66 +279,98 @@ def run_thesis_online_benchmark(
         resolved_checkpoint_path
     )
 
-    run_kwargs: dict[str, Any] = {
-        "experiment_config": experiment_config,
-        "protocol_config": protocol_config,
-        "online_variant": online_variant,
-        "dry_run": dry_run,
-    }
-    if event_callback is not None:
-        run_kwargs["event_callback"] = event_callback
-    online_outputs = run_thesis_online_tta_experiment(**run_kwargs)
-    online_outputs = dict(online_outputs)
-    online_outputs["records"] = _normalize_online_records(
-        list(online_outputs.get("records", [])),
-        online_variant,
-    )
-
-    report = {
-        "benchmark_status": "dry_run" if dry_run else "completed",
-        "created_at_utc": _utc_now_iso(),
-        "experiment_config_path": experiment_config_path,
-        "online_variant": online_variant,
-        "protocol_config_path": protocol_config_path,
-        "protocol": protocol_config,
-        "online_execution": online_outputs,
-        "retention_policy": retention_policy,
-    }
-    report_path = _write_report(
-        Path(str(experiment_config["output_dir"])),
-        online_variant,
-        report,
-    )
-    retention_artifact_paths: dict[str, str] = {}
+    experiment_logger: ExperimentLogger | None = None
     if not dry_run:
-        retention_artifact_paths = _export_online_retention_bundle(
-            output_dir=Path(str(experiment_config["output_dir"])),
-            experiment_config=experiment_config,
-            online_outputs=online_outputs,
-            online_variant=online_variant,
-            retention_policy=retention_policy,
+        logging_config = dict(experiment_config.get("logging", {}))
+        if logging_config.get("use_wandb", False):
+            logging_config.setdefault("wandb_job_type", "online_benchmark")
+            logging_config.setdefault(
+                "wandb_run_name", experiment_config["experiment_name"]
+            )
+            experiment_logger = ExperimentLogger(
+                experiment_config["output_dir"],
+                experiment_config=experiment_config,
+                logging_config=logging_config,
+            )
+
+    try:
+        run_kwargs: dict[str, Any] = {
+            "experiment_config": experiment_config,
+            "protocol_config": protocol_config,
+            "online_variant": online_variant,
+            "dry_run": dry_run,
+        }
+        runtime_event_callback = _build_online_event_callback(
+            experiment_logger, event_callback
         )
-    report_identity = {
-        "experiment_name": str(experiment_config["experiment_name"]),
-        "online_variant": online_variant,
-        "protocol_config_path": str(protocol_config_path),
-    }
-    report_manifest = build_artifact_manifest(
-        {"benchmark_report": report_path}, report_identity
-    )
-    report_manifest_path = write_artifact_manifest(
-        report_path.with_name(f"{report_path.stem}_integrity_manifest.json"),
-        report_manifest,
-    )
-    report["report_path"] = str(report_path)
-    report["retention_artifact_paths"] = retention_artifact_paths
-    report["report_artifact_integrity_status"] = (
-        "verified"
-        if verify_artifact_manifest(report_manifest, report_identity)
-        else "failed"
-    )
-    report["report_artifact_manifest_path"] = str(report_manifest_path)
-    return report
+        if runtime_event_callback is not None:
+            run_kwargs["event_callback"] = runtime_event_callback
+        online_outputs = run_thesis_online_tta_experiment(**run_kwargs)
+        online_outputs = dict(online_outputs)
+        online_outputs["records"] = _normalize_online_records(
+            list(online_outputs.get("records", [])),
+            online_variant,
+        )
+
+        report = {
+            "benchmark_status": "dry_run" if dry_run else "completed",
+            "created_at_utc": _utc_now_iso(),
+            "experiment_config_path": experiment_config_path,
+            "online_variant": online_variant,
+            "protocol_config_path": protocol_config_path,
+            "protocol": protocol_config,
+            "online_execution": online_outputs,
+            "retention_policy": retention_policy,
+        }
+        report_path = _write_report(
+            Path(str(experiment_config["output_dir"])),
+            online_variant,
+            report,
+        )
+        retention_artifact_paths: dict[str, str] = {}
+        if not dry_run:
+            retention_artifact_paths = _export_online_retention_bundle(
+                output_dir=Path(str(experiment_config["output_dir"])),
+                experiment_config=experiment_config,
+                online_outputs=online_outputs,
+                online_variant=online_variant,
+                retention_policy=retention_policy,
+            )
+        report_identity = {
+            "experiment_name": str(experiment_config["experiment_name"]),
+            "online_variant": online_variant,
+            "protocol_config_path": str(protocol_config_path),
+        }
+        report_manifest = build_artifact_manifest(
+            {"benchmark_report": report_path}, report_identity
+        )
+        report_manifest_path = write_artifact_manifest(
+            report_path.with_name(f"{report_path.stem}_integrity_manifest.json"),
+            report_manifest,
+        )
+        report["report_path"] = str(report_path)
+        report["retention_artifact_paths"] = retention_artifact_paths
+        report["report_artifact_integrity_status"] = (
+            "verified"
+            if verify_artifact_manifest(report_manifest, report_identity)
+            else "failed"
+        )
+        report["report_artifact_manifest_path"] = str(report_manifest_path)
+        if experiment_logger is not None:
+            experiment_logger.log_summary(
+                {
+                    "benchmark_status": report["benchmark_status"],
+                    "online_variant": online_variant,
+                    "processed_windows": len(online_outputs.get("records", [])),
+                    "report_artifact_integrity_status": report[
+                        "report_artifact_integrity_status"
+                    ],
+                }
+            )
+        return report
+    finally:
+        if experiment_logger is not None:
+            experiment_logger.close()
 
 
 def main() -> None:

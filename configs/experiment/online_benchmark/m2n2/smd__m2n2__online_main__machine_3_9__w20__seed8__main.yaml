@@ -26,3 +26,17 @@ task_overrides:
   absolute_end_index: 10807
   max_online_steps: null
 benchmark_mode: main
+logging:
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_job_type: online_benchmark
+  wandb_run_name: smd__m2n2__online_main__machine_3_9__w20__seed8__main
+  wandb_tags:
+  - online-benchmark
+  - m2n2
+  - main
+  - machine_3_9
+  - seed8
+  - window20
+  - main

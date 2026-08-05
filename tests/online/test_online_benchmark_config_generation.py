@@ -111,4 +111,8 @@ def test_generate_thesis_online_benchmark_configs_writes_all_expected_files() ->
                         assert (
                             loaded_config["model"]["score_source"] == "projected_hidden"
                         )
+                        assert loaded_config["logging"]["use_wandb"] is (not smoke)
+                        assert loaded_config["logging"]["wandb_mode"] == (
+                            "disabled" if smoke else "online"
+                        )
                         assert loaded_config["optimizer"]["optimizer_name"] == "adamw"

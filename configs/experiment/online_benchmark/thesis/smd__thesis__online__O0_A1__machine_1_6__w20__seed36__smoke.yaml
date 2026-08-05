@@ -57,6 +57,7 @@ logging:
   use_wandb: false
   wandb_project: bachelor-thesis-2026
   wandb_mode: disabled
+  wandb_job_type: online_benchmark
   wandb_run_name: smd__thesis__online__O0_A1__machine_1_6__w20__seed36__smoke
   wandb_tags:
   - online-benchmark

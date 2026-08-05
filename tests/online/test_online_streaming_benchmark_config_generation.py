@@ -43,6 +43,8 @@ def test_generate_online_streaming_benchmark_configs_writes_all_expected_files()
     assert sample_config["task_overrides"]["max_online_steps"] is None
     assert sample_config["task_overrides"]["absolute_start_index"] == 146
     assert sample_config["task_overrides"]["absolute_end_index"] == 2200
+    assert sample_config["logging"]["use_wandb"] is True
+    assert sample_config["logging"]["wandb_mode"] == "online"
     assert sample_config["protocol_config_path"].endswith(
         "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
     )
@@ -56,3 +58,5 @@ def test_generate_online_streaming_benchmark_configs_writes_all_expected_files()
     assert smoke_config["task_overrides"]["max_online_steps"] == 16
     assert smoke_config["task_overrides"]["absolute_start_index"] == 146
     assert smoke_config["task_overrides"]["absolute_end_index"] == 2200
+    assert smoke_config["logging"]["use_wandb"] is False
+    assert smoke_config["logging"]["wandb_mode"] == "disabled"
