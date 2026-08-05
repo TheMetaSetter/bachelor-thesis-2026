@@ -9,10 +9,23 @@ data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
 protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
 output_dir: outputs/benchmark_smoke/online_streaming/smd/candi/A0/machine_3_4/seed36
 baseline_kwargs:
+  input_dim: 38
   window_size: 20
   threshold_quantile: 0.99
   adaptation_momentum: 0.02
   seed: 36
+  encoder_family: cnn_simple
+  encoder_dim: 64
+  cnn_num_layers: 3
+  cnn_kernel_size: 3
+  cnn_hidden_channels: 64
+  cnn_dropout: 0.1
+  backbone_epochs: 1
+  backbone_batch_size: 256
+  backbone_learning_rate: 0.001
+  backbone_device: cpu
 task_overrides:
+  absolute_start_index: 2634
+  absolute_end_index: 6116
   max_online_steps: 16
 benchmark_mode: smoke

@@ -19,6 +19,11 @@ ONLINE_STREAMING_BENCHMARK_CONFIG_ROOT = (
 WINDOW_SIZE = 20
 BENCHMARK_ENTITY_IDS = ("machine_1_6", "machine_3_4", "machine_3_9")
 BENCHMARK_SEEDS = (6, 8, 36)
+ONLINE_STREAM_RANGES = {
+    "machine_1_6": (146, 2200),
+    "machine_3_4": (2634, 6116),
+    "machine_3_9": (1099, 10807),
+}
 BENCHMARK_METHODS = ("candi", "m2n2", "stumpy", "kmeans_ad", "iforest")
 BENCHMARK_METHOD_VARIANTS = {
     "candi": ("A0", "A1", "A2"),
@@ -82,20 +87,50 @@ def _data_config_path(entity_id: str) -> str:
     return f"configs/data/smd_benchmark_{_entity_token(entity_id)}_window20.yaml"
 
 
+def _online_stream_range(entity_id: str) -> dict[str, int]:
+    start_index, end_index = ONLINE_STREAM_RANGES[entity_id]
+    return {
+        "absolute_start_index": start_index,
+        "absolute_end_index": end_index,
+    }
+
+
 def _baseline_kwargs(method: str, seed: int, smoke: bool) -> dict[str, Any]:
     if method == "candi":
         return {
+            "input_dim": 38,
             "window_size": WINDOW_SIZE,
             "threshold_quantile": 0.99,
             "adaptation_momentum": 0.02 if smoke else 0.02,
             "seed": seed,
+            "encoder_family": "cnn_simple",
+            "encoder_dim": 64,
+            "cnn_num_layers": 3,
+            "cnn_kernel_size": 3,
+            "cnn_hidden_channels": 64,
+            "cnn_dropout": 0.1,
+            "backbone_epochs": 1,
+            "backbone_batch_size": 256,
+            "backbone_learning_rate": 1.0e-3,
+            "backbone_device": "cpu",
         }
     if method == "m2n2":
         return {
+            "input_dim": 38,
             "window_size": WINDOW_SIZE,
             "threshold_quantile": 0.99,
             "adaptation_momentum": 0.01 if smoke else 0.01,
             "seed": seed,
+            "encoder_family": "cnn_simple",
+            "encoder_dim": 64,
+            "cnn_num_layers": 3,
+            "cnn_kernel_size": 3,
+            "cnn_hidden_channels": 64,
+            "cnn_dropout": 0.1,
+            "backbone_epochs": 1,
+            "backbone_batch_size": 256,
+            "backbone_learning_rate": 1.0e-3,
+            "backbone_device": "cpu",
         }
     if method == "stumpy":
         return {
@@ -152,6 +187,7 @@ def build_online_streaming_benchmark_config(
         "output_dir": _output_dir(method, online_variant, entity_id, seed, smoke),
         "baseline_kwargs": _baseline_kwargs(method, seed, smoke),
         "task_overrides": {
+            **_online_stream_range(entity_id),
             "max_online_steps": 16 if smoke else None,
         },
         "benchmark_mode": _mode_name(smoke),

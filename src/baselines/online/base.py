@@ -153,6 +153,11 @@ def extract_last_point_label(batch: dict[str, Any]) -> int:
     return int(np.asarray(labels)[0, -1])
 
 
+def absolute_stream_offset(sequence: dict[str, Any]) -> int:
+    """Return the entity-global start index of a selected stream."""
+    return int(sequence.get("meta", {}).get("absolute_start_index", 0))
+
+
 def build_online_record_schema(
     *,
     entity_id: str,

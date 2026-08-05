@@ -40,6 +40,7 @@ from src.engine.online_tta.online_optimizer import (
     assert_only_projector_is_trainable,
 )
 from src.engine.online_tta.checkpoint_resolution import resolve_threshold_artifact
+from src.protocols.online_stream_range import select_online_stream_sequence
 from src.protocols.threshold_artifact import load_threshold_artifact
 
 
@@ -52,47 +53,8 @@ def _resolve_max_online_steps(value: Any) -> int | None:
     return resolved_value
 
 
-def _select_online_stream_sequence(
-    sequence: dict[str, Any],
-    *,
-    absolute_start_index: int | None,
-    absolute_end_index: int | None,
-) -> dict[str, Any]:
-    if absolute_start_index is None and absolute_end_index is None:
-        return sequence
-    if absolute_start_index is None or absolute_end_index is None:
-        raise ValueError(
-            "absolute_start_index and absolute_end_index must be set together"
-        )
-
-    source_length = int(sequence["x"].shape[0])
-    if not 0 <= absolute_start_index < absolute_end_index <= source_length:
-        raise ValueError(
-            "Online stream range must satisfy "
-            f"0 <= start < end <= {source_length}, got "
-            f"[{absolute_start_index}, {absolute_end_index})"
-        )
-
-    selected_sequence = dict(sequence)
-
-    # TODO: Giải thích vòng for này. ==> Tối ưu thêm.
-    for field_name in ("x", "point_labels", "mask", "timestamps"):
-        value = sequence.get(field_name)
-        selected_sequence[field_name] = (
-            None
-            if value is None
-            else value[absolute_start_index:absolute_end_index].clone()
-        )
-
-    selected_sequence["meta"] = {
-        **sequence["meta"],
-        "sequence_length": absolute_end_index - absolute_start_index,
-        "source_sequence_length": source_length,
-        "absolute_start_index": absolute_start_index,
-        "absolute_end_index": absolute_end_index,
-    }
-
-    return selected_sequence
+# Kept as a private compatibility name for existing runtime-flow tests.
+_select_online_stream_sequence = select_online_stream_sequence
 
 
 def _build_dry_run_online_context(*, online_variant: str) -> dict[str, Any]:

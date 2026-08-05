@@ -22,6 +22,7 @@ from sklearn.ensemble import IsolationForest
 
 from src.baselines.online.base import (
     OnlineStreamingBaselineProtocol,
+    absolute_stream_offset,
     as_2d_sequence,
     build_online_thresholds,
     causal_point_scores_from_windows,
@@ -203,6 +204,7 @@ class _FrozenStreamingBaseline(OnlineStreamingBaselineProtocol):
         metric_history: list[dict[str, Any]] = []
         records: list[dict[str, Any]] = []
         entity_id = str(sequence["meta"]["entity_id"])
+        absolute_offset = absolute_stream_offset(sequence)
         for step_index, (raw_score, ewma_score) in enumerate(
             zip(raw_point_scores, ewma_point_scores, strict=True)
         ):
@@ -218,9 +220,9 @@ class _FrozenStreamingBaseline(OnlineStreamingBaselineProtocol):
             window_start_index = window_end_index - self.window_size
             record = {
                 "entity_id": entity_id,
-                "point_index": window_end_index - 1,
-                "window_start_index": window_start_index,
-                "window_end_index": window_end_index,
+                "point_index": absolute_offset + window_end_index - 1,
+                "window_start_index": absolute_offset + window_start_index,
+                "window_end_index": absolute_offset + window_end_index,
                 "raw_point_score": float(raw_score),
                 "ewma_point_score": float(ewma_score),
                 "latent_window_score": float(raw_score),

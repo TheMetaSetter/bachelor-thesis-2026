@@ -34,6 +34,7 @@ from src.baselines.online import (
 from src.core.config import load_yaml_config
 from src.core.registry import build_dataset
 from src.core.runtime_components import register_evaluation_runtime_components
+from src.protocols.online_stream_range import select_online_stream_sequence
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     write_threshold_artifact,
@@ -99,6 +100,11 @@ def _truncate_sequence_to_max_online_steps(
         truncated_sequence["timestamps"] = np.asarray(sequence["timestamps"])[
             :max_points
         ]
+    metadata = dict(sequence.get("meta", {}))
+    metadata["sequence_length"] = max_points
+    absolute_start_index = int(metadata.get("absolute_start_index", 0))
+    metadata["absolute_end_index"] = absolute_start_index + max_points
+    truncated_sequence["meta"] = metadata
     return truncated_sequence
 
 
@@ -290,8 +296,6 @@ def run_online_streaming_benchmark(
     baseline_kwargs.setdefault("online_variant", online_variant)
     baseline_kwargs.setdefault("seed", seed)
     baseline = _instantiate_baseline(baseline_name, baseline_kwargs)
-    if hasattr(baseline, "fit"):
-        baseline.fit(_to_numpy(train_sequence["x"], dtype=np.float64))
 
     max_online_steps_override = benchmark_config.get("task_overrides", {}).get(
         "max_online_steps"
@@ -329,11 +333,40 @@ def run_online_streaming_benchmark(
 
     metric_history: list[dict[str, Any]] = []
     records: list[dict[str, Any]] = []
+    stream_selections: list[dict[str, Any]] = []
+    task_overrides = dict(benchmark_config.get("task_overrides", {}))
     for sequence in test_sequences:
-        limited_sequence = _truncate_sequence_to_max_online_steps(
+        selected_sequence = select_online_stream_sequence(
             sequence,
+            absolute_start_index=task_overrides.get("absolute_start_index"),
+            absolute_end_index=task_overrides.get("absolute_end_index"),
+        )
+        limited_sequence = _truncate_sequence_to_max_online_steps(
+            selected_sequence,
             window_size=int(protocol_config["window_size"]),
             max_online_steps=max_online_steps,
+        )
+        selected_metadata = dict(limited_sequence.get("meta", {}))
+        stream_selections.append(
+            {
+                "entity_id": str(selected_metadata.get("entity_id", entity_id)),
+                "source_sequence_length": int(
+                    selected_metadata.get(
+                        "source_sequence_length", sequence["x"].shape[0]
+                    )
+                ),
+                "absolute_start_index": int(
+                    selected_metadata.get("absolute_start_index", 0)
+                ),
+                "absolute_end_index": int(
+                    selected_metadata.get(
+                        "absolute_end_index", limited_sequence["x"].shape[0]
+                    )
+                ),
+                "sequence_length": int(
+                    selected_metadata.get("sequence_length", limited_sequence["x"].shape[0])
+                ),
+            }
         )
         sequence_metric_history, sequence_records = baseline.run_sequence(
             sequence=limited_sequence,
@@ -363,6 +396,7 @@ def run_online_streaming_benchmark(
         "threshold_artifact_path": str(threshold_path),
         "threshold_value": float(calibration["threshold_value"]),
         "threshold_source": calibration["threshold_source"],
+        "stream_selections": stream_selections,
         "metric_history": metric_history,
         "records": normalized_records,
         "online_metrics_path": str(metrics_path),

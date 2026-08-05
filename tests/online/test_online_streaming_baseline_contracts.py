@@ -11,6 +11,7 @@ from src.baselines.online import (
     M2N2StreamingBaseline,
     StumpyChannelABStreamingBaseline,
 )
+from src.protocols.online_stream_range import select_online_stream_sequence
 
 
 def _build_sequence(entity_id: str, seed: int = 0) -> dict[str, Any]:
@@ -106,9 +107,55 @@ def test_online_streaming_baselines_calibrate_and_run() -> None:
         assert metric_history
         assert records
         assert records[0]["online_variant"] == expected_variant
+        if baseline.method_name in {"candi", "m2n2"}:
+            metadata = calibration["method_metadata"]
+            assert metadata["encoder_family"] == "cnn_simple"
+            assert metadata["encoder_dim"] == 64
+            assert metadata["cnn_num_layers"] == 3
+            assert metadata["cnn_kernel_size"] == 3
+            assert metadata["cnn_hidden_channels"] == 64
         for metric in metric_history:
             assert "online/verification_buffer_size" in metric
             assert "online/ttl_buffer_size" not in metric
             assert "online/raw_point_score" in metric
             assert "online/prediction" in metric
             assert "online/did_update" in metric
+
+
+def test_online_streaming_baselines_emit_entity_global_indices() -> None:
+    train_sequence = _build_sequence("machine-1-6", seed=3)["x"]
+    clean_validation_sequences = [_build_sequence("machine-1-6", seed=4)]
+    test_sequence = select_online_stream_sequence(
+        _build_sequence("machine-1-6", seed=5),
+        absolute_start_index=10,
+        absolute_end_index=32,
+    )
+    protocol_config = _protocol_config()
+
+    baselines = [
+        CANDIStreamingBaseline(train_sequence=train_sequence, window_size=8),
+        M2N2StreamingBaseline(train_sequence=train_sequence, window_size=8),
+        StumpyChannelABStreamingBaseline(train_sequence=train_sequence, window_size=8),
+        KMeansADStreamingBaseline(
+            train_sequence=train_sequence, window_size=8, n_clusters=2
+        ),
+        IForestStreamingBaseline(
+            train_sequence=train_sequence, window_size=8, n_estimators=10
+        ),
+    ]
+
+    for baseline in baselines:
+        calibration = baseline.calibrate(
+            clean_validation_sequences=clean_validation_sequences,
+            protocol_config=protocol_config,
+            device="cpu",
+        )
+        _, records = baseline.run_sequence(
+            sequence=test_sequence,
+            threshold_value=float(calibration["threshold_value"]),
+            protocol_config=protocol_config,
+            device="cpu",
+        )
+        assert records[0]["point_index"] == 17
+        assert records[0]["window_start_index"] == 10
+        assert records[0]["window_end_index"] == 18

@@ -260,7 +260,11 @@ def test_online_streaming_benchmark_applies_overrides_and_max_online_steps(
                     "max_val_windows": 2,
                     "max_test_windows": 2,
                 },
-                "task_overrides": {"max_online_steps": 2},
+                "task_overrides": {
+                    "absolute_start_index": 5,
+                    "absolute_end_index": 30,
+                    "max_online_steps": 2,
+                },
             },
             sort_keys=False,
         ),
@@ -317,7 +321,7 @@ def test_online_streaming_benchmark_applies_overrides_and_max_online_steps(
         lambda: None,
     )
 
-    run_online_streaming_benchmark(
+    report = run_online_streaming_benchmark(
         benchmark_config_path=str(config_path),
         protocol_config_path=str(protocol_path),
         dry_run=False,
@@ -330,3 +334,12 @@ def test_online_streaming_benchmark_applies_overrides_and_max_online_steps(
     assert captured_data_configs[0]["max_test_windows"] == 2
     assert fake_baseline.calibration_validation_lengths == [1]
     assert fake_baseline.run_sequence_lengths == [21]
+    assert report["online_execution"]["stream_selections"] == [
+        {
+            "absolute_end_index": 26,
+            "absolute_start_index": 5,
+            "entity_id": "machine-1-6",
+            "sequence_length": 21,
+            "source_sequence_length": 40,
+        }
+    ]

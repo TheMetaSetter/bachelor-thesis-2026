@@ -78,14 +78,23 @@ indices in result provenance and report partial coverage explicitly.
 | 3 | `[10662,10707)` | 45 |
 | 4 | `[27849,27950)` | 101 |
 
-## Current runtime limitation
+## Implemented absolute range contract
 
-The checked-in online benchmark configs expose `max_online_steps`, which caps
-the number of steps starting at the beginning of the test sequence. They do
-not expose an absolute start/end slice for the test sequence. Therefore setting
-only `max_online_steps` cannot produce the selected intervals above for all
-three methods. A later implementation must add the same
-`absolute_start_index` and `absolute_end_index` contract before windowization
-to the shared sequence input used by THESIS, M2N2, and CANDI. It must retain
-the original sequence length and absolute timestamps in metadata so evaluation
-and reporting remain auditable.
+The online benchmark configs now use the same minimal range contract for
+THESIS, M2N2, CANDI, Stumpy, KMeansAD, and Isolation Forest:
+
+```yaml
+task_overrides:
+  absolute_start_index: 146
+  absolute_end_index: 2200
+```
+
+The interval is 0-based and half-open: `[absolute_start_index,
+absolute_end_index)`. The runner applies this slice before windowization. The
+selected sequence metadata records `source_sequence_length`,
+`sequence_length`, `absolute_start_index`, and `absolute_end_index`. Baseline
+records add the same offset to `point_index`, `window_start_index`, and
+`window_end_index`, so reports remain in entity-global coordinates.
+
+`max_online_steps` remains an optional smoke-run cap applied after the absolute
+range selection. It does not replace the range contract.

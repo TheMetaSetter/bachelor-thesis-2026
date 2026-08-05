@@ -15,15 +15,19 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
+import torch
+import torch.nn.functional as F
 
 from src.baselines.online.base import (
     OnlineStreamingBaselineProtocol,
+    absolute_stream_offset,
     as_2d_sequence,
     build_online_thresholds,
     causal_point_scores_from_windows,
     smooth_point_scores,
 )
 from src.engine.online_tta.triage import classify_legacy_baseline_window
+from src.models.simple_window_cnn_autoencoder import SimpleWindowCnnAutoencoder
 from src.protocols.threshold_artifact import build_threshold_artifact
 
 
@@ -53,11 +57,22 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         self,
         *,
         train_sequence: np.ndarray,
+        input_dim: int | None = None,
         window_size: int = 20,
         threshold_quantile: float = 0.99,
         online_variant: str = "A0",
         seed: int = 0,
         adaptation_momentum: float = 0.02,
+        encoder_family: str = "cnn_simple",
+        encoder_dim: int = 64,
+        cnn_num_layers: int = 3,
+        cnn_kernel_size: int = 3,
+        cnn_hidden_channels: int = 64,
+        cnn_dropout: float = 0.1,
+        backbone_epochs: int = 1,
+        backbone_batch_size: int = 256,
+        backbone_learning_rate: float = 1.0e-3,
+        backbone_device: str = "cpu",
     ) -> None:
         if window_size <= 0:
             raise ValueError("window_size must be positive")
@@ -65,11 +80,37 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             raise ValueError("threshold_quantile must be in (0, 1)")
         if not 0.0 < adaptation_momentum <= 1.0:
             raise ValueError("adaptation_momentum must be in (0, 1]")
+        if encoder_family != "cnn_simple":
+            raise ValueError("M2N2 and CANDI require encoder_family='cnn_simple'")
+        if encoder_dim <= 0:
+            raise ValueError("encoder_dim must be positive")
+        if cnn_num_layers < 2:
+            raise ValueError("cnn_num_layers must be at least 2")
+        if cnn_kernel_size <= 0 or cnn_hidden_channels <= 0:
+            raise ValueError("CNN dimensions must be positive")
+        if not 0.0 <= cnn_dropout <= 1.0:
+            raise ValueError("cnn_dropout must be between 0 and 1")
+        if backbone_epochs <= 0 or backbone_batch_size <= 0:
+            raise ValueError("backbone_epochs and backbone_batch_size must be positive")
+        if backbone_learning_rate <= 0.0:
+            raise ValueError("backbone_learning_rate must be positive")
         self.window_size = int(window_size)
+        self.input_dim = None if input_dim is None else int(input_dim)
         self.threshold_quantile = float(threshold_quantile)
         self.online_variant = str(online_variant)
         self.seed = int(seed)
         self.adaptation_momentum = float(adaptation_momentum)
+        self.encoder_family = str(encoder_family)
+        self.encoder_dim = int(encoder_dim)
+        self.cnn_num_layers = int(cnn_num_layers)
+        self.cnn_kernel_size = int(cnn_kernel_size)
+        self.cnn_hidden_channels = int(cnn_hidden_channels)
+        self.cnn_dropout = float(cnn_dropout)
+        self.backbone_epochs = int(backbone_epochs)
+        self.backbone_batch_size = int(backbone_batch_size)
+        self.backbone_learning_rate = float(backbone_learning_rate)
+        self.backbone_device = str(backbone_device)
+        self.backbone_: SimpleWindowCnnAutoencoder | None = None
         self.reference_mean_: np.ndarray | None = None
         self.reference_std_: np.ndarray | None = None
         self.calibration_: AdaptiveStreamingCalibration | None = None
@@ -79,12 +120,95 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         train_array = as_2d_sequence(train_sequence)
         self.reference_mean_ = np.mean(train_array, axis=0)
         self.reference_std_ = np.maximum(np.std(train_array, axis=0, ddof=1), 1.0e-3)
+        self._fit_backbone(train_array)
         self.calibration_ = None
         return self
+
+    def _fit_backbone(self, train_sequence: np.ndarray) -> None:
+        if self.reference_mean_ is None or self.reference_std_ is None:
+            raise RuntimeError("Reference statistics must be fitted first")
+        if train_sequence.shape[0] < self.window_size:
+            raise ValueError("train_sequence must be long enough for one window")
+        if self.input_dim is not None and train_sequence.shape[1] != self.input_dim:
+            raise ValueError(
+                f"input_dim={self.input_dim} does not match train_sequence feature dimension "
+                f"{train_sequence.shape[1]}"
+            )
+
+        torch.manual_seed(self.seed)
+        self.backbone_ = SimpleWindowCnnAutoencoder(
+            input_dim=train_sequence.shape[1],
+            latent_dim=self.encoder_dim,
+            hidden_channels=self.cnn_hidden_channels,
+            kernel_size=self.cnn_kernel_size,
+            num_layers=self.cnn_num_layers,
+            dropout=self.cnn_dropout,
+        ).to(self.backbone_device)
+        optimizer = torch.optim.Adam(
+            self.backbone_.parameters(), lr=self.backbone_learning_rate
+        )
+        windows = np.stack(
+            [
+                train_sequence[start : start + self.window_size]
+                for start in range(train_sequence.shape[0] - self.window_size + 1)
+            ],
+            axis=0,
+        )
+        windows = (windows - self.reference_mean_[None, None, :]) / self.reference_std_[
+            None, None, :
+        ]
+        window_tensor = torch.as_tensor(windows, dtype=torch.float32)
+        self.backbone_.train()
+        for _ in range(self.backbone_epochs):
+            permutation = torch.randperm(window_tensor.shape[0])
+            for batch_start in range(0, window_tensor.shape[0], self.backbone_batch_size):
+                batch_indices = permutation[batch_start : batch_start + self.backbone_batch_size]
+                batch = window_tensor[batch_indices].to(self.backbone_device)
+                reconstruction, _ = self.backbone_(batch)
+                loss = F.mse_loss(reconstruction, batch)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+        self.backbone_.eval()
+
+    def _score_backbone_windows(
+        self, query_sequence: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        if self.backbone_ is None:
+            raise RuntimeError("Call fit() before scoring")
+        if query_sequence.shape[0] < self.window_size:
+            empty = np.zeros(0, dtype=np.float64)
+            return empty, empty
+        if self.reference_mean_ is None or self.reference_std_ is None:
+            raise RuntimeError("Call fit() before scoring")
+        windows = np.stack(
+            [
+                query_sequence[start : start + self.window_size]
+                for start in range(query_sequence.shape[0] - self.window_size + 1)
+            ],
+            axis=0,
+        )
+        normalized = (windows - self.reference_mean_[None, None, :]) / self.reference_std_[
+            None, None, :
+        ]
+        with torch.no_grad():
+            reconstruction, latent = self.backbone_(
+                torch.as_tensor(normalized, dtype=torch.float32).to(self.backbone_device)
+            )
+            raw_scores = torch.mean((reconstruction - torch.as_tensor(
+                normalized, dtype=torch.float32
+            ).to(self.backbone_device)) ** 2, dim=(1, 2))
+            latent_scores = torch.mean(torch.abs(latent), dim=(1, 2))
+        return (
+            raw_scores.detach().cpu().numpy().astype(np.float64),
+            latent_scores.detach().cpu().numpy().astype(np.float64),
+        )
 
     def _score_window_scores(
         self, query_sequence: np.ndarray
     ) -> tuple[np.ndarray, np.ndarray]:
+        if self.backbone_ is not None:
+            return self._score_backbone_windows(query_sequence)
         if self.reference_mean_ is None or self.reference_std_ is None:
             raise RuntimeError("Call fit() before scoring.")
         query_array = as_2d_sequence(query_sequence)
@@ -133,6 +257,21 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             "method": self.method_name,
             "adaptation_momentum": self.adaptation_momentum,
             "online_variant": self.online_variant,
+            **self._backbone_metadata(),
+        }
+
+    def _backbone_metadata(self) -> dict[str, Any]:
+        return {
+            "encoder_family": self.encoder_family,
+            "input_dim": self.input_dim,
+            "encoder_dim": self.encoder_dim,
+            "cnn_num_layers": self.cnn_num_layers,
+            "cnn_kernel_size": self.cnn_kernel_size,
+            "cnn_hidden_channels": self.cnn_hidden_channels,
+            "cnn_dropout": self.cnn_dropout,
+            "backbone_epochs": self.backbone_epochs,
+            "backbone_batch_size": self.backbone_batch_size,
+            "backbone_learning_rate": self.backbone_learning_rate,
         }
 
     def calibrate(
@@ -254,6 +393,7 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         metric_history: list[dict[str, Any]] = []
         records: list[dict[str, Any]] = []
         entity_id = str(sequence["meta"]["entity_id"])
+        absolute_offset = absolute_stream_offset(sequence)
         sequence_array = as_2d_sequence(sequence["x"])
         for point_index, (raw_score, latent_score, ewma_score) in enumerate(
             zip(raw_point_scores, latent_point_scores, ewma_point_scores, strict=True)
@@ -283,9 +423,9 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             records.append(
                 {
                     "entity_id": entity_id,
-                    "point_index": point_index,
-                    "window_start_index": window_start_index,
-                    "window_end_index": window_end_index,
+                    "point_index": absolute_offset + point_index,
+                    "window_start_index": absolute_offset + window_start_index,
+                    "window_end_index": absolute_offset + window_end_index,
                     "raw_point_score": float(raw_score),
                     "ewma_point_score": float(ewma_score),
                     "latent_window_score": float(latent_score),
