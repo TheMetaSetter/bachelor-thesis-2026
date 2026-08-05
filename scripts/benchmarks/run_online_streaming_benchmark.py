@@ -364,7 +364,9 @@ def run_online_streaming_benchmark(
                     )
                 ),
                 "sequence_length": int(
-                    selected_metadata.get("sequence_length", limited_sequence["x"].shape[0])
+                    selected_metadata.get(
+                        "sequence_length", limited_sequence["x"].shape[0]
+                    )
                 ),
             }
         )

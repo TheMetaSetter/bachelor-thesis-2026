@@ -161,8 +161,12 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         self.backbone_.train()
         for _ in range(self.backbone_epochs):
             permutation = torch.randperm(window_tensor.shape[0])
-            for batch_start in range(0, window_tensor.shape[0], self.backbone_batch_size):
-                batch_indices = permutation[batch_start : batch_start + self.backbone_batch_size]
+            for batch_start in range(
+                0, window_tensor.shape[0], self.backbone_batch_size
+            ):
+                batch_indices = permutation[
+                    batch_start : batch_start + self.backbone_batch_size
+                ]
                 batch = window_tensor[batch_indices].to(self.backbone_device)
                 reconstruction, _ = self.backbone_(batch)
                 loss = F.mse_loss(reconstruction, batch)
@@ -188,16 +192,25 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             ],
             axis=0,
         )
-        normalized = (windows - self.reference_mean_[None, None, :]) / self.reference_std_[
-            None, None, :
-        ]
+        normalized = (
+            windows - self.reference_mean_[None, None, :]
+        ) / self.reference_std_[None, None, :]
         with torch.no_grad():
             reconstruction, latent = self.backbone_(
-                torch.as_tensor(normalized, dtype=torch.float32).to(self.backbone_device)
+                torch.as_tensor(normalized, dtype=torch.float32).to(
+                    self.backbone_device
+                )
             )
-            raw_scores = torch.mean((reconstruction - torch.as_tensor(
-                normalized, dtype=torch.float32
-            ).to(self.backbone_device)) ** 2, dim=(1, 2))
+            raw_scores = torch.mean(
+                (
+                    reconstruction
+                    - torch.as_tensor(normalized, dtype=torch.float32).to(
+                        self.backbone_device
+                    )
+                )
+                ** 2,
+                dim=(1, 2),
+            )
             latent_scores = torch.mean(torch.abs(latent), dim=(1, 2))
         return (
             raw_scores.detach().cpu().numpy().astype(np.float64),
