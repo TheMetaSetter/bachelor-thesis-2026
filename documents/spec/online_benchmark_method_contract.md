@@ -1,8 +1,8 @@
-# Online absolute range và pretrained encoder contract
+# Online benchmark contract giữa THESIS và các baseline
 
 **Ngày chốt:** 2026-08-05  
 **Phạm vi:** online test-time adaptation trên SMD cho THESIS, M2N2, CANDI và traditional ML baselines  
-**Trạng thái:** quyết định chính thức cho benchmark hiện tại
+**Trạng thái:** contract đã chốt; code/config cần nghiệm thu trước main run
 
 ## Kết luận chính
 
@@ -16,6 +16,12 @@ THESIS dùng encoder trong Stage B `best.pt` của chính THESIS. M2N2 và CANDI
 RedLamp là `128`, còn latent dimension của THESIS là `64`. Hai dimension này
 không cần bằng nhau. Đây là quyết định có chủ ý để dùng ngay checkpoint đã có
 và không train lại từng combination.
+
+Các phương pháp phải dùng cùng dữ liệu stream, cùng cách cắt range, cùng
+window size, cùng cách lấy threshold và cùng cách đánh giá. Mỗi phương pháp
+vẫn giữ protocol nội tại khi tính score và cập nhật online. Vì vậy, công bằng
+không có nghĩa là ép traditional ML phải dùng neural encoder hoặc ép mọi
+phương pháp có cùng latent dimension.
 
 ## 1. Absolute range contract
 
@@ -94,6 +100,31 @@ trước span đầu tiên và suffix 100 time-step sau span cuối cùng.
 Các range này áp dụng giống nhau cho THESIS, M2N2, CANDI, Stumpy, KMeansAD
 và Isolation Forest. Do đó, khác biệt về performance không đến từ việc mỗi
 phương pháp nhìn một đoạn test khác nhau.
+
+### 1.4 Protocol chung cho mọi phương pháp
+
+Các trường dưới đây là phần chung của benchmark. Nếu một baseline có thêm
+tham số riêng, tham số đó không được thay đổi các trường chung này.
+
+| Thành phần | Giá trị chốt | Ý nghĩa |
+|---|---:|---|
+| Dataset | SMD | Tất cả phương pháp dùng cùng entity và cùng feature set |
+| `input_dim` | `38` | Số feature đầu vào của mỗi time-step |
+| `window_size` | `20` | Mỗi score nhìn 20 time-step liên tiếp |
+| Offline window stride | `20` | Cách tạo reference window cho protocol offline của baseline |
+| Online window stride | `1` | Mỗi bước online dịch cửa sổ một time-step |
+| Threshold split | clean validation | Không dùng test labels để chọn threshold |
+| Threshold quantile | `0.99` | Quantile dùng để đặt threshold |
+| Online EWMA | current `0.9`, previous `0.1` | Làm mượt point score trước khi phân loại |
+| Test labels | metrics only | Chỉ dùng để tính performance sau khi stream kết thúc |
+| `max_online_steps` | `null` ở main run | Smoke test mới được đặt giới hạn bước |
+| Seed set | `6`, `8`, `36` | Dùng cùng seed set khi method có random state |
+| Stream update | theo method | Deep baselines có policy update riêng; traditional baselines frozen |
+
+`offline window stride` chỉ mô tả protocol tạo reference/calibration của
+baseline. Online benchmark luôn dùng `online_window_stride: 1`. Không được
+thay `max_online_steps` bằng một range khác; range tuyệt đối phải là cơ chế
+chọn đoạn stream.
 
 ## 2. Pretrained encoder contract
 
@@ -209,28 +240,105 @@ baseline_kwargs:
 `pretrained_encoder_checkpoint` là một phần của contract. Runtime không được
 âm thầm train một backbone mới nếu trường này đã được cung cấp.
 
-## 3. Tiêu chí công bằng của benchmark
+### 2.5 Contract riêng của online adaptation
+
+THESIS và hai deep-learning baseline không dùng chung quy tắc cập nhật. Bảng
+dưới đây ghi vai trò của từng phương pháp.
+
+| Phương pháp | Score chính | Cập nhật trong stream | Tham số riêng đã chốt |
+|---|---|---|---|
+| THESIS | Score theo model THESIS và threshold artifact tương ứng | Theo các policy A0/A1/A2; chỉ phần được contract cho online TTA được cập nhật | `O0/O1`, `A0/A1/A2`, latent `64` |
+| M2N2 | Score từ backbone RedLamp và head/policy M2N2 | Policy M2N2; không cập nhật khi cửa sổ bị xem là bất thường | `adaptation_momentum = 0.01`, latent `128` |
+| CANDI | Score từ backbone RedLamp và head/policy CANDI | Policy CANDI; chỉ nhận cửa sổ đủ điều kiện theo policy | `adaptation_momentum = 0.02`, latent `128` |
+| Stumpy Channel AB | Matrix-profile AB-join theo từng channel, lấy `nanmax` giữa channels | Frozen, không update tham số | `p = 2.0`, `normalize = true` |
+| KMeansAD | Khoảng cách Euclidean tới cluster center gần nhất | Frozen, không update cluster center | `n_clusters = 20`, `n_init = 10`, `normalize_windows = true` |
+| Isolation Forest | Điểm từ `decision_function` của Isolation Forest | Frozen, không update forest | `n_estimators = 100`, `max_samples = auto`, `max_features = 1.0`, `contamination = auto`, `normalize_windows = true` |
+
+`A0`, `A1` và `A2` là tên variant của THESIS. Chúng không được dùng để tạo
+thêm combination chính thức cho M2N2, CANDI hoặc traditional ML. M2N2 và
+CANDI mỗi phương pháp có một online baseline configuration cho mỗi
+entity/seed. Traditional ML dùng tên `main` và luôn frozen.
+
+Nếu runner bắt buộc có trường `online_variant`, baseline dùng giá trị
+`main`. Giá trị này chỉ là nhãn configuration; nó không biến policy của
+baseline thành policy A0/A1/A2 của THESIS.
+
+### 2.6 Ma trận combination chính thức
+
+| Nhóm | Số combination | Cách tính |
+|---|---:|---|
+| THESIS | 54 | `2 O-variant × 3 A-variant × 3 entity × 3 seed` |
+| M2N2 | 9 | `1 baseline method × 3 entity × 3 seed` |
+| CANDI | 9 | `1 baseline method × 3 entity × 3 seed` |
+| Stumpy Channel AB | 9 | `1 main config × 3 entity × 3 seed` |
+| KMeansAD | 9 | `1 main config × 3 entity × 3 seed` |
+| Isolation Forest | 9 | `1 main config × 3 entity × 3 seed` |
+| **Tổng comparison matrix** | **99** | Bao gồm cả ba traditional ML baselines |
+
+M2N2 và CANDI không nhân thành ba combination chỉ vì config có trường
+`online_variant`. Nếu cần giữ field này để tương thích runner, giá trị chính
+thức là `main`. Các file generated cũ có đường dẫn `A0`, `A1` hoặc `A2` cho
+baseline không thuộc matrix chính thức và không được dùng để báo cáo.
+
+## 3. Hyperparameter của traditional ML
+
+Traditional ML không có pretrained encoder. Để so sánh công bằng, các method
+này dùng cùng feature set, cùng window size, cùng stride, cùng clean-validation
+threshold và cùng EWMA với deep-learning methods. Các tham số dưới đây là
+tham số chính thức cho main run.
+
+| Method | Tham số chính thức | Ghi chú |
+|---|---|---|
+| Stumpy Channel AB | `window_size=20`, `normalize=true`, `p=2.0`, `threshold_quantile=0.99` | Chạy AB-join trên từng channel rồi gộp bằng `nanmax`; `ignore_trivial=false` là hành vi hiện tại |
+| KMeansAD | `window_size=20`, `n_clusters=20`, `normalize_windows=true`, `threshold_quantile=0.99`, `n_init=10` | `n_init=10` được cố định trong runtime; seed là `6`, `8`, `36` |
+| Isolation Forest | `window_size=20`, `n_estimators=100`, `max_samples="auto"`, `max_features=1.0`, `contamination="auto"`, `normalize_windows=true`, `threshold_quantile=0.99` | Seed được truyền vào `random_state`; contamination không lấy từ test labels |
+
+`normalize=true` và `normalize_windows=true` là preprocessing nội tại của
+traditional method hiện tại. Giữ chúng trong main run là lựa chọn native
+protocol, không phải một cách làm cho traditional baseline nhìn thấy test
+labels. Nếu cần nghiên cứu ảnh hưởng của preprocessing, hãy ghi thành một
+ablation riêng; không thay đổi main contract giữa chừng.
+
+Smoke run có thể dùng `n_clusters=4` và `n_estimators=20` để chạy nhanh. Hai
+giá trị này không được dùng để báo cáo performance chính thức.
+
+Tất cả traditional baseline đều fit reference model trên train sequence,
+calibrate threshold trên clean validation, sau đó chạy test stream frozen.
+Chúng không được cập nhật cluster center, forest hoặc matrix profile bằng
+test labels hay bằng anomaly span đã biết.
+
+## 4. Tiêu chí công bằng của benchmark
 
 Benchmark này định nghĩa công bằng ở các điểm sau:
 
 1. Tất cả phương pháp nhìn cùng absolute range của cùng entity.
-2. Deep-learning methods dùng cùng input dimension, window size và cấu trúc
+2. Mọi phương pháp dùng cùng `input_dim=38`, `window_size=20` và online
+   stride `1`.
+3. Deep-learning methods dùng cùng input dimension, window size và cấu trúc
    simple 1D-CNN cơ bản.
-3. M2N2 và CANDI dùng cùng nguồn RedLamp encoder và cùng quy tắc ghép
+4. M2N2 và CANDI dùng cùng nguồn RedLamp encoder và cùng quy tắc ghép
    entity/seed.
-4. THESIS dùng checkpoint Stage B tương ứng với chính nó, không thay bằng
+5. THESIS dùng checkpoint Stage B tương ứng với chính nó, không thay bằng
    RedLamp encoder.
-5. Khác biệt latent dimension `64` và `128` được ghi công khai trong bảng
+6. Khác biệt latent dimension `64` và `128` được ghi công khai trong bảng
    kết quả. Không gọi hai dimension này là “bằng nhau”.
-6. Traditional ML baselines không bị ép phải có encoder vì chúng không phải
+7. Threshold chỉ fit trên clean validation; test labels chỉ dùng để tính
+   metric.
+8. Traditional ML baselines không bị ép phải có encoder vì chúng không phải
    deep-learning methods.
+9. Traditional ML baselines chạy frozen; chỉ THESIS, M2N2 và CANDI được phép
+   có cập nhật online theo policy riêng.
+
+Không dùng grid search trên test stream. Nếu cần chọn một hyperparameter mới,
+phải chọn bằng train/clean-validation protocol, ghi vào config và giữ nguyên
+cho mọi seed của cùng method.
 
 Việc THESIS dùng pipeline 30 epoch còn M2N2/CANDI dùng RedLamp checkpoint có
 metadata 100 epoch là một giới hạn thực nghiệm đã được chấp nhận. Mục tiêu hiện
 tại là so sánh online adaptation trên cùng stream, với nguồn encoder được ghi
 rõ và tái lập được; không train lại encoder cho từng combination.
 
-## 4. Provenance bắt buộc
+## 5. Provenance bắt buộc
 
 Mỗi online result phải lưu tối thiểu:
 
@@ -245,7 +353,7 @@ Mỗi online result phải lưu tối thiểu:
 SHA-256 phải được tính trên đúng file checkpoint được load. Không dùng metric
 hoặc tên file thay cho checkpoint hash.
 
-## 5. Trạng thái implementation và điều kiện nghiệm thu
+## 6. Trạng thái implementation và điều kiện nghiệm thu
 
 Absolute range contract đã có trong
 [`src/protocols/online_stream_range.py`](../../src/protocols/online_stream_range.py)
@@ -264,11 +372,13 @@ trước benchmark chính thức cần kiểm tra các điều kiện sau:
 - Một smoke run ghi đúng checkpoint path, SHA-256, latent dimension và
   absolute range.
 - Smoke tests cho THESIS, M2N2 và CANDI đều đi qua cùng range contract.
+- Generator và YAML chính thức tạo đúng một config `main` cho mỗi baseline,
+  entity và seed; không chạy các config baseline cũ mang nhãn `A0/A1/A2`.
 
 Chỉ sau khi một combination chạy end-to-end và các điều kiện trên pass mới
 chạy toàn bộ matrix.
 
-## 6. Terminology changes
+## 7. Terminology changes
 
 Spec này không đổi tên runtime object đã có. Mapping chính thức là:
 
@@ -292,4 +402,3 @@ Spec này không đổi tên runtime object đã có. Mapping chính thức là:
 - [`adaptive.py`](../../src/baselines/online/adaptive.py)
 - [`neural_blocks.py`](../../src/models/neural_blocks.py)
 - [`generate_online_streaming_benchmark_configs.py`](../../scripts/benchmarks/generate_online_streaming_benchmark_configs.py)
-
