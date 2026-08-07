@@ -1,0 +1,23 @@
+{
+  "affiliation_f1": 0.6994040988024329,
+  "f1": 0.25610417797069995,
+  "fpr": 0.04589933122140091,
+  "is_single_class_label_regime": 0.0,
+  "n_neg": 28410.0,
+  "n_pos": 303.0,
+  "positive_ratio": 0.010553,
+  "pr_auc": 0.5572680723132697,
+  "precision": 0.15324675324675324,
+  "predicted_positive_count": 1540.0,
+  "predicted_positive_ratio": 0.053634,
+  "recall": 0.7788778877887789,
+  "roc_auc": 0.9037692417605014,
+  "score_max": 2.555417,
+  "score_mean": 0.172255,
+  "score_min": -2.011264,
+  "score_std": 0.733305,
+  "threshold": 1.5703402110931335,
+  "unique_label_count": 2.0,
+  "vus_pr": 0.6585537663849093,
+  "vus_roc": 0.9012336961036799
+}
