@@ -1,0 +1,4061 @@
+{
+  "created_at_utc": "2026-07-26T10:10:00+00:00",
+  "identity_reconciliation": "/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/outputs/reporting/offline_phase_tables/identity_reconciliation.json",
+  "method_status": [
+    {
+      "identity_conflict_count": 9,
+      "method": "THESIS",
+      "run_count": 18,
+      "status": "ready_with_diagnostics",
+      "table_1_eligible_count": 18,
+      "table_2_eligible_count": 18,
+      "table_2_expected": true,
+      "tail_gap_run_count": 18,
+      "tail_gaps": [
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O0/machine_1_6/seed36"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O0/machine_1_6/seed6"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O0/machine_1_6/seed8"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O0/machine_3_4/seed36"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O0/machine_3_4/seed6"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O0/machine_3_4/seed8"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O0/machine_3_9/seed36"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O0/machine_3_9/seed6"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O0/machine_3_9/seed8"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O1/machine_1_6/seed36"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O1/machine_1_6/seed6"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O1/machine_1_6/seed8"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O1/machine_3_4/seed36"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O1/machine_3_4/seed6"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O1/machine_3_4/seed8"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O1/machine_3_9/seed36"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O1/machine_3_9/seed6"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O1/machine_3_9/seed8"
+        }
+      ]
+    },
+    {
+      "identity_conflict_count": 0,
+      "method": "iforest",
+      "run_count": 9,
+      "status": "ready",
+      "table_1_eligible_count": 9,
+      "table_2_eligible_count": 0,
+      "table_2_expected": false,
+      "tail_gap_run_count": 0,
+      "tail_gaps": []
+    },
+    {
+      "identity_conflict_count": 0,
+      "method": "kmeans_ad",
+      "run_count": 9,
+      "status": "ready",
+      "table_1_eligible_count": 9,
+      "table_2_eligible_count": 0,
+      "table_2_expected": false,
+      "tail_gap_run_count": 0,
+      "tail_gaps": []
+    },
+    {
+      "identity_conflict_count": 0,
+      "method": "redlamp_baseline",
+      "run_count": 9,
+      "status": "ready_with_diagnostics",
+      "table_1_eligible_count": 9,
+      "table_2_eligible_count": 0,
+      "table_2_expected": false,
+      "tail_gap_run_count": 9,
+      "tail_gaps": [
+        {
+          "missing_points": 9,
+          "run_id": "redlamp_baseline/machine_1_6/seed36"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "redlamp_baseline/machine_1_6/seed6"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "redlamp_baseline/machine_1_6/seed8"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "redlamp_baseline/machine_3_4/seed36"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "redlamp_baseline/machine_3_4/seed6"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "redlamp_baseline/machine_3_4/seed8"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "redlamp_baseline/machine_3_9/seed36"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "redlamp_baseline/machine_3_9/seed6"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "redlamp_baseline/machine_3_9/seed8"
+        }
+      ]
+    },
+    {
+      "identity_conflict_count": 0,
+      "method": "stumpy_channel_ab",
+      "run_count": 9,
+      "status": "ready",
+      "table_1_eligible_count": 9,
+      "table_2_eligible_count": 0,
+      "table_2_expected": false,
+      "tail_gap_run_count": 0,
+      "tail_gaps": []
+    }
+  ],
+  "purpose": "Canonical local index for the two offline report tables and later audit. It records the chosen identity, report fields, provenance and diagnostics.",
+  "records": [
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/iforest/machine_1_6/seed36/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "iforest",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.14039174116364234,
+          "vus_pr": 0.300938277615848,
+          "vus_roc": 0.6365862689272137
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "iforest/machine_1_6/seed36",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/iforest/machine_1_6/seed6/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "iforest",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6179813614191725,
+          "vus_pr": 0.21753087301544602,
+          "vus_roc": 0.6218468423302634
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "iforest/machine_1_6/seed6",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/iforest/machine_1_6/seed8/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "iforest",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.5423684804976728,
+          "vus_pr": 0.27682620115148215,
+          "vus_roc": 0.611818783465539
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "iforest/machine_1_6/seed8",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/iforest/machine_3_4/seed36/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "iforest",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.15776605661896864,
+          "vus_pr": 0.12466183433565273,
+          "vus_roc": 0.7919831068533317
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "iforest/machine_3_4/seed36",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/iforest/machine_3_4/seed6/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "iforest",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.1704279341336705,
+          "vus_pr": 0.15161152419693857,
+          "vus_roc": 0.8459199059217607
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "iforest/machine_3_4/seed6",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/iforest/machine_3_4/seed8/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "iforest",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.12437162496358871,
+          "vus_pr": 0.18461960058660537,
+          "vus_roc": 0.8531653456935285
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "iforest/machine_3_4/seed8",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/iforest/machine_3_9/seed36/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "iforest",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6546622046208668,
+          "vus_pr": 0.020575681345222648,
+          "vus_roc": 0.25146718748632385
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "iforest/machine_3_9/seed36",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/iforest/machine_3_9/seed6/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "iforest",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6609748484036431,
+          "vus_pr": 0.02065237680957674,
+          "vus_roc": 0.21915735341791
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "iforest/machine_3_9/seed6",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/iforest/machine_3_9/seed8/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "iforest",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6179166241342187,
+          "vus_pr": 0.041987131024466176,
+          "vus_roc": 0.27765725209238135
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "iforest/machine_3_9/seed8",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/kmeans_ad/machine_1_6/seed36/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "kmeans_ad",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.15156499592300915,
+          "vus_pr": 0.3308968495932335,
+          "vus_roc": 0.8054944554808623
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "kmeans_ad/machine_1_6/seed36",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/kmeans_ad/machine_1_6/seed6/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "kmeans_ad",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6113143984100479,
+          "vus_pr": 0.23831244511129196,
+          "vus_roc": 0.6865835717668249
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "kmeans_ad/machine_1_6/seed6",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/kmeans_ad/machine_1_6/seed8/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "kmeans_ad",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.13843993086742418,
+          "vus_pr": 0.33146335559384266,
+          "vus_roc": 0.8069607057636752
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "kmeans_ad/machine_1_6/seed8",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/kmeans_ad/machine_3_4/seed36/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "kmeans_ad",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.20208198347527803,
+          "vus_pr": 0.4230863733711193,
+          "vus_roc": 0.962947406575913
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "kmeans_ad/machine_3_4/seed36",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/kmeans_ad/machine_3_4/seed6/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "kmeans_ad",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.0,
+          "vus_pr": 0.4219428090705045,
+          "vus_roc": 0.9615162050683368
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "kmeans_ad/machine_3_4/seed6",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/kmeans_ad/machine_3_4/seed8/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "kmeans_ad",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.20706212385907083,
+          "vus_pr": 0.32939861834184825,
+          "vus_roc": 0.9235116749214931
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "kmeans_ad/machine_3_4/seed8",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/kmeans_ad/machine_3_9/seed36/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "kmeans_ad",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.697486651725946,
+          "vus_pr": 0.6093730907944029,
+          "vus_roc": 0.9006473923828224
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "kmeans_ad/machine_3_9/seed36",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/kmeans_ad/machine_3_9/seed6/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "kmeans_ad",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6994040988024329,
+          "vus_pr": 0.6585537663849093,
+          "vus_roc": 0.9012336961036799
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "kmeans_ad/machine_3_9/seed6",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/kmeans_ad/machine_3_9/seed8/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "kmeans_ad",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6990596112460458,
+          "vus_pr": 0.7557094701765446,
+          "vus_roc": 0.8968586539920386
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "kmeans_ad/machine_3_9/seed8",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/stumpy_channel_ab/machine_1_6/seed36/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "stumpy_channel_ab",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.18968584555375348,
+          "vus_pr": 0.17507781790075003,
+          "vus_roc": 0.4988633171346488
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "stumpy_channel_ab/machine_1_6/seed36",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/stumpy_channel_ab/machine_1_6/seed6/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "stumpy_channel_ab",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.18968584555375348,
+          "vus_pr": 0.17507781790075003,
+          "vus_roc": 0.4988633171346488
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "stumpy_channel_ab/machine_1_6/seed6",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/stumpy_channel_ab/machine_1_6/seed8/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "stumpy_channel_ab",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.18968584555375348,
+          "vus_pr": 0.17507781790075003,
+          "vus_roc": 0.4988633171346488
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "stumpy_channel_ab/machine_1_6/seed8",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/stumpy_channel_ab/machine_3_4/seed36/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "stumpy_channel_ab",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6234950924657667,
+          "vus_pr": 0.05790871542982891,
+          "vus_roc": 0.5059611641950886
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "stumpy_channel_ab/machine_3_4/seed36",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/stumpy_channel_ab/machine_3_4/seed6/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "stumpy_channel_ab",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6234950924657667,
+          "vus_pr": 0.05790871542982891,
+          "vus_roc": 0.5059611641950886
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "stumpy_channel_ab/machine_3_4/seed6",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/stumpy_channel_ab/machine_3_4/seed8/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "stumpy_channel_ab",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6234950924657667,
+          "vus_pr": 0.05790871542982891,
+          "vus_roc": 0.5059611641950886
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "stumpy_channel_ab/machine_3_4/seed8",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/stumpy_channel_ab/machine_3_9/seed36/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "stumpy_channel_ab",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.5922884461716087,
+          "vus_pr": 0.04501984778649071,
+          "vus_roc": 0.5503799287956175
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "stumpy_channel_ab/machine_3_9/seed36",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/stumpy_channel_ab/machine_3_9/seed6/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "stumpy_channel_ab",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.5922884461716087,
+          "vus_pr": 0.04501984778649071,
+          "vus_roc": 0.5503799287956175
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "stumpy_channel_ab/machine_3_9/seed6",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/offline_benchmark/stumpy_channel_ab/machine_3_9/seed8/metrics/offline_metrics.json",
+        "source_kind": "traditional_machine_learning_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": null,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": null,
+        "raw_protocol_status": null
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "stumpy_channel_ab",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "metric_summary",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.5922884461716087,
+          "vus_pr": 0.04501984778649071,
+          "vus_roc": 0.5503799287956175
+        },
+        "uq_summary": {
+          "status": "not_applicable"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "stumpy_channel_ab/machine_3_9/seed8",
+      "status": {
+        "coverage": "not_reported",
+        "overall": "ready",
+        "table_1": "ready",
+        "table_2": "not_applicable"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/redlamp_baseline/machine_1_6/seed36/evaluation_metrics.json",
+        "source_kind": "redlamp_baseline_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": 9,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "redlamp_baseline",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "evaluation",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7224814518735203,
+          "vus_pr": 0.5860651359952171,
+          "vus_roc": 0.5004300181105703
+        },
+        "uq_summary": {
+          "status": "not_available"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "redlamp_baseline/machine_1_6/seed36",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "not_available"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/redlamp_baseline/machine_1_6/seed6/evaluation_metrics.json",
+        "source_kind": "redlamp_baseline_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": 9,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "redlamp_baseline",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "evaluation",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6966393207622477,
+          "vus_pr": 0.5860688571928764,
+          "vus_roc": 0.5005648548128347
+        },
+        "uq_summary": {
+          "status": "not_available"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "redlamp_baseline/machine_1_6/seed6",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "not_available"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/redlamp_baseline/machine_1_6/seed8/evaluation_metrics.json",
+        "source_kind": "redlamp_baseline_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": 9,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "redlamp_baseline",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "evaluation",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.6833136032355176,
+          "vus_pr": 0.5860614147975581,
+          "vus_roc": 0.500295181408306
+        },
+        "uq_summary": {
+          "status": "not_available"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "redlamp_baseline/machine_1_6/seed8",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "not_available"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/redlamp_baseline/machine_3_4/seed36/evaluation_metrics.json",
+        "source_kind": "redlamp_baseline_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": 7,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "redlamp_baseline",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "evaluation",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7077546487730684,
+          "vus_pr": 0.6145405964672361,
+          "vus_roc": 0.9127513328763392
+        },
+        "uq_summary": {
+          "status": "not_available"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "redlamp_baseline/machine_3_4/seed36",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "not_available"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/redlamp_baseline/machine_3_4/seed6/evaluation_metrics.json",
+        "source_kind": "redlamp_baseline_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": 7,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "redlamp_baseline",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "evaluation",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7078100916860233,
+          "vus_pr": 0.6112666705515498,
+          "vus_roc": 0.9067027776117655
+        },
+        "uq_summary": {
+          "status": "not_available"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "redlamp_baseline/machine_3_4/seed6",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "not_available"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/redlamp_baseline/machine_3_4/seed8/evaluation_metrics.json",
+        "source_kind": "redlamp_baseline_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": 7,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "redlamp_baseline",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "evaluation",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7078100916860233,
+          "vus_pr": 0.6157821754442347,
+          "vus_roc": 0.8506367787187682
+        },
+        "uq_summary": {
+          "status": "not_available"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "redlamp_baseline/machine_3_4/seed8",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "not_available"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/redlamp_baseline/machine_3_9/seed36/evaluation_metrics.json",
+        "source_kind": "redlamp_baseline_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": 13,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "redlamp_baseline",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 36,
+        "stage_name": "evaluation",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.8088794328428213,
+          "vus_pr": 0.5171342597457426,
+          "vus_roc": 0.5445705216864053
+        },
+        "uq_summary": {
+          "status": "not_available"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "redlamp_baseline/machine_3_9/seed36",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "not_available"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/redlamp_baseline/machine_3_9/seed6/evaluation_metrics.json",
+        "source_kind": "redlamp_baseline_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": 13,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "redlamp_baseline",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 6,
+        "stage_name": "evaluation",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.8617344382465892,
+          "vus_pr": 0.5171342597457426,
+          "vus_roc": 0.5445705216864053
+        },
+        "uq_summary": {
+          "status": "not_available"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "redlamp_baseline/machine_3_9/seed6",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "not_available"
+      }
+    },
+    {
+      "artifact_paths": {
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/redlamp_baseline/machine_3_9/seed8/evaluation_metrics.json",
+        "source_kind": "redlamp_baseline_metric"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": null,
+        "best_checkpoint_sha256_expected": null,
+        "best_checkpoint_sha256_matches": null
+      },
+      "diagnostics": {
+        "missing_points": 13,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "redlamp_baseline",
+        "phase_name": "offline",
+        "resolution": "path",
+        "seed": 8,
+        "stage_name": "evaluation",
+        "variant_name": null
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.8026709466065621,
+          "vus_pr": 0.5187641862951241,
+          "vus_roc": 0.5511709489083414
+        },
+        "uq_summary": {
+          "status": "not_available"
+        },
+        "validation_testing_comparison": null
+      },
+      "run_id": "redlamp_baseline/machine_3_9/seed8",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "not_available"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "083e7973c831b0b41dc517f2ddd07af56cfc9828cbf148b39f2661f0b43f633b",
+        "best_checkpoint_sha256_expected": "083e7973c831b0b41dc517f2ddd07af56cfc9828cbf148b39f2661f0b43f633b",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed36/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed36/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "083e7973c831b0b41dc517f2ddd07af56cfc9828cbf148b39f2661f0b43f633b",
+        "best_checkpoint_sha256_expected": "083e7973c831b0b41dc517f2ddd07af56cfc9828cbf148b39f2661f0b43f633b",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 9,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O0",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 36,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O0"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7471408620689869,
+          "vus_pr": 0.8003811371132352,
+          "vus_roc": 0.8923032315669291
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 5.538637528314366,
+              "mean_of_variances": 0.01332564755195815,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.538637524439117,
+              "window_variance_mean": 0.000637814886570179
+            },
+            "synthetic_validation": {
+              "mean_of_means": 5.537927820887101,
+              "mean_of_variances": 0.013075012076128914,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.537928454009658,
+              "window_variance_mean": 0.0006440510638655678
+            },
+            "test": {
+              "mean_of_means": 23.657011254717332,
+              "mean_of_variances": 0.12731509304104813,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 23.657011626112098,
+              "window_variance_mean": 0.00627628448777663
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 23.657011254717332,
+          "mean_of_means_validation": 5.538637528314366,
+          "mean_of_variances_test": 0.12731509304104813,
+          "mean_of_variances_validation": 0.01332564755195815,
+          "test_minus_validation": {
+            "mean_of_means": 18.118373726402965,
+            "mean_of_variances": 0.11398944548908997
+          }
+        }
+      },
+      "run_id": "thesis/O0/machine_1_6/seed36",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "958228f40256b77cd0c6aaf58e013d42a1628699422a3a53c4d6a9b7b72d5c53",
+        "best_checkpoint_sha256_expected": "958228f40256b77cd0c6aaf58e013d42a1628699422a3a53c4d6a9b7b72d5c53",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "958228f40256b77cd0c6aaf58e013d42a1628699422a3a53c4d6a9b7b72d5c53",
+        "best_checkpoint_sha256_expected": "958228f40256b77cd0c6aaf58e013d42a1628699422a3a53c4d6a9b7b72d5c53",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 9,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O0",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 6,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O0"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7466805673094721,
+          "vus_pr": 0.796055534629309,
+          "vus_roc": 0.8923338109781869
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 5.612448465052235,
+              "mean_of_variances": 0.010872646628382943,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.612449056516259,
+              "window_variance_mean": 0.0005366864298840652
+            },
+            "synthetic_validation": {
+              "mean_of_means": 5.611502738469044,
+              "mean_of_variances": 0.010940223092875076,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.611502780247543,
+              "window_variance_mean": 0.0005316317127203624
+            },
+            "test": {
+              "mean_of_means": 23.258214056354355,
+              "mean_of_variances": 0.3386686839555902,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 23.258214459779698,
+              "window_variance_mean": 0.01657672831762004
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 23.258214056354355,
+          "mean_of_means_validation": 5.612448465052235,
+          "mean_of_variances_test": 0.3386686839555902,
+          "mean_of_variances_validation": 0.010872646628382943,
+          "test_minus_validation": {
+            "mean_of_means": 17.64576559130212,
+            "mean_of_variances": 0.32779603732720725
+          }
+        }
+      },
+      "run_id": "thesis/O0/machine_1_6/seed6",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "3403123f3b4d0fa7952ae0f10ee25addec298c5bb379be567203d31b4d232539",
+        "best_checkpoint_sha256_expected": "3403123f3b4d0fa7952ae0f10ee25addec298c5bb379be567203d31b4d232539",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed8/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed8/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "3403123f3b4d0fa7952ae0f10ee25addec298c5bb379be567203d31b4d232539",
+        "best_checkpoint_sha256_expected": "3403123f3b4d0fa7952ae0f10ee25addec298c5bb379be567203d31b4d232539",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 9,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": false,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O0",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 8,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O0"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7465804534876098,
+          "vus_pr": 0.7969265783013858,
+          "vus_roc": 0.8923295731619182
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 5.629885833060085,
+              "mean_of_variances": 0.013137802757695377,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.62988571165982,
+              "window_variance_mean": 0.0006219221273198145
+            },
+            "synthetic_validation": {
+              "mean_of_means": 5.6307298293889705,
+              "mean_of_variances": 0.013040075153232862,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.630729808961436,
+              "window_variance_mean": 0.000673423172870725
+            },
+            "test": {
+              "mean_of_means": 24.297627408164427,
+              "mean_of_variances": 0.28505825584339006,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 24.297627833898407,
+              "window_variance_mean": 0.013807804134520315
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 24.297627408164427,
+          "mean_of_means_validation": 5.629885833060085,
+          "mean_of_variances_test": 0.28505825584339006,
+          "mean_of_variances_validation": 0.013137802757695377,
+          "test_minus_validation": {
+            "mean_of_means": 18.667741575104344,
+            "mean_of_variances": 0.2719204530856947
+          }
+        }
+      },
+      "run_id": "thesis/O0/machine_1_6/seed8",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "e67ab103284cfc680f9cfa5fbd9a2b87dd229cbd92e0e971b625d5d0f9402426",
+        "best_checkpoint_sha256_expected": "e67ab103284cfc680f9cfa5fbd9a2b87dd229cbd92e0e971b625d5d0f9402426",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed36/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed36/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "e67ab103284cfc680f9cfa5fbd9a2b87dd229cbd92e0e971b625d5d0f9402426",
+        "best_checkpoint_sha256_expected": "e67ab103284cfc680f9cfa5fbd9a2b87dd229cbd92e0e971b625d5d0f9402426",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 7,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O0",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 36,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O0"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7075151015208035,
+          "vus_pr": 0.7066968269422004,
+          "vus_roc": 0.9506220759895241
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.7008915069268353,
+              "mean_of_variances": 0.005893732278464201,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.7008915198177604,
+              "window_variance_mean": 0.0002931962085621292
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.7011922433135747,
+              "mean_of_variances": 0.005947778305064287,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.7011922635138035,
+              "window_variance_mean": 0.00029483293156055756
+            },
+            "test": {
+              "mean_of_means": 2225.509470537033,
+              "mean_of_variances": 0.46559961784270615,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 2225.5095110055613,
+              "window_variance_mean": 0.02283557406147682
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 2225.509470537033,
+          "mean_of_means_validation": 0.7008915069268353,
+          "mean_of_variances_test": 0.46559961784270615,
+          "mean_of_variances_validation": 0.005893732278464201,
+          "test_minus_validation": {
+            "mean_of_means": 2224.808579030106,
+            "mean_of_variances": 0.45970588556424197
+          }
+        }
+      },
+      "run_id": "thesis/O0/machine_3_4/seed36",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "fedcc19a747787cb5da3cf78756e900c31134c0da4d09f87607c6ba5e3786ca0",
+        "best_checkpoint_sha256_expected": "fedcc19a747787cb5da3cf78756e900c31134c0da4d09f87607c6ba5e3786ca0",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed6/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed6/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "fedcc19a747787cb5da3cf78756e900c31134c0da4d09f87607c6ba5e3786ca0",
+        "best_checkpoint_sha256_expected": "fedcc19a747787cb5da3cf78756e900c31134c0da4d09f87607c6ba5e3786ca0",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 7,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O0",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 6,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O0"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7075579489898836,
+          "vus_pr": 0.7030815678312801,
+          "vus_roc": 0.9497747358952567
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.7453999149407876,
+              "mean_of_variances": 0.01154614940332591,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.7453999173338131,
+              "window_variance_mean": 0.0005706442308125542
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.7450109646024214,
+              "mean_of_variances": 0.011230128978601157,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.7450109754957385,
+              "window_variance_mean": 0.0005459197878982364
+            },
+            "test": {
+              "mean_of_means": 2224.804273480242,
+              "mean_of_variances": 0.41501429451412203,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 2224.8043217105487,
+              "window_variance_mean": 0.02077528737480542
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 2224.804273480242,
+          "mean_of_means_validation": 0.7453999149407876,
+          "mean_of_variances_test": 0.41501429451412203,
+          "mean_of_variances_validation": 0.01154614940332591,
+          "test_minus_validation": {
+            "mean_of_means": 2224.0588735653014,
+            "mean_of_variances": 0.4034681451107961
+          }
+        }
+      },
+      "run_id": "thesis/O0/machine_3_4/seed6",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "b36e01c6e561a4abd6b1e40f5ad798ccfc1eed7d6b5a86da485e17233634e290",
+        "best_checkpoint_sha256_expected": "b36e01c6e561a4abd6b1e40f5ad798ccfc1eed7d6b5a86da485e17233634e290",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed8/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed8/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "b36e01c6e561a4abd6b1e40f5ad798ccfc1eed7d6b5a86da485e17233634e290",
+        "best_checkpoint_sha256_expected": "b36e01c6e561a4abd6b1e40f5ad798ccfc1eed7d6b5a86da485e17233634e290",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 7,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": false,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O0",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 8,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O0"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7075365293350853,
+          "vus_pr": 0.705464013515499,
+          "vus_roc": 0.9502318502291367
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.750173132004753,
+              "mean_of_variances": 0.020705483688404178,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.7501731452421617,
+              "window_variance_mean": 0.001042723306732191
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.7499281934351992,
+              "mean_of_variances": 0.020383987390330392,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.7499282096780963,
+              "window_variance_mean": 0.0009749605512713631
+            },
+            "test": {
+              "mean_of_means": 2224.9338555326312,
+              "mean_of_variances": 0.4151437197950381,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 2224.93390098851,
+              "window_variance_mean": 0.021063897558101907
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 2224.9338555326312,
+          "mean_of_means_validation": 0.750173132004753,
+          "mean_of_variances_test": 0.4151437197950381,
+          "mean_of_variances_validation": 0.020705483688404178,
+          "test_minus_validation": {
+            "mean_of_means": 2224.1836824006264,
+            "mean_of_variances": 0.3944382361066339
+          }
+        }
+      },
+      "run_id": "thesis/O0/machine_3_4/seed8",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "73edd6c560b7b01a874e8f980a1f9978d80cec5f340653b6a6029e3850042d3d",
+        "best_checkpoint_sha256_expected": "73edd6c560b7b01a874e8f980a1f9978d80cec5f340653b6a6029e3850042d3d",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed36/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed36/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "73edd6c560b7b01a874e8f980a1f9978d80cec5f340653b6a6029e3850042d3d",
+        "best_checkpoint_sha256_expected": "73edd6c560b7b01a874e8f980a1f9978d80cec5f340653b6a6029e3850042d3d",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 13,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O0",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 36,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O0"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7795100870850727,
+          "vus_pr": 0.5778490237102021,
+          "vus_roc": 0.6452270368209316
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.6545024262436175,
+              "mean_of_variances": 0.01521726462451379,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.6545024374532368,
+              "window_variance_mean": 0.0007889962338030992
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.6542929732905967,
+              "mean_of_variances": 0.015005446537173027,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.654292979358796,
+              "window_variance_mean": 0.0007318074325229795
+            },
+            "test": {
+              "mean_of_means": 40.101563108563425,
+              "mean_of_variances": 0.0332849309125573,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 40.10156213789659,
+              "window_variance_mean": 0.0016864753116902895
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 40.101563108563425,
+          "mean_of_means_validation": 0.6545024262436175,
+          "mean_of_variances_test": 0.0332849309125573,
+          "mean_of_variances_validation": 0.01521726462451379,
+          "test_minus_validation": {
+            "mean_of_means": 39.44706068231981,
+            "mean_of_variances": 0.01806766628804351
+          }
+        }
+      },
+      "run_id": "thesis/O0/machine_3_9/seed36",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "875621989795aa4acd0c772458d3c41c706d7d87ea3661a1a416f45ec2dfbdd9",
+        "best_checkpoint_sha256_expected": "875621989795aa4acd0c772458d3c41c706d7d87ea3661a1a416f45ec2dfbdd9",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed6/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed6/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "875621989795aa4acd0c772458d3c41c706d7d87ea3661a1a416f45ec2dfbdd9",
+        "best_checkpoint_sha256_expected": "875621989795aa4acd0c772458d3c41c706d7d87ea3661a1a416f45ec2dfbdd9",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 13,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O0",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 6,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O0"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7940904726661533,
+          "vus_pr": 0.5778490237102021,
+          "vus_roc": 0.6452270368209316
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.5781417770797991,
+              "mean_of_variances": 0.013696265522959238,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.5781417889358275,
+              "window_variance_mean": 0.0007063954394129802
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.5783490854130493,
+              "mean_of_variances": 0.013640354371956997,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.5783490942537992,
+              "window_variance_mean": 0.0006793128520957939
+            },
+            "test": {
+              "mean_of_means": 39.68001166726472,
+              "mean_of_variances": 0.052026339448131585,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 39.68001378589806,
+              "window_variance_mean": 0.002590401302585275
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 39.68001166726472,
+          "mean_of_means_validation": 0.5781417770797991,
+          "mean_of_variances_test": 0.052026339448131585,
+          "mean_of_variances_validation": 0.013696265522959238,
+          "test_minus_validation": {
+            "mean_of_means": 39.10186989018492,
+            "mean_of_variances": 0.03833007392517235
+          }
+        }
+      },
+      "run_id": "thesis/O0/machine_3_9/seed6",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "2f6a1c521e833cab7d8819da21058827255c8af8fdda761e7f86253c452939fd",
+        "best_checkpoint_sha256_expected": "2f6a1c521e833cab7d8819da21058827255c8af8fdda761e7f86253c452939fd",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed8/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed8/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "2f6a1c521e833cab7d8819da21058827255c8af8fdda761e7f86253c452939fd",
+        "best_checkpoint_sha256_expected": "2f6a1c521e833cab7d8819da21058827255c8af8fdda761e7f86253c452939fd",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 13,
+        "provenance_diagnostics": [],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": false,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O0",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 8,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O0"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7935611747425597,
+          "vus_pr": 0.5778490237102021,
+          "vus_roc": 0.6452270368209316
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O0/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.6080267949620398,
+              "mean_of_variances": 0.011499803912376674,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.6080268050320057,
+              "window_variance_mean": 0.0005632169545558768
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.6068656226405906,
+              "mean_of_variances": 0.011634283722098652,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.6068656277885005,
+              "window_variance_mean": 0.000573740500561489
+            },
+            "test": {
+              "mean_of_means": 39.98772770054249,
+              "mean_of_variances": 0.04863688283909718,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 39.98772758082438,
+              "window_variance_mean": 0.0025121841916955607
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 39.98772770054249,
+          "mean_of_means_validation": 0.6080267949620398,
+          "mean_of_variances_test": 0.04863688283909718,
+          "mean_of_variances_validation": 0.011499803912376674,
+          "test_minus_validation": {
+            "mean_of_means": 39.37970090558046,
+            "mean_of_variances": 0.03713707892672051
+          }
+        }
+      },
+      "run_id": "thesis/O0/machine_3_9/seed8",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "4492e78eb34606cb0d1536fb315ec71fea25aa95b4f6d713de630e241f3a03f6",
+        "best_checkpoint_sha256_expected": "4492e78eb34606cb0d1536fb315ec71fea25aa95b4f6d713de630e241f3a03f6",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed36/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed36/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "4492e78eb34606cb0d1536fb315ec71fea25aa95b4f6d713de630e241f3a03f6",
+        "best_checkpoint_sha256_expected": "4492e78eb34606cb0d1536fb315ec71fea25aa95b4f6d713de630e241f3a03f6",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 9,
+        "provenance_diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": true,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O1",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 36,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O1"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7488971584093947,
+          "vus_pr": 0.7989954478490927,
+          "vus_roc": 0.892745362573597
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 5.6072547882211285,
+              "mean_of_variances": 0.002727238064645073,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.607254785564491,
+              "window_variance_mean": 0.0001404293004542277
+            },
+            "synthetic_validation": {
+              "mean_of_means": 5.6072730656713246,
+              "mean_of_variances": 0.002359341744266789,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.607273228277089,
+              "window_variance_mean": 0.00011709920351361273
+            },
+            "test": {
+              "mean_of_means": 24.366929600635114,
+              "mean_of_variances": 0.023888687732306388,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 24.36692988321286,
+              "window_variance_mean": 0.0011802847116382663
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 24.366929600635114,
+          "mean_of_means_validation": 5.6072547882211285,
+          "mean_of_variances_test": 0.023888687732306388,
+          "mean_of_variances_validation": 0.002727238064645073,
+          "test_minus_validation": {
+            "mean_of_means": 18.759674812413984,
+            "mean_of_variances": 0.021161449667661314
+          }
+        }
+      },
+      "run_id": "thesis/O1/machine_1_6/seed36",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "b101a079622637ad9977d484f05cc7711b1027080436979a10b3aece2046a396",
+        "best_checkpoint_sha256_expected": "b101a079622637ad9977d484f05cc7711b1027080436979a10b3aece2046a396",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [
+          "low_trust_variant_metadata_conflict",
+          "duplicated_experiment_config_path_prefix",
+          "missing_query_num_samples_eval"
+        ],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "b101a079622637ad9977d484f05cc7711b1027080436979a10b3aece2046a396",
+        "best_checkpoint_sha256_expected": "b101a079622637ad9977d484f05cc7711b1027080436979a10b3aece2046a396",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 9,
+        "provenance_diagnostics": [
+          "low_trust_variant_metadata_conflict",
+          "duplicated_experiment_config_path_prefix",
+          "missing_query_num_samples_eval"
+        ],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": true,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O1"
+        },
+        "raw_path_variant": "O1",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 6,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O1"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7474278932522352,
+          "vus_pr": 0.7986753679615659,
+          "vus_roc": 0.8919256298703677
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 5.610237286989656,
+              "mean_of_variances": 0.007937354498324112,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.610237650510113,
+              "window_variance_mean": 0.0003983628840900164
+            },
+            "synthetic_validation": {
+              "mean_of_means": 5.610469951782123,
+              "mean_of_variances": 0.007690906010868171,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.610470218110388,
+              "window_variance_mean": 0.00038095392829684175
+            },
+            "test": {
+              "mean_of_means": 23.876757918942932,
+              "mean_of_variances": 0.11856529197305245,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 23.8767582781336,
+              "window_variance_mean": 0.006032915221276106
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 23.876757918942932,
+          "mean_of_means_validation": 5.610237286989656,
+          "mean_of_variances_test": 0.11856529197305245,
+          "mean_of_variances_validation": 0.007937354498324112,
+          "test_minus_validation": {
+            "mean_of_means": 18.266520631953277,
+            "mean_of_variances": 0.11062793747472834
+          }
+        }
+      },
+      "run_id": "thesis/O1/machine_1_6/seed6",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "88a210fcdbbf0ea429c23bcd2311387c3c2f9ee510122a6354b52e2cc48aea25",
+        "best_checkpoint_sha256_expected": "88a210fcdbbf0ea429c23bcd2311387c3c2f9ee510122a6354b52e2cc48aea25",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed8/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed8/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "88a210fcdbbf0ea429c23bcd2311387c3c2f9ee510122a6354b52e2cc48aea25",
+        "best_checkpoint_sha256_expected": "88a210fcdbbf0ea429c23bcd2311387c3c2f9ee510122a6354b52e2cc48aea25",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 9,
+        "provenance_diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_1_6",
+        "identity_conflict": true,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O1",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 8,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O1"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7467468836352467,
+          "vus_pr": 0.7978482311152275,
+          "vus_roc": 0.8920204664624248
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_1_6/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 5.624396340995712,
+              "mean_of_variances": 0.007206743444721333,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.6243965275333085,
+              "window_variance_mean": 0.0003699525289408037
+            },
+            "synthetic_validation": {
+              "mean_of_means": 5.623903602969406,
+              "mean_of_variances": 0.007382655179189685,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 5.623903802264545,
+              "window_variance_mean": 0.0003843168881727344
+            },
+            "test": {
+              "mean_of_means": 24.44453680909245,
+              "mean_of_variances": 0.12485087568218975,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 24.444537143827088,
+              "window_variance_mean": 0.0063951674158602145
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 24.44453680909245,
+          "mean_of_means_validation": 5.624396340995712,
+          "mean_of_variances_test": 0.12485087568218975,
+          "mean_of_variances_validation": 0.007206743444721333,
+          "test_minus_validation": {
+            "mean_of_means": 18.82014046809674,
+            "mean_of_variances": 0.11764413223746842
+          }
+        }
+      },
+      "run_id": "thesis/O1/machine_1_6/seed8",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "3531f0c27de2f6a206b28a81d1bde7328d1138b38fd3911e2c3db44d7a51e9f4",
+        "best_checkpoint_sha256_expected": "3531f0c27de2f6a206b28a81d1bde7328d1138b38fd3911e2c3db44d7a51e9f4",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed36/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed36/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "3531f0c27de2f6a206b28a81d1bde7328d1138b38fd3911e2c3db44d7a51e9f4",
+        "best_checkpoint_sha256_expected": "3531f0c27de2f6a206b28a81d1bde7328d1138b38fd3911e2c3db44d7a51e9f4",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 7,
+        "provenance_diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": true,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O1",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 36,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O1"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7075151015208035,
+          "vus_pr": 0.7083762934656598,
+          "vus_roc": 0.9506766644792007
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.6740398770450788,
+              "mean_of_variances": 0.006321020839748221,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.674039883949494,
+              "window_variance_mean": 0.0003233225433547686
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.6743810916185315,
+              "mean_of_variances": 0.006069905054675542,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.6743811082915735,
+              "window_variance_mean": 0.00029262320813204957
+            },
+            "test": {
+              "mean_of_means": 2224.9106184817506,
+              "mean_of_variances": 0.38834900770155145,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 2224.9106660256966,
+              "window_variance_mean": 0.019188664628041203
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 2224.9106184817506,
+          "mean_of_means_validation": 0.6740398770450788,
+          "mean_of_variances_test": 0.38834900770155145,
+          "mean_of_variances_validation": 0.006321020839748221,
+          "test_minus_validation": {
+            "mean_of_means": 2224.2365786047053,
+            "mean_of_variances": 0.3820279868618032
+          }
+        }
+      },
+      "run_id": "thesis/O1/machine_3_4/seed36",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "549ea675ac9f2cf489f6dc8b84577d8b7849ae3c5c66e8552c56995719221897",
+        "best_checkpoint_sha256_expected": "549ea675ac9f2cf489f6dc8b84577d8b7849ae3c5c66e8552c56995719221897",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed6/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed6/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "549ea675ac9f2cf489f6dc8b84577d8b7849ae3c5c66e8552c56995719221897",
+        "best_checkpoint_sha256_expected": "549ea675ac9f2cf489f6dc8b84577d8b7849ae3c5c66e8552c56995719221897",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 7,
+        "provenance_diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": true,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O1",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 6,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O1"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7075365293350853,
+          "vus_pr": 0.7003998046768792,
+          "vus_roc": 0.9492994852192796
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.6878496306735264,
+              "mean_of_variances": 0.01805671759933275,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.6878496404674094,
+              "window_variance_mean": 0.000899320586941647
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.6886510718321838,
+              "mean_of_variances": 0.018219504207976477,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.6886510907088296,
+              "window_variance_mean": 0.0008972803106636571
+            },
+            "test": {
+              "mean_of_means": 2226.566952188504,
+              "mean_of_variances": 0.45467425612147067,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 2226.5669967898143,
+              "window_variance_mean": 0.023201470162996736
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 2226.566952188504,
+          "mean_of_means_validation": 0.6878496306735264,
+          "mean_of_variances_test": 0.45467425612147067,
+          "mean_of_variances_validation": 0.01805671759933275,
+          "test_minus_validation": {
+            "mean_of_means": 2225.8791025578303,
+            "mean_of_variances": 0.4366175385221379
+          }
+        }
+      },
+      "run_id": "thesis/O1/machine_3_4/seed6",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "3ed2536fee6fa417b862d34ada8ee078f88742dca396cbdaecc8c5808e3d97bb",
+        "best_checkpoint_sha256_expected": "3ed2536fee6fa417b862d34ada8ee078f88742dca396cbdaecc8c5808e3d97bb",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed8/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed8/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "3ed2536fee6fa417b862d34ada8ee078f88742dca396cbdaecc8c5808e3d97bb",
+        "best_checkpoint_sha256_expected": "3ed2536fee6fa417b862d34ada8ee078f88742dca396cbdaecc8c5808e3d97bb",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 7,
+        "provenance_diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_4",
+        "identity_conflict": true,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O1",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 8,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O1"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7075365293350853,
+          "vus_pr": 0.7046389085603246,
+          "vus_roc": 0.9505199363744682
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_4/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.7100672414226425,
+              "mean_of_variances": 0.033479554231836135,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.7100672587373499,
+              "window_variance_mean": 0.0016910072806039953
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.7085597144171469,
+              "mean_of_variances": 0.03245902832558448,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.7085597220871408,
+              "window_variance_mean": 0.001631394047192663
+            },
+            "test": {
+              "mean_of_means": 2226.052962203662,
+              "mean_of_variances": 0.8749615061321083,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 2226.0530014845567,
+              "window_variance_mean": 0.04494282660231408
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 2226.052962203662,
+          "mean_of_means_validation": 0.7100672414226425,
+          "mean_of_variances_test": 0.8749615061321083,
+          "mean_of_variances_validation": 0.033479554231836135,
+          "test_minus_validation": {
+            "mean_of_means": 2225.3428949622394,
+            "mean_of_variances": 0.8414819519002722
+          }
+        }
+      },
+      "run_id": "thesis/O1/machine_3_4/seed8",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "45a5fadb2ddc16d16b698286924fbb462281fda4d8c16cdb6e4a5cda4d53df62",
+        "best_checkpoint_sha256_expected": "45a5fadb2ddc16d16b698286924fbb462281fda4d8c16cdb6e4a5cda4d53df62",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed36/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed36/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "45a5fadb2ddc16d16b698286924fbb462281fda4d8c16cdb6e4a5cda4d53df62",
+        "best_checkpoint_sha256_expected": "45a5fadb2ddc16d16b698286924fbb462281fda4d8c16cdb6e4a5cda4d53df62",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 13,
+        "provenance_diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": true,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O1",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 36,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O1"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7820010212158871,
+          "vus_pr": 0.5778490237102021,
+          "vus_roc": 0.6452270368209316
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed36/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.6433147836191002,
+              "mean_of_variances": 0.009624462109501523,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.6433147969769268,
+              "window_variance_mean": 0.00048421250096175865
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.6432419467834231,
+              "mean_of_variances": 0.00965501042401332,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.6432419535590381,
+              "window_variance_mean": 0.0004886463426335638
+            },
+            "test": {
+              "mean_of_means": 40.08091873975088,
+              "mean_of_variances": 0.028917035885755452,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 40.08091877465257,
+              "window_variance_mean": 0.001484632433312072
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 40.08091873975088,
+          "mean_of_means_validation": 0.6433147836191002,
+          "mean_of_variances_test": 0.028917035885755452,
+          "mean_of_variances_validation": 0.009624462109501523,
+          "test_minus_validation": {
+            "mean_of_means": 39.43760395613178,
+            "mean_of_variances": 0.01929257377625393
+          }
+        }
+      },
+      "run_id": "thesis/O1/machine_3_9/seed36",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "d11744d69fc8ab3ed44b30221f7fabfbf6d346f7ef9de20a8a2412e5476d1efd",
+        "best_checkpoint_sha256_expected": "d11744d69fc8ab3ed44b30221f7fabfbf6d346f7ef9de20a8a2412e5476d1efd",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed6/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed6/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "d11744d69fc8ab3ed44b30221f7fabfbf6d346f7ef9de20a8a2412e5476d1efd",
+        "best_checkpoint_sha256_expected": "d11744d69fc8ab3ed44b30221f7fabfbf6d346f7ef9de20a8a2412e5476d1efd",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 13,
+        "provenance_diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": true,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O1",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 6,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O1"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.7987705727718457,
+          "vus_pr": 0.5778490237102021,
+          "vus_roc": 0.6452270368209316
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed6/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.5502697438183354,
+              "mean_of_variances": 0.052490669976809574,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.5502697532081438,
+              "window_variance_mean": 0.0027048304255764596
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.5504721004697608,
+              "mean_of_variances": 0.05273303656624625,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.5504721107175541,
+              "window_variance_mean": 0.0026837747195919727
+            },
+            "test": {
+              "mean_of_means": 39.53425617478736,
+              "mean_of_variances": 0.11758713704877179,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 39.53425762566125,
+              "window_variance_mean": 0.005607721860620326
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 39.53425617478736,
+          "mean_of_means_validation": 0.5502697438183354,
+          "mean_of_variances_test": 0.11758713704877179,
+          "mean_of_variances_validation": 0.052490669976809574,
+          "test_minus_validation": {
+            "mean_of_means": 38.983986430969026,
+            "mean_of_variances": 0.0650964670719622
+          }
+        }
+      },
+      "run_id": "thesis/O1/machine_3_9/seed6",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    },
+    {
+      "artifact_paths": {
+        "best_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/checkpoints/best.pt",
+        "best_checkpoint_sha256_actual": "10a6f47d2934657f1cf85dc1654b9a9272ac19ca74ecb4e85e73e19478e25474",
+        "best_checkpoint_sha256_expected": "10a6f47d2934657f1cf85dc1654b9a9272ac19ca74ecb4e85e73e19478e25474",
+        "best_checkpoint_sha256_matches": true,
+        "diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "initialization_checkpoint_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed8/two_stage/initializations/stage_b_init.pt",
+        "manifest_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed8/two_stage/two_stage_manifest.json",
+        "metric_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/evaluation_metrics.json",
+        "protocol_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/protocol/resolved_protocol.json",
+        "resolved_config_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/resolved_experiment_config.json",
+        "threshold_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/thresholds/thresholds.json",
+        "uq_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json"
+      },
+      "checkpoint_evidence": {
+        "best_checkpoint_sha256_actual": "10a6f47d2934657f1cf85dc1654b9a9272ac19ca74ecb4e85e73e19478e25474",
+        "best_checkpoint_sha256_expected": "10a6f47d2934657f1cf85dc1654b9a9272ac19ca74ecb4e85e73e19478e25474",
+        "best_checkpoint_sha256_matches": true
+      },
+      "diagnostics": {
+        "missing_points": 13,
+        "provenance_diagnostics": [
+          "low_trust_variant_metadata_conflict"
+        ],
+        "raw_benchmark_comparability": "non_comparable",
+        "raw_protocol_status": "truncated_smoke_evaluation"
+      },
+      "identity": {
+        "entity_id": "machine_3_9",
+        "identity_conflict": true,
+        "method_name": "THESIS",
+        "phase_name": "offline",
+        "raw_metadata_variants": {
+          "thresholds": "O0",
+          "uq_summary": "O0"
+        },
+        "raw_path_variant": "O1",
+        "resolution": "path_config_manifest_checkpoint_consensus",
+        "seed": 8,
+        "stage_name": "stage_b_fusion_finetuning",
+        "variant_name": "O1"
+      },
+      "report_fields": {
+        "metrics": {
+          "affiliation_f1": 0.796845845944484,
+          "vus_pr": 0.5778490237102021,
+          "vus_roc": 0.6452270368209316
+        },
+        "uq_summary": {
+          "source_path": "/root/bachelor-thesis-2026/outputs/benchmark/smd/thesis/O1/machine_3_9/seed8/two_stage/stage_b_fusion_finetuning/metrics/uq_summary.json",
+          "splits": {
+            "clean_validation": {
+              "mean_of_means": 0.6099559067667362,
+              "mean_of_variances": 0.00937423763990617,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.6099559118004211,
+              "window_variance_mean": 0.0004684925604380833
+            },
+            "synthetic_validation": {
+              "mean_of_means": 0.6100975834767786,
+              "mean_of_variances": 0.009162469841517392,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 1,
+                  "point_score_samples": 1,
+                  "reconstruction_samples": 1,
+                  "window_score_samples": 1
+                },
+                "uncertainty_history_non_null_count": 1
+              },
+              "window_score_mean": 0.6100975898603944,
+              "window_variance_mean": 0.0004624202547949627
+            },
+            "test": {
+              "mean_of_means": 40.047965573684316,
+              "mean_of_variances": 0.03549474541758194,
+              "trace_audit": {
+                "any_mc_sample_history": true,
+                "any_uncertainty_history": true,
+                "mc_histories_non_null_count": {
+                  "classification_probability_samples": 3,
+                  "point_score_samples": 3,
+                  "reconstruction_samples": 3,
+                  "window_score_samples": 3
+                },
+                "uncertainty_history_non_null_count": 3
+              },
+              "window_score_mean": 40.04796570492746,
+              "window_variance_mean": 0.0017833205267157699
+            }
+          }
+        },
+        "validation_testing_comparison": {
+          "mean_of_means_test": 40.047965573684316,
+          "mean_of_means_validation": 0.6099559067667362,
+          "mean_of_variances_test": 0.03549474541758194,
+          "mean_of_variances_validation": 0.00937423763990617,
+          "test_minus_validation": {
+            "mean_of_means": 39.43800966691758,
+            "mean_of_variances": 0.026120507777675772
+          }
+        }
+      },
+      "run_id": "thesis/O1/machine_3_9/seed8",
+      "status": {
+        "coverage": "near_complete_tail_gap",
+        "overall": "ready_with_diagnostics",
+        "table_1": "ready",
+        "table_2": "ready"
+      }
+    }
+  ],
+  "resolution_policy": {
+    "checkpoint_binding": {
+      "required_links": [
+        "stage_b_evaluation_metrics",
+        "stage_b_uq_summary",
+        "stage_b_resolved_protocol",
+        "stage_b_best_checkpoint"
+      ],
+      "rule": "Artifacts linked to the same Stage B output directory and matching best-checkpoint SHA-256 belong to the same candidate."
+    },
+    "default": [
+      "path",
+      "resolved_experiment_config",
+      "experiment_name",
+      "two_stage_manifest",
+      "checkpoint_path_and_sha256",
+      "threshold_or_uq_metadata"
+    ],
+    "exception_handling": "Use an explicit per-run reconciliation entry and preserve every conflicting raw field."
+  },
+  "schema_version": 1,
+  "source_report": "/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/outputs/reporting/offline_phase_tables/offline_report_data.json",
+  "source_root": "/root/bachelor-thesis-2026/outputs/benchmark/smd",
+  "summary": {
+    "blocked_record_count": 0,
+    "identity_conflict_count": 9,
+    "method_count": 5,
+    "record_count": 54,
+    "table_1_eligible_count": 54,
+    "table_2_eligible_count": 18
+  }
+}

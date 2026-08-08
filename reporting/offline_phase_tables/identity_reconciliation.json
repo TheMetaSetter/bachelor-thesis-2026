@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-24",
+  "purpose": "Resolve fragmented experiment identities without rerunning Stage A or Stage B.",
+  "source_root": "/root/bachelor-thesis-2026/outputs/benchmark",
+  "raw_artifacts_are_immutable": true,
+  "resolution_strategy": {
+    "default": [
+      "path",
+      "resolved_experiment_config",
+      "experiment_name",
+      "two_stage_manifest",
+      "checkpoint_path_and_sha256",
+      "threshold_or_uq_metadata"
+    ],
+    "checkpoint_binding": {
+      "required_links": [
+        "stage_b_evaluation_metrics",
+        "stage_b_uq_summary",
+        "stage_b_resolved_protocol",
+        "stage_b_best_checkpoint"
+      ],
+      "rule": "Artifacts linked to the same Stage B output directory and matching best-checkpoint SHA-256 belong to the same candidate."
+    },
+    "exception_handling": "Use an explicit per-run reconciliation entry and preserve every conflicting raw field."
+  },
+  "method_policies": [
+    {
+      "scope": "smd/offline_benchmark/**",
+      "resolved_identity_source": "path",
+      "table_1_eligible": true,
+      "uq_status": "not_applicable",
+      "provenance_status": "partial",
+      "notes": "Use offline_metrics.json.vus_pr, offline_metrics.json.affiliation_f1, and offline_metrics.json.vus_roc."
+    },
+    {
+      "scope": "smd/redlamp_baseline/**",
+      "resolved_identity_source": "path",
+      "table_1_eligible": true,
+      "uq_status": "not_available",
+      "provenance_status": "partial",
+      "coverage_policy": "near_complete_tail_gap",
+      "notes": "Keep raw evaluated_num_points and raw_num_points; accept the small tail gap for the report with an explicit diagnostic."
+    },
+    {
+      "scope": "smd/thesis/O0/**",
+      "resolved_identity_source": "path_config_manifest_checkpoint_consensus",
+      "resolved_variant": "O0",
+      "table_1_eligible": true,
+      "table_2_eligible": true,
+      "coverage_policy": "near_complete_tail_gap",
+      "status": "resolved_with_coverage_diagnostic"
+    },
+    {
+      "scope": "smd/thesis/O1/**",
+      "resolved_identity_source": "path_config_manifest_checkpoint_consensus",
+      "resolved_variant": "O1",
+      "table_1_eligible": true,
+      "table_2_eligible": true,
+      "coverage_policy": "near_complete_tail_gap",
+      "status": "resolved_with_metadata_conflict",
+      "conflicting_fields": [
+        "thresholds.variant_name",
+        "uq_summary.run.variant_name"
+      ]
+    }
+  ],
+  "exceptions": [
+    {
+      "scope": "smd/thesis/O1/machine_1_6/seed6",
+      "resolved_variant": "O1",
+      "status": "resolved_with_diagnostics",
+      "evidence": [
+        "path_contains_O1",
+        "resolved_experiment_config.experiment_variant_is_two_stage_point_score_supervised_v1",
+        "two_stage_manifest_experiment_name_contains_O1",
+        "best_checkpoint_sha256_binds_stage_b_artifacts"
+      ],
+      "diagnostics": [
+        "uq_summary.run.experiment_name_is_stage_b_fusion_finetuning_only",
+        "uq_summary.run.experiment_config_path_has_duplicated_prefix",
+        "uq_summary.run_scalar_logs.query_num_samples_eval_is_null",
+        "uq_summary.run_scalar_logs.query_num_samples_train_is_null"
+      ],
+      "action": "Use resolved_variant O1 in the canonical record, retain the raw UQ metadata, and keep the diagnostics visible in the report bundle."
+    }
+  ]
+}

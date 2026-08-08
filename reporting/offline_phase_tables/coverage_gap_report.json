@@ -1,0 +1,316 @@
+{
+  "accepted_gaps": {
+    "explanation": "Một số run thiếu một phần đuôi rất nhỏ do chưa có end-aligned window; giữ nguyên diagnostic gốc và vẫn dùng report theo chính sách đã duyệt.",
+    "policy": "near_complete_tail_gap",
+    "runs": [
+      {
+        "missing_points": 9,
+        "run_id": "redlamp_baseline/machine_1_6/seed36"
+      },
+      {
+        "missing_points": 9,
+        "run_id": "redlamp_baseline/machine_1_6/seed6"
+      },
+      {
+        "missing_points": 9,
+        "run_id": "redlamp_baseline/machine_1_6/seed8"
+      },
+      {
+        "missing_points": 7,
+        "run_id": "redlamp_baseline/machine_3_4/seed36"
+      },
+      {
+        "missing_points": 7,
+        "run_id": "redlamp_baseline/machine_3_4/seed6"
+      },
+      {
+        "missing_points": 7,
+        "run_id": "redlamp_baseline/machine_3_4/seed8"
+      },
+      {
+        "missing_points": 13,
+        "run_id": "redlamp_baseline/machine_3_9/seed36"
+      },
+      {
+        "missing_points": 13,
+        "run_id": "redlamp_baseline/machine_3_9/seed6"
+      },
+      {
+        "missing_points": 13,
+        "run_id": "redlamp_baseline/machine_3_9/seed8"
+      },
+      {
+        "missing_points": 9,
+        "run_id": "thesis/O0/machine_1_6/seed36"
+      },
+      {
+        "missing_points": 9,
+        "run_id": "thesis/O0/machine_1_6/seed6"
+      },
+      {
+        "missing_points": 9,
+        "run_id": "thesis/O0/machine_1_6/seed8"
+      },
+      {
+        "missing_points": 7,
+        "run_id": "thesis/O0/machine_3_4/seed36"
+      },
+      {
+        "missing_points": 7,
+        "run_id": "thesis/O0/machine_3_4/seed6"
+      },
+      {
+        "missing_points": 7,
+        "run_id": "thesis/O0/machine_3_4/seed8"
+      },
+      {
+        "missing_points": 13,
+        "run_id": "thesis/O0/machine_3_9/seed36"
+      },
+      {
+        "missing_points": 13,
+        "run_id": "thesis/O0/machine_3_9/seed6"
+      },
+      {
+        "missing_points": 13,
+        "run_id": "thesis/O0/machine_3_9/seed8"
+      },
+      {
+        "missing_points": 9,
+        "run_id": "thesis/O1/machine_1_6/seed36"
+      },
+      {
+        "missing_points": 9,
+        "run_id": "thesis/O1/machine_1_6/seed6"
+      },
+      {
+        "missing_points": 9,
+        "run_id": "thesis/O1/machine_1_6/seed8"
+      },
+      {
+        "missing_points": 7,
+        "run_id": "thesis/O1/machine_3_4/seed36"
+      },
+      {
+        "missing_points": 7,
+        "run_id": "thesis/O1/machine_3_4/seed6"
+      },
+      {
+        "missing_points": 7,
+        "run_id": "thesis/O1/machine_3_4/seed8"
+      },
+      {
+        "missing_points": 13,
+        "run_id": "thesis/O1/machine_3_9/seed36"
+      },
+      {
+        "missing_points": 13,
+        "run_id": "thesis/O1/machine_3_9/seed6"
+      },
+      {
+        "missing_points": 13,
+        "run_id": "thesis/O1/machine_3_9/seed8"
+      }
+    ]
+  },
+  "canonical_manifest": "/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/outputs/reporting/offline_phase_tables/canonical_run_manifest.json",
+  "created_at_utc": "2026-07-26T10:10:00+00:00",
+  "identity_diagnostics": {
+    "count": 9,
+    "source": "canonical records preserve raw metadata and reconciliation diagnostics"
+  },
+  "limitations": [
+    "offline_benchmark có metric chính nhưng không có UQ summary; UQ không áp dụng cho nhóm này.",
+    "redlamp_baseline có coverage gần đầy đủ nhưng không có UQ summary.",
+    "THESIS giữ nguyên nhãn protocol_status=truncated_smoke_evaluation và benchmark_comparability=non_comparable trong diagnostics; không đổi artifact gốc thành full-timeline comparable.",
+    "Chín record THESIS có conflict metadata variant ở trường độ tin cậy thấp; variant canonical được resolve bằng path/config/manifest/checkpoint và raw conflict vẫn được giữ."
+  ],
+  "method_status": [
+    {
+      "identity_conflict_count": 9,
+      "method": "THESIS",
+      "run_count": 18,
+      "status": "ready_with_diagnostics",
+      "table_1_eligible_count": 18,
+      "table_2_eligible_count": 18,
+      "table_2_expected": true,
+      "tail_gap_run_count": 18,
+      "tail_gaps": [
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O0/machine_1_6/seed36"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O0/machine_1_6/seed6"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O0/machine_1_6/seed8"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O0/machine_3_4/seed36"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O0/machine_3_4/seed6"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O0/machine_3_4/seed8"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O0/machine_3_9/seed36"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O0/machine_3_9/seed6"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O0/machine_3_9/seed8"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O1/machine_1_6/seed36"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O1/machine_1_6/seed6"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "thesis/O1/machine_1_6/seed8"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O1/machine_3_4/seed36"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O1/machine_3_4/seed6"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "thesis/O1/machine_3_4/seed8"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O1/machine_3_9/seed36"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O1/machine_3_9/seed6"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "thesis/O1/machine_3_9/seed8"
+        }
+      ]
+    },
+    {
+      "identity_conflict_count": 0,
+      "method": "iforest",
+      "run_count": 9,
+      "status": "ready",
+      "table_1_eligible_count": 9,
+      "table_2_eligible_count": 0,
+      "table_2_expected": false,
+      "tail_gap_run_count": 0,
+      "tail_gaps": []
+    },
+    {
+      "identity_conflict_count": 0,
+      "method": "kmeans_ad",
+      "run_count": 9,
+      "status": "ready",
+      "table_1_eligible_count": 9,
+      "table_2_eligible_count": 0,
+      "table_2_expected": false,
+      "tail_gap_run_count": 0,
+      "tail_gaps": []
+    },
+    {
+      "identity_conflict_count": 0,
+      "method": "redlamp_baseline",
+      "run_count": 9,
+      "status": "ready_with_diagnostics",
+      "table_1_eligible_count": 9,
+      "table_2_eligible_count": 0,
+      "table_2_expected": false,
+      "tail_gap_run_count": 9,
+      "tail_gaps": [
+        {
+          "missing_points": 9,
+          "run_id": "redlamp_baseline/machine_1_6/seed36"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "redlamp_baseline/machine_1_6/seed6"
+        },
+        {
+          "missing_points": 9,
+          "run_id": "redlamp_baseline/machine_1_6/seed8"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "redlamp_baseline/machine_3_4/seed36"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "redlamp_baseline/machine_3_4/seed6"
+        },
+        {
+          "missing_points": 7,
+          "run_id": "redlamp_baseline/machine_3_4/seed8"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "redlamp_baseline/machine_3_9/seed36"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "redlamp_baseline/machine_3_9/seed6"
+        },
+        {
+          "missing_points": 13,
+          "run_id": "redlamp_baseline/machine_3_9/seed8"
+        }
+      ]
+    },
+    {
+      "identity_conflict_count": 0,
+      "method": "stumpy_channel_ab",
+      "run_count": 9,
+      "status": "ready",
+      "table_1_eligible_count": 9,
+      "table_2_eligible_count": 0,
+      "table_2_expected": false,
+      "tail_gap_run_count": 0,
+      "tail_gaps": []
+    }
+  ],
+  "purpose": "Make accepted coverage gaps, raw protocol labels and identity diagnostics visible without reopening deleted raw traces.",
+  "schema_version": 1,
+  "source_report": "/Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/outputs/reporting/offline_phase_tables/offline_report_data.json",
+  "summary": {
+    "blocked_methods": [],
+    "identity_conflict_count": 9,
+    "prune_delete_bytes": 7395484474,
+    "prune_delete_count": 216,
+    "raw_benchmark_comparability_counts": {
+      "non_comparable": 27
+    },
+    "raw_protocol_status_counts": {
+      "truncated_smoke_evaluation": 27
+    },
+    "record_count": 54,
+    "table_1_complete": true,
+    "table_1_eligible_count": 54,
+    "table_2_complete_for_expected_methods": true,
+    "table_2_eligible_count": 18,
+    "tail_gap_run_count": 27
+  }
+}
