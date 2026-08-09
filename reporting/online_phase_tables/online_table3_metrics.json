@@ -1,0 +1,4909 @@
+{
+  "schema_version": "online_table3_metrics.v1",
+  "report_name": "Table 3 - online benchmark performance",
+  "source_revision": "820c8886",
+  "source_manifest": "reporting/online_phase_tables/online_metrics_99/online_metrics_99_manifest.json",
+  "comparison_scope": {
+    "dataset": "SMD",
+    "methods": [
+      "candi",
+      "iforest",
+      "kmeans_ad",
+      "m2n2",
+      "stumpy",
+      "thesis"
+    ],
+    "run_count": 99,
+    "entity_count": 3,
+    "seed_values": [
+      "seed36",
+      "seed6",
+      "seed8"
+    ]
+  },
+  "metric_protocol": {
+    "score_field": "online/ewma_point_score",
+    "threshold_field": "online/threshold",
+    "prediction_field": "online/prediction",
+    "window_size": 20,
+    "online_window_stride": 1,
+    "vus_max_buffer_size": 20,
+    "vus_num_thresholds": 200,
+    "test_labels": "SMD test_label sliced at causal endpoints",
+    "point_adjustment": false
+  },
+  "stream_ranges": {
+    "machine_1_6": {
+      "label_file": "machine-1-6.txt",
+      "absolute_start_index": 146,
+      "absolute_end_index": 2200
+    },
+    "machine_3_4": {
+      "label_file": "machine-3-4.txt",
+      "absolute_start_index": 2634,
+      "absolute_end_index": 6116
+    },
+    "machine_3_9": {
+      "label_file": "machine-3-9.txt",
+      "absolute_start_index": 1099,
+      "absolute_end_index": 10807
+    }
+  },
+  "records": [
+    {
+      "method": "candi",
+      "method_family": "deep_learning",
+      "method_label": "CANDI",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__candi__main__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 7.287288454137315,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.5859614567500658,
+        "affiliation_f1": 0.7933243653426914,
+        "vus_roc": 0.9804944855663111
+      },
+      "status": "complete"
+    },
+    {
+      "method": "candi",
+      "method_family": "deep_learning",
+      "method_label": "CANDI",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__candi__main__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 6.185228161019691,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.5909078804489877,
+        "affiliation_f1": 0.7933243653426914,
+        "vus_roc": 0.9694962507063222
+      },
+      "status": "complete"
+    },
+    {
+      "method": "candi",
+      "method_family": "deep_learning",
+      "method_label": "CANDI",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__candi__main__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 5.7933365818398075,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.5778447381796449,
+        "affiliation_f1": 0.792940317116959,
+        "vus_roc": 0.9796705063378994
+      },
+      "status": "complete"
+    },
+    {
+      "method": "candi",
+      "method_family": "deep_learning",
+      "method_label": "CANDI",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__candi__main__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 4.641042019917893,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8610267790969327,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9661388368453264
+      },
+      "status": "complete"
+    },
+    {
+      "method": "candi",
+      "method_family": "deep_learning",
+      "method_label": "CANDI",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__candi__main__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 4.497387476209588,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.859255701683783,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9837926533342205
+      },
+      "status": "complete"
+    },
+    {
+      "method": "candi",
+      "method_family": "deep_learning",
+      "method_label": "CANDI",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__candi__main__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 4.028102738001819,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9295190355721527,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9829891122732614
+      },
+      "status": "complete"
+    },
+    {
+      "method": "candi",
+      "method_family": "deep_learning",
+      "method_label": "CANDI",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__candi__main__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.2862857584919056,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.5249798462262228,
+        "affiliation_f1": 0.7491136043636176,
+        "vus_roc": 0.6867806049404034
+      },
+      "status": "complete"
+    },
+    {
+      "method": "candi",
+      "method_family": "deep_learning",
+      "method_label": "CANDI",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__candi__main__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.5802716242417483,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6158029980532178,
+        "affiliation_f1": 0.7169679568865027,
+        "vus_roc": 0.7371746609508126
+      },
+      "status": "complete"
+    },
+    {
+      "method": "candi",
+      "method_family": "deep_learning",
+      "method_label": "CANDI",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__candi__main__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.2249568591326367,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6175497410538374,
+        "affiliation_f1": 0.7192269152936619,
+        "vus_roc": 0.7371988030801618
+      },
+      "status": "complete"
+    },
+    {
+      "method": "iforest",
+      "method_family": "traditional_ml",
+      "method_label": "Isolation Forest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/iforest/main/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__iforest__main__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": -0.01715404556353904,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.03955109706716723,
+        "affiliation_f1": 0.645796298719676,
+        "vus_roc": 0.2524726383152668
+      },
+      "status": "complete"
+    },
+    {
+      "method": "iforest",
+      "method_family": "traditional_ml",
+      "method_label": "Isolation Forest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/iforest/main/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__iforest__main__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": -0.02412258265948623,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.048368250864171104,
+        "affiliation_f1": 0.49900534506084737,
+        "vus_roc": 0.2654692629501709
+      },
+      "status": "complete"
+    },
+    {
+      "method": "iforest",
+      "method_family": "traditional_ml",
+      "method_label": "Isolation Forest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/iforest/main/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__iforest__main__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": -0.020231767221078965,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.08837350354481971,
+        "affiliation_f1": 0.5045981918072507,
+        "vus_roc": 0.30685652455286594
+      },
+      "status": "complete"
+    },
+    {
+      "method": "iforest",
+      "method_family": "traditional_ml",
+      "method_label": "Isolation Forest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/iforest/main/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__iforest__main__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": -0.02694901976022706,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8550093154095186,
+        "affiliation_f1": 0.0,
+        "vus_roc": 0.9318323844764503
+      },
+      "status": "complete"
+    },
+    {
+      "method": "iforest",
+      "method_family": "traditional_ml",
+      "method_label": "Isolation Forest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/iforest/main/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__iforest__main__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": -0.014759084374825425,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.686295970334073,
+        "affiliation_f1": 0.17813087289273033,
+        "vus_roc": 0.9327697728515412
+      },
+      "status": "complete"
+    },
+    {
+      "method": "iforest",
+      "method_family": "traditional_ml",
+      "method_label": "Isolation Forest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/iforest/main/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__iforest__main__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": -0.012254740684936451,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.754929880666892,
+        "affiliation_f1": 0.16439685424462896,
+        "vus_roc": 0.9442585221471776
+      },
+      "status": "complete"
+    },
+    {
+      "method": "iforest",
+      "method_family": "traditional_ml",
+      "method_label": "Isolation Forest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/iforest/main/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__iforest__main__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 0.05001528637009758,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.03584335544654992,
+        "affiliation_f1": 0.7138810301761565,
+        "vus_roc": 0.48171826353147734
+      },
+      "status": "complete"
+    },
+    {
+      "method": "iforest",
+      "method_family": "traditional_ml",
+      "method_label": "Isolation Forest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/iforest/main/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__iforest__main__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 0.059439196929490734,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.027270083879441895,
+        "affiliation_f1": 0.6532817732643926,
+        "vus_roc": 0.44378804027198465
+      },
+      "status": "complete"
+    },
+    {
+      "method": "iforest",
+      "method_family": "traditional_ml",
+      "method_label": "Isolation Forest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/iforest/main/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__iforest__main__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 0.05115693395914262,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.04298568390693193,
+        "affiliation_f1": 0.7279518667537607,
+        "vus_roc": 0.45813951746673304
+      },
+      "status": "complete"
+    },
+    {
+      "method": "kmeans_ad",
+      "method_family": "traditional_ml",
+      "method_label": "KMeansAD",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__kmeans_ad__main__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 30.27121968242835,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.10751101363163469,
+        "affiliation_f1": 0.13732300419726295,
+        "vus_roc": 0.8243602665328515
+      },
+      "status": "complete"
+    },
+    {
+      "method": "kmeans_ad",
+      "method_family": "traditional_ml",
+      "method_label": "KMeansAD",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__kmeans_ad__main__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 30.726550222294918,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.40676141883138506,
+        "affiliation_f1": 0.0,
+        "vus_roc": 0.8924029527678426
+      },
+      "status": "complete"
+    },
+    {
+      "method": "kmeans_ad",
+      "method_family": "traditional_ml",
+      "method_label": "KMeansAD",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__kmeans_ad__main__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 30.426902067768825,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.21135826104840436,
+        "affiliation_f1": 0.4896695263109388,
+        "vus_roc": 0.8702192940553766
+      },
+      "status": "complete"
+    },
+    {
+      "method": "kmeans_ad",
+      "method_family": "traditional_ml",
+      "method_label": "KMeansAD",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__kmeans_ad__main__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 28.719095735549505,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9655605459659804,
+        "affiliation_f1": 0.2653874991969455,
+        "vus_roc": 0.9860396286106485
+      },
+      "status": "complete"
+    },
+    {
+      "method": "kmeans_ad",
+      "method_family": "traditional_ml",
+      "method_label": "KMeansAD",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__kmeans_ad__main__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 28.67678594816085,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9504325180343118,
+        "affiliation_f1": 0.26139643794003464,
+        "vus_roc": 0.9848108589037103
+      },
+      "status": "complete"
+    },
+    {
+      "method": "kmeans_ad",
+      "method_family": "traditional_ml",
+      "method_label": "KMeansAD",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__kmeans_ad__main__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 28.705502649473463,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.943942976692959,
+        "affiliation_f1": 0.4356299896918933,
+        "vus_roc": 0.9802954365927187
+      },
+      "status": "complete"
+    },
+    {
+      "method": "kmeans_ad",
+      "method_family": "traditional_ml",
+      "method_label": "KMeansAD",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__kmeans_ad__main__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 31.773866255471045,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.4618692193428226,
+        "affiliation_f1": 0.9202219754089953,
+        "vus_roc": 0.8639668961818217
+      },
+      "status": "complete"
+    },
+    {
+      "method": "kmeans_ad",
+      "method_family": "traditional_ml",
+      "method_label": "KMeansAD",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__kmeans_ad__main__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 31.97765016996183,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.5219991533198887,
+        "affiliation_f1": 0.9118431251912211,
+        "vus_roc": 0.8610200246084402
+      },
+      "status": "complete"
+    },
+    {
+      "method": "kmeans_ad",
+      "method_family": "traditional_ml",
+      "method_label": "KMeansAD",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__kmeans_ad__main__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 31.781785918263118,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.5631917871815504,
+        "affiliation_f1": 0.931265798160332,
+        "vus_roc": 0.8618443569106927
+      },
+      "status": "complete"
+    },
+    {
+      "method": "m2n2",
+      "method_family": "deep_learning",
+      "method_label": "M2N2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__m2n2__main__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 7.287288454137315,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.5859614567500658,
+        "affiliation_f1": 0.7933243653426914,
+        "vus_roc": 0.9804944855663111
+      },
+      "status": "complete"
+    },
+    {
+      "method": "m2n2",
+      "method_family": "deep_learning",
+      "method_label": "M2N2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__m2n2__main__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 6.185228161019691,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.5909078804489877,
+        "affiliation_f1": 0.7933243653426914,
+        "vus_roc": 0.9694962507063222
+      },
+      "status": "complete"
+    },
+    {
+      "method": "m2n2",
+      "method_family": "deep_learning",
+      "method_label": "M2N2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__m2n2__main__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 5.7933365818398075,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.5778447381796449,
+        "affiliation_f1": 0.792940317116959,
+        "vus_roc": 0.9796705063378994
+      },
+      "status": "complete"
+    },
+    {
+      "method": "m2n2",
+      "method_family": "deep_learning",
+      "method_label": "M2N2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__m2n2__main__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 4.641042019917893,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8610267790969327,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9661388368453264
+      },
+      "status": "complete"
+    },
+    {
+      "method": "m2n2",
+      "method_family": "deep_learning",
+      "method_label": "M2N2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__m2n2__main__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 4.497387476209588,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.859255701683783,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9837926533342205
+      },
+      "status": "complete"
+    },
+    {
+      "method": "m2n2",
+      "method_family": "deep_learning",
+      "method_label": "M2N2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__m2n2__main__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 4.028102738001819,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9295190355721527,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9829891122732614
+      },
+      "status": "complete"
+    },
+    {
+      "method": "m2n2",
+      "method_family": "deep_learning",
+      "method_label": "M2N2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__m2n2__main__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.2862857584919056,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.5249798462262228,
+        "affiliation_f1": 0.7491136043636176,
+        "vus_roc": 0.6867806049404034
+      },
+      "status": "complete"
+    },
+    {
+      "method": "m2n2",
+      "method_family": "deep_learning",
+      "method_label": "M2N2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__m2n2__main__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.5802716242417483,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6158029980532178,
+        "affiliation_f1": 0.7169679568865027,
+        "vus_roc": 0.7371746609508126
+      },
+      "status": "complete"
+    },
+    {
+      "method": "m2n2",
+      "method_family": "deep_learning",
+      "method_label": "M2N2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__m2n2__main__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.2249568591326367,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6175497410538374,
+        "affiliation_f1": 0.7192269152936619,
+        "vus_roc": 0.7371988030801618
+      },
+      "status": "complete"
+    },
+    {
+      "method": "stumpy",
+      "method_family": "traditional_ml",
+      "method_label": "StumPy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/stumpy/main/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__stumpy__main__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.7208197768408495,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.03715839318966485,
+        "affiliation_f1": 0.426584108668365,
+        "vus_roc": 0.46210187997498026
+      },
+      "status": "complete"
+    },
+    {
+      "method": "stumpy",
+      "method_family": "traditional_ml",
+      "method_label": "StumPy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/stumpy/main/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__stumpy__main__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.7208197768408495,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.03715839318966485,
+        "affiliation_f1": 0.426584108668365,
+        "vus_roc": 0.46210187997498026
+      },
+      "status": "complete"
+    },
+    {
+      "method": "stumpy",
+      "method_family": "traditional_ml",
+      "method_label": "StumPy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/stumpy/main/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__stumpy__main__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.7208197768408495,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.03715839318966485,
+        "affiliation_f1": 0.426584108668365,
+        "vus_roc": 0.46210187997498026
+      },
+      "status": "complete"
+    },
+    {
+      "method": "stumpy",
+      "method_family": "traditional_ml",
+      "method_label": "StumPy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/stumpy/main/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__stumpy__main__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.6535611584600605,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.33203502633584053,
+        "affiliation_f1": 0.7194273679721036,
+        "vus_roc": 0.6125630657426541
+      },
+      "status": "complete"
+    },
+    {
+      "method": "stumpy",
+      "method_family": "traditional_ml",
+      "method_label": "StumPy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/stumpy/main/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__stumpy__main__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.6535611584600605,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.33203502633584053,
+        "affiliation_f1": 0.7194273679721036,
+        "vus_roc": 0.6125630657426541
+      },
+      "status": "complete"
+    },
+    {
+      "method": "stumpy",
+      "method_family": "traditional_ml",
+      "method_label": "StumPy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/stumpy/main/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__stumpy__main__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.6535611584600605,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.33203502633584053,
+        "affiliation_f1": 0.7194273679721036,
+        "vus_roc": 0.6125630657426541
+      },
+      "status": "complete"
+    },
+    {
+      "method": "stumpy",
+      "method_family": "traditional_ml",
+      "method_label": "StumPy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/stumpy/main/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "baseline__stumpy__main__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.651334405472246,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.04306051657040583,
+        "affiliation_f1": 0.7249062852620839,
+        "vus_roc": 0.5968156094309567
+      },
+      "status": "complete"
+    },
+    {
+      "method": "stumpy",
+      "method_family": "traditional_ml",
+      "method_label": "StumPy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/stumpy/main/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "baseline__stumpy__main__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.651334405472246,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.04306051657040583,
+        "affiliation_f1": 0.7249062852620839,
+        "vus_roc": 0.5968156094309567
+      },
+      "status": "complete"
+    },
+    {
+      "method": "stumpy",
+      "method_family": "traditional_ml",
+      "method_label": "StumPy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/stumpy/main/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "baseline__stumpy__main__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.651334405472246,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.04306051657040583,
+        "affiliation_f1": 0.7249062852620839,
+        "vus_roc": 0.5968156094309567
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.677399921417468,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8191884652507313,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8909595434636638
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.400772371292161,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.7929053405018807,
+        "affiliation_f1": 0.9986048738917768,
+        "vus_roc": 0.8932205695657732
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.490638685226447,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8126889012700621,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.9014187812272519
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.8726043701171875,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9783727176223878,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9775757344898389
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.085879549980164,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9800572415355724,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9776577938183337
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.905813193321228,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9803002947813158,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.977517973106147
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.550412037372589,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6637672134175878,
+        "affiliation_f1": 0.7560033387083307,
+        "vus_roc": 0.7561004761085439
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.209894101619722,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6552325409772635,
+        "affiliation_f1": 0.7575453462244995,
+        "vus_roc": 0.698540487561376
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.2446679639816285,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6589874602871301,
+        "affiliation_f1": 0.780933367515839,
+        "vus_roc": 0.7353199653163828
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.677399921417468,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8191884652507313,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8909595434636638
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.400772371292161,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.7929053405018807,
+        "affiliation_f1": 0.9986048738917768,
+        "vus_roc": 0.8932205695657732
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.490638685226447,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8126889012700621,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.9014187812272519
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.8726043701171875,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9783727176223878,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9775757344898389
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.085879549980164,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9800572415355724,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9776577938183337
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.905813193321228,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9803002947813158,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.977517973106147
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.550412037372589,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6637672134175878,
+        "affiliation_f1": 0.7560033387083307,
+        "vus_roc": 0.7561004761085439
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.209894101619722,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6552325409772635,
+        "affiliation_f1": 0.7575453462244995,
+        "vus_roc": 0.698540487561376
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.2446679639816285,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6589874602871301,
+        "affiliation_f1": 0.780933367515839,
+        "vus_roc": 0.7353199653163828
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.677399921417468,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8191884652507313,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8909595434636638
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.400772371292161,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.7929053405018807,
+        "affiliation_f1": 0.9986048738917768,
+        "vus_roc": 0.8932205695657732
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.490638685226447,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8126889012700621,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.9014187812272519
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.8726043701171875,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9780810433947933,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.977377568146672
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.085879549980164,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9800572415355724,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9776577938183337
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.905813193321228,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9803557665613303,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9776058650330997
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.550412037372589,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6637672134175878,
+        "affiliation_f1": 0.7560033387083307,
+        "vus_roc": 0.7561004761085439
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.209894101619722,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6552325409772635,
+        "affiliation_f1": 0.7575453462244995,
+        "vus_roc": 0.698540487561376
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.2446679639816285,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6532469439312378,
+        "affiliation_f1": 0.780933367515839,
+        "vus_roc": 0.730648212401457
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.48693342208866,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8221976524364345,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8973533511672448
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.518080244064356,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8121283301613267,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8958327201527241
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.649500846862793,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8379775099146113,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8992036269752226
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.843760952949529,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9797359705481196,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9782551669818402
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.072666883468628,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9802366568922969,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9760053074923511
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.0698044180870108,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9811772698309762,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9758522283567572
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.4973690700531055,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.663880685776015,
+        "affiliation_f1": 0.810084438705353,
+        "vus_roc": 0.7606690283745411
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.3119730734825135,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6582719871055935,
+        "affiliation_f1": 0.8634361370192066,
+        "vus_roc": 0.6905854422018016
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.2103774547576904,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6780089709207774,
+        "affiliation_f1": 0.7797038255370643,
+        "vus_roc": 0.749369618388188
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.48693342208866,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8221976524364345,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8973533511672448
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.518080244064356,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8121283301613267,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8958327201527241
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.649500846862793,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8379775099146113,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8992036269752226
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.843760952949529,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9797359705481196,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9782551669818402
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.072666883468628,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9802366568922969,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9760053074923511
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.0698044180870108,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9811772698309762,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9758522283567572
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.4973690700531055,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.663880685776015,
+        "affiliation_f1": 0.810084438705353,
+        "vus_roc": 0.7606690283745411
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.3119730734825135,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6582719871055935,
+        "affiliation_f1": 0.8634361370192066,
+        "vus_roc": 0.6905854422018016
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.2103774547576904,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6780089709207774,
+        "affiliation_f1": 0.7797038255370643,
+        "vus_roc": 0.749369618388188
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_1_6__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.48693342208866,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8221976524364345,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8973533511672448
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_1_6__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.518080244064356,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8121283301613267,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8958327201527241
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_1_6__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "expected_steps": 2035,
+        "processed_steps": 2035
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-1-6.txt",
+        "positive_count": 19,
+        "negative_count": 2016,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 8.649500846862793,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.8379775099146113,
+        "affiliation_f1": 0.9986411071678298,
+        "vus_roc": 0.8992036269752226
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_4__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.843760952949529,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9798842783727059,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9784574469401205
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_4__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.072666883468628,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9799116601271555,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9757564382420848
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_4__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "expected_steps": 3463,
+        "processed_steps": 3463
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-4.txt",
+        "positive_count": 865,
+        "negative_count": 2598,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 3.0698044180870108,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.9811772698309762,
+        "affiliation_f1": 0.7209686451889483,
+        "vus_roc": 0.9758522283567572
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_9__seed36__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.4973690700531055,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6620644264672999,
+        "affiliation_f1": 0.810084438705353,
+        "vus_roc": 0.760634827086223
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_9__seed6__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.3119730734825135,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6582719871055935,
+        "affiliation_f1": 0.8634361370192066,
+        "vus_roc": 0.6905854422018016
+      },
+      "status": "complete"
+    },
+    {
+      "method": "thesis",
+      "method_family": "THESIS",
+      "method_label": "THESIS",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_9__seed8__online_metrics.json",
+      "metric_score_field": "online/ewma_point_score",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "expected_steps": 9689,
+        "processed_steps": 9689
+      },
+      "labels": {
+        "label_file": "data/ServerMachineDataset/test_label/machine-3-9.txt",
+        "positive_count": 202,
+        "negative_count": 9487,
+        "unique_label_count": 2
+      },
+      "threshold": {
+        "value": 2.2103774547576904,
+        "is_constant": true,
+        "prediction_mismatch_count": 0
+      },
+      "metrics": {
+        "vus_pr": 0.6780089709207774,
+        "affiliation_f1": 0.7797038255370643,
+        "vus_roc": 0.749369618388188
+      },
+      "status": "complete"
+    }
+  ],
+  "summary_by_method_variant": [
+    {
+      "method": "candi",
+      "offline_variant": "",
+      "online_variant": "main",
+      "method_label": "CANDI",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.6847609085627605,
+          "population_std_across_runs": 0.14384711910520986,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.7475337177681076,
+          "population_std_across_runs": 0.0335169478932143,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.8915262126705243,
+          "population_std_across_runs": 0.12191609748609551,
+          "count": 9
+        }
+      }
+    },
+    {
+      "method": "iforest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "method_label": "Isolation Forest",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.2865141267910628,
+          "population_std_across_runs": 0.34135985169206046,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.4541158036577159,
+          "population_std_across_runs": 0.25598656979255274,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.5574783251737409,
+          "population_std_across_runs": 0.2789316658865485,
+          "count": 9
+        }
+      }
+    },
+    {
+      "method": "kmeans_ad",
+      "offline_variant": "",
+      "online_variant": "main",
+      "method_label": "KMeansAD",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.5702918771165486,
+          "population_std_across_runs": 0.30262538668057104,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.48363748401084705,
+          "population_std_across_runs": 0.3378923851103899,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.9027733016849003,
+          "population_std_across_runs": 0.05954782093315637,
+          "count": 9
+        }
+      }
+    },
+    {
+      "method": "m2n2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "method_label": "M2N2",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.6847609085627605,
+          "population_std_across_runs": 0.14384711910520986,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.7475337177681076,
+          "population_std_across_runs": 0.0335169478932143,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.8915262126705243,
+          "population_std_across_runs": 0.12191609748609551,
+          "count": 9
+        }
+      }
+    },
+    {
+      "method": "stumpy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "method_label": "StumPy",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.13741797869863706,
+          "population_std_across_runs": 0.13763612701217295,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.6236392539675175,
+          "population_std_across_runs": 0.139356981287436,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.5571601850495304,
+          "population_std_across_runs": 0.06752311514243045,
+          "count": 9
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "method_label": "THESIS",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8157222417382146,
+          "population_std_across_runs": 0.13102247400429176,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.8281416751381057,
+          "population_std_across_runs": 0.12205299184607006,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.8675901471841457,
+          "population_std_across_runs": 0.1038943919265606,
+          "count": 9
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "method_label": "THESIS",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8157222417382146,
+          "population_std_across_runs": 0.13102247400429176,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.8281416751381057,
+          "population_std_across_runs": 0.12205299184607006,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.8675901471841457,
+          "population_std_across_runs": 0.1038943919265606,
+          "count": 9
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "method_label": "THESIS",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8150581618711621,
+          "population_std_across_runs": 0.131763224102261,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.8281416751381057,
+          "population_std_across_runs": 0.12205299184607006,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.867058810814019,
+          "population_std_across_runs": 0.10455053713569797,
+          "count": 9
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "method_label": "THESIS",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8237350037317945,
+          "population_std_across_runs": 0.12828984242538705,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.845783739814662,
+          "population_std_across_runs": 0.11680237350109146,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.8692362766767412,
+          "population_std_across_runs": 0.10280438389725712,
+          "count": 9
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "method_label": "THESIS",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8237350037317945,
+          "population_std_across_runs": 0.12828984242538705,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.845783739814662,
+          "population_std_across_runs": 0.11680237350109146,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.8692362766767412,
+          "population_std_across_runs": 0.10280438389725712,
+          "count": 9
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "method_label": "THESIS",
+      "run_count": 9,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8235135650374312,
+          "population_std_across_runs": 0.12851837705945404,
+          "count": 9
+        },
+        "affiliation_f1": {
+          "mean": 0.845783739814662,
+          "population_std_across_runs": 0.11680237350109146,
+          "count": 9
+        },
+        "vus_roc": {
+          "mean": 0.8692272999455963,
+          "population_std_across_runs": 0.10280356853372555,
+          "count": 9
+        }
+      }
+    }
+  ],
+  "summary_by_method_variant_entity": [
+    {
+      "method": "candi",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "method_label": "CANDI",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.5849046917928995,
+          "population_std_across_seeds": 0.005385102018117129,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7931963492674472,
+          "population_std_across_seeds": 0.0001810420698120032,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9765537475368442,
+          "population_std_across_seeds": 0.005001728473027121,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "candi",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "method_label": "CANDI",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8832671721176227,
+          "population_std_across_seeds": 0.03271299775892553,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7209686451889483,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9776402008176027,
+          "population_std_across_seeds": 0.008139305845760393,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "candi",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "method_label": "CANDI",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.5861108617777594,
+          "population_std_across_seeds": 0.04323203730683379,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7284361588479275,
+          "population_std_across_seeds": 0.014650217019145068,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.720384689657126,
+          "population_std_across_seeds": 0.02376167822281783,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "iforest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "method_label": "Isolation Forest",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.05876428382538602,
+          "population_std_across_seeds": 0.021244057515224988,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.5497999451959247,
+          "population_std_across_seeds": 0.0679180628948096,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.2749328086061012,
+          "population_std_across_seeds": 0.0231886580445763,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "iforest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "method_label": "Isolation Forest",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.7654117221368278,
+          "population_std_across_seeds": 0.06927457422983438,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.11417590904578644,
+          "population_std_across_seeds": 0.08092902022505223,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9362868931583898,
+          "population_std_across_seeds": 0.005649768478595792,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "iforest",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "method_label": "Isolation Forest",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.03536637441097458,
+          "population_std_across_seeds": 0.0064247258949174935,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.6983715567314366,
+          "population_std_across_seeds": 0.032396641187290735,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.46121527375673166,
+          "population_std_across_seeds": 0.015636936330269212,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "kmeans_ad",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "method_label": "KMeansAD",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.24187689783714136,
+          "population_std_across_seeds": 0.12405977496523153,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.20899751016940057,
+          "population_std_across_seeds": 0.20623124133547643,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.8623275044520236,
+          "population_std_across_seeds": 0.02833327895927396,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "kmeans_ad",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "method_label": "KMeansAD",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.9533120135644171,
+          "population_std_across_seeds": 0.009057168291815115,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.32080464227629113,
+          "population_std_across_seeds": 0.08121012847063025,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9837153080356925,
+          "population_std_across_seeds": 0.0024696975878331392,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "kmeans_ad",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "method_label": "KMeansAD",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.5156867199480872,
+          "population_std_across_seeds": 0.0416048939402043,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.9211102995868494,
+          "population_std_across_seeds": 0.0079541140801465,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.8622770925669848,
+          "population_std_across_seeds": 0.0012413589673340214,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "m2n2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "method_label": "M2N2",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.5849046917928995,
+          "population_std_across_seeds": 0.005385102018117129,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7931963492674472,
+          "population_std_across_seeds": 0.0001810420698120032,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9765537475368442,
+          "population_std_across_seeds": 0.005001728473027121,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "m2n2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "method_label": "M2N2",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8832671721176227,
+          "population_std_across_seeds": 0.03271299775892553,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7209686451889483,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9776402008176027,
+          "population_std_across_seeds": 0.008139305845760393,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "m2n2",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "method_label": "M2N2",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.5861108617777594,
+          "population_std_across_seeds": 0.04323203730683379,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7284361588479275,
+          "population_std_across_seeds": 0.014650217019145068,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.720384689657126,
+          "population_std_across_seeds": 0.02376167822281783,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "stumpy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_1_6",
+      "method_label": "StumPy",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.03715839318966485,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.426584108668365,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.46210187997498026,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "stumpy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_4",
+      "method_label": "StumPy",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.33203502633584053,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7194273679721036,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.6125630657426541,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "stumpy",
+      "offline_variant": "",
+      "online_variant": "main",
+      "entity_id": "machine_3_9",
+      "method_label": "StumPy",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.04306051657040583,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7249062852620839,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.5968156094309567,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_1_6",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8082609023408913,
+          "population_std_across_seeds": 0.011177538265899286,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.9986290294091454,
+          "population_std_across_seeds": 1.7080530134484704e-05,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.8951996314188964,
+          "population_std_across_seeds": 0.004493434322258968,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_3_4",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.979576751313092,
+          "population_std_across_seeds": 0.000857143148810705,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7209686451889483,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9775838338047732,
+          "population_std_across_seeds": 5.736815066397735e-05,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "entity_id": "machine_3_9",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.6593290715606605,
+          "population_std_across_seeds": 0.0034926286292285454,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7648273508162231,
+          "population_std_across_seeds": 0.011406059127826463,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.7299869763287675,
+          "population_std_across_seeds": 0.02379942084791203,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_1_6",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8082609023408913,
+          "population_std_across_seeds": 0.011177538265899286,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.9986290294091454,
+          "population_std_across_seeds": 1.7080530134484704e-05,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.8951996314188964,
+          "population_std_across_seeds": 0.004493434322258968,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_3_4",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.979576751313092,
+          "population_std_across_seeds": 0.000857143148810705,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7209686451889483,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9775838338047732,
+          "population_std_across_seeds": 5.736815066397735e-05,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "entity_id": "machine_3_9",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.6593290715606605,
+          "population_std_across_seeds": 0.0034926286292285454,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7648273508162231,
+          "population_std_across_seeds": 0.011406059127826463,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.7299869763287675,
+          "population_std_across_seeds": 0.02379942084791203,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_1_6",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8082609023408913,
+          "population_std_across_seeds": 0.011177538265899286,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.9986290294091454,
+          "population_std_across_seeds": 1.7080530134484704e-05,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.8951996314188964,
+          "population_std_across_seeds": 0.004493434322258968,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_3_4",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.9794980171638986,
+          "population_std_across_seeds": 0.0010093365129299626,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7209686451889483,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9775470756660352,
+          "population_std_across_seeds": 0.00012172030513833938,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "entity_id": "machine_3_9",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.6574155661086963,
+          "population_std_across_seeds": 0.004563859226554313,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7648273508162231,
+          "population_std_across_seeds": 0.011406059127826463,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.7284297253571257,
+          "population_std_across_seeds": 0.023551069812387512,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_1_6",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8241011641707908,
+          "population_std_across_seeds": 0.010638375225930221,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.9986411071678298,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.8974632327650638,
+          "population_std_across_seeds": 0.0013783586073409235,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_3_4",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.9803832990904642,
+          "population_std_across_seeds": 0.0005974746055430703,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7209686451889483,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9767042342769828,
+          "population_std_across_seeds": 0.0010984542159130338,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "entity_id": "machine_3_9",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.6667205479341286,
+          "population_std_across_seeds": 0.008304045011840984,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.817741467087208,
+          "population_std_across_seeds": 0.03460970537547742,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.733541362988177,
+          "population_std_across_seeds": 0.03072271162580907,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_1_6",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8241011641707908,
+          "population_std_across_seeds": 0.010638375225930221,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.9986411071678298,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.8974632327650638,
+          "population_std_across_seeds": 0.0013783586073409235,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_3_4",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.9803832990904642,
+          "population_std_across_seeds": 0.0005974746055430703,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7209686451889483,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9767042342769828,
+          "population_std_across_seeds": 0.0010984542159130338,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "entity_id": "machine_3_9",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.6667205479341286,
+          "population_std_across_seeds": 0.008304045011840984,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.817741467087208,
+          "population_std_across_seeds": 0.03460970537547742,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.733541362988177,
+          "population_std_across_seeds": 0.03072271162580907,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_1_6",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.8241011641707908,
+          "population_std_across_seeds": 0.010638375225930221,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.9986411071678298,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.8974632327650638,
+          "population_std_across_seeds": 0.0013783586073409235,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_3_4",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.9803244027769459,
+          "population_std_across_seeds": 0.0006031716720840446,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.7209686451889483,
+          "population_std_across_seeds": 0.0,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.9766887045129875,
+          "population_std_across_seeds": 0.0012513009940784171,
+          "count": 3
+        }
+      }
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "entity_id": "machine_3_9",
+      "method_label": "THESIS",
+      "run_count": 3,
+      "metrics": {
+        "vus_pr": {
+          "mean": 0.666115128164557,
+          "population_std_across_seeds": 0.008551540629630355,
+          "count": 3
+        },
+        "affiliation_f1": {
+          "mean": 0.817741467087208,
+          "population_std_across_seeds": 0.03460970537547742,
+          "count": 3
+        },
+        "vus_roc": {
+          "mean": 0.7335299625587376,
+          "population_std_across_seeds": 0.030712647810177855,
+          "count": 3
+        }
+      }
+    }
+  ]
+}

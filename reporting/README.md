@@ -21,3 +21,11 @@ Source revision: 820c88867114e8ef92299935eff756b3eb0e0aaf
 M2N2 and CANDI do not have separate offline detection metrics in the remote output tree. They use the RedLamp encoder checkpoint for their online runs. The manifest records this as not_available; it does not copy RedLamp metrics under the M2N2 or CANDI names.
 
 Use benchmark_metrics_manifest.json for the complete file inventory and provenance. Use offline_phase_tables/offline_report_data.json for the compact offline reporting payload.
+
+The online Table 3 metric payload is stored at
+`online_phase_tables/online_table3_metrics.json`. It contains the 99 per-run
+records, the method/variant means, and the method/variant/entity means for
+VUS-PR, affiliation F1, and VUS-ROC.
+
+The rendered comparison table is stored at
+`online_phase_tables/online_phase_metric_table_report3.md`.
