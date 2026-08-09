@@ -30,6 +30,8 @@ def test_threshold_artifact_round_trips_json(tmp_path) -> None:
         input_window_threshold=3.0,
         latent_window_low_threshold=4.0,
         latent_window_high_threshold=5.0,
+        point_score_c=1.0,
+        point_score_tau=0.5,
     )
     output_path = tmp_path / "thresholds.json"
 
@@ -66,6 +68,8 @@ def test_threshold_artifact_keeps_independent_window_thresholds() -> None:
         input_window_threshold=3.0,
         latent_window_low_threshold=4.0,
         latent_window_high_threshold=5.0,
+        point_score_c=1.0,
+        point_score_tau=0.5,
         quantile=0.99,
         ewma_current_weight=0.9,
         ewma_previous_weight=0.1,
@@ -100,6 +104,8 @@ def test_threshold_artifact_rejects_invalid_stride_contract() -> None:
         input_window_threshold=3.0,
         latent_window_low_threshold=4.0,
         latent_window_high_threshold=5.0,
+        point_score_c=1.0,
+        point_score_tau=0.5,
     )
     with pytest.raises(ValueError, match="offline_stride must match window_size"):
         write_threshold_artifact(artifact, Path("/tmp/threshold.json"))

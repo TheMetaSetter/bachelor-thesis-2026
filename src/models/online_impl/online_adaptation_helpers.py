@@ -12,6 +12,7 @@ from src.engine.online_tta.signature_verification import (
 )
 from src.models.neural_blocks import build_multilayer_perceptron
 from src.models.thesis_multitask import ThesisMultitaskModel
+from src.protocols.point_score_calibration import PointScoreCalibration
 
 
 class ThesisMultitaskEncoderAdapter(nn.Module):
@@ -32,6 +33,11 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
     def encode_source(self, batch: dict[str, Any]) -> torch.Tensor:
         """Encode one input window with the frozen source encoder."""
         return self.forward(batch)["hidden"].detach()
+
+    def set_point_score_calibration(
+        self, calibration: PointScoreCalibration
+    ) -> None:
+        self.model.set_point_score_calibration(calibration)
 
     def score_source(
         self, source_hidden: torch.Tensor, x_tensor: torch.Tensor
@@ -74,7 +80,10 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
             self.model.window_size * self.model.hidden_dim,
         )
         logits = self.model.classification_head(flattened_classification_hidden)
-        point_scores = torch.mean((recon - x_tensor) ** 2, dim=-1)
+        raw_point_scores = torch.mean((recon - x_tensor) ** 2, dim=-1)
+        point_scores, point_score_calibrated = (
+            self.model.transform_official_point_scores(raw_point_scores)
+        )
         latent_window_score = self._compute_latent_memory_score(hidden)
         return {
             "pooled": flattened_classification_hidden,
@@ -91,6 +100,8 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
                 "alpha": fusion_outputs["alpha"],
                 "beta": fusion_outputs["beta"],
                 "latent_window_score": latent_window_score,
+                "raw_point_scores": raw_point_scores,
+                "point_score_calibrated": point_score_calibrated,
             },
         }
 

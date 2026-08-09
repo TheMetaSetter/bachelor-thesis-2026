@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -60,6 +61,41 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
         raise ValueError(
             "threshold artifact checkpoint_sha256 must be a non-empty string"
         )
+    requires_point_score_calibration = (
+        schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION
+        and artifact["method_name"] == "THESIS"
+    )
+    if requires_point_score_calibration:
+        calibration_fields = {
+            "point_score_transform",
+            "point_score_c",
+            "point_score_tau",
+            "point_score_tau_estimator",
+            "point_score_mad_normalizer",
+        }
+        missing_calibration_fields = sorted(
+            calibration_fields - set(artifact)
+        )
+        if missing_calibration_fields:
+            raise ValueError(
+                "THESIS schema v4 artifact is missing point-score calibration fields: "
+                f"{missing_calibration_fields}"
+            )
+        if artifact["point_score_transform"] != (
+            "shifted-and-scaled logistic sigmoid"
+        ):
+            raise ValueError("unsupported THESIS point score transform")
+        if artifact["point_score_tau_estimator"] != "mad_based_robust_scale":
+            raise ValueError("unsupported THESIS point score tau estimator")
+        for field_name in ["point_score_c", "point_score_tau"]:
+            if not math.isfinite(float(artifact[field_name])):
+                raise ValueError(f"threshold artifact {field_name} must be finite")
+        if float(artifact["point_score_tau"]) <= 0.0:
+            raise ValueError("threshold artifact point_score_tau must be positive")
+        if float(artifact["point_score_mad_normalizer"]) != 0.6745:
+            raise ValueError(
+                "threshold artifact point_score_mad_normalizer must be 0.6745"
+            )
     if not isinstance(artifact["entity_id"], str) or not artifact["entity_id"]:
         raise ValueError("threshold artifact entity_id must be a non-empty string")
     if not isinstance(artifact["method_name"], str) or not artifact["method_name"]:
@@ -134,6 +170,19 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
         raise ValueError(
             "threshold artifact provenance.resolved_config_sha256 must match resolved_config_sha256"
         )
+    if requires_point_score_calibration:
+        for field_name in [
+            "point_score_transform",
+            "point_score_c",
+            "point_score_tau",
+            "point_score_tau_estimator",
+            "point_score_mad_normalizer",
+        ]:
+            if provenance.get(field_name) != artifact.get(field_name):
+                raise ValueError(
+                    "threshold artifact provenance calibration field must match "
+                    f"{field_name}"
+                )
     if "checkpoint_sha256" in artifact and artifact["checkpoint_sha256"] is not None:
         if (
             not isinstance(artifact["checkpoint_sha256"], str)
@@ -266,6 +315,11 @@ def build_threshold_artifact(
     latent_window_low_threshold: float | None = None,
     latent_window_high_threshold: float | None = None,
     latent_window_low_quantile: float = 0.75,
+    point_score_c: float | None = None,
+    point_score_tau: float | None = None,
+    point_score_transform: str = "shifted-and-scaled logistic sigmoid",
+    point_score_tau_estimator: str = "mad_based_robust_scale",
+    point_score_mad_normalizer: float = 0.6745,
 ) -> dict[str, Any]:
     if not 0.0 < float(quantile) <= 1.0:
         raise ValueError("quantile must be in (0, 1]")
@@ -280,6 +334,13 @@ def build_threshold_artifact(
         or latent_window_high_threshold is None
     ):
         raise ValueError("THESIS schema version 4 requires all triage thresholds")
+    if is_thesis_v4 and (point_score_c is None or point_score_tau is None):
+        raise ValueError("THESIS schema version 4 requires point score calibration")
+    if is_thesis_v4:
+        if not math.isfinite(float(point_score_c)):
+            raise ValueError("point_score_c must be finite")
+        if not math.isfinite(float(point_score_tau)) or float(point_score_tau) <= 0.0:
+            raise ValueError("point_score_tau must be finite and positive")
     if (
         latent_window_low_threshold is not None
         and latent_window_high_threshold is not None
@@ -330,7 +391,7 @@ def build_threshold_artifact(
             "score_rule": "latent_memory_distance",
             "quantile": 0.99,
         }
-    return {
+    artifact = {
         "artifact_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION if is_thesis_v4 else 3,
         "schema_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION if is_thesis_v4 else 3,
         "method_name": method_name,
@@ -371,6 +432,26 @@ def build_threshold_artifact(
             "resolved_config_sha256": resolved_config_sha256,
         },
     }
+    if is_thesis_v4:
+        artifact.update(
+            {
+                "point_score_transform": point_score_transform,
+                "point_score_c": float(point_score_c),
+                "point_score_tau": float(point_score_tau),
+                "point_score_tau_estimator": point_score_tau_estimator,
+                "point_score_mad_normalizer": float(point_score_mad_normalizer),
+            }
+        )
+        artifact["provenance"].update(
+            {
+                "point_score_transform": point_score_transform,
+                "point_score_c": float(point_score_c),
+                "point_score_tau": float(point_score_tau),
+                "point_score_tau_estimator": point_score_tau_estimator,
+                "point_score_mad_normalizer": float(point_score_mad_normalizer),
+            }
+        )
+    return artifact
 
 
 def write_threshold_artifact(artifact: dict[str, Any], output_path: Path) -> None:

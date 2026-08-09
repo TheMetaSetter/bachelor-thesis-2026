@@ -246,13 +246,20 @@ def forward(
     logits = None
     class_probabilities = None
     monte_carlo_uncertainty = None
-    point_scores = torch.mean((recon - batch["x"]) ** 2, dim=-1)
-    window_scores = point_scores.mean(dim=1)
+    raw_point_scores = torch.mean((recon - batch["x"]) ** 2, dim=-1)
+    point_scores, point_score_calibrated = self.transform_official_point_scores(
+        raw_point_scores
+    )
+    window_scores = raw_point_scores.mean(dim=1)
     if not self.training and monte_carlo_forward_outputs is not None:
         recon = monte_carlo_forward_outputs["outputs"]["recon"]
         logits = monte_carlo_forward_outputs["outputs"]["logits"]
         point_scores = monte_carlo_forward_outputs["outputs"]["point_scores"]
         window_scores = monte_carlo_forward_outputs["outputs"]["window_scores"]
+        raw_point_scores = monte_carlo_forward_outputs["aux"]["raw_point_scores"]
+        point_score_calibrated = monte_carlo_forward_outputs["aux"][
+            "point_score_calibrated"
+        ]
         class_probabilities = monte_carlo_forward_outputs["aux"].get(
             "class_probabilities"
         )
@@ -280,6 +287,8 @@ def forward(
             "alpha": fusion_outputs["alpha"],
             "beta": fusion_outputs["beta"],
             "class_probabilities": class_probabilities,
+            "raw_point_scores": raw_point_scores,
+            "point_score_calibrated": point_score_calibrated,
             "deterministic_geometry": {
                 "hidden_reconstruction": hidden_reconstruction,
                 "hidden_classification": hidden_classification,

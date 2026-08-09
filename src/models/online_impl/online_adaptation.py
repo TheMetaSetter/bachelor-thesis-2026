@@ -27,6 +27,7 @@ from src.models.online_impl.online_adaptation_helpers import (
     NearIdentityMLPProjector,
     ThesisMultitaskEncoderAdapter,
 )
+from src.protocols.point_score_calibration import PointScoreCalibration
 
 
 def _resolve_reference_checkpoint_path(checkpoint_path: str | Path) -> Path:
@@ -231,6 +232,12 @@ class OnlineAdaptationModel(BaseModel):
             "Set trainable parameter group",
             target_param_group=target_param_group,
         )
+
+    def set_point_score_calibration(
+        self, calibration: PointScoreCalibration
+    ) -> None:
+        self.reference_encoder.set_point_score_calibration(calibration)
+        self.online_encoder.set_point_score_calibration(calibration)
 
     def get_parameter_group(self, target_param_group: str) -> list[nn.Parameter]:
         return self._parameters_for_target_group(target_param_group)

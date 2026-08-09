@@ -120,6 +120,11 @@ Entity-scoped artifact do offline phase tạo. Online đọc ít nhất:
 
 ```text
 online_point_ewma_threshold
+point_score_transform
+point_score_c
+point_score_tau
+point_score_tau_estimator
+point_score_mad_normalizer
 input_window_threshold
 latent_window_low_threshold
 latent_window_high_threshold
@@ -158,9 +163,13 @@ meta.stream_step: int
 
 ### 5.2 `window_point_scores`
 
-Inherited model output vector `[B,L]`. Mỗi value là point-wise reconstruction score trong current window.
+Inherited model output vector `[B,L]`. Mỗi value là point-level anomaly score
+trong current window sau khi áp dụng shifted-and-scaled logistic sigmoid lên
+Monte Carlo mean raw point MSE. Raw point MSE là intermediate value, không phải
+giá trị của canonical `window_point_scores`.
 
-`raw_point_scores` là exact alias trong desired-flow draft. Canonical name nói rõ container thuộc một window.
+`raw_point_scores` là tên legacy trong desired-flow draft. Canonical name nói
+rõ container thuộc một window và không dùng `raw` để chỉ giá trị của field.
 
 ### 5.3 Vector prediction objects
 
@@ -174,9 +183,10 @@ Các object sau là contract runtime hiện hành:
 
 `point_level_binary_predictions` là exact alias của `window_point_predictions`. Không gọi vector này là `prediction` vì runtime record hiện dùng `prediction` cho một scalar endpoint prediction.
 
-Point mới trong map dùng `window_point_scores` hiện tại. Point xuất hiện lại trong
-window overlap dùng EWMA weights. Runtime thay toàn bộ map bằng các point của
-current causal window, nên không có finalized-point table.
+Point mới trong map dùng transformed `window_point_scores` hiện tại. Point xuất
+hiện lại trong window overlap dùng EWMA weights `0.9 current + 0.1 previous`.
+Runtime thay toàn bộ map bằng các point của current causal window, nên không có
+finalized-point table.
 
 ### 5.4 Endpoint compatibility fields
 
@@ -184,7 +194,7 @@ Runtime record vẫn ghi point cuối của vector để các reader scalar cũ 
 
 | Canonical name | Runtime name | Shape |
 | --- | --- | --- |
-| `endpoint_point_score` | `raw_point_score` | scalar |
+| `endpoint_point_score` | `raw_point_score` (legacy runtime field name; value is the transformed anomaly score) | scalar |
 | `previous_endpoint_ewma_point_score` | `previous_ewma_score` | scalar hoặc absent |
 | `current_endpoint_ewma_point_score` | `ewma_point_score` | scalar |
 | `endpoint_point_prediction` | `prediction` | scalar binary |
@@ -194,7 +204,15 @@ compatibility fields; chúng không được dùng để triage, verification ho
 
 ### 5.5 `online_point_ewma_threshold`
 
-Threshold point-level áp dụng lên online EWMA score.
+Threshold point-level áp dụng lên online EWMA anomaly score. Offline tạo
+threshold này bằng:
+
+```text
+Q_0.99(clean-validation transformed point scores after sliding-window + EWMA)
+```
+
+Một point là anomaly khi `current_window_ewma_point_scores >
+online_point_ewma_threshold`.
 
 | Tên gặp trong repo | Mapping |
 | --- | --- |
@@ -236,6 +254,8 @@ aux.latent_window_score
 ```
 
 Runtime top-level aliases là `recon`, `logits`, `point_scores` và `window_scores`.
+`point_scores` là transformed point anomaly scores; `window_scores` là raw
+window reconstruction MSE dùng cho `input_window_score`/triage.
 
 ## 7. Triage objects
 
@@ -437,7 +457,8 @@ Nó không chứa optimizer moments hay `recurrent_signature_set`.
 | `online_tta_phase` | `reads` | `threshold_artifact` |
 | `frozen_source_model.shared_encoder` | `produces` | `source_hidden` |
 | `online_mlp_projector` | `maps` | `source_hidden` to `projected_hidden` |
-| `frozen_source_model` | `produces` | `window_point_scores` |
+| `frozen_source_model` | `produces` | `raw_point_mse` |
+| score transformation | `maps` | `raw_point_mse` to `window_point_scores` |
 | online EWMA step | `maps` | `window_point_scores` to `current_window_ewma_point_scores` |
 | `triage_region` | `depends on` | `input_window_score`, `latent_window_score`, and triage thresholds |
 | `gray_zone` | `may create` | `verification_entry` |
@@ -465,7 +486,7 @@ compatibility reader mới dùng scalar endpoint fields.
 
 | Old name | New canonical name | Status | Runtime owner | Migration boundary |
 | --- | --- | --- | --- | --- |
-| `raw_point_scores` | `window_point_scores` | renamed for container clarity | model output | Desired pseudocode |
+| `raw_point_scores` | `window_point_scores` | legacy name replaced; canonical value is transformed anomaly score, not raw MSE | model output | Desired pseudocode |
 | `previous_ewma_point_scores` | `active_ewma_point_scores` | replaced because state is keyed by absolute index | online runtime state | vector runtime |
 | `current_ewma_point_scores` | `current_window_ewma_point_scores` | renamed for scope | desired online state | Desired pseudocode |
 | `point_level_binary_predictions` | `window_point_predictions` | renamed for container clarity | desired output | Desired pseudocode |

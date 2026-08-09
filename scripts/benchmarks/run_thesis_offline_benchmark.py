@@ -51,6 +51,7 @@ from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     write_threshold_artifact,
 )
+from src.protocols.point_score_calibration import fit_mad_logistic_calibration
 
 
 def build_model_from_experiment_config(experiment_config: dict[str, Any]) -> Any:
@@ -335,7 +336,7 @@ def collect_offline_artifact_inputs(
         protocol_config=protocol_config,
     )
     return {
-        "entity_id": _first_entity_id(split_outputs["test"]),
+        "entity_id": _require_single_entity_id(split_outputs["test"], "test"),
         "seed": int(experiment_config.get("seed", 0)),
         "variant_name": str(experiment_config.get("offline_variant", "O0")),
         "model": model,
@@ -343,6 +344,7 @@ def collect_offline_artifact_inputs(
             "val", []
         ),
         "device": str(experiment_config["device"]),
+        "point_score_calibration": split_outputs["point_score_calibration"],
         "clean_validation": split_outputs["clean_validation_payload"],
         "clean_validation_traces": split_outputs["clean_validation"].get("traces", []),
         "synthetic_validation": _evaluation_outputs_to_score_payload(
@@ -431,6 +433,13 @@ def _evaluate_offline_benchmark_splits(
     loaders: dict[str, Any],
     protocol_config: dict[str, Any],
 ) -> dict[str, Any]:
+    raw_clean_outputs = evaluator.evaluate(model, loaders["val"])
+    _require_single_entity_id(raw_clean_outputs, "clean_validation")
+    raw_clean_payload = _evaluation_outputs_to_score_payload(raw_clean_outputs)
+    calibration = fit_mad_logistic_calibration(raw_clean_payload["point_scores"])
+    if not hasattr(model, "set_point_score_calibration"):
+        raise TypeError("THESIS offline model must support point-score calibration")
+    model.set_point_score_calibration(calibration)
     clean_outputs = evaluator.evaluate(model, loaders["val"])
     clean_payload = _evaluation_outputs_to_score_payload(clean_outputs)
     clean_threshold = select_clean_validation_point_threshold(
@@ -454,6 +463,8 @@ def _evaluate_offline_benchmark_splits(
     return {
         "clean_validation": clean_outputs,
         "clean_validation_payload": clean_payload,
+        "raw_clean_validation_payload": raw_clean_payload,
+        "point_score_calibration": calibration,
         "synthetic_validation": synthetic_outputs,
         "test": test_outputs,
     }
@@ -502,6 +513,20 @@ def _first_entity_id(evaluation_outputs: dict[str, Any]) -> str:
     return str(records[0]["entity_id"])
 
 
+def _require_single_entity_id(
+    evaluation_outputs: dict[str, Any], split_name: str
+) -> str:
+    entity_ids = {
+        str(record["entity_id"]) for record in evaluation_outputs.get("records", [])
+    }
+    if len(entity_ids) != 1:
+        raise ValueError(
+            f"THESIS {split_name} calibration artifact requires exactly one entity, "
+            f"got {sorted(entity_ids)}"
+        )
+    return next(iter(entity_ids))
+
+
 def _build_thresholds(
     artifact_inputs: dict[str, Any],
     protocol_config: dict[str, Any],
@@ -544,6 +569,8 @@ def _build_thresholds(
         created_by="scripts/run_thesis_offline_benchmark.py",
         config_path=experiment_config_path,
         checkpoint_sha256=checkpoint_sha256,
+        point_score_c=float(artifact_inputs["point_score_calibration"].center),
+        point_score_tau=float(artifact_inputs["point_score_calibration"].tau),
         input_window_threshold=float(
             np.quantile(
                 np.asarray(online_calibration["input_window"], dtype=float),

@@ -32,6 +32,8 @@ def test_threshold_artifact_preserves_checkpoint_and_config_provenance(
         input_window_threshold=3.0,
         latent_window_low_threshold=4.0,
         latent_window_high_threshold=5.0,
+        point_score_c=1.0,
+        point_score_tau=0.5,
     )
     output_path = tmp_path / "thresholds.json"
     write_threshold_artifact(artifact, output_path)
@@ -42,3 +44,6 @@ def test_threshold_artifact_preserves_checkpoint_and_config_provenance(
     assert loaded["sample_retention_policy"] == "retain_for_eda"
     assert loaded["provenance"]["checkpoint_sha256"] == "checkpoint-sha"
     assert loaded["provenance"]["resolved_config_sha256"] == "config-sha"
+    assert loaded["point_score_transform"] == "shifted-and-scaled logistic sigmoid"
+    assert loaded["point_score_c"] == 1.0
+    assert loaded["point_score_tau"] == 0.5

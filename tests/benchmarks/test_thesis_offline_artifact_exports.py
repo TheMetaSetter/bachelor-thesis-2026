@@ -12,6 +12,7 @@ from scripts.run_thesis_offline_benchmark import (
     run_thesis_offline_benchmark,
 )
 from src.core.uq_summary import validate_uq_summary_payload
+from src.protocols.point_score_calibration import PointScoreCalibration
 
 
 def _write_experiment_config(path: Path, output_dir: Path) -> None:
@@ -121,6 +122,7 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
             "model": object(),
             "clean_validation_sequences": [],
             "device": "cpu",
+            "point_score_calibration": PointScoreCalibration(center=0.2, tau=1.0),
             "clean_validation": {
                 "point_scores": np.array([0.1, 0.2, 0.3], dtype=float),
                 "point_labels": np.array([0, 0, 0], dtype=np.int64),
@@ -279,6 +281,7 @@ def test_thesis_offline_wrapper_supports_summary_only_retention(
             "model": object(),
             "clean_validation_sequences": [],
             "device": "cpu",
+            "point_score_calibration": PointScoreCalibration(center=0.2, tau=1.0),
             "clean_validation": {
                 "point_scores": np.array([0.1, 0.2], dtype=float),
                 "point_labels": np.array([0, 0], dtype=np.int64),
@@ -369,6 +372,7 @@ def test_thesis_offline_wrapper_supports_evaluation_only_checkpoint_rerun(
                 "model": object(),
                 "clean_validation_sequences": [],
                 "device": "cpu",
+                "point_score_calibration": PointScoreCalibration(center=0.2, tau=1.0),
                 "clean_validation": {
                     "point_scores": np.array([0.1, 0.2], dtype=float),
                     "point_labels": np.array([0, 0], dtype=np.int64),
@@ -546,9 +550,13 @@ def test_collect_offline_artifact_inputs_uses_checkpoint_and_three_splits(
             }
         },
     )
+    class FakeModel:
+        def set_point_score_calibration(self, calibration):
+            self.calibration = calibration
+
     monkeypatch.setattr(
         "scripts.run_thesis_offline_benchmark.build_model_from_experiment_config",
-        lambda config: torch.nn.Linear(1, 1),
+        lambda config: FakeModel(),
     )
     monkeypatch.setattr(
         "scripts.run_thesis_offline_benchmark.CheckpointManager",
@@ -577,6 +585,7 @@ def test_collect_offline_artifact_inputs_uses_checkpoint_and_three_splits(
         f"checkpoint_dir:{tmp_path / 'checkpoints'}",
         f"checkpoint:{tmp_path / 'best.pt'}",
         "evaluator:cpu:17",
+        "evaluate:val",
         "evaluate:val",
         "evaluate:val_synth",
         "evaluate:test",

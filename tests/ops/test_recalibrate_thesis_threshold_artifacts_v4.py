@@ -19,6 +19,7 @@ from src.protocols.threshold_artifact import (
     validate_threshold_artifact,
     write_threshold_artifact,
 )
+from src.protocols.point_score_calibration import PointScoreCalibration
 
 
 def _v3_artifact() -> dict:
@@ -62,6 +63,9 @@ def test_build_v4_artifact_recalibrates_vector_ewma_and_triage_thresholds(
         artifact_v3=_v3_artifact(),
         checkpoint_sha256="checkpoint-sha",
         calibration_scores={
+            "offline_raw": [0.0, 1.0, 2.0, 3.0],
+            "offline": [0.26894142, 0.5, 0.73105858, 0.88079708],
+            "calibration": PointScoreCalibration(center=1.0, tau=1.0),
             "ewma": [0.0, 1.0, 2.0, 3.0],
             "input_window": [1.0, 2.0, 3.0, 4.0],
             "latent_window": [2.0, 4.0, 6.0, 8.0],
@@ -90,6 +94,11 @@ def test_build_v4_artifact_recalibrates_vector_ewma_and_triage_thresholds(
     assert thresholds["online_ewma_point"]["value"] == pytest.approx(
         np.quantile([0.0, 1.0, 2.0, 3.0], 0.99)
     )
+    assert thresholds["offline_point"]["value"] == pytest.approx(
+        np.quantile([0.26894142, 0.5, 0.73105858, 0.88079708], 0.99)
+    )
+    assert artifact_v4["point_score_c"] == 1.0
+    assert artifact_v4["point_score_tau"] == 1.0
     assert thresholds["input_window"]["value"] == pytest.approx(
         np.quantile([1.0, 2.0, 3.0, 4.0], 0.99)
     )

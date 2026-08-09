@@ -69,6 +69,7 @@ class ThesisMultitaskModel(
         **flat_kwargs: Any,
     ) -> None:
         super().__init__()
+        self._point_score_calibration = None
         config = self._resolve_model_config(config, flat_kwargs)
 
         self._store_config_values(config)

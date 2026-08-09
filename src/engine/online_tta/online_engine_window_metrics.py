@@ -91,6 +91,7 @@ def _score_online_window(
 ) -> tuple[
     dict[str, Any],
     torch.Tensor,
+    torch.Tensor,
     float,
     float,
     torch.Tensor,
@@ -106,7 +107,7 @@ def _score_online_window(
         "model_forward",
         lambda: _forward_online_window(model, batch_on_device, online_variant),
     )
-    window_point_scores, input_window_score, latent_window_score = (
+    window_point_scores, raw_point_scores, input_window_score, latent_window_score = (
         timing_logger.measure(
             "score_extraction",
             lambda: _extract_online_window_scores(pre_outputs, batch_on_device),
@@ -126,6 +127,7 @@ def _score_online_window(
     return (
         batch_on_device,
         window_point_scores,
+        raw_point_scores,
         input_window_score,
         latent_window_score,
         current_window_ewma_point_scores,
@@ -147,8 +149,13 @@ def _forward_online_window(
 
 def _extract_online_window_scores(
     outputs: dict[str, Any], batch_on_device: dict[str, Any]
-) -> tuple[torch.Tensor, float, float]:
+) -> tuple[torch.Tensor, torch.Tensor, float, float]:
     window_point_scores = outputs["point_scores"][0].detach()
+    scoring_aux = outputs["aux"].get("scoring", outputs["aux"])
+    raw_point_scores = scoring_aux.get("raw_point_scores")
+    if not isinstance(raw_point_scores, torch.Tensor):
+        raise ValueError("online model must expose raw point scores under aux.scoring")
+    raw_point_scores = raw_point_scores[0].detach()
     latent_value = outputs["aux"].get("latent_window_score")
     if latent_value is None:
         latent_value = outputs["window_scores"]
@@ -156,7 +163,7 @@ def _extract_online_window_scores(
     input_window_score = float(
         torch.mean((outputs["recon"] - batch_on_device["x"]) ** 2).detach().cpu()
     )
-    return window_point_scores, input_window_score, latent_window_score
+    return window_point_scores, raw_point_scores, input_window_score, latent_window_score
 
 
 def _update_online_window_buffers(
@@ -198,6 +205,7 @@ def _build_online_window_outputs(
     threshold_value: float,
     absolute_indices: torch.Tensor,
     window_point_scores: torch.Tensor,
+    raw_point_scores: torch.Tensor,
     input_window_score: float,
     current_window_ewma_point_scores: torch.Tensor,
     triage_decision: str,
@@ -212,6 +220,9 @@ def _build_online_window_outputs(
     record["window_point_scores"] = [
         float(score) for score in window_point_scores.detach().cpu().tolist()
     ]
+    record["raw_window_point_scores"] = [
+        float(score) for score in raw_point_scores.detach().cpu().tolist()
+    ]
     record["current_window_ewma_point_scores"] = [
         float(score)
         for score in current_window_ewma_point_scores.detach().cpu().tolist()
@@ -225,7 +236,7 @@ def _build_online_window_outputs(
     record["verification_cycle_ready"] = verification_buffer.should_verify()
     metric = {
         "online/step": 0,
-        "online/raw_point_score": float(window_point_scores[-1].detach().cpu()),
+        "online/raw_point_score": float(raw_point_scores[-1].detach().cpu()),
         "online/ewma_point_score": float(
             current_window_ewma_point_scores[-1].detach().cpu()
         ),

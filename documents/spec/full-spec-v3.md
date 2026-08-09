@@ -211,7 +211,7 @@ The public top-level contract remains:
 }
 ```
 
-For stochastic inference, `recon`, `point_scores`, and `window_scores` are Monte Carlo means. `logits` is a compatibility representation defined from the mean class probabilities as `log(mean_probability.clamp_min(eps))`; therefore `softmax(logits)` recovers the official mean probability distribution. Per-sample tensors and variances live only under `aux`; they MUST NOT add a leading Monte Carlo dimension to stable top-level fields.
+For stochastic inference, `recon` and the raw point/window reconstruction MSEs are Monte Carlo means. The stable top-level `point_scores` field is the official point-level anomaly score after the configured score transformation. `window_scores` remains the raw window reconstruction MSE used by window-level triage. `logits` is a compatibility representation defined from the mean class probabilities as `log(mean_probability.clamp_min(eps))`; therefore `softmax(logits)` recovers the official mean probability distribution. Per-sample tensors and variances live only under `aux`; they MUST NOT add a leading Monte Carlo dimension to stable top-level fields.
 
 ---
 
@@ -542,7 +542,7 @@ mean_probability = classification_probs.mean(dim=1)
 outputs["logits"] = mean_probability.clamp_min(eps).log()
 ```
 
-The official mean point score is the mean of the ten per-sample MSE scores. It MUST NOT be recomputed as the MSE between `x` and the mean reconstruction because, in general,
+The official mean raw point MSE is the mean of the ten per-sample MSE scores. It MUST NOT be recomputed as the MSE between `x` and the mean reconstruction because, in general,
 
 \[
 \frac1M\sum_m\lVert x-\hat x^{(m)}\rVert^2
@@ -557,6 +557,51 @@ Point-wise MSE for sample `m`:
 \[
 s^{(m)}_{bt}=\frac1D\sum_d(x_{btd}-\hat x^{(m)}_{btd})^2.
 \]
+
+The official raw point MSE is the Monte Carlo mean:
+
+\[
+e_{bt}=\frac1M\sum_{m=1}^{M}s^{(m)}_{bt}.
+\]
+
+For each entity, estimate the score-transformation parameters from the raw
+point MSEs on clean validation:
+
+\[
+\mathcal{E}_{\mathrm{cv}}=\{e^{(\mathrm{cv})}_1,\ldots,e^{(\mathrm{cv})}_N\},
+\qquad
+c=\operatorname{median}(\mathcal{E}_{\mathrm{cv}}),
+\]
+
+\[
+\operatorname{MAD}(\mathcal{E}_{\mathrm{cv}})
+=
+\operatorname{median}_j
+\left|e^{(\mathrm{cv})}_j-c\right|,
+\qquad
+\tau=
+\frac{\operatorname{MAD}(\mathcal{E}_{\mathrm{cv}})}{0.6745}.
+\]
+
+The official point-level anomaly score is the **shifted-and-scaled logistic
+sigmoid** of the raw point MSE:
+
+\[
+\boxed{
+q_{bt}
+=
+\operatorname{sigmoid}
+\left(\frac{e_{bt}-c}{\tau}\right)
+=
+\frac{1}{1+\exp\left(-\frac{e_{bt}-c}{\tau}\right)}
+}
+\]
+
+The stable top-level `point_scores` field MUST contain `q`, and the score
+transformation MUST run after raw point MSE computation. The same entity-level
+`c` and `\tau` are reused for offline and online point-score calibration.
+The `aux.point_score_samples` values remain the per-sample raw point MSEs used
+to compute `e`; they are not independently sigmoid-transformed.
 
 Window MSE for sample `m`:
 
@@ -647,7 +692,9 @@ Do not compute variance of integer class IDs. Classification uncertainty is wind
 
 ### 8.8 Role in v3 decisions
 
-All uncertainty values are diagnostic except that Monte Carlo mean scores are the official prediction scores. Variance MUST NOT alter:
+All uncertainty values are diagnostic. The Monte Carlo mean raw point MSE is
+transformed into `q`, which is the official point prediction score. Variance
+MUST NOT alter:
 
 - anomaly thresholds;
 - four-region triage;
@@ -723,6 +770,11 @@ Each entity owns an independent threshold artifact:
   "continuous_temperature": 0.9,
   "discrete_temperature": 0.9,
   "score_reduction": "mean",
+  "point_score_transform": "shifted-and-scaled logistic sigmoid",
+  "point_score_c": 0.0,
+  "point_score_tau": 0.0,
+  "point_score_tau_estimator": "mad_based_robust_scale",
+  "point_score_mad_normalizer": 0.6745,
   "variance_correction": 1,
   "numeric_precision": "fp32",
   "offline_point_threshold_nonoverlap": 0.0,
@@ -747,11 +799,53 @@ Calibration runs in `eval()` and `no_grad()` using the exact official stochastic
 
 Clean validation alone calibrates anomaly thresholds. Synthetic validation MAY report classification and uncertainty diagnostics but MUST NOT set anomaly thresholds.
 
+The calibration procedure MUST first compute the official raw point MSEs on
+clean validation, then estimate one entity-level `c` and `tau` using the
+median and MAD-based robust scale defined in Section 8.2. It MUST transform
+clean-validation point MSEs with the shifted-and-scaled logistic sigmoid before
+computing point thresholds. The offline and online point thresholds remain
+separate because their score timelines differ, but both use the same persisted
+entity-level `c` and `tau`.
+
 ### 10.3 Offline and online timelines
 
 - offline calibration/evaluation: non-overlapping windows, stride `20`, end-aligned handling explicitly recorded;
-- online calibration: sliding windows, stride `1`, absolute-index point aggregation, EWMA `0.9 current + 0.1 previous`;
+- online calibration: sliding windows, stride `1`, transformed point-score aggregation by absolute index, EWMA `0.9 current + 0.1 previous`;
 - the two score timelines MUST NOT share one threshold value by assumption.
+
+Offline point threshold:
+
+\[
+T_{\mathrm{point,offline}}
+=
+Q_{0.99}\left(\{q_t^{(\mathrm{cv,offline})}\}\right).
+\]
+
+Online EWMA point threshold:
+
+\[
+T_{\mathrm{point,online\text{-}EWMA}}
+=
+Q_{0.99}\left(\{r_t^{(\mathrm{cv,online})}\}\right),
+\]
+
+where `r` is produced by applying the existing absolute-index EWMA protocol
+to the transformed point anomaly scores `q`. In both cases, a point is
+classified as anomalous only when its score is strictly greater than the
+corresponding threshold.
+
+### 10.4 Score terminology mapping
+
+| Object | v3 meaning after this decision | Status |
+|---|---|---|
+| raw point MSE `e` | Monte Carlo mean of per-sample point MSEs | unchanged intermediate |
+| `point_scores` | transformed point anomaly score `q` | semantic refinement of the canonical output |
+| `window_scores` | raw window reconstruction MSE | unchanged |
+| `offline_point_threshold_nonoverlap` | 99th percentile of transformed offline clean-validation point scores | unchanged artifact name; calibration input refined |
+| `online_point_threshold_ewma` | 99th percentile of EWMA transformed clean-validation point scores | unchanged artifact name; calibration input refined |
+
+The term **anomaly score** continues to refer to `point_scores`/`q`, not to
+the intermediate raw point MSE `e`.
 
 ---
 
@@ -803,10 +897,12 @@ state.
 
 ### 12.2 Point prediction
 
-The official point score is the Monte Carlo mean score. Each causal window
-stores `absolute_indices [L]`, `window_point_scores [L]`,
+The official point score is the transformed anomaly score `q`, obtained from
+the Monte Carlo mean raw point MSE. Each causal window stores
+`absolute_indices [L]`, `window_point_scores [L]`,
 `current_window_ewma_point_scores [L]`, and `window_point_predictions [L]`.
-For a newly seen point, EWMA equals the current score. For a point that appears
+The runtime applies EWMA to transformed point anomaly scores, not to raw MSE.
+For a newly seen point, EWMA equals the current transformed score. For a point that appears
 again in an overlapping window, EWMA uses the previous value for that same
 absolute index. Runtime state keeps only the active point map needed for the
 next causal window.
@@ -1071,7 +1167,8 @@ Per-entity compressed artifact SHOULD contain:
 
 ```text
 absolute indices
-mean point scores
+mean raw point MSE before score transformation
+mean point anomaly scores after score transformation
 point score variances
 point reconstruction variances
 continuous/discrete retrieval variances
@@ -1169,7 +1266,7 @@ Labels are optional post-prediction overlays. The demo MUST NOT tune thresholds,
 - no variance of class indices exists.
 - top-level predictions equal sample means.
 - `softmax(top_level_logits)` equals the official mean class probabilities.
-- mean point scores are means of per-sample MSE values, not MSE of mean reconstruction.
+- mean raw point MSEs are means of per-sample MSE values, not MSE of mean reconstruction; official `point_scores` are the transformed anomaly scores defined in Section 8.2.
 - `return_mc_samples=false` preserves all required summaries.
 
 ### 17.2 Online vector records and state
@@ -1331,6 +1428,12 @@ V3 is implementation-complete only when:
 [LOCKED] Classification uncertainty is variance of class probabilities, never class IDs.
 [LOCKED] Variance does not affect thresholding, triage, buffers, PNN, or adaptation in v3.
 [LOCKED] Clean validation alone calibrates anomaly thresholds using the same M=10 protocol.
+[LOCKED] The official point anomaly score is the shifted-and-scaled logistic sigmoid of the Monte Carlo mean raw point MSE.
+[LOCKED] The sigmoid center is c = median(MSE(clean validation)).
+[LOCKED] The sigmoid scale is tau = MAD(MSE(clean validation)) / 0.6745.
+[LOCKED] The same entity-level c and tau are reused for offline and online point-score calibration.
+[LOCKED] Offline and online point thresholds are separate 99th percentiles of their transformed clean-validation score timelines.
+[LOCKED] A point is anomalous only when its score is strictly greater than the applicable threshold.
 [LOCKED] Stage B freezes encoder and both memories; trains only fusion/prediction heads.
 [LOCKED] Online A1/A2 update only the light-weight MLP projector.
 [LOCKED] No two augmented views are required online.

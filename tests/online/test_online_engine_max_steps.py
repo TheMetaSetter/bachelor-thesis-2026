@@ -192,6 +192,9 @@ def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -
         def to(self, *args: Any, **kwargs: Any) -> "_DummyModel":
             return self
 
+        def set_point_score_calibration(self, calibration) -> None:
+            self.point_score_calibration = calibration
+
     class _DummyCheckpointManager:
         def __init__(self, checkpoint_dir: Path) -> None:
             self.checkpoint_dir = checkpoint_dir
@@ -243,6 +246,11 @@ def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -
             "checkpoint_sha256": "checkpoint-sha",
             "ewma_current_weight": 0.9,
             "ewma_previous_weight": 0.1,
+            "point_score_transform": "shifted-and-scaled logistic sigmoid",
+            "point_score_c": 0.2,
+            "point_score_tau": 1.0,
+            "point_score_tau_estimator": "mad_based_robust_scale",
+            "point_score_mad_normalizer": 0.6745,
             "thresholds": {"online_ewma_point": {"value": 0.5}},
         },
     )

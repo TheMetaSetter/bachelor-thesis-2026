@@ -66,6 +66,7 @@ def _prepare_online_window_event(
     (
         batch_on_device,
         point_scores,
+        raw_point_scores,
         input_score,
         latent_score,
         ewma_scores,
@@ -87,6 +88,7 @@ def _prepare_online_window_event(
     return {
         "batch": batch_on_device,
         "window_point_scores": point_scores,
+        "raw_window_point_scores": raw_point_scores,
         "input_window_score": input_score,
         "latent_window_score": latent_score,
         "current_window_ewma_point_scores": ewma_scores,
@@ -117,7 +119,7 @@ def _run_current_window_action(
         online_variant=online_variant,
         threshold_value=threshold_value,
         ewma_point_score=float(event["current_window_ewma_point_scores"][-1]),
-        raw_point_score=float(event["window_point_scores"][-1]),
+        raw_point_score=float(event["raw_window_point_scores"][-1]),
         latent_window_score=event["latent_window_score"],
         triage_decision="hard_old_normality" if accepted_hard_old else triage_region,
     )
@@ -174,6 +176,7 @@ def _build_event_outputs(
         threshold_value=threshold_value,
         absolute_indices=event["batch"]["absolute_indices"][0],
         window_point_scores=event["window_point_scores"],
+        raw_point_scores=event["raw_window_point_scores"],
         input_window_score=event["input_window_score"],
         current_window_ewma_point_scores=event["current_window_ewma_point_scores"],
         triage_decision=event["triage_region"],

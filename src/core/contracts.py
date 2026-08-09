@@ -135,6 +135,12 @@ def validate_model_outputs(outputs: dict[str, Any]) -> None:
         _require_tensor_rank(outputs["window_scores"], 1, "outputs['window_scores']")
     if not isinstance(outputs["aux"], dict):
         raise TypeError("outputs['aux'] must be a dictionary")
+    if outputs["aux"].get("point_score_calibrated") is True:
+        point_scores = outputs["point_scores"]
+        if point_scores is None or not torch.isfinite(point_scores.float()).all().item():
+            raise ValueError("calibrated point_scores must contain only finite values")
+        if bool(torch.any(point_scores < 0.0)) or bool(torch.any(point_scores > 1.0)):
+            raise ValueError("calibrated point_scores must be in [0, 1]")
     stochastic_query = outputs["aux"].get("stochastic_query")
     if stochastic_query is not None:
         validate_stochastic_query_aux(stochastic_query)

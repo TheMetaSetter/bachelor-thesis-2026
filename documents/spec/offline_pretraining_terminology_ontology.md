@@ -300,10 +300,15 @@ verification_metadata_source
 | --- | --- | --- | --- |
 | `reconstruction` | `recon` | `[B,L,D]` | Reconstructed input window |
 | `classification_logits` | `logits` | `[B,12]` | Window-class logits |
-| `window_point_scores` | `point_scores` | `[B,L]` | Per-point channel-mean squared reconstruction error |
-| `window_anomaly_scores` | `window_scores` | `[B]` | Per-window aggregation of point scores |
+| `raw_point_mse` | `aux.point_score_samples` reduced over `M` | `[B,L]` | Monte Carlo mean channel-wise reconstruction MSE before score transformation |
+| `window_point_scores` | `point_scores` | `[B,L]` | Point-level anomaly score after the shifted-and-scaled logistic sigmoid |
+| `window_anomaly_scores` | `window_scores` | `[B]` | Per-window raw reconstruction MSE used by window-level triage |
 
-Không dùng `raw_point_scores` trong offline ontology vì “raw” không nói score nằm ở window hay timeline.
+Raw point MSE remains an intermediate value used to compute `window_point_scores`.
+The score transformation parameters are estimated from clean-validation raw
+point MSEs: `c = median(MSE(clean_validation))` and
+`tau = MAD(MSE(clean_validation)) / 0.6745`. Here `MSE(clean_validation)`
+means the clean-validation raw point-MSE timeline, not the window-level MSE.
 
 ### 7.2 Stage A losses
 
@@ -316,6 +321,11 @@ Không dùng `raw_point_scores` trong offline ontology vì “raw” không nói
 | `stage_a_total_loss` | `total_loss` trong Stage A | Có | Có |
 
 `L_recon`, `L_cls`, `L_contrastive`, `L_score_point` là mathematical aliases. Dùng canonical snake-case names trong pseudocode; dùng ký hiệu `L_*` trong công thức.
+
+`point_score_loss` dùng `raw_point_mse` trong training. The shifted-and-scaled
+logistic sigmoid is applied after raw MSE computation for inference, score
+timeline construction, and threshold calibration; it is not an additional
+training loss term.
 
 ### 7.3 Stage B losses
 
@@ -331,11 +341,11 @@ Không dùng `raw_point_scores` trong offline ontology vì “raw” không nói
 
 | Canonical name | Meaning |
 | --- | --- |
-| `clean_validation_point_score_timeline` | Window point scores được đưa về absolute entity timeline trên clean validation |
+| `clean_validation_point_score_timeline` | Transformed window point anomaly scores được đưa về absolute entity timeline trên clean validation |
 | `synthetic_validation_point_score_timeline` | Timeline tương tự cho synthetic validation |
 | `test_point_score_timeline` | Timeline tương tự cho test |
-| `offline_point_threshold` | Threshold hiệu chỉnh từ `clean_validation_point_score_timeline` cho offline predictions |
-| `online_point_ewma_threshold` | Threshold hiệu chỉnh offline từ clean-validation EWMA simulation, rồi chuyển sang online |
+| `offline_point_threshold` | `Q_0.99` của transformed `clean_validation_point_score_timeline` trên timeline non-overlapping |
+| `online_point_ewma_threshold` | `Q_0.99` của transformed clean-validation timeline sau sliding-window + absolute-index EWMA |
 
 `offline_point_threshold_nonoverlap` là exact schema alias trong full-spec-v3. `online_ewma_point_threshold` là runtime artifact alias của `online_point_ewma_threshold`.
 
@@ -363,7 +373,11 @@ Best checkpoint của `stage_b_fusion_finetuning`. Đây là checkpoint chính t
 
 ### 8.5 `threshold_artifact`
 
-Entity-scoped artifact chứa `offline_point_threshold`, `online_point_ewma_threshold`, triage thresholds, calibration identity, checkpoint identity, seed và protocol fields.
+Entity-scoped artifact chứa `offline_point_threshold`,
+`online_point_ewma_threshold`, triage thresholds, point-score transform
+parameters (`point_score_transform`, `point_score_c`, `point_score_tau`,
+`point_score_tau_estimator`, `point_score_mad_normalizer`), calibration
+identity, checkpoint identity, seed và protocol fields.
 
 ### 8.6 `offline_evaluation_record`
 
@@ -402,6 +416,8 @@ Nhóm output của `offline_evaluation`, gồm score artifacts, `offline_metrics
 | `stage_b_fusion_finetuning` | `loads` | `stage_b_initialization_checkpoint` |
 | `stage_b_fusion_finetuning` | `produces` | `stage_b_best_checkpoint` |
 | `offline_evaluation` | `loads` | `stage_b_best_checkpoint` |
+| `offline_evaluation` | `computes` | `raw_point_mse` |
+| score transformation | `maps` | `raw_point_mse` to `window_point_scores` |
 | `offline_evaluation` | `calibrates from` | `clean_validation_point_score_timeline` |
 | `offline_evaluation` | `produces` | `threshold_artifact` |
 | `offline_evaluation` | `produces` | `offline_artifact_bundle` |
@@ -421,7 +437,7 @@ Nhóm output của `offline_evaluation`, gồm score artifacts, `offline_metrics
 | `training_phase` | `stage_name` | renamed semantically, compatibility retained | generated config/model config parser | Không đổi source khi chưa có migration plan |
 | `continuous memory` | `continuous_prototype_bank` | renamed for specificity | model state | Docs/pseudocode |
 | `discrete memory` | `discrete_codebook` | renamed for specificity | model state | Docs/pseudocode |
-| `point-wise reconstruction score` | `window_point_scores` | clarified container | model output | Field vẫn là `point_scores` |
+| `point-wise reconstruction score` | `window_point_scores` | renamed/refined: canonical field now stores transformed anomaly score; raw MSE is a separate intermediate | model output | Field vẫn là `point_scores` |
 
 ## 11. Known semantic conflicts
 

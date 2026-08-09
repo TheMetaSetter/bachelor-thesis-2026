@@ -21,7 +21,6 @@ class _FakeOnlineModel(torch.nn.Module):
         assert target_param_group == "projector_params"
         return [self.projector_weight]
 
-
 class _FakeOnlineLoop:
     def __init__(
         self, model, optimizer, checkpoint_manager, experiment_logger, device: str
@@ -60,6 +59,9 @@ class _SpyOnlineBenchmarkModel(torch.nn.Module):
     def get_parameter_group(self, target_param_group: str) -> list[torch.nn.Parameter]:
         assert target_param_group == "projector_params"
         return [self.projector_weight]
+
+    def set_point_score_calibration(self, calibration) -> None:
+        self.point_score_calibration = calibration
 
 
 def test_build_online_optimizer_supports_adamw() -> None:
@@ -277,6 +279,11 @@ def test_online_benchmark_moves_model_to_device_before_calibration(
             "checkpoint_sha256": "checkpoint-sha",
             "ewma_current_weight": 0.9,
             "ewma_previous_weight": 0.1,
+            "point_score_transform": "shifted-and-scaled logistic sigmoid",
+            "point_score_c": 0.2,
+            "point_score_tau": 1.0,
+            "point_score_tau_estimator": "mad_based_robust_scale",
+            "point_score_mad_normalizer": 0.6745,
             "thresholds": {"online_ewma_point": {"value": 0.5}},
         },
     )
@@ -449,6 +456,11 @@ def test_online_benchmark_validates_reference_checkpoint_hash_before_streaming(
             .hexdigest(),
             "ewma_current_weight": 0.9,
             "ewma_previous_weight": 0.1,
+            "point_score_transform": "shifted-and-scaled logistic sigmoid",
+            "point_score_c": 0.2,
+            "point_score_tau": 1.0,
+            "point_score_tau_estimator": "mad_based_robust_scale",
+            "point_score_mad_normalizer": 0.6745,
             "thresholds": {"online_ewma_point": {"value": 0.5}},
         },
     )

@@ -185,7 +185,10 @@ def _build_monte_carlo_forward_outputs(
     )
     window_score_samples = point_score_samples.mean(dim=-1)
     reconstruction_mean = reconstruction_samples.mean(dim=1)
-    point_score_mean = point_score_samples.mean(dim=1)
+    raw_point_score_mean = point_score_samples.mean(dim=1)
+    point_score_mean, point_score_calibrated = self.transform_official_point_scores(
+        raw_point_score_mean
+    )
     window_score_mean = window_score_samples.mean(dim=1)
     if classification_probability_samples is not None:
         class_probabilities = classification_probability_samples.mean(dim=1)
@@ -229,6 +232,8 @@ def _build_monte_carlo_forward_outputs(
     }
     aux = {
         "class_probabilities": class_probabilities,
+        "raw_point_scores": raw_point_score_mean,
+        "point_score_calibrated": point_score_calibrated,
         "uncertainty": uncertainty,
         "deterministic_geometry": {
             "hidden_reconstruction": fusion_outputs["hidden_reconstruction"],

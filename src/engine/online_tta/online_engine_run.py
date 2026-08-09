@@ -42,6 +42,7 @@ from src.engine.online_tta.online_optimizer import (
 from src.engine.online_tta.checkpoint_resolution import resolve_threshold_artifact
 from src.protocols.online_stream_range import select_online_stream_sequence
 from src.protocols.threshold_artifact import load_threshold_artifact
+from src.protocols.point_score_calibration import PointScoreCalibration
 
 
 def _resolve_max_online_steps(value: Any) -> int | None:
@@ -122,6 +123,11 @@ def _build_runtime_online_context(
     )
     model = _build_model_from_experiment_config(
         {**experiment_config, "online_variant": online_variant}
+    )
+    if not hasattr(model, "set_point_score_calibration"):
+        raise TypeError("THESIS online model must support point-score calibration")
+    model.set_point_score_calibration(
+        PointScoreCalibration.from_artifact(threshold_artifact)
     )
     optimizer = (
         None

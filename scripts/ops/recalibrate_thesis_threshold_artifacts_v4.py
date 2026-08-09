@@ -33,7 +33,10 @@ from src.core.registry import build_dataset
 from src.core.runtime_components import register_online_runtime_components
 from src.core.seed import seed_everything
 from src.data.loaders import rebuild_dataset_bundle_with_scaler_state
-from src.engine.online_tta.online_calibration import collect_stride1_online_scores
+from src.engine.online_tta.online_calibration import (
+    collect_nonoverlap_offline_scores,
+    collect_stride1_online_scores,
+)
 from src.engine.online_tta.online_engine_shared import (
     _build_model_from_experiment_config,
 )
@@ -41,6 +44,11 @@ from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     load_threshold_artifact,
     write_threshold_artifact,
+)
+from src.protocols.point_score_calibration import (
+    PointScoreCalibration,
+    fit_mad_logistic_calibration,
+    transform_point_scores,
 )
 
 
@@ -257,7 +265,15 @@ def _collect_clean_validation_scores(
     model.to(device)
     seed_everything(entry.seed)
     clean_validation_sequences = data_bundle.get("scaled_sequences", {}).get("val", [])
-    return collect_stride1_online_scores(
+    offline_raw_scores = collect_nonoverlap_offline_scores(
+        model=model,
+        clean_validation_sequences=clean_validation_sequences,
+        window_size=window_size,
+        device=device,
+    )
+    calibration = fit_mad_logistic_calibration(offline_raw_scores)
+    model.set_point_score_calibration(calibration)
+    online_scores = collect_stride1_online_scores(
         model=model,
         clean_validation_sequences=clean_validation_sequences,
         window_size=window_size,
@@ -268,11 +284,18 @@ def _collect_clean_validation_scores(
         current_weight=float(protocol_config["online_ewma_current_weight"]),
         previous_weight=float(protocol_config["online_ewma_previous_weight"]),
     )
+    online_scores["offline_raw"] = offline_raw_scores
+    online_scores["calibration"] = calibration
+    online_scores["offline"] = transform_point_scores(
+        np.asarray(offline_raw_scores, dtype=float), calibration
+    ).tolist()
+    return online_scores
 
 
 def _calibrate_threshold_values(
     calibration_scores: dict[str, list[float]], protocol_config: dict[str, Any]
 ) -> dict[str, float]:
+    offline_quantile = _require_quantile(protocol_config, "offline_threshold_quantile")
     input_quantile = _require_quantile(protocol_config, "B_window_quantile")
     latent_low_quantile = _require_quantile(protocol_config, "A_low_quantile")
     latent_high_quantile = _require_quantile(protocol_config, "A_high_quantile")
@@ -291,7 +314,12 @@ def _calibrate_threshold_values(
     online_ewma_threshold = _finite_quantile(
         calibration_scores["ewma"], online_ewma_quantile, "online_ewma"
     )
+    offline_threshold = _finite_quantile(
+        calibration_scores["offline"], offline_quantile, "offline_point"
+    )
     return {
+        "offline_point_quantile": offline_quantile,
+        "offline_point_threshold": offline_threshold,
         "input_window_quantile": input_quantile,
         "input_window_threshold": input_threshold,
         "latent_window_low_quantile": latent_low_quantile,
@@ -351,14 +379,25 @@ def build_v4_threshold_artifact(
     entry: StageBInventoryEntry,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     threshold_values = _calibrate_threshold_values(calibration_scores, protocol_config)
+    calibration = calibration_scores.get("calibration")
+    if not isinstance(calibration, PointScoreCalibration):
+        raise ValueError("recalibration requires fitted point-score calibration")
+    artifact_fields = _v4_artifact_fields(
+        artifact_v3,
+        checkpoint_sha256,
+        experiment_config_path,
+        protocol_config,
+        entry,
+    )
+    artifact_fields.update(
+        {
+            "offline_point_threshold": threshold_values["offline_point_threshold"],
+            "point_score_c": calibration.center,
+            "point_score_tau": calibration.tau,
+        }
+    )
     artifact_v4 = build_threshold_artifact(
-        **_v4_artifact_fields(
-            artifact_v3,
-            checkpoint_sha256,
-            experiment_config_path,
-            protocol_config,
-            entry,
-        ),
+        **artifact_fields,
         online_ewma_point_threshold=threshold_values["online_ewma_point_threshold"],
         input_window_threshold=threshold_values["input_window_threshold"],
         latent_window_low_threshold=threshold_values["latent_window_low_threshold"],
@@ -376,6 +415,8 @@ def build_v4_threshold_artifact(
     artifact_v4["provenance"]["variant_name_resolution"] = variant_name_resolution
     audit = {
         "clean_validation_window_count": len(calibration_scores["input_window"]),
+        "offline_point_count": len(calibration_scores["offline_raw"]),
+        "point_score_calibration": calibration.to_artifact_fields(),
         "checkpoint_sha256": checkpoint_sha256,
         "artifact_v3_variant_name": str(artifact_v3["variant_name"]),
         "artifact_v4_variant_name": entry.offline_variant,

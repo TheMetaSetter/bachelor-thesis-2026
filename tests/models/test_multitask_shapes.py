@@ -6,6 +6,7 @@ import pytest
 from src.core.contracts import validate_model_outputs
 from src.data.augment import REDLAMP_MULTICLASS_CLASS_NAMES
 from src.models.thesis_multitask import ThesisMultitaskModel
+from src.protocols.point_score_calibration import PointScoreCalibration
 
 
 def test_multitask_model_defaults_to_redlamp_multiclass_configuration() -> None:
@@ -258,6 +259,7 @@ def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode(
     )
     model.memory_initialized = True
     model.memory_training_enabled = False
+    model.set_point_score_calibration(PointScoreCalibration(center=0.5, tau=0.25))
     model.eval()
     batch = {
         "x": torch.randn(3, 20, 38),
@@ -297,9 +299,21 @@ def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode(
     )
     assert torch.allclose(
         outputs["point_scores"],
+        torch.sigmoid(
+            (
+                outputs["aux"]["stochastic_query"]["point_score_samples"].mean(dim=1)
+                - 0.5
+            )
+            / 0.25
+        ),
+        atol=1e-6,
+    )
+    assert torch.allclose(
+        outputs["aux"]["raw_point_scores"],
         outputs["aux"]["stochastic_query"]["point_score_samples"].mean(dim=1),
         atol=1e-6,
     )
+    assert outputs["aux"]["point_score_calibrated"] is True
     assert torch.allclose(
         outputs["window_scores"],
         outputs["aux"]["stochastic_query"]["window_score_samples"].mean(dim=1),
