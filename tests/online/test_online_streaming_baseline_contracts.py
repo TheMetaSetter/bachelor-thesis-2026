@@ -79,14 +79,15 @@ def test_online_streaming_baselines_calibrate_and_run(tmp_path: Path) -> None:
         CANDIStreamingBaseline(
             train_sequence=train_sequence,
             window_size=8,
-            online_variant="main",
+            online_variant="reference_adapter_redlamp_encoder",
             seed=7,
             pretrained_encoder_checkpoint=checkpoint_path,
+            candi_use_fpm=False,
         ),
         M2N2StreamingBaseline(
             train_sequence=train_sequence,
             window_size=8,
-            online_variant="main",
+            online_variant="reference_adapter_redlamp_encoder",
             seed=7,
             pretrained_encoder_checkpoint=checkpoint_path,
         ),
@@ -125,7 +126,12 @@ def test_online_streaming_baselines_calibrate_and_run(tmp_path: Path) -> None:
             protocol_config=protocol_config,
             device="cpu",
         )
-        assert calibration["threshold_source"] == "clean_validation_stride1_ewma"
+        expected_threshold_source = (
+            "clean_validation_stride1_raw_window"
+            if baseline.method_name in {"candi", "m2n2"}
+            else "clean_validation_stride1_ewma"
+        )
+        assert calibration["threshold_source"] == expected_threshold_source
         if baseline.method_name in {"candi", "m2n2"}:
             assert calibration["threshold_artifact"]["checkpoint_sha256"]
         assert metric_history
@@ -162,6 +168,7 @@ def test_online_streaming_baselines_emit_entity_global_indices(tmp_path: Path) -
             train_sequence=train_sequence,
             window_size=8,
             pretrained_encoder_checkpoint=checkpoint_path,
+            candi_use_fpm=False,
         ),
         M2N2StreamingBaseline(
             train_sequence=train_sequence,

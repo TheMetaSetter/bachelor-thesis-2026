@@ -38,6 +38,7 @@ from src.core.uq_summary import (
     write_uq_summary_json,
 )
 from src.core.registry import build_dataset
+from src.core.runtime_components import register_online_runtime_components
 from src.data.loaders import rebuild_dataset_bundle_with_scaler_state
 from src.engine.checkpoint import CheckpointManager
 from src.engine.evaluator import Evaluator
@@ -46,6 +47,13 @@ from src.engine.thresholding import (
     select_online_ewma_threshold,
 )
 from src.engine.online_tta.online_calibration import collect_stride1_online_scores
+from src.engine.online_tta.online_engine_shared import (
+    _build_model_from_experiment_config,
+)
+from scripts.ops.threshold_artifact_v4_online_scoring import (
+    StageBInventoryEntry,
+    load_a0_scoring_config,
+)
 from src.protocols.point_scores import ewma_scores
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
@@ -340,6 +348,7 @@ def collect_offline_artifact_inputs(
         "seed": int(experiment_config.get("seed", 0)),
         "variant_name": str(experiment_config.get("offline_variant", "O0")),
         "model": model,
+        "checkpoint_path": checkpoint_path,
         "clean_validation_sequences": data_bundle.get("scaled_sequences", {}).get(
             "val", []
         ),
@@ -538,8 +547,29 @@ def _build_thresholds(
         dtype=float,
     )
     quantile = float(protocol_config["offline_threshold_quantile"])
+    checkpoint_path = Path(str(artifact_inputs["checkpoint_path"]))
+    entry = StageBInventoryEntry(
+        experiment_config_path=Path(experiment_config_path),
+        offline_variant=str(artifact_inputs["variant_name"]),
+        entity_id=str(artifact_inputs["entity_id"]),
+        seed=int(artifact_inputs["seed"]),
+        threshold_artifact_v3_path=Path(),
+        stage_b_best_checkpoint_path=checkpoint_path,
+        threshold_artifact_v4_path=Path(),
+        audit_path=Path(),
+    )
+    register_online_runtime_components()
+    online_config = load_a0_scoring_config(
+        entry,
+        int(protocol_config["window_size"]),
+    )
+    online_model = _build_model_from_experiment_config(online_config)
+    online_model.set_point_score_calibration(
+        artifact_inputs["point_score_calibration"]
+    )
+    online_model.to(str(artifact_inputs["device"]))
     online_calibration = collect_stride1_online_scores(
-        model=artifact_inputs["model"],
+        model=online_model,
         clean_validation_sequences=artifact_inputs["clean_validation_sequences"],
         window_size=int(protocol_config["window_size"]),
         batch_size=1,

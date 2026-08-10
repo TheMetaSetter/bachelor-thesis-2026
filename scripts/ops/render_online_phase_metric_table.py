@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from statistics import mean
 from typing import Any
 
 
@@ -80,9 +81,47 @@ def _build_ranks(
     return ranks
 
 
+def _average_across_entities(
+    values: dict[tuple[str, str, str, str], dict[str, float]],
+) -> dict[tuple[str, str, str], dict[str, float]]:
+    averages = {}
+    for method, offline_variant, online_variant, _ in METHOD_ORDER:
+        averages[(method, offline_variant, online_variant)] = {
+            metric: mean(
+                values[(method, offline_variant, online_variant, entity)][metric]
+                for entity in ENTITIES
+            )
+            for metric, _ in METRICS
+        }
+    return averages
+
+
+def _build_average_ranks(
+    averages: dict[tuple[str, str, str], dict[str, float]],
+) -> dict[tuple[str, str, str, str], int]:
+    ranks = {}
+    for metric, _ in METRICS:
+        method_values = [
+            averages[(method, offline_variant, online_variant)][metric]
+            for method, offline_variant, online_variant, _ in METHOD_ORDER
+        ]
+        value_ranks = {
+            value: rank
+            for rank, value in enumerate(sorted(set(method_values), reverse=True), 1)
+        }
+        for method, offline_variant, online_variant, _ in METHOD_ORDER:
+            value = averages[(method, offline_variant, online_variant)][metric]
+            ranks[(method, offline_variant, online_variant, metric)] = value_ranks[
+                value
+            ]
+    return ranks
+
+
 def _render_table(
     values: dict[tuple[str, str, str, str], dict[str, float]],
     ranks: dict[tuple[str, str, str, str, str], int],
+    averages: dict[tuple[str, str, str], dict[str, float]],
+    average_ranks: dict[tuple[str, str, str, str], int],
 ) -> str:
     lines = [
         "# Online Phase — Table 3",
@@ -101,10 +140,11 @@ def _render_table(
     lines.extend(
         f'      <th colspan="{len(METRICS)}">{entity}</th>' for entity in ENTITIES
     )
+    lines.append(f'      <th colspan="{len(METRICS)}">Trung bình theo entity</th>')
     lines.extend(["    </tr>", "    <tr>"])
     lines.extend(
         f"      <th>{metric_label}</th>"
-        for _ in ENTITIES
+        for _ in (*ENTITIES, "average")
         for _, metric_label in METRICS
     )
     lines.extend(["    </tr>", "  </thead>", "  <tbody>"])
@@ -116,6 +156,10 @@ def _render_table(
                 value = values[(method, offline_variant, online_variant, entity)][metric]
                 rank = ranks[(method, offline_variant, online_variant, entity, metric)]
                 lines.append(f"      <td>{_format_value(value, rank)}</td>")
+        for metric, _ in METRICS:
+            value = averages[(method, offline_variant, online_variant)][metric]
+            rank = average_ranks[(method, offline_variant, online_variant, metric)]
+            lines.append(f"      <td>{_format_value(value, rank)}</td>")
         lines.append("    </tr>")
     lines.extend(["  </tbody>", "</table>"])
     return "\n".join(lines)
@@ -124,7 +168,9 @@ def _render_table(
 def render() -> str:
     values = _load_values()
     ranks = _build_ranks(values)
-    table = _render_table(values, ranks)
+    averages = _average_across_entities(values)
+    average_ranks = _build_average_ranks(averages)
+    table = _render_table(values, ranks, averages, average_ranks)
     return "\n".join(
         [
             table,
@@ -134,6 +180,7 @@ def render() -> str:
             f"- `{REPORT_PATH}`",
             "- Bảng có 11 hàng, 3 entity và 3 metric; tổng cộng 99 run được "
             "gộp thành 33 combination theo entity.",
+            "- Ba cột cuối là trung bình số học của từng metric theo 3 entity.",
             "- Score dùng để tính metric là `online/ewma_point_score`; "
             "threshold và prediction giữ nguyên từ runtime online.",
             "- Protocol VUS dùng `vus_max_buffer_size = 20` và "

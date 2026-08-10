@@ -71,6 +71,10 @@ def _collect_batch_scores(
     )
     latent_scores = outputs["aux"].get("latent_window_score")
     if not isinstance(latent_scores, torch.Tensor):
+        geometry = outputs["aux"].get("deterministic_geometry")
+        if isinstance(geometry, dict):
+            latent_scores = geometry.get("latent_window_score")
+    if not isinstance(latent_scores, torch.Tensor):
         raise KeyError("online model must expose aux.latent_window_score")
     return (
         point_scores,
@@ -137,8 +141,16 @@ def _collect_offline_scores(
         sequence, window_size=window_size, stride=window_size, tail_policy="end_align"
     )
     for window in windows:
+        absolute_start_index = int(window["meta"]["absolute_start_index"])
+        absolute_end_index = int(window["meta"]["absolute_end_index"])
         batch = {
             "x": window["x"].unsqueeze(0).to(device),
+            "absolute_indices": torch.arange(
+                absolute_start_index,
+                absolute_end_index,
+                dtype=torch.long,
+                device=device,
+            ).unsqueeze(0),
             "point_labels": None,
             "mask": None,
             "timestamps": None,

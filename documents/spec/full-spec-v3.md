@@ -603,6 +603,50 @@ transformation MUST run after raw point MSE computation. The same entity-level
 The `aux.point_score_samples` values remain the per-sample raw point MSEs used
 to compute `e`; they are not independently sigmoid-transformed.
 
+### 8.2.1 Offline THESIS scoring boundary
+
+The offline phase of THESIS MUST NOT use RedLamp-style anomaly scoring.
+RedLamp-style scoring is an exploratory or reference-baseline option only; it
+is not part of the official THESIS offline benchmark protocol.
+
+The official THESIS anomaly score remains the shifted-and-scaled logistic
+sigmoid applied to point-wise reconstruction MSE:
+
+\[
+c = \operatorname{median}(\operatorname{MSE}(\text{clean validation})),
+\qquad
+\tau =
+\frac{\operatorname{MAD}(\operatorname{MSE}(\text{clean validation}))}{0.6745},
+\]
+
+\[
+s_t = \sigma\left(\frac{\operatorname{MSE}_t-c}{\tau}\right).
+\]
+
+The simple anomaly threshold MUST be computed from the transformed
+clean-validation score timeline. The protocol MUST explicitly select either
+the 95th percentile (`q95`) or the 99th percentile (`q99`).
+
+RedLamp-style anomaly scoring is excluded from the official offline THESIS
+protocol for the following reasons:
+
+1. It combines reconstruction scores with a classification-based score, while
+   THESIS defines its official anomaly score from point-wise reconstruction MSE.
+2. Its classification score depends on how common classes are selected in the
+   evaluated sequence.
+3. Its moving-average smoothing and test-sequence min--max normalization can
+   depend on the full test distribution.
+4. Its original score has window-level semantics, while THESIS requires a
+   point-wise score on the absolute timeline.
+5. Combining the two score families would change threshold-artifact schema,
+   score provenance, and comparability across offline variants.
+
+Therefore, the offline THESIS benchmark MUST NOT use classification
+probabilities to construct the official anomaly score and MUST NOT apply
+test-dependent min--max normalization. RedLamp-style scoring MAY be used only
+as a separately identified exploratory ablation when a future study requires
+it.
+
 Window MSE for sample `m`:
 
 \[
@@ -818,7 +862,10 @@ Offline point threshold:
 \[
 T_{\mathrm{point,offline}}
 =
-Q_{0.99}\left(\{q_t^{(\mathrm{cv,offline})}\}\right).
+Q_{\alpha_{\mathrm{offline}}}
+\left(\{q_t^{(\mathrm{cv,offline})}\}\right),
+\qquad
+\alpha_{\mathrm{offline}}\in\{0.95,0.99\}.
 \]
 
 Online EWMA point threshold:
@@ -826,7 +873,10 @@ Online EWMA point threshold:
 \[
 T_{\mathrm{point,online\text{-}EWMA}}
 =
-Q_{0.99}\left(\{r_t^{(\mathrm{cv,online})}\}\right),
+Q_{\alpha_{\mathrm{online}}}
+\left(\{r_t^{(\mathrm{cv,online})}\}\right),
+\qquad
+\alpha_{\mathrm{online}}\in\{0.95,0.99\},
 \]
 
 where `r` is produced by applying the existing absolute-index EWMA protocol
@@ -841,11 +891,21 @@ corresponding threshold.
 | raw point MSE `e` | Monte Carlo mean of per-sample point MSEs | unchanged intermediate |
 | `point_scores` | transformed point anomaly score `q` | semantic refinement of the canonical output |
 | `window_scores` | raw window reconstruction MSE | unchanged |
-| `offline_point_threshold_nonoverlap` | 99th percentile of transformed offline clean-validation point scores | unchanged artifact name; calibration input refined |
-| `online_point_threshold_ewma` | 99th percentile of EWMA transformed clean-validation point scores | unchanged artifact name; calibration input refined |
+| `offline_point_threshold_nonoverlap` | protocol-selected q95 or q99 of transformed offline clean-validation point scores | unchanged artifact name; calibration input refined |
+| `online_point_threshold_ewma` | protocol-selected q95 or q99 of EWMA transformed clean-validation point scores | unchanged artifact name; calibration input refined |
 
 The term **anomaly score** continues to refer to `point_scores`/`q`, not to
 the intermediate raw point MSE `e`.
+
+### 10.5 Terminology changes for this decision
+
+No canonical THESIS runtime object is renamed. The following boundary is
+explicitly added:
+
+| Term | v3 meaning | Status |
+|---|---|---|
+| RedLamp-style anomaly scoring | Reconstruction/classification score combination with moving-average smoothing and test-dependent min--max normalization | excluded from official offline THESIS; exploratory/reference baseline only |
+| THESIS anomaly score | Point-wise reconstruction MSE transformed by the shifted-and-scaled logistic sigmoid | unchanged canonical meaning |
 
 ---
 
@@ -1432,8 +1492,10 @@ V3 is implementation-complete only when:
 [LOCKED] The sigmoid center is c = median(MSE(clean validation)).
 [LOCKED] The sigmoid scale is tau = MAD(MSE(clean validation)) / 0.6745.
 [LOCKED] The same entity-level c and tau are reused for offline and online point-score calibration.
-[LOCKED] Offline and online point thresholds are separate 99th percentiles of their transformed clean-validation score timelines.
+[LOCKED] Offline and online point thresholds are separate protocol-selected q95 or q99 quantiles of their transformed clean-validation score timelines.
 [LOCKED] A point is anomalous only when its score is strictly greater than the applicable threshold.
+[LOCKED] The official offline THESIS phase does not use RedLamp-style anomaly scoring.
+[LOCKED] Official offline THESIS anomaly scores do not use classification probabilities or test-dependent min--max normalization.
 [LOCKED] Stage B freezes encoder and both memories; trains only fusion/prediction heads.
 [LOCKED] Online A1/A2 update only the light-weight MLP projector.
 [LOCKED] No two augmented views are required online.

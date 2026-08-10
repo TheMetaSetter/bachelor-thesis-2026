@@ -2,7 +2,7 @@
 
 **Ngày chốt:** 2026-08-05  
 **Phạm vi:** online test-time adaptation trên SMD cho THESIS, M2N2, CANDI và traditional ML baselines  
-**Trạng thái:** contract đã chốt; code/config cần nghiệm thu trước main run
+**Trạng thái:** contract đã chốt; runtime adapter đã triển khai, cần nghiệm thu trước main run
 
 ## Kết luận chính
 
@@ -14,8 +14,10 @@ của anomaly trong báo cáo.
 THESIS dùng encoder trong Stage B `best.pt` của chính THESIS. M2N2 và CANDI
 đều dùng encoder CNN đơn giản đã pretrain trong RedLamp. Latent dimension của
 RedLamp là `128`, còn latent dimension của THESIS là `64`. Hai dimension này
-không cần bằng nhau. Đây là quyết định có chủ ý để dùng ngay checkpoint đã có
-và không train lại từng combination.
+không cần bằng nhau. Reconstruction head do adapter sở hữu và được cập nhật
+theo objective của phương pháp. Đây là biến thể
+`reference_adapter_redlamp_encoder`: giữ encoder checkpoint RedLamp nhưng
+không gọi nó là native MLP/TimesNet của reference codebase.
 
 Các phương pháp phải dùng cùng dữ liệu stream, cùng cách cắt range, cùng
 window size, cùng cách lấy threshold và cùng cách đánh giá. Mỗi phương pháp
@@ -114,7 +116,7 @@ tham số riêng, tham số đó không được thay đổi các trường chun
 | Offline window stride | `20` | Cách tạo reference window cho protocol offline của baseline |
 | Online window stride | `1` | Mỗi bước online dịch cửa sổ một time-step |
 | Threshold split | clean validation | Không dùng test labels để chọn threshold |
-| Threshold quantile | `0.99` | Quantile dùng để đặt threshold |
+| Threshold quantile | `0.995` cho M2N2/CANDI `reference_adapter_redlamp_encoder`; `0.99` cho profile traditional/legacy | Quantile dùng để đặt threshold trong đúng profile của phương pháp |
 | Online EWMA | current `0.9`, previous `0.1` | Làm mượt point score trước khi phân loại |
 | Test labels | metrics only | Chỉ dùng để tính performance sau khi stream kết thúc |
 | `max_online_steps` | `null` ở main run | Smoke test mới được đặt giới hạn bước |
@@ -126,6 +128,23 @@ baseline. Online benchmark luôn dùng `online_window_stride: 1`. Không đượ
 thay `max_online_steps` bằng một range khác; range tuyệt đối phải là cơ chế
 chọn đoạn stream.
 
+### 1.5 Runtime flow của reference adapter profile
+
+M2N2 và CANDI dùng threshold raw reconstruction score từ clean validation.
+Config reference dùng `ANOMALY_RATIO = 0.5` phần trăm, tương đương quantile
+`0.995`. Runner phải giữ thứ tự sau cho từng test batch:
+
+```text
+score toàn bộ batch
+→ tạo prediction và record từ score trước update
+→ gọi một lần adaptation cho batch
+→ batch kế tiếp mới thấy state mới
+```
+
+`adaptation_batch_size` được ghi trong config. Giá trị `1` là profile smoke
+hiện tại; lifecycle vẫn nhận batch và không được gọi adaptation giữa các phần
+tuần tự của cùng một batch.
+
 ## 2. Pretrained encoder contract
 
 ### 2.1 Quy tắc theo phương pháp
@@ -133,8 +152,8 @@ chọn đoạn stream.
 | Phương pháp | Nguồn tham số encoder | Latent dimension | Cách dùng trong online phase |
 |---|---|---:|---|
 | THESIS | Stage B `best.pt` của chính combination THESIS | 64 | Load checkpoint; giữ reference encoder và memory theo checkpoint; online chỉ cập nhật projector theo config |
-| M2N2 | RedLamp `best.pt` cùng entity và seed | 128 | Chỉ dùng phần encoder làm backbone pretrained; không load RedLamp classification head |
-| CANDI | RedLamp `best.pt` cùng entity và seed | 128 | Chỉ dùng phần encoder làm backbone pretrained; không load RedLamp classification head |
+| M2N2 | RedLamp `best.pt` cùng entity và seed | 128 | Load encoder; adapter sở hữu reconstruction head và Detrender; không load RedLamp classification head |
+| CANDI | RedLamp `best.pt` cùng entity và seed | 128 | Load encoder; adapter sở hữu reconstruction head cùng `sana_in`/`sana_out`; không load RedLamp classification head |
 | Stumpy, KMeansAD, Isolation Forest | Không có neural encoder | Không áp dụng | Dùng feature/window representation riêng của từng traditional baseline |
 
 ### 2.2 Tham số kiến trúc encoder dùng cho deep-learning methods
@@ -219,8 +238,9 @@ Thông số đã chốt của RedLamp encoder:
 Số epoch 100 được chấp nhận. Đây là metadata của checkpoint RedLamp đang có
 trên remote, không phải yêu cầu train lại. Checkpoint được chọn theo metric
 `val_synth_vus_pr` của quá trình RedLamp. Khi load cho M2N2 hoặc CANDI, runtime
-chỉ lấy tensor của encoder và bỏ qua classification head, reconstruction head
-và các state không thuộc backbone.
+chỉ lấy tensor của encoder và bỏ qua classification head, decoder RedLamp và
+các state không thuộc backbone. Head do adapter tạo với seed đã ghi trong
+config, sau đó được cập nhật bằng objective reference.
 
 Config cuối cùng của M2N2/CANDI phải biểu diễn rõ các trường tương đương sau:
 
@@ -240,7 +260,27 @@ baseline_kwargs:
 `pretrained_encoder_checkpoint` là một phần của contract. Runtime không được
 âm thầm train một backbone mới nếu trường này đã được cung cấp.
 
-### 2.5 Contract riêng của online adaptation
+### 2.5a Optimizer và checkpoint identity của adapter
+
+Reference adapter profile phải ghi rõ:
+
+```yaml
+baseline_kwargs:
+  adaptation_optimizer: sgd
+  adaptation_learning_rate: 0.0001
+  adaptation_weight_decay: 0.0001
+  adaptation_momentum: 0.9
+  adaptation_dampening: 0.0
+  adaptation_nesterov: true
+  adaptation_batch_size: 1
+```
+
+M2N2 cập nhật model parameters đang trainable. CANDI với `USE_SANA=true`
+freeze backbone và chỉ cập nhật `sana_in` cùng `sana_out`. Artifact phải ghi
+optimizer, batch size, checkpoint role và checkpoint SHA-256 để phân biệt
+profile corrected với artifact legacy.
+
+### 2.6 Contract riêng của online adaptation
 
 THESIS và hai deep-learning baseline không dùng chung quy tắc cập nhật. Bảng
 dưới đây ghi vai trò của từng phương pháp.
@@ -248,8 +288,8 @@ dưới đây ghi vai trò của từng phương pháp.
 | Phương pháp | Score chính | Cập nhật trong stream | Tham số riêng đã chốt |
 |---|---|---|---|
 | THESIS | Score theo model THESIS và threshold artifact tương ứng | Theo các policy A0/A1/A2; chỉ phần được contract cho online TTA được cập nhật | `O0/O1`, `A0/A1/A2`, latent `64` |
-| M2N2 | Score từ backbone RedLamp và head/policy M2N2 | Policy M2N2; không cập nhật khi cửa sổ bị xem là bất thường | `adaptation_momentum = 0.01`, latent `128` |
-| CANDI | Score từ backbone RedLamp và head/policy CANDI | Policy CANDI; chỉ nhận cửa sổ đủ điều kiện theo policy | `adaptation_momentum = 0.02`, latent `128` |
+| M2N2 | Reconstruction MSE của RedLamp adapter model | Detrender mean-only, pseudo-anomaly mask theo timestep, masked reconstruction loss và một optimizer step; score được ghi trước update | `gamma = 0.99999`, `steps = 1`, latent `128` |
+| CANDI | Reconstruction MSE sau `sana_in`/`sana_out` | Validation representations, covariance pseudoinverse, hard/moderate Mahalanobis selection, pool gate `MIN_SAMPLES = 16`, SANA MSE và một optimizer step | `USE_FPM/SANA/HARD/MODERATE = true`, `MIN_SAMPLES = 16`, `steps = 1`, latent `128` |
 | Stumpy Channel AB | Matrix-profile AB-join theo từng channel, lấy `nanmax` giữa channels | Frozen, không update tham số | `p = 2.0`, `normalize = true` |
 | KMeansAD | Khoảng cách Euclidean tới cluster center gần nhất | Frozen, không update cluster center | `n_clusters = 20`, `n_init = 10`, `normalize_windows = true` |
 | Isolation Forest | Điểm từ `decision_function` của Isolation Forest | Frozen, không update forest | `n_estimators = 100`, `max_samples = auto`, `max_features = 1.0`, `contamination = auto`, `normalize_windows = true` |

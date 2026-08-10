@@ -32,6 +32,8 @@ from src.baselines.online import (
     OnlineStreamingBaselineProtocol,
     StumpyChannelABStreamingBaseline,
 )
+from src.baselines.online.adaptive import AdaptiveStreamingBaselineBase
+from src.baselines.online.pre_tta import score_sequence_before_adaptation
 from src.core.config import load_yaml_config
 from src.core.registry import build_dataset
 from src.core.runtime_components import register_evaluation_runtime_components
@@ -53,7 +55,6 @@ BASELINE_BUILDERS: dict[str, Callable[..., OnlineStreamingBaselineProtocol]] = {
     "iforest": IForestStreamingBaseline,
 }
 
-
 def _utc_now_iso() -> str:
     return (
         datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
@@ -66,7 +67,6 @@ def _load_json_config(path_like: str | Path) -> dict[str, Any]:
         path = (REPOSITORY_ROOT / path).resolve()
     return load_yaml_config(path)
 
-
 def _apply_data_overrides(
     data_config: dict[str, Any], data_overrides: dict[str, Any] | None
 ) -> dict[str, Any]:
@@ -76,7 +76,6 @@ def _apply_data_overrides(
     for key, value in data_overrides.items():
         merged_data_config[key] = value
     return merged_data_config
-
 
 def _truncate_sequence_to_max_online_steps(
     sequence: dict[str, Any],
@@ -109,14 +108,12 @@ def _truncate_sequence_to_max_online_steps(
     truncated_sequence["meta"] = metadata
     return truncated_sequence
 
-
 def _write_json(path: Path, payload: Any) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     return str(path)
-
 
 def _to_numpy(array_like: Any, *, dtype: Any) -> np.ndarray:
     if hasattr(array_like, "detach"):
@@ -360,6 +357,7 @@ def run_online_streaming_benchmark(
     metric_history: list[dict[str, Any]] = []
     records: list[dict[str, Any]] = []
     stream_selections: list[dict[str, Any]] = []
+    selected_test_sequences: list[dict[str, Any]] = []
     task_overrides = dict(benchmark_config.get("task_overrides", {}))
     for sequence in test_sequences:
         selected_sequence = select_online_stream_sequence(
@@ -396,6 +394,30 @@ def run_online_streaming_benchmark(
                 ),
             }
         )
+        selected_test_sequences.append(limited_sequence)
+
+    pre_tta_test_score_summary: list[dict[str, Any]] = []
+    if isinstance(baseline, AdaptiveStreamingBaselineBase):
+        for selected_sequence in selected_test_sequences:
+            pre_tta_scores = score_sequence_before_adaptation(
+                baseline, selected_sequence
+            )
+            finite_scores = pre_tta_scores[np.isfinite(pre_tta_scores)]
+            if finite_scores.size == 0:
+                raise FloatingPointError("pre-TTA test scores are not finite")
+            pre_tta_test_score_summary.append(
+                {
+                    "entity_id": str(
+                        selected_sequence.get("meta", {}).get("entity_id", entity_id)
+                    ),
+                    "count": int(finite_scores.size),
+                    "minimum": float(np.min(finite_scores)),
+                    "maximum": float(np.max(finite_scores)),
+                    "mean": float(np.mean(finite_scores)),
+                }
+            )
+
+    for limited_sequence in selected_test_sequences:
         sequence_metric_history, sequence_records = baseline.run_sequence(
             sequence=limited_sequence,
             threshold_value=float(calibration["threshold_value"]),
@@ -432,6 +454,7 @@ def run_online_streaming_benchmark(
         "threshold_source": calibration["threshold_source"],
         "method_metadata": calibration.get("method_metadata", {}),
         "stream_selections": stream_selections,
+        "pre_tta_test_score_summary": pre_tta_test_score_summary,
         "metric_history": metric_history,
         "records": normalized_records,
         "online_metrics_path": str(metrics_path),
@@ -461,7 +484,7 @@ def main() -> None:
     parser.add_argument("--benchmark-config", required=True)
     parser.add_argument(
         "--protocol-config",
-        default="configs/protocol/smd_window20_cleanval_q99_ewma09.yaml",
+        default=None,
     )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()

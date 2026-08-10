@@ -347,7 +347,7 @@ def _v4_artifact_fields(
         "offline_point_threshold": float(
             artifact_v3["offline_point_threshold_nonoverlap"]
         ),
-        "quantile": float(artifact_v3["thresholds"]["offline_point"]["quantile"]),
+        "quantile": float(protocol_config["offline_threshold_quantile"]),
         "ewma_current_weight": float(protocol_config["online_ewma_current_weight"]),
         "ewma_previous_weight": float(protocol_config["online_ewma_previous_weight"]),
         "created_by": "scripts/ops/recalibrate_thesis_threshold_artifacts_v4.py",

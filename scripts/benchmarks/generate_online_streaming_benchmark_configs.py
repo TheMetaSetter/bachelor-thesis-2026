@@ -26,8 +26,8 @@ ONLINE_STREAM_RANGES = {
 }
 BENCHMARK_METHODS = ("candi", "m2n2", "stumpy", "kmeans_ad", "iforest")
 BENCHMARK_METHOD_VARIANTS = {
-    "candi": ("main",),
-    "m2n2": ("main",),
+    "candi": ("reference_adapter_redlamp_encoder",),
+    "m2n2": ("reference_adapter_redlamp_encoder",),
     "stumpy": ("main",),
     "kmeans_ad": ("main",),
     "iforest": ("main",),
@@ -41,7 +41,7 @@ BENCHMARK_VARIANTS = tuple(
         }
     )
 )
-PROTOCOL_CONFIG_PATH = "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
+PROTOCOL_CONFIG_PATH = "configs/protocol/smd_window20_cleanval_q995_ewma09.yaml"
 METHOD_DIRECTORY_NAMES = {
     "candi": "candi",
     "m2n2": "m2n2",
@@ -106,8 +106,7 @@ def _baseline_kwargs(
         return {
             "input_dim": 38,
             "window_size": WINDOW_SIZE,
-            "threshold_quantile": 0.99,
-            "adaptation_momentum": 0.02 if smoke else 0.02,
+            "threshold_quantile": 0.995,
             "seed": seed,
             "encoder_family": "cnn_simple",
             "encoder_dim": 128,
@@ -115,14 +114,33 @@ def _baseline_kwargs(
             "cnn_kernel_size": 3,
             "cnn_hidden_channels": 64,
             "cnn_dropout": 0.1,
+            "candi_use_fpm": True,
+            "candi_use_sana": True,
+            "candi_use_hard": True,
+            "candi_use_moderate": True,
+            "candi_min_samples": 16,
+            "candi_steps": 1,
+            "candi_anomaly_ratio": 0.5,
+            "sana_type": "TCN_iTrans",
+            "sana_d_model": 512,
+            "sana_n_heads": 8,
+            "sana_d_ff": 512,
+            "sana_dropout": 0.0,
+            "sana_gating_init": 0.0,
+            "adaptation_learning_rate": 0.0001,
+            "adaptation_weight_decay": 0.0001,
+            "adaptation_optimizer": "sgd",
+            "adaptation_momentum": 0.9,
+            "adaptation_dampening": 0.0,
+            "adaptation_nesterov": True,
+            "adaptation_batch_size": 1,
             "pretrained_encoder_checkpoint": pretrained_encoder_checkpoint,
         }
     if method == "m2n2":
         return {
             "input_dim": 38,
             "window_size": WINDOW_SIZE,
-            "threshold_quantile": 0.99,
-            "adaptation_momentum": 0.01 if smoke else 0.01,
+            "threshold_quantile": 0.995,
             "seed": seed,
             "encoder_family": "cnn_simple",
             "encoder_dim": 128,
@@ -130,6 +148,15 @@ def _baseline_kwargs(
             "cnn_kernel_size": 3,
             "cnn_hidden_channels": 64,
             "cnn_dropout": 0.1,
+            "m2n2_gamma": 0.99999,
+            "m2n2_steps": 1,
+            "adaptation_learning_rate": 0.0001,
+            "adaptation_weight_decay": 0.0001,
+            "adaptation_optimizer": "sgd",
+            "adaptation_momentum": 0.9,
+            "adaptation_dampening": 0.0,
+            "adaptation_nesterov": True,
+            "adaptation_batch_size": 1,
             "pretrained_encoder_checkpoint": pretrained_encoder_checkpoint,
         }
     if method == "stumpy":

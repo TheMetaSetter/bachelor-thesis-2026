@@ -1,0 +1,50 @@
+benchmark_name: smd__m2n2__online_reference_adapter_redlamp_encoder__machine_3_4__w20__seed8__smoke
+baseline_name: m2n2
+online_variant: reference_adapter_redlamp_encoder
+entity_id: machine_3_4
+seed: 8
+device: cpu
+window_size: 20
+data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
+protocol_config_path: configs/protocol/smd_window20_cleanval_q995_ewma09.yaml
+output_dir: outputs/benchmark_smoke/online_streaming/smd/m2n2/reference_adapter_redlamp_encoder/machine_3_4/seed8
+baseline_kwargs:
+  input_dim: 38
+  window_size: 20
+  threshold_quantile: 0.995
+  seed: 8
+  encoder_family: cnn_simple
+  encoder_dim: 128
+  cnn_num_layers: 3
+  cnn_kernel_size: 3
+  cnn_hidden_channels: 64
+  cnn_dropout: 0.1
+  m2n2_gamma: 0.99999
+  m2n2_steps: 1
+  adaptation_learning_rate: 0.0001
+  adaptation_weight_decay: 0.0001
+  adaptation_optimizer: sgd
+  adaptation_momentum: 0.9
+  adaptation_dampening: 0.0
+  adaptation_nesterov: true
+  adaptation_batch_size: 1
+  pretrained_encoder_checkpoint: outputs/benchmark/smd/redlamp_baseline/machine_3_4/seed8/checkpoints/best.pt
+task_overrides:
+  absolute_start_index: 2634
+  absolute_end_index: 6116
+  max_online_steps: 16
+benchmark_mode: smoke
+logging:
+  use_wandb: false
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: disabled
+  wandb_job_type: online_benchmark
+  wandb_run_name: smd__m2n2__online_reference_adapter_redlamp_encoder__machine_3_4__w20__seed8__smoke
+  wandb_tags:
+  - online-benchmark
+  - m2n2
+  - reference_adapter_redlamp_encoder
+  - machine_3_4
+  - seed8
+  - window20
+  - smoke
