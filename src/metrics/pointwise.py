@@ -399,6 +399,7 @@ def compute_vus_pr_exact_naive(
 
     thresholds = _build_score_thresholds(score_array, num_thresholds)
     average_precision_values: list[float] = []
+
     for buffer_size in range(max_buffer_size + 1):
         precision_values: list[float] = []
         recall_values: list[float] = []
@@ -557,7 +558,7 @@ def compute_pointwise_metrics(
     # TODO: Đọc, hiểu bản chất và sử dụng thêm metric VUS-PR.
 
     # Dựa vào threshold đã tính toán ra dựa trên
-    # anomlay score của tất cả timestep trong validation set
+    # anomaly score của tất cả timestep trong validation set
     # để convert score sang dự đoán nhị phân.
     label_array, score_array = _validate_pointwise_array_shapes(
         point_labels=point_labels,

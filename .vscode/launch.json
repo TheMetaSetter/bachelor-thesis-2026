@@ -1,22 +1,19 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug THESIS online A2",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "scripts.run_thesis_online_benchmark",
-      "args": [
-        "--experiment-config",
-        "configs/experiment/online_diagnostic/thesis/smd__thesis__online__O1_A2__machine_1_6__w20__seed6__transfer_timing_5608_5909.yaml",
-        "--protocol-config",
-        "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml",
-        "--online-variant",
-        "A2"
-      ],
-      "cwd": "${workspaceFolder}",
-      "justMyCode": false,
-      "console": "integratedTerminal"
-    }
-  ]
+  "configurations": [{
+    "name": "Debug online Table 3 metrics",
+    "type": "debugpy",
+    "request": "launch",
+    "program": "${workspaceFolder}/scripts/ops/aggregate_online_table3_metrics.py",
+    "args": [
+      "--manifest",
+      "reporting/online_phase_tables/online_metrics_99/online_metrics_99_manifest.json",
+      "--output",
+      "/tmp/online_table3_debug.json",
+      "--workers",
+      "1"
+    ],
+    "cwd": "${workspaceFolder}",
+    "justMyCode": false,
+    "console": "integratedTerminal",
+  }],  
 }

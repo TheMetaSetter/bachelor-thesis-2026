@@ -19,6 +19,10 @@ class SequenceCleaningPipeline:
         self.annotate_metadata = annotate_metadata
 
     def transform_sequence(self, sequence: dict[str, Any]) -> dict[str, Any]:
+        """
+        Sequences satisfied contract are considered clean.
+        """
+
         validate_raw_sequence(sequence)
         cleaned_sequence = dict(sequence)
         cleaned_sequence["meta"] = dict(sequence["meta"])

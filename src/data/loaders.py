@@ -330,6 +330,7 @@ class SMDDatasetBuilder(BaseDatasetBuilder):
             annotate_metadata=bool(data_config.get("annotate_cleaning_metadata", False))
         )
         cleaned_sequences = cleaning_pipeline.transform_splits(parsed_sequences)
+
         return _build_dataset_bundle_from_sequences(
             dataset_name="smd",
             parser=parser,

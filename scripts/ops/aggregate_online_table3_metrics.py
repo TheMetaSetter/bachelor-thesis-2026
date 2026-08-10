@@ -212,11 +212,13 @@ def _compute_run_metrics(job: dict[str, Any]) -> dict[str, Any]:
     )
     if len(point_labels) != len(score_array):
         raise ValueError(f"Label/score length mismatch: {job['staged_name']}")
+
     metric_values = _compute_metric_values(
         point_labels,
         score_array,
         threshold=float(threshold_values[0]),
     )
+
     return _build_run_record(
         job,
         rows=rows,
