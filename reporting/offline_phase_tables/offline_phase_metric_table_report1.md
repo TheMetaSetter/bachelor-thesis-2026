@@ -4,7 +4,14 @@ Mỗi ô là trung bình số học của 3 seed (`seed6`, `seed8`, `seed36`) ch
 
 Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạch chân. Các metric đều được hiểu là càng cao càng tốt.
 
-<table>
+<style>
+  .report-shared { border-collapse: collapse; }
+  .report-shared th, .report-shared td { padding: 0.55rem 1.25rem; text-align: center; }
+  .report-shared thead th { background: #dcebf8; }
+  .report-shared tbody th { text-align: left; white-space: nowrap; }
+</style>
+
+<table class="report-shared">
   <thead>
     <tr>
       <th rowspan="2">Method + variant</th>
@@ -106,7 +113,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
 - Bảng có 6 hàng, 3 entity và 3 metric; tổng cộng 54 report record được gộp thành 18 combination theo entity.
 - Bảng này chỉ dùng `vus_pr`, `affiliation_f1` và `vus_roc`; UQ được trình bày ở bảng report riêng.
 
-<table>
+<table class="report-shared">
   <thead>
     <tr>
       <th rowspan="2">Method + variant</th>

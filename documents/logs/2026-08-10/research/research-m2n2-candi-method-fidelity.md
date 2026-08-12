@@ -4139,9 +4139,46 @@ Repository-wide `.venv/bin/pytest -q` was also run. It produced `484 passed`,
 compliance snapshot and multitask-model files outside this online adapter
 change. The required `tests/online` suite remains green with `91 passed`.
 
-### Current approval boundary
+### Approval boundary before the controlled rerun
 
 The corrected profile is ready for manual artifact review. The full benchmark
-matrix remains unapproved until the reviewer confirms that corrected output
-roots are separated from legacy q99/AdamW artifacts and accepts the two smoke
-reports. No matrix run was started in this task.
+matrix remained unapproved until the reviewer confirmed that corrected output
+roots were separated from legacy q99/AdamW artifacts and accepted the two smoke
+reports. The controlled rerun recorded below supersedes that pre-rerun status.
+
+## Follow-up run record: M2N2 and CANDI only
+
+The approved rerun completed on the synchronized remote source revision
+`e3bd7d5dbf55d4d49fd0c2497b05df83ce665bb1`. The scope contains only the two
+corrected online baselines:
+
+- M2N2: 3 entities × seeds `6`, `8`, `36`.
+- CANDI: 3 entities × seeds `6`, `8`, `36`.
+
+The 18 main runs use the `reference_adapter_redlamp_encoder` checkpoint
+profile, clean-validation threshold quantile `q=0.995`, window size `20`,
+online stride `1`, official stream ranges, and no online-step limit. The nine
+RedLamp checkpoints were present on the remote host and their SHA-256 values
+matched the verified checkpoint inventory. Two separate smoke runs completed
+before the main matrix.
+
+The main runs produced 18 completed `online_metrics.json` artifacts. Their
+step counts are `2,035` for `machine_1_6`, `3,463` for `machine_3_4`, and
+`9,689` for `machine_3_9`, for every method and seed. The 18 new artifacts
+replace only the M2N2 and CANDI rows in the 99-file staging manifest; the
+other 81 rows remain unchanged.
+
+The queue used temporary remote configs with Weights & Biases disabled because
+the first launch reached the W&B login step before the API credential was
+available. This setting is homogeneous across all 18 main runs and does not
+change model scoring, thresholding, adaptation, or the three reported metrics.
+
+The Table 3 aggregate reads `online/ewma_point_score`. Runtime predictions are
+created from the raw point score compared with the threshold, so validation
+must compare predictions with the raw score rather than with the EWMA field.
+All 91,122 M2N2 and CANDI records passed this raw-score prediction check, and
+all scores, thresholds, and predictions are finite.
+
+The final aggregate contains 99 runs, 11 method/variant rows, and 33
+method/variant/entity rows. Each M2N2 and CANDI entity row contains all three
+metrics required by Table 3: VUS-PR, affiliation F1, and VUS-ROC.

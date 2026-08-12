@@ -58,7 +58,7 @@
       "online_variant": "main",
       "entity_id": "machine_1_6",
       "seed": "seed36",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_1_6/seed36/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/reference_adapter_redlamp_encoder/machine_1_6/seed36/online_metrics.json",
       "staged_metric_file": "baseline__candi__main__machine_1_6__seed36__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -77,14 +77,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 7.287288454137315,
+        "value": 5.486103341579437,
         "is_constant": true,
-        "prediction_mismatch_count": 0
+        "prediction_mismatch_count": 2
       },
       "metrics": {
-        "vus_pr": 0.5859614567500658,
-        "affiliation_f1": 0.7933243653426914,
-        "vus_roc": 0.9804944855663111
+        "vus_pr": 0.5758997294183323,
+        "affiliation_f1": 0.792732677802652,
+        "vus_roc": 0.9755219106807536
       },
       "status": "complete"
     },
@@ -96,7 +96,7 @@
       "online_variant": "main",
       "entity_id": "machine_1_6",
       "seed": "seed6",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_1_6/seed6/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/reference_adapter_redlamp_encoder/machine_1_6/seed6/online_metrics.json",
       "staged_metric_file": "baseline__candi__main__machine_1_6__seed6__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -115,14 +115,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 6.185228161019691,
+        "value": 5.163897950649261,
         "is_constant": true,
-        "prediction_mismatch_count": 0
+        "prediction_mismatch_count": 1
       },
       "metrics": {
-        "vus_pr": 0.5909078804489877,
-        "affiliation_f1": 0.7933243653426914,
-        "vus_roc": 0.9694962507063222
+        "vus_pr": 0.60536917004788,
+        "affiliation_f1": 0.7929387179456396,
+        "vus_roc": 0.9722890923835631
       },
       "status": "complete"
     },
@@ -134,7 +134,7 @@
       "online_variant": "main",
       "entity_id": "machine_1_6",
       "seed": "seed8",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_1_6/seed8/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/reference_adapter_redlamp_encoder/machine_1_6/seed8/online_metrics.json",
       "staged_metric_file": "baseline__candi__main__machine_1_6__seed8__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -153,14 +153,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 5.7933365818398075,
+        "value": 6.194730916023254,
         "is_constant": true,
         "prediction_mismatch_count": 0
       },
       "metrics": {
-        "vus_pr": 0.5778447381796449,
-        "affiliation_f1": 0.792940317116959,
-        "vus_roc": 0.9796705063378994
+        "vus_pr": 0.589194638252658,
+        "affiliation_f1": 0.7930746802632649,
+        "vus_roc": 0.970035275361171
       },
       "status": "complete"
     },
@@ -172,7 +172,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_4",
       "seed": "seed36",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_4/seed36/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/reference_adapter_redlamp_encoder/machine_3_4/seed36/online_metrics.json",
       "staged_metric_file": "baseline__candi__main__machine_3_4__seed36__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -191,14 +191,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 4.641042019917893,
+        "value": 6.086502256393432,
         "is_constant": true,
         "prediction_mismatch_count": 0
       },
       "metrics": {
-        "vus_pr": 0.8610267790969327,
+        "vus_pr": 0.9629357882959055,
         "affiliation_f1": 0.7209686451889483,
-        "vus_roc": 0.9661388368453264
+        "vus_roc": 0.95088183043675
       },
       "status": "complete"
     },
@@ -210,7 +210,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_4",
       "seed": "seed6",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_4/seed6/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/reference_adapter_redlamp_encoder/machine_3_4/seed6/online_metrics.json",
       "staged_metric_file": "baseline__candi__main__machine_3_4__seed6__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -229,14 +229,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 4.497387476209588,
+        "value": 3.4681435430049885,
         "is_constant": true,
         "prediction_mismatch_count": 0
       },
       "metrics": {
-        "vus_pr": 0.859255701683783,
+        "vus_pr": 0.9579351304386886,
         "affiliation_f1": 0.7209686451889483,
-        "vus_roc": 0.9837926533342205
+        "vus_roc": 0.9576010551968163
       },
       "status": "complete"
     },
@@ -248,7 +248,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_4",
       "seed": "seed8",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_4/seed8/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/reference_adapter_redlamp_encoder/machine_3_4/seed8/online_metrics.json",
       "staged_metric_file": "baseline__candi__main__machine_3_4__seed8__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -267,14 +267,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 4.028102738001819,
+        "value": 4.611854200363158,
         "is_constant": true,
         "prediction_mismatch_count": 0
       },
       "metrics": {
-        "vus_pr": 0.9295190355721527,
+        "vus_pr": 0.8374397151611251,
         "affiliation_f1": 0.7209686451889483,
-        "vus_roc": 0.9829891122732614
+        "vus_roc": 0.9759048238431256
       },
       "status": "complete"
     },
@@ -286,7 +286,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_9",
       "seed": "seed36",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_9/seed36/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/reference_adapter_redlamp_encoder/machine_3_9/seed36/online_metrics.json",
       "staged_metric_file": "baseline__candi__main__machine_3_9__seed36__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -305,14 +305,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 2.2862857584919056,
+        "value": 1.7911298298835765,
         "is_constant": true,
-        "prediction_mismatch_count": 0
+        "prediction_mismatch_count": 10
       },
       "metrics": {
-        "vus_pr": 0.5249798462262228,
-        "affiliation_f1": 0.7491136043636176,
-        "vus_roc": 0.6867806049404034
+        "vus_pr": 0.6211521969370695,
+        "affiliation_f1": 0.763156175090909,
+        "vus_roc": 0.8688417795782951
       },
       "status": "complete"
     },
@@ -324,7 +324,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_9",
       "seed": "seed6",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_9/seed6/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/reference_adapter_redlamp_encoder/machine_3_9/seed6/online_metrics.json",
       "staged_metric_file": "baseline__candi__main__machine_3_9__seed6__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -343,14 +343,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 2.5802716242417483,
+        "value": 1.8172445666790025,
         "is_constant": true,
-        "prediction_mismatch_count": 0
+        "prediction_mismatch_count": 3
       },
       "metrics": {
-        "vus_pr": 0.6158029980532178,
-        "affiliation_f1": 0.7169679568865027,
-        "vus_roc": 0.7371746609508126
+        "vus_pr": 0.5829368035640411,
+        "affiliation_f1": 0.8269170431301041,
+        "vus_roc": 0.8720942901701034
       },
       "status": "complete"
     },
@@ -362,7 +362,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_9",
       "seed": "seed8",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/main/machine_3_9/seed8/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/candi/reference_adapter_redlamp_encoder/machine_3_9/seed8/online_metrics.json",
       "staged_metric_file": "baseline__candi__main__machine_3_9__seed8__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -381,14 +381,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 2.2249568591326367,
+        "value": 1.7008066976070413,
         "is_constant": true,
-        "prediction_mismatch_count": 0
+        "prediction_mismatch_count": 7
       },
       "metrics": {
-        "vus_pr": 0.6175497410538374,
-        "affiliation_f1": 0.7192269152936619,
-        "vus_roc": 0.7371988030801618
+        "vus_pr": 0.6210596329832444,
+        "affiliation_f1": 0.833593449782697,
+        "vus_roc": 0.8732933028220767
       },
       "status": "complete"
     },
@@ -1084,7 +1084,7 @@
       "online_variant": "main",
       "entity_id": "machine_1_6",
       "seed": "seed36",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_1_6/seed36/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/reference_adapter_redlamp_encoder/machine_1_6/seed36/online_metrics.json",
       "staged_metric_file": "baseline__m2n2__main__machine_1_6__seed36__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -1103,14 +1103,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 7.287288454137315,
+        "value": 5.486103341579437,
         "is_constant": true,
         "prediction_mismatch_count": 0
       },
       "metrics": {
-        "vus_pr": 0.5859614567500658,
-        "affiliation_f1": 0.7933243653426914,
-        "vus_roc": 0.9804944855663111
+        "vus_pr": 0.5688931264406257,
+        "affiliation_f1": 0.7876693543358703,
+        "vus_roc": 0.98293226816773
       },
       "status": "complete"
     },
@@ -1122,7 +1122,7 @@
       "online_variant": "main",
       "entity_id": "machine_1_6",
       "seed": "seed6",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_1_6/seed6/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/reference_adapter_redlamp_encoder/machine_1_6/seed6/online_metrics.json",
       "staged_metric_file": "baseline__m2n2__main__machine_1_6__seed6__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -1141,14 +1141,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 6.185228161019691,
+        "value": 5.163897950649261,
         "is_constant": true,
         "prediction_mismatch_count": 0
       },
       "metrics": {
-        "vus_pr": 0.5909078804489877,
-        "affiliation_f1": 0.7933243653426914,
-        "vus_roc": 0.9694962507063222
+        "vus_pr": 0.5775651235871282,
+        "affiliation_f1": 0.7923842589280858,
+        "vus_roc": 0.9832212935378767
       },
       "status": "complete"
     },
@@ -1160,7 +1160,7 @@
       "online_variant": "main",
       "entity_id": "machine_1_6",
       "seed": "seed8",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_1_6/seed8/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/reference_adapter_redlamp_encoder/machine_1_6/seed8/online_metrics.json",
       "staged_metric_file": "baseline__m2n2__main__machine_1_6__seed8__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -1179,14 +1179,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 5.7933365818398075,
+        "value": 6.194730916023254,
         "is_constant": true,
-        "prediction_mismatch_count": 0
+        "prediction_mismatch_count": 2
       },
       "metrics": {
-        "vus_pr": 0.5778447381796449,
-        "affiliation_f1": 0.792940317116959,
-        "vus_roc": 0.9796705063378994
+        "vus_pr": 0.5764949816088568,
+        "affiliation_f1": 0.7914488501125196,
+        "vus_roc": 0.9814217994260068
       },
       "status": "complete"
     },
@@ -1198,7 +1198,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_4",
       "seed": "seed36",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_4/seed36/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/reference_adapter_redlamp_encoder/machine_3_4/seed36/online_metrics.json",
       "staged_metric_file": "baseline__m2n2__main__machine_3_4__seed36__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -1217,14 +1217,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 4.641042019917893,
+        "value": 6.086502256393432,
         "is_constant": true,
         "prediction_mismatch_count": 0
       },
       "metrics": {
-        "vus_pr": 0.8610267790969327,
+        "vus_pr": 0.8604698711978087,
         "affiliation_f1": 0.7209686451889483,
-        "vus_roc": 0.9661388368453264
+        "vus_roc": 0.9832981067369924
       },
       "status": "complete"
     },
@@ -1236,7 +1236,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_4",
       "seed": "seed6",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_4/seed6/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/reference_adapter_redlamp_encoder/machine_3_4/seed6/online_metrics.json",
       "staged_metric_file": "baseline__m2n2__main__machine_3_4__seed6__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -1255,14 +1255,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 4.497387476209588,
+        "value": 3.4681435430049885,
         "is_constant": true,
         "prediction_mismatch_count": 0
       },
       "metrics": {
-        "vus_pr": 0.859255701683783,
+        "vus_pr": 0.8342408406911175,
         "affiliation_f1": 0.7209686451889483,
-        "vus_roc": 0.9837926533342205
+        "vus_roc": 0.9722656722889504
       },
       "status": "complete"
     },
@@ -1274,7 +1274,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_4",
       "seed": "seed8",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_4/seed8/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/reference_adapter_redlamp_encoder/machine_3_4/seed8/online_metrics.json",
       "staged_metric_file": "baseline__m2n2__main__machine_3_4__seed8__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -1293,14 +1293,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 4.028102738001819,
+        "value": 4.611854200363158,
         "is_constant": true,
         "prediction_mismatch_count": 0
       },
       "metrics": {
-        "vus_pr": 0.9295190355721527,
+        "vus_pr": 0.7494341269613449,
         "affiliation_f1": 0.7209686451889483,
-        "vus_roc": 0.9829891122732614
+        "vus_roc": 0.9732876570128904
       },
       "status": "complete"
     },
@@ -1312,7 +1312,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_9",
       "seed": "seed36",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_9/seed36/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/reference_adapter_redlamp_encoder/machine_3_9/seed36/online_metrics.json",
       "staged_metric_file": "baseline__m2n2__main__machine_3_9__seed36__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -1331,14 +1331,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 2.2862857584919056,
+        "value": 1.7911298298835765,
         "is_constant": true,
-        "prediction_mismatch_count": 0
+        "prediction_mismatch_count": 2
       },
       "metrics": {
-        "vus_pr": 0.5249798462262228,
-        "affiliation_f1": 0.7491136043636176,
-        "vus_roc": 0.6867806049404034
+        "vus_pr": 0.7129803528563976,
+        "affiliation_f1": 0.9972295002610789,
+        "vus_roc": 0.8669682541959249
       },
       "status": "complete"
     },
@@ -1350,7 +1350,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_9",
       "seed": "seed6",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_9/seed6/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/reference_adapter_redlamp_encoder/machine_3_9/seed6/online_metrics.json",
       "staged_metric_file": "baseline__m2n2__main__machine_3_9__seed6__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -1369,14 +1369,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 2.5802716242417483,
+        "value": 1.8172445666790025,
         "is_constant": true,
-        "prediction_mismatch_count": 0
+        "prediction_mismatch_count": 2
       },
       "metrics": {
-        "vus_pr": 0.6158029980532178,
-        "affiliation_f1": 0.7169679568865027,
-        "vus_roc": 0.7371746609508126
+        "vus_pr": 0.699798608477243,
+        "affiliation_f1": 0.9972071936326554,
+        "vus_roc": 0.8484604200319004
       },
       "status": "complete"
     },
@@ -1388,7 +1388,7 @@
       "online_variant": "main",
       "entity_id": "machine_3_9",
       "seed": "seed8",
-      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/main/machine_3_9/seed8/online_metrics.json",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/m2n2/reference_adapter_redlamp_encoder/machine_3_9/seed8/online_metrics.json",
       "staged_metric_file": "baseline__m2n2__main__machine_3_9__seed8__online_metrics.json",
       "metric_score_field": "online/ewma_point_score",
       "stream": {
@@ -1407,14 +1407,14 @@
         "unique_label_count": 2
       },
       "threshold": {
-        "value": 2.2249568591326367,
+        "value": 1.7008066976070413,
         "is_constant": true,
-        "prediction_mismatch_count": 0
+        "prediction_mismatch_count": 1
       },
       "metrics": {
-        "vus_pr": 0.6175497410538374,
-        "affiliation_f1": 0.7192269152936619,
-        "vus_roc": 0.7371988030801618
+        "vus_pr": 0.7368603791917898,
+        "affiliation_f1": 0.9972752847401725,
+        "vus_roc": 0.8548972457639616
       },
       "status": "complete"
     },
@@ -3822,18 +3822,18 @@
       "run_count": 9,
       "metrics": {
         "vus_pr": {
-          "mean": 0.6847609085627605,
-          "population_std_across_runs": 0.14384711910520986,
+          "mean": 0.7059914227887716,
+          "population_std_across_runs": 0.15528411600164232,
           "count": 9
         },
         "affiliation_f1": {
-          "mean": 0.7475337177681076,
-          "population_std_across_runs": 0.0335169478932143,
+          "mean": 0.7739242977313457,
+          "population_std_across_runs": 0.04213672867820905,
           "count": 9
         },
         "vus_roc": {
-          "mean": 0.8915262126705243,
-          "population_std_across_runs": 0.12191609748609551,
+          "mean": 0.9351625956080728,
+          "population_std_across_runs": 0.045750208284288926,
           "count": 9
         }
       }
@@ -3894,18 +3894,18 @@
       "run_count": 9,
       "metrics": {
         "vus_pr": {
-          "mean": 0.6847609085627605,
-          "population_std_across_runs": 0.14384711910520986,
+          "mean": 0.7018597123347013,
+          "population_std_across_runs": 0.10281796617104383,
           "count": 9
         },
         "affiliation_f1": {
-          "mean": 0.7475337177681076,
-          "population_std_across_runs": 0.0335169478932143,
+          "mean": 0.8362355975085808,
+          "population_std_across_runs": 0.11733691085955188,
           "count": 9
         },
         "vus_roc": {
-          "mean": 0.8915262126705243,
-          "population_std_across_runs": 0.12191609748609551,
+          "mean": 0.9385280796846927,
+          "population_std_across_runs": 0.058106227938559456,
           "count": 9
         }
       }
@@ -4089,18 +4089,18 @@
       "run_count": 3,
       "metrics": {
         "vus_pr": {
-          "mean": 0.5849046917928995,
-          "population_std_across_seeds": 0.005385102018117129,
+          "mean": 0.5901545125729568,
+          "population_std_across_seeds": 0.012049979302546154,
           "count": 3
         },
         "affiliation_f1": {
-          "mean": 0.7931963492674472,
-          "population_std_across_seeds": 0.0001810420698120032,
+          "mean": 0.7929153586705189,
+          "population_std_across_seeds": 0.0001405955489265681,
           "count": 3
         },
         "vus_roc": {
-          "mean": 0.9765537475368442,
-          "population_std_across_seeds": 0.005001728473027121,
+          "mean": 0.9726154261418292,
+          "population_std_across_seeds": 0.0022517640601479364,
           "count": 3
         }
       }
@@ -4114,8 +4114,8 @@
       "run_count": 3,
       "metrics": {
         "vus_pr": {
-          "mean": 0.8832671721176227,
-          "population_std_across_seeds": 0.03271299775892553,
+          "mean": 0.9194368779652398,
+          "population_std_across_seeds": 0.05801667964585469,
           "count": 3
         },
         "affiliation_f1": {
@@ -4124,8 +4124,8 @@
           "count": 3
         },
         "vus_roc": {
-          "mean": 0.9776402008176027,
-          "population_std_across_seeds": 0.008139305845760393,
+          "mean": 0.961462569825564,
+          "population_std_across_seeds": 0.010574214586275535,
           "count": 3
         }
       }
@@ -4139,18 +4139,18 @@
       "run_count": 3,
       "metrics": {
         "vus_pr": {
-          "mean": 0.5861108617777594,
-          "population_std_across_seeds": 0.04323203730683379,
+          "mean": 0.6083828778281183,
+          "population_std_across_seeds": 0.017993131348954375,
           "count": 3
         },
         "affiliation_f1": {
-          "mean": 0.7284361588479275,
-          "population_std_across_seeds": 0.014650217019145068,
+          "mean": 0.80788888933457,
+          "population_std_across_seeds": 0.031748022449190644,
           "count": 3
         },
         "vus_roc": {
-          "mean": 0.720384689657126,
-          "population_std_across_seeds": 0.02376167822281783,
+          "mean": 0.8714097908568251,
+          "population_std_across_seeds": 0.0018806770553696684,
           "count": 3
         }
       }
@@ -4314,18 +4314,18 @@
       "run_count": 3,
       "metrics": {
         "vus_pr": {
-          "mean": 0.5849046917928995,
-          "population_std_across_seeds": 0.005385102018117129,
+          "mean": 0.5743177438788702,
+          "population_std_across_seeds": 0.00386058343836736,
           "count": 3
         },
         "affiliation_f1": {
-          "mean": 0.7931963492674472,
-          "population_std_across_seeds": 0.0001810420698120032,
+          "mean": 0.7905008211254919,
+          "population_std_across_seeds": 0.0020382427968894334,
           "count": 3
         },
         "vus_roc": {
-          "mean": 0.9765537475368442,
-          "population_std_across_seeds": 0.005001728473027121,
+          "mean": 0.9825251203772045,
+          "population_std_across_seeds": 0.000789038130536558,
           "count": 3
         }
       }
@@ -4339,8 +4339,8 @@
       "run_count": 3,
       "metrics": {
         "vus_pr": {
-          "mean": 0.8832671721176227,
-          "population_std_across_seeds": 0.03271299775892553,
+          "mean": 0.8147149462834237,
+          "population_std_across_seeds": 0.04738621134782885,
           "count": 3
         },
         "affiliation_f1": {
@@ -4349,8 +4349,8 @@
           "count": 3
         },
         "vus_roc": {
-          "mean": 0.9776402008176027,
-          "population_std_across_seeds": 0.008139305845760393,
+          "mean": 0.9762838120129445,
+          "population_std_across_seeds": 0.004977372871361412,
           "count": 3
         }
       }
@@ -4364,18 +4364,18 @@
       "run_count": 3,
       "metrics": {
         "vus_pr": {
-          "mean": 0.5861108617777594,
-          "population_std_across_seeds": 0.04323203730683379,
+          "mean": 0.7165464468418101,
+          "population_std_across_seeds": 0.015339089105050259,
           "count": 3
         },
         "affiliation_f1": {
-          "mean": 0.7284361588479275,
-          "population_std_across_seeds": 0.014650217019145068,
+          "mean": 0.9972373262113022,
+          "population_std_across_seeds": 2.8343533694043426e-05,
           "count": 3
         },
         "vus_roc": {
-          "mean": 0.720384689657126,
-          "population_std_across_seeds": 0.02376167822281783,
+          "mean": 0.856775306663929,
+          "population_std_across_seeds": 0.007671606347163041,
           "count": 3
         }
       }

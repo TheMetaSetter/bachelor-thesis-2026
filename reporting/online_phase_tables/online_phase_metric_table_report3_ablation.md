@@ -4,7 +4,14 @@ Mỗi ô là trung bình số học của 3 seed (`seed6`, `seed8`, `seed36`) ch
 
 Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạch chân. Các metric đều được hiểu là càng cao càng tốt.
 
-<table>
+<style>
+  .report-shared { border-collapse: collapse; }
+  .report-shared th, .report-shared td { padding: 0.55rem 1.25rem; text-align: center; }
+  .report-shared thead th { background: #dcebf8; }
+  .report-shared tbody th { text-align: left; white-space: nowrap; }
+</style>
+
+<table class="report-shared">
   <thead>
     <tr>
       <th rowspan="2">Method + variant</th>
@@ -109,6 +116,8 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
 
 ## Nguồn dữ liệu
 
+- Bảng này giữ nguyên vì lần rerun gần nhất chỉ cập nhật M2N2 và CANDI; hai
+  phương pháp đó không thuộc bảng ablation THESIS này.
 - `reporting/online_phase_tables/online_table3_metrics.json`
 - Bảng gồm 5 hàng được chọn từ Table 3 online gốc; mỗi ô là trung bình của 3 seed.
 - Mục đích: so sánh các biến thể THESIS O0/O1 và A0/A1/A2.

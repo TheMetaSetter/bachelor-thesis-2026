@@ -6,7 +6,7 @@ seed: 36
 device: cpu
 window_size: 20
 data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
-protocol_config_path: configs/protocol/smd_window20_cleanval_q99_ewma09.yaml
+protocol_config_path: configs/protocol/smd_window20_cleanval_q995_ewma09.yaml
 output_dir: outputs/benchmark/online_streaming/smd/kmeans_ad/main/machine_3_4/seed36
 baseline_kwargs:
   window_size: 20

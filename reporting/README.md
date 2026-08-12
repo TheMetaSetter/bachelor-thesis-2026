@@ -29,3 +29,8 @@ VUS-PR, affiliation F1, and VUS-ROC.
 
 The rendered comparison table is stored at
 `online_phase_tables/online_phase_metric_table_report3.md`.
+
+The offline uncertainty comparison table is stored at
+`offline_phase_tables/offline_phase_metric_table_report2.md`. It compares
+`mean_of_variances` between clean validation and test for THESIS variants O0
+and O1 across the three SMD entities.
