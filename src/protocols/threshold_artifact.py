@@ -73,17 +73,13 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
             "point_score_tau_estimator",
             "point_score_mad_normalizer",
         }
-        missing_calibration_fields = sorted(
-            calibration_fields - set(artifact)
-        )
+        missing_calibration_fields = sorted(calibration_fields - set(artifact))
         if missing_calibration_fields:
             raise ValueError(
                 "THESIS schema v4 artifact is missing point-score calibration fields: "
                 f"{missing_calibration_fields}"
             )
-        if artifact["point_score_transform"] != (
-            "shifted-and-scaled logistic sigmoid"
-        ):
+        if artifact["point_score_transform"] != ("shifted-and-scaled logistic sigmoid"):
             raise ValueError("unsupported THESIS point score transform")
         if artifact["point_score_tau_estimator"] != "mad_based_robust_scale":
             raise ValueError("unsupported THESIS point score tau estimator")

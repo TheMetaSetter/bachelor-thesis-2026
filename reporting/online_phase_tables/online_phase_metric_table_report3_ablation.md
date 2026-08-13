@@ -7,6 +7,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
 <style>
   .report-shared { border-collapse: collapse; }
   .report-shared th, .report-shared td { padding: 0.55rem 1.25rem; text-align: center; }
+  .report-shared .blank-corner { background: #fff; border: 0; }
   .report-shared thead th { background: #dcebf8; }
   .report-shared tbody th { text-align: left; white-space: nowrap; }
 </style>
@@ -14,11 +15,11 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
 <table class="report-shared">
   <thead>
     <tr>
-      <th rowspan="2">Method + variant</th>
-      <th colspan="3">machine_1_6</th>
-      <th colspan="3">machine_3_4</th>
-      <th colspan="3">machine_3_9</th>
-      <th colspan="3">Trung bình theo entity</th>
+      <th rowspan="2" class="blank-corner"></th>
+      <th colspan="3">machine-1-6</th>
+      <th colspan="3">machine-3-4</th>
+      <th colspan="3">machine-3-9</th>
+      <th colspan="3">Average</th>
     </tr>
     <tr>
       <th>VUS-PR</th>
@@ -111,15 +112,28 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
       <td><strong>0.8458</strong></td>
       <td><strong>0.8692</strong></td>
     </tr>
+    <tr>
+      <th>THESIS O1 + A2</th>
+      <td><strong>0.8241</strong></td>
+      <td><strong>0.9986</strong></td>
+      <td><u>0.8975</u></td>
+      <td><u>0.9803</u></td>
+      <td><strong>0.7210</strong></td>
+      <td>0.9767</td>
+      <td><u>0.6661</u></td>
+      <td><u>0.8177</u></td>
+      <td>0.7335</td>
+      <td><u>0.8235</u></td>
+      <td><strong>0.8458</strong></td>
+      <td>0.8692</td>
+    </tr>
   </tbody>
 </table>
 
 ## Nguồn dữ liệu
 
-- Bảng này giữ nguyên vì lần rerun gần nhất chỉ cập nhật M2N2 và CANDI; hai
-  phương pháp đó không thuộc bảng ablation THESIS này.
 - `reporting/online_phase_tables/online_table3_metrics.json`
-- Bảng gồm 5 hàng được chọn từ Table 3 online gốc; mỗi ô là trung bình của 3 seed.
+- Bảng gồm 6 biến thể THESIS được chọn từ Table 3 online gốc; mỗi ô là trung bình của 3 seed.
 - Mục đích: so sánh các biến thể THESIS O0/O1 và A0/A1/A2.
 - Ba cột cuối là trung bình số học của từng metric theo 3 entity.
 - Score dùng để tính metric là `online/ewma_point_score`; threshold và prediction giữ nguyên từ runtime online.

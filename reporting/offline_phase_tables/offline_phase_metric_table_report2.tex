@@ -6,14 +6,21 @@
 \scriptsize
 \setlength{\tabcolsep}{2.5pt}
 \begin{adjustbox}{max width=\textwidth}
-\begin{tabular}{lcccccc}
+\begin{tabular}{lcccccccccccc}
 \toprule
-\multirow{2}{*}{{}} & \multicolumn{2}{c}{machine\_1\_6} & \multicolumn{2}{c}{machine\_3\_4} & \multicolumn{2}{c}{machine\_3\_9} \\
+\multirow{2}{*}{} & \multicolumn{4}{c}{machine-1-6} & \multicolumn{4}{c}{machine-3-4} & \multicolumn{4}{c}{machine-3-9} \\
 \midrule
-{} & Validation & Test & Validation & Test & Validation & Test \\
-THESIS + O0 & 0.012 & 0.250 & 0.013 & 0.432 & 0.013 & 0.045 \\
-THESIS + O1 & 0.006 & 0.089 & 0.019 & 0.573 & 0.024 & 0.061 \\
-\bottomrule
+ & VUS-PR & Aff. F1 & Validation & Test & VUS-PR & Aff. F1 & Validation & Test & VUS-PR & Aff. F1 & Validation & Test \\
+THESIS O0 & 0.798 & 0.747 & 0.012 & 0.250 & 0.705 & 0.708 & 0.013 & 0.432 & 0.578 & 0.789 & 0.013 & 0.045 \\
+THESIS O1 & 0.799 & 0.748 & 0.006 & 0.089 & 0.704 & 0.708 & 0.019 & 0.573 & 0.578 & 0.793 & 0.024 & 0.061 \\
+\midrule
+\multicolumn{5}{c}{Average} \\
+\cmidrule[1.2pt](l{0pt}r{-0.4em}){1-5}
+ & VUS-PR & Aff. F1 & Validation & Test & \multicolumn{8}{c}{} \\
+THESIS O0 & \textbf{0.694} & 0.748 & \textbf{0.013} & \textbf{0.242} & \multicolumn{8}{c}{} \\
+THESIS O1 & \textbf{0.694} & \textbf{0.749} & 0.016 & 0.241 & \multicolumn{8}{c}{} \\
+\cmidrule[1.2pt](l{0pt}r{-0.4em}){1-5}
+\cmidrule(lr){1-5}
 \end{tabular}
 \end{adjustbox}
 \end{table}

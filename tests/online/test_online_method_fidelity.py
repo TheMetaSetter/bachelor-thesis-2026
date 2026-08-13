@@ -99,7 +99,9 @@ def test_m2n2_uses_detrender_mask_and_optimizer_step(tmp_path: Path) -> None:
     assert result["did_update"] is True
     assert result["mask_count"] == 8
     assert np.isfinite(result["loss_total"])
-    assert not torch.equal(before["0.weight"], baseline.backbone_.decoder.state_dict()["0.weight"])
+    assert not torch.equal(
+        before["0.weight"], baseline.backbone_.decoder.state_dict()["0.weight"]
+    )
     assert float(baseline.detrender.mean.abs().sum()) > 0.0
 
 
@@ -141,7 +143,9 @@ def test_stream_records_score_before_adaptation(tmp_path: Path) -> None:
         del x
         return state["value"], 0.0
 
-    def adapt(self: object, x: torch.Tensor, score: float, threshold: float) -> dict[str, object]:
+    def adapt(
+        self: object, x: torch.Tensor, score: float, threshold: float
+    ) -> dict[str, object]:
         del x, score, threshold
         state["value"] += 1.0
         return {"decision": "probe", "did_update": True, "loss_total": 0.0}
@@ -197,7 +201,14 @@ def test_batch_lifecycle_scores_all_windows_before_one_update(tmp_path: Path) ->
         device="cpu",
     )
 
-    assert events == [("score", 2), ("adapt", 2), ("score", 2), ("adapt", 2), ("score", 2), ("adapt", 2)]
+    assert events == [
+        ("score", 2),
+        ("adapt", 2),
+        ("score", 2),
+        ("adapt", 2),
+        ("score", 2),
+        ("adapt", 2),
+    ]
     assert [record["raw_point_score"] for record in records] == [
         0.0,
         1.0,
@@ -231,9 +242,7 @@ def test_candi_fpm_reads_raw_current_input(tmp_path: Path) -> None:
         observed.append(x.detach().clone())
         return original_get_representations(x)
 
-    baseline.backbone_.get_representations = MethodType(
-        capture, baseline.backbone_
-    )
+    baseline.backbone_.get_representations = MethodType(capture, baseline.backbone_)
     baseline._mahalanobis_similarity = lambda representation, references: True
     current_window = torch.ones(1, 8, 3)
     baseline._collect_candidates(

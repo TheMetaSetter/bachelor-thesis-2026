@@ -1,5 +1,8 @@
 # Development Specification: Two-Stage Offline Pre-training with Point-wise Balanced Reconstruction-Score Loss for `thesis_multitask.py`
 
+> **Notation authority:** Khi đối chiếu anomaly score mức điểm, tài liệu lịch sử này dùng mapping trong [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime và ngữ nghĩa lịch sử trong thân tài liệu được giữ nguyên.
+
+
 ## 1. Purpose
 
 Tài liệu này đặc tả cách implement thí nghiệm **two-stage offline pre-training** cho mô hình `thesis_multitask.py`, với thay đổi chính là sử dụng **point-wise balanced reconstruction-score loss** thay cho bản balanced reconstruction-score loss ở mức window.
@@ -1631,13 +1634,20 @@ Validation set must not be used for:
 
 Validation/test point-wise anomaly score for a window:
 
-$$
-s_{i,t}
+For a deterministic forward pass, this historical formula is the \(M=1\) case of the canonical raw point score:
+
+\[
+s^{(1)}_{t,i}
 =
 \frac{1}{C}
-\sum_{c=1}^{C}
-\left(\hat{x}_{i,t,c}-x^{input}_{i,t,c}\right)^2
-$$
+\left\|\mathbf{x}_{t,i}-\widehat{\mathbf{x}}^{(1)}_{t,i}\right\|_2^2.
+\]
+
+For stochastic inference with \(M\) retrieval samples, validation and test use
+
+\[
+\overline{s}_{t,i}=\frac{1}{M}\sum_{m=1}^{M}s^{(m)}_{t,i}.
+\]
 
 Shape:
 

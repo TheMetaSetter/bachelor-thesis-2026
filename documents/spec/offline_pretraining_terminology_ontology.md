@@ -8,6 +8,9 @@ evidence_revision: e58602f45ee5439a1e001f060e8ea640aeddde9c
 
 # Offline Pre-training Terminology Ontology
 
+> **Notation authority:** Ký hiệu anomaly score mức điểm trong tài liệu này tuân theo [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime, config và artifact không bị đổi bởi việc chuẩn hóa ký hiệu.
+
+
 ## 1. Mục đích
 
 Tài liệu này là nguồn chuẩn về **tên object** và **quan hệ giữa object** trong pha offline của THESIS. Nó giải quyết bốn câu hỏi cho mỗi tên:
@@ -306,9 +309,7 @@ verification_metadata_source
 
 Raw point MSE remains an intermediate value used to compute `window_point_scores`.
 The score transformation parameters are estimated from clean-validation raw
-point MSEs: `c = median(MSE(clean_validation))` and
-`tau = MAD(MSE(clean_validation)) / 0.6745`. Here `MSE(clean_validation)`
-means the clean-validation raw point-MSE timeline, not the window-level MSE.
+point MSEs: \(\mu^{(\mathrm{input})}_{\mathrm{val}} = \operatorname{median}(\mathcal{S}^{(\mathrm{input})}_{\mathrm{val}})\) and \(\gamma^{(\mathrm{input})}_{\mathrm{val}} = \operatorname{MAD}(\mathcal{S}^{(\mathrm{input})}_{\mathrm{val}}) / 0.6745\). Here \(\mathcal{S}^{(\mathrm{input})}_{\mathrm{val}}\) is the clean-validation raw point-MSE timeline \(\overline{s}_{t,i}\), not the window-level MSE. The calibrated runtime field `point_scores` corresponds to \(s^{(\mathrm{cal})}_{t,i}\).
 
 ### 7.2 Stage A losses
 

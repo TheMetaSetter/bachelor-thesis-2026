@@ -1,5 +1,8 @@
 # Development Specification v3: THESIS Offline, Stochastic Prototype Retrieval, Online TTA, Benchmark, and Demo
 
+> **Notation authority:** Ký hiệu anomaly score mức điểm trong tài liệu này tuân theo [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime, config và artifact không bị đổi bởi việc chuẩn hóa ký hiệu.
+
+
 **Status:** normative implementation specification  
 **Date:** 2026-07-11  
 **Supersedes:** `documents/spec/full-spec-v2.md` where this document differs
@@ -552,35 +555,42 @@ The official mean raw point MSE is the mean of the ten per-sample MSE scores. It
 
 ### 8.2 Score construction
 
-Point-wise MSE for sample `m`:
+Point-wise input-space MSE for sample \(m\):
 
 \[
-s^{(m)}_{bt}=\frac1D\sum_d(x_{btd}-\hat x^{(m)}_{btd})^2.
+s^{(m)}_{t,i}
+=
+\frac{1}{C}
+\left\|\mathbf{x}_{t,i}-\widehat{\mathbf{x}}^{(m)}_{t,i}\right\|_2^2.
 \]
 
 The official raw point MSE is the Monte Carlo mean:
 
 \[
-e_{bt}=\frac1M\sum_{m=1}^{M}s^{(m)}_{bt}.
+\overline{s}_{t,i}
+=
+\frac{1}{M}\sum_{m=1}^{M}s^{(m)}_{t,i}.
 \]
 
 For each entity, estimate the score-transformation parameters from the raw
 point MSEs on clean validation:
 
 \[
-\mathcal{E}_{\mathrm{cv}}=\{e^{(\mathrm{cv})}_1,\ldots,e^{(\mathrm{cv})}_N\},
+\mathcal{S}^{(\mathrm{input})}_{\mathrm{val}}
+=
+\{\overline{s}^{(\mathrm{cv})}_1,\ldots,\overline{s}^{(\mathrm{cv})}_N\},
 \qquad
-c=\operatorname{median}(\mathcal{E}_{\mathrm{cv}}),
+\mu^{(\mathrm{input})}_{\mathrm{val}}
+=
+\operatorname{median}\left(\mathcal{S}^{(\mathrm{input})}_{\mathrm{val}}\right),
 \]
 
 \[
-\operatorname{MAD}(\mathcal{E}_{\mathrm{cv}})
+\gamma^{(\mathrm{input})}_{\mathrm{val}}
 =
-\operatorname{median}_j
-\left|e^{(\mathrm{cv})}_j-c\right|,
-\qquad
-\tau=
-\frac{\operatorname{MAD}(\mathcal{E}_{\mathrm{cv}})}{0.6745}.
+\frac{
+\operatorname{MAD}\left(\mathcal{S}^{(\mathrm{input})}_{\mathrm{val}}\right)
+}{0.6745}.
 \]
 
 The official point-level anomaly score is the **shifted-and-scaled logistic
@@ -588,20 +598,26 @@ sigmoid** of the raw point MSE:
 
 \[
 \boxed{
-q_{bt}
+s^{(\mathrm{cal})}_{t,i}
 =
-\operatorname{sigmoid}
-\left(\frac{e_{bt}-c}{\tau}\right)
-=
-\frac{1}{1+\exp\left(-\frac{e_{bt}-c}{\tau}\right)}
+\operatorname{sigmoid}\left(
+\frac{
+\overline{s}_{t,i}-\mu^{(\mathrm{input})}_{\mathrm{val}}
+}{
+\gamma^{(\mathrm{input})}_{\mathrm{val}}
 }
+\right)
+}.
 \]
 
-The stable top-level `point_scores` field MUST contain `q`, and the score
-transformation MUST run after raw point MSE computation. The same entity-level
-`c` and `\tau` are reused for offline and online point-score calibration.
-The `aux.point_score_samples` values remain the per-sample raw point MSEs used
-to compute `e`; they are not independently sigmoid-transformed.
+The stable top-level **point_scores** field MUST contain
+\(s^{(\mathrm{cal})}_{t,i}\), and the score transformation MUST run after raw
+point MSE computation. The same entity-level
+\(\mu^{(\mathrm{input})}_{\mathrm{val}}\) and
+\(\gamma^{(\mathrm{input})}_{\mathrm{val}}\) are reused for offline and online
+point-score calibration. The **aux.point_score_samples** values remain the
+per-sample raw point MSEs used to compute \(\overline{s}_{t,i}\); they are not
+independently sigmoid-transformed.
 
 ### 8.2.1 Offline THESIS scoring boundary
 
@@ -610,17 +626,20 @@ RedLamp-style scoring is an exploratory or reference-baseline option only; it
 is not part of the official THESIS offline benchmark protocol.
 
 The official THESIS anomaly score remains the shifted-and-scaled logistic
-sigmoid applied to point-wise reconstruction MSE:
+sigmoid applied to point-wise reconstruction MSE. It uses
+\(\overline{s}_{t,i}\), \(\mu^{(\mathrm{input})}_{\mathrm{val}}\), and
+\(\gamma^{(\mathrm{input})}_{\mathrm{val}}\) exactly as defined in Section 8.2:
 
 \[
-c = \operatorname{median}(\operatorname{MSE}(\text{clean validation})),
-\qquad
-\tau =
-\frac{\operatorname{MAD}(\operatorname{MSE}(\text{clean validation}))}{0.6745},
-\]
-
-\[
-s_t = \sigma\left(\frac{\operatorname{MSE}_t-c}{\tau}\right).
+s^{(\mathrm{cal})}_{t,i}
+=
+\sigma\left(
+\frac{
+\overline{s}_{t,i}-\mu^{(\mathrm{input})}_{\mathrm{val}}
+}{
+\gamma^{(\mathrm{input})}_{\mathrm{val}}
+}
+\right).
 \]
 
 The simple anomaly threshold MUST be computed from the transformed
@@ -650,7 +669,7 @@ it.
 Window MSE for sample `m`:
 
 \[
-S^{(m)}_b=\frac1L\sum_t s^{(m)}_{bt}.
+S^{(\mathrm{input},m)}_t=\frac1L\sum_t s^{(m)}_{t,i}.
 \]
 
 `window_score_variance` MUST be variance across `S^(m)`. It MUST NOT be replaced by the mean of point variances because temporal covariance would be lost.
@@ -675,7 +694,7 @@ point_anomaly_score_variance [B,L]
 ```
 
 \[
-u^{score}_{bt}=\widehat{Var}_m[s^{(m)}_{bt}].
+u^{\mathrm{score}}_{t,i}=\widehat{Var}_m[s^{(m)}_{t,i}].
 \]
 
 Also export:
@@ -837,24 +856,20 @@ Each entity owns an independent threshold artifact:
 }
 ```
 
+The artifact field names **point_score_c** and **point_score_tau** are retained as legacy runtime-schema names. Their mathematical meanings are \(\mu^{(\mathrm{input})}_{\mathrm{val}}\) and \(\gamma^{(\mathrm{input})}_{\mathrm{val}}\), respectively. This notation change does not authorize a schema migration.
+
 ### 10.2 Calibration identity
 
-Calibration runs in `eval()` and `no_grad()` using the exact official stochastic inference contract. A threshold calibrated from one-pass scores MUST NOT be used with ten-sample mean scores.
+Calibration runs in **eval()** and **no_grad()** using the exact official stochastic inference contract. A threshold calibrated from one-pass scores MUST NOT be used with ten-sample mean scores.
 
 Clean validation alone calibrates anomaly thresholds. Synthetic validation MAY report classification and uncertainty diagnostics but MUST NOT set anomaly thresholds.
 
-The calibration procedure MUST first compute the official raw point MSEs on
-clean validation, then estimate one entity-level `c` and `tau` using the
-median and MAD-based robust scale defined in Section 8.2. It MUST transform
-clean-validation point MSEs with the shifted-and-scaled logistic sigmoid before
-computing point thresholds. The offline and online point thresholds remain
-separate because their score timelines differ, but both use the same persisted
-entity-level `c` and `tau`.
+The calibration procedure MUST first compute \(\overline{s}_{t,i}\) on clean validation, then estimate one entity-level \(\mu^{(\mathrm{input})}_{\mathrm{val}}\) and \(\gamma^{(\mathrm{input})}_{\mathrm{val}}\) using the median and MAD-based robust scale defined in Section 8.2. It MUST transform clean-validation raw point MSEs into \(s^{(\mathrm{cal})}_{t,i}\) before computing point thresholds. The offline and online point thresholds remain separate because their score timelines differ, but both use the same persisted entity-level calibration parameters.
 
 ### 10.3 Offline and online timelines
 
-- offline calibration/evaluation: non-overlapping windows, stride `20`, end-aligned handling explicitly recorded;
-- online calibration: sliding windows, stride `1`, transformed point-score aggregation by absolute index, EWMA `0.9 current + 0.1 previous`;
+- offline calibration/evaluation: non-overlapping windows, stride **20**, end-aligned handling explicitly recorded;
+- online calibration: sliding windows, stride **1**, calibrated point-score aggregation by absolute index, EWMA **0.9 current + 0.1 previous**;
 - the two score timelines MUST NOT share one threshold value by assumption.
 
 Offline point threshold:
@@ -863,7 +878,7 @@ Offline point threshold:
 T_{\mathrm{point,offline}}
 =
 Q_{\alpha_{\mathrm{offline}}}
-\left(\{q_t^{(\mathrm{cv,offline})}\}\right),
+\left(\{s^{(\mathrm{cal,cv,offline})}_n\}\right),
 \qquad
 \alpha_{\mathrm{offline}}\in\{0.95,0.99\}.
 \]
@@ -874,28 +889,24 @@ Online EWMA point threshold:
 T_{\mathrm{point,online\text{-}EWMA}}
 =
 Q_{\alpha_{\mathrm{online}}}
-\left(\{r_t^{(\mathrm{cv,online})}\}\right),
+\left(\{\widetilde{s}^{(\mathrm{cv,online})}_n\}\right),
 \qquad
 \alpha_{\mathrm{online}}\in\{0.95,0.99\},
 \]
 
-where `r` is produced by applying the existing absolute-index EWMA protocol
-to the transformed point anomaly scores `q`. In both cases, a point is
-classified as anomalous only when its score is strictly greater than the
-corresponding threshold.
+where \(\widetilde{s}^{(\mathrm{cv,online})}_n\) is produced by applying the absolute-index EWMA protocol to \(s^{(\mathrm{cal})}_{t,i}\). In both cases, a point is anomalous only when its score is strictly greater than the corresponding threshold.
 
 ### 10.4 Score terminology mapping
 
-| Object | v3 meaning after this decision | Status |
+| Object | Mathematical symbol | Status |
 |---|---|---|
-| raw point MSE `e` | Monte Carlo mean of per-sample point MSEs | unchanged intermediate |
-| `point_scores` | transformed point anomaly score `q` | semantic refinement of the canonical output |
-| `window_scores` | raw window reconstruction MSE | unchanged |
-| `offline_point_threshold_nonoverlap` | protocol-selected q95 or q99 of transformed offline clean-validation point scores | unchanged artifact name; calibration input refined |
-| `online_point_threshold_ewma` | protocol-selected q95 or q99 of EWMA transformed clean-validation point scores | unchanged artifact name; calibration input refined |
+| raw point MSE | \(\overline{s}_{t,i}\) | unchanged intermediate |
+| **point_scores** | \(s^{(\mathrm{cal})}_{t,i}\) | unchanged runtime field |
+| **window_scores** | \(S_t^{(\mathrm{input})}\) | unchanged raw window reconstruction score |
+| **offline_point_threshold_nonoverlap** | quantile of the offline clean-validation \(s^{(\mathrm{cal})}\) timeline | unchanged artifact name |
+| **online_point_threshold_ewma** | quantile of the online clean-validation \(\widetilde{s}\) timeline | unchanged artifact name |
 
-The term **anomaly score** continues to refer to `point_scores`/`q`, not to
-the intermediate raw point MSE `e`.
+The term **anomaly score** refers to **point_scores** and \(s^{(\mathrm{cal})}_{t,i}\), not to the intermediate raw point MSE \(\overline{s}_{t,i}\).
 
 ### 10.5 Terminology changes for this decision
 
@@ -980,13 +991,13 @@ only affects future causal windows.
 
 ### 12.3 Four-region triage
 
-Use Monte Carlo mean window reconstruction score `s_input` and deterministic latent-memory score `s_latent`:
+Use Monte Carlo mean window reconstruction score \(S_t^{(\mathrm{input})}\) and deterministic latent-memory score \(S_t^{(\mathrm{latent})}\). Runtime fields remain **s_input** and **s_latent**:
 
 ```text
-s_input <= B_window                                normal
-s_input > B_window and s_latent <= A_low           hard_old
-s_input > B_window and A_low < s_latent <= A_high  gray_zone
-s_input > B_window and s_latent > A_high           strong_anomaly
+S_t^(input) <= B_window                                normal
+S_t^(input) > B_window and S_t^(latent) <= A_low           hard_old
+S_t^(input) > B_window and A_low < S_t^(latent) <= A_high  gray_zone
+S_t^(input) > B_window and S_t^(latent) > A_high           strong_anomaly
 ```
 
 Uncertainty variance does not participate in this truth table.
@@ -1489,9 +1500,9 @@ V3 is implementation-complete only when:
 [LOCKED] Variance does not affect thresholding, triage, buffers, PNN, or adaptation in v3.
 [LOCKED] Clean validation alone calibrates anomaly thresholds using the same M=10 protocol.
 [LOCKED] The official point anomaly score is the shifted-and-scaled logistic sigmoid of the Monte Carlo mean raw point MSE.
-[LOCKED] The sigmoid center is c = median(MSE(clean validation)).
-[LOCKED] The sigmoid scale is tau = MAD(MSE(clean validation)) / 0.6745.
-[LOCKED] The same entity-level c and tau are reused for offline and online point-score calibration.
+[LOCKED] The sigmoid center is mu_val^(input) = median(raw point MSE on clean validation).
+[LOCKED] The sigmoid scale is gamma_val^(input) = MAD(raw point MSE on clean validation) / 0.6745.
+[LOCKED] The same entity-level mu_val^(input) and gamma_val^(input) are reused for offline and online point-score calibration.
 [LOCKED] Offline and online point thresholds are separate protocol-selected q95 or q99 quantiles of their transformed clean-validation score timelines.
 [LOCKED] A point is anomalous only when its score is strictly greater than the applicable threshold.
 [LOCKED] The official offline THESIS phase does not use RedLamp-style anomaly scoring.
@@ -1511,7 +1522,7 @@ V3 is implementation-complete only when:
 The following are not newly decided by stochastic uncertainty and MUST retain their validated v2/entity-specific definitions:
 
 ```text
-A_low = Q_0.75(s_latent_window on clean validation). This supersedes the Q_0.95 value in full-spec-v2.
+A_low = Q_0.75(S_t^(latent) on clean validation). This supersedes the Q_0.95 value in full-spec-v2.
 exact A_high quantile or estimator
 exact B_window quantile if not already locked by entity config
 final entity list and seed count for the published benchmark

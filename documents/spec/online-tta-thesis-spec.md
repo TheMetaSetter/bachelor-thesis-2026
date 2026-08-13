@@ -1,5 +1,8 @@
 # Development Specification
 
+> **Notation authority:** Khi đối chiếu anomaly score mức điểm, tài liệu lịch sử này dùng mapping trong [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime và ngữ nghĩa lịch sử trong thân tài liệu được giữ nguyên.
+
+
 # Point-Level THESIS with Window-Level Online Verification Buffer
 
 ## 0. Status
@@ -24,26 +27,23 @@ The design intentionally minimizes additional hyperparameters. Any unresolved de
 
 THESIS aims to perform time-series anomaly detection with point-level anomaly decisions.
 
-The model should learn to reconstruct normal time-points well and reconstruct anomalous time-points poorly. Therefore, the final anomaly score should be available at the point level:
+The model should learn to reconstruct normal time-points well and reconstruct anomalous time-points poorly. The raw input-space point score is
 
-[
-s_{\text{point}}(t)
-===================
-
+\[
+\overline{s}_{t,i}
+=
+\frac{1}{M}\sum_{m=1}^{M}
 \frac{1}{C}
-\sum_{c=1}^{C}
-(x_{t,c}-\hat{x}_{t,c})^2.
-]
+\left\|\mathbf{x}_{t,i}-\widehat{\mathbf{x}}^{(m)}_{t,i}\right\|_2^2.
+\]
 
-A point is predicted as anomalous if:
+When the run uses calibrated input-space scoring, the score sent to the online timeline is \(s^{(\mathrm{cal})}_{t,i}\), as defined by the notation authority. A point is predicted anomalous if
 
-[
-s_{\text{point}}(t) > T_{\text{point}}.
-]
+\[
+\widehat{a}_n=\mathbb{I}\left(\widetilde{s}_n>T_{\mathrm{point}}\right).
+\]
 
-The threshold (T_{\text{point}}) is the main operational anomaly threshold.
-
-However, online test-time adaptation is not triggered directly by every anomalous point. Instead, THESIS uses window-level signals to decide whether a window should be placed into a verification buffer.
+The threshold \(T_{\mathrm{point}}\) is the main operational anomaly threshold. Online test-time adaptation is not triggered directly by every anomalous point. Instead, THESIS uses window-level signals to decide whether a window should be placed into a verification buffer.
 
 ---
 
@@ -136,203 +136,83 @@ THESIS uses three threshold objects.
 
 ### 4.1 Point-Level Anomaly Threshold
 
-[
-T_{\text{point}}
-]
+\[
+T_{\mathrm{point}}
+=
+Q_p\left(\widetilde{s}^{\mathrm{clean-val}}_n\right).
+\]
 
-This is the final decision threshold.
+The clean-validation timeline must use the same selected score design and EWMA path as online inference. The score may be \(\overline{s}_{t,i}\), \(s^{(\mathrm{cal})}_{t,i}\), \(\overline{\ell}^{(c)}_{t,i}\), or \(s^{(\mathrm{latent})}_{t,i}\), but one run MUST use one explicitly named score space.
 
-A point is predicted anomalous if:
+A point is predicted anomalous only when \(\widetilde{s}_n>T_{\mathrm{point}}\). The exact quantile \(p\) remains a protocol choice; candidates are \(0.95\) and \(0.99\), with the conservative historical default \(0.99\).
 
-[
-s_{\text{point}}(t)>T_{\text{point}}.
-]
-
-Default calibration source:
-
-[
-T_{\text{point}}
-================
-
-Q_p
-\left(
-s_{\text{point}}^{\text{clean-val}}(t)
-\right).
-]
-
-**Undecided:** the exact quantile (p). Candidate values:
-
-[
-p=0.95,\quad 0.99.
-]
-
-The current conservative default should be:
-
-[
-p=0.99.
-]
 
 ### 4.2 Window-Level Input Reconstruction Threshold
 
-[
-B_{\text{window}}
-]
+Let the Monte Carlo mean input-window reconstruction score be
 
-This threshold is used only to decide whether a window is suspicious enough to enter the online triage stage.
+\[
+S_t^{(\mathrm{input})}
+=
+\frac{1}{T}\sum_{i=1}^{T}\overline{s}_{t,i}.
+\]
 
-For a window (W):
+The window enters online triage only when
 
-[
-s_{\text{input-window}}(W)
-==========================
+\[
+S_t^{(\mathrm{input})}>B_{\mathrm{window}},
+\qquad
+B_{\mathrm{window}}
+=
+Q_p\left(S_t^{(\mathrm{input,clean-val})}\right).
+\]
 
-\frac{1}{LC}
-\sum_{t\in W}
-\sum_{c=1}^{C}
-(x_{t,c}-\hat{x}_{t,c})^2.
-]
-
-Then:
-
-[
-B_{\text{window}}
-=================
-
-Q_p
-\left(
-s_{\text{input-window}}^{\text{clean-val}}(W)
-\right).
-]
-
-A window enters triage only if:
-
-[
-s_{\text{input-window}}(W)>B_{\text{window}}.
-]
-
-**Undecided:** the exact quantile (p). Candidate values:
-
-[
-p=0.95,\quad 0.99.
-]
+This threshold is used for window triage, not for the final point-level anomaly decision. The exact quantile \(p\) remains an explicit protocol value; historical candidates are \(0.95\) and \(0.99\).
 
 ### 4.3 Window-Level Latent Threshold Band
 
-To support three cases — latent MSE low, medium, and high — THESIS uses a latent threshold band:
+THESIS uses the window-level latent score \(S_t^{(\mathrm{latent})}\) with a threshold band:
 
-[
-A_{\text{low}}, A_{\text{high}}.
-]
+\[
+A_{\mathrm{low}}
+=
+Q_{p_1}\left(S_t^{(\mathrm{latent,clean-val})}\right),
+\qquad
+A_{\mathrm{high}}
+=
+Q_{p_2}\left(S_t^{(\mathrm{latent,clean-val})}\right).
+\]
 
-For a window (W), define:
-
-[
-s_{\text{latent-window}}(W)
-===========================
-
-\operatorname{MSE}(Z_W,Z_W^c),
-]
-
-where (Z_W) is the latent tensor before continuous prototype retrieval, and (Z_W^c) is the latent tensor after continuous prototype retrieval.
-
-Default calibration:
-
-[
-A_{\text{low}}
-==============
-
-Q_{p_1}
-\left(
-s_{\text{latent-window}}^{\text{clean-val}}(W)
-\right),
-]
-
-[
-A_{\text{high}}
-===============
-
-Q_{p_2}
-\left(
-s_{\text{latent-window}}^{\text{clean-val}}(W)
-\right).
-]
-
-**Undecided:** exact values of (p_1,p_2). Candidate default:
-
-[
-p_1=0.95,\qquad p_2=0.99.
-]
+The runtime field for this quantity remains **latent_window_score**. It is a window-level triage score and is not automatically identical to the proposed point-level prototype displacement \(\overline{\ell}^{(c)}_{t,i}\). Historical candidate quantiles are \(p_1=0.95\) and \(p_2=0.99\).
 
 Interpretation:
 
-```text
-latent <= A_low
-    close to old normal memory
-
-A_low < latent <= A_high
-    gray-zone latent deviation
-
-latent > A_high
-    far from old normal memory
-```
+    S_t^(latent) <= A_low                    close to old normal memory
+    A_low < S_t^(latent) <= A_high           gray-zone latent deviation
+    S_t^(latent) > A_high                    far from old normal memory
 
 ---
 
 ## 5. Online Point-Level Score Aggregation
 
-Online TTA uses sliding windows. Therefore, one absolute time-point may appear in several windows.
+Online TTA uses sliding windows, so one absolute time-point may appear in several windows. Let \(s^{(r)}_n\) be the score produced for absolute point \(n\) when processing causal window \(r\). The active timeline uses
 
-For the newest point, there is no previous score. Initialize:
+\[
+\widetilde{s}^{(r)}_n
+=
+\rho s^{(r)}_n+(1-\rho)\widetilde{s}^{(r-1)}_n,
+\qquad \rho=0.9.
+\]
 
-[
-S_{\text{point}}(\tau)
-======================
+For a newly seen point, initialize \(\widetilde{s}^{(r)}_n=s^{(r)}_n\). Runtime keeps only the active absolute-index map required by the next causal window. A separate point-finalization mechanism is unnecessary: a point stops changing naturally when later windows no longer contain it.
 
-s_{\text{point}}^{(\tau)}(\tau).
-]
+The implementation must keep the weight direction explicit:
 
-For an already-seen overlapping point (t), update its score using current-dominant EWMA:
+    online_score_aggregation: ewma
+    online_score_current_weight: 0.9
+    online_score_previous_weight: 0.1
 
-[
-S_{\text{point,new}}(t)
-=======================
-
-0.9,s_{\text{point}}^{(\tau)}(t)
-+
-0.1,S_{\text{point,old}}(t).
-]
-
-For a point that no longer appears in future sliding windows, freeze its score.
-
-If window length is (L), a point (t) can be finalized after:
-
-[
-\tau > t + L - 1.
-]
-
-Implementation note:
-
-```python
-S_new[t] = 0.9 * current_score[t] + 0.1 * previous_score[t]
-```
-
-Do not call this parameter `ema_decay=0.9`, because many codebases interpret EMA decay as:
-
-```python
-S_new = 0.9 * S_old + 0.1 * current
-```
-
-which is the opposite of the current design.
-
-Use explicit names:
-
-```yaml
-online_score_aggregation: ewma
-online_score_current_weight: 0.9
-online_score_previous_weight: 0.1
-```
-
-**Undecided:** whether (T_{\text{point}}) should be calibrated using non-overlapping validation windows only, or by simulating sliding-window + EWMA on clean validation. The latter is statistically cleaner for online TTA but slightly complicates the protocol.
+Do not name the current weight **ema_decay**, because that name commonly means the weight on the previous value.
 
 ---
 

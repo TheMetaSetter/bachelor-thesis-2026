@@ -8,15 +8,15 @@
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{lccccccccc}
 \toprule
-\multirow{2}{*}{Method / var.} & \multicolumn{3}{c}{machine\_1\_6} & \multicolumn{3}{c}{machine\_3\_4} & \multicolumn{3}{c}{machine\_3\_9} \\
+\multirow{2}{*}{{}} & \multicolumn{3}{c}{machine-1-6} & \multicolumn{3}{c}{machine-3-4} & \multicolumn{3}{c}{machine-3-9} \\
 \midrule
 {} & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC \\
-THESIS + O0 & \underline{0.798} & \underline{0.747} & \textbf{0.892} & \textbf{0.705} & \underline{0.708} & \textbf{0.950} & \underline{0.578} & 0.789 & \underline{0.645} \\
-THESIS + O1 & \textbf{0.799} & \textbf{0.748} & \underline{0.892} & \underline{0.705} & 0.708 & \underline{0.950} & \underline{0.578} & \underline{0.793} & \underline{0.645} \\
+THESIS O0 & \underline{0.798} & \underline{0.747} & \textbf{0.892} & \textbf{0.705} & \underline{0.708} & \textbf{0.950} & \underline{0.578} & 0.789 & \underline{0.645} \\
+THESIS O1 & \textbf{0.799} & \textbf{0.748} & \underline{0.892} & \underline{0.705} & 0.708 & \underline{0.950} & \underline{0.578} & \underline{0.793} & \underline{0.645} \\
 RedLamp & 0.586 & 0.701 & 0.500 & 0.614 & \textbf{0.708} & 0.890 & 0.518 & \textbf{0.824} & 0.547 \\
 iForest & 0.265 & 0.434 & 0.623 & 0.154 & 0.151 & 0.830 & 0.028 & 0.645 & 0.249 \\
 KMeans-AD & 0.300 & 0.300 & 0.766 & 0.392 & 0.136 & 0.949 & \textbf{0.675} & 0.699 & \textbf{0.900} \\
-STUMPY + AB & 0.175 & 0.190 & 0.499 & 0.058 & 0.624 & 0.506 & 0.045 & 0.592 & 0.550 \\
+StumPy & 0.175 & 0.190 & 0.499 & 0.058 & 0.624 & 0.506 & 0.045 & 0.592 & 0.550 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -29,14 +29,14 @@ STUMPY + AB & 0.175 & 0.190 & 0.499 & 0.058 & 0.624 & 0.506 & 0.045 & 0.592 & 0.
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{lcccccccccccc}
 \toprule
-\multirow{2}{*}{} & \multicolumn{3}{c}{machine-1-6} & \multicolumn{3}{c}{machine-3-4} & \multicolumn{3}{c}{machine-3-9} & \multicolumn{3}{c}{Avg. entities} \\
+\multirow{2}{*}{{}} & \multicolumn{3}{c}{machine-1-6} & \multicolumn{3}{c}{machine-3-4} & \multicolumn{3}{c}{machine-3-9} & \multicolumn{3}{c}{Average} \\
 \midrule
 {} & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC \\
-THESIS O0 & \underline{0.798} & \underline{0.747} & \textbf{0.892} & \textbf{0.705} & \underline{0.708} & \textbf{0.950} & \underline{0.578} & 0.789 & \underline{0.645} & 0.694 & 0.748 & 0.829 \\
-THESIS O1 & \textbf{0.799} & \textbf{0.748} & \underline{0.892} & \underline{0.705} & 0.708 & \underline{0.950} & \underline{0.578} & \underline{0.793} & \underline{0.645} & 0.694 & 0.749 & 0.829 \\
+THESIS O0 & \underline{0.798} & \underline{0.747} & \textbf{0.892} & \textbf{0.705} & \underline{0.708} & \textbf{0.950} & \underline{0.578} & 0.789 & \underline{0.645} & \textbf{0.694} & \underline{0.748} & \underline{0.829} \\
+THESIS O1 & \textbf{0.799} & \textbf{0.748} & \underline{0.892} & \underline{0.705} & 0.708 & \underline{0.950} & \underline{0.578} & \underline{0.793} & \underline{0.645} & \textbf{0.694} & \textbf{0.749} & \underline{0.829} \\
 RedLamp & 0.586 & 0.701 & 0.500 & 0.614 & \textbf{0.708} & 0.890 & 0.518 & \textbf{0.824} & 0.547 & 0.573 & 0.744 & 0.646 \\
 iForest & 0.265 & 0.434 & 0.623 & 0.154 & 0.151 & 0.830 & 0.028 & 0.645 & 0.249 & 0.149 & 0.410 & 0.568 \\
-KMeans-AD & 0.300 & 0.300 & 0.766 & 0.392 & 0.136 & 0.949 & \textbf{0.675} & 0.699 & \textbf{0.900} & 0.455 & 0.379 & 0.872 \\
+KMeans-AD & 0.300 & 0.300 & 0.766 & 0.392 & 0.136 & 0.949 & \textbf{0.675} & 0.699 & \textbf{0.900} & 0.455 & 0.379 & \textbf{0.872} \\
 StumPy & 0.175 & 0.190 & 0.499 & 0.058 & 0.624 & 0.506 & 0.045 & 0.592 & 0.550 & 0.093 & 0.469 & 0.518 \\
 \bottomrule
 \end{tabular}

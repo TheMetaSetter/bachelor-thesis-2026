@@ -120,7 +120,9 @@ def _task_overrides(
     try:
         absolute_start_index, absolute_end_index = ONLINE_STREAM_RANGES[entity_id]
     except KeyError as error:
-        raise ValueError(f"Unknown THESIS online benchmark entity: {entity_id}") from error
+        raise ValueError(
+            f"Unknown THESIS online benchmark entity: {entity_id}"
+        ) from error
     max_online_steps = 16 if smoke else None
     checkpoint_every_n_steps = 8 if smoke else 50
     return {

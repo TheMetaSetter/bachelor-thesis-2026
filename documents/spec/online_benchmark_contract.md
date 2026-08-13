@@ -1,5 +1,8 @@
 # Online benchmark contract giữa THESIS và các baseline
 
+> **Notation authority:** Ký hiệu anomaly score mức điểm trong tài liệu này tuân theo [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime, config và artifact không bị đổi bởi việc chuẩn hóa ký hiệu.
+
+
 **Ngày chốt:** 2026-08-05  
 **Phạm vi:** online test-time adaptation trên SMD cho THESIS, M2N2, CANDI và traditional ML baselines  
 **Trạng thái:** contract đã chốt; runtime adapter đã triển khai, cần nghiệm thu trước main run

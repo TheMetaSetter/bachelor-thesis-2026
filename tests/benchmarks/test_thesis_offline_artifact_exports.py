@@ -550,6 +550,7 @@ def test_collect_offline_artifact_inputs_uses_checkpoint_and_three_splits(
             }
         },
     )
+
     class FakeModel:
         def set_point_score_calibration(self, calibration):
             self.calibration = calibration

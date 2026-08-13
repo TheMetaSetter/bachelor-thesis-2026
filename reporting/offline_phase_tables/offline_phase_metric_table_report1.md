@@ -7,6 +7,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
 <style>
   .report-shared { border-collapse: collapse; }
   .report-shared th, .report-shared td { padding: 0.55rem 1.25rem; text-align: center; }
+  .report-shared .blank-corner { background: #fff; border: 0; }
   .report-shared thead th { background: #dcebf8; }
   .report-shared tbody th { text-align: left; white-space: nowrap; }
 </style>
@@ -14,10 +15,10 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
 <table class="report-shared">
   <thead>
     <tr>
-      <th rowspan="2">Method + variant</th>
-      <th colspan="3">machine_1_6</th>
-      <th colspan="3">machine_3_4</th>
-      <th colspan="3">machine_3_9</th>
+      <th rowspan="2" class="blank-corner"></th>
+      <th colspan="3">machine-1-6</th>
+      <th colspan="3">machine-3-4</th>
+      <th colspan="3">machine-3-9</th>
     </tr>
     <tr>
       <th>VUS-PR</th>
@@ -33,7 +34,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
   </thead>
   <tbody>
     <tr>
-      <th>Thesis main + O0</th>
+      <th>THESIS O0</th>
       <td><u>0.7978</u></td>
       <td><u>0.7468</u></td>
       <td><strong>0.8923</strong></td>
@@ -45,7 +46,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
       <td><u>0.6452</u></td>
     </tr>
     <tr>
-      <th>Thesis main + O1</th>
+      <th>THESIS O1</th>
       <td><strong>0.7985</strong></td>
       <td><strong>0.7477</strong></td>
       <td><u>0.8922</u></td>
@@ -57,7 +58,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
       <td><u>0.6452</u></td>
     </tr>
     <tr>
-      <th>RedLamp + baseline</th>
+      <th>RedLamp</th>
       <td>0.5861</td>
       <td>0.7008</td>
       <td>0.5004</td>
@@ -93,7 +94,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
       <td><strong>0.8996</strong></td>
     </tr>
     <tr>
-      <th>STUMPY + channel AB</th>
+      <th>StumPy</th>
       <td>0.1751</td>
       <td>0.1897</td>
       <td>0.4989</td>
@@ -116,11 +117,11 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
 <table class="report-shared">
   <thead>
     <tr>
-      <th rowspan="2">Method + variant</th>
-      <th colspan="3">machine_1_6</th>
-      <th colspan="3">machine_3_4</th>
-      <th colspan="3">machine_3_9</th>
-      <th colspan="3">Average across machines</th>
+      <th rowspan="2" class="blank-corner"></th>
+      <th colspan="3">machine-1-6</th>
+      <th colspan="3">machine-3-4</th>
+      <th colspan="3">machine-3-9</th>
+      <th colspan="3">Average</th>
     </tr>
     <tr>
       <th>VUS-PR</th>
@@ -139,7 +140,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
   </thead>
   <tbody>
     <tr>
-      <th>Thesis main + O0</th>
+      <th>THESIS O0</th>
       <td><u>0.7978</u></td>
       <td><u>0.7468</u></td>
       <td><strong>0.8923</strong></td>
@@ -149,12 +150,12 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
       <td><u>0.5778</u></td>
       <td>0.7891</td>
       <td><u>0.6452</u></td>
-      <td>0.6936</td>
-      <td>0.7478</td>
-      <td>0.8292</td>
+      <td><strong>0.6936</strong></td>
+      <td><u>0.7478</u></td>
+      <td><u>0.8292</u></td>
     </tr>
     <tr>
-      <th>Thesis main + O1</th>
+      <th>THESIS O1</th>
       <td><strong>0.7985</strong></td>
       <td><strong>0.7477</strong></td>
       <td><u>0.8922</u></td>
@@ -164,12 +165,12 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
       <td><u>0.5778</u></td>
       <td><u>0.7925</u></td>
       <td><u>0.6452</u></td>
-      <td>0.6936</td>
-      <td>0.7492</td>
-      <td>0.8292</td>
+      <td><strong>0.6936</strong></td>
+      <td><strong>0.7492</strong></td>
+      <td><u>0.8292</u></td>
     </tr>
     <tr>
-      <th>RedLamp + baseline</th>
+      <th>RedLamp</th>
       <td>0.5861</td>
       <td>0.7008</td>
       <td>0.5004</td>
@@ -211,10 +212,10 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
       <td><strong>0.8996</strong></td>
       <td>0.4554</td>
       <td>0.3785</td>
-      <td>0.8717</td>
+      <td><strong>0.8717</strong></td>
     </tr>
     <tr>
-      <th>STUMPY + channel AB</th>
+      <th>StumPy</th>
       <td>0.1751</td>
       <td>0.1897</td>
       <td>0.4989</td>

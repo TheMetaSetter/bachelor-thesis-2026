@@ -7,6 +7,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
 <style>
   .report-shared { border-collapse: collapse; }
   .report-shared th, .report-shared td { padding: 0.55rem 1.25rem; text-align: center; }
+  .report-shared .blank-corner { background: #fff; border: 0; }
   .report-shared thead th { background: #dcebf8; }
   .report-shared tbody th { text-align: left; white-space: nowrap; }
 </style>
@@ -14,11 +15,11 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
 <table class="report-shared">
   <thead>
     <tr>
-      <th rowspan="2">Method + variant</th>
-      <th colspan="3">machine_1_6</th>
-      <th colspan="3">machine_3_4</th>
-      <th colspan="3">machine_3_9</th>
-      <th colspan="3">Trung bình theo entity</th>
+      <th rowspan="2" class="blank-corner"></th>
+      <th colspan="3">machine-1-6</th>
+      <th colspan="3">machine-3-4</th>
+      <th colspan="3">machine-3-9</th>
+      <th colspan="3">Average</th>
     </tr>
     <tr>
       <th>VUS-PR</th>
@@ -157,7 +158,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
       <td><u>0.9352</u></td>
     </tr>
     <tr>
-      <th>Isolation Forest</th>
+      <th>iForest</th>
       <td>0.0588</td>
       <td>0.5498</td>
       <td>0.2749</td>
@@ -172,7 +173,7 @@ Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạ
       <td>0.5575</td>
     </tr>
     <tr>
-      <th>KMeansAD</th>
+      <th>KMeans-AD</th>
       <td>0.2419</td>
       <td>0.2090</td>
       <td>0.8623</td>

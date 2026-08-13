@@ -62,9 +62,7 @@ def _write_redlamp_fixture(tmp_path: Path) -> Path:
         dropout=0.1,
     )
     checkpoint_path = tmp_path / "redlamp_best.pt"
-    torch.save(
-        {"model_state_dict": model.state_dict(), "epoch": 100}, checkpoint_path
-    )
+    torch.save({"model_state_dict": model.state_dict(), "epoch": 100}, checkpoint_path)
     return checkpoint_path
 
 

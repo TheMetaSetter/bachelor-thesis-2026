@@ -1,5 +1,8 @@
 # Development Specification: THESIS Offline/Online Experiments and Demo Software
 
+> **Notation authority:** Khi đối chiếu anomaly score mức điểm, tài liệu lịch sử này dùng mapping trong [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime và ngữ nghĩa lịch sử trong thân tài liệu được giữ nguyên.
+
+
 ## 0. Status
 
 This specification describes the codebase changes needed to run the current THESIS experiment plan and to build a visual demo for offline and online time-series anomaly detection.
@@ -828,6 +831,8 @@ Latent-window threshold band:
 A_low  = Q_0.95(s_latent_window on clean validation)
 A_high = Q_0.99(s_latent_window on clean validation)
 ```
+
+Canonical notation: the historical `s_latent_window` maps to \(S_t^{(\mathrm{latent})}\). It remains a window-level triage score, separate from the newly proposed point-level prototype displacement \(\overline{\ell}^{(c)}_{t,i}\).
 
 These thresholds are constants during online TTA. Do not backpropagate through them.
 

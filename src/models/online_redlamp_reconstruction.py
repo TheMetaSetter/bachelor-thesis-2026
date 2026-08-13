@@ -126,11 +126,7 @@ def _encoder_state_dict(
     }
     if prefixed:
         return prefixed
-    direct = {
-        key: value
-        for key, value in state_dict.items()
-        if isinstance(key, str)
-    }
+    direct = {key: value for key, value in state_dict.items() if isinstance(key, str)}
     if direct:
         return direct
     raise ValueError(f"RedLamp checkpoint has no encoder tensors: {checkpoint_path}")

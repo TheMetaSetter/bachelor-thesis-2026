@@ -26,9 +26,7 @@ class ThesisMultitaskStateMixin(
     ThesisMultitaskStateMemoryMixin,
     ThesisMultitaskStatePassthroughMixin,
 ):
-    def set_point_score_calibration(
-        self, calibration: PointScoreCalibration
-    ) -> None:
+    def set_point_score_calibration(self, calibration: PointScoreCalibration) -> None:
         if not isinstance(calibration, PointScoreCalibration):
             raise TypeError("calibration must be a PointScoreCalibration")
         self._point_score_calibration = calibration

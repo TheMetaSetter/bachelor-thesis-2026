@@ -564,9 +564,7 @@ def _build_thresholds(
         int(protocol_config["window_size"]),
     )
     online_model = _build_model_from_experiment_config(online_config)
-    online_model.set_point_score_calibration(
-        artifact_inputs["point_score_calibration"]
-    )
+    online_model.set_point_score_calibration(artifact_inputs["point_score_calibration"])
     online_model.to(str(artifact_inputs["device"]))
     online_calibration = collect_stride1_online_scores(
         model=online_model,

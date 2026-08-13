@@ -8,13 +8,19 @@ Interpretation:
 - Layout is modeled after the reference figure: methods on rows, entities on grouped columns.
 - Best values may be bold, second-best may be underlined.
 
-<table>
+<style>
+  .report-shared { border-collapse: collapse; }
+  .report-shared th, .report-shared td { padding: 0.55rem 1.25rem; text-align: center; }
+  .report-shared .blank-corner { background: #fff; border: 0; }
+</style>
+
+<table class="report-shared">
   <thead>
     <tr>
-      <th rowspan="2">Method + variant</th>
-      <th colspan="3">machine_1_6</th>
-      <th colspan="3">machine_3_4</th>
-      <th colspan="3">machine_3_9</th>
+      <th rowspan="2" class="blank-corner"></th>
+      <th colspan="3">machine-1-6</th>
+      <th colspan="3">machine-3-4</th>
+      <th colspan="3">machine-3-9</th>
     </tr>
     <tr>
       <th>VUS-PR</th><th>affiliation F1</th><th>VUS-ROC</th>
@@ -24,37 +30,37 @@ Interpretation:
   </thead>
   <tbody>
     <tr>
-      <th>Thesis main + O0</th>
+      <th>THESIS O0</th>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
     </tr>
     <tr>
-      <th>Thesis main + O1</th>
+      <th>THESIS O1</th>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
     </tr>
     <tr>
-      <th>RedLamp + baseline</th>
+      <th>RedLamp</th>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
     </tr>
     <tr>
-      <th>Traditional ML 1</th>
+      <th>iForest</th>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
     </tr>
     <tr>
-      <th>Traditional ML 2</th>
+      <th>KMeans-AD</th>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
     </tr>
     <tr>
-      <th>Traditional ML 3</th>
+      <th>StumPy</th>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>
       <td>--</td><td>--</td><td>--</td>

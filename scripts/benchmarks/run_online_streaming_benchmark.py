@@ -55,6 +55,7 @@ BASELINE_BUILDERS: dict[str, Callable[..., OnlineStreamingBaselineProtocol]] = {
     "iforest": IForestStreamingBaseline,
 }
 
+
 def _utc_now_iso() -> str:
     return (
         datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
@@ -67,6 +68,7 @@ def _load_json_config(path_like: str | Path) -> dict[str, Any]:
         path = (REPOSITORY_ROOT / path).resolve()
     return load_yaml_config(path)
 
+
 def _apply_data_overrides(
     data_config: dict[str, Any], data_overrides: dict[str, Any] | None
 ) -> dict[str, Any]:
@@ -76,6 +78,7 @@ def _apply_data_overrides(
     for key, value in data_overrides.items():
         merged_data_config[key] = value
     return merged_data_config
+
 
 def _truncate_sequence_to_max_online_steps(
     sequence: dict[str, Any],
@@ -108,12 +111,14 @@ def _truncate_sequence_to_max_online_steps(
     truncated_sequence["meta"] = metadata
     return truncated_sequence
 
+
 def _write_json(path: Path, payload: Any) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     return str(path)
+
 
 def _to_numpy(array_like: Any, *, dtype: Any) -> np.ndarray:
     if hasattr(array_like, "detach"):

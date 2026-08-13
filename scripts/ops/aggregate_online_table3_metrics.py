@@ -70,7 +70,7 @@ def _job_sort_key(job: dict[str, Any]) -> tuple[str, str, str, str]:
         str(job["method"]),
         str(job.get("offline_variant") or ""),
         str(job["online_variant"]),
-        f'{job["entity_id"]}:{job["seed"]}',
+        f"{job['entity_id']}:{job['seed']}",
     )
 
 
@@ -91,7 +91,9 @@ def _load_online_arrays(
 ) -> tuple[list[dict[str, Any]], np.ndarray, np.ndarray, np.ndarray]:
     rows = _load_json(Path(job["local_metric_path"]))
     if not isinstance(rows, list) or not rows:
-        raise ValueError(f"Expected a non-empty metric list: {job['local_metric_path']}")
+        raise ValueError(
+            f"Expected a non-empty metric list: {job['local_metric_path']}"
+        )
 
     start = int(job["stream_range"]["absolute_start_index"])
     end = int(job["stream_range"]["absolute_end_index"])
@@ -124,8 +126,7 @@ def _load_point_labels(
     point_end: int,
 ) -> tuple[np.ndarray, Path]:
     label_path = (
-        Path("data/ServerMachineDataset/test_label")
-        / job["stream_range"]["label_file"]
+        Path("data/ServerMachineDataset/test_label") / job["stream_range"]["label_file"]
     )
     full_labels = np.loadtxt(label_path, dtype=np.int64).reshape(-1)
     return full_labels[point_start:point_end], label_path
@@ -274,7 +275,9 @@ def build_report(
     manifest = _load_json(manifest_path)
     manifest_records = list(manifest["files"])
     if len(manifest_records) != 99:
-        raise ValueError(f"Expected 99 online manifest records, found {len(manifest_records)}")
+        raise ValueError(
+            f"Expected 99 online manifest records, found {len(manifest_records)}"
+        )
     jobs = sorted(
         [_build_job(record, reporting_root) for record in manifest_records],
         key=_job_sort_key,
@@ -365,7 +368,9 @@ def main() -> int:
     print(args.output)
     print(f"records={len(report['records'])}")
     print(f"method_variant_rows={len(report['summary_by_method_variant'])}")
-    print(f"method_variant_entity_rows={len(report['summary_by_method_variant_entity'])}")
+    print(
+        f"method_variant_entity_rows={len(report['summary_by_method_variant_entity'])}"
+    )
     return 0
 
 

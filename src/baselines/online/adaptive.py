@@ -27,6 +27,7 @@ from src.protocols.threshold_artifact import build_threshold_artifact
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 
+
 def _finite_values(array: np.ndarray) -> np.ndarray:
     values = np.asarray(array, dtype=np.float64).reshape(-1)
     return values[np.isfinite(values)]
@@ -42,15 +43,12 @@ def _metric_from_record(record: dict[str, Any]) -> dict[str, Any]:
         "online/did_update": record["did_update"],
         "online/loss_total": record["loss_total"],
         "online/triage_decision": record["triage_decision"],
-        "online/verification_buffer_size": record[
-            "online/verification_buffer_size"
-        ],
+        "online/verification_buffer_size": record["online/verification_buffer_size"],
         "online/adaptation_mask_count": record["adaptation_mask_count"],
         "online/candidate_pool_hard_size": record["candidate_pool_hard_size"],
-        "online/candidate_pool_moderate_size": record[
-            "candidate_pool_moderate_size"
-        ],
+        "online/candidate_pool_moderate_size": record["candidate_pool_moderate_size"],
     }
+
 
 def _window_matrix(sequence: np.ndarray, window_size: int) -> np.ndarray:
     if sequence.shape[0] < window_size:
@@ -119,7 +117,9 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
                 "use 'reference_adapter_redlamp_encoder' for the method adapter"
             )
         if encoder_family != "cnn_simple":
-            raise ValueError("reference_adapter_redlamp requires encoder_family='cnn_simple'")
+            raise ValueError(
+                "reference_adapter_redlamp requires encoder_family='cnn_simple'"
+            )
         if encoder_dim <= 0 or cnn_num_layers < 2:
             raise ValueError("encoder dimensions are invalid")
         if cnn_kernel_size <= 0 or cnn_hidden_channels <= 0:
@@ -230,9 +230,7 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             latent_score = float(representation.abs().mean().cpu())
         return score, latent_score
 
-    def _score_tensor_batch(
-        self, x: torch.Tensor
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def _score_tensor_batch(self, x: torch.Tensor) -> tuple[np.ndarray, np.ndarray]:
         if self.backbone_ is None:
             raise RuntimeError("model has not been initialized")
         self.backbone_.eval()
@@ -247,13 +245,13 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             latent_scores.cpu().numpy().astype(np.float64),
         )
 
-    def _adapt_tensor(self, x: torch.Tensor, score: float, threshold: float) -> dict[str, Any]:
+    def _adapt_tensor(
+        self, x: torch.Tensor, score: float, threshold: float
+    ) -> dict[str, Any]:
         del x, score, threshold
         raise NotImplementedError
 
-    def _build_optimizer(
-        self, parameters: Any
-    ) -> torch.optim.Optimizer:
+    def _build_optimizer(self, parameters: Any) -> torch.optim.Optimizer:
         trainable_parameters = [
             parameter for parameter in parameters if parameter.requires_grad
         ]
@@ -322,7 +320,9 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
                 all_scores.extend(scores.tolist())
         if not all_scores:
             raise ValueError("Validation stream produced no windows")
-        return np.concatenate(all_windows, axis=0), np.asarray(all_scores, dtype=np.float64)
+        return np.concatenate(all_windows, axis=0), np.asarray(
+            all_scores, dtype=np.float64
+        )
 
     def calibrate(
         self,
@@ -344,12 +344,16 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         point_scores = _finite_values(validation_window_scores)
         ewma_scores = np.empty_like(point_scores)
         for index, score in enumerate(point_scores):
-            ewma_scores[index] = score if index == 0 else (
-                current_weight * score + previous_weight * ewma_scores[index - 1]
+            ewma_scores[index] = (
+                score
+                if index == 0
+                else (current_weight * score + previous_weight * ewma_scores[index - 1])
             )
         threshold_value = float(np.nanquantile(point_scores, self.threshold_quantile))
         ewma_threshold = float(np.nanquantile(ewma_scores, self.threshold_quantile))
-        entity_id = str(clean_validation_sequences[0].get("meta", {}).get("entity_id", "unknown"))
+        entity_id = str(
+            clean_validation_sequences[0].get("meta", {}).get("entity_id", "unknown")
+        )
         checkpoint_sha256 = (
             self.checkpoint_identity_.checkpoint_sha256
             if self.checkpoint_identity_ is not None
@@ -410,7 +414,9 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         previous_ewma: float | None = None
         windows = _window_matrix(sequence_array, self.window_size)
         for batch_start in range(0, windows.shape[0], self.adaptation_batch_size):
-            batch_windows = windows[batch_start : batch_start + self.adaptation_batch_size]
+            batch_windows = windows[
+                batch_start : batch_start + self.adaptation_batch_size
+            ]
             tensor_batch = torch.as_tensor(batch_windows, dtype=torch.float32)
             if tensor_batch.shape[0] == 1:
                 raw_score, latent_score = self._score_tensor(tensor_batch)
@@ -421,8 +427,13 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             batch_records: list[dict[str, Any]] = []
             for batch_offset, raw_score in enumerate(raw_scores):
                 stream_step = batch_start + batch_offset + 1
-                ewma_score = float(raw_score) if previous_ewma is None else (
-                    current_weight * float(raw_score) + previous_weight * previous_ewma
+                ewma_score = (
+                    float(raw_score)
+                    if previous_ewma is None
+                    else (
+                        current_weight * float(raw_score)
+                        + previous_weight * previous_ewma
+                    )
                 )
                 previous_ewma = ewma_score
                 window_start = absolute_offset + stream_step - 1
@@ -456,10 +467,14 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
                     self._active_test_labels = None
                 else:
                     labels_array = np.asarray(point_labels).reshape(-1)
-                    endpoint_indices = np.arange(
-                        batch_start,
-                        batch_start + len(batch_records),
-                    ) + self.window_size - 1
+                    endpoint_indices = (
+                        np.arange(
+                            batch_start,
+                            batch_start + len(batch_records),
+                        )
+                        + self.window_size
+                        - 1
+                    )
                     if int(endpoint_indices[-1]) >= len(labels_array):
                         raise ValueError("test labels do not cover the stream windows")
                     self._active_test_labels = labels_array[endpoint_indices]
@@ -496,5 +511,7 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
                         ),
                     }
                 )
-            metric_history.extend(_metric_from_record(record) for record in batch_records)
+            metric_history.extend(
+                _metric_from_record(record) for record in batch_records
+            )
         return metric_history, records

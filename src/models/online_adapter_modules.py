@@ -190,12 +190,13 @@ class SANA(nn.Module):
         self.input_dim = int(input_dim)
         self.window_size = int(window_size)
         self.sana_type = sana_type
-        self.gating = nn.Parameter(
-            torch.full((self.input_dim,), float(gating_init))
-        )
+        self.gating = nn.Parameter(torch.full((self.input_dim,), float(gating_init)))
         if sana_type == "Linear":
             self.projection = nn.ModuleList(
-                [nn.Linear(self.window_size, self.window_size) for _ in range(self.input_dim)]
+                [
+                    nn.Linear(self.window_size, self.window_size)
+                    for _ in range(self.input_dim)
+                ]
             )
             return
 

@@ -9,6 +9,9 @@ evidence_revision: e58602f45ee5439a1e001f060e8ea640aeddde9c
 
 # Online TTA Terminology Ontology
 
+> **Notation authority:** Ký hiệu anomaly score mức điểm trong tài liệu này tuân theo [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime, config và artifact không bị đổi bởi việc chuẩn hóa ký hiệu.
+
+
 ## 1. Mục đích và nguyên tắc offline-first
 
 Tài liệu này chuẩn hóa tên object trong `online_tta_phase`. Nó kế thừa object identity từ [`offline_pretraining_terminology_ontology.md`](offline_pretraining_terminology_ontology.md), không tạo tên mới cho cùng offline object.
@@ -165,8 +168,7 @@ meta.stream_step: int
 
 Inherited model output vector `[B,L]`. Mỗi value là point-level anomaly score
 trong current window sau khi áp dụng shifted-and-scaled logistic sigmoid lên
-Monte Carlo mean raw point MSE. Raw point MSE là intermediate value, không phải
-giá trị của canonical `window_point_scores`.
+Monte Carlo mean raw point MSE \(\overline{s}_{t,i}\). Raw point MSE là intermediate value, không phải giá trị của canonical `window_point_scores`. Runtime `window_point_scores` tương ứng với calibrated score \(s^{(\mathrm{cal})}_{t,i}\).
 
 `raw_point_scores` là tên legacy trong desired-flow draft. Canonical name nói
 rõ container thuộc một window và không dùng `raw` để chỉ giá trị của field.
@@ -183,7 +185,7 @@ Các object sau là contract runtime hiện hành:
 
 `point_level_binary_predictions` là exact alias của `window_point_predictions`. Không gọi vector này là `prediction` vì runtime record hiện dùng `prediction` cho một scalar endpoint prediction.
 
-Point mới trong map dùng transformed `window_point_scores` hiện tại. Point xuất
+Point mới trong map dùng transformed `window_point_scores` hiện tại, tức \(s^{(\mathrm{cal})}_{t,i}\). Point xuất
 hiện lại trong window overlap dùng EWMA weights `0.9 current + 0.1 previous`.
 Runtime thay toàn bộ map bằng các point của current causal window, nên không có
 finalized-point table.

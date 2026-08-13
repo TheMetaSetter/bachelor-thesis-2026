@@ -15,6 +15,9 @@ tags:
 
 # Offline Pre-Training Three-Stage First Implementation Spec
 
+> **Notation authority:** Khi đối chiếu anomaly score mức điểm, tài liệu lịch sử này dùng mapping trong [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime và ngữ nghĩa lịch sử trong thân tài liệu được giữ nguyên.
+
+
 ## Purpose
 
 This spec defines the first real implementation of the offline pre-training

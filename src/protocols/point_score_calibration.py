@@ -95,11 +95,14 @@ def transform_point_scores(
             raise ValueError("raw point MSE must not be empty")
         if not bool(torch.isfinite(score_tensor).all()):
             raise ValueError("raw point MSE must contain only finite values")
-        return torch.sigmoid(
-            (score_tensor - calibration.center) / calibration.tau
-        )
+        return torch.sigmoid((score_tensor - calibration.center) / calibration.tau)
     score_array = _as_finite_numpy_scores(raw_point_mse)
     transformed = 1.0 / (
-        1.0 + np.exp(-np.clip((score_array - calibration.center) / calibration.tau, -700.0, 700.0))
+        1.0
+        + np.exp(
+            -np.clip(
+                (score_array - calibration.center) / calibration.tau, -700.0, 700.0
+            )
+        )
     )
     return transformed

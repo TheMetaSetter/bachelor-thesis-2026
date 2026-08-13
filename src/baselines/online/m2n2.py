@@ -92,9 +92,7 @@ class M2N2StreamingBaseline(AdaptiveStreamingBaselineBase):
             )
         return score, latent_score
 
-    def _score_tensor_batch(
-        self, x: torch.Tensor
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def _score_tensor_batch(self, x: torch.Tensor) -> tuple[np.ndarray, np.ndarray]:
         self.backbone_.eval()
         with torch.no_grad():
             normalized = self.detrender.normalize(x)

@@ -233,9 +233,7 @@ class OnlineAdaptationModel(BaseModel):
             target_param_group=target_param_group,
         )
 
-    def set_point_score_calibration(
-        self, calibration: PointScoreCalibration
-    ) -> None:
+    def set_point_score_calibration(self, calibration: PointScoreCalibration) -> None:
         self.reference_encoder.set_point_score_calibration(calibration)
         self.online_encoder.set_point_score_calibration(calibration)
 

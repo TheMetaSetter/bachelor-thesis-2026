@@ -34,9 +34,7 @@ class ThesisMultitaskEncoderAdapter(nn.Module):
         """Encode one input window with the frozen source encoder."""
         return self.forward(batch)["hidden"].detach()
 
-    def set_point_score_calibration(
-        self, calibration: PointScoreCalibration
-    ) -> None:
+    def set_point_score_calibration(self, calibration: PointScoreCalibration) -> None:
         self.model.set_point_score_calibration(calibration)
 
     def score_source(

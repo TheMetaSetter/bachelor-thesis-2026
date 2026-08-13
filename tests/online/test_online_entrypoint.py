@@ -21,6 +21,7 @@ class _FakeOnlineModel(torch.nn.Module):
         assert target_param_group == "projector_params"
         return [self.projector_weight]
 
+
 class _FakeOnlineLoop:
     def __init__(
         self, model, optimizer, checkpoint_manager, experiment_logger, device: str

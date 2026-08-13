@@ -33,7 +33,9 @@ DEFAULT_OUTPUT_PATH = (
 
 
 def _load_data_config(entity_id: str, config_dir: Path) -> dict[str, Any]:
-    config_path = config_dir / f"smd_benchmark_{entity_id.replace('-', '_')}_window20.yaml"
+    config_path = (
+        config_dir / f"smd_benchmark_{entity_id.replace('-', '_')}_window20.yaml"
+    )
     with config_path.open("r", encoding="utf-8") as handle:
         config = yaml.safe_load(handle)
     if not isinstance(config, dict):
@@ -98,10 +100,7 @@ def _labels_to_spans(labels: np.ndarray) -> list[tuple[int, int]]:
 
 def _line_limits(payloads: list[dict[str, Any]]) -> tuple[float, float]:
     values = np.concatenate(
-        [
-            payload["train_values"].ravel()
-            for payload in payloads
-        ]
+        [payload["train_values"].ravel() for payload in payloads]
         + [payload["test_values"].ravel() for payload in payloads]
     )
     absolute_limit = float(np.nanpercentile(np.abs(values), 99.0))
@@ -156,7 +155,7 @@ def _plot_entity(
         alpha=0.16,
         linewidth=0.45,
     )
-    mean_line, = axis_test.plot(
+    (mean_line,) = axis_test.plot(
         test_time,
         np.mean(test_values, axis=1),
         color="black",
@@ -183,7 +182,14 @@ def _plot_entity(
     axis_test.grid(alpha=0.18, linewidth=0.4)
     axis_test.legend(
         handles=[
-            Line2D([0], [0], color="tab:blue", alpha=0.55, linewidth=1.0, label="38 channels"),
+            Line2D(
+                [0],
+                [0],
+                color="tab:blue",
+                alpha=0.55,
+                linewidth=1.0,
+                label="38 channels",
+            ),
             mean_line,
             Patch(facecolor="black", alpha=0.18, label="test_label anomaly"),
         ],

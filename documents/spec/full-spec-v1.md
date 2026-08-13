@@ -1,5 +1,8 @@
 # Development Specification: Two-Phase THESIS Pipeline
 
+> **Notation authority:** Khi đối chiếu anomaly score mức điểm, tài liệu lịch sử này dùng mapping trong [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime và ngữ nghĩa lịch sử trong thân tài liệu được giữ nguyên.
+
+
 ## 0. Status
 
 This document specifies the current two-phase design of **THESIS**:
@@ -1013,6 +1016,8 @@ Latent window score:
 ```text
 s_latent_window(W) = MSE(Z_W, Z_W_cont)
 ```
+
+Canonical notation: the historical runtime quantity `s_latent_window(W)` maps to \(S_t^{(\mathrm{latent})}\). It is a window-level triage score and is not automatically identical to the proposed point-level score \(\overline{\ell}^{(c)}_{t,i}\).
 
 where:
 

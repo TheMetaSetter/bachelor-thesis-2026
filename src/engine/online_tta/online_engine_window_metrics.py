@@ -163,7 +163,12 @@ def _extract_online_window_scores(
     input_window_score = float(
         torch.mean((outputs["recon"] - batch_on_device["x"]) ** 2).detach().cpu()
     )
-    return window_point_scores, raw_point_scores, input_window_score, latent_window_score
+    return (
+        window_point_scores,
+        raw_point_scores,
+        input_window_score,
+        latent_window_score,
+    )
 
 
 def _update_online_window_buffers(

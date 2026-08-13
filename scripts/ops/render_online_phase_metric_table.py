@@ -9,10 +9,9 @@ from typing import Any
 
 
 REPORT_PATH = Path("reporting/online_phase_tables/online_table3_metrics.json")
-OUTPUT_PATH = Path(
-    "reporting/online_phase_tables/online_phase_metric_table_report3.md"
-)
+OUTPUT_PATH = Path("reporting/online_phase_tables/online_phase_metric_table_report3.md")
 ENTITIES = ("machine_1_6", "machine_3_4", "machine_3_9")
+ENTITY_LABELS = {entity: entity.replace("_", "-") for entity in ENTITIES}
 METRICS = (
     ("vus_pr", "VUS-PR"),
     ("affiliation_f1", "affiliation F1"),
@@ -44,8 +43,7 @@ def _load_values() -> dict[tuple[str, str, str, str], dict[str, float]]:
             record["entity_id"],
         )
         values[key] = {
-            metric: record["metrics"][metric]["mean"]
-            for metric, _ in METRICS
+            metric: record["metrics"][metric]["mean"] for metric, _ in METRICS
         }
     return values
 
@@ -71,10 +69,14 @@ def _build_ranks(
             ]
             value_ranks = {
                 value: rank
-                for rank, value in enumerate(sorted(set(method_values), reverse=True), 1)
+                for rank, value in enumerate(
+                    sorted(set(method_values), reverse=True), 1
+                )
             }
             for method, offline_variant, online_variant, _ in METHOD_ORDER:
-                value = values[(method, offline_variant, online_variant, entity)][metric]
+                value = values[(method, offline_variant, online_variant, entity)][
+                    metric
+                ]
                 ranks[(method, offline_variant, online_variant, entity, metric)] = (
                     value_ranks[value]
                 )
@@ -132,15 +134,21 @@ def _render_table(
         "Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạch chân. "
         "Các metric đều được hiểu là càng cao càng tốt.",
         "",
-        "<table>",
+        "<style>",
+        "  .report-shared { border-collapse: collapse; }",
+        "  .report-shared th, .report-shared td { padding: 0.55rem 1.25rem; text-align: center; }",
+        "  .report-shared .blank-corner { background: #fff; border: 0; }",
+        "</style>",
+        '<table class="report-shared">',
         "  <thead>",
         "    <tr>",
-        '      <th rowspan="2">Method + variant</th>',
+        '      <th rowspan="2" class="blank-corner"></th>',
     ]
     lines.extend(
-        f'      <th colspan="{len(METRICS)}">{entity}</th>' for entity in ENTITIES
+        f'      <th colspan="{len(METRICS)}">{ENTITY_LABELS[entity]}</th>'
+        for entity in ENTITIES
     )
-    lines.append(f'      <th colspan="{len(METRICS)}">Trung bình theo entity</th>')
+    lines.append(f'      <th colspan="{len(METRICS)}">Average</th>')
     lines.extend(["    </tr>", "    <tr>"])
     lines.extend(
         f"      <th>{metric_label}</th>"
@@ -153,7 +161,9 @@ def _render_table(
         lines.append(f"      <th>{label}</th>")
         for entity in ENTITIES:
             for metric, _ in METRICS:
-                value = values[(method, offline_variant, online_variant, entity)][metric]
+                value = values[(method, offline_variant, online_variant, entity)][
+                    metric
+                ]
                 rank = ranks[(method, offline_variant, online_variant, entity, metric)]
                 lines.append(f"      <td>{_format_value(value, rank)}</td>")
         for metric, _ in METRICS:

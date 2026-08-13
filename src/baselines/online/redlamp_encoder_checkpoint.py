@@ -40,7 +40,9 @@ def _load_checkpoint_payload(checkpoint_path: Path) -> Mapping[str, Any]:
     return payload
 
 
-def _encoder_state_dict(payload: Mapping[str, Any], checkpoint_path: Path) -> dict[str, Any]:
+def _encoder_state_dict(
+    payload: Mapping[str, Any], checkpoint_path: Path
+) -> dict[str, Any]:
     model_state_dict = payload.get("model_state_dict")
     if not isinstance(model_state_dict, Mapping):
         model_state_dict = payload.get("state_dict")

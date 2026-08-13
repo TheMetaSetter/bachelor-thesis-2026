@@ -137,7 +137,10 @@ def validate_model_outputs(outputs: dict[str, Any]) -> None:
         raise TypeError("outputs['aux'] must be a dictionary")
     if outputs["aux"].get("point_score_calibrated") is True:
         point_scores = outputs["point_scores"]
-        if point_scores is None or not torch.isfinite(point_scores.float()).all().item():
+        if (
+            point_scores is None
+            or not torch.isfinite(point_scores.float()).all().item()
+        ):
             raise ValueError("calibrated point_scores must contain only finite values")
         if bool(torch.any(point_scores < 0.0)) or bool(torch.any(point_scores > 1.0)):
             raise ValueError("calibrated point_scores must be in [0, 1]")

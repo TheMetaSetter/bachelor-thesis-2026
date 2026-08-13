@@ -174,9 +174,7 @@ class CANDIStreamingBaseline(AdaptiveStreamingBaselineBase):
             latent_score = float(representation.abs().mean().cpu())
         return score, latent_score
 
-    def _score_tensor_batch(
-        self, x: torch.Tensor
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def _score_tensor_batch(self, x: torch.Tensor) -> tuple[np.ndarray, np.ndarray]:
         self.backbone_.eval()
         if self._sana_in is not None:
             self._sana_in.eval()
@@ -215,9 +213,7 @@ class CANDIStreamingBaseline(AdaptiveStreamingBaselineBase):
         self._hard_representations = representations[topk_indices]
         self._q1 = float(np.percentile(validation_scores, 25))
         self._q3 = float(np.percentile(validation_scores, 75))
-        moderate_mask = (validation_scores > self._q1) & (
-            validation_scores < self._q3
-        )
+        moderate_mask = (validation_scores > self._q1) & (validation_scores < self._q3)
         moderate_indices = np.flatnonzero(moderate_mask)
         if moderate_indices.size == 0:
             raise ValueError("CANDI FPM produced no moderate validation references")
@@ -328,9 +324,7 @@ class CANDIStreamingBaseline(AdaptiveStreamingBaselineBase):
     def _adapt_tensor(
         self, x: torch.Tensor, score: np.ndarray, threshold: float
     ) -> dict[str, Any]:
-        hard_selected, moderate_selected = self._collect_candidates(
-            x, score, threshold
-        )
+        hard_selected, moderate_selected = self._collect_candidates(x, score, threshold)
         losses: list[float] = []
         if len(self._hard_pool) >= self.candi_min_samples:
             losses.append(self._adapt_pool(self._hard_pool))

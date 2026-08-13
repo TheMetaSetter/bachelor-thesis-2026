@@ -14,6 +14,7 @@ OUTPUT_PATH = Path(
     "outputs/reporting/offline_phase_tables/offline_phase_metric_table_report1.md"
 )
 ENTITIES = ("machine_1_6", "machine_3_4", "machine_3_9")
+ENTITY_LABELS = {entity: entity.replace("_", "-") for entity in ENTITIES}
 METRICS = (
     ("vus_pr", "VUS-PR"),
     ("affiliation_f1", "affiliation F1"),
@@ -86,13 +87,19 @@ def render() -> str:
         "Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạch chân. "
         "Các metric đều được hiểu là càng cao càng tốt.",
         "",
-        "<table>",
+        "<style>",
+        "  .report-shared { border-collapse: collapse; }",
+        "  .report-shared th, .report-shared td { padding: 0.55rem 1.25rem; text-align: center; }",
+        "  .report-shared .blank-corner { background: #fff; border: 0; }",
+        "</style>",
+        '<table class="report-shared">',
         "  <thead>",
         "    <tr>",
-        '      <th rowspan="2">Method + variant</th>',
+        '      <th rowspan="2" class="blank-corner"></th>',
     ]
     lines.extend(
-        f'      <th colspan="{len(METRICS)}">{entity}</th>' for entity in ENTITIES
+        f'      <th colspan="{len(METRICS)}">{ENTITY_LABELS[entity]}</th>'
+        for entity in ENTITIES
     )
     lines.extend(
         [
