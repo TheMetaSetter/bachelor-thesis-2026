@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Visualize SMD train/test sequences using the locked benchmark data path."""
+"""Create one full-timeline train/test plot for each selected SMD entity."""
 
 import argparse
 import sys
@@ -9,221 +9,121 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
-import yaml
-from matplotlib.lines import Line2D
-from matplotlib.patches import Patch
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.datasets.smd import SMDDatasetParser  # noqa: E402
-from src.data.loaders import WindowDataset  # noqa: E402
-from src.data.scalers import SequenceStandardScaler  # noqa: E402
 
 
-ENTITY_IDS = ("machine-1-6", "machine-3-4", "machine-3-9")
-DEFAULT_OUTPUT_PATH = (
-    PROJECT_ROOT
-    / "documents"
-    / "logs"
-    / "08-09-2026"
-    / "research"
-    / "smd-benchmark-train-test-line-w20.png"
-)
+DEFAULT_DATASET_ROOT = PROJECT_ROOT / "data" / "ServerMachineDataset"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "documents" / "logs" / "08-09-2026" / "research"
+SELECTED_ENTITY_IDS = ("machine-1-6", "machine-3-4", "machine-3-9")
+NUM_CHANNEL_GROUPS = 3
+TIME_START = 10_000
+TIME_END = 15_000
+CHANNEL_COLORS = ("tab:blue", "tab:orange", "tab:green")
 
 
-def _load_data_config(entity_id: str, config_dir: Path) -> dict[str, Any]:
-    config_path = (
-        config_dir / f"smd_benchmark_{entity_id.replace('-', '_')}_window20.yaml"
-    )
-    with config_path.open("r", encoding="utf-8") as handle:
-        config = yaml.safe_load(handle)
-    if not isinstance(config, dict):
-        raise ValueError(f"Expected mapping in benchmark config: {config_path}")
-    return config
-
-
-def _load_entity_payload(
-    entity_id: str,
-    config_dir: Path,
-) -> dict[str, Any]:
-    config = _load_data_config(entity_id, config_dir)
+def _load_entity_payloads(
+    dataset_root: Path,
+    entity_ids: tuple[str, ...],
+) -> list[dict[str, Any]]:
     parser = SMDDatasetParser(
-        root_dir=PROJECT_ROOT / config["root_dir"],
-        validation_split_ratio=float(config["validation_split_ratio"]),
-        entity_ids=[entity_id],
+        root_dir=dataset_root,
+        validation_split_ratio=0.2,
+        entity_ids=list(entity_ids),
     )
     parsed_splits = parser.parse()
-    scaler = SequenceStandardScaler()
-    scaler.fit(parsed_splits["train"])
-    scaled_splits = {
-        split_name: scaler.transform_sequences(sequences)
-        for split_name, sequences in parsed_splits.items()
+    test_by_entity = {
+        sequence["meta"]["entity_id"]: sequence for sequence in parsed_splits["test"]
     }
-    train_sequence = scaled_splits["train"][0]
-    test_sequence = scaled_splits["test"][0]
-    train_dataset = WindowDataset(
-        sequences=[train_sequence],
-        window_size=int(config["window_size"]),
-        stride=int(config["train_stride"]),
-    )
-    test_dataset = WindowDataset(
-        sequences=[test_sequence],
-        window_size=int(config["window_size"]),
-        stride=int(config["test_stride"]),
-    )
-    return {
-        "entity_id": entity_id,
-        "config": config,
-        "train_values": train_sequence["x"].detach().cpu().numpy(),
-        "test_values": test_sequence["x"].detach().cpu().numpy(),
-        "test_labels": test_sequence["point_labels"].detach().cpu().numpy(),
-        "train_windows": len(train_dataset),
-        "test_windows": len(test_dataset),
-        "validation_points": int(parsed_splits["val"][0]["x"].shape[0]),
-    }
-
-
-def _labels_to_spans(labels: np.ndarray) -> list[tuple[int, int]]:
-    spans: list[tuple[int, int]] = []
-    start_index: int | None = None
-    for index, value in enumerate(labels.astype(int).tolist()):
-        if value != 0 and start_index is None:
-            start_index = index
-        elif value == 0 and start_index is not None:
-            spans.append((start_index, index))
-            start_index = None
-    if start_index is not None:
-        spans.append((start_index, int(labels.shape[0])))
-    return spans
-
-
-def _line_limits(payloads: list[dict[str, Any]]) -> tuple[float, float]:
-    values = np.concatenate(
-        [payload["train_values"].ravel() for payload in payloads]
-        + [payload["test_values"].ravel() for payload in payloads]
-    )
-    absolute_limit = float(np.nanpercentile(np.abs(values), 99.0))
-    absolute_limit = min(max(absolute_limit, 1.0), 5.0)
-    return -absolute_limit, absolute_limit
-
-
-def _plot_entity(
-    axis_train: Any,
-    axis_test: Any,
-    payload: dict[str, Any],
-    line_min: float,
-    line_max: float,
-) -> None:
-    entity_id = payload["entity_id"]
-    config = payload["config"]
-    train_values = payload["train_values"]
-    test_values = payload["test_values"]
-    train_time = np.arange(train_values.shape[0])
-    test_time = np.arange(test_values.shape[0])
-
-    axis_train.plot(
-        train_time,
-        train_values,
-        color="tab:blue",
-        alpha=0.16,
-        linewidth=0.45,
-    )
-    axis_train.plot(
-        train_time,
-        np.mean(train_values, axis=1),
-        color="black",
-        linewidth=1.0,
-    )
-    axis_train.set_title(
-        f"{entity_id} | benchmark train\n"
-        f"points={len(payload['train_values']):,} "
-        f"| w={config['window_size']} | stride={config['train_stride']} "
-        f"| windows={payload['train_windows']:,}",
-        fontsize=9,
-        pad=2,
-    )
-    axis_train.set_ylabel("Standardized value")
-    axis_train.set_xlabel("Time index")
-    axis_train.set_ylim(line_min, line_max)
-    axis_train.grid(alpha=0.18, linewidth=0.4)
-
-    axis_test.plot(
-        test_time,
-        test_values,
-        color="tab:blue",
-        alpha=0.16,
-        linewidth=0.45,
-    )
-    (mean_line,) = axis_test.plot(
-        test_time,
-        np.mean(test_values, axis=1),
-        color="black",
-        linewidth=1.0,
-        label="channel mean",
-    )
-    for start_index, end_index in _labels_to_spans(payload["test_labels"]):
-        axis_test.axvspan(start_index, end_index, color="black", alpha=0.18)
-    window_stride = int(config["test_stride"])
-    for boundary in range(0, len(payload["test_values"]), window_stride * 100):
-        axis_test.axvline(boundary, color="black", alpha=0.20, linewidth=0.35)
-    axis_test.set_title(
-        f"{entity_id} | benchmark test\n"
-        f"points={len(payload['test_values']):,} "
-        f"| w={config['window_size']} | stride={config['test_stride']} "
-        f"| windows={payload['test_windows']:,} "
-        f"| anomaly_points={int(payload['test_labels'].sum()):,}",
-        fontsize=9,
-        pad=2,
-    )
-    axis_test.set_xlabel("Time index")
-    axis_test.set_ylabel("Standardized value")
-    axis_test.set_ylim(line_min, line_max)
-    axis_test.grid(alpha=0.18, linewidth=0.4)
-    axis_test.legend(
-        handles=[
-            Line2D(
-                [0],
-                [0],
-                color="tab:blue",
-                alpha=0.55,
-                linewidth=1.0,
-                label="38 channels",
-            ),
-            mean_line,
-            Patch(facecolor="black", alpha=0.18, label="test_label anomaly"),
-        ],
-        loc="upper right",
-        fontsize=8,
-    )
-
-
-def save_visualization(
-    payloads: list[dict[str, Any]],
-    output_path: Path,
-) -> Path:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    line_min, line_max = _line_limits(payloads)
-    figure, axes = plt.subplots(
-        len(payloads),
-        2,
-        figsize=(18, 5.2 * len(payloads)),
-        constrained_layout=True,
-        squeeze=False,
-    )
-    for row_index, payload in enumerate(payloads):
-        _plot_entity(
-            axes[row_index, 0],
-            axes[row_index, 1],
-            payload,
-            line_min,
-            line_max,
+    payloads: list[dict[str, Any]] = []
+    for train_sequence in parsed_splits["train"]:
+        entity_id = str(train_sequence["meta"]["entity_id"])
+        full_train_values = train_sequence["x"].detach().cpu().numpy()
+        full_test_values = test_by_entity[entity_id]["x"].detach().cpu().numpy()
+        channel_mean = np.mean(full_train_values, axis=0)
+        channel_std = np.std(full_train_values, axis=0, ddof=0)
+        ordered_channels = np.argsort(channel_mean)
+        scale_groups = np.array_split(ordered_channels, NUM_CHANNEL_GROUPS)
+        channel_indices: list[int] = []
+        channel_labels: list[str] = []
+        for group_index, group_channels in enumerate(scale_groups, start=1):
+            selected_position = int(np.argmax(channel_std[group_channels]))
+            selected_channel = int(group_channels[selected_position])
+            channel_indices.append(selected_channel)
+            channel_labels.append(f"scale group {group_index} | ch {selected_channel}")
+        payloads.append(
+            {
+                "entity_id": entity_id,
+                "train_std": float(np.std(full_train_values, ddof=0)),
+                "channel_indices": channel_indices,
+                "channel_labels": channel_labels,
+                "train_values": full_train_values[TIME_START:TIME_END][
+                    :, channel_indices
+                ],
+                "test_values": full_test_values[TIME_START:TIME_END][
+                    :, channel_indices
+                ],
+            }
         )
-    figure.suptitle(
-        "SMD benchmark train/test line plot | w=20 | train-fit standardization | "
-        "validation tail omitted | 38 channels + channel mean",
-        fontsize=12,
+    return payloads
+
+
+def _line_limits(payload: dict[str, Any]) -> tuple[float, float]:
+    plotted_values = np.concatenate(
+        [payload["train_values"].ravel(), payload["test_values"].ravel()]
     )
+    lower = float(np.nanmin(plotted_values))
+    upper = float(np.nanmax(plotted_values))
+    padding = max((upper - lower) * 0.05, 0.1)
+    return lower - padding, upper + padding
+
+
+def _plot_split(
+    axis: Any,
+    payload: dict[str, Any],
+    split_name: str,
+    line_limits: tuple[float, float],
+    show_legend: bool,
+) -> None:
+    values = payload[f"{split_name}_values"]
+    time_indices = np.arange(TIME_START, TIME_START + values.shape[0])
+    for channel_position, channel_label in enumerate(payload["channel_labels"]):
+        axis.plot(
+            time_indices,
+            values[:, channel_position],
+            color=CHANNEL_COLORS[channel_position],
+            linewidth=0.7,
+            label=channel_label if show_legend else None,
+        )
+    axis.set_title(f"{payload['entity_id']} | {split_name}", loc="left")
+    axis.set_ylabel("Raw value")
+    axis.set_xlim(TIME_START, TIME_END)
+    axis.set_ylim(*line_limits)
+    axis.grid(alpha=0.2, linewidth=0.4)
+    if show_legend:
+        axis.legend(loc="upper right")
+
+
+def save_entity_visualization(
+    payload: dict[str, Any],
+    output_dir: Path,
+) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    figure, axes = plt.subplots(
+        2,
+        1,
+        figsize=(12, 7),
+        sharex=False,
+        constrained_layout=True,
+    )
+    line_limits = _line_limits(payload)
+    _plot_split(axes[0], payload, "train", line_limits, show_legend=True)
+    _plot_split(axes[1], payload, "test", line_limits, show_legend=False)
+    axes[1].set_xlabel("Time index")
+    output_path = output_dir / f"smd-benchmark-train-test-{payload['entity_id']}.png"
     figure.savefig(output_path, dpi=160)
     plt.close(figure)
     return output_path
@@ -231,23 +131,23 @@ def save_visualization(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config-dir", default=str(PROJECT_ROOT / "configs" / "data"))
-    parser.add_argument("--output-path", default=str(DEFAULT_OUTPUT_PATH))
+    parser.add_argument("--dataset-root", default=str(DEFAULT_DATASET_ROOT))
+    parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
     args = parser.parse_args()
-    payloads = [
-        _load_entity_payload(entity_id, Path(args.config_dir))
-        for entity_id in ENTITY_IDS
-    ]
-    output_path = save_visualization(payloads, Path(args.output_path))
-    print(output_path)
-    for payload in payloads:
+
+    selected_payloads = _load_entity_payloads(
+        Path(args.dataset_root),
+        SELECTED_ENTITY_IDS,
+    )
+    output_dir = Path(args.output_dir)
+
+    for payload in selected_payloads:
         print(
-            f"{payload['entity_id']}: train_points={len(payload['train_values'])}, "
-            f"validation_points={payload['validation_points']}, "
-            f"test_points={len(payload['test_values'])}, "
-            f"train_windows={payload['train_windows']}, "
-            f"test_windows={payload['test_windows']}"
+            f"entity={payload['entity_id']}, "
+            f"channels={payload['channel_labels']}, "
+            f"selected_train_std={payload['train_std']:.6f}"
         )
+        print(save_entity_visualization(payload, output_dir))
 
 
 if __name__ == "__main__":
