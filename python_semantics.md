@@ -37,7 +37,7 @@ exclude stop
 So:
 
 ```python
-a[i:i+10]
+a[i : i + 10]
 ```
 
 accesses indices:
@@ -77,9 +77,9 @@ last element
 Common patterns:
 
 ```python
-a[-1]    # last item
-a[:-1]   # all except last item
-a[-2:]   # last two items
+a[-1]  # last item
+a[:-1]  # all except last item
+a[-2:]  # last two items
 ```
 
 ### Slice Out-of-Bounds Is Safe
@@ -153,6 +153,7 @@ Use:
 
 ```python
 import copy
+
 b = copy.deepcopy(a)
 ```
 
@@ -330,10 +331,10 @@ else use default_value
 Examples:
 
 ```python
-"hello" or "world"   # "hello"
-"" or "world"        # "world"
+"hello" or "world"  # "hello"
+"" or "world"  # "world"
 "hello" and "world"  # "world"
-"" and "world"       # ""
+"" and "world"  # ""
 ```
 
 ## 8. Equality vs Identity
@@ -515,6 +516,7 @@ Example:
 ```python
 def square(x):
     return x * x
+
 
 f = square
 f(5)

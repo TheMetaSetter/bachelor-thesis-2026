@@ -141,15 +141,10 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
             "FakeEvaluator",
             (),
             {
-                "__init__": lambda self,
-                device,
-                vus_max_buffer_size=None,
-                vus_num_thresholds=200: None,
-                "evaluate": lambda self,
-                model,
-                data_loader,
-                point_score_threshold=None,
-                threshold_source=None: {
+                "__init__": lambda self, device, vus_max_buffer_size=None, vus_num_thresholds=200: (
+                    None
+                ),
+                "evaluate": lambda self, model, data_loader, point_score_threshold=None, threshold_source=None: {
                     "records": [
                         {
                             "entity_id": "machine-1-6",

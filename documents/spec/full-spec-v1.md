@@ -1904,7 +1904,6 @@ Future ablation only.
 
 ```python
 for tau in online_stream:
-
     # ------------------------------------------------------------
     # 1. Build sliding window
     # ------------------------------------------------------------
@@ -1915,24 +1914,21 @@ for tau in online_stream:
     # ------------------------------------------------------------
     outputs = model.forward(W)
 
-    point_scores = outputs["point_reconstruction_mse"]      # [L]
-    input_w_score = outputs["input_window_mse"]             # scalar
-    latent_w_score = outputs["latent_window_mse"]           # scalar
+    point_scores = outputs["point_reconstruction_mse"]  # [L]
+    input_w_score = outputs["input_window_mse"]  # scalar
+    latent_w_score = outputs["latent_window_mse"]  # scalar
 
     # ------------------------------------------------------------
     # 3. EWMA point-level score update
     # ------------------------------------------------------------
     for abs_t, local_t in W.absolute_to_local.items():
-
         cur = point_scores[local_t]
 
         if abs_t not in point_score_state:
             point_score_state[abs_t] = cur
         else:
             old = point_score_state[abs_t]
-            point_score_state[abs_t] = (
-                0.9 * cur + 0.1 * old
-            )
+            point_score_state[abs_t] = 0.9 * cur + 0.1 * old
 
     # ------------------------------------------------------------
     # 4. Finalize expired point-level decisions
@@ -1967,7 +1963,6 @@ for tau in online_stream:
     # 7. Trigger verification
     # ------------------------------------------------------------
     if len(verification_buffer) >= N_buf:
-
         verification_output = verify_buffer(
             buffer=verification_buffer,
             discrete_codebook=source_discrete_codebook,
@@ -2003,23 +1998,18 @@ def verify_buffer(
     signature_to_windows = defaultdict(set)
 
     for window_id, W in enumerate(buffer):
-
         Z = encode_window(W)  # [L, d_model]
 
         for local_t, z in enumerate(Z):
-
             # ----------------------------------------------------
             # 1. Remove points inside anomalous discrete clusters
             # ----------------------------------------------------
             k_star = nearest_codeword(z, discrete_codebook)
 
-            is_anom_codeword = (
-                discrete_codeword_class_id[k_star] != 0
-            )
+            is_anom_codeword = discrete_codeword_class_id[k_star] != 0
 
             inside_anom_radius = (
-                distance(z, discrete_codebook[k_star])
-                <= discrete_anom_radius[k_star]
+                distance(z, discrete_codebook[k_star]) <= discrete_anom_radius[k_star]
             )
 
             if is_anom_codeword and inside_anom_radius:
@@ -2034,9 +2024,7 @@ def verify_buffer(
                 k=continuous_signature_topk,
             )
 
-            signature_to_points[signature].append(
-                (window_id, local_t, z)
-            )
+            signature_to_points[signature].append((window_id, local_t, z))
 
             signature_to_windows[signature].add(window_id)
 
@@ -2045,13 +2033,10 @@ def verify_buffer(
     windows_to_be_adapted = set()
 
     for sig, window_ids in signature_to_windows.items():
-
         if len(window_ids) > 1:
             recurrent_signatures.add(sig)
             windows_to_be_adapted.update(window_ids)
-            pseudo_new_normality_points.extend(
-                signature_to_points[sig]
-            )
+            pseudo_new_normality_points.extend(signature_to_points[sig])
 
     token_mask_pnn = build_token_mask(
         buffer=buffer,

@@ -1027,15 +1027,15 @@ import torch
 import torch.nn.functional as F
 
 
-def point_mask_from_synthetic_mask(synthetic_anomaly_mask: torch.Tensor) -> torch.Tensor:
+def point_mask_from_synthetic_mask(
+    synthetic_anomaly_mask: torch.Tensor,
+) -> torch.Tensor:
     """Return point-wise anomaly mask with shape [B, L]."""
     if synthetic_anomaly_mask.ndim == 2:
         return synthetic_anomaly_mask.bool()
     if synthetic_anomaly_mask.ndim == 3:
         return synthetic_anomaly_mask.bool().any(dim=-1)
-    raise ValueError(
-        "synthetic_anomaly_mask must have shape [B, L] or [B, L, C]."
-    )
+    raise ValueError("synthetic_anomaly_mask must have shape [B, L] or [B, L, C].")
 
 
 def compute_pointwise_balanced_score_loss(
@@ -1392,9 +1392,7 @@ $$
 If any class has fewer than 5 eligible tokens:
 
 ```python
-raise RuntimeError(
-    "Not enough tokens for class-level k-means memory initialization."
-)
+raise RuntimeError("Not enough tokens for class-level k-means memory initialization.")
 ```
 
 Do not silently reduce `K`.
@@ -1464,9 +1462,7 @@ def initialize_memories_after_stage_a(model, train_loader, config, device):
         k=config.continuous_num_prototypes,
     )
 
-    model.continuous_prototype_bank.copy_(
-        F.normalize(continuous_centroids, dim=-1)
-    )
+    model.continuous_prototype_bank.copy_(F.normalize(continuous_centroids, dim=-1))
 
     class_centroids = []
 
@@ -1485,9 +1481,7 @@ def initialize_memories_after_stage_a(model, train_loader, config, device):
 
     discrete_codebook = torch.cat(class_centroids, dim=0)
 
-    model.discrete_codebook.copy_(
-        F.normalize(discrete_codebook, dim=-1)
-    )
+    model.discrete_codebook.copy_(F.normalize(discrete_codebook, dim=-1))
 ```
 
 ---
@@ -2023,10 +2017,7 @@ timeline[3] = 6
 After Stage B backward pass:
 
 ```python
-assert all(
-    p.grad is None or torch.all(p.grad == 0)
-    for p in model.encoder.parameters()
-)
+assert all(p.grad is None or torch.all(p.grad == 0) for p in model.encoder.parameters())
 ```
 
 Also verify memory banks do not receive gradients.

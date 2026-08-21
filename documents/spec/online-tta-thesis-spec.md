@@ -764,7 +764,6 @@ buffer verification
 
 ```python
 for tau in online_stream:
-
     # 1. Build sliding window
     W = get_sliding_window_ending_at(tau)
 
@@ -782,19 +781,14 @@ for tau in online_stream:
         if abs_t not in point_score_state:
             point_score_state[abs_t] = cur_score
         else:
-            point_score_state[abs_t] = (
-                0.9 * cur_score
-                + 0.1 * point_score_state[abs_t]
-            )
+            point_score_state[abs_t] = 0.9 * cur_score + 0.1 * point_score_state[abs_t]
 
     # 4. Finalize expired point scores
     finalize_points_that_can_no_longer_overlap()
 
     # 5. Point-level anomaly decision
     for finalized_t in finalized_points:
-        y_pred[finalized_t] = (
-            point_score_state[finalized_t] > T_point
-        )
+        y_pred[finalized_t] = point_score_state[finalized_t] > T_point
 
     # 6. Window-level triage
     if input_window_score <= B_window:

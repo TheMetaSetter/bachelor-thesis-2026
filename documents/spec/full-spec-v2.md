@@ -514,9 +514,9 @@ Do not infer point-level anomaly labels from window-level labels. Only injected 
 ```python
 outputs = model.forward_stage_a(batch["x_input"])
 
-z = outputs["hidden"]                       # [B, L, d_model]
-x_hat = outputs["reconstruction"]           # [B, L, C]
-logits = outputs["classification_logits"]   # [B, 12]
+z = outputs["hidden"]  # [B, L, d_model]
+x_hat = outputs["reconstruction"]  # [B, L, C]
+logits = outputs["classification_logits"]  # [B, 12]
 contrastive = outputs.get("contrastive")
 ```
 
@@ -526,7 +526,7 @@ For synthetic windows, reconstruct `x_clean`, not `x_input`.
 
 ```python
 clean_mask = 1 - point_anomaly_mask  # [B, L]
-m = clean_mask.float()[:, :, None]   # [B, L, 1]
+m = clean_mask.float()[:, :, None]  # [B, L, 1]
 
 loss_recon = ((x_hat - x_clean) ** 2 * m).sum()
 loss_recon = loss_recon / (m.sum() * C + eps)
@@ -572,7 +572,7 @@ Point anomaly labels:
 if synthetic_anomaly_mask.ndim == 3:
     a = synthetic_anomaly_mask.any(dim=-1)  # [B, L]
 else:
-    a = synthetic_anomaly_mask              # [B, L]
+    a = synthetic_anomaly_mask  # [B, L]
 ```
 
 Batch-normal-token statistics:
@@ -1034,9 +1034,9 @@ negatives = all anomalous discrete codewords
 The source latent and codewords are detached.
 
 ```python
-q = normalize(g_psi(z_source))            # [L, d]
-k_pos = normalize(z_source).detach()      # [L, d]
-k_neg = normalize(anom_codewords).detach() # [K_anom, d]
+q = normalize(g_psi(z_source))  # [L, d]
+k_pos = normalize(z_source).detach()  # [L, d]
+k_neg = normalize(anom_codewords).detach()  # [K_anom, d]
 ```
 
 This online contrastive term is a regularizer. It allows reconstruction-driven adaptation, but discourages the MLP projector from moving the online latent representation too far from the frozen source geometry.
@@ -1191,8 +1191,8 @@ Each projected token still receives gradient when it is used as its own anchor.
 Pseudocode:
 
 ```python
-q_all = normalize(g_psi(z_source))          # [B, L, d]
-z_src_key = normalize(z_source).detach()    # [B, L, d]
+q_all = normalize(g_psi(z_source))  # [B, L, d]
+z_src_key = normalize(z_source).detach()  # [B, L, d]
 code_neg = normalize(anom_codewords).detach()
 
 loss_terms = []

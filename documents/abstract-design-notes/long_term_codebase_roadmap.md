@@ -70,6 +70,7 @@ The active online batch contract extends that with:
 
 ```python
 "view_a"
+
 "view_b"
 ```
 

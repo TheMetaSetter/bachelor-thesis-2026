@@ -50,11 +50,11 @@ A batch should always look like this conceptually:
 
 ```python
 batch = {
-    "x": Tensor[B, L, D],                  # input window
+    "x": Tensor[B, L, D],  # input window
     "point_labels": Optional[Tensor[B, L]],
     "mask": Optional[Tensor[B, L, D]],
     "timestamps": Optional[Tensor[B, L]],
-    "meta": list[dict],                    # dataset-specific metadata
+    "meta": list[dict],  # dataset-specific metadata
 }
 ```
 
@@ -62,13 +62,13 @@ A model output should always look like this conceptually:
 
 ```python
 outputs = {
-    "hidden": Tensor[B, L, H],     # thesis-facing representation
+    "hidden": Tensor[B, L, H],  # thesis-facing representation
     "pooled": Optional[Tensor[B, H]],
     "recon": Optional[Tensor[B, L, D]],
     "logits": Optional[Tensor],
     "point_scores": Optional[Tensor[B, L]],
     "window_scores": Optional[Tensor[B]],
-    "aux": dict,                   # prototype assignments, uncertainty, etc.
+    "aux": dict,  # prototype assignments, uncertainty, etc.
 }
 ```
 
@@ -242,6 +242,7 @@ Now let us write the minimal base classes. Keep them small.
 from abc import ABC, abstractmethod
 import torch.nn as nn
 
+
 class BaseModel(nn.Module, ABC):
     @abstractmethod
     def forward(self, batch: dict) -> dict:
@@ -275,16 +276,20 @@ Now the **registry**. Since you want many datasets and many models, you do need 
 DATASETS = {}
 MODELS = {}
 
+
 def register_dataset(name):
     def wrapper(cls):
         DATASETS[name] = cls
         return cls
+
     return wrapper
+
 
 def register_model(name):
     def wrapper(cls):
         MODELS[name] = cls
         return cls
+
     return wrapper
 ```
 
@@ -426,8 +431,9 @@ The better decomposition is:
 
 ```python
 class ThesisMultiTaskModel(BaseModel):
-    def __init__(self, encoder, cont_proto, disc_proto, fusion, recon_head, cls_head):
-        ...
+    def __init__(
+        self, encoder, cont_proto, disc_proto, fusion, recon_head, cls_head
+    ): ...
 ```
 
 That is, the architecture should be **assembled from modules**. Then you can instantiate:
@@ -463,9 +469,9 @@ class ThesisMultiTaskModel(BaseModel):
         self.cls_head = cls_head
 
     def forward(self, batch: dict) -> dict:
-        x = batch["x"]                       # [B, L, D]
+        x = batch["x"]  # [B, L, D]
         enc_out = self.encoder(x)
-        h = enc_out["hidden"]               # [B, L, H]
+        h = enc_out["hidden"]  # [B, L, H]
 
         h_cont = self.continuous_proto(h)
         h_disc = self.discrete_proto(h)
