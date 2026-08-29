@@ -1,0 +1,2526 @@
+% \chapter{Phương pháp đề xuất}
+% \label{Chapter3}
+
+% \pagebreak
+% \section{Kiến trúc mạng nơ-ron}
+% \label{sec:neural-network-architecture}
+% \begin{figure}[H]
+%     \centering
+%     \includesvg[width=0.65\linewidth]{images/architecture-thesis.drawio.svg}
+%     \caption{Kiến trúc của mô hình mà chúng tôi đề xuất.}
+%     \label{fig:architecture-thesis}
+% \end{figure}
+
+% Trong khoá luận này, chúng tôi đề xuất một mạng nơ-ron \textit{học đa tác vụ (multi-task learning)} dựa trên hai \textit{bộ nhớ (memory bank)} là \textit{tập nguyên mẫu liên tục (continuous prototype bank)} và \textit{tập mã vec-tơ rời rạc (discrete codebook)}. Tương ứng với tập nguyên mẫu liên tục là \textit{toán tử truy vấn liên tục (continuous query operator)} lấy cảm hứng từ bài nghiên cứu của tác giả Shen \cite{shen2025learn}, và tương ứng với tập nguyên mẫu rời rạc là \textit{toán tử truy vấn rời rạc (discrete query operator)} lấy cảm hứng từ bài nghiên cứu của tác giả Oord \cite{3295222.3295378}. Hai tác vụ học chúng tôi sử dụng trong thiết kế là \textit{tái tạo chuỗi (reconstruction)} và \textit{phân loại đa lớp (multi-class classifiaction)}. Chúng tôi lựa chọn thiết kế học đa tác vụ để giúp biểu diễn ẩn (latent representation) học được bởi bộ mã hoá sẽ có \textit{tính tổng quát hoá (generalization)} cao hơn \cite{9847099}.
+
+% \subsection{Bộ mã hoá chia sẻ chung}
+% Bộ mã hoá được chia sẻ chung giữa hai tác vụ (shared encoder) là một mạng nơ-ron tích chập (convolutional neural networks) sử dụng toán tử tích chập 1 chiều (1D convolution operator). Chi tiết cài đặt của mạng khá đơn giản, chỉ gồm 3 lớp tích chập. Chúng tôi lựa chọn thiết kế đơn giản này là vì muốn phương pháp hướng đến \textit{tính chất không phụ thuộc vào một bộ mã hoá cụ thể (encoder-agnostic)}. Đầu ra của bộ mã hoá chia sẻ chung được gọi là một \textit{ten-xơ trạng thái ẩn (latent tensor)}, chứa bên trong các \textit{vec-tơ trạng thái ẩn (latent vectors)} tương ứng với từng bước thời gian (time-step) trong \textit{cửa sổ đầu vào (input window)}. Chúng tôi ký hiệu ten-xơ trạng thái ẩn như sau:
+
+% \begin{equation}
+% \mathbf{Z}_t
+% =
+% f_{\mathrm{enc}}
+% \left(
+%     \mathbf{X}_t;
+%     \boldsymbol{\theta}_{\mathrm{enc}}
+% \right)
+% \in
+% \mathbb{R}^{T\times H},
+% \end{equation}
+
+% Trong công thức trên, ten-xơ trạng thái ẩn là một ten-xơ hai chiều hay còn gọi là một ma trận. Nếu ta sử dụng kích thước một lô dữ liệu \(B\) từ 2 cửa sổ đầu vào trở lên thì ten-xơ này sẽ là một ten-xơ 3 chiều thuộc không gian ten-xơ \(\mathbb{R}^{B \times T\times H}\).
+
+% Mỗi vec-tơ trạng thái ẩn được trả về từ mạng mã hoá sẽ được chuẩn hoá độ lớn (normalize) về vec-tơ có độ lớn đơn vị (unit-length vector) hay độ lớn là 1. Thao tác này giúp ánh xạ từng vec-tơ đầu vào ở mỗi bước thời gian lên \textit{bề mặt của một siêu cầu có bán kính đơn vị (surface of a unit hypersphere)}. Bề mặt đó có thể được gọi ngắn gọn hơn là một \textit{đa tạp siêu cầu đơn vị (unit hypersphere manifold)}. Khi lựa chọn \textit{không gian ẩn (latent space)} đầu ra của một bộ mã hoá trong \textit{học tương phản (contrastive learning)} thì đa tạp siêu cầu đơn vị là một lựa chọn phổ biến trong \textit{nghiên cứu thực nghiệm (emperical study)}, theo nghiên cứu của tác giả Wang \cite{3524938.3525859}.
+
+% Thông qua kiến trúc phân tầng (hierarchical architecture) của mạng nơ-ron tích chập, mỗi vec-tơ ẩn đầu ra của bộ mã hoá sẽ có một vùng tiếp nhận (receptive field) tương ứng, cụ thể hơn là một \textit{vùng tiếp nhận hiệu dụng (effective receptive field)} tương ứng. Bằng cách này, vec-tơ ẩn tại một bước thời gian đầu ra không chỉ chứa thông tin về mẫu hình của bước thời gian tương ứng ở cửa sổ đầu vào, mà còn chứa thông tin của các bước thời gian lân cận ở đầu vào. Điều này cũng đồng nghĩa với việc chúng tôi đang áp dụng \textit{tính cục bộ (locality)} -- một \textit{thiên kiến quy nạp (inductive bias)} của mạng nơ-ron tích chập -- lên dữ liệu chuỗi thời gian. Tính cục bộ này có nghĩa là mạng nơ-ron tích chập sẽ ưu tiên mô hình hoá mối quan hệ giữa giá trị của các bước thời gian gần nhau.
+
+% Trong không gian ẩn mà chúng tôi sử dụng (đa tạp siêu cầu đơn vị), các mẫu hình (patterns) xung quanh một bước thời gian đầu vào sẽ được mã hoá hết vào bên trong \textit{hướng (direction)} của vec-tơ ẩn tương ứng với bước thời gian đó, do \textit{độ lớn (magnitude hay L2-norm)} của mọi vec-tơ đã được chuẩn hoá về 1. Mỗi hướng sẽ tương ứng với các mẫu hình khác nhau. Có những hướng tương ứng với \textit{các mẫu hình bình thường (normal patterns)}, có những hướng tương ứng với \textit{các mẫu hình bất thường (anomalous patterns)}.
+
+% \pagebreak
+% \subsection{Hai bộ nhớ và hai toán tử truy vấn tương ứng}
+% \subsubsection{Hai bộ nhớ}
+% Mỗi \textit{bộ nhớ (memory bank)} sẽ chứa một số lượng vec-tơ nguyên mẫu nhất định và được thiết kế để chứa các mẫu hình nhất định.
+
+% Theo thiết kế của mạng nơ-ron, mỗi vec-tơ trong tập nguyên mẫu liên tục (continuous prototype bank) sẽ đại diện cho một mẫu hình bình thường. Chúng tôi hình dung một cách trực quan là các mẫu hình bình thường tồn tại như các \textbf{cụm điểm (cluster)} trong không gian ẩn (latent space) với mỗi vec-tơ nguyên mẫu liên tục là tâm của một cụm. Về chi tiết cài đặt, chúng tôi sử dụng 32 vec-tơ nguyên mẫu liên tục, đại diện cho 32 tâm cụm bình thường. Chúng tôi sử dụng từ \textbf{cụm} là do các vec-tơ nguyên mẫu trong cả 2 bộ nhớ sẽ được khởi tạo bằng thuật toán K-Means \cite{lloyd1982least} sau giai đoạn tiền huấn luyện đa tác vụ của pha tiền huấn luyện ngoại tuyến trong phương pháp.
+
+% Trong tập nguyên mẫu rời rạc, mỗi \textit{vec-tơ nguyên mẫu} đại diện cho một mẫu hình của một trong các lớp dữ liệu nhân tạo mà phương pháp sử dụng, bao gồm 1 lớp bình thường (giữ nguyên giá trị gốc) và 11 lớp bất thường nhân tạo (được tiêm giá trị nhân tạo). Về chi tiết cài đặt, chúng tôi sử dụng 60 vec-tơ nguyên mẫu rời rạc. Mỗi lớp nhân tạo sẽ có 5 vec-tơ tâm cụm được lưu lại, đại diện cho 5 cụm mẫu hình của mỗi lớp, kể cả lớp bình thường.
+
+% \subsubsection{Hai toán tử truy vấn tương ứng}
+
+% Sau khi thu được ten-xơ trạng thái ẩn \(\mathbf{Z}_t\) từ bộ mã hoá chung cho hai tác vụ, chúng tôi sử dụng các vec-tơ \(\mathbf{z}_{t,i}\) trong ten-xơ này để truy vấn hai bộ nhớ.
+
+% \textbf{Toán tử truy vấn liên tục}
+
+% Đối với tập nguyên mẫu liên tục, quá trình truy vấn \textbf{tất định} có thể được viết thành các phương trình sau:
+
+% Ký hiệu tập nguyên mẫu liên tục gồm \(K_c\) vec-tơ là
+% \begin{equation}
+% \mathbf{P}^{(c)}
+% =
+% \begin{bmatrix}
+% \mathbf{p}^{(c)}_1;
+% \ldots;
+% \mathbf{p}^{(c)}_{K_c}
+% \end{bmatrix}
+% \in \mathbb{R}^{K_c\times H}.
+% \end{equation}
+
+% Xét vec-tơ trạng thái ẩn \(\mathbf{z}_{t,i}\), trọng số truy vấn tất định được tính bằng
+% \begin{equation}
+% \alpha^{(c)}_{t,i,k}
+% =
+% \frac{
+% \exp\left(
+% \mathbf{z}_{t,i}^{\top}\mathbf{p}^{(c)}_k/\tau_c
+% \right)}
+% {
+% \sum_{j=1}^{K_c}
+% \exp\left(
+% \mathbf{z}_{t,i}^{\top}\mathbf{p}^{(c)}_j/\tau_c
+% \right)
+% },
+% \end{equation}
+% trong đó \(\tau_c>0\) là nhiệt độ (temperature), là một siêu tham số (hyperparameter) cố định trong quá trình huấn luyện mạng.
+
+% Vec-tơ được truy xuất từ tập nguyên mẫu liên tục là
+% \begin{equation}
+% \widetilde{\mathbf{z}}^{(c)}_{t,i}
+% =
+% \sum_{k=1}^{K_c}
+% \alpha^{(c)}_{t,i,k}\mathbf{p}^{(c)}_k.
+% \end{equation}
+
+% Chúng tôi gọi vec-tơ được truy xuất từ tập nguyên mẫu liên tục là \textit{vec-tơ ẩn của nhánh liên tục (continuous-branch latent vector)}. Ngoài ra, độc giả có thể hình dung toán tử truy vấn bên trên khá giống với \textit{toán tử chú ý chéo (cross-attention operator)}, khác ở chỗ toán tử chú ý chéo có thêm phép cộng residual giữa \(\mathbf{z}_{t,i}\) và \(\widetilde{\mathbf{z}}^{(c)}_{t,i}\) \cite{3295222.3295349} \cite{9859720}.
+
+% Trong khoá luận này, do hướng đến mục tiêu ước lượng được độ bất định nhận thức (epistemic uncertainty) của mạng nơ-ron, chúng tôi đề xuất phiên bản ngẫu nhiên (stochastic) của toán tử truy vấn liên tục, gọi là \textit{toán tử ngẫu nhiên truy vấn liên tục (stochastic continuous query operator)}. Phiên bản ngẫu nhiên này tương ứng với các phương trình sau:
+
+% Ở lần truy vấn ngẫu nhiên thứ \(m\), trước hết chúng tôi lấy mẫu độc lập ngẫu nhiên (sampling) nhiễu Gumbel từ cùng một phân phối (i.i.d) như sau:
+% \begin{equation}
+% g^{(m)}_{t,i,k}
+% =
+% -\log\left[-\log\left(u^{(m)}_{t,i,k}\right)\right],
+% \qquad
+% u^{(m)}_{t,i,k}
+% \overset{\mathrm{i.i.d.}}{\sim}
+% \operatorname{Uniform}(0,1).
+% \end{equation}
+
+% \textit{Trọng số truy vấn ngẫu nhiên (stochastic continuous query weights)} ứng với từng nguyên mẫu liên tục được tính bằng hàm Gumbel-Softmax:
+% \begin{equation}
+% \alpha^{(c,m)}_{t,i,k}
+% =
+% \frac{
+% \exp\left(
+% \frac{
+% \mathbf{z}_{t,i}^{\top}\mathbf{p}^{(c)}_k
+% +
+% g^{(m)}_{t,i,k}
+% }{\tau_c}
+% \right)}
+% {
+% \displaystyle
+% \sum_{j=1}^{K_c}
+% \exp\left(
+% \frac{
+% \mathbf{z}_{t,i}^{\top}\mathbf{p}^{(c)}_j
+% +
+% g^{(m)}_{t,i,j}
+% }{\tau_c}
+% \right)
+% }.
+% \end{equation}
+
+% Khi đó, vec-tơ được truy xuất ở lần thứ \(m\) là
+% \begin{equation}
+% \widetilde{\mathbf{z}}^{(c,m)}_{t,i}
+% =
+% \sum_{k=1}^{K_c}
+% \alpha^{(c,m)}_{t,i,k}
+% \mathbf{p}^{(c)}_k.
+% \end{equation} \\ \\
+
+% \textbf{Toán tử truy vấn rời rạc}
+
+% Đối với tập nguyên mẫu rời rạc thì toán tử truy vấn tất định có thể được viết thành các phương trình sau:
+
+% Ký hiệu tập nguyên mẫu rời rạc gồm \(K_d\) vec-tơ là
+% \begin{equation}
+% \mathbf{P}^{(d)}
+% =
+% \begin{bmatrix}
+% \mathbf{p}^{(d)}_1;
+% \ldots;
+% \mathbf{p}^{(d)}_{K_d}
+% \end{bmatrix}
+% \in \mathbb{R}^{K_d\times H}.
+% \end{equation}
+
+% Xét vec-tơ trạng thái ẩn \(\mathbf{z}_{t,i}\), khoảng cách đến nguyên mẫu rời rạc thứ \(k\) được tính bằng
+% \begin{equation}
+% \begin{aligned}
+% d^{(d)}_{t,i,k}
+% &=
+% \left\|
+% \mathbf{z}_{t,i}
+% -
+% \mathbf{p}^{(d)}_k
+% \right\|_2^2
+% \\
+% &=
+% 2\left(
+% 1-
+% \operatorname{cos}
+% \left(
+% \mathbf{z}_{t,i},
+% \mathbf{p}^{(d)}_k
+% \right)
+% \right).
+% \end{aligned}
+% \end{equation}
+
+% Ở phương trình trên, dấu bằng thứ hai là một tính chất hữu ích của việc chuẩn hoá độ lớn các vec-tơ ẩn về độ lớn đơn vị.
+
+% Tập chỉ số của \(K_{\mathrm{top}}\) nguyên mẫu gần nhất được xác định bởi
+% \begin{equation}
+% \mathcal{I}^{(d)}_{t,i}
+% =
+% \operatorname{TopKMin}_{k\in\{1,\ldots,K_d\}}
+% \left(
+% d^{(d)}_{t,i,k};
+% K_{\mathrm{top}}
+% \right),
+% \end{equation}
+% trong đó \(\operatorname{TopKMin}\) trả về chỉ số của \(K_{\mathrm{top}}\) giá trị nhỏ nhất. Trong cài đặt của chúng tôi, \(K_{\mathrm{top}}=3\).
+
+% \textbf{Trọng số} ứng với các nguyên mẫu được chọn là
+% \begin{equation}
+% \alpha^{(d)}_{t,i,k}
+% =
+% \begin{cases}
+% \dfrac{
+% \exp\left(-d^{(d)}_{t,i,k}/\tau_d\right)
+% }{
+% \displaystyle
+% \sum_{j\in\mathcal{I}^{(d)}_{t,i}}
+% \exp\left(-d^{(d)}_{t,i,j}/\tau_d\right)
+% },
+% &
+% k\in\mathcal{I}^{(d)}_{t,i},
+% \\[12pt]
+% 0,
+% &
+% k\notin\mathcal{I}^{(d)}_{t,i}.
+% \end{cases}
+% \end{equation}
+
+% Vec-tơ ẩn của nhánh rời rạc (discrete-branch latent vector) được tính bằng
+% \begin{equation}
+% \widetilde{\mathbf{z}}^{(d)}_{t,i}
+% =
+% \sum_{k\in\mathcal{I}^{(d)}_{t,i}}
+% \alpha^{(d)}_{t,i,k}\mathbf{p}^{(d)}_k.
+% \end{equation}
+
+% Phiên bản ngẫu nhiên của toán tử truy vấn rời rạc, còn gọi là \textit{toán tử truy vấn ngẫu nhiên rời rạc (stochastic discrete query operator)}, có thể được trình bày như sau:
+
+% Ở lần truy vấn ngẫu nhiên thứ \(m\), chúng tôi lấy mẫu độc lập ngẫu nhiên nhiễu Gumbel từ cùng một phân phối
+% \begin{equation}
+% g^{(d,m)}_{t,i,k}
+% =
+% -\log\left[-\log\left(u^{(d,m)}_{t,i,k}\right)\right],
+% \qquad
+% u^{(d,m)}_{t,i,k}
+% \overset{\mathrm{i.i.d.}}{\sim}
+% \operatorname{Uniform}(0,1).
+% \end{equation}
+
+% \textit{\textbf{Điểm} truy vấn (stochastic discrete query score)} sau khi thêm nhiễu được tính như sau:
+% \begin{equation}
+% q^{(d,m)}_{t,i,k}
+% =
+% \frac{
+% -d^{(d)}_{t,i,k}
+% +
+% g^{(d,m)}_{t,i,k}
+% }{\tau_d},
+% \end{equation}
+% trong đó \(\tau_d>0\) là nhiệt độ của toán tử truy vấn rời rạc.
+
+% Tập chỉ số của \(K_{\mathrm{top}}\) nguyên mẫu được chọn ở lần truy vấn thứ \(m\) là
+% \begin{equation}
+% \mathcal{I}^{(d,m)}_{t,i}
+% =
+% \operatorname{TopKMax}_{k\in\{1,\ldots,K_d\}}
+% \left(
+% q^{(d,m)}_{t,i,k};
+% K_{\mathrm{top}}
+% \right).
+% \end{equation}
+
+% \textit{\textbf{Trọng số} truy vấn ngẫu nhiên (stochastic discrete query)} được tính bằng
+% \begin{equation}
+% \alpha^{(d,m)}_{t,i,k}
+% =
+% \begin{cases}
+% \dfrac{
+% \exp\left(q^{(d,m)}_{t,i,k}\right)
+% }{
+% \displaystyle
+% \sum_{j\in\mathcal{I}^{(d,m)}_{t,i}}
+% \exp\left(q^{(d,m)}_{t,i,j}\right)
+% },
+% &
+% k\in\mathcal{I}^{(d,m)}_{t,i},
+% \\[12pt]
+% 0,
+% &
+% k\notin\mathcal{I}^{(d,m)}_{t,i}.
+% \end{cases}
+% \end{equation}
+
+% Khi đó, vec-tơ được truy xuất ở lần thứ \(m\) là
+% \begin{equation}
+% \widetilde{\mathbf{z}}^{(d,m)}_{t,i}
+% =
+% \sum_{k\in\mathcal{I}^{(d,m)}_{t,i}}
+% \alpha^{(d,m)}_{t,i,k}
+% \mathbf{p}^{(d)}_k.
+% \end{equation}
+
+% Như vậy, ten-xơ ẩn của nhánh rời rạc (discrete-branch latent tensor) là tập hợp các vec-tơ ẩn của nhánh đó, ký hiệu
+% \begin{equation}
+% \widetilde{\mathbf{Z}}^{(d,m)}_t
+% =
+% \begin{bmatrix}
+% \widetilde{\mathbf{z}}^{(d,m)}_{t,1};
+% \ldots;
+% \widetilde{\mathbf{z}}^{(d,m)}_{t,T}
+% \end{bmatrix}
+% \in \mathbf{R}^{T\times H}.
+% \end{equation}
+
+% Tương tự đối với nhánh liên tục, ký hiệu
+% \begin{equation}
+% \widetilde{\mathbf{Z}}^{(c,m)}_t
+% =
+% \begin{bmatrix}
+% \widetilde{\mathbf{z}}^{(c,m)}_{t,1};
+% \ldots;
+% \widetilde{\mathbf{z}}^{(c,m)}_{t,T}
+% \end{bmatrix}
+% \in \mathbf{R}^{T\times H}.
+% \end{equation}
+
+% % https://tex.stackexchange.com/questions/19579/horizontal-line-spanning-the-entire-document-in-latex
+
+% Như vậy, ten-xơ ẩn của nhánh rời rạc (discrete-branch latent tensor) là tập hợp các vec-tơ ẩn của nhánh đó, ký hiệu
+% \begin{equation}
+% \widetilde{\mathbf{Z}}^{(d,m)}_t
+% =
+% \begin{bmatrix}
+% \widetilde{\mathbf{z}}^{(d,m)}_{t,1};
+% \ldots;
+% \widetilde{\mathbf{z}}^{(d,m)}_{t,T}
+% \end{bmatrix}
+% \in \mathbf{R}^{T\times H}.
+% \end{equation}
+
+% Tương tự đối với nhánh liên tục, ký hiệu
+% \begin{equation}
+% \widetilde{\mathbf{Z}}^{(c,m)}_t
+% =
+% \begin{bmatrix}
+% \widetilde{\mathbf{z}}^{(c,m)}_{t,1};
+% \ldots;
+% \widetilde{\mathbf{z}}^{(c,m)}_{t,T}
+% \end{bmatrix}
+% \in \mathbf{R}^{T\times H}.
+% \end{equation}
+
+% \section{Quy trình tiền huấn luyện và hàm mất mát tương ứng}
+% \label{section:pre-training}
+
+% Quy trình tiền huấn luyện được chúng tôi gọi là \textit{\textbf{pha} tiền huấn luyện ngoại tuyến (offline pre-training phase)}, phân biệt với \textit{\textbf{pha} thích ứng khi kiểm thử trực tuyến (online test-time adaptation phase)}. Luồng tổng quan của pha này được trình bày trong \hyperref[alg:offline-pretraining]{Thuật toán~\ref*{alg:offline-pretraining}}.
+
+% Pha tiền huấn luyện ngoại tuyến sẽ bao gồm 2 \textbf{giai đoạn (stage)} là \textbf{giai đoạn} học biểu diễn đa nhiệm (offline multi-task learning stage) và \textbf{giai đoạn} tinh chỉnh bộ kết hợp (fusion head fine-tuning stage). Chúng tôi sẽ gọi hai giai đoạn này là giai đoạn A và giai đoạn B.
+
+% Trong giai đoạn A, để tập trung học biểu diễn đa nhiệm, chúng tôi chỉ huấn luyện mạng mã hoá (encoder network) và hai mạng dự đoán (prediction heads) tương ứng với hai tác vụ (Xem hình 3.2). Chúng tôi chưa khởi tạo hai bộ nhớ trong giai đoạn này và do đó, chưa cần thêm các mạng kết hợp (fusion networks) tương ứng. Mạng mã hoá là một mạng nơ-ron tích chập 1 chiều (1-dimensional convolutional neural network) như đã trình bày ở \hyperref[sec:neural-network-architecture]
+% {Mục~\ref*{sec:neural-network-architecture}}.
+
+% \begin{figure}[H]
+%     \centering
+%     \includesvg[width=0.9\linewidth]{images/pretrain-stage-arch.drawio.svg}
+%     \caption{Kiến trúc mô hình trong giai đoạn A của pha ngoại tuyến.}
+%     \label{fig:architecture-stage-A-offline-phase}
+% \end{figure}
+
+% Trong giai đoạn học biểu diễn đa nhiệm, chúng tôi sử dụng 3 hàm mất mát chính: một hàm cho tác vụ tái tạo chuỗi, một hàm cho tác vụ phân loại đa lớp và một hàm để học tương phản ở cấp độ điểm thời gian (\textit{point-level contrastive loss}). Lí do chúng tôi sử dụng hàm tương phản ở cấp độ điểm thời gian là để phân tách rõ ràng hơn các vec-tơ mẫu hình bình thường và các vec-tơ mẫu hình bất thường trong không gian ẩn mà chúng tôi đã lựa chọn (\textit{đa tạp siêu cầu đơn vị}).
+
+% Quá trình \textit{lan truyền xuôi (forward-propagation)} tương ứng với các phương trình sau:
+
+% Ký hiệu một \textit{cửa sổ sạch (clean window)} đến từ \textit{chuỗi huấn luyện gốc (original train series)} là \(\mathbf{X}^{(0)}_t\). Từ cùng cửa sổ này, chúng tôi tạo ra một \textit{phiên bản bất thường nhân tạo (synthetic anomalous view)} thuộc lớp \(a_t\in\{1,\ldots,11\}\):
+% \begin{equation}
+% \mathbf{X}^{(a_t)}_t
+% =
+% \left(\mathbf{1}-\mathbf{M}_t\right)
+% \odot
+% \mathbf{X}^{(0)}_t
+% +
+% \mathbf{M}_t
+% \odot
+% \mathcal{A}_{a_t}
+% \left(
+% \mathbf{X}^{(0)}_t;
+% \boldsymbol{\xi}_t
+% \right),
+% \end{equation}
+% trong đó \(\mathbf{M}_t\) là vec-tơ mặt nạ xác định các \textit{bước thời gian (time-step)} được tiêm bất thường, \(\mathcal{A}_{a_t}\) là \textit{hàm biến đổi (transformation function)} tương ứng với lớp bất thường \(a_t\), và \(\boldsymbol{\xi}_t\) chứa các tham số ngẫu nhiên của \textit{hàm biến đổi}. Những vị trí có \(\mathbf{M}_t=0\) được giữ nguyên giá trị gốc từ cửa sổ sạch. Trong khóa luận này, chúng tôi sử dụng 11 lớp bất thường nhân tạo sau: tăng đột ngột (spike), lật ngang (flip), tăng nhịp độ (speedup), nhiễu (noise), cắt theo ngưỡng (cutoff), trung bình hóa (average), co giãn biên độ (scale), dao động kiểu trôi dạt (wander), bất thường theo ngữ cảnh (contextual), lật dọc (upsidedown) và bất thường hỗn hợp (mixture). Tương ứng với 11 lớp bất thường nhân tạo sẽ có 11 hàm biến đổi (transformation functions). 11 lớp bất thường nhân tạo này được minh hoạ trong \hyperref[fig:smd_3-9_classes_0-5_w20]{Hình~\ref*{fig:smd_3-9_classes_0-5_w20}} và \hyperref[fig:smd_3-9_classes_6-11_w20]{Hình~\ref*{fig:smd_3-9_classes_6-11_w20}}.
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.75\linewidth]{images/smd_3-9_classes_0-5_w20.png}
+%     \caption{Các lớp bất thường nhân tạo từ 0 đến 5.}
+%     \label{fig:smd_3-9_classes_0-5_w20}
+% \end{figure}
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.75\linewidth]{images/smd_3-9_classes_6-11_w20.png}
+%     \caption{Các lớp bất thường nhân tạo từ 6 đến 11.}
+%     \label{fig:smd_3-9_classes_6-11_w20}
+% \end{figure}
+
+% Hai phiên bản của cùng một cửa sổ được đưa qua cùng một bộ mã hoá:
+% \begin{align}
+% \mathbf{Z}^{(0)}_t
+% &=
+% f_{\mathrm{enc}}
+% \left(
+% \mathbf{X}^{(0)}_t;
+% \boldsymbol{\theta}_{\mathrm{enc}}
+% \right),
+% \\
+% \mathbf{Z}^{(a_t)}_t
+% &=
+% f_{\mathrm{enc}}
+% \left(
+% \mathbf{X}^{(a_t)}_t;
+% \boldsymbol{\theta}_{\mathrm{enc}}
+% \right).
+% \end{align}
+
+% Đối với tác vụ tái tạo chuỗi, cửa sổ sạch được tái tạo bằng
+% \begin{equation}
+% \widehat{\mathbf{X}}^{(0)}_t
+% =
+% f_{\mathrm{rec}}
+% \left(
+% \mathbf{Z}^{(0)}_t;
+% \boldsymbol{\theta}_{\mathrm{rec}}
+% \right).
+% \end{equation}
+
+% Đối với tác vụ phân loại đa lớp, xác suất dự đoán được tính cho cả cửa sổ sạch và cửa sổ bất thường nhân tạo:
+% \begin{equation}
+% \widehat{\mathbf{y}}^{(v)}_t
+% =
+% \operatorname{softmax}
+% \left[
+% f_{\mathrm{cls}}
+% \left(
+% \operatorname{Pool}\left(\mathbf{Z}^{(v)}_t\right);
+% \boldsymbol{\theta}_{\mathrm{cls}}
+% \right)
+% \right],
+% \qquad
+% v\in\{0,a_t\},
+% \end{equation}
+% trong đó \(v=0\) biểu thị lớp sạch và \(v=a_t\) biểu thị lớp bất thường nhân tạo. Trong đó hàm \(\operatorname{Pool}\) thường là hàm trung bình theo từng biến của vec-tơ ẩn.
+
+% Trong quá trình học tương phản ở cấp độ điểm thời gian, mỗi vec-tơ
+% \(\mathbf{z}^{(0)}_{t,i}\) của cửa sổ sạch được sử dụng làm \textit{điểm neo (anchor point)}. Vec-tơ tương ứng \(\mathbf{z}^{(a_t)}_{t,i}\) là \textit{điểm dương tương ứng (positive point)} nếu vị trí \(i\) không được tiêm bất thường, và là \textit{điểm đối tương ứng (negative point)} nếu vị trí này được tiêm bất thường:
+% \begin{equation}
+% \mathbf{z}^{(a_t)}_{t,i}
+% \in
+% \begin{cases}
+% \mathcal{P}\left(\mathbf{z}^{(0)}_{t,i}\right),
+% & \mathbf{M}_{t,i}=0,
+% \\
+% \mathcal{N}\left(\mathbf{z}^{(0)}_{t,i}\right),
+% & \mathbf{M}_{t,i}=1.
+% \end{cases}
+% \end{equation}
+
+% Cuối cùng, các hàm mất mát được tính toán theo các phương trình sau. Hàm mất mát tái tạo chuỗi là
+% \begin{equation}
+% \mathcal{L}_{\mathrm{rec}}
+% =
+% \frac{1}{TC}
+% \left\|
+% \mathbf{X}^{(0)}_t
+% -
+% \widehat{\mathbf{X}}^{(0)}_t
+% \right\|_F^2.
+% \end{equation}
+
+% Trong đó, \(T\) là số bước độ dài của cửa sổ, còn \(C\) là số biến của chuỗi thời gian.
+
+% Hàm mất mát phân loại đa lớp là
+% \begin{equation}
+% \mathcal{L}_{\mathrm{cls}}
+% =
+% -\frac{1}{2}
+% \sum_{v\in\{0,a_t\}}
+% \sum_{r=0}^{11}
+% y^{(v)}_{t,r}
+% \log
+% \widehat{y}^{(v)}_{t,r}.
+% \end{equation}
+
+% Hàm mất mát tương phản ở cấp độ điểm thời gian là
+% \begin{equation}
+% \begin{aligned}
+% \mathcal{L}_{\mathrm{con}}
+% =
+% -\frac{1}{|\mathcal{Q}|}
+% \sum_{\mathbf{z}_q\in\mathcal{Q}}
+% \log
+% \Bigg[
+% &
+% \sum_{\mathbf{z}_p\in\mathcal{P}(\mathbf{z}_q)}
+% \exp\left(
+% \frac{
+% \operatorname{cos}(\mathbf{z}_q,\mathbf{z}_p)
+% }{
+% \tau_{\mathrm{con}}
+% }
+% \right)
+% \\[-0.2em]
+% &\Bigg/
+% \Bigg(
+% \sum_{\mathbf{z}_p\in\mathcal{P}(\mathbf{z}_q)}
+% \exp\left(
+% \frac{
+% \operatorname{cos}(\mathbf{z}_q,\mathbf{z}_p)
+% }{
+% \tau_{\mathrm{con}}
+% }
+% \right)
+% \\
+% &\qquad
+% +
+% \sum_{\mathbf{z}_n\in\mathcal{N}(\mathbf{z}_q)}
+% \exp\left(
+% \frac{
+% \operatorname{cos}(\mathbf{z}_q,\mathbf{z}_n)
+% }{
+% \tau_{\mathrm{con}}
+% }
+% \right)
+% \Bigg)
+% \Bigg].
+% \end{aligned}
+% \end{equation}
+% trong đó \(\mathcal{Q}\) là tập các \textit{điểm neo (anchor point)}, \(\mathcal{P}(\mathbf{z}_q)\) là tập các \textit{điểm dương tương ứng (positive point)} và \(\mathcal{N}(\mathbf{z}_q)\) là tập các \textit{điểm đối tương ứng (negative point)} của điểm neo \(\mathbf{z}_q\).
+
+% \textit{Hàm mất mát tổng (total loss)} của giai đoạn học biểu diễn đa nhiệm là
+% \begin{equation}
+% \mathcal{L}_{\mathrm{multi}}
+% =
+% \lambda_{\mathrm{rec}}\mathcal{L}_{\mathrm{rec}}
+% +
+% \lambda_{\mathrm{cls}}\mathcal{L}_{\mathrm{cls}}
+% +
+% \lambda_{\mathrm{con}}\mathcal{L}_{\mathrm{con}}.
+% \end{equation}
+
+% Đến đây, chúng tôi có thể tính toán gradient của hàm mất mát theo từng tham số trong mạng mã hoá (encoder network), hai mạng dự đoán (prediction networks) sử dụng thuật toán lan truyền ngược (backpropagation) \cite{rumelhart1986learning}. Và sử dụng các gradient để cập nhật từng tham số theo các \textit{thuật toán tối ưu ngẫu nhiên (stochastic optimization algorithms)} như Stochastic Gradient Descent đơn giản \cite{4308316} hoặc các phiên bản hiện đại hơn như Adam \cite{kingma2015adam}, AdamW \cite{loshchilov2018decoupled}.
+
+% Sau khi huấn luyện xong giai đoạn A, chúng tôi kỳ vọng thu được mạng mã hoá đã học được biểu diễn đa nhiệm và dùng mạng này để khởi tạo hai bộ nhớ. Chúng tôi chọn ra một vài lô dữ liệu trong tập huấn luyện, sau đó tiêm bất thường vào các cửa sổ trong tập này sao cho tỉ lệ giữa 12 lớp, gồm 1 lớp bình thường và 11 lớp bất thường nhân tạo, là bằng nhau. Đối với tập nguyên mẫu liên tục, chúng tôi lọc ra tất cả điểm thời gian bình thường trong các lô được chọn rồi chạy thuật toán K-Means để chọn ra 32 vec-tơ đại diện cho 32 cụm mẫu hình bình thường. Đối với tập nguyên mẫu rời rạc, với mỗi lớp trong 12 lớp, chúng tôi cũng lọc ra các điểm thời gian thuộc lớp đó rồi chạy thuật toán K-Means để chọn ra 5 vec-tơ đại diện cho mỗi lớp trong 12 lớp. Sau khi khởi tạo xong thì chúng tôi cũng \textbf{đóng băng (freeze)} mạng mã hoá và 2 bộ nhớ để đảm bảo mạng mã hoá và 2 bộ nhớ đến từ cùng một \textit{xấp xỉ hàm (function approximator)} đã học được. Ở đây, \textbf{đóng băng} một tham số nghĩa là không tính toán gradient của hàm mất mát theo tham số đó.
+
+% Tiếp theo chính là giai đoạn B: tinh chỉnh các mạng tổng hợp (fusion networks). Kiến trúc mạng nơ-ron của giai đoạn này được minh hoạ ở \hyperref[fig:architecture-stage-B-offline-phase]
+% {Hình~\ref*{fig:architecture-stage-B-offline-phase}}.
+
+% \begin{figure}[H]
+%     \centering
+%     \includesvg[width=0.9\linewidth]{images/fine-tune-stage-arch.drawio.svg}
+%     \caption[Kiến trúc mô hình trong giai đoạn B của pha ngoại tuyến.] {Kiến trúc mô hình trong giai đoạn B của pha ngoại tuyến. Tham số của các mô-đun nằm trong vùng màu xanh dương nhạt sẽ bị đóng băng. Tham số của các mô-đun nằm trong vùng màu đỏ nhạt sẽ được tính gradient.}
+%     \label{fig:architecture-stage-B-offline-phase}
+% \end{figure}
+
+% Gọi \(\widetilde{\mathbf{Z}}^{(c,m)}_t\) và
+% \(\widetilde{\mathbf{Z}}^{(d,m)}_t\) là hai ten-xơ đầu ra tương ứng với nhánh liên tục và nhánh rời rạc. Quá trình lan truyền xuôi tính từ các mạng tổng hợp (fusion networks) diễn ra như sau.
+
+% Trước hết, ten-xơ trạng thái ẩn ban đầu và đầu ra của hai nhánh được ghép lại với mục đích là để mạng tổng hợp tiếp cận được ten-xơ ẩn gốc:
+% \begin{equation}
+% \mathbf{Z}^{(\mathrm{cat},m)}_t
+% =
+% \operatorname{Concat}
+% \left[
+% \mathbf{Z}_t,
+% \widetilde{\mathbf{Z}}^{(c,m)}_t,
+% \widetilde{\mathbf{Z}}^{(d,m)}_t
+% \right]
+% \in
+% \mathbb{R}^{T\times 3H}.
+% \end{equation}
+
+% Hai mạng tổng hợp tương ứng với hai tác vụ tạo ra hai ten-xơ trạng thái ẩn:
+% \begin{align}
+% \mathbf{H}^{(\mathrm{rec},m)}_t
+% &=
+% f_{\mathrm{fus}}^{(\mathrm{rec})}
+% \left(
+% \mathbf{Z}^{(\mathrm{cat},m)}_t;
+% \boldsymbol{\theta}_{\mathrm{fus}}^{(\mathrm{rec})}
+% \right),
+% \\
+% \mathbf{H}^{(\mathrm{cls},m)}_t
+% &=
+% f_{\mathrm{fus}}^{(\mathrm{cls})}
+% \left(
+% \mathbf{Z}^{(\mathrm{cat},m)}_t;
+% \boldsymbol{\theta}_{\mathrm{fus}}^{(\mathrm{cls})}
+% \right).
+% \end{align}
+
+% Đầu tái tạo chuỗi tạo ra cửa sổ tái tạo:
+% \begin{equation}
+% \widehat{\mathbf{X}}^{(m)}_t
+% =
+% f_{\mathrm{rec}}
+% \left(
+% \mathbf{H}^{(\mathrm{rec},m)}_t;
+% \boldsymbol{\theta}_{\mathrm{rec}}
+% \right).
+% \end{equation}
+
+% Đầu phân loại đa lớp tạo ra xác suất dự đoán:
+% \begin{equation}
+% \widehat{\mathbf{y}}^{(m)}_t
+% =
+% \operatorname{softmax}
+% \left[
+% f_{\mathrm{cls}}
+% \left(
+% \operatorname{Pool}
+% \left(
+% \mathbf{H}^{(\mathrm{cls},m)}_t
+% \right);
+% \boldsymbol{\theta}_{\mathrm{cls}}
+% \right)
+% \right].
+% \end{equation}
+
+% Trong giai đoạn B, chúng tôi sử dụng hàm mất mát tái tạo
+% \begin{equation}
+% \mathcal{L}^{(B)}_{\mathrm{rec}}
+% =
+% \frac{1}{TC}
+% \left\|
+% \mathbf{X}_t
+% -
+% \widehat{\mathbf{X}}^{(m)}_t
+% \right\|_F^2
+% \end{equation}
+% và hàm mất mát phân loại đa lớp
+% \begin{equation}
+% \mathcal{L}^{(B)}_{\mathrm{cls}}
+% =
+% -
+% \sum_{r=0}^{11}
+% y_{t,r}
+% \log
+% \widehat{y}^{(m)}_{t,r}.
+% \end{equation}
+
+% Hàm mất mát tổng của giai đoạn tinh chỉnh các mạng tổng hợp là
+% \begin{equation}
+% \mathcal{L}_B
+% =
+% \lambda_{\mathrm{rec}}
+% \mathcal{L}^{(B)}_{\mathrm{rec}}
+% +
+% \lambda_{\mathrm{cls}}
+% \mathcal{L}^{(B)}_{\mathrm{cls}}.
+% \end{equation}
+
+% Trong giai đoạn này, mạng mã hoá, tập nguyên mẫu liên tục và tập nguyên mẫu rời rạc đều được đóng băng. Gradient chỉ được sử dụng để cập nhật hai mạng tổng hợp và hai mạng dự đoán.
+
+% Sau khi huấn luyện xong hai giai đoạn A và B, chúng tôi tính toán ngưỡng bất thường (anomaly threshold) từ tập xác thực (validation set). Điểm bất thường (anomaly score) được tính ở cấp độ điểm dữ liệu (point-level) sử dụng hàm \textit{tổng sai số bình phương (mean squared errors - MSE)} -- tương ứng với \textit{độ lệch tái tạo} -- trên từng điểm dữ liệu trong từng cửa sổ xác thực (validation window). Trong thí nghiệm, chúng tôi chia chuỗi xác thực thành các cửa sổ không chồng lấp (non-overlapping window) nên sau khi tính toán xong MSE cho từng điểm trong từng cửa sổ, chúng tôi ghép các danh sách MSE này lại theo thứ tự thời gian của chuỗi gốc và tính toán các độ đo VUS-PR \cite{boniol2025vus}, affiliation F1 \cite{10.1145/3534678.3539339} và VUS-ROC \cite{boniol2025vus} dựa trên chuỗi tổng hợp này.
+
+% \begin{algorithm}[H]
+% \caption{Pha tiền huấn luyện ngoại tuyến}
+% \label{alg:offline-pretraining}
+% \begin{algorithmic}[1]
+
+% \Require $\mathcal{D}_{\mathrm{train}}$, $\mathcal{D}_{\mathrm{val}}$, bộ cấu hình $\Omega$
+% \Ensure Checkpoint tốt nhất $\Theta^{*}$
+
+% \State $\mathcal{P} \gets \{\mathrm{A},\mathrm{B}\}$
+
+% \For{$p \in \mathcal{P}$}
+%     \State Khởi tạo bộ cấu hình đúng giai đoạn $\Omega_p$
+
+%     \If{$p=\mathrm{B}$}
+%         \State Đọc checkpoint tốt nhất của Stage A
+%         \State Khởi tạo 2 bộ nhớ từ $\mathcal{D}_{\mathrm{train}}$
+%     \EndIf
+
+%     \For{mỗi epoch}
+%         \For{mỗi lô dữ liệu $(X,Y,M)$ trong $\mathcal{D}_{\mathrm{train}}$}
+%             \State Lan truyền xuôi
+%             \State Tính toán $\mathcal{L}_{\mathrm{rec}}$ và $\mathcal{L}_{\mathrm{cls}}$
+%             \State Tính toán các hàm mất mát bổ trợ khác
+%             \State Tính toán hàm mất mát tổng $\mathcal{L}$
+%             \State Cập nhật các tham số học được (learnable)
+%         \EndFor
+
+%         \State Đánh giá trên $\mathcal{D}_{\mathrm{val}}$
+%         \State Lưu lại checkpoint nếu như hiệu quả đánh giá có cải thiện.
+%     \EndFor
+% \EndFor
+
+% \State \Return $\Theta^{*}$
+
+% \end{algorithmic}
+% \end{algorithm}
+
+% \section{Quy trình thích ứng trực tuyến trên dòng dữ liệu và hàm mất mát tương ứng}
+% Trong pha thích ứng trực tuyến khi kiểm thử trên dòng dữ liệu (streaming time-series), mục tiêu của chúng tôi là phát hiện ra được các mẫu hình bình thường mới và thích ứng mạng nơ-ron trên các mẫu hình đó ngay trên dòng trực tuyến (online stream). Đồng thời, đảm bảo không gian ẩn đầu ra của mạng nơ-ron sau khi được thích ứng không quá khác so với không gian ẩn đầu ra của mạng nơ-ron gốc. Kiến trúc trong giai đoạn này được minh hoạ trong \hyperref[fig:architecture-online-phase]
+% {Hình~\ref*{fig:architecture-online-phase}}. \hyperref[alg:online-adaptation]{Thuật toán~\ref*{alg:online-adaptation}} bên dưới trình bày luồng tổng quan của pha thích ứng trực tuyến.
+
+% \begin{algorithm}[H]
+% \caption{Pha thích ứng trực tuyến}
+% \label{alg:online-adaptation}
+% \begin{algorithmic}[1]
+
+% \Require Dòng dữ liệu $\mathcal{S}$, checkpoint từ pha ngoại tuyến $\Theta^{*}$, bộ cấu hình $\Omega$
+% \Ensure Mô hình trong pha trực tuyến $\Theta_{\mathrm{online}}$
+
+% \State $\Theta_{\mathrm{online}} \gets \Theta^{*}$
+% \State Khởi tạo bộ đệm xác minh $\mathcal{B}_{\mathrm{ver}}$
+% \State Khởi tạo bộ đệm Time-to-Live $\mathcal{B}_{\mathrm{ttl}}$
+
+% \For{mỗi cửa sổ $X_t$ trên $\mathcal{S}$}
+%     \State Tính điểm bất thường $s_t$
+%     \State $\mathrm{decision}, M_t
+%     \gets
+%     \operatorname{RouteAndVerifyPNN}
+%     \left(X_t, s_t, \mathcal{B}_{\mathrm{ver}}\right)$
+
+%     \State Cập nhật các bộ đệm dựa trên $\mathrm{decision}$
+
+%     \If{$M_t \neq \varnothing$}
+%         \State Cập nhật $\Theta_{\mathrm{online}}$ bằng các điểm thời gian trong $M_t$
+%     \EndIf
+
+%     \State Lưu dự đoán và các thống kê khác của $X_t$
+% \EndFor
+
+% \State \Return $\Theta_{\mathrm{online}}$
+
+% \end{algorithmic}
+% \end{algorithm}
+
+% \begin{algorithm}[H]
+% \caption{Phân luồng và xác thực pseudo-new-normality}
+% \label{alg:route-verify-pnn}
+% \begin{algorithmic}[1]
+
+% \Procedure{RouteAndVerifyPNN}{$X_t,s_t,\mathcal{B}_{\mathrm{ver}}$}
+
+%     \If{$s_t < \delta_{\mathrm{normal}}$}
+%         \State $\mathrm{decision} \gets \mathrm{normal}$
+%         \State $M_t \gets \varnothing$
+
+%     \ElsIf{$s_t > \delta_{\mathrm{anomaly}}$}
+%         \State $\mathrm{decision} \gets \mathrm{anomaly}$
+%         \State $M_t \gets \varnothing$
+
+%     \Else
+%         \State $\mathrm{decision} \gets \mathrm{gray\text{-}zone}$
+%         \State Đưa $X_t$ vào $\mathcal{B}_{\mathrm{ver}}$
+%         \State $M_t \gets \varnothing$
+
+%         \If{$\mathcal{B}_{\mathrm{ver}}$ chứa đủ số cửa sổ}
+%             \State Loại bỏ các time-point nằm trong cụm bất thường đã biết
+%             \State Tính toán chữ ký của các time-point còn lại
+%             \State Xác định các chữ ký lặp lại qua nhiều cửa sổ
+%             \State Tạo vec-tơ mặt nạ nhị phân cho pseudo-new-normality $M_t$
+
+%             \If{$M_t \neq \varnothing$}
+%                 \State $\mathrm{decision} \gets \mathrm{pseudo\text{-}new\text{-}normal}$
+%             \Else
+%                 \State $\mathrm{decision} \gets \mathrm{unresolved}$
+%             \EndIf
+%         \EndIf
+%     \EndIf
+
+%     \State \Return $\mathrm{decision},M_t$
+
+% \EndProcedure
+
+% \end{algorithmic}
+% \end{algorithm}
+
+% \begin{figure}[H]
+%     \centering
+%     \includesvg[width=0.9\linewidth]{images/online-adaptation-arch.drawio.svg}
+%     \caption[Kiến trúc mô hình trong pha trực tuyến.] {Kiến trúc mô hình trong pha trực tuyến. Tham số của các mô-đun nằm trong vùng màu xanh dương nhạt sẽ bị đóng băng. Tham số của các mô-đun nằm trong vùng màu đỏ nhạt sẽ được tính gradient.}
+%     \label{fig:architecture-online-phase}
+% \end{figure}
+
+% \subsection{Nhánh biểu diễn nguồn và bộ ánh xạ trực tuyến}
+
+% Từ checkpoint của giai đoạn B, chúng tôi đóng băng mạng mã hoá, hai bộ nhớ, hai mạng tổng hợp và hai mạng dự đoán. Xét cửa sổ trực tuyến (online window) \(\mathbf{X}_t\) mà mô hình nhận được tại bước thời gian \(t\), \textit{ten-xơ trạng thái ẩn của nhánh nguồn (source latent tensor)} được tính một lần:
+% \begin{equation}
+% \mathbf{Z}^{(\mathrm{src})}_t
+% =
+% f_{\mathrm{enc}}
+% \left(
+% \mathbf{X}_t;
+% \boldsymbol{\theta}_{\mathrm{enc}}
+% \right).
+% \end{equation}
+
+% Ten-xơ trạng thái ẩn trực tuyến (online latent tensor) là đầu ra của một mạng perceptron đa lớp (multi-layer perceptron - MLP) được khởi tạo xấp xỉ như một \textit{hàm định danh (identity function)}:
+% \begin{equation}
+% \mathbf{Z}^{(\mathrm{on})}_t
+% =
+% g_{\mathrm{proj}}
+% \left(
+% \mathbf{Z}^{(\mathrm{src})}_t;
+% \boldsymbol{\phi}
+% \right).
+% \end{equation}
+
+% Trong pha thích ứng khi kiểm thử trực tuyến, chỉ có tham số \(\boldsymbol{\phi}\) của mạng multi-layer perceptron được tính toán gradient và cập nhật. Tham số của các mô-đun còn lại của mạng trực tuyến đều sẽ bị đóng băng.
+
+% \subsection{Ngưỡng bất thường trực tuyến và cơ chế phân luồng cửa sổ trực tuyến}
+% \label{sec:route-and-verify-pnn}
+
+% Tại bước thời gian \(t\), mạng nơ-ron nhận đầu vào là một cửa sổ trực tuyến (online window) \(\mathbf{X}_t\in\mathbb{R}^{T\times C}\). Ở lần lan truyền xuôi ngẫu nhiên (stochastic forward-propagation) thứ \(m\), độ lệch tái tạo của điểm thời gian thứ \(i\) trong cửa sổ được tính bằng phương trình
+% \begin{equation}
+% s^{(m)}_{t,i}
+% =
+% \frac{1}{C}
+% \left\|
+% \mathbf{x}_{t,i}
+% -
+% \widehat{\mathbf{x}}^{(m)}_{t,i}
+% \right\|_2^2.
+% \end{equation}
+
+% Sau \(M\) lần lan truyền xuôi ngẫu nhiên, độ lệch tái tạo trung bình được tính bằng phương trình
+% \begin{equation}
+% \overline{s}_{t,i}
+% =
+% \frac{1}{M}
+% \sum_{m=1}^{M}
+% s^{(m)}_{t,i}.
+% \end{equation}
+
+% Do các cửa sổ trực tuyến được hình thành theo cơ chế cửa sổ trượt (sliding window), một điểm thời gian cụ thể có thể sẽ xuất hiện trong nhiều cửa sổ trượt liên tiếp nhau. Để \textit{điểm bất thường (anomaly score)} phản ánh những thông tin gần nhất và đồng thời giữ được thông tin quá khứ, chúng tôi sử dụng kỹ thuật làm trơn (smoothing) các độ lệch tái tạo của cùng một điểm thời gian bằng phép tính trung bình trượt hàm mũ (\textit{exponentially weighted moving average -- EWMA}):
+% \begin{equation}
+% \widetilde{s}^{(r)}_{n}
+% =
+% \rho\,\overline{s}^{(r)}_{n}
+% +
+% (1-\rho)\widetilde{s}^{(r-1)}_{n},
+% \end{equation}
+% trong đó \(n\) là \textit{chỉ số tuyệt đối} (\textit{absolute index} hay \textit{global index}) của điểm thời gian trên toàn bộ dòng dữ liệu, \(r\) là số lần điểm này xuất hiện trong các cửa sổ đã được mạng ra quyết định và \(\rho=0.9\) là chi tiết cài đặt cụ thể mà chúng tôi sử dụng. Ở lần xuất hiện đầu tiên của một điểm thời gian (time-point), chúng tôi đặt
+% \begin{equation}
+% \widetilde{s}^{(1)}_{n}
+% =
+% \overline{s}^{(1)}_{n}.
+% \end{equation}
+
+% Một điểm thời gian được dự đoán là bất thường nếu
+% \begin{equation}
+% \widehat{a}_{n}
+% =
+% \mathbb{I}
+% \left(
+% \widetilde{s}_{n}>T_{\mathrm{point}}
+% \right),
+% \end{equation}
+% trong đó \(T_{\mathrm{point}}\) là ngưỡng bất thường được \textit{hiệu chỉnh (calibrated)} từ \textit{chuỗi xác thực gốc} (\textit{clean validation series} hay \textit{original validation series}).
+
+% \textit{Độ lệch tái tạo ở cấp độ cửa sổ (window-level reconstruction error)} được tính bằng trung bình của \textit{các điểm bất thường đã được làm trơn (smoothed anomaly scores)} bên trong một cửa sổ:
+% \begin{equation}
+% S^{(\mathrm{input})}_t
+% =
+% \frac{1}{T}
+% \sum_{i=1}^{T}
+% \widetilde{s}_{t,i}.
+% \end{equation}
+
+% Ngoài ra, chúng tôi tính toán thêm khoảng cách từ mỗi vec-tơ ẩn trực tuyến (online latent vector) đến vec-tơ nguyên mẫu liên tục (continuous prototype) gần với vec-tơ đó nhất để biết được vec-tơ ẩn trực tuyến gần với cụm mẫu hình bình thường nào nhất:
+% \begin{equation}
+% S^{(\mathrm{latent})}_t
+% =
+% \frac{1}{T}
+% \sum_{i=1}^{T}
+% \min_{k\in\{1,\ldots,K_c\}}
+% \left\|
+% \mathbf{z}^{(\mathrm{on})}_{t,i}
+% -
+% \mathbf{p}^{(c)}_k
+% \right\|_2^2.
+% \end{equation}
+
+% Gọi \(B_{\mathrm{win}}\) là ngưỡng của độ lệch tái tạo cửa sổ (window-level reconstruction error), còn
+% \(A_{\mathrm{win}}^{(\mathrm{low})}\) và
+% \(A_{\mathrm{win}}^{(\mathrm{high})}\) lần lượt là ngưỡng dưới và ngưỡng trên của các khoảng cách trong không gian ẩn. Một cửa sổ trực tuyến được phân vào các luồng theo \textit{quy tắc tam phân (triage)} sau đây:
+% \begin{equation}
+% \operatorname{Triage}(\mathbf{X}_t)
+% =
+% \begin{cases}
+% \textit{normal},
+% &
+% S^{(\mathrm{input})}_t
+% \leq B_{\mathrm{win}},
+% \\[12pt]
+
+% \textit{hard-old-normality},
+% &
+% \begin{aligned}
+% &S^{(\mathrm{input})}_t
+% > B_{\mathrm{win}}
+% \\[3pt]
+% &\quad {}\land{}\;
+% S^{(\mathrm{latent})}_t
+% \leq A_{\mathrm{win}}^{(\mathrm{low})},
+% \end{aligned}
+% \\[12pt]
+
+% \textit{gray zone},
+% &
+% \begin{aligned}
+% &S^{(\mathrm{input})}_t
+% > B_{\mathrm{win}}
+% \\[3pt]
+% &\quad {}\land{}\;
+% A_{\mathrm{win}}^{(\mathrm{low})}
+% <
+% S^{(\mathrm{latent})}_t
+% \leq
+% A_{\mathrm{win}}^{(\mathrm{high})},
+% \end{aligned}
+% \\[12pt]
+
+% \textit{strong anomaly},
+% &
+% \begin{aligned}
+% &S^{(\mathrm{input})}_t
+% > B_{\mathrm{win}}
+% \\[3pt]
+% &\quad {}\land{}\;
+% S^{(\mathrm{latent})}_t
+% >
+% A_{\mathrm{win}}^{(\mathrm{high})}.
+% \end{aligned}
+% \end{cases}
+% \end{equation}
+
+% Trong đó, \textbf{``normal''} nghĩa là cửa sổ trực tuyến đó được mạng dự đoán là bình thường. \textbf{``hard-old-normality''} nghĩa là cửa sổ đó có chứa mẫu hình bình thường gần với các mẫu hình trong tập huấn luyện nhưng mạng lại chưa học được tốt, hay nói cách khác, đó là các mẫu hình \textit{bình thường khó}. \textbf{``strong anomaly''} nghĩa là cửa sổ đó có khả năng cao là bất thường vì vừa có điểm bất thường cao hơn ngưỡng và có khoảng cách (trong không gian ẩn) là xa so với các mẫu hình bình thường được lưu lại trong tập nguyên mẫu liên tục (continuous prototype). Các cửa sổ còn lại được phân vào luồng \textbf{``gray zone''} (vùng xám) để tính toán thêm. Chúng tôi gọi là quy tắc tam phân (triage) do chỉ quan tâm đến 3 trường hợp mà độ lệch tái tạo cửa sổ (window-level reconstruction error) lớn hơn \(B_{\mathrm{win}}\).
+
+% Các cửa sổ \textit{normal} sẽ không được sử dụng để thích ứng mạng. Các cửa sổ \textit{hard-old-normality} được sử dụng để cập nhật bộ ánh xạ perceptron đa lớp (MLP projector), và các cửa sổ của luồng \textit{gray zone} được thêm vào \textit{bộ đệm xác minh (verification buffer)}. Các cửa sổ \textit{strong anomaly} cũng không được dùng để thích ứng mạng nhằm hạn chế nguy cơ mô hình vô tình học phải các mẫu hình bất thường. Toàn bộ các ngưỡng
+% \(T_{\mathrm{point}}\), \(B_{\mathrm{win}}\),
+% \(A_{\mathrm{win}}^{(\mathrm{low})}\) và
+% \(A_{\mathrm{win}}^{(\mathrm{high})}\) đều được hiệu chỉnh từ chuỗi \textit{original validation}. Chúng tôi không sử dụng nhãn của \textit{chuỗi kiểm thử (test series)} để đảm bảo không vi phạm hiện tượng \textit{rò rỉ dữ liệu (data leakage)}.
+
+% \subsection{Thích ứng mạng với các mẫu hình bình thường khó}
+
+% Một cửa sổ trực tuyến \(\mathbf{X}_t\) được xác định là \textit{bất thường khó} khi độ lệch tái tạo của cửa sổ vượt quá ngưỡng \(B_{\mathrm{win}}\) nhưng các vec-tơ ẩn trực tuyến (online latent vectors) của cửa sổ đó vẫn nằm gần tập nguyên mẫu liên tục:
+% \begin{equation}
+% S^{(\mathrm{input})}_t>B_{\mathrm{win}}
+% \quad\land\quad
+% S^{(\mathrm{latent})}_t
+% \leq
+% A_{\mathrm{win}}^{(\mathrm{low})}.
+% \end{equation}
+% Như đã diễn giải ở \hyperref[sec:route-and-verify-pnn]{phần~\ref*{sec:route-and-verify-pnn}}, các cửa sổ trong luồng này có chứa các mẫu hình gần với những mẫu hình bình thường từ tập huấn luyện được lưu lại trong tập nguyên mẫu liên tục, nhưng mạng chưa học được cách tái tạo tốt các mẫu hình đó.
+
+% Trong một bước thích ứng (adaptation step) bất kỳ, cửa sổ được lan truyền xuôi (forward-propagation) qua mô hình. Độ lệch tái tạo cửa sổ (window-level reconstruction error) là một hàm khả vi (differentiable) theo tham số \(\boldsymbol{\phi}\) của MLP projector được
+% tính bằng phương trình:
+% \begin{equation}
+% S^{(\mathrm{hard})}_t(\boldsymbol{\phi})
+% =
+% \frac{1}{MTC}
+% \sum_{m=1}^{M}
+% \left\|
+% \mathbf{X}_t
+% -
+% \widehat{\mathbf{X}}^{(m)}_t(\boldsymbol{\phi})
+% \right\|_F^2.
+% \end{equation}
+
+% Chúng tôi cố gắng kéo điểm tái tạo giảm xuống dưới ngưỡng \(B_{\mathrm{win}}\) bằng cách sử
+% dụng một \textit{hàm phạt kiểu hinge (hinge-style penalty)}, lấy cảm hứng từ hàm hinge loss trong bài nghiên cứu của tác giả Cortes và tác giả Vapnik từ năm 1995 \cite{cortes1995support}:
+% \begin{equation}
+% \label{eq:hard-rec-loss}
+% \mathcal{L}_{\mathrm{hard\text{-}rec}}
+% =
+% \left[
+% S^{(\mathrm{hard})}_t(\boldsymbol{\phi})
+% -
+% B_{\mathrm{win}}
+% \right]_{+},
+% \end{equation}
+% trong đó \([x]_{+}=\max(0,x)\). Hàm mất mát này sẽ trả về giá trị bằng \(0\) khi độ lệch tái tạo nhỏ hơn hoặc bằng \(B_{\mathrm{win}}\).
+
+% Bên cạnh đó, chúng tôi còn sử dụng một \textit{hàm mất mát tương phản (contrastive loss)} giữa \textit{nhánh biểu diễn trực tuyến (online representation branch)}
+% và \textit{nhánh biểu diễn nguồn (source representation branch)}. Với mỗi điểm neo là một vec-tơ trực tuyến
+% \(\mathbf{z}^{(\mathrm{on})}_{t,i}\), vec-tơ nguồn tương ứng
+% \(\mathbf{z}^{(\mathrm{src})}_{t,i}\) được sử dụng làm \textit{điểm dương (positives)}. Các nguyên
+% mẫu rời rạc thuộc lớp bất thường được sử dụng làm các điểm đối (negatives). Gọi \begin{equation}
+% \mathcal{K}_{\mathrm{anom}}
+% =
+% \left\{
+% k\in\{1,\ldots,K_d\}
+% :
+% c^{(d)}_k\neq 0
+% \right\}
+% \end{equation}
+% là tập chỉ số của các nguyên mẫu bất thường. Hàm mất mát tương phản được tính
+% bằng
+% \begin{equation}
+% \label{eq:src-on-loss}
+% \begin{aligned}
+% \mathcal{L}_{\mathrm{src\text{-}on}}
+% =
+% -\frac{1}{T}
+% \sum_{i=1}^{T}
+% \log
+% \Bigg[
+% &
+% \exp\left(
+% \frac{
+% \operatorname{cos}\left(
+% \mathbf{z}^{(\mathrm{on})}_{t,i},
+% \mathbf{z}^{(\mathrm{src})}_{t,i}
+% \right)
+% }{
+% \tau_{\mathrm{on}}
+% }
+% \right)
+% \\[-0.2em]
+% &\Bigg/
+% \Bigg(
+% \exp\left(
+% \frac{
+% \operatorname{cos}\left(
+% \mathbf{z}^{(\mathrm{on})}_{t,i},
+% \mathbf{z}^{(\mathrm{src})}_{t,i}
+% \right)
+% }{
+% \tau_{\mathrm{on}}
+% }
+% \right)
+% \\
+% &\qquad
+% +
+% \sum_{k\in\mathcal{K}_{\mathrm{anom}}}
+% \exp\left(
+% \frac{
+% \operatorname{cos}\left(
+% \mathbf{z}^{(\mathrm{on})}_{t,i},
+% \mathbf{p}^{(d)}_k
+% \right)
+% }{
+% \tau_{\mathrm{on}}
+% }
+% \right)
+% \Bigg)
+% \Bigg].
+% \end{aligned}
+% \end{equation}
+
+% Cuối cùng, hàm mất mát cho bước thích ứng (adaptation step) đối với cửa sổ \textit{hard-old-normality} là
+% \begin{equation}
+% \mathcal{L}_{\mathrm{hard}}
+% =
+% \mathcal{L}_{\mathrm{hard\text{-}rec}}
+% +
+% \lambda_{\mathrm{con}}
+% \mathcal{L}_{\mathrm{src\text{-}on}}.
+% \end{equation}
+
+% Gradient của hàm số  \(\mathcal{L}_{\mathrm{hard}}\) chỉ được tính theo \(\boldsymbol{\phi}\) là tham số của mạng MLP projector. Mạng mã hoá, hai bộ nhớ, hai mạng tổng hợp và hai mạng dự đoán đều được giữ cố định trong mọi bước thích ứng xảy ra trên \textit{dòng dữ liệu trực tuyến (online streaming time-series)}.
+
+% \subsection{Thích ứng với các mẫu hình giả định bình thường mới đã được xác minh}
+
+% Các cửa sổ trực tuyến được phân vào luồng \textit{gray zone} chưa thể được xem là có chứa các mẫu hình bình thường mới (new normality) vì các cửa sổ này vẫn có thể chứa các mẫu hình bất thường mà mô hình chưa nhận biết được. Vì vậy, chúng tôi thêm các cửa sổ này vào một \textit{bộ đệm xác minh (verification buffer)} trước khi sử dụng các cửa sổ đó để thích ứng mạng. Các cửa sổ trong bộ đệm xác minh không được chồng lấn nhau (non-overlapping) nhằm đảm bảo rằng sự lặp lại của một mẫu hình không chỉ xuất phát từ việc cùng một điểm thời gian xuất hiện trong nhiều cửa sổ trượt liên tiếp nhau.
+
+% Trước hết, chúng tôi sử dụng tập nguyên mẫu rời rạc để loại bỏ các điểm nằm trong một cụm bất thường đã biết ngay sau giai đoạn học biểu diễn đa nhiệm của pha ngoại tuyến. Xét vec-tơ ẩn trực tuyến \(\mathbf{z}^{(\mathrm{on})}_{u,i}\), chỉ số của nguyên mẫu rời rạc (discrete codebook) gần với vec-tơ đó nhất trong không gian ẩn là
+% \begin{equation}
+% \kappa^{(d)}_{u,i}
+% =
+% \underset{k\in\{1,\ldots,K_d\}}{\operatorname{arg\,min}}
+% \left\|
+% \mathbf{z}^{(\mathrm{on})}_{u,i}
+% -
+% \mathbf{p}^{(d)}_k
+% \right\|_2.
+% \end{equation}
+
+% Gọi \(c^{(d)}_k\in\{0,\ldots,11\}\) là nhãn của các lớp bất thường nhân tạo và
+% \(r^{(d)}_k\) là bán kính của cụm mẫu hình bất thường tương ứng với nguyên mẫu \(\mathbf{p}^{(d)}_k\). Điểm đang xét được chúng tôi xem là có chứa một mẫu hình bất thường đã biết nếu nguyên mẫu rời rạc gần với điểm đó nhất là tâm của một cụm bất thường và điểm đó
+% nằm trong bán kính bao phủ (covering radius) của cụm:
+% \begin{equation}
+% M^{(\mathrm{known\text{-}anom})}_{u,i}
+% =
+% \mathbb{I}
+% \left[
+% c^{(d)}_{\kappa^{(d)}_{u,i}}\neq 0
+% \;\land\;
+% \left\|
+% \mathbf{z}^{(\mathrm{on})}_{u,i}
+% -
+% \mathbf{p}^{(d)}_{\kappa^{(d)}_{u,i}}
+% \right\|_2
+% \leq
+% r^{(d)}_{\kappa^{(d)}_{u,i}}
+% \right].
+% \end{equation}
+% Các điểm có
+% \(M^{(\mathrm{known\text{-}anom})}_{u,i}=1\) bị loại khỏi \textit{bộ đệm xác minh (verification buffer)}.
+
+% Đối với mỗi điểm còn lại, chúng tôi tìm ba nguyên mẫu liên tục (continuous prototype) gần với các điểm đó nhất trong không gian ẩn. Ba chỉ số nguyên mẫu được sắp xếp theo khoảng cách tăng dần để tạo thành một \textit{cấu trúc dữ liệu (data structure)} mà chúng tôi gọi là \textit{chữ ký nguyên mẫu liên tục (continuous prototype signature)}:
+% \begin{equation}
+% \boldsymbol{\sigma}_{u,i}
+% =
+% \operatorname{OrderedTopKMin}_{k\in\{1,\ldots,K_c\}}
+% \left(
+% \left\|
+% \mathbf{z}^{(\mathrm{on})}_{u,i}
+% -
+% \mathbf{p}^{(c)}_k
+% \right\|_2^2;
+% 3
+% \right).
+% \end{equation}
+
+% Hai điểm thời gian trực tuyến (online time-point) có cùng \textit{chữ ký (signature)} khi ba nguyên mẫu liên tục gần nhất với hai điểm là giống nhau theo cùng thứ tự. Lúc này, chúng tôi xem như hai vec-tơ ẩn của hai điểm đó nằm trong một khoảng không gian tương tự nhau nếu cùng so với tập nguyên mẫu liên tục.
+
+% Tại sao lại là 3 nguyên mẫu liên tục (hay tâm cụm bình thường) gần nhất? Vì chúng tôi hình dung trong không gian 2D như sau: Nếu chọn 1 tâm cụm thì các điểm trên một hình tròn đều gần với cụm đó nhất. Nếu chọn 2 tâm cụm, hình dung khi nối hai tâm cụm thành đường thẳng thì hai điểm nằm ở hai phía của đường thẳng vẫn có thể có khoảng cách bằng nhau đến hai tâm cụm, theo cùng một thứ tự! Nhưng nếu chọn 3 tâm cụm thì chúng tôi sẽ cố định được một vùng trên mặt phẳng 2D thoả việc khoảng cách của các điểm trong vùng đó đến 3 tâm cụm là có thứ tự như nhau. Chúng tôi kỳ vọng vùng đó cũng có cấu trúc tròn do chúng tôi đã sử dụng thuật toán K-Means trong quá trình khởi tạo các cụm và thuật toán này vốn giả định các cụm trong không gian ẩn hình thành theo cấu trúc tròn. Vậy tại sao không phải 4 cụm, 5 cụm, hay lớn hơn? Đó là vì chúng tôi muốn các chữ ký này có dung lượng nhỏ nhất có thể!
+
+% Gọi \(\mathcal{B}\) là bộ đệm xác minh (verification buffer). Số cửa sổ khác nhau trong bộ đệm có chứa chữ ký \(\boldsymbol{\sigma}\) được tính bằng
+% \begin{equation}
+% R_{\mathcal{B}}(\boldsymbol{\sigma})
+% =
+% \sum_{\mathbf{X}_v\in\mathcal{B}}
+% \mathbb{I}
+% \left[
+% \exists j:
+% M^{(\mathrm{known\text{-}anom})}_{v,j}=0
+% \;\land\;
+% \boldsymbol{\sigma}_{v,j}
+% =
+% \boldsymbol{\sigma}
+% \right].
+% \end{equation}
+
+% Một điểm được xác minh là
+% \textit{pseudo-new-normality} nếu nó không khớp với bất kì cụm bất thường đã biết nào và chữ ký của nó xuất hiện trong ít nhất hai cửa sổ không chồng lấn:
+% \begin{equation}
+% M^{(\mathrm{pnn})}_{u,i}
+% =
+% \mathbb{I}
+% \left[
+% M^{(\mathrm{known\text{-}anom})}_{u,i}=0
+% \;\land\;
+% R_{\mathcal{B}}
+% \left(
+% \boldsymbol{\sigma}_{u,i}
+% \right)
+% \geq 2
+% \right].
+% \end{equation}
+
+% Lưu ý rằng điều kiện trên đếm số \textbf{cửa sổ khác nhau}, không phải đếm số điểm mang cùng
+% chữ ký trong cùng một cửa sổ. \textit{Vì vậy, một chữ ký xuất hiện nhiều lần trong cùng một cửa sổ vẫn chưa đủ để được xác minh.} Chúng tôi sử dụng từ
+% \textit{pseudo} vì quá trình này không sử dụng nhãn thật của chuỗi kiểm thử; ``đã được xác minh'' chỉ có nghĩa là mẫu hình đã vượt qua phép lọc cụm bất
+% thường và xuất hiện lặp lại trong nhiều cửa sổ độc lập.
+
+% Gọi
+% \begin{equation}
+% \mathcal{V}
+% =
+% \left\{
+% (u,i):
+% M^{(\mathrm{pnn})}_{u,i}=1
+% \right\}
+% \end{equation}
+% là tập các điểm đã được xác minh. Hàm mất mát tái tạo ở cấp độ điểm (point-level reconstruction loss) chỉ được tính trên những điểm thuộc \(\mathcal{V}\):
+% \begin{equation}
+% \mathcal{L}_{\mathrm{pnn\text{-}rec}}
+% =
+% \frac{1}{M|\mathcal{V}|C}
+% \sum_{m=1}^{M}
+% \sum_{(u,i)\in\mathcal{V}}
+% \left\|
+% \mathbf{x}_{u,i}
+% -
+% \widehat{\mathbf{x}}^{(m)}_{u,i}
+% \left(\boldsymbol{\phi}\right)
+% \right\|_2^2.
+% \end{equation}
+
+% Đồng thời, với mỗi điểm neo
+% \(\mathbf{z}^{(\mathrm{on})}_{u,i}\), vec-tơ biểu diễn nguồn tương ứng
+% \(\mathbf{z}^{(\mathrm{src})}_{u,i}\) được sử dụng làm điểm dương, còn các
+% nguyên mẫu rời rạc thuộc lớp bất thường (các tâm cụm bất thường) được sử dụng làm các điểm đối. Hàm
+% mất mát tương phản có dạng tường minh là
+% \begin{equation}
+% \mathcal{L}^{(\mathrm{pnn})}_{\mathrm{src\text{-}on}}
+% =
+% -\frac{1}{|\mathcal{V}|}
+% \sum_{(u,i)\in\mathcal{V}}
+% \log
+% \frac{
+% \exp\left(
+% \operatorname{cos}\left(
+% \mathbf{z}^{(\mathrm{on})}_{u,i},
+% \mathbf{z}^{(\mathrm{src})}_{u,i}
+% \right)
+% /\tau_{\mathrm{on}}
+% \right)
+% }{
+% \begin{aligned}
+% &
+% \exp\left(
+% \operatorname{cos}\left(
+% \mathbf{z}^{(\mathrm{on})}_{u,i},
+% \mathbf{z}^{(\mathrm{src})}_{u,i}
+% \right)
+% /\tau_{\mathrm{on}}
+% \right)
+% \\
+% &+
+% \sum_{k\in\mathcal{K}_{\mathrm{anom}}}
+% \exp\left(
+% \operatorname{cos}\left(
+% \mathbf{z}^{(\mathrm{on})}_{u,i},
+% \mathbf{p}^{(d)}_k
+% \right)
+% /\tau_{\mathrm{on}}
+% \right)
+% \end{aligned}
+% }.
+% \end{equation}
+
+% Hàm mất mát của bước thích ứng với các mẫu hình bình thường mới là
+% \begin{equation}
+% \mathcal{L}_{\mathrm{pnn}}
+% =
+% \mathcal{L}_{\mathrm{pnn\text{-}rec}}
+% +
+% \lambda_{\mathrm{con}}
+% \mathcal{L}^{(\mathrm{pnn})}_{\mathrm{src\text{-}on}}.
+% \end{equation}
+
+% Gradient của \(\mathcal{L}_{\mathrm{pnn}}\) cũng chỉ được tính theo tham số
+% \(\boldsymbol{\phi}\) của MLP projector. \textbf{Nếu} tại cùng một bước thời gian có cả
+% bước thích ứng trên \textit{hard-old-normality} và bước thích ứng trên
+% \textit{verified pseudo-new-normality} \textbf{thì} bước thích ứng \textit{hard-old-normality} được thực hiện trước. Đây chỉ đơn giản là một lựa chọn thiết kế của chúng tôi.
+
+% Dưới đây là nháp
+\chapter{Phương pháp đề xuất}
+\label{Chapter3}
+
+\pagebreak
+\section{Kiến trúc mạng nơ-ron}
+\label{sec:neural-network-architecture}
+\begin{figure}[H]
+    \centering
+    \includesvg[width=0.9\linewidth]{images/architecture-thesis.drawio.svg}
+    \caption{Kiến trúc của mô hình mà chúng tôi đề xuất.}
+    \label{fig:architecture-thesis}
+\end{figure}
+
+Trong khoá luận này, chúng tôi đề xuất một mạng nơ-ron \textit{học đa tác vụ (multi-task learning)} dựa trên hai \textit{bộ nhớ (memory bank)} là \textit{tập nguyên mẫu liên tục (continuous prototype bank)} và \textit{tập mã vec-tơ rời rạc (discrete codebook)}. Tương ứng với tập nguyên mẫu liên tục là \textit{toán tử truy vấn liên tục (continuous query operator)} lấy cảm hứng từ bài nghiên cứu của tác giả Shen \cite{shen2025learn}, và tương ứng với tập nguyên mẫu rời rạc là \textit{toán tử truy vấn rời rạc (discrete query operator)} lấy cảm hứng từ bài nghiên cứu của tác giả Oord \cite{3295222.3295378}. Hai tác vụ học chúng tôi sử dụng trong thiết kế là \textit{tái tạo chuỗi (reconstruction)} và \textit{phân loại đa lớp (multi-class classifiaction)}. Chúng tôi lựa chọn thiết kế học đa tác vụ để giúp biểu diễn ẩn (latent representation) học được bởi bộ mã hoá sẽ có \textit{tính tổng quát hoá (generalization)} cao hơn \cite{9847099}.
+
+Trong các phương trình dưới đây, chúng tôi xét cố định một cửa sổ trong lô dữ liệu (hoặc trên dòng dữ liệu) và lược bỏ chỉ mục cửa sổ $t$. Vì vậy, $\mathbf{X}$, $\mathbf{Z}$ và $\mathbf{z}_i$ lần lượt được hiểu là $\mathbf{X}_t$, $\mathbf{Z}_t$ và $\mathbf{z}_{t,i}$ nếu viết đầy đủ.
+
+\subsection{Bộ mã hoá chia sẻ chung}
+Bộ mã hoá được chia sẻ chung giữa hai tác vụ (shared encoder) là một mạng nơ-ron tích chập (convolutional neural networks) sử dụng toán tử tích chập 1 chiều (1D convolution operator). Chi tiết cài đặt của mạng khá đơn giản, chỉ gồm 3 lớp tích chập. Chúng tôi lựa chọn thiết kế đơn giản này là vì muốn phương pháp hướng đến \textit{tính chất không phụ thuộc vào một bộ mã hoá cụ thể (encoder-agnostic)}. Đầu ra của bộ mã hoá chia sẻ chung được gọi là một \textit{ten-xơ trạng thái ẩn (latent tensor)}, chứa bên trong các \textit{vec-tơ trạng thái ẩn (latent vectors)} tương ứng với từng bước thời gian (time-step) trong \textit{cửa sổ đầu vào (input window)}. Chúng tôi ký hiệu ten-xơ trạng thái ẩn như sau:
+
+\begin{equation}
+\mathbf{Z}
+=
+f_{\mathrm{enc}}
+\left(
+    \mathbf{X};
+    \boldsymbol{\theta}_{\mathrm{enc}}
+\right)
+\in
+\mathbb{R}^{T\times H},
+\end{equation}
+
+Trong công thức trên, ten-xơ trạng thái ẩn là một ten-xơ hai chiều hay còn gọi là một ma trận. Nếu ta sử dụng kích thước một lô dữ liệu \(B\) từ 2 cửa sổ đầu vào trở lên thì ten-xơ này sẽ là một ten-xơ 3 chiều thuộc không gian ten-xơ \(\mathbb{R}^{B \times T\times H}\).
+
+Mỗi vec-tơ trạng thái ẩn được trả về từ mạng mã hoá sẽ được chuẩn hoá độ lớn (normalize) về vec-tơ có độ lớn đơn vị (unit-length vector) hay độ lớn là 1. Thao tác này giúp ánh xạ từng vec-tơ đầu vào ở mỗi bước thời gian lên \textit{bề mặt của một siêu cầu có bán kính đơn vị (surface of a unit hypersphere)}. Bề mặt đó có thể được gọi ngắn gọn hơn là một \textit{đa tạp siêu cầu đơn vị (unit hypersphere manifold)}. Khi lựa chọn \textit{không gian ẩn (latent space)} đầu ra của một bộ mã hoá trong \textit{học tương phản (contrastive learning)} thì đa tạp siêu cầu đơn vị là một lựa chọn phổ biến trong \textit{nghiên cứu thực nghiệm (emperical study)}, theo nghiên cứu của tác giả Wang \cite{3524938.3525859}.
+
+Thông qua kiến trúc phân tầng (hierarchical architecture) của mạng nơ-ron tích chập, mỗi vec-tơ ẩn đầu ra của bộ mã hoá sẽ có một vùng tiếp nhận (receptive field) tương ứng, cụ thể hơn là một \textit{vùng tiếp nhận hiệu dụng (effective receptive field)} tương ứng. Bằng cách này, vec-tơ ẩn tại một bước thời gian đầu ra không chỉ chứa thông tin về mẫu hình của bước thời gian tương ứng ở cửa sổ đầu vào, mà còn chứa thông tin của các bước thời gian lân cận ở đầu vào. Điều này cũng đồng nghĩa với việc chúng tôi đang áp dụng \textit{tính cục bộ (locality)} -- một \textit{thiên kiến quy nạp (inductive bias)} của mạng nơ-ron tích chập -- lên dữ liệu chuỗi thời gian. Tính cục bộ này có nghĩa là mạng nơ-ron tích chập sẽ ưu tiên mô hình hoá mối quan hệ giữa giá trị của các bước thời gian gần nhau.
+
+Trong không gian ẩn mà chúng tôi sử dụng (đa tạp siêu cầu đơn vị), các mẫu hình (patterns) xung quanh một bước thời gian đầu vào sẽ được mã hoá hết vào bên trong \textit{hướng (direction)} của vec-tơ ẩn tương ứng với bước thời gian đó, do \textit{độ lớn (magnitude hay L2-norm)} của mọi vec-tơ đã được chuẩn hoá về 1. Mỗi hướng sẽ tương ứng với các mẫu hình khác nhau. Có những hướng tương ứng với \textit{các mẫu hình bình thường (normal patterns)}, có những hướng tương ứng với \textit{các mẫu hình bất thường (anomalous patterns)}.
+
+\pagebreak
+\subsection{Hai bộ nhớ và hai toán tử truy vấn tương ứng}
+\subsubsection{Hai bộ nhớ}
+Mỗi \textit{bộ nhớ (memory bank)} sẽ chứa một số lượng vec-tơ nguyên mẫu nhất định và được thiết kế để chứa các mẫu hình nhất định.
+
+Theo thiết kế của mạng nơ-ron, mỗi vec-tơ trong tập nguyên mẫu liên tục (continuous prototype bank) sẽ đại diện cho một mẫu hình bình thường. Chúng tôi hình dung một cách trực quan là các mẫu hình bình thường tồn tại như các \textbf{cụm điểm (cluster)} trong không gian ẩn (latent space) với mỗi vec-tơ nguyên mẫu liên tục là tâm của một cụm. Về chi tiết cài đặt, chúng tôi sử dụng 32 vec-tơ nguyên mẫu liên tục, đại diện cho 32 tâm cụm bình thường. Chúng tôi sử dụng từ \textbf{cụm} là do các vec-tơ nguyên mẫu trong cả 2 bộ nhớ sẽ được khởi tạo bằng thuật toán K-Means \cite{lloyd1982least} sau giai đoạn tiền huấn luyện đa tác vụ của pha tiền huấn luyện ngoại tuyến trong phương pháp.
+
+Trong tập nguyên mẫu rời rạc, mỗi \textit{vec-tơ nguyên mẫu} đại diện cho một mẫu hình của một trong các lớp dữ liệu nhân tạo mà phương pháp sử dụng, bao gồm 1 lớp bình thường (giữ nguyên giá trị gốc) và 11 lớp bất thường nhân tạo (được tiêm giá trị nhân tạo). Về chi tiết cài đặt, chúng tôi sử dụng 60 vec-tơ nguyên mẫu rời rạc. Mỗi lớp nhân tạo sẽ có 5 vec-tơ tâm cụm được lưu lại, đại diện cho 5 cụm mẫu hình của mỗi lớp, kể cả lớp bình thường.
+
+\subsubsection{Hai toán tử truy vấn tương ứng}
+
+Sau khi thu được ten-xơ trạng thái ẩn \(\mathbf{Z}\) từ bộ mã hoá chung cho hai tác vụ, chúng tôi sử dụng các vec-tơ \(\mathbf{z}_{i}\) trong ten-xơ này để truy vấn hai bộ nhớ.
+
+\textbf{Toán tử truy vấn liên tục}
+
+Đối với tập nguyên mẫu liên tục, quá trình truy vấn \textbf{tất định} có thể được viết thành các phương trình sau:
+
+Ký hiệu tập nguyên mẫu liên tục gồm \(K_c\) vec-tơ là
+\begin{equation}
+\mathbf{P}^{(c)}
+=
+\begin{bmatrix}
+\mathbf{p}^{(c)}_1;
+\ldots;
+\mathbf{p}^{(c)}_{K_c}
+\end{bmatrix}
+\in \mathbb{R}^{K_c\times H}.
+\end{equation}
+
+Xét vec-tơ trạng thái ẩn \(\mathbf{z}_{i}\), trọng số truy vấn tất định được tính bằng
+\begin{equation}
+\alpha^{(c)}_{i,k}
+=
+\frac{
+\exp\left(
+\mathbf{z}_{i}^{\top}\mathbf{p}^{(c)}_k/\tau_c
+\right)}
+{
+\sum_{j=1}^{K_c}
+\exp\left(
+\mathbf{z}_{i}^{\top}\mathbf{p}^{(c)}_j/\tau_c
+\right)
+},
+\end{equation}
+trong đó \(\tau_c>0\) là nhiệt độ (temperature), là một siêu tham số (hyperparameter) cố định trong quá trình huấn luyện mạng.
+
+Vec-tơ được truy xuất từ tập nguyên mẫu liên tục là
+\begin{equation}
+\widetilde{\mathbf{z}}^{(c)}_{i}
+=
+\sum_{k=1}^{K_c}
+\alpha^{(c)}_{i,k}\mathbf{p}^{(c)}_k.
+\end{equation}
+
+Chúng tôi gọi vec-tơ được truy xuất từ tập nguyên mẫu liên tục là \textit{vec-tơ ẩn của nhánh liên tục (continuous-branch latent vector)}. Ngoài ra, độc giả có thể hình dung toán tử truy vấn bên trên khá giống với \textit{toán tử chú ý chéo (cross-attention operator)}, khác ở chỗ toán tử chú ý chéo có thêm phép cộng residual giữa \(\mathbf{z}_{i}\) và \(\widetilde{\mathbf{z}}^{(c)}_{i}\) \cite{3295222.3295349} \cite{9859720}.
+
+Trong khoá luận này, do hướng đến mục tiêu ước lượng được độ bất định nhận thức (epistemic uncertainty) của mạng nơ-ron, chúng tôi đề xuất phiên bản ngẫu nhiên (stochastic) của toán tử truy vấn liên tục, gọi là \textit{toán tử ngẫu nhiên truy vấn liên tục (stochastic continuous query operator)}. Phiên bản ngẫu nhiên này tương ứng với các phương trình sau:
+
+Ở lần truy vấn ngẫu nhiên thứ \(m\), trước hết chúng tôi lấy mẫu độc lập ngẫu nhiên (sampling) nhiễu Gumbel từ cùng một phân phối (i.i.d) như sau:
+\begin{equation}
+g^{(c,m)}_{i,k}
+=
+-\log\left[-\log\left(u^{(c,m)}_{i,k}\right)\right],
+\qquad
+u^{(c,m)}_{i,k}
+\overset{\mathrm{i.i.d.}}{\sim}
+\operatorname{Uniform}(0,1).
+\end{equation}
+
+\textit{Trọng số truy vấn ngẫu nhiên (stochastic continuous query weights)} ứng với từng nguyên mẫu liên tục được tính bằng hàm Gumbel-Softmax:
+\begin{equation}
+\alpha^{(c,m)}_{i,k}
+=
+\frac{
+\exp\left(
+\frac{
+\mathbf{z}_{i}^{\top}\mathbf{p}^{(c)}_k
++
+g^{(c,m)}_{i,k}
+}{\tau_c}
+\right)}
+{
+\displaystyle
+\sum_{j=1}^{K_c}
+\exp\left(
+\frac{
+\mathbf{z}_{i}^{\top}\mathbf{p}^{(c)}_j
++
+g^{(c,m)}_{i,j}
+}{\tau_c}
+\right)
+}.
+\end{equation}
+
+Khi đó, vec-tơ được truy xuất ở lần thứ \(m\) là
+\begin{equation}
+\widetilde{\mathbf{z}}^{(c,m)}_{i}
+=
+\sum_{k=1}^{K_c}
+\alpha^{(c,m)}_{i,k}
+\mathbf{p}^{(c)}_k.
+\end{equation} \\ \\
+
+\textbf{Toán tử truy vấn rời rạc}
+
+Đối với tập nguyên mẫu rời rạc thì toán tử truy vấn tất định có thể được viết thành các phương trình sau:
+
+Ký hiệu tập nguyên mẫu rời rạc gồm \(K_d\) vec-tơ là
+\begin{equation}
+\mathbf{P}^{(d)}
+=
+\begin{bmatrix}
+\mathbf{p}^{(d)}_1;
+\ldots;
+\mathbf{p}^{(d)}_{K_d}
+\end{bmatrix}
+\in \mathbb{R}^{K_d\times H}.
+\end{equation}
+
+Xét vec-tơ trạng thái ẩn \(\mathbf{z}_{i}\), khoảng cách đến nguyên mẫu rời rạc thứ \(k\) được tính bằng
+\begin{equation}
+\begin{aligned}
+d^{(d)}_{i,k}
+&=
+\left\|
+\mathbf{z}_{i}
+-
+\mathbf{p}^{(d)}_k
+\right\|_2^2
+\\
+&=
+2\left(
+1-
+\operatorname{cos}
+\left(
+\mathbf{z}_{i},
+\mathbf{p}^{(d)}_k
+\right)
+\right).
+\end{aligned}
+\end{equation}
+
+Ở phương trình trên, dấu bằng thứ hai là một tính chất hữu ích của việc chuẩn hoá độ lớn các vec-tơ ẩn về độ lớn đơn vị.
+
+Tập chỉ số của \(K_{\mathrm{top}}\) nguyên mẫu gần nhất được xác định bởi
+\begin{equation}
+\mathcal{I}^{(d)}_{i}
+=
+\operatorname{TopKMin}_{k\in\{1,\ldots,K_d\}}
+\left(
+d^{(d)}_{i,k};
+K_{\mathrm{top}}
+\right),
+\end{equation}
+trong đó \(\operatorname{TopKMin}\) trả về chỉ số của \(K_{\mathrm{top}}\) giá trị nhỏ nhất. Trong cài đặt của chúng tôi, \(K_{\mathrm{top}}=3\).
+
+\textbf{Trọng số} ứng với các nguyên mẫu được chọn là
+\begin{equation}
+\alpha^{(d)}_{i,k}
+=
+\begin{cases}
+\dfrac{
+\exp\left(-d^{(d)}_{i,k}/\tau_d\right)
+}{
+\displaystyle
+\sum_{j\in\mathcal{I}^{(d)}_{i}}
+\exp\left(-d^{(d)}_{i,j}/\tau_d\right)
+},
+&
+k\in\mathcal{I}^{(d)}_{i},
+\\[12pt]
+0,
+&
+k\notin\mathcal{I}^{(d)}_{i}.
+\end{cases}
+\end{equation}
+
+Vec-tơ ẩn của nhánh rời rạc (discrete-branch latent vector) được tính bằng
+\begin{equation}
+\widetilde{\mathbf{z}}^{(d)}_{i}
+=
+\sum_{k\in\mathcal{I}^{(d)}_{i}}
+\alpha^{(d)}_{i,k}\mathbf{p}^{(d)}_k.
+\end{equation}
+
+Phiên bản ngẫu nhiên của toán tử truy vấn rời rạc, còn gọi là \textit{toán tử truy vấn ngẫu nhiên rời rạc (stochastic discrete query operator)}, có thể được trình bày như sau:
+
+Ở lần truy vấn ngẫu nhiên thứ \(m\), chúng tôi lấy mẫu độc lập ngẫu nhiên nhiễu Gumbel từ cùng một phân phối
+\begin{equation}
+g^{(d,m)}_{i,k}
+=
+-\log\left[-\log\left(u^{(d,m)}_{i,k}\right)\right],
+\qquad
+u^{(d,m)}_{i,k}
+\overset{\mathrm{i.i.d.}}{\sim}
+\operatorname{Uniform}(0,1).
+\end{equation}
+
+\textit{\textbf{Điểm} truy vấn (stochastic discrete query score)} sau khi thêm nhiễu được tính như sau:
+\begin{equation}
+q^{(d,m)}_{i,k}
+=
+\frac{
+-d^{(d)}_{i,k}
++
+g^{(d,m)}_{i,k}
+}{\tau_d},
+\end{equation}
+trong đó \(\tau_d>0\) là nhiệt độ của toán tử truy vấn rời rạc.
+
+Tập chỉ số của \(K_{\mathrm{top}}\) nguyên mẫu được chọn ở lần truy vấn thứ \(m\) là
+\begin{equation}
+\mathcal{I}^{(d,m)}_{i}
+=
+\operatorname{TopKMax}_{k\in\{1,\ldots,K_d\}}
+\left(
+q^{(d,m)}_{i,k};
+K_{\mathrm{top}}
+\right).
+\end{equation}
+
+\textit{\textbf{Trọng số} truy vấn ngẫu nhiên (stochastic discrete query)} được tính bằng
+\begin{equation}
+\alpha^{(d,m)}_{i,k}
+=
+\begin{cases}
+\dfrac{
+\exp\left(q^{(d,m)}_{i,k}\right)
+}{
+\displaystyle
+\sum_{j\in\mathcal{I}^{(d,m)}_{i}}
+\exp\left(q^{(d,m)}_{i,j}\right)
+},
+&
+k\in\mathcal{I}^{(d,m)}_{i},
+\\[12pt]
+0,
+&
+k\notin\mathcal{I}^{(d,m)}_{i}.
+\end{cases}
+\end{equation}
+
+Khi đó, vec-tơ được truy xuất ở lần thứ \(m\) là
+\begin{equation}
+\widetilde{\mathbf{z}}^{(d,m)}_{i}
+=
+\sum_{k\in\mathcal{I}^{(d,m)}_{i}}
+\alpha^{(d,m)}_{i,k}
+\mathbf{p}^{(d)}_k.
+\end{equation}
+
+Như vậy, ten-xơ ẩn của nhánh rời rạc (discrete-branch latent tensor) là tập hợp các vec-tơ ẩn của nhánh đó, ký hiệu
+\begin{equation}
+\widetilde{\mathbf{Z}}^{(d,m)}
+=
+\begin{bmatrix}
+\widetilde{\mathbf{z}}^{(d,m)}_{1};
+\ldots;
+\widetilde{\mathbf{z}}^{(d,m)}_{T}
+\end{bmatrix}
+\in \mathbf{R}^{T\times H}.
+\end{equation}
+
+Tương tự đối với nhánh liên tục, ký hiệu
+\begin{equation}
+\widetilde{\mathbf{Z}}^{(c,m)}
+=
+\begin{bmatrix}
+\widetilde{\mathbf{z}}^{(c,m)}_{1};
+\ldots;
+\widetilde{\mathbf{z}}^{(c,m)}_{T}
+\end{bmatrix}
+\in \mathbf{R}^{T\times H}.
+\end{equation}
+
+% https://tex.stackexchange.com/questions/19579/horizontal-line-spanning-the-entire-document-in-latex
+
+Như vậy, ten-xơ ẩn của nhánh rời rạc (discrete-branch latent tensor) là tập hợp các vec-tơ ẩn của nhánh đó, ký hiệu
+\begin{equation}
+\widetilde{\mathbf{Z}}^{(d,m)}
+=
+\begin{bmatrix}
+\widetilde{\mathbf{z}}^{(d,m)}_{1};
+\ldots;
+\widetilde{\mathbf{z}}^{(d,m)}_{T}
+\end{bmatrix}
+\in \mathbf{R}^{T\times H}.
+\end{equation}
+
+Tương tự đối với nhánh liên tục, ký hiệu
+\begin{equation}
+\widetilde{\mathbf{Z}}^{(c,m)}
+=
+\begin{bmatrix}
+\widetilde{\mathbf{z}}^{(c,m)}_{1};
+\ldots;
+\widetilde{\mathbf{z}}^{(c,m)}_{T}
+\end{bmatrix}
+\in \mathbf{R}^{T\times H}.
+\end{equation}
+
+\section{Quy trình tiền huấn luyện và hàm mất mát tương ứng}
+\label{section:pre-training}
+
+Quy trình tiền huấn luyện được chúng tôi gọi là \textit{\textbf{pha} tiền huấn luyện ngoại tuyến (offline pre-training phase)}, phân biệt với \textit{\textbf{pha} thích ứng khi kiểm thử trực tuyến (online test-time adaptation phase)}. Luồng tổng quan của pha này được trình bày trong \hyperref[alg:offline-pretraining]{Thuật toán~\ref*{alg:offline-pretraining}}.
+
+Pha tiền huấn luyện ngoại tuyến sẽ bao gồm 2 \textbf{giai đoạn (stage)} là \textbf{giai đoạn} học biểu diễn đa nhiệm (offline multi-task learning stage) và \textbf{giai đoạn} tinh chỉnh bộ kết hợp (fusion head fine-tuning stage). Chúng tôi sẽ gọi hai giai đoạn này là giai đoạn A và giai đoạn B.
+
+Trong giai đoạn A, để tập trung học biểu diễn đa nhiệm, chúng tôi chỉ huấn luyện mạng mã hoá (encoder network) và hai mạng dự đoán (prediction heads) tương ứng với hai tác vụ (Xem hình 3.2). Chúng tôi chưa khởi tạo hai bộ nhớ trong giai đoạn này và do đó, chưa cần thêm các mạng kết hợp (fusion networks) tương ứng. Mạng mã hoá là một mạng nơ-ron tích chập 1 chiều (1-dimensional convolutional neural network) như đã trình bày ở \hyperref[sec:neural-network-architecture]
+{Mục~\ref*{sec:neural-network-architecture}}.
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=0.9\linewidth]{images/pretrain-stage-arch.drawio.svg}
+    \caption{Kiến trúc mô hình trong giai đoạn A của pha ngoại tuyến.}
+    \label{fig:architecture-stage-A-offline-phase}
+\end{figure}
+
+Trong giai đoạn học biểu diễn đa nhiệm, chúng tôi sử dụng 3 hàm mất mát chính: một hàm cho tác vụ tái tạo chuỗi, một hàm cho tác vụ phân loại đa lớp và một hàm để học tương phản ở cấp độ điểm thời gian (\textit{point-level contrastive loss}). Lí do chúng tôi sử dụng hàm tương phản ở cấp độ điểm thời gian là để phân tách rõ ràng hơn các vec-tơ mẫu hình bình thường và các vec-tơ mẫu hình bất thường trong không gian ẩn mà chúng tôi đã lựa chọn (\textit{đa tạp siêu cầu đơn vị}).
+
+Quá trình \textit{lan truyền xuôi (forward-propagation)} tương ứng với các phương trình sau:
+
+Ký hiệu một \textit{cửa sổ sạch (clean window)} đến từ \textit{chuỗi huấn luyện gốc (original train series)} là \(\mathbf{X}^{(0)}\). Từ cùng cửa sổ này, chúng tôi tạo ra một \textit{phiên bản bất thường nhân tạo (synthetic anomalous view)} thuộc lớp \(a\in\{1,\ldots,11\}\):
+\begin{equation}
+\mathbf{X}^{(a)}
+=
+\left(\mathbf{1}-\mathbf{M}^{(\mathrm{inj})}\right)
+\odot
+\mathbf{X}^{(0)}
++
+\mathbf{M}^{(\mathrm{inj})}
+\odot
+\mathcal{A}_{a}
+\left(
+\mathbf{X}^{(0)};
+\boldsymbol{\xi}
+\right),
+\end{equation}
+trong đó \(\mathbf{M}^{(\mathrm{inj})}\) là vec-tơ mặt nạ xác định các \textit{bước thời gian (time-step)} được tiêm bất thường, \(\mathcal{A}_{a}\) là \textit{hàm biến đổi (transformation function)} tương ứng với lớp bất thường \(a\), và \(\boldsymbol{\xi}\) chứa các tham số ngẫu nhiên của \textit{hàm biến đổi}. Những vị trí có \(\mathbf{M}^{(\mathrm{inj})}=0\) được giữ nguyên giá trị gốc từ cửa sổ sạch. Trong khóa luận này, chúng tôi sử dụng 11 lớp bất thường nhân tạo sau: tăng đột ngột (spike), lật ngang (flip), tăng nhịp độ (speedup), nhiễu (noise), cắt theo ngưỡng (cutoff), trung bình hóa (average), co giãn biên độ (scale), dao động kiểu trôi dạt (wander), bất thường theo ngữ cảnh (contextual), lật dọc (upsidedown) và bất thường hỗn hợp (mixture). Tương ứng với 11 lớp bất thường nhân tạo sẽ có 11 hàm biến đổi (transformation functions). 11 lớp bất thường nhân tạo này được minh hoạ trong \hyperref[fig:smd_3-9_classes_0-5_w20]{Hình~\ref*{fig:smd_3-9_classes_0-5_w20}} và \hyperref[fig:smd_3-9_classes_6-11_w20]{Hình~\ref*{fig:smd_3-9_classes_6-11_w20}}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{images/smd_3-9_classes_0-5_w20.png}
+    \caption{Các lớp bất thường nhân tạo từ 0 đến 5.}
+    \label{fig:smd_3-9_classes_0-5_w20}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{images/smd_3-9_classes_6-11_w20.png}
+    \caption{Các lớp bất thường nhân tạo từ 6 đến 11.}
+    \label{fig:smd_3-9_classes_6-11_w20}
+\end{figure}
+
+Hai phiên bản của cùng một cửa sổ được đưa qua cùng một bộ mã hoá:
+\begin{align}
+\mathbf{Z}^{(0)}
+&=
+f_{\mathrm{enc}}
+\left(
+\mathbf{X}^{(0)};
+\boldsymbol{\theta}_{\mathrm{enc}}
+\right),
+\\
+\mathbf{Z}^{(a)}
+&=
+f_{\mathrm{enc}}
+\left(
+\mathbf{X}^{(a)};
+\boldsymbol{\theta}_{\mathrm{enc}}
+\right).
+\end{align}
+
+Đối với tác vụ tái tạo chuỗi, cửa sổ sạch được tái tạo bằng
+\begin{equation}
+\widehat{\mathbf{X}}^{(0)}
+=
+f_{\mathrm{rec}}
+\left(
+\mathbf{Z}^{(0)};
+\boldsymbol{\theta}_{\mathrm{rec}}
+\right).
+\end{equation}
+
+Đối với tác vụ phân loại đa lớp, xác suất dự đoán được tính cho cả cửa sổ sạch và cửa sổ bất thường nhân tạo:
+\begin{equation}
+\widehat{\mathbf{y}}^{(v)}
+=
+\operatorname{softmax}
+\left[
+f_{\mathrm{cls}}
+\left(
+\operatorname{Pool}\left(\mathbf{Z}^{(v)}\right);
+\boldsymbol{\theta}_{\mathrm{cls}}
+\right)
+\right],
+\qquad
+v\in\{0,a\},
+\end{equation}
+trong đó \(v=0\) biểu thị lớp sạch và \(v=a\) biểu thị lớp bất thường nhân tạo. Trong đó hàm \(\operatorname{Pool}\) thường là hàm trung bình theo từng biến của vec-tơ ẩn.
+
+Trong quá trình học tương phản ở cấp độ điểm thời gian, mỗi vec-tơ
+\(\mathbf{z}^{(0)}_{i}\) của cửa sổ sạch được sử dụng làm \textit{điểm neo (anchor point)}. Vec-tơ tương ứng \(\mathbf{z}^{(a)}_{i}\) là \textit{điểm dương tương ứng (positive point)} nếu vị trí \(i\) không được tiêm bất thường, và là \textit{điểm đối tương ứng (negative point)} nếu vị trí này được tiêm bất thường:
+\begin{equation}
+\mathbf{z}^{(a)}_{i}
+\in
+\begin{cases}
+\mathcal{P}\left(\mathbf{z}^{(0)}_{i}\right),
+& \mathbf{M}^{(\mathrm{inj})}_{i}=0,
+\\
+\mathcal{N}\left(\mathbf{z}^{(0)}_{i}\right),
+& \mathbf{M}^{(\mathrm{inj})}_{i}=1.
+\end{cases}
+\end{equation}
+
+Cuối cùng, các hàm mất mát được tính toán theo các phương trình sau. Hàm mất mát tái tạo chuỗi là
+\begin{equation}
+\mathcal{L}_{\mathrm{rec}}
+=
+\frac{1}{TC}
+\left\|
+\mathbf{X}^{(0)}
+-
+\widehat{\mathbf{X}}^{(0)}
+\right\|_F^2.
+\end{equation}
+
+Trong đó, \(T\) là số bước độ dài của cửa sổ, còn \(C\) là số biến của chuỗi thời gian.
+
+Hàm mất mát phân loại đa lớp là
+\begin{equation}
+\mathcal{L}_{\mathrm{cls}}
+=
+-\frac{1}{2}
+\sum_{v\in\{0,a\}}
+\sum_{r=0}^{11}
+y^{(v)}_{r}
+\log
+\widehat{y}^{(v)}_{r}.
+\end{equation}
+
+Hàm mất mát tương phản ở cấp độ điểm thời gian là
+\begin{equation}
+\begin{aligned}
+\mathcal{L}_{\mathrm{con}}
+=
+-\frac{1}{|\mathcal{Q}|}
+\sum_{\mathbf{z}_q\in\mathcal{Q}}
+\log
+\Bigg[
+&
+\sum_{\mathbf{z}_p\in\mathcal{P}(\mathbf{z}_q)}
+\exp\left(
+\frac{
+\operatorname{cos}(\mathbf{z}_q,\mathbf{z}_p)
+}{
+\tau_{\mathrm{con}}
+}
+\right)
+\\[-0.2em]
+&\Bigg/
+\Bigg(
+\sum_{\mathbf{z}_p\in\mathcal{P}(\mathbf{z}_q)}
+\exp\left(
+\frac{
+\operatorname{cos}(\mathbf{z}_q,\mathbf{z}_p)
+}{
+\tau_{\mathrm{con}}
+}
+\right)
+\\
+&\qquad
++
+\sum_{\mathbf{z}_n\in\mathcal{N}(\mathbf{z}_q)}
+\exp\left(
+\frac{
+\operatorname{cos}(\mathbf{z}_q,\mathbf{z}_n)
+}{
+\tau_{\mathrm{con}}
+}
+\right)
+\Bigg)
+\Bigg].
+\end{aligned}
+\end{equation}
+trong đó \(\mathcal{Q}\) là tập các \textit{điểm neo (anchor point)}, \(\mathcal{P}(\mathbf{z}_q)\) là tập các \textit{điểm dương tương ứng (positive point)} và \(\mathcal{N}(\mathbf{z}_q)\) là tập các \textit{điểm đối tương ứng (negative point)} của điểm neo \(\mathbf{z}_q\).
+
+\textit{Hàm mất mát tổng (total loss)} của giai đoạn học biểu diễn đa nhiệm là
+\begin{equation}
+\mathcal{L}_{\mathrm{multi}}
+=
+\lambda_{\mathrm{rec}}\mathcal{L}_{\mathrm{rec}}
++
+\lambda_{\mathrm{cls}}\mathcal{L}_{\mathrm{cls}}
++
+\lambda_{\mathrm{con}}\mathcal{L}_{\mathrm{con}}.
+\end{equation}
+
+Đến đây, chúng tôi có thể tính toán gradient của hàm mất mát theo từng tham số trong mạng mã hoá (encoder network), hai mạng dự đoán (prediction networks) sử dụng thuật toán lan truyền ngược (backpropagation) \cite{rumelhart1986learning}. Và sử dụng các gradient để cập nhật từng tham số theo các \textit{thuật toán tối ưu ngẫu nhiên (stochastic optimization algorithms)} như Stochastic Gradient Descent đơn giản \cite{4308316} hoặc các phiên bản hiện đại hơn như Adam \cite{kingma2015adam}, AdamW \cite{loshchilov2018decoupled}.
+
+Sau khi huấn luyện xong giai đoạn A, chúng tôi kỳ vọng thu được mạng mã hoá đã học được biểu diễn đa nhiệm và dùng mạng này để khởi tạo hai bộ nhớ. Chúng tôi chọn ra một vài lô dữ liệu trong tập huấn luyện, sau đó tiêm bất thường vào các cửa sổ trong tập này sao cho tỉ lệ giữa 12 lớp, gồm 1 lớp bình thường và 11 lớp bất thường nhân tạo, là bằng nhau. Đối với tập nguyên mẫu liên tục, chúng tôi lọc ra tất cả điểm thời gian bình thường trong các lô được chọn rồi chạy thuật toán K-Means để chọn ra 32 vec-tơ đại diện cho 32 cụm mẫu hình bình thường. Đối với tập nguyên mẫu rời rạc, với mỗi lớp trong 12 lớp, chúng tôi cũng lọc ra các điểm thời gian thuộc lớp đó rồi chạy thuật toán K-Means để chọn ra 5 vec-tơ đại diện cho mỗi lớp trong 12 lớp. Sau khi khởi tạo xong thì chúng tôi cũng \textbf{đóng băng (freeze)} mạng mã hoá và 2 bộ nhớ để đảm bảo mạng mã hoá và 2 bộ nhớ đến từ cùng một \textit{xấp xỉ hàm (function approximator)} đã học được. Ở đây, \textbf{đóng băng} một tham số nghĩa là không tính toán gradient của hàm mất mát theo tham số đó.
+
+Tiếp theo chính là giai đoạn B: tinh chỉnh các mạng tổng hợp (fusion networks). Kiến trúc mạng nơ-ron của giai đoạn này được minh hoạ ở \hyperref[fig:architecture-stage-B-offline-phase]
+{Hình~\ref*{fig:architecture-stage-B-offline-phase}}.
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=0.9\linewidth]{images/fine-tune-stage-arch.drawio.svg}
+    \caption[Kiến trúc mô hình trong giai đoạn B của pha ngoại tuyến.] {Kiến trúc mô hình trong giai đoạn B của pha ngoại tuyến. Tham số của các mô-đun nằm trong vùng màu xanh dương nhạt sẽ bị đóng băng. Tham số của các mô-đun nằm trong vùng màu đỏ nhạt sẽ được tính gradient.}
+    \label{fig:architecture-stage-B-offline-phase}
+\end{figure}
+
+Ta có \(\widetilde{\mathbf{Z}}^{(c,m)}\) và
+\(\widetilde{\mathbf{Z}}^{(d,m)}\) là hai ten-xơ đầu ra tương ứng với nhánh liên tục và nhánh rời rạc. Quá trình lan truyền xuôi tính từ các mạng tổng hợp (fusion networks) diễn ra như sau.
+
+Trước hết, ten-xơ trạng thái ẩn ban đầu và đầu ra của hai nhánh được ghép lại với mục đích là để mạng tổng hợp tiếp cận được ten-xơ ẩn gốc:
+\begin{equation}
+\mathbf{Z}^{(\mathrm{cat},m)}
+=
+\operatorname{Concat}
+\left[
+\mathbf{Z},
+\widetilde{\mathbf{Z}}^{(c,m)},
+\widetilde{\mathbf{Z}}^{(d,m)}
+\right]
+\in
+\mathbb{R}^{T\times 3H}.
+\end{equation}
+
+Hai mạng tổng hợp tương ứng với hai tác vụ tạo ra hai ten-xơ trạng thái ẩn:
+\begin{align}
+\mathbf{H}^{(\mathrm{rec},m)}
+&=
+f_{\mathrm{fus}}^{(\mathrm{rec})}
+\left(
+\mathbf{Z}^{(\mathrm{cat},m)};
+\boldsymbol{\theta}_{\mathrm{fus}}^{(\mathrm{rec})}
+\right),
+\\
+\mathbf{H}^{(\mathrm{cls},m)}
+&=
+f_{\mathrm{fus}}^{(\mathrm{cls})}
+\left(
+\mathbf{Z}^{(\mathrm{cat},m)};
+\boldsymbol{\theta}_{\mathrm{fus}}^{(\mathrm{cls})}
+\right).
+\end{align}
+
+Đầu tái tạo chuỗi tạo ra cửa sổ tái tạo:
+\begin{equation}
+\widehat{\mathbf{X}}^{(m)}
+=
+f_{\mathrm{rec}}
+\left(
+\mathbf{H}^{(\mathrm{rec},m)};
+\boldsymbol{\theta}_{\mathrm{rec}}
+\right).
+\end{equation}
+
+Đầu phân loại đa lớp tạo ra xác suất dự đoán:
+\begin{equation}
+\widehat{\mathbf{y}}^{(m)}
+=
+\operatorname{softmax}
+\left[
+f_{\mathrm{cls}}
+\left(
+\operatorname{Pool}
+\left(
+\mathbf{H}^{(\mathrm{cls},m)}
+\right);
+\boldsymbol{\theta}_{\mathrm{cls}}
+\right)
+\right].
+\end{equation}
+
+Trong giai đoạn B, chúng tôi sử dụng hàm mất mát tái tạo
+\begin{equation}
+\mathcal{L}^{(B)}_{\mathrm{rec}}
+=
+\frac{1}{TC}
+\left\|
+\mathbf{X}
+-
+\widehat{\mathbf{X}}^{(m)}
+\right\|_F^2
+\end{equation}
+và hàm mất mát phân loại đa lớp
+\begin{equation}
+\mathcal{L}^{(B)}_{\mathrm{cls}}
+=
+-
+\sum_{r=0}^{11}
+y_r
+\log
+\widehat{y}^{(m)}_{r}.
+\end{equation}
+
+Hàm mất mát tổng của giai đoạn tinh chỉnh các mạng tổng hợp là
+\begin{equation}
+\mathcal{L}_B
+=
+\lambda_{\mathrm{rec}}
+\mathcal{L}^{(B)}_{\mathrm{rec}}
++
+\lambda_{\mathrm{cls}}
+\mathcal{L}^{(B)}_{\mathrm{cls}}.
+\end{equation}
+
+Trong giai đoạn này, mạng mã hoá, tập nguyên mẫu liên tục và tập nguyên mẫu rời rạc đều được đóng băng. Gradient chỉ được sử dụng để cập nhật hai mạng tổng hợp và hai mạng dự đoán.
+
+Sau khi huấn luyện xong hai giai đoạn A và B, chúng tôi tính toán ngưỡng bất thường (anomaly threshold) từ tập xác thực (validation set). Điểm bất thường (anomaly score) được tính ở cấp độ điểm dữ liệu (point-level) sử dụng hàm \textit{tổng sai số bình phương (mean squared errors - MSE)} -- tương ứng với \textit{độ lệch tái tạo} -- trên từng điểm dữ liệu trong từng cửa sổ xác thực (validation window). Trong thí nghiệm, chúng tôi chia chuỗi xác thực thành các cửa sổ không chồng lấp (non-overlapping window) nên sau khi tính toán xong MSE cho từng điểm trong từng cửa sổ, chúng tôi ghép các danh sách MSE này lại theo thứ tự thời gian của chuỗi gốc và tính toán các độ đo VUS-PR \cite{boniol2025vus}, affiliation F1 \cite{10.1145/3534678.3539339} và VUS-ROC \cite{boniol2025vus} dựa trên chuỗi tổng hợp này.
+
+\begin{algorithm}[H]
+\caption{Pha tiền huấn luyện ngoại tuyến}
+\label{alg:offline-pretraining}
+\begin{algorithmic}[1]
+
+\Require $\mathcal{D}_{\mathrm{train}}$, $\mathcal{D}_{\mathrm{val}}$, bộ cấu hình $\Omega$
+\Ensure Checkpoint tốt nhất $\Theta^{*}$
+
+\State $\mathcal{P} \gets \{\mathrm{A},\mathrm{B}\}$
+
+\For{$p \in \mathcal{P}$}
+    \State Khởi tạo bộ cấu hình đúng giai đoạn $\Omega_p$
+
+    \If{$p=\mathrm{B}$}
+        \State Đọc checkpoint tốt nhất của Stage A
+        \State Khởi tạo 2 bộ nhớ từ $\mathcal{D}_{\mathrm{train}}$
+    \EndIf
+
+    \For{mỗi epoch}
+        \For{mỗi lô dữ liệu $(X,Y,M)$ trong $\mathcal{D}_{\mathrm{train}}$}
+            \State Lan truyền xuôi
+            \State Tính toán $\mathcal{L}_{\mathrm{rec}}$ và $\mathcal{L}_{\mathrm{cls}}$
+            \State Tính toán các hàm mất mát bổ trợ khác
+            \State Tính toán hàm mất mát tổng $\mathcal{L}$
+            \State Cập nhật các tham số học được (learnable)
+        \EndFor
+
+        \State Đánh giá trên $\mathcal{D}_{\mathrm{val}}$
+        \State Lưu lại checkpoint nếu như hiệu quả đánh giá có cải thiện.
+    \EndFor
+\EndFor
+
+\State \Return $\Theta^{*}$
+
+\end{algorithmic}
+\end{algorithm}
+
+\section{Quy trình thích ứng trực tuyến trên dòng dữ liệu và hàm mất mát tương ứng}
+Trong pha thích ứng trực tuyến khi kiểm thử trên dòng dữ liệu (streaming time-series), mục tiêu của chúng tôi là phát hiện ra được các mẫu hình bình thường mới và thích ứng mạng nơ-ron trên các mẫu hình đó ngay trên dòng trực tuyến (online stream). Đồng thời, đảm bảo không gian ẩn đầu ra của mạng nơ-ron sau khi được thích ứng không quá khác so với không gian ẩn đầu ra của mạng nơ-ron gốc. Kiến trúc trong giai đoạn này được minh hoạ trong \hyperref[fig:architecture-online-phase]
+{Hình~\ref*{fig:architecture-online-phase}}. \hyperref[alg:online-adaptation]{Thuật toán~\ref*{alg:online-adaptation}} bên dưới trình bày luồng tổng quan của pha thích ứng trực tuyến.
+
+% \begin{algorithm}[H]
+% \caption{Pha thích ứng trực tuyến}
+% \label{alg:online-adaptation}
+% \begin{algorithmic}[1]
+
+% \Require Dòng dữ liệu $\mathcal{S}$, checkpoint từ pha ngoại tuyến $\Theta^{*}$, bộ cấu hình $\Omega$
+% \Ensure Mô hình trong pha trực tuyến $\Theta_{\mathrm{online}}$
+
+% \State $\Theta_{\mathrm{online}} \gets \Theta^{*}$
+% \State Khởi tạo bộ đệm xác minh $\mathcal{B}_{\mathrm{ver}}$
+% \State Khởi tạo bộ đệm Time-to-Live $\mathcal{B}_{\mathrm{ttl}}$
+
+% \For{mỗi cửa sổ $X$ trên $\mathcal{S}$}
+%     \State Tính điểm bất thường $s$
+%     \State $\mathrm{decision}, M
+%     \gets
+%     \operatorname{RouteAndVerifyPNN}
+%     \left(X, s, \mathcal{B}_{\mathrm{ver}}\right)$
+
+%     \State Cập nhật các bộ đệm dựa trên $\mathrm{decision}$
+
+%     \If{$M \neq \varnothing$}
+%         \State Cập nhật $\Theta_{\mathrm{online}}$ bằng các điểm thời gian trong $M$
+%     \EndIf
+
+%     \State Lưu dự đoán và các thống kê khác của $X$
+% \EndFor
+
+% \State \Return $\Theta_{\mathrm{online}}$
+
+% \end{algorithmic}
+% \end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Pha thích ứng trực tuyến}
+\label{alg:online-adaptation}
+\begin{algorithmic}[1]
+
+\Require Dòng dữ liệu $\mathcal{S}$, checkpoint từ pha ngoại tuyến $\Theta^{*}$, bộ cấu hình $\Omega$
+\Ensure Mô hình trong pha trực tuyến $\Theta_{\mathrm{online}}$
+
+\State $\Theta_{\mathrm{online}} \gets \Theta^{*}$
+\State Khởi tạo bộ đệm xác minh $\mathcal{B}$
+
+\For{mỗi cửa sổ $\mathbf{X}$ trên $\mathcal{S}$}
+
+    \State $\mathrm{decision}, \mathcal{V}
+    \gets
+    \operatorname{RouteAndVerifyPNN}
+    \left(\mathbf{X}, \mathcal{B}\right)$
+
+    \If{$\mathrm{decision}
+    = \mathrm{hard\text{-}old\text{-}normality}$}
+        \State Thích ứng $\Theta_{\mathrm{online}}$ trên $\mathbf{X}$
+    \EndIf
+
+    \If{$\mathcal{V} \neq \varnothing$}
+        \State Thích ứng $\Theta_{\mathrm{online}}$ trên các điểm trong $\mathcal{V}$
+    \EndIf
+
+    \State Lưu dự đoán và các thống kê khác của $\mathbf{X}$
+
+\EndFor
+
+\State \Return $\Theta_{\mathrm{online}}$
+
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Phân luồng và xác thực pseudo-new-normality}
+\label{alg:route-verify-pnn}
+\begin{algorithmic}[1]
+
+% \Procedure{RouteAndVerifyPNN}{$X,s,\mathcal{B}_{\mathrm{ver}}$}
+
+%     \If{$s < \delta_{\mathrm{normal}}$}
+%         \State $\mathrm{decision} \gets \mathrm{normal}$
+%         \State $M \gets \varnothing$
+
+%     \ElsIf{$s > \delta_{\mathrm{anomaly}}$}
+%         \State $\mathrm{decision} \gets \mathrm{anomaly}$
+%         \State $M \gets \varnothing$
+
+%     \Else
+%         \State $\mathrm{decision} \gets \mathrm{gray\text{-}zone}$
+%         \State Đưa $X$ vào $\mathcal{B}_{\mathrm{ver}}$
+%         \State $M \gets \varnothing$
+
+%         \If{$\mathcal{B}_{\mathrm{ver}}$ chứa đủ số cửa sổ}
+%             \State Loại bỏ các time-point nằm trong cụm bất thường đã biết
+%             \State Tính toán chữ ký của các time-point còn lại
+%             \State Xác định các chữ ký lặp lại qua nhiều cửa sổ
+%             \State Tạo vec-tơ mặt nạ nhị phân cho pseudo-new-normality $M$
+
+%             \If{$M \neq \varnothing$}
+%                 \State $\mathrm{decision} \gets \mathrm{pseudo\text{-}new\text{-}normal}$
+%             \Else
+%                 \State $\mathrm{decision} \gets \mathrm{unresolved}$
+%             \EndIf
+%         \EndIf
+%     \EndIf
+
+%     \State \Return $\mathrm{decision},M$
+
+% \EndProcedure
+
+\Procedure{RouteAndVerifyPNN}
+{$\mathbf{X},\mathcal{B}$}
+
+    \State $\mathrm{decision}
+    \gets \operatorname{Triage}(\mathbf{X})$
+    \State $\mathcal{V} \gets \varnothing$
+
+    \If{$\mathrm{decision}=\mathrm{gray\text{-}zone}$}
+        \State Đưa $\mathbf{X}$ vào $\mathcal{B}$
+
+        \If{$\mathcal{B}$ chứa đủ số cửa sổ}
+            \State Loại bỏ các điểm thuộc cụm bất thường đã biết
+            \State Tính chữ ký của các điểm còn lại
+            \State Xác minh các chữ ký lặp lại qua nhiều cửa sổ
+            \State Tạo tập điểm pseudo-new-normality $\mathcal{V}$
+
+            \If{$\mathcal{V}\neq\varnothing$}
+                \State $\mathrm{decision}
+                \gets \mathrm{pseudo\text{-}new\text{-}normality}$
+            \Else
+                \State $\mathrm{decision}
+                \gets \mathrm{unresolved}$
+            \EndIf
+        \EndIf
+    \EndIf
+
+    \State \Return $\mathrm{decision},\mathcal{V}$
+
+\EndProcedure
+
+\end{algorithmic}
+\end{algorithm}
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=0.9\linewidth]{images/online-adaptation-arch.drawio.svg}
+    \caption[Kiến trúc mô hình trong pha trực tuyến.] {Kiến trúc mô hình trong pha trực tuyến. Tham số của các mô-đun nằm trong vùng màu xanh dương nhạt sẽ bị đóng băng. Tham số của các mô-đun nằm trong vùng màu đỏ nhạt sẽ được tính gradient.}
+    \label{fig:architecture-online-phase}
+\end{figure}
+
+\subsection{Nhánh biểu diễn nguồn và bộ ánh xạ trực tuyến}
+
+Từ checkpoint của giai đoạn B, chúng tôi đóng băng mạng mã hoá, hai bộ nhớ, hai mạng tổng hợp và hai mạng dự đoán. Xét cửa sổ trực tuyến (online window) \(\mathbf{X}\) mà mô hình nhận được tại bước thời gian \(t\), \textit{ten-xơ trạng thái ẩn của nhánh nguồn (source latent tensor)} được tính một lần:
+\begin{equation}
+\mathbf{Z}^{(\mathrm{src})}
+=
+f_{\mathrm{enc}}
+\left(
+\mathbf{X};
+\boldsymbol{\theta}_{\mathrm{enc}}
+\right).
+\end{equation}
+
+Ten-xơ trạng thái ẩn trực tuyến (online latent tensor) là đầu ra của một mạng perceptron đa lớp (multi-layer perceptron - MLP) được khởi tạo xấp xỉ như một \textit{hàm định danh (identity function)}:
+\begin{equation}
+\mathbf{Z}^{(\mathrm{on})}
+=
+g_{\mathrm{proj}}
+\left(
+\mathbf{Z}^{(\mathrm{src})};
+\boldsymbol{\phi}
+\right).
+\end{equation}
+
+Trong pha thích ứng khi kiểm thử trực tuyến, chỉ có tham số \(\boldsymbol{\phi}\) của mạng multi-layer perceptron được tính toán gradient và cập nhật. Tham số của các mô-đun còn lại của mạng trực tuyến đều sẽ bị đóng băng.
+
+\subsection{Ngưỡng bất thường trực tuyến và cơ chế phân luồng cửa sổ trực tuyến}
+\label{sec:route-and-verify-pnn}
+
+Tại bước thời gian \(t\), mạng nơ-ron nhận đầu vào là một cửa sổ trực tuyến (online window) \(\mathbf{X}\in\mathbb{R}^{T\times C}\). Ở lần lan truyền xuôi ngẫu nhiên (stochastic forward-propagation) thứ \(m\), độ lệch tái tạo của điểm thời gian thứ \(i\) trong cửa sổ được tính bằng phương trình
+\begin{equation}
+s^{(m)}_{i}
+=
+\frac{1}{C}
+\left\|
+\mathbf{x}_{i}
+-
+\widehat{\mathbf{x}}^{(m)}_{i}
+\right\|_2^2.
+\end{equation}
+
+Sau \(M\) lần lan truyền xuôi ngẫu nhiên, độ lệch tái tạo trung bình được tính bằng phương trình
+\begin{equation}
+\overline{s}_{i}
+=
+\frac{1}{M}
+\sum_{m=1}^{M}
+s^{(m)}_{i}.
+\end{equation}
+
+Do các cửa sổ trực tuyến được hình thành theo cơ chế cửa sổ trượt (sliding window), một điểm thời gian cụ thể có thể sẽ xuất hiện trong nhiều cửa sổ trượt liên tiếp nhau. Để \textit{điểm bất thường (anomaly score)} phản ánh những thông tin gần nhất và đồng thời giữ được thông tin quá khứ, chúng tôi sử dụng kỹ thuật làm trơn (smoothing) các độ lệch tái tạo của cùng một điểm thời gian bằng phép tính trung bình trượt hàm mũ (\textit{exponentially weighted moving average -- EWMA}):
+\begin{equation}
+\widetilde{s}^{(r)}_{n}
+=
+\rho\,\overline{s}^{(r)}_{n}
++
+(1-\rho)\widetilde{s}^{(r-1)}_{n},
+\end{equation}
+trong đó \(n\) là \textit{chỉ số tuyệt đối} (\textit{absolute index} hay \textit{global index}) của điểm thời gian trên toàn bộ dòng dữ liệu, \(r\) là số lần điểm này xuất hiện trong các cửa sổ đã được mạng ra quyết định và \(\rho=0.9\) là chi tiết cài đặt cụ thể mà chúng tôi sử dụng. Ở lần xuất hiện đầu tiên của một điểm thời gian (time-point), chúng tôi đặt
+\begin{equation}
+\widetilde{s}^{(1)}_{n}
+=
+\overline{s}^{(1)}_{n}.
+\end{equation}
+
+Một điểm thời gian được dự đoán là bất thường nếu
+\begin{equation}
+\widehat{a}_{n}
+=
+\mathbb{I}
+\left(
+\widetilde{s}_{n}>\delta_{\mathrm{pt}}
+\right),
+\end{equation}
+trong đó \(\delta_{\mathrm{pt}}\) là ngưỡng bất thường được \textit{hiệu chỉnh (calibrated)} từ \textit{chuỗi xác thực gốc} (\textit{clean validation series} hay \textit{original validation series}).
+
+\textit{Độ lệch tái tạo ở cấp độ cửa sổ (window-level reconstruction error)} được tính bằng trung bình của \textit{các điểm bất thường đã được làm trơn (smoothed anomaly scores)} bên trong một cửa sổ:
+\begin{equation}
+S^{(\mathrm{input})}
+=
+\frac{1}{T}
+\sum_{i=1}^{T}
+\widetilde{s}_{n(i)}.
+\end{equation}
+
+Ngoài ra, chúng tôi tính toán thêm khoảng cách từ mỗi vec-tơ ẩn trực tuyến (online latent vector) đến vec-tơ nguyên mẫu liên tục (continuous prototype) gần với vec-tơ đó nhất để biết được vec-tơ ẩn trực tuyến gần với cụm mẫu hình bình thường nào nhất:
+\begin{equation}
+S^{(\mathrm{latent})}
+=
+\frac{1}{T}
+\sum_{i=1}^{T}
+\min_{k\in\{1,\ldots,K_c\}}
+\left\|
+\mathbf{z}^{(\mathrm{on})}_{i}
+-
+\mathbf{p}^{(c)}_k
+\right\|_2^2.
+\end{equation}
+
+Gọi \(\delta_{\mathrm{rec}}\) là ngưỡng của độ lệch tái tạo cửa sổ (window-level reconstruction error), còn
+\(\delta_{\mathrm{lat}}^{-}\) và
+\(\delta_{\mathrm{lat}}^{+}\) lần lượt là ngưỡng dưới và ngưỡng trên của các khoảng cách trong không gian ẩn. Một cửa sổ trực tuyến được phân vào các luồng theo \textit{quy tắc tam phân (triage)} sau đây:
+\begin{equation}
+\operatorname{Triage}(\mathbf{X})
+=
+\begin{cases}
+\textit{normal},
+&
+S^{(\mathrm{input})}
+\leq \delta_{\mathrm{rec}},
+\\[12pt]
+
+\textit{hard-old-normality},
+&
+\begin{aligned}
+&S^{(\mathrm{input})}
+> \delta_{\mathrm{rec}}
+\\[3pt]
+&\quad {}\land{}\;
+S^{(\mathrm{latent})}
+\leq \delta_{\mathrm{lat}}^{-},
+\end{aligned}
+\\[12pt]
+
+\textit{gray zone},
+&
+\begin{aligned}
+&S^{(\mathrm{input})}
+> \delta_{\mathrm{rec}}
+\\[3pt]
+&\quad {}\land{}\;
+\delta_{\mathrm{lat}}^{-}
+<
+S^{(\mathrm{latent})}
+\leq
+\delta_{\mathrm{lat}}^{+},
+\end{aligned}
+\\[12pt]
+
+\textit{strong anomaly},
+&
+\begin{aligned}
+&S^{(\mathrm{input})}
+> \delta_{\mathrm{rec}}
+\\[3pt]
+&\quad {}\land{}\;
+S^{(\mathrm{latent})}
+>
+\delta_{\mathrm{lat}}^{+}.
+\end{aligned}
+\end{cases}
+\end{equation}
+
+Trong đó, \textbf{``normal''} nghĩa là cửa sổ trực tuyến đó được mạng dự đoán là bình thường. \textbf{``hard-old-normality''} nghĩa là cửa sổ đó có chứa mẫu hình bình thường gần với các mẫu hình trong tập huấn luyện nhưng mạng lại chưa học được tốt, hay nói cách khác, đó là các mẫu hình \textit{bình thường khó}. \textbf{``strong anomaly''} nghĩa là cửa sổ đó có khả năng cao là bất thường vì vừa có điểm bất thường cao hơn ngưỡng và có khoảng cách (trong không gian ẩn) là xa so với các mẫu hình bình thường được lưu lại trong tập nguyên mẫu liên tục (continuous prototype). Các cửa sổ còn lại được phân vào luồng \textbf{``gray zone''} (vùng xám) để tính toán thêm. Chúng tôi gọi là quy tắc tam phân (triage) do chỉ quan tâm đến 3 trường hợp mà độ lệch tái tạo cửa sổ (window-level reconstruction error) lớn hơn \(\delta_{\mathrm{rec}}\).
+
+Các cửa sổ \textit{normal} sẽ không được sử dụng để thích ứng mạng. Các cửa sổ \textit{hard-old-normality} được sử dụng để cập nhật bộ ánh xạ perceptron đa lớp (MLP projector), và các cửa sổ của luồng \textit{gray zone} được thêm vào \textit{bộ đệm xác minh (verification buffer)}. Các cửa sổ \textit{strong anomaly} cũng không được dùng để thích ứng mạng nhằm hạn chế nguy cơ mô hình vô tình học phải các mẫu hình bất thường. Toàn bộ các ngưỡng
+\(\delta_{\mathrm{pt}}\), \(\delta_{\mathrm{rec}}\),
+\(\delta_{\mathrm{lat}}^{-}\) và
+\(\delta_{\mathrm{lat}}^{+}\) đều được hiệu chỉnh từ chuỗi \textit{original validation}. Chúng tôi không sử dụng nhãn của \textit{chuỗi kiểm thử (test series)} để đảm bảo không vi phạm hiện tượng \textit{rò rỉ dữ liệu (data leakage)}.
+
+\subsection{Thích ứng mạng với các mẫu hình bình thường khó}
+
+Một cửa sổ trực tuyến \(\mathbf{X}\) được xác định là \textit{bất thường khó} khi độ lệch tái tạo của cửa sổ vượt quá ngưỡng \(\delta_{\mathrm{rec}}\) nhưng các vec-tơ ẩn trực tuyến (online latent vectors) của cửa sổ đó vẫn nằm gần tập nguyên mẫu liên tục:
+\begin{equation}
+S^{(\mathrm{input})}>\delta_{\mathrm{rec}}
+\quad\land\quad
+S^{(\mathrm{latent})}
+\leq
+\delta_{\mathrm{lat}}^{-}.
+\end{equation}
+Như đã diễn giải ở \hyperref[sec:route-and-verify-pnn]{phần~\ref*{sec:route-and-verify-pnn}}, các cửa sổ trong luồng này có chứa các mẫu hình gần với những mẫu hình bình thường từ tập huấn luyện được lưu lại trong tập nguyên mẫu liên tục, nhưng mạng chưa học được cách tái tạo tốt các mẫu hình đó.
+
+Trong một bước thích ứng (adaptation step) bất kỳ, cửa sổ được lan truyền xuôi (forward-propagation) qua mô hình. Độ lệch tái tạo cửa sổ (window-level reconstruction error) là một hàm khả vi (differentiable) theo tham số \(\boldsymbol{\phi}\) của MLP projector được
+tính bằng phương trình:
+\begin{equation}
+S^{(\mathrm{hard})}(\boldsymbol{\phi})
+=
+\frac{1}{MTC}
+\sum_{m=1}^{M}
+\left\|
+\mathbf{X}
+-
+\widehat{\mathbf{X}}^{(m)}(\boldsymbol{\phi})
+\right\|_F^2.
+\end{equation}
+
+Chúng tôi cố gắng kéo điểm tái tạo giảm xuống dưới ngưỡng \(\delta_{\mathrm{rec}}\) bằng cách sử
+dụng một \textit{hàm phạt kiểu hinge (hinge-style penalty)}, lấy cảm hứng từ hàm hinge loss trong bài nghiên cứu của tác giả Cortes và tác giả Vapnik từ năm 1995 \cite{cortes1995support}:
+\begin{equation}
+\label{eq:hard-rec-loss}
+\mathcal{L}_{\mathrm{hard\text{-}rec}}
+=
+\left[
+S^{(\mathrm{hard})}(\boldsymbol{\phi})
+-
+\delta_{\mathrm{rec}}
+\right]_{+},
+\end{equation}
+trong đó \([x]_{+}=\max(0,x)\). Hàm mất mát này sẽ trả về giá trị bằng \(0\) khi độ lệch tái tạo nhỏ hơn hoặc bằng \(\delta_{\mathrm{rec}}\).
+
+Bên cạnh đó, chúng tôi còn sử dụng một \textit{hàm mất mát tương phản (contrastive loss)} giữa \textit{nhánh biểu diễn trực tuyến (online representation branch)}
+và \textit{nhánh biểu diễn nguồn (source representation branch)}. Với mỗi điểm neo là một vec-tơ trực tuyến
+\(\mathbf{z}^{(\mathrm{on})}_{i}\), vec-tơ nguồn tương ứng
+\(\mathbf{z}^{(\mathrm{src})}_{i}\) được sử dụng làm \textit{điểm dương (positives)}. Các nguyên
+mẫu rời rạc thuộc lớp bất thường được sử dụng làm các điểm đối (negatives). Gọi \begin{equation}
+\mathcal{K}_{\mathrm{anom}}
+=
+\left\{
+k\in\{1,\ldots,K_d\}
+:
+c^{(d)}_k\neq 0
+\right\}
+\end{equation}
+là tập chỉ số của các nguyên mẫu bất thường. Hàm mất mát tương phản được tính
+bằng
+\begin{equation}
+\label{eq:src-on-loss}
+\begin{aligned}
+\mathcal{L}_{\mathrm{src\text{-}on}}
+=
+-\frac{1}{T}
+\sum_{i=1}^{T}
+\log
+\Bigg[
+&
+\exp\left(
+\frac{
+\operatorname{cos}\left(
+\mathbf{z}^{(\mathrm{on})}_{i},
+\mathbf{z}^{(\mathrm{src})}_{i}
+\right)
+}{
+\tau_{\mathrm{on}}
+}
+\right)
+\\[-0.2em]
+&\Bigg/
+\Bigg(
+\exp\left(
+\frac{
+\operatorname{cos}\left(
+\mathbf{z}^{(\mathrm{on})}_{i},
+\mathbf{z}^{(\mathrm{src})}_{i}
+\right)
+}{
+\tau_{\mathrm{on}}
+}
+\right)
+\\
+&\qquad
++
+\sum_{k\in\mathcal{K}_{\mathrm{anom}}}
+\exp\left(
+\frac{
+\operatorname{cos}\left(
+\mathbf{z}^{(\mathrm{on})}_{i},
+\mathbf{p}^{(d)}_k
+\right)
+}{
+\tau_{\mathrm{on}}
+}
+\right)
+\Bigg)
+\Bigg].
+\end{aligned}
+\end{equation}
+
+Cuối cùng, hàm mất mát cho bước thích ứng (adaptation step) đối với cửa sổ \textit{hard-old-normality} là
+\begin{equation}
+\mathcal{L}_{\mathrm{hard}}
+=
+\mathcal{L}_{\mathrm{hard\text{-}rec}}
++
+\lambda_{\mathrm{con}}
+\mathcal{L}_{\mathrm{src\text{-}on}}.
+\end{equation}
+
+Gradient của hàm số  \(\mathcal{L}_{\mathrm{hard}}\) chỉ được tính theo \(\boldsymbol{\phi}\) là tham số của mạng MLP projector. Mạng mã hoá, hai bộ nhớ, hai mạng tổng hợp và hai mạng dự đoán đều được giữ cố định trong mọi bước thích ứng xảy ra trên \textit{dòng dữ liệu trực tuyến (online streaming time-series)}.
+
+\subsection{Thích ứng với các mẫu hình giả định bình thường mới đã được xác minh}
+
+Các cửa sổ trực tuyến được phân vào luồng \textit{gray zone} chưa thể được xem là có chứa các mẫu hình bình thường mới (new normality) vì các cửa sổ này vẫn có thể chứa các mẫu hình bất thường mà mô hình chưa nhận biết được. Vì vậy, chúng tôi thêm các cửa sổ này vào một \textit{bộ đệm xác minh (verification buffer)} trước khi sử dụng các cửa sổ đó để thích ứng mạng. Các cửa sổ trong bộ đệm xác minh không được chồng lấn nhau (non-overlapping) nhằm đảm bảo rằng sự lặp lại của một mẫu hình không chỉ xuất phát từ việc cùng một điểm thời gian xuất hiện trong nhiều cửa sổ trượt liên tiếp nhau.
+
+Trước hết, chúng tôi sử dụng tập nguyên mẫu rời rạc để loại bỏ các điểm nằm trong một cụm bất thường đã biết ngay sau giai đoạn học biểu diễn đa nhiệm của pha ngoại tuyến. Xét vec-tơ ẩn trực tuyến \(\mathbf{z}^{(\mathrm{on})}_{u,i}\), chỉ số của nguyên mẫu rời rạc (discrete codebook) gần với vec-tơ đó nhất trong không gian ẩn là
+\begin{equation}
+\kappa^{(d)}_{u,i}
+=
+\underset{k\in\{1,\ldots,K_d\}}{\operatorname{arg\,min}}
+\left\|
+\mathbf{z}^{(\mathrm{on})}_{u,i}
+-
+\mathbf{p}^{(d)}_k
+\right\|_2.
+\end{equation}
+
+Gọi \(c^{(d)}_k\in\{0,\ldots,11\}\) là nhãn của các lớp bất thường nhân tạo và
+\(r^{(d)}_k\) là bán kính của cụm mẫu hình bất thường tương ứng với nguyên mẫu \(\mathbf{p}^{(d)}_k\). Điểm đang xét được chúng tôi xem là có chứa một mẫu hình bất thường đã biết nếu nguyên mẫu rời rạc gần với điểm đó nhất là tâm của một cụm bất thường và điểm đó
+nằm trong bán kính bao phủ (covering radius) của cụm:
+\begin{equation}
+M^{(\mathrm{known\text{-}anom})}_{u,i}
+=
+\mathbb{I}
+\left[
+c^{(d)}_{\kappa^{(d)}_{u,i}}\neq 0
+\;\land\;
+\left\|
+\mathbf{z}^{(\mathrm{on})}_{u,i}
+-
+\mathbf{p}^{(d)}_{\kappa^{(d)}_{u,i}}
+\right\|_2
+\leq
+r^{(d)}_{\kappa^{(d)}_{u,i}}
+\right].
+\end{equation}
+Các điểm có
+\(M^{(\mathrm{known\text{-}anom})}_{u,i}=1\) bị loại khỏi \textit{bộ đệm xác minh (verification buffer)}.
+
+Đối với mỗi điểm còn lại, chúng tôi tìm ba nguyên mẫu liên tục (continuous prototype) gần với các điểm đó nhất trong không gian ẩn. Ba chỉ số nguyên mẫu được sắp xếp theo khoảng cách tăng dần để tạo thành một \textit{cấu trúc dữ liệu (data structure)} mà chúng tôi gọi là \textit{chữ ký nguyên mẫu liên tục (continuous prototype signature)}:
+\begin{equation}
+\boldsymbol{\sigma}_{u,i}
+=
+\operatorname{OrderedTopKMin}_{k\in\{1,\ldots,K_c\}}
+\left(
+\left\|
+\mathbf{z}^{(\mathrm{on})}_{u,i}
+-
+\mathbf{p}^{(c)}_k
+\right\|_2^2;
+3
+\right).
+\end{equation}
+
+Hai điểm thời gian trực tuyến (online time-point) có cùng \textit{chữ ký (signature)} khi ba nguyên mẫu liên tục gần nhất với hai điểm là giống nhau theo cùng thứ tự. Lúc này, chúng tôi xem như hai vec-tơ ẩn của hai điểm đó nằm trong một khoảng không gian tương tự nhau nếu cùng so với tập nguyên mẫu liên tục.
+
+Tại sao lại là 3 nguyên mẫu liên tục (hay tâm cụm bình thường) gần nhất? Vì chúng tôi hình dung trong không gian 2D như sau: Nếu chọn 1 tâm cụm thì các điểm trên một hình tròn đều gần với cụm đó nhất. Nếu chọn 2 tâm cụm, hình dung khi nối hai tâm cụm thành đường thẳng thì hai điểm nằm ở hai phía của đường thẳng vẫn có thể có khoảng cách bằng nhau đến hai tâm cụm, theo cùng một thứ tự! Nhưng nếu chọn 3 tâm cụm thì chúng tôi sẽ cố định được một vùng trên mặt phẳng 2D thoả việc khoảng cách của các điểm trong vùng đó đến 3 tâm cụm là có thứ tự như nhau. Chúng tôi kỳ vọng vùng đó cũng có cấu trúc tròn do chúng tôi đã sử dụng thuật toán K-Means trong quá trình khởi tạo các cụm và thuật toán này vốn giả định các cụm trong không gian ẩn hình thành theo cấu trúc tròn. Vậy tại sao không phải 4 cụm, 5 cụm, hay lớn hơn? Đó là vì chúng tôi muốn các chữ ký này có dung lượng nhỏ nhất có thể!
+
+Gọi \(\mathcal{B}\) là bộ đệm xác minh (verification buffer). Số cửa sổ khác nhau trong bộ đệm có chứa chữ ký \(\boldsymbol{\sigma}\) được tính bằng
+\begin{equation}
+R_{\mathcal{B}}(\boldsymbol{\sigma})
+=
+\sum_{\mathbf{X}_v\in\mathcal{B}}
+\mathbb{I}
+\left[
+\exists j:
+M^{(\mathrm{known\text{-}anom})}_{v,j}=0
+\;\land\;
+\boldsymbol{\sigma}_{v,j}
+=
+\boldsymbol{\sigma}
+\right].
+\end{equation}
+
+Một điểm được xác minh là
+\textit{pseudo-new-normality} nếu nó không khớp với bất kì cụm bất thường đã biết nào và chữ ký của nó xuất hiện trong ít nhất hai cửa sổ không chồng lấn:
+\begin{equation}
+M^{(\mathrm{pnn})}_{u,i}
+=
+\mathbb{I}
+\left[
+M^{(\mathrm{known\text{-}anom})}_{u,i}=0
+\;\land\;
+R_{\mathcal{B}}
+\left(
+\boldsymbol{\sigma}_{u,i}
+\right)
+\geq 2
+\right].
+\end{equation}
+
+Lưu ý rằng điều kiện trên đếm số \textbf{cửa sổ khác nhau}, không phải đếm số điểm mang cùng
+chữ ký trong cùng một cửa sổ. \textit{Vì vậy, một chữ ký xuất hiện nhiều lần trong cùng một cửa sổ vẫn chưa đủ để được xác minh.} Chúng tôi sử dụng từ
+\textit{pseudo} vì quá trình này không sử dụng nhãn thật của chuỗi kiểm thử; ``đã được xác minh'' chỉ có nghĩa là mẫu hình đã vượt qua phép lọc cụm bất
+thường và xuất hiện lặp lại trong nhiều cửa sổ độc lập.
+
+Gọi
+\begin{equation}
+\mathcal{V}
+=
+\left\{
+(u,i):
+M^{(\mathrm{pnn})}_{u,i}=1
+\right\}
+\end{equation}
+là tập các điểm đã được xác minh. Hàm mất mát tái tạo ở cấp độ điểm (point-level reconstruction loss) chỉ được tính trên những điểm thuộc \(\mathcal{V}\):
+\begin{equation}
+\mathcal{L}_{\mathrm{pnn\text{-}rec}}
+=
+\frac{1}{M|\mathcal{V}|C}
+\sum_{m=1}^{M}
+\sum_{(u,i)\in\mathcal{V}}
+\left\|
+\mathbf{x}_{u,i}
+-
+\widehat{\mathbf{x}}^{(m)}_{u,i}
+\left(\boldsymbol{\phi}\right)
+\right\|_2^2.
+\end{equation}
+
+Đồng thời, với mỗi điểm neo
+\(\mathbf{z}^{(\mathrm{on})}_{u,i}\), vec-tơ biểu diễn nguồn tương ứng
+\(\mathbf{z}^{(\mathrm{src})}_{u,i}\) được sử dụng làm điểm dương, còn các
+nguyên mẫu rời rạc thuộc lớp bất thường (các tâm cụm bất thường) được sử dụng làm các điểm đối. Hàm
+mất mát tương phản có dạng tường minh là
+\begin{equation}
+\mathcal{L}^{(\mathrm{pnn})}_{\mathrm{src\text{-}on}}
+=
+-\frac{1}{|\mathcal{V}|}
+\sum_{(u,i)\in\mathcal{V}}
+\log
+\frac{
+\exp\left(
+\operatorname{cos}\left(
+\mathbf{z}^{(\mathrm{on})}_{u,i},
+\mathbf{z}^{(\mathrm{src})}_{u,i}
+\right)
+/\tau_{\mathrm{on}}
+\right)
+}{
+\begin{aligned}
+&
+\exp\left(
+\operatorname{cos}\left(
+\mathbf{z}^{(\mathrm{on})}_{u,i},
+\mathbf{z}^{(\mathrm{src})}_{u,i}
+\right)
+/\tau_{\mathrm{on}}
+\right)
+\\
+&+
+\sum_{k\in\mathcal{K}_{\mathrm{anom}}}
+\exp\left(
+\operatorname{cos}\left(
+\mathbf{z}^{(\mathrm{on})}_{u,i},
+\mathbf{p}^{(d)}_k
+\right)
+/\tau_{\mathrm{on}}
+\right)
+\end{aligned}
+}.
+\end{equation}
+
+Hàm mất mát của bước thích ứng với các mẫu hình bình thường mới là
+\begin{equation}
+\mathcal{L}_{\mathrm{pnn}}
+=
+\mathcal{L}_{\mathrm{pnn\text{-}rec}}
++
+\lambda_{\mathrm{con}}
+\mathcal{L}^{(\mathrm{pnn})}_{\mathrm{src\text{-}on}}.
+\end{equation}
+
+Gradient của \(\mathcal{L}_{\mathrm{pnn}}\) cũng chỉ được tính theo tham số
+\(\boldsymbol{\phi}\) của MLP projector. \textbf{Nếu} tại cùng một bước thời gian có cả
+bước thích ứng trên \textit{hard-old-normality} và bước thích ứng trên
+\textit{verified pseudo-new-normality} \textbf{thì} bước thích ứng \textit{hard-old-normality} được thực hiện trước. Đây chỉ đơn giản là một lựa chọn thiết kế của chúng tôi.

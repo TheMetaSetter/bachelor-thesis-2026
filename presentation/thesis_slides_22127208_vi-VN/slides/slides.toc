@@ -1,0 +1,7 @@
+\beamer@sectionintoc {1}{Mở đầu và đặt bài toán}{2}{0}{1}
+\beamer@sectionintoc {2}{Tính mới và kiến trúc đề xuất}{6}{0}{2}
+\beamer@sectionintoc {3}{Luồng dữ liệu của pha ngoại tuyến}{9}{0}{3}
+\beamer@sectionintoc {4}{Các toán tử truy vấn và độ bất định}{15}{0}{4}
+\beamer@sectionintoc {5}{Luồng dữ liệu của pha trực tuyến}{22}{0}{5}
+\beamer@sectionintoc {6}{Độ đo và thiết kế thí nghiệm}{28}{0}{6}
+\beamer@sectionintoc {7}{Kết quả, FPR và kết luận}{34}{0}{7}

@@ -1,0 +1,1658 @@
+{
+  "schema_version": "online_fpr_metrics.v1",
+  "report_name": "Online THESIS false-positive-rate audit",
+  "source_revision": "820c8886",
+  "calculated_on_checkout_revision": "dfb205b761ba1cc4c9f8bcbf43e81ec902ad8cd5",
+  "source_manifest": "reporting/online_phase_tables/online_metrics_99/online_metrics_99_manifest.json",
+  "scope": {
+    "method": "thesis",
+    "run_count": 54,
+    "variants": [
+      "O0+A0",
+      "O0+A1",
+      "O0+A2",
+      "O1+A0",
+      "O1+A1",
+      "O1+A2"
+    ],
+    "entities": [
+      "machine_1_6",
+      "machine_3_4",
+      "machine_3_9"
+    ],
+    "seeds": [
+      "seed6",
+      "seed8",
+      "seed36"
+    ]
+  },
+  "protocol": {
+    "score_field": "online/ewma_point_score",
+    "threshold_field": "online/threshold",
+    "prediction_field": "online/prediction",
+    "prediction_rule": "score > threshold",
+    "fpr_definition": "false_positive_count / negative_count",
+    "label_source": "SMD test_label sliced at causal endpoints",
+    "aggregation": "arithmetic mean across seeds, then arithmetic mean across entity means"
+  },
+  "records": [
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_1_6__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_1_6__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_1_6__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_4__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_4__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_4__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_9__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 767,
+        "true_negative_count": 8720,
+        "negative_count": 9487
+      },
+      "fpr": 0.0808474754927796,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_9__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 567,
+        "true_negative_count": 8920,
+        "negative_count": 9487
+      },
+      "fpr": 0.05976599557288922,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A0/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A0__machine_3_9__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 740,
+        "true_negative_count": 8747,
+        "negative_count": 9487
+      },
+      "fpr": 0.07800147570359439,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_1_6__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_1_6__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_1_6__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_4__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_4__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_4__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_9__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 767,
+        "true_negative_count": 8720,
+        "negative_count": 9487
+      },
+      "fpr": 0.0808474754927796,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_9__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 567,
+        "true_negative_count": 8920,
+        "negative_count": 9487
+      },
+      "fpr": 0.05976599557288922,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A1/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A1__machine_3_9__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 740,
+        "true_negative_count": 8747,
+        "negative_count": 9487
+      },
+      "fpr": 0.07800147570359439,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_1_6__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_1_6__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_1_6__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_4__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_4__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_4__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_9__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 767,
+        "true_negative_count": 8720,
+        "negative_count": 9487
+      },
+      "fpr": 0.0808474754927796,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_9__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 567,
+        "true_negative_count": 8920,
+        "negative_count": 9487
+      },
+      "fpr": 0.05976599557288922,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O0_A2/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O0_A2__machine_3_9__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 740,
+        "true_negative_count": 8747,
+        "negative_count": 9487
+      },
+      "fpr": 0.07800147570359439,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_1_6__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_1_6__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_1_6__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_4__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_4__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_4__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_9__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 769,
+        "true_negative_count": 8718,
+        "negative_count": 9487
+      },
+      "fpr": 0.0810582902919785,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_9__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 336,
+        "true_negative_count": 9151,
+        "negative_count": 9487
+      },
+      "fpr": 0.03541688626541583,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A0/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A0__machine_3_9__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 888,
+        "true_negative_count": 8599,
+        "negative_count": 9487
+      },
+      "fpr": 0.09360177084431327,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_1_6__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_1_6__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_1_6__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_4__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_4__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_4__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_9__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 769,
+        "true_negative_count": 8718,
+        "negative_count": 9487
+      },
+      "fpr": 0.0810582902919785,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_9__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 336,
+        "true_negative_count": 9151,
+        "negative_count": 9487
+      },
+      "fpr": 0.03541688626541583,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A1/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A1__machine_3_9__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 888,
+        "true_negative_count": 8599,
+        "negative_count": 9487
+      },
+      "fpr": 0.09360177084431327,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_1_6/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_1_6__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_1_6/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_1_6__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_1_6",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_1_6/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_1_6__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 146,
+        "absolute_end_index": 2200,
+        "point_start_index": 165,
+        "point_end_index_exclusive": 2200,
+        "window_size": 20,
+        "processed_steps": 2035
+      },
+      "classification_counts": {
+        "false_positive_count": 0,
+        "true_negative_count": 2016,
+        "negative_count": 2016
+      },
+      "fpr": 0.0,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_4/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_4__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_4/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_4__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_3_4",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_4/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_4__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 2634,
+        "absolute_end_index": 6116,
+        "point_start_index": 2653,
+        "point_end_index_exclusive": 6116,
+        "window_size": 20,
+        "processed_steps": 3463
+      },
+      "classification_counts": {
+        "false_positive_count": 2517,
+        "true_negative_count": 81,
+        "negative_count": 2598
+      },
+      "fpr": 0.9688221709006929,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed36",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_9/seed36/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_9__seed36__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 769,
+        "true_negative_count": 8718,
+        "negative_count": 9487
+      },
+      "fpr": 0.0810582902919785,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed6",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_9/seed6/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_9__seed6__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 336,
+        "true_negative_count": 9151,
+        "negative_count": 9487
+      },
+      "fpr": 0.03541688626541583,
+      "prediction_mismatch_count": 0
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_3_9",
+      "seed": "seed8",
+      "source_metric_file": "/root/bachelor-thesis-2026/outputs/benchmark/online/smd/thesis/O1_A2/machine_3_9/seed8/online_metrics.json",
+      "staged_metric_file": "thesis__O1_A2__machine_3_9__seed8__online_metrics.json",
+      "stream": {
+        "absolute_start_index": 1099,
+        "absolute_end_index": 10807,
+        "point_start_index": 1118,
+        "point_end_index_exclusive": 10807,
+        "window_size": 20,
+        "processed_steps": 9689
+      },
+      "classification_counts": {
+        "false_positive_count": 888,
+        "true_negative_count": 8599,
+        "negative_count": 9487
+      },
+      "fpr": 0.09360177084431327,
+      "prediction_mismatch_count": 0
+    }
+  ],
+  "summary_by_variant_entity": [
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_1_6",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.0,
+      "false_positive_mean_across_seeds": 0.0,
+      "true_negative_mean_across_seeds": 2016.0,
+      "negative_count": 2016
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_3_4",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.9688221709006929,
+      "false_positive_mean_across_seeds": 2517.0,
+      "true_negative_mean_across_seeds": 81.0,
+      "negative_count": 2598
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_id": "machine_3_9",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.07287164892308774,
+      "false_positive_mean_across_seeds": 691.3333333333334,
+      "true_negative_mean_across_seeds": 8795.666666666666,
+      "negative_count": 9487
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_1_6",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.0,
+      "false_positive_mean_across_seeds": 0.0,
+      "true_negative_mean_across_seeds": 2016.0,
+      "negative_count": 2016
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_3_4",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.9688221709006929,
+      "false_positive_mean_across_seeds": 2517.0,
+      "true_negative_mean_across_seeds": 81.0,
+      "negative_count": 2598
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_id": "machine_3_9",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.07287164892308774,
+      "false_positive_mean_across_seeds": 691.3333333333334,
+      "true_negative_mean_across_seeds": 8795.666666666666,
+      "negative_count": 9487
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_1_6",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.0,
+      "false_positive_mean_across_seeds": 0.0,
+      "true_negative_mean_across_seeds": 2016.0,
+      "negative_count": 2016
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_3_4",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.9688221709006929,
+      "false_positive_mean_across_seeds": 2517.0,
+      "true_negative_mean_across_seeds": 81.0,
+      "negative_count": 2598
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_id": "machine_3_9",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.07287164892308774,
+      "false_positive_mean_across_seeds": 691.3333333333334,
+      "true_negative_mean_across_seeds": 8795.666666666666,
+      "negative_count": 9487
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_1_6",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.0,
+      "false_positive_mean_across_seeds": 0.0,
+      "true_negative_mean_across_seeds": 2016.0,
+      "negative_count": 2016
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_3_4",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.9688221709006929,
+      "false_positive_mean_across_seeds": 2517.0,
+      "true_negative_mean_across_seeds": 81.0,
+      "negative_count": 2598
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_id": "machine_3_9",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.07002564913390254,
+      "false_positive_mean_across_seeds": 664.3333333333334,
+      "true_negative_mean_across_seeds": 8822.666666666666,
+      "negative_count": 9487
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_1_6",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.0,
+      "false_positive_mean_across_seeds": 0.0,
+      "true_negative_mean_across_seeds": 2016.0,
+      "negative_count": 2016
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_3_4",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.9688221709006929,
+      "false_positive_mean_across_seeds": 2517.0,
+      "true_negative_mean_across_seeds": 81.0,
+      "negative_count": 2598
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_id": "machine_3_9",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.07002564913390254,
+      "false_positive_mean_across_seeds": 664.3333333333334,
+      "true_negative_mean_across_seeds": 8822.666666666666,
+      "negative_count": 9487
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_1_6",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.0,
+      "false_positive_mean_across_seeds": 0.0,
+      "true_negative_mean_across_seeds": 2016.0,
+      "negative_count": 2016
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_3_4",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.9688221709006929,
+      "false_positive_mean_across_seeds": 2517.0,
+      "true_negative_mean_across_seeds": 81.0,
+      "negative_count": 2598
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_id": "machine_3_9",
+      "run_count": 3,
+      "fpr_mean_across_seeds": 0.07002564913390254,
+      "false_positive_mean_across_seeds": 664.3333333333334,
+      "true_negative_mean_across_seeds": 8822.666666666666,
+      "negative_count": 9487
+    }
+  ],
+  "summary_by_variant": [
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A0",
+      "variant_label": "THESIS O0 + A0",
+      "entity_count": 3,
+      "fpr_mean_across_entity_means": 0.3472312732745935
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A1",
+      "variant_label": "THESIS O0 + A1",
+      "entity_count": 3,
+      "fpr_mean_across_entity_means": 0.3472312732745935
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O0",
+      "online_variant": "A2",
+      "variant_label": "THESIS O0 + A2",
+      "entity_count": 3,
+      "fpr_mean_across_entity_means": 0.3472312732745935
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A0",
+      "variant_label": "THESIS O1 + A0",
+      "entity_count": 3,
+      "fpr_mean_across_entity_means": 0.3462826066781985
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A1",
+      "variant_label": "THESIS O1 + A1",
+      "entity_count": 3,
+      "fpr_mean_across_entity_means": 0.3462826066781985
+    },
+    {
+      "method": "thesis",
+      "offline_variant": "O1",
+      "online_variant": "A2",
+      "variant_label": "THESIS O1 + A2",
+      "entity_count": 3,
+      "fpr_mean_across_entity_means": 0.3462826066781985
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+\begin{thebibliography}{8}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Islam et~al.(2025)Islam, Rakha, Pourmajidi, Sivaloganathan,
+  Steinbacher, and Miranskyy]{11121677}
+Mohammad~Saiful Islam, Mohamed~Sami Rakha, William Pourmajidi, Janakan
+  Sivaloganathan, John Steinbacher, and Andriy Miranskyy.
+\newblock Anomaly detection in large-scale cloud systems: An industry case and
+  dataset.
+\newblock In \emph{2025 IEEE/ACM 47th International Conference on Software
+  Engineering: Software Engineering in Practice (ICSE-SEIP)}, pages 377--388,
+  2025.
+\newblock \doi{10.1109/ICSE-SEIP66354.2025.00039}.
+
+\bibitem[Kim et~al.(2026)Kim, Hwang, and Park]{kim2026sacvt}
+Sunuwe Kim, Junho Hwang, and Sangwook Park.
+\newblock Step-aware cross-view transformer for unsupervised semiconductor
+  manufacturing equipment anomaly detection.
+\newblock \emph{IEEE Internet of Things Journal}, 13\penalty0 (12):\penalty0
+  26470--26482, 2026.
+\newblock \doi{10.1109/JIOT.2026.3677542}.
+\newblock URL \url{https://doi.org/10.1109/JIOT.2026.3677542}.
+
+\bibitem[Lehman et~al.(2024)Lehman, Moody, McCullum, Saeed, Deep, Perry,
+  Struja, Li, Clifford, and Mark]{PhysioNet-vtac-1.0}
+Li-wei Lehman, Benjamin Moody, Lucas McCullum, Hasan Saeed, Harsh Deep, Diane
+  Perry, Tristan Struja, Qiao Li, Gari Clifford, and Roger Mark.
+\newblock {VTaC: A Benchmark Dataset of Ventricular Tachycardia Alarms from ICU
+  Monitors}.
+\newblock \emph{{PhysioNet}}, October 2024.
+\newblock \doi{10.13026/8td2-g363}.
+\newblock URL \url{https://doi.org/10.13026/8td2-g363}.
+\newblock Version 1.0.
+
+\bibitem[Obata et~al.(2025)Obata, Matsubara, and Sakurai]{redlamp2025}
+Kohei Obata, Yasuko Matsubara, and Yasushi Sakurai.
+\newblock Robust and explainable detector of time series anomaly via augmenting
+  multiclass pseudo-anomalies.
+\newblock In \emph{Proceedings of the 31st ACM SIGKDD Conference on Knowledge
+  Discovery and Data Mining}, pages 2198--2209, 2025.
+\newblock \doi{10.1145/3711896.3737110}.
+
+\bibitem[Pei et~al.(2022)Pei, Wang, and Szarvas]{pei2022transformer}
+Jiahuan Pei, Cheng Wang, and Gyorgy Szarvas.
+\newblock Transformer uncertainty estimation with hierarchical stochastic
+  attention.
+\newblock 2022.
+\newblock URL
+  \url{https://www.amazon.science/publications/transformer-uncertainty-estimation-with-hierarchical-stochastic-attention}.
+
+\bibitem[Shen(2025)]{shen2025learn}
+Ke-Yuan Shen.
+\newblock Learn hybrid prototypes for multivariate time series anomaly
+  detection.
+\newblock In \emph{The Thirteenth International Conference on Learning
+  Representations}, 2025.
+\newblock URL \url{https://openreview.net/forum?id=8TBGdH3t6a}.
+
+\bibitem[van~den Oord et~al.(2017)van~den Oord, Vinyals, and
+  Kavukcuoglu]{oord2017neural}
+Aaron van~den Oord, Oriol Vinyals, and Koray Kavukcuoglu.
+\newblock Neural discrete representation learning.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~30, 2017.
+\newblock URL
+  \url{https://papers.neurips.cc/paper/7210-neural-discrete-representation-learning.pdf}.
+
+\bibitem[Zhang et~al.(2024)Zhang, Xie, Yao, and Sugiyama]{zhang2024adarealign}
+Zhen-Yu Zhang, Zhiyu Xie, Huaxiu Yao, and Masashi Sugiyama.
+\newblock Test-time adaptation in non-stationary environments via adaptive
+  representation alignment.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~37, 2024.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper_files/paper/2024/hash/abe31a12e83111fdf2cfd54deed5a2ce-Abstract-Conference.html}.
+
+\end{thebibliography}

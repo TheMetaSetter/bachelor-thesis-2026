@@ -23,7 +23,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 from src.metrics.pointwise import compute_pointwise_metrics
 
 
-METRIC_NAMES = ("vus_pr", "affiliation_f1", "vus_roc")
+METRIC_NAMES = ("fpr", "vus_pr", "affiliation_f1", "vus_roc")
 DEFAULT_WINDOW_SIZE = 20
 DEFAULT_VUS_MAX_BUFFER_SIZE = 20
 DEFAULT_VUS_NUM_THRESHOLDS = 200
@@ -191,6 +191,15 @@ def _build_run_record(
             "negative_count": int((point_labels == 0).sum()),
             "unique_label_count": int(np.unique(point_labels).size),
         },
+        "classification_counts": {
+            "false_positive_count": int(
+                np.count_nonzero((expected_predictions == 1) & (point_labels == 0))
+            ),
+            "true_negative_count": int(
+                np.count_nonzero((expected_predictions == 0) & (point_labels == 0))
+            ),
+            "predicted_positive_count": int(np.count_nonzero(expected_predictions)),
+        },
         "threshold": {
             "value": threshold,
             "is_constant": bool(np.allclose(threshold_values, threshold)),
@@ -312,6 +321,7 @@ def build_report(
             "score_field": "online/ewma_point_score",
             "threshold_field": "online/threshold",
             "prediction_field": "online/prediction",
+            "fpr_definition": "false_positive_count / negative_count",
             "window_size": DEFAULT_WINDOW_SIZE,
             "online_window_stride": 1,
             "vus_max_buffer_size": DEFAULT_VUS_MAX_BUFFER_SIZE,

@@ -1,0 +1,20 @@
+\begin{table}[htbp]
+\centering
+\caption{False-positive rate của các biến thể THESIS trong pha online.}
+\label{tab:online-thesis-fpr}
+\scriptsize
+\begin{tabular}{lrrrr}
+\toprule
+Variant & machine-1-6 & machine-3-4 & machine-3-9 & Average \\
+\midrule
+\rowcolor{black!10} \textbf{THESIS O1+A2} & \textbf{0.000} & \textbf{0.969} & 0.070 & \underline{0.346} \\
+\quad w/o BPSL (O0+A2) & 0.000 & \textbf{0.969} & 0.073 & 0.347 \\
+\quad w/o TTA (O1+A0) & 0.000 & \textbf{0.969} & \underline{0.070} & \underline{0.346} \\
+\quad w/o HO+CL (O1+A1) & 0.000 & \textbf{0.969} & \underline{0.070} & \underline{0.346} \\
+\quad w/o BPSL+TTA (O0+A0) & 0.000 & \textbf{0.969} & 0.073 & 0.347 \\
+\quad w/o BPSL+HO+CL (O0+A1) & 0.000 & \textbf{0.969} & 0.073 & 0.347 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Abbreviations:} BPSL = Point-wise Balanced Reconstruction-Score Loss; TTA = online test-time adaptation; HO = guarded hard-old update; CL = online contrastive loss. Canonical mapping: O0 = w/o BPSL, O1 = w/ BPSL, A0 = w/o TTA, A1 = w/o HO + CL, A2 = full TTA.

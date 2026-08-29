@@ -1,0 +1,197 @@
+\begin{figure}[h]
+\noindent
+\begin{minipage}[c]{0.4\textwidth}
+    \includegraphics[width=\linewidth]{images/logo-fithcmus.png}
+\end{minipage}
+\hfill
+\begin{minipage}[c]{0.55\textwidth}
+    \centering
+    {\footnotesize\bfseries
+    TRƯỜNG ĐẠI HỌC KHOA HỌC TỰ NHIÊN\\
+    KHOA CÔNG NGHỆ THÔNG TIN}
+\end{minipage}
+\end{figure}
+
+\begin{center}
+    %Xác định loại đề tài tốt nghiệp tương ứng: Khóa luận, Thực tập, Đồ án
+    \textbf{\normalsize ĐỀ CƯƠNG KHOÁ LUẬN TỐT NGHIỆP} \\
+\end{center}
+
+\begin{center}
+%Tên đề tài phải VIẾT HOA
+    
+    \textbf{\Large Một khung đa nhiệm cho phát hiện bất thường chuỗi thời gian với bất định ngẫu nhiên}
+    \\
+    
+%Tên đề tài bằng tiếng Anh (nếu có)
+\vspace{.5cm}
+    \textit{\textbf{\normalsize A Robust Multi-Task Framework for Time Series Anomaly Detection with Stochastic Uncertainty}}
+\end{center}
+
+\vspace{.5cm}
+
+\normalsize
+\section{THÔNG TIN CHUNG}
+\begin{itemize}[label = {}]
+    
+    \item \textbf{Người hướng dẫn:} 
+    %Thể hiện dạng: <Chức danh> <Họ và tên> (<Đơn vị công tác>)
+    \begin{itemize}
+        \item GS. TS. Lê Hoài Bắc (Khoa Công nghệ Thông tin, Trường Đại học Khoa học Tự nhiên, Đại học Quốc gia TP. HCM)
+        \item PGS. TS. Kiều Vũ Thanh Tùng (Department of Computer Science, Aalborg University)
+    \end{itemize}{}
+
+    
+    \item \textbf{Sinh viên thực hiện:}
+    
+    %Thể hiện dạng: <Họ và tên sinh viên> (MSSV: )
+    \begin{enumerate}
+    
+        \item Nguyễn Anh Khôi (MSSV: 22127208)
+    \end{enumerate}
+
+   %Chọn loại thích hợp
+    \item \textbf{Loại đề tài:} Nghiên cứu
+    
+    \item \textbf{Thời gian thực hiện:} Từ \textit{01/2026} đến \textit{07/2026}
+    
+    
+\end{itemize}
+
+\pagebreak 
+
+\section{NỘI DUNG THỰC HIỆN}
+{
+\subsection{Giới thiệu về đề tài}
+\textit{Phát hiện bất thường chuỗi thời gian (TSAD - Time Series Anomaly Detection)} là một bài toán quan trọng có nhiều ứng dụng trong đa dạng các lĩnh vực như trong các khoa hồi sức tích cực (ICUs – Intensive Care Units) \cite{NEURIPS2023_7a53bf4e}, trong các hệ thống đám mây và hệ thống phân tán \cite{10.1145/3746252.3760799}, trong bài toán giám sát người bệnh tại nhà \cite{10.1145/3637528.3671936}, và nhiều ứng dụng khác. Các phương pháp TSAD thường dựa trên hai \textit{tác vụ học (learning task)} chính là \textit{dự báo (forecasting)} và \textit{tái tạo chuỗi (reconstruction)}. Trong đó, các phương pháp TSAD \textit{dựa trên tác vụ tái tạo chuỗi (reconstruction-based)} thường được sử dụng để phát hiện bất thường trong các lĩnh vực cần độ chính xác cao, do mô hình trong các phương pháp này dự đoán dựa trên dữ liệu mới nhất, không giống như các phương pháp dựa trên \textit{tác vụ dự báo (forecasting-based)} thường dựa trên dữ liệu lịch sử để dự đoán dữ liệu mới nhất \cite{10.1145/3691338}. Trong đề tài này, chúng tôi sẽ nghiên cứu và thảo luận về các phương pháp TSAD dựa trên tác vụ tái tạo chuỗi. Trong các đoạn kế tiếp, chúng tôi sẽ thảo luận về khía cạnh dữ liệu của bài toán TSAD.
+
+Dữ liệu chuỗi thời gian được gán nhãn bất thường, tính đến hiện nay, là tương đối ít, do việc gán nhãn là rất tốn nhân công. Ngoài ra, dữ liệu được xem là bình thường cũng không tránh khỏi nguy cơ bị \textit{nhiễm bất thường (anomaly contamination)}. Vì hai lí do trên, một số phương pháp hiện nay sử dụng các kỹ thuật \textit{gia tăng dữ liệu (data augmentation)} nhằm thu được các \textit{bất thường nhân tạo (pseudo-anomaly)} \cite{10.1145/3711896.3737110} \cite{jeong2026pgrfnet} \cite{darban_carla_2025}. Điều này, một mặt giúp các mô hình có nhiều dữ liệu hơn để học được các \textit{mẫu hình bất thường (anomalous pattern)} một cách tiện lợi hơn, mặt khác có thể vô tình tạo ra các bất thường nhân tạo trùng với các bất thường bị nhiễm trong dữ liệu bình thường, giúp mô hình tách biệt được tốt hơn những mẫu hình thật sự bình thường ra khỏi những mẫu hình bất thường.
+
+Các phương pháp gia tăng dữ liệu bất thường hiện nay dựa trên một trong hai giả định chính: \textit{giả định nhị phân về bất thường (binary anomaly assumption)}, nghĩa là có một lớp bình thường và một lớp bất thường, và \textit{giả định đa lớp về bất thường (multi-class anomaly assumption)}, nghĩa là có một lớp bình thường và nhiều lớp bất thường. Hai \textit{tác vụ học (learning task)} tương ứng với hai giả định này là \textit{phân loại nhị phân (binary classification)} và \textit{phân loại đa lớp (multi-class classification)}.
+
+Các phương pháp học sâu được đề xuất gần đây, bao gồm các phương pháp sử dụng kỹ thuật gia tăng dữ liệu, đã cho thấy kết quả khả quan trong tác vụ phát hiện bất thường chuỗi thời gian. Tuy nhiên, chỉ có số ít phương pháp định lượng được \textit{độ bất định của mô hình (epistemic uncertainty)} \cite{10.1145/3637528.3671936}. Những phương pháp không định lượng được độ bất định của mô hình không phát hiện được khi nào mô hình đang \textit{quá tự tin (overconfident)}, và khi nào mô hình đang \textit{không chắc chắn (uncertain)}, đặc biệt khi sử dụng mô hình trên dòng dữ liệu thời gian sinh ra từ phân phối khác với phân phối của tập huấn luyện. Điều này làm giới hạn khả năng ứng dụng các phương pháp này trong các lĩnh vực rủi ro cao như y tế kỹ thuật cao, tài chính, và ngân hàng.
+
+Tóm lại, các phương pháp hiện nay có hai hạn chế chung như sau: \newline
+(1) Chưa lượng hoá được \textit{độ bất định (uncertainty)} trong kết quả phân lớp hay trong kết quả phát hiện bất thường. \newline
+(2) Chưa thích ứng được mô hình một cách liên tục (continual adaptation) và hiệu quả (efficiency) trên các dòng dữ liệu thời gian có tính không dừng (non-stationary streaming time series).
+
+Để giải quyết hai vấn đề trên, trong đề tài này, chúng tôi sẽ đề xuất một phương pháp để định lượng độ bất định của mô hình đối với \textit{biểu diễn sâu (deep representation)} mà mô hình học được, bằng cách sử dụng phân phối xác suất trong cơ chế \textit{truy vấn nguyên mẫu (querying prototypes)}. Đồng thời, chúng tôi cũng đề xuất một phương pháp để thích ứng mô hình trên dòng dữ liệu thời gian có tính không dừng, với mục tiêu là đưa phân phối của biểu diễn sâu tại thời điểm mới về gần với phân phối của biểu diễn sâu mà mô hình học được sau khi trải qua quá trình tiền huấn luyện (pre-training). Ngoài ra, chúng tôi cũng sẽ đề xuất một phương pháp cải tiến biểu diễn mà mô hình học được sao cho mỗi tác vụ trong khung huấn luyện đa tác vụ (multi-task learning) mà chúng tôi sử dụng sẽ có biểu diễn chuyên biệt tương ứng, dựa trên việc sử dụng đồng thời: một nhánh truy vấn \textit{vec-tơ nguyên mẫu liên tục (continuous prototypes)} và một nhánh truy vấn \textit{vec-tơ nguyên mẫu rời rạc (discrete prototypes)}.
+
+Phương pháp đề xuất sẽ được đánh giá trên các bộ dữ liệu tổng quan (general dataset) trong bài toán TSAD như SMD, SMAP, MSL, SWaT. Các độ đo (metric) mà chúng tôi sẽ sử dụng bao gồm nhưng không giới hạn trong: độ chuẩn xác (precision), độ bao phủ (recall), F1-score, diện tích dưới đường cong AUC (ROC-AUC), diện tích dưới đường cong PR (ROC-PR), và các độ đo chuyên biệt cho bài toán TSAD như Range-AUC-ROC, Range-AUC-PR.
+
+Ngoài các độ đo chuẩn (standard metrics) bên trên, chúng tôi cũng sẽ đo mức độ mô hình sử dụng các vec-tơ nguyên mẫu rời rạc, bằng cách tính toán entropy của phân phối mà chúng tôi sử dụng trong cơ chế truy vấn. Dựa trên số liệu định lượng trong kết quả thí nghiệm, chúng tôi cũng sẽ quyết định thiết kế hay không cơ chế điều chỉnh (regularization) giữa hai nhánh, để tránh việc mô hình lạm dụng kiến thức của một nhánh mà không học nhánh còn lại, đồng thời, làm cho biểu diễn học được giữa hai nhánh khác nhau về mặt ngữ nghĩa, tạo ra sự đa dạng trong không gian biểu diễn.
+
+\subsection{Mục tiêu đề tài}
+Việc thực hiện nghiên cứu đề tài này sẽ giúp đề xuất được phương pháp để định lượng sự không chắc chắn của mô hình, dựa trên cơ sở lý thuyết trong lĩnh vực \textit{học biểu diễn sâu (deep representation learning)}, ứng dụng trong \textit{học biểu diễn chuỗi thời gian (deep representation learning of time window)}. Hơn nữa, đề tài cũng sẽ cung cấp phương pháp để thích ứng mô hình trong bối cảnh chuỗi thời gian có tính không dừng.
+
+Bằng cách cung cấp định lượng bất định và khả năng thích ứng, kết quả của đề tài sẽ giúp các mô hình TSAD hoạt động được một cách đáng tin cậy và hiệu quả hơn trong các bối cảnh dòng dữ liệu thời gian có tính không dừng.
+
+\subsection{Phạm vi của đề tài}
+
+Đối tượng nghiên cứu chính của đề tài là cơ chế học biểu diễn của các mô hình học sâu sử dụng trong TSAD và đối tượng \textit{ten-xơ biểu diễn (representation tensors)} mà các mô hình học được.
+
+Các thực thể liên quan bao gồm các khung kiến trúc mô hình học sâu (backbone) được sử dụng trong TSAD như Residual Convolutional Network (gọi tắt là ResNet) \cite{7780459}, hay các backbone sử dụng cơ chế Attention như Transformer \cite{10.5555/3295222.3295349}, và còn nhiều backbone khác.
+
+Các tập dữ liệu có thể được sử dụng trong đề tài bao gồm: Server Machine Dataset (SMD) \cite{10.1145/3292500.3330672}, Soil Moisture Active Passive (SMAP) \cite{10.1145/3219819.3219845}, Mars Science Laboratory (MSL) \cite{10.1145/3219819.3219845}, Secure Water Treatment (SWaT) \cite{10.1007/978-3-319-71368-7_8}.
+
+Để đánh giá hiệu quả của mô hình (model performance) trên các dòng dữ liệu có tính không dừng, chúng tôi sẽ lựa chọn sử dụng bộ dữ liệu SWaT, và các thực thể (data entity) sau trong bộ dữ liệu SMD: SMD 1-7, 1-8, 2-1, 2-4, và 3-2. Lí do là vì trong các đối tượng này, có sự thay đổi về mặt phân phối giữa chuỗi huấn luyện (training series) và chuỗi kiểm tra được gán nhãn (labeled testing series) \cite{Kim_Mok_Lee_Shin_Yoon_2026}.
+
+\subsection{Cách tiếp cận dự kiến}
+
+Tuy có độ chính xác cao, các phương pháp reconstruction-based thường gặp phải một khó khăn chung là mô hình có thể vô tình học cách tái tạo các mẫu hình bất thường, đây gọi là hiện tượng \textit{tổng quát hoá quá mức (overgeneralization)}. Để giải quyết vấn đề này, các phương pháp gần đây đã đề xuất sử dụng các \textit{vec-tơ bộ nhớ (memory / prototype vectors)} để lưu các mẫu hình bình thường trong quá trình huấn luyện và dùng các vec-tơ này để tái tạo chuỗi đầu vào, làm giới hạn khả năng tái tạo lại các mẫu hình bất thường của mô hình \cite{10.5555/3666122.3668647} \cite{shen2025learn} \cite{10.1145/3696410.3714941}. Bằng cách này, các phương pháp học kèm theo bộ nhớ thường ít tái tạo lại các chuỗi có chứa bất thường.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/hpad-tsne.png}
+    \caption{Trực quan hoá kết quả tái tạo chuỗi của phương pháp H-PAD. Nguồn ảnh trong bài báo gốc \cite{shen2025learn}}
+    \label{fig:hpad-tsne}
+\end{figure}
+
+Tuy vậy, các phương pháp hiện tại có sử dụng cơ chế bộ nhớ chủ yếu lưu trữ các \textit{vec-tơ nguyên mẫu liên tục (continuous prototypes)}. Trong khi đó, việc kết hợp đồng thời vec-tơ nguyên mẫu liên tục với \textit{vec-tơ nguyên mẫu rời rạc (discrete prototypes / codebook)} vẫn chưa được khai thác nhiều. Vì vậy, tiềm năng bổ sung lẫn nhau giữa hai dạng biểu diễn này vẫn chưa được nghiên cứu đầy đủ. Cụ thể, trong khi các vec-tơ liên tục có khả năng biểu diễn linh hoạt và bảo toàn tốt thông tin ngữ nghĩa, các vec-tơ rời rạc có ưu thế về \textit{lượng tử hóa (quantize)} biểu diễn và \textit{nén dữ liệu (data compression)}. Trong đề tài này, chúng tôi kỳ vọng rằng việc phối hợp hai loại vec-tơ trên sẽ giúp xây dựng \textit{các biểu diễn chuyên biệt (more specialized representations)} hơn, từ đó hỗ trợ hiệu quả cho các khung \textit{học đa tác vụ (multi-task learning)}, chẳng hạn như đồng thời tối ưu \textit{tác vụ phân lớp (classification)} và \textit{tác vụ tái tạo chuỗi (reconstruction)}. Việc sử dụng khung học đa tác vụ trong phương pháp cũng sẽ giúp mô hình học được các biểu diễn có tính tổng quát (generality) cao hơn \cite{10.1109/TPAMI.2022.3195549}. Đồng thời, chúng tôi sẽ đề xuất phương pháp định lượng độ bất định phù hợp với cơ chế của từng loại vec-tơ nguyên mẫu. Cụ thể là, khi một \textit{vec-tơ ẩn (latent representation)} truy vấn để các vec-tơ nguyên mẫu chứa giá trị liên tục, chúng tôi sẽ đặt một phân phối xác suất lên các trọng số truy vấn đầu ra để đại diện cho \textit{độ bất định trong thao tác kết hợp (uncertainty in linear combination)} các vec-tơ nguyên mẫu liên tục, có thể là phân phối xác suất trong các bài báo \cite{10.5555/3495724.3497097} \cite{Pei_Wang_Szarvas_2022}. Điểm khác biệt ở đây là chúng tôi sẽ xem việc truy vấn đến các vec-tơ nguyên mẫu rời rạc giống như thao tác cross-attention và đặt một phân phối lên các vec-tơ trọng số attention. Đối với trường hợp vec-tơ nguyên mẫu là các vec-tơ chứa giá trị rời rạc, chúng tôi sẽ sử dụng phương pháp trong bài báo \cite{pmlr-v139-ramesh21a} để đại diện cho độ bất định trong việc chọn ra 1 vec-tơ nguyên mẫu \textit{gần nhất (nearest)} với vec-tơ ẩn. Sau khi sử dụng vec-tơ ẩn để truy vấn đến hai nguyên mẫu, mô hình sẽ tổng hợp (fuse) kết quả từ hai nhánh sử dụng hai bộ tổng hợp (head) khác nhau, mỗi bộ tổng hợp tương ứng với một tác vụ trong khung học đa tác vụ. Như đã nói trong phần 2.1, chúng tôi sẽ căn cứ vào kết quả thí nghiệm để quyết định sẽ thiết kế hay không cơ chế điều chỉnh (regularization) để đảm bảo mô hình không lạm dụng một nhánh cho bất kì tác vụ nào, đồng thời tạo ra sự đa dạng về mặt ngữ nghĩa giữa hai nhánh. Cơ chế mà chúng tôi sử dụng sẽ có điểm tương đồng với cơ chế được trình bày trong hai bài báo \cite{bardes2022vicreg} và \cite{Kim_2026_WACV}.
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=0.9\linewidth]{images/architecture-thesis.drawio.svg}
+    \caption{Dự kiến kiến trúc của mô hình}
+    \label{fig:architcture-v1}
+\end{figure}
+
+Một vấn đề khác chúng tôi muốn thảo luận là, các phương pháp phát hiện bất thường chuỗi thời gian (time series anomaly detection, TSAD) hiện nay vẫn còn tương đối hạn chế trong việc thích ứng trực tuyến (online adaptation) khi dữ liệu đầu vào có tính không dừng (non-stationary), hoặc khi dòng dữ liệu quan sát thuộc miền khác với miền dữ liệu huấn luyện (domain adaptation). Trong phạm vi đề tài này, chúng tôi hướng đến việc đề xuất một cơ chế thích ứng mô hình theo sự thay đổi phân phối của từng online mini-batch. Cụ thể, phương pháp được xây dựng theo hướng căn chỉnh (align) biểu diễn của các mẫu trong online mini-batch với các biểu diễn tham chiếu trong phân phối của tập huấn luyện. Ý tưởng này được lấy cảm hứng từ phương pháp trong bài báo \cite{10.5555/3737916.3740915}. Tuy nhiên, điểm khác biệt của đề tài là chúng tôi sẽ thiết kế một hàm mất mát tương phản (contrastive loss) nhằm đồng thời kéo các biểu diễn trong mini-batch lại gần các biểu diễn chuẩn trong tập huấn luyện và các vec-tơ nguyên mẫu (prototype vectors), qua đó hỗ trợ mô hình thích ứng tốt hơn với sự thay đổi phân phối dữ liệu theo thời gian.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/online-adaptation-v1.png}
+    \caption{Dự kiến phương pháp thích ứng online}
+    \label{fig:online-adaptation-v1}
+\end{figure}
+
+Tóm lại, trong đề tài này, chúng tôi sẽ đề xuất những ý chính sau:
+\begin{itemize}
+    \item Chúng tôi sẽ sử dụng một mô-đun vec-tơ nguyên mẫu liên tục và một mô-đun vec-tơ nguyên mẫu rời rạc. Sau đó, chúng tôi đề xuất kết hợp (fuse) kết quả từ hai mô-đun này để tạo thành các biểu diễn chuyên biệt cho từng tác vụ trong khung huấn luyện đa tác vụ.
+    \item Chúng tôi đề xuất áp dụng phương pháp định lượng độ bất định trong cơ chế truy vấn của từng loại nguyên mẫu tương ứng.
+    \item Chúng tôi thiết kế một hàm mất mát tương phản (contrastive loss) để căn chỉnh biểu diễn trực tuyến với biểu diễn tham chiếu tương ứng.
+\end{itemize}
+
+\subsection{Kết quả dự kiến của đề tài}
+Kết quả dự kiến của đề tài sẽ bao gồm số liệu định lượng, sản phẩm đầu ra và, trong trường hợp tốt nhất, sẽ bao gồm bài báo khoa học.
+
+\begin{itemize}
+    \item Số liệu định lượng sẽ bao gồm các thông số như độ chính xác (precision), độ bao phủ (recall) và F1-score.
+    \item Sản phẩm đầu ra sẽ bao gồm mã nguồn dưới dạng GitHub repository, các dữ liệu liên quan trong Google Drive và các số liệu đo đạc được trong quá trình thí nghiệm.
+    \item Bài báo khoa học, trong trường hợp tốt nhất, sẽ được nộp đến một hội nghị hoặc tạp chí uy tín trong lĩnh vực Khai thác dữ liệu (Data Mining) và Học máy (Machine Learning).
+\end{itemize}
+
+\subsection{Kế hoạch thực hiện}
+\begin{table}[H]
+{\normalsize
+\centering
+\caption{Kế hoạch thực hiện và phân chia công việc}
+\label{tab:plan}
+\renewcommand{\arraystretch}{1.3}
+
+\begin{tabularx}{\textwidth}{|c|X|c|X|}
+\hline
+\textbf{Thời gian} & \textbf{Nội dung công việc} & \textbf{Người thực hiện} & \textbf{Kết quả dự kiến} \\
+\hline
+Tháng 1 & Khảo sát các nghiên cứu trước, xác định bài toán nghiên cứu & Nguyễn Anh Khôi & Tổng quan các nghiên cứu trước và xác định hướng nghiên cứu \\
+\hline
+Tháng 2,3 & Đề xuất phương pháp và mô hình & Nguyễn Anh Khôi & Phương pháp và mô hình dự kiến \\
+\hline
+Tháng 4 & Lập trình và thực hiện thí nghiệm & Nguyễn Anh Khôi & Mã nguồn thí nghiệm và kết quả định lượng của phương pháp và mô hình \\
+\hline
+Tháng 5 & Lặp lại: đánh giá, thí nghiệm và cải tiến, tinh chỉnh phương pháp và mô hình  & Nguyễn Anh Khôi & Các kết quả định lượng thêm từ thí nghiệm, các cải tiến nhỏ để hoàn thiện phương pháp và mô hình \\
+\hline
+Tháng 6 & Viết báo cáo tổng kết đề tài và bài báo khoa học (nếu có) & Nguyễn Anh Khôi & Bản thảo báo cáo tổng kết đề tài và bài báo khoa học (nếu có) \\
+\hline
+Tháng 7 & Hoàn thiện báo cáo tổng kết đề tài và nộp bài báo khoa học (nếu có) & Nguyễn Anh Khôi & Báo cáo tổng kết đề tài và bài báo khoa học (nếu có) \\
+\hline
+\end{tabularx}
+}
+\end{table}
+
+}
+
+\pagebreak 
+%TÀI LIỆU TRÍCH DẪN
+%Đây là ví dụ
+
+\begin{table}[h]
+\noindent
+\begin{minipage}[t]{0.4\textwidth}
+    \centering
+    {\footnotesize\bfseries
+    XÁC NHẬN\\
+    CỦA NGƯỜI HƯỚNG DẪN\\
+    \textit{(Ký và ghi rõ họ tên)}
+    }
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.55\textwidth}
+    \centering
+    {\footnotesize\bfseries
+    \textit{TP. Hồ Chí Minh, ngày 06 tháng 04 năm 2026}\\
+    NHÓM SINH VIÊN THỰC HIỆN\\
+    \textit{(Ký và ghi rõ họ tên)}
+    }
+\end{minipage}
+\end{table}

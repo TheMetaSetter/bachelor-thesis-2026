@@ -25,7 +25,13 @@ Use benchmark_metrics_manifest.json for the complete file inventory and provenan
 The online Table 3 metric payload is stored at
 `online_phase_tables/online_table3_metrics.json`. It contains the 99 per-run
 records, the method/variant means, and the method/variant/entity means for
-VUS-PR, affiliation F1, and VUS-ROC.
+FPR, VUS-PR, affiliation F1, and VUS-ROC.
+
+The THESIS online FPR audit is stored at
+`online_phase_tables/online_fpr_metrics.json`. Its compact tables are
+`online_phase_tables/online_fpr_table.md` and
+`online_phase_tables/online_fpr_table.tex`. FPR uses the causal endpoint
+labels and the strict runtime rule `online/ewma_point_score > online/threshold`.
 
 The rendered comparison table is stored at
 `online_phase_tables/online_phase_metric_table_report3.md`.

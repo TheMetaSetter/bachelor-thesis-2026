@@ -1,0 +1,184 @@
+\chapter{Thiết kế thực nghiệm và Kết quả thực nghiệm}
+\label{Chapter4}
+
+\pagebreak
+\section{Thiết kế thực nghiệm}
+Chúng tôi thử nghiệm phương pháp đề xuất trên 3 chuỗi thời gian khác nhau đến từ tập dữ liệu Server Machine Dataset \cite{10.1145/3292500.3330672} là chuỗi SMD 1-6, chuỗi SMD 3-4 và chuỗi SMD 3-9. Lí do chúng tôi chọn các chuỗi này là vì các chuỗi này có sự thay đổi đủ rõ rệt về mặt phân phối giá trị giữa phần huấn luyện và phần kiểm tra. Kích thước của một cửa sổ đầu vào là 20 và số lượng cửa sổ trong tập huấn luyện, tập xác thực và tập kiểm tra của mỗi chuỗi được trình bày trong bảng bên dưới.
+
+\begin{table}[ht]
+\centering
+\caption{Số lượng cửa sổ với độ dài 20 trong các tập huấn luyện, tập xác thực và tập kiểm tra.}
+\label{tab:smd-window-counts}
+\begin{tabular}{lrrrr}
+\hline
+Chuỗi SMD & Huấn luyện & Xác thực & Kiểm tra & Tổng \\
+\hline
+Machine-1-6 & 18{,}932 & 236 & 1{,}184 & 20{,}352 \\
+Machine-3-4 & 18{,}931 & 236 & 1{,}184 & 20{,}351 \\
+Machine-3-9 & 22{,}952 & 287 & 1{,}435 & 24{,}674 \\
+\hline
+\end{tabular}
+\end{table}
+
+Đối với pha tiền huấn luyện ngoại tuyến (offline pre-training phase), chúng tôi huấn luyện trên 25 epoch cho giai đoạn học biểu diễn đa nhiệm và 5 epoch cho giai đoạn tinh chỉnh các mạng kết hợp. Tổng số lượng (offline) epoch của phương pháp và các baseline tương ứng sẽ là 30. Một epoch tương đương một lần duyệt hết tập huấn luyện. Trên mỗi chuỗi, chúng tôi thực hiện 3 thí nghiệm với 3 hạt giống ngẫu nhiên (random seed) khác nhau và lấy kết quả trung bình làm kết quả trên chuỗi đó. Cấu hình phần cứng chúng tôi sử dụng là 1 GPU dòng RTX 4070 S với 12GB VRAM và 1 CPU dòng AMD EPYC 7702. Toàn bộ mã nguồn của khóa luận này được chúng tôi lưu trữ tại GitHub repo sau
+\href{https://github.com/TheMetaSetter/bachelor-thesis-2026}
+{\texttt{TheMetaSetter/bachelor-thesis-2026}}.
+
+\pagebreak
+\section{Kết quả thực nghiệm}
+
+Chúng tôi thí nghiệm hai \textbf{biến thể (variants)} của pha ngoại tuyến trên các chuỗi SMD 1-6, SMD 3-4 và SMD 3-9. Biến thể THESIS O0 sử dụng các hàm mất mát như đã trình bày ở \hyperref[section:pre-training]{Mục~\ref*{section:pre-training}}. Biến thể THESIS O1 cũng sử dụng các hàm mất mát đó và một hàm mất mát bổ trợ khác tên là \textit{hàm mất mát cân bằng (balanced point-score loss)}. Hàm mất mát cân bằng này sẽ kéo anomaly score của các điểm bình thường xuống thấp hơn anomaly score của các điểm bất thường nhân tạo trong pha tiền huấn luyện ngoại tuyến. Có thể biểu diễn hàm này bằng các phương trình bên dưới.
+
+Trong \textit{chuỗi huấn luyện nhân tạo (synthetic validation series)}, gọi số lượng điểm bình thường là $N_0$ và số lượng điểm bất thường nhân tạo là $N_1$. Mỗi điểm tương ứng một time-step.
+\begin{equation}
+N_0
+=
+\sum_{t}\sum_{i=1}^{T}
+\mathbb{I}\left(M_{t,i}=0\right),
+\qquad
+N_1
+=
+\sum_{t}\sum_{i=1}^{T}
+\mathbb{I}\left(M_{t,i}=1\right).
+\end{equation}
+
+Trung bình và độ lệch chuẩn trên danh sách anomaly score của các điểm bình thường là:
+
+\begin{equation}
+\mu_0
+=
+\frac{1}{N_0}
+\sum_{t}\sum_{i=1}^{T}
+\mathbb{I}\left(M_{t,i}=0\right)s_{t,i},
+\end{equation}
+
+\begin{equation}
+\sigma_0
+=
+\sqrt{
+\frac{1}{N_0}
+\sum_{t}\sum_{i=1}^{T}
+\mathbb{I}\left(M_{t,i}=0\right)
+\left(s_{t,i}-\mu_0\right)^2
+}.
+\end{equation}
+
+Chuẩn hóa (normalize) các điểm bất thường (anomaly score) trước khi tính giá trị hàm mất mát cân bằng.
+
+\begin{equation}
+\eta_{t,i}
+=
+\frac{s_{t,i}-\mu_0}
+{\max\left(\sigma_0,\varepsilon\right)}.
+\end{equation}
+
+Giá trị của hàm mất mát cân bằng được tính toán bằng phương trình:
+
+\begin{equation}
+\boxed{
+\begin{aligned}
+\mathcal{L}_{\mathrm{BPSL}}
+=
+&-\frac{1}{2N_0}
+\sum_{t}\sum_{i=1}^{T}
+\mathbb{I}\left(M_{t,i}=0\right)
+\log\left[
+\operatorname{sigmoid}\left(-\eta_{t,i}\right)
+\right]
+\\
+&-\frac{1}{2N_1}
+\sum_{t}\sum_{i=1}^{T}
+\mathbb{I}\left(M_{t,i}=1\right)
+\log\left[
+\operatorname{sigmoid}\left(\eta_{t,i}\right)
+\right].
+\end{aligned}
+}
+\end{equation}
+
+\begin{table}[htbp]
+\centering
+\caption{So sánh hiệu quả pha ngoại tuyến của phương pháp đề xuất với các phương pháp đối sánh.}
+\label{tab:smd-window-counts}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lcccccccccccc}
+\toprule
+\multirow{2}{*}{{}} & \multicolumn{3}{c}{machine-1-6} & \multicolumn{3}{c}{machine-3-4} & \multicolumn{3}{c}{machine-3-9} & \multicolumn{3}{c}{Average} \\
+\midrule
+{} & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC \\
+THESIS O0 & \underline{0.798} & \underline{0.747} & \textbf{0.892} & \textbf{0.705} & \underline{0.708} & \textbf{0.950} & \underline{0.578} & 0.789 & \underline{0.645} & \textbf{0.694} & \underline{0.748} & \underline{0.829} \\
+THESIS O1 & \textbf{0.799} & \textbf{0.748} & \underline{0.892} & \underline{0.705} & 0.708 & \underline{0.950} & \underline{0.578} & \underline{0.793} & \underline{0.645} & \textbf{0.694} & \textbf{0.749} & \underline{0.829} \\
+RedLamp & 0.586 & 0.701 & 0.500 & 0.614 & \textbf{0.708} & 0.890 & 0.518 & \textbf{0.824} & 0.547 & 0.573 & 0.744 & 0.646 \\
+iForest & 0.265 & 0.434 & 0.623 & 0.154 & 0.151 & 0.830 & 0.028 & 0.645 & 0.249 & 0.149 & 0.410 & 0.568 \\
+KMeans-AD & 0.300 & 0.300 & 0.766 & 0.392 & 0.136 & 0.949 & \textbf{0.675} & 0.699 & \textbf{0.900} & 0.455 & 0.379 & \textbf{0.872} \\
+StumPy & 0.175 & 0.190 & 0.499 & 0.058 & 0.624 & 0.506 & 0.045 & 0.592 & 0.550 & 0.093 & 0.469 & 0.518 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+Kết quả thí nghiệm của pha tiền huấn luyện ngoại tuyến cho thấy cả hai biến thể của phương pháp đề xuất (THESIS) đều tốt hơn các phương pháp đối sánh trên 2 độ đo VUS-PR và Affiliation F1-score, đặc biệt là phương pháp RedLamp \cite{10.1145/3711896.3737110}. Chúng tôi xét phương pháp RedLamp như một biến thể của THESIS nhưng bị cắt bỏ hai mô-đun bộ nhớ. Do biến thể THESIS O1 \textbf{không} tốt hơn đáng kể (significantly better than) biến thể THESIS O0 nên chúng tôi nhận định rằng việc sử dụng hai mô-đun bộ nhớ đóng góp vào mức tăng trên các độ đo nhiều hơn việc sử dụng hàm mất mát cân bằng.
+
+\pagebreak
+\begin{table}[htbp]
+\centering
+\caption{Quan sát độ bất định của mạng nơ-ron trong pha ngoại tuyến.}
+\label{tab:offline-phase-table-2}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lcccccccccccc}
+\toprule
+\multirow{2}{*}{} & \multicolumn{4}{c}{machine-1-6} & \multicolumn{4}{c}{machine-3-4} & \multicolumn{4}{c}{machine-3-9} \\
+\midrule
+ & VUS-PR & Aff. F1 & Validation & Test & VUS-PR & Aff. F1 & Validation & Test & VUS-PR & Aff. F1 & Validation & Test \\
+THESIS O0 & 0.798 & 0.747 & 0.012 & 0.250 & 0.705 & 0.708 & 0.013 & 0.432 & 0.578 & 0.789 & 0.013 & 0.045 \\
+THESIS O1 & 0.799 & 0.748 & 0.006 & 0.089 & 0.704 & 0.708 & 0.019 & 0.573 & 0.578 & 0.793 & 0.024 & 0.061 \\
+\midrule
+\multicolumn{5}{c}{Average} \\
+\cmidrule[1.2pt](l{0pt}r{-0.4em}){1-5}
+ & VUS-PR & Aff. F1 & Validation & Test & \multicolumn{8}{c}{} \\
+THESIS O0 & \textbf{0.694} & 0.748 & \textbf{0.013} & \textbf{0.242} & \multicolumn{8}{c}{} \\
+THESIS O1 & \textbf{0.694} & \textbf{0.749} & 0.016 & 0.241 & \multicolumn{8}{c}{} \\
+\cmidrule[1.2pt](l{0pt}r{-0.4em}){1-5}
+\cmidrule(lr){1-5}
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+Kết quả thí nghiệm cho thấy độ bất định của mạng nơ-ron trên \textit{tập xác thực (validation set)} thấp hơn so với độ bất định của mạng nơ-ron trên \textit{tập kiểm tra (test set)}. Ngoài ra, các độ đo trên tập kiểm tra vẫn cho thấy kết quả tốt dù độ bất định cao hơn, phần nào cho thấy mô hình có khả năng \textit{tổng quát hoá (generalization)} trên tập kiểm tra mà không gặp phải \textit{hiện tượng tự tin quá mức (overconfidence)}. Đây chính là hành vi mà chúng tôi kỳ vọng phương pháp ước lượng độ bất định có được.
+
+\begin{table}[htbp]
+\centering
+\caption{Kết quả cuối cùng ở pha online của THESIS, M2N2 và CANDI.}
+\label{tab:online-phase-table-3-final}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lcccccccccccc}
+\toprule
+\multirow{2}{*}{{}} & \multicolumn{3}{c}{machine-1-6} & \multicolumn{3}{c}{machine-3-4} & \multicolumn{3}{c}{machine-3-9} & \multicolumn{3}{c}{Average} \\
+\midrule
+{} & VUS-PR & Aff. F1 & FPR & VUS-PR & Aff. F1 & FPR & VUS-PR & Aff. F1 & FPR & VUS-PR & Aff. F1 & FPR \\
+THESIS O0 + A0 & \underline{0.808} & \underline{0.999} & \textbf{0.000} & 0.980 & \textbf{0.721} & \textbf{0.969} & 0.659 & 0.765 & 0.073 & 0.816 & \underline{0.828} & 0.347 \\
+THESIS O0 + A1 & \underline{0.808} & \underline{0.999} & \textbf{0.000} & 0.980 & \textbf{0.721} & \textbf{0.969} & 0.659 & 0.765 & 0.073 & 0.816 & \underline{0.828} & 0.347 \\
+THESIS O0 + A2 & \underline{0.808} & \underline{0.999} & \textbf{0.000} & 0.980 & \textbf{0.721} & \textbf{0.969} & 0.657 & 0.765 & 0.073 & 0.815 & \underline{0.828} & 0.347 \\
+THESIS O1 + A0 & \textbf{0.824} & \textbf{0.999} & \textbf{0.000} & \textbf{0.980} & \textbf{0.721} & \textbf{0.969} & \textbf{0.667} & \underline{0.818} & \underline{0.070} & \textbf{0.824} & \textbf{0.846} & \underline{0.346} \\
+THESIS O1 + A1 & \textbf{0.824} & \textbf{0.999} & \textbf{0.000} & \textbf{0.980} & \textbf{0.721} & \textbf{0.969} & \textbf{0.667} & \underline{0.818} & \underline{0.070} & \textbf{0.824} & \textbf{0.846} & \underline{0.346} \\
+THESIS O1 + A2 & \textbf{0.824} & \textbf{0.999} & \textbf{0.000} & \underline{0.980} & \textbf{0.721} & \textbf{0.969} & \underline{0.666} & \underline{0.818} & \underline{0.070} & \underline{0.824} & \textbf{0.846} & \underline{0.346} \\
+M2N2 & 0.574 & 0.791 & \underline{0.012} & 0.815 & \textbf{0.721} & \textbf{0.969} & \textbf{0.717} & \textbf{0.997} & \textbf{0.004} & 0.702 & \underline{0.836} & \textbf{0.328} \\
+CANDI & \underline{0.590} & \underline{0.793} & 0.015 & \underline{0.919} & \textbf{0.721} & \textbf{0.969} & 0.608 & 0.808 & 0.171 & \underline{0.706} & 0.774 & 0.385 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+Trong bảng này, FPR được tính bởi $\mathrm{FP}/(\mathrm{FP}+\mathrm{TN})$; FPR càng thấp càng tốt. Mỗi ô là trung bình của ba seed trên cùng một entity, còn cột Average là trung bình của ba entity.
+
+Chúng tôi thiết kế thí nghiệm pha trực tuyến với ba biến thể của phương pháp thích ứng là A0, A1 và A2. Biến thể A0 là hoàn toàn không thích ứng. Biến thể A1 có thích ứng nhưng không sử dụng hàm mất mát tương phản (contrastive loss) (xem \hyperref[eq:src-on-loss]{Phương trình~(\ref*{eq:src-on-loss})}) giữa nhánh biểu diễn trực tuyến và nhánh biểu diễn nguồn. Biến thể A2 có thích ứng và sử dụng tất cả hàm mất mát trong phương pháp đề xuất, bao gồm một hàm phạt kiểu hinge (xem \hyperref[eq:hard-rec-loss]{Phương trình~(\ref*{eq:hard-rec-loss})}) và một hàm mất mát tương phản.
+
+\pagebreak
+Kết quả thí nghiệm cho thấy các biến thể sử dụng thích ứng trực tuyến (trong \hyperref[tab:online-phase-table-3-final]
+{Bảng~\ref*{tab:online-phase-table-3-final}}) có VUS-PR và Affiliation F1 cao hơn các biến thể thuần tiền huấn luyện ngoại tuyến (trong \hyperref[tab:smd-window-counts] {Bảng~\ref*{tab:smd-window-counts}}) và cao hơn hai phương pháp đối sánh chính là M2N2 \cite{Kim_Park_Choo_2024} và CANDI \cite{Kim_Mok_Lee_Shin_Yoon_2026}. FPR cho thấy một kết luận khác: M2N2 có FPR trung bình thấp nhất (0.328), tiếp theo là THESIS O1 (0.346), THESIS O0 (0.347) và CANDI (0.385). Cả ba phương pháp đều có FPR cao trên machine-3-4. Khi cố định biến thể ngoại tuyến và sử dụng các biến thể trực tuyến khác nhau, kết quả độ đo không thay đổi đáng kể, kể cả đối với biến thể không sử dụng thích ứng. Điều này cho thấy, thay đổi của pha trực tuyến (so với pha ngoại tuyến) đóng góp chính vào mức tăng của VUS-PR và Affiliation F1 là việc sử dụng kỹ thuật làm trơn (smoothing) chuỗi điểm bất thường bằng phép tính trung bình trượt hàm mũ (\textit{exponentially weighted moving average -- EWMA}). Thay đổi đơn giản nhất này đóng góp nhiều nhất vào mức tăng.

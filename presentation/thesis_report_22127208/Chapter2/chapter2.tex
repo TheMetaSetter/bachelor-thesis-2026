@@ -1,0 +1,365 @@
+\chapter{Các công trình liên quan}
+\label{Chapter2}
+
+\pagebreak
+\section{Phát hiện bất thường trên chuỗi thời gian đa biến sử dụng mạng nơ-ron sâu}
+Các phương pháp học sâu được đề xuất gần đây, cụ thể là từ năm 2024 đến tháng 7 năm 2026, cho bài toán \textit{phát hiện bất thường trên chuỗi thời gian đa biến (MTSAD)} thường sẽ học cách \textbf{dự đoán (predict)} \textit{giá trị kỳ vọng (expected value)} của một mẫu dữ liệu dựa trên các mẫu hình đã được mã hoá (encoded) vào ten-xơ tham số (parameter tensors) của mô hình backbone và \textbf{ra quyết định (make decision)} một mẫu dữ liệu (sample) là bình thường hay bất thường dựa vào độ lệch (deviations) giữa giá trị kỳ vọng của mẫu và giá trị của cùng mẫu đó mà mô hình thật sự nhận được. Tuỳ vào phương pháp cụ thể mà độ lệch đó có thể là độ lệch tái tạo chuỗi (reconstruction error) \cite{wei2026dess}\cite{rajan2026heights}\cite{wu2026wavae}, độ lệch dự báo chuỗi (forecasting residual) \cite{rajan2026heights}\cite{martinez2026adaptive}\cite{banerjee2026unknown}, độ lệch so với các vec-tơ nguyên mẫu đại diện cho mẫu hình bình thường (deviations from normal prototypes) \cite{shen2026gboc}\cite{jeong2026pgrf}\cite{park2026paano}, và nhiều cách tính toán độ lệch khác \cite{zhuang2024contraad}\cite{martinez2026adaptive}\cite{kim2026sacvt}\cite{li2026ngbad}. Trong đó, ra quyết định phát hiện bất thường dựa vào độ lệch tái tạo chuỗi thường được sử dụng trong các ứng dụng yêu cầu độ chính xác cao \cite{10.1145/3691338}. Đối với một cửa sổ tại bước thời gian \(t\), công thức của độ lệch tái tạo thường được viết một cách tường minh như sau:
+\begin{equation}
+\begin{aligned}
+E_{\mathrm{rec},t}(\mathbf{X}_t,\widehat{\mathbf{X}}_t)
+&=
+\operatorname{MSE}(\mathbf{X}_t,\widehat{\mathbf{X}}_t)
+\\[4pt]
+&=
+\frac{1}{TD}
+\sum_{s=t-T+1}^{t}
+\sum_{d=1}^{D}
+\left(x_{s,d}-\widehat{x}_{s,d}\right)^2
+\\[4pt]
+&=
+\frac{1}{TD}
+\Big[
+(x_{t-T+1,1}-\widehat{x}_{t-T+1,1})^2
++\cdots+
+(x_{t-T+1,D}-\widehat{x}_{t-T+1,D})^2
+\\
+&\qquad\quad+
+(x_{t-T+2,1}-\widehat{x}_{t-T+2,1})^2
++\cdots+
+(x_{t-T+2,D}-\widehat{x}_{t-T+2,D})^2
+\\
+&\qquad\quad+
+\cdots
+\\
+&\qquad\quad+
+(x_{t,1}-\widehat{x}_{t,1})^2
++\cdots+
+(x_{t,D}-\widehat{x}_{t,D})^2
+\Big].
+\end{aligned}
+\label{eq:reconstruction-error}
+\end{equation}
+
+\pagebreak
+Trong đó:
+\begin{itemize}
+    \item \(T\) là số bước thời gian trong một cửa sổ;
+    
+    \item \(D\) là số biến;
+    
+    \item \(x_{t,d}\) là giá trị thật sự quan sát được của biến \(d\) tại thời điểm \(t\);
+    
+    \item \(\widehat{x}_{t,d}\) là giá trị được tái tạo của biến \(d\) tại thời điểm \(t\). Đây là giá trị mà mô hình kì vọng;
+    
+    \item \(E_{\mathrm{rec},t}\) là độ lệch tái tạo. Giá trị
+    \(E_{\mathrm{rec},t}\) càng lớn thì chuỗi quan sát được \(\mathbf{X}_t\)
+    càng khác chuỗi kỳ vọng \(\widehat{\mathbf{X}}_t\). Khi độ lệch này vượt qua một ngưỡng \(\tau\) nào đó thì mô hình quyết định cửa sổ quan sát được là bất thường.
+\end{itemize}
+
+Chúng tôi in đậm hai từ \textbf{dự đoán} giá trị kỳ vọng và \textbf{ra quyết định} phát hiện bất thường để người đọc phân biệt được rõ ràng hơn hai quá trình này trong bất kì phương pháp MTSAD nào.
+
+\begin{table}[H]
+    \centering
+    \caption{Một số phương pháp phát hiện bất thường chuỗi thời gian
+    sử dụng mạng nơ-ron trong giai đoạn 2024--2026.}
+    \label{tab:recent-deep-tsad-methods}
+    \small
+    \renewcommand{\arraystretch}{1.15}
+
+    \begin{tabularx}{\textwidth}{
+        >{\centering\arraybackslash}p{1.0cm}
+        >{\raggedright\arraybackslash}p{2.5cm}
+        >{\raggedright\arraybackslash}p{2.8cm}
+        >{\raggedright\arraybackslash}X
+    }
+        \toprule
+        \textbf{Năm} &
+        \textbf{Tên phương pháp} &
+        \textbf{Nơi công bố} &
+        \textbf{Các từ khoá} \\
+        \midrule
+
+        2024 & ContraAD~\cite{zhuang2024noise} & PVLDB &
+        \textit{cross contrastive learning; cross-timestamp discrepancy;
+        anomaly-boundary-guided optimization} \\
+
+        2024 & DualTF~\cite{nam2024dualtf} & WWW &
+        \textit{time-frequency granularity alignment;
+        dual-domain representation; cross-granularity alignment} \\
+
+        2025 & CATCH~\cite{wu2025catch} & ICLR &
+        \textit{frequency patching; channel masking;
+        channel-aware frequency dependencies} \\
+
+        2025 & DADA~\cite{shentu2025dada} & ICLR &
+        \textit{adaptive bottleneck; complementary masking;
+        dual adversarial decoders} \\
+
+        2026 & Adaptive Conformal AD~\cite{martinezgil2026adaptive}
+        & ICLR &
+        \textit{foundation-model residual nonconformity;
+        adaptive conformal calibration; sequential p-values;
+        false-alarm control} \\
+
+        2026 & DESS~\cite{wei2026dess} & WWW &
+        \textit{evolving proxy; proxy-guided update;
+        streaming concept-drift adaptation} \\
+
+        2026 & GBOC~\cite{shen2026gboc} & AAAI &
+        \textit{granular-ball vector data description;
+        density-guided splitting; nearest-ball alignment} \\
+
+        2026 & HEIGHTS~\cite{rajan2026heights} & Neurocomputing &
+        \textit{hierarchical graph structure learning;
+        temporal-variable graphs; view-level hierarchical graph} \\
+
+        2026 & MindTS~\cite{hu2026mindts} & ICLR &
+        \textit{time-text semantic alignment; condensed interaction;
+        content-condenser reconstruction} \\
+
+        2026 & PaAno~\cite{park2026paano} & ICLR &
+        \textit{patch-based representation learning;
+        normal-patch embedding bank; patch-neighborhood scoring} \\
+
+        2026 & PGRF-Net~\cite{jeong2026pgrfnet} & ICLR &
+        \textit{prototype-guided relational fusion;
+        multi-evidence modeling; gated evidence fusion} \\
+
+        2026 & SACVT~\cite{kim2026sacvt}
+        & IEEE Internet of Things Journal &
+        \textit{step-aware cross-view attention;
+        hierarchical step-token summarization; cross-wafer views} \\
+
+        2026 & VLM4TS~\cite{he2026vlm4ts} & AAAI &
+        \textit{time-series visual rendering; ViT candidate screening;
+        VLM reasoning and refinement} \\
+
+        2026 & WAVAE~\cite{wu2026wavae} & Information Fusion &
+        \textit{weak augmentation; mutual-information contrast;
+        adversarial feature alignment} \\
+
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Phát hiện bất thường trên chuỗi thời gian đa biến có sử dụng bộ nhớ hỗ trợ}
+Các phương pháp MTSAD dựa trên tái tạo chuỗi có thể gặp một khó khăn là mạng nơ-ron vô tình học được cách tái tạo các mẫu hình bất thường bị nhiễm (contaminated) trong dữ liệu huấn luyện. Hành vi này được gọi là \textit{tổng quát hoá quá mức (over-generalization)} \cite{10.5555/3666122.3668647} \cite{shen2025learn}. Để hạn chế hành vi này ở các mạng nơ-ron backbone, tác giả Song và các cộng sự đã đề xuất sử dụng \textit{mô-đun bộ nhớ (memory bank)} để lưu lại các vec-tơ đại diện cho các mẫu hình bình thường, gọi là các nguyên mẫu (prototypes), và thiết kế cơ chế truy vấn nguyên mẫu (query prototypes) với chủ ý là làm giảm khả năng tái tạo các mẫu hình bất thường của mô hình, góp phần hạn chế được hành vi tổng quát hoá quá mức \cite{10.5555/3666122.3668647}. Tiếp theo sau, tác giả Shen và các cộng sự đề xuất sử dụng đồng thời nguyên mẫu bình thường (normal prototypes) và nguyên mẫu chu kỳ (period prototypes), kèm theo cơ chế truy vấn tương ứng với mỗi loại để giúp mô hình tránh được hiện tượng tổng quát hoá quá mức ở các loại bất thường cụ thể như là bất thường điểm (point anomalies), bất thường khoảng (interval anomalies) và bất thường chu kỳ (period anomalies) \cite{shen2025learn}. Đầu năm 2026, tác giả Park và các cộng sự đề xuất sử dụng kết hợp các vec-tơ nguyên mẫu trong bộ nhớ với các quyết định khéo léo khác về mặt thiết kế phương pháp như sử dụng hàm mất mát tương phản (contrastive loss), hàm mất mát của tác vụ tiền đề (pretext loss) và hàm tính điểm bất thường (anomaly scoring function) \cite{park2026paano}.
+
+\section{Thích ứng khi kiểm thử trực tuyến cho bài toán phát hiện bất thường chuỗi thời gian}
+Khi triển khai mạng nơ-ron lên môi trường công nghiệp (production environment) để phát hiện bất thường trên chuỗi thời gian, mạng có thể sẽ nhận được các cửa sổ dữ liệu (time window) nằm ngoài phân phối đã học được từ quá trình tiền huấn luyện (pre-training), hiện tượng này gọi là \textit{hiện tượng dịch chuyển phân phối dữ liệu đầu vào (input data distribution shift)}, thường được viết ngắn gọn là ``distribution shift''. Hiện tượng này xuất hiện trong nhiều lĩnh vực khác nhau. Trong giám sát trung tâm dữ liệu, tín hiệu đo từ xa (telemetry) đến từ các đơn vị phần cứng, chẳng hạn như đơn vị xử lý đồ hoạ (Graphics Processing Unit - GPU), đơn vị xử lý trung tâm (Central Processing Unit), bộ nhớ truy xuất ngẫu nhiên (Random Access Memory - RAM), ổ cứng thể rắn (Solid-State Disk - SSD), có thể xuất hiện distribution shift khi thay mới hoặc nâng cấp các đơn vị phần cứng. Hiện tượng này cũng có thể xảy ra khi thay mới hoặc nâng cấp \textit{hệ thống cảm biến đo từ xa (telemetry sensor system)}. Hiện tượng tương tự có thể xảy ra khi nâng cấp hoặc thay mới các tấm pin trong các trang trại điện mặt trời (solar farm).
+
+
+Năm 2024, tác giả Kim Dong Min và các cộng sự đề xuất sử dụng ước lượng xu hướng (trend estimation), khử xu hướng (detrending) và thích ứng khi kiểm thử tự giám sát (self-supervised test-time adaptation) để học các mẫu hình \textit{bình thường mới} (\textit{new normality} hay \textit{new normal patterns}) \cite{Kim_Park_Choo_2024}.
+
+Năm 2026, Tác giả Park và các cộng sự đề xuất sử dụng tập mã rời rạc (discrete codebook) để lưu đồng thời mẫu hình bình thường (normal patterns) học được từ tập huấn luyện và mẫu hình bình thường học được trong thời gian kiểm thử (test time). Phương pháp này cập nhật trực tiếp các vec-tơ trong tập mã rời rạc ngay trong thời gian kiểm thử.
+
+Cùng năm 2026, tác giả Kim HuynGi và các cộng sự đề xuất phương pháp thích ứng khi kiểm thử dựa trên các mẫu dữ liệu \textit{nghi là báo động giả (potential false positives)} và cập nhật một mạng rất ít tham số (light-weight) nằm trên \textit{kết nối cộng tắt (residual connection)} nhằm bảo toàn tri thức và không gian ẩn mà bộ mã hoá đã học được sau quá trình tiền huấn luyện (pre-training) \cite{Kim_Mok_Lee_Shin_Yoon_2026}.
+
+\section{Ước lượng bất định nhận thức}
+\textit{Bất định nhận thức (epistemic uncertainty)} là mức độ không chắc chắn của mô hình do dữ liệu huấn luyện chưa cung cấp đủ thông tin để mô hình học được một hàm dự đoán đáng tin cậy. Bất định nhận thức thường tăng lên khi mô hình tính toán dự đoán trên các mẫu dữ liệu nằm ngoài phân phối của dữ liệu huấn luyện và có thể giảm xuống khi mô hình được huấn luyện trên nhiều dữ liệu hơn. Ngược lại, bất định ngẫu nhiên (aleatoric uncertainty) có nguồn gốc từ nhiễu hoặc tính ngẫu nhiên vốn có trong dữ liệu và không thể loại bỏ hoàn toàn được kể cả khi có thêm dữ liệu huấn luyện \cite{kendall2017uncertainties} \cite{deng2023uncertainty}.
+
+Một \textit{mạng nơ-ron tất định (deterministic neural networks)} chỉ tạo ra một giá trị dự đoán cho mỗi mẫu dữ liệu đầu vào. Do đó, nếu tồn tại nhiều hơn một cấu hình (hay bộ giá trị) tham số phù hợp hoặc quá trình suy luận (computational process of inference) phù hợp cho cùng một mạng nơ-ron, thì giá trị dự đoán này không cho biết được quyết định của mạng nơ-ron sẽ dao động thế nào qua các cấu hình tham số và các quá trình suy luận khác nhau. Để \textit{ước lượng} (hay \textit{định lượng}) mức độ dao động đó, tác giả Gal và Ghahramani đề xuất sử dụng \textit{cơ chế tắt nơ-ron ngẫu nhiên (dropout mechanism)} \cite{2627435.2670313} kể cả trong thời gian kiểm thử và thực hiện nhiều lần \textit{tính toán lan truyền xuôi (forward-propagation)} với các \textit{mặt nạ bật tắt (dropout mask)} được lấy mẫu độc lập từ cùng một phân phối Bernoulli (independent and identically distributed - i.i.d), biết rằng cơ chế tắt nơ-ron ngẫu nhiên thường chỉ được sử dụng trên dữ liệu huấn luyện (training data).
+
+Phương pháp này được gọi là \textbf{Monte Carlo dropout} và được các tác giả \textit{diễn giải toán học (mathematically formulated)} để trở nên tương đương với một phép xấp xỉ suy luận Bayes (Bayes inference) trên tham số của một mạng nơ-ron \cite{gal2016dropout}.
+
+Một hướng tiếp cận khác là huấn luyện nhiều mạng nơ-ron có cùng kiến trúc nhưng có bộ tham số được khởi tạo độc lập và từ cùng một phân phối (i.i.d), sau đó tính toán độ phân tán trên các dự đoán của các mạng này. Hướng tiếp cận này thường được gọi là \textit{tham vấn nhiều mạng sâu (deep ensembles)} \cite{lakshminarayanan2017simple}.
+
+Tác giả Pei và các cộng sự đề xuất một cách tiếp cận khác để tạo ra nhiều kết quả suy luận từ cùng một mạng nơ-ron. Cụ thể, các tác giả lấy mẫu độc lập ngẫu nhiên các trọng số của \textit{cơ chế chú ý (attention mechanism)} \cite{bahdanau2014attn} từ cùng một phân phối Gumbel-Softmax. Trong bài báo, đây là phân phối có điều kiện trên một tập hợp \textit{các vec-tơ tâm cụm có thể học được (learnable centroids)}. Khi thực hiện nhiều lần lan truyền xuôi (forward-propagation) với các mẫu Gumbel độc lập ngẫu nhiên, mạng nơ-ron có thể tạo ra nhiều ten-xơ biểu diễn (representation tensors) và nhiều giá trị dự đoán (prediction values) khác nhau cho cùng một mẫu dữ liệu đầu vào. \textit{Độ lệch chuẩn (standard deviation)} giữa các giá trị dự đoán này được xem như độ bất định nhận thức (epistemic uncertainty) của mạng nơ-ron \cite{pei2022transformer}. Tuy nhiên, phương pháp này được đề xuất cho các \textit{tác vụ phân loại văn bản (text classification)}, không phải cho bài toán phát hiện bất thường trên chuỗi thời gian.
+
+Đối với một phương pháp phát hiện bất thường chuỗi thời gian (TSAD) dựa trên độ lệch tái tạo, giả sử ta thực hiện \(M\) lần \textit{lan truyền xuôi ngẫu nhiên (stochastic forward-propagation)} trên cùng một cửa sổ \(\mathbf{X}_t\) với cùng một mạng nơ-ron có sử dụng \textit{cơ chế chú ý ngẫu nhiên (stochastic attention)}. Ở lần lan truyền xuôi thứ \(m\), mạng nơ-ron tạo ra chuỗi tái tạo
+\(\widehat{\mathbf{X}}_t^{(m)}\) và điểm bất thường
+\(s_t^{(m)}\). Điểm bất thường trung bình của cửa sổ thời gian (time window) đó được tính toán như sau:
+\begin{equation}
+\begin{aligned}
+\overline{s}_t
+&=
+\frac{1}{M}
+\sum_{m=1}^{M}
+s_t^{(m)}
+\\[4pt]
+&=
+\frac{1}{M}
+\sum_{m=1}^{M}
+\operatorname{MSE}
+\left(
+\mathbf{X}_t,
+\widehat{\mathbf{X}}_t^{(m)}
+\right).
+\end{aligned}
+\label{eq:mean-anomaly-score}
+\end{equation}
+
+Mức độ phân tán của điểm bất thường trên cùng một cửa sổ được tính bằng phương sai mẫu, có công thức tính khác với phương sai tổng thể ở mức độ tự do (degree of freedom):
+\begin{equation}
+U_{\mathrm{score},t}
+=
+\frac{1}{M-1}
+\sum_{m=1}^{M}
+\left(
+s_t^{(m)}-\overline{s}_t
+\right)^2.
+\label{eq:score-uncertainty}
+\end{equation}
+
+Trong đó:
+\begin{itemize}
+    \item \(M\) là số lần truyền xuôi ngẫu nhiên (stochastic forward-propagation) được thực hiện trên cùng một cửa sổ;
+    
+    \item \(\widehat{\mathbf{X}}_t^{(m)}\) là cửa sổ được mạng nơ-ron tái tạo lại ở lần lan truyền xuôi ngẫu nhiên thứ \(m\);
+    
+    \item \(s_t^{(m)}\) là điểm bất thường thu được ở lần lan truyền xuôi ngẫu nhiên thứ \(m\);
+    
+    \item \(\overline{s}_t\) là điểm bất thường trung bình của cửa sổ;
+    
+    \item \(U_{\mathrm{score},t}\) là phương sai mẫu của điểm bất thường. Giá trị này thể hiện mức độ không chắc chắn của mạng nơ-ron đối với cửa sổ \(\mathbf{X}_t\) thông qua quá trình lan truyền xuôi ngẫu nhiên.
+\end{itemize}
+
+\subsection{Các độ đo}
+Trong bài toán phát hiện bất thường chuỗi thời gian, các độ đo truyền thống -- chẳng hạn như Precision, Recall, F1 -- thường không đánh giá chính xác được tính hiệu quả (performance) của phương pháp do tính chất mất cân bằng nghiêm trọng (severely-imbalanced) giữa số lượng mẫu bình thường (mẫu âm tính) và số lượng mẫu bất thường (mẫu dương tính). Các phương pháp Range-based được đề xuất sau đó để đánh giá hiệu quả phát hiện bất thường theo khoảng (interval anomalies) thường cho ra các kết quả tích cực hơn hiệu quả thật sự của phương pháp. Do đó, các độ đo hiện đại như họ độ đo Volume Under Surface \cite{boniol2025vus} và họ độ đo affiliation \cite{10.1145/3534678.3539339} đã được đề xuất để khắc phục các hạn chế của những độ đo trước.
+
+\subsubsection{Các độ đo họ Volume Under Surface}
+Trong họ độ đo này, có hai độ đo mà chúng tôi lựa chọn để đánh giá mô hình vì tính phổ biến trong các bài báo gần đây, đó là VUS-PR và VUS-ROC. Trong đó, chúng tôi ưu tiên đánh giá dựa trên VUS-PR hơn vì độ đo ROC cổ điển vốn có tính chính xác kém hơn độ đo PR cổ điển trên dữ liệu mất cân bằng nghiêm trọng.
+
+Cách tính toán của hai độ đo này là như sau:
+
+Giả sử \textit{chuỗi chứa nhãn thật (ground truth series)} và \textit{chuỗi điểm bất thường (point-level anomaly score series)} có độ dài \(N\), lần lượt được ký hiệu là
+\begin{equation}
+\begin{aligned}
+\mathbf{y}
+=
+\begin{bmatrix}
+y_1,\ldots,y_N
+\end{bmatrix}^{\top}
+\in\{0,1\}^{N}
+\end{aligned}
+\end{equation}
+và
+\begin{equation}
+\begin{aligned}
+\mathbf{s}
+=
+\begin{bmatrix}
+s_1,\ldots,s_N
+\end{bmatrix}^{\top}
+\in\mathbb{R}^{N}.
+\end{aligned}
+\end{equation}
+
+Với mỗi ngưỡng bất thường \(\theta\), chuỗi điểm bất thường được chuyển thành \textit{chuỗi dự đoán nhị phân (binary prediction series)}
+\begin{equation}
+\begin{aligned}
+\widehat{\mathbf{y}}^{(\theta)}
+=
+\begin{bmatrix}
+\widehat{y}^{(\theta)}_1,\ldots,
+\widehat{y}^{(\theta)}_N
+\end{bmatrix}^{\top},
+\end{aligned}
+\end{equation}
+trong đó
+\begin{equation}
+\begin{aligned}
+\widehat{y}^{(\theta)}_n
+=
+\mathbb{I}\left(s_n\geq\theta\right),
+\qquad n\in\{1,\ldots,N\}.
+\end{aligned}
+\end{equation}
+
+Khác với AUC-ROC và AUC-PR cổ điển, VUS không chỉ thay đổi ngưỡng bất thường \(\theta\) mà còn thay đổi độ dài vùng đệm \(\ell\) quanh mỗi \textit{khoảng bất
+thường (anomaly span)} có nhãn ground-truth. Với mỗi độ dài \(\ell\in\{0,1,\ldots,\ell_{\max}\}\), chuỗi ground-truth \(\mathbf{y}\) được mở rộng thành chuỗi ground-truth có vùng đệm (buffered ground-truth series) \(\mathbf{y}^{(\ell)}\). Vùng đệm này cho phép đánh giá một cách linh hoạt hơn các dự đoán
+xuất hiện hơi sớm hoặc hơi muộn so với khoảng bất thường (anomaly span) được gán nhãn ground-truth.
+
+Với mỗi cặp \((\ell,\theta)\), các đại lượng trên đường cong ROC được tính bằng
+\begin{equation}
+\begin{aligned}
+\operatorname{TPR}^{(\ell)}(\theta)
+=
+\operatorname{Recall}^{(\ell)}(\theta)
+=
+\frac{
+\operatorname{TP}^{(\ell)}(\theta)
+}{
+\operatorname{TP}^{(\ell)}(\theta)
++
+\operatorname{FN}^{(\ell)}(\theta)
+},
+\end{aligned}
+\end{equation}
+và
+\begin{equation}
+\begin{aligned}
+\operatorname{FPR}^{(\ell)}(\theta)
+=
+\frac{
+\operatorname{FP}^{(\ell)}(\theta)
+}{
+\operatorname{FP}^{(\ell)}(\theta)
++
+\operatorname{TN}^{(\ell)}(\theta)
+}.
+\end{aligned}
+\end{equation}
+
+Độ chuẩn xác trên đường cong Precision-Recall được tính bằng
+\begin{equation}
+\begin{aligned}
+\operatorname{Precision}^{(\ell)}(\theta)
+=
+\frac{
+\operatorname{TP}^{(\ell)}(\theta)
+}{
+\operatorname{TP}^{(\ell)}(\theta)
++
+\operatorname{FP}^{(\ell)}(\theta)
+}.
+\end{aligned}
+\end{equation}
+
+Khi cố định \(\ell\), việc thay đổi \(\theta\) tạo ra một đường cong ROC hoặc
+Precision-Recall. Khi tiếp tục thay đổi \(\ell\), nhiều đường cong xếp cạnh nhau tạo thành một bề mặt (surface) trong không gian ba chiều. Dựa trên hình ảnh trực quan đó, VUS-ROC được định nghĩa là thể tích đã được chuẩn hoá dưới bề mặt tạo bởi rất nhiều đường cong ROC:
+\begin{equation}
+\begin{aligned}
+\operatorname{VUS\text{-}ROC}
+=
+\frac{1}{\ell_{\max}}
+\int_{0}^{\ell_{\max}}
+\operatorname{AUC\text{-}ROC}^{(\ell)}
+\,d\ell,
+\end{aligned}
+\end{equation}
+trong đó
+\begin{equation}
+\begin{aligned}
+\operatorname{AUC\text{-}ROC}^{(\ell)}
+=
+\int
+\operatorname{TPR}^{(\ell)}(\theta)
+\,d\operatorname{FPR}^{(\ell)}(\theta).
+\end{aligned}
+\end{equation}
+
+Tương tự, VUS-PR được định nghĩa là thể tích được chuẩn hoá dưới bề mặt rất nhiều đường cong Precision-Recall:
+\begin{equation}
+\begin{aligned}
+\operatorname{VUS\text{-}PR}
+=
+\frac{1}{\ell_{\max}}
+\int_{0}^{\ell_{\max}}
+\operatorname{AUC\text{-}PR}^{(\ell)}
+\,d\ell,
+\end{aligned}
+\end{equation}
+trong đó
+\begin{equation}
+\begin{aligned}
+\operatorname{AUC\text{-}PR}^{(\ell)}
+=
+\int
+\operatorname{Precision}^{(\ell)}(\theta)
+\,d\operatorname{Recall}^{(\ell)}(\theta).
+\end{aligned}
+\end{equation}
+
+Khi tính toán trong thực tế, các tích phân trên được xấp xỉ bằng cách lấy trung bình trên một tập hữu hạn các độ dài vùng đệm \(\ell\) và một tập hữu hạn các ngưỡng bất thường \(\theta\).
+VUS-ROC và VUS-PR có thể được xem là các phiên bản mở rộng của AUC-ROC và AUC-PR theo nghĩa là các độ đo này không phụ thuộc vào một ngưỡng bất thường cố định và ít nhạy (sensitive) hơn với các sai lệch nhỏ giữa các vị trí bất thường ground-truth và các vị trí được dự đoán bởi mô hình.

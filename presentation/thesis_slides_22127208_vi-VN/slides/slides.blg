@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99e (TeX Live 2026)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: slides.aux
+The style file: plainnat.bst
+Database file #1: ../references.bib
+Warning--empty journal in pei2022transformer
+You've used 8 entries,
+            2773 wiz_defined-function locations,
+            646 strings with 7144 characters,
+and the built_in function-call counts, 4609 in all, are:
+= -- 396
+> -- 319
+< -- 5
++ -- 107
+- -- 99
+* -- 395
+:= -- 708
+add.period$ -- 35
+call.type$ -- 8
+change.case$ -- 57
+chr.to.int$ -- 8
+cite$ -- 17
+duplicate$ -- 200
+empty$ -- 341
+format.name$ -- 107
+if$ -- 967
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 8
+newline$ -- 59
+num.names$ -- 32
+pop$ -- 120
+preamble$ -- 1
+purify$ -- 49
+quote$ -- 0
+skip$ -- 160
+stack$ -- 0
+substring$ -- 121
+swap$ -- 35
+text.length$ -- 4
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 88
+warning$ -- 1
+while$ -- 31
+width$ -- 0
+write$ -- 129
+(There was 1 warning)

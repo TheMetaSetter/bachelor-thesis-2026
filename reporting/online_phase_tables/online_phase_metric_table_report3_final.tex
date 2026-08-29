@@ -12,15 +12,15 @@
 \toprule
 \multirow{2}{*}{{}} & \multicolumn{3}{c}{machine-1-6} & \multicolumn{3}{c}{machine-3-4} & \multicolumn{3}{c}{machine-3-9} & \multicolumn{3}{c}{Average} \\
 \midrule
-{} & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC & VUS-PR & Aff. F1 & VUS-ROC \\
-THESIS O0 + A0 & \underline{0.808} & \underline{0.999} & 0.895 & 0.980 & \textbf{0.721} & 0.978 & 0.659 & 0.765 & 0.730 & 0.816 & \underline{0.828} & 0.868 \\
-THESIS O0 + A1 & \underline{0.808} & \underline{0.999} & 0.895 & 0.980 & \textbf{0.721} & 0.978 & 0.659 & 0.765 & 0.730 & 0.816 & \underline{0.828} & 0.868 \\
-THESIS O0 + A2 & \underline{0.808} & \underline{0.999} & 0.895 & 0.980 & \textbf{0.721} & 0.978 & 0.657 & 0.765 & 0.728 & 0.815 & \underline{0.828} & 0.867 \\
-THESIS O1 + A0 & \textbf{0.824} & \textbf{0.999} & \underline{0.898} & \textbf{0.980} & \textbf{0.721} & 0.977 & \textbf{0.667} & \underline{0.818} & \underline{0.734} & \textbf{0.824} & \textbf{0.846} & 0.869 \\
-THESIS O1 + A1 & \textbf{0.824} & \textbf{0.999} & \underline{0.898} & \textbf{0.980} & \textbf{0.721} & 0.977 & \textbf{0.667} & \underline{0.818} & \underline{0.734} & \textbf{0.824} & \textbf{0.846} & 0.869 \\
-THESIS O1 + A2 & \textbf{0.824} & \textbf{0.999} & \underline{0.898} & \underline{0.980} & \textbf{0.721} & 0.977 & \underline{0.666} & \underline{0.818} & 0.734 & \underline{0.824} & \textbf{0.846} & 0.869 \\
-M2N2 & 0.574 & 0.791 & \textbf{0.983} & 0.815 & \textbf{0.721} & \underline{0.976} & \textbf{0.717} & \textbf{0.997} & \underline{0.857} & 0.702 & \underline{0.836} & \textbf{0.939} \\
-CANDI & \underline{0.590} & \underline{0.793} & \underline{0.973} & \underline{0.919} & \textbf{0.721} & 0.962 & 0.608 & 0.808 & \textbf{0.871} & \underline{0.706} & 0.774 & \underline{0.935} \\
+{} & VUS-PR & Aff. F1 & FPR & VUS-PR & Aff. F1 & FPR & VUS-PR & Aff. F1 & FPR & VUS-PR & Aff. F1 & FPR \\
+THESIS O0 + A0 & \underline{0.808} & \underline{0.999} & \textbf{0.000} & 0.980 & \textbf{0.721} & \textbf{0.969} & 0.659 & 0.765 & 0.073 & 0.816 & \underline{0.828} & 0.347 \\
+THESIS O0 + A1 & \underline{0.808} & \underline{0.999} & \textbf{0.000} & 0.980 & \textbf{0.721} & \textbf{0.969} & 0.659 & 0.765 & 0.073 & 0.816 & \underline{0.828} & 0.347 \\
+THESIS O0 + A2 & \underline{0.808} & \underline{0.999} & \textbf{0.000} & 0.980 & \textbf{0.721} & \textbf{0.969} & 0.657 & 0.765 & 0.073 & 0.815 & \underline{0.828} & 0.347 \\
+THESIS O1 + A0 & \textbf{0.824} & \textbf{0.999} & \textbf{0.000} & \textbf{0.980} & \textbf{0.721} & \textbf{0.969} & \textbf{0.667} & \underline{0.818} & \underline{0.070} & \textbf{0.824} & \textbf{0.846} & \underline{0.346} \\
+THESIS O1 + A1 & \textbf{0.824} & \textbf{0.999} & \textbf{0.000} & \textbf{0.980} & \textbf{0.721} & \textbf{0.969} & \textbf{0.667} & \underline{0.818} & \underline{0.070} & \textbf{0.824} & \textbf{0.846} & \underline{0.346} \\
+THESIS O1 + A2 & \textbf{0.824} & \textbf{0.999} & \textbf{0.000} & \underline{0.980} & \textbf{0.721} & \textbf{0.969} & \underline{0.666} & \underline{0.818} & \underline{0.070} & \underline{0.824} & \textbf{0.846} & \underline{0.346} \\
+M2N2 & 0.574 & 0.791 & \underline{0.012} & 0.815 & \textbf{0.721} & \textbf{0.969} & \textbf{0.717} & \textbf{0.997} & \textbf{0.004} & 0.702 & \underline{0.836} & \textbf{0.328} \\
+CANDI & \underline{0.590} & \underline{0.793} & 0.015 & \underline{0.919} & \textbf{0.721} & \textbf{0.969} & 0.608 & 0.808 & 0.171 & \underline{0.706} & 0.774 & 0.385 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}

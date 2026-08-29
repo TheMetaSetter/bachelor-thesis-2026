@@ -15,8 +15,9 @@ ENTITY_LABELS = {entity: entity.replace("_", "-") for entity in ENTITIES}
 METRICS = (
     ("vus_pr", "VUS-PR"),
     ("affiliation_f1", "affiliation F1"),
-    ("vus_roc", "VUS-ROC"),
+    ("fpr", "FPR"),
 )
+METRIC_SORT_REVERSE = {"vus_pr": True, "affiliation_f1": True, "fpr": False}
 METHOD_ORDER = (
     ("thesis", "O0", "A0", "THESIS O0 + A0"),
     ("thesis", "O0", "A1", "THESIS O0 + A1"),
@@ -70,7 +71,11 @@ def _build_ranks(
             value_ranks = {
                 value: rank
                 for rank, value in enumerate(
-                    sorted(set(method_values), reverse=True), 1
+                    sorted(
+                        set(method_values),
+                        reverse=METRIC_SORT_REVERSE[metric],
+                    ),
+                    1,
                 )
             }
             for method, offline_variant, online_variant, _ in METHOD_ORDER:
@@ -109,7 +114,13 @@ def _build_average_ranks(
         ]
         value_ranks = {
             value: rank
-            for rank, value in enumerate(sorted(set(method_values), reverse=True), 1)
+            for rank, value in enumerate(
+                sorted(
+                    set(method_values),
+                    reverse=METRIC_SORT_REVERSE[metric],
+                ),
+                1,
+            )
         }
         for method, offline_variant, online_variant, _ in METHOD_ORDER:
             value = averages[(method, offline_variant, online_variant)][metric]
@@ -131,8 +142,8 @@ def _render_table(
         "Mỗi ô là trung bình số học của 3 seed (`seed6`, `seed8`, `seed36`) "
         "cho cùng method, variant và entity.",
         "",
-        "Giá trị cao nhất được in đậm; giá trị cao thứ hai được gạch chân. "
-        "Các metric đều được hiểu là càng cao càng tốt.",
+            "VUS-PR và affiliation F1: càng cao càng tốt; FPR: càng thấp càng tốt. "
+            "Giá trị tốt nhất được in đậm; giá trị tốt thứ hai được gạch chân.",
         "",
         "<style>",
         "  .report-shared { border-collapse: collapse; }",
