@@ -1,0 +1,49 @@
+# This experiment starts from the existing Stage B checkpoint.
+# It runs Stage B directly and does not use the two-stage runner.
+experiment_name: smd__thesis__offline__direct_branch_routing__machine_3_4__w20__seed6__stage_b
+seed: 6
+experiment_variant: direct_branch_routing_v1
+device: cuda
+output_dir: outputs/benchmark/smd/machine_3_4/seed6/thesis_direct_branch_routing/offline/stage_b
+checkpoint_dir: outputs/benchmark/smd/machine_3_4/seed6/thesis_direct_branch_routing/offline/stage_b/checkpoints
+initialization_checkpoint_path: outputs/benchmark/smd/thesis/O0/machine_3_4/seed6/two_stage/initializations/stage_b_init.pt
+data_config_path: configs/data/smd_benchmark_machine_3_4_window20.yaml
+model_config_path: configs/model/thesis_multitask_two_stage_window20.yaml
+task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20_benchmark_fixed_synth.yaml
+model_overrides:
+  training_phase: stage_b_fusion_finetuning
+  fusion_mode: direct_branch_routing
+optimizer:
+  optimizer_name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0
+  gradient_clip_norm: 0.5
+  scheduler:
+    scheduler_name: cosine
+    warmup_epochs: 5
+    warmup_start_lr: 0.001
+    cosine_end_lr: 0.0
+    cosine_after_warmup: true
+checkpoint_monitor_metric: val_synth_vus_pr
+epochs: 5
+evaluation:
+  vus_max_buffer_size: 20
+  vus_num_thresholds: 200
+  retention_policy: retain_for_eda
+logging:
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_run_name: smd__thesis__offline__direct_branch_routing__machine_3_4__w20__seed6__stage_b
+  wandb_tags:
+  - offline-ablation
+  - thesis
+  - direct-branch-routing
+  - machine_3_4
+  - seed6
+  - window20
+  log_hard_prediction_ratio: true
+  log_row_normalized_confusion_matrix: true
+  diagnostics_stages_for_classification:
+  - train
+  - val_synth

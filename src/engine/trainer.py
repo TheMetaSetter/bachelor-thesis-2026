@@ -22,6 +22,7 @@ from src.engine.evaluator import (
     reconstruct_pointwise_records_from_window_payload,
 )
 from src.engine.logger import ExperimentLogger
+from src.engine.runtime_resource_monitor import RuntimeResourceMonitor
 from src.engine.thresholding import (
     build_checkpoint_evaluation_metadata,
     select_point_score_threshold,
@@ -553,6 +554,8 @@ class Trainer:
         best_checkpoint_memory_initialized = False
         best_checkpoint_extra_state: dict[str, Any] | None = None
         last_epoch_metrics: dict[str, Any] | None = None
+        resource_monitor = RuntimeResourceMonitor(self.device)
+        resource_monitor.reset()
         self.model.to(self.device)
         console_print(
             "TRAIN",
