@@ -155,6 +155,16 @@ class ThesisMultitaskSetupMixin:
                 requires_grad=False,
             )
         if self.training_phase == TWO_STAGE_B_PHASE_NAME:
+            if self.fusion_mode == "direct_branch_routing":
+                # Keep legacy fusion modules for checkpoint keys, but never train them.
+                self._set_module_requires_grad(
+                    self.reconstruction_concat_projection,
+                    requires_grad=False,
+                )
+                self._set_module_requires_grad(
+                    self.classification_concat_projection,
+                    requires_grad=False,
+                )
             self._set_module_requires_grad(
                 self.classification_fusion_gate,
                 requires_grad=False,

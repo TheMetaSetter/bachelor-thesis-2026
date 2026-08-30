@@ -1,12 +1,18 @@
-experiment_name: smd__thesis__offline__O0__machine_1_6__w20__debug_cpu
-seed: 8
-experiment_variant: two_stage_debug_cpu_v1
+experiment_name: smd__thesis__offline__direct_branch_routing__machine_1_6__w20__debug_cpu
+seed: 6
+experiment_variant: direct_branch_routing_debug_cpu_v1
 device: cpu
-output_dir: outputs/benchmark_smoke/smd/thesis/O0/machine_1_6/seed8/debug_cpu
-checkpoint_dir: outputs/benchmark_smoke/smd/thesis/O0/machine_1_6/seed8/debug_cpu/checkpoints
+output_dir: outputs/benchmark_smoke/smd/thesis_direct_branch_routing/machine_1_6/seed6/debug_cpu
+checkpoint_dir: outputs/benchmark_smoke/smd/thesis_direct_branch_routing/machine_1_6/seed6/debug_cpu/checkpoints
 data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml
 model_config_path: configs/model/thesis_multitask_two_stage_window20.yaml
 task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20_benchmark_fixed_synth.yaml
+# Debug starts from a fresh model because the historical Stage-B checkpoint is
+# not present in this local checkout. The trainer initializes memories from the
+# small clean training slice before the first Stage-B step.
+model_overrides:
+  training_phase: stage_b_fusion_finetuning
+  fusion_mode: direct_branch_routing
 optimizer:
   optimizer_name: adamw
   learning_rate: 0.001
@@ -28,18 +34,15 @@ logging:
   use_wandb: false
   wandb_project: bachelor-thesis-2026
   wandb_mode: disabled
-  wandb_run_name: smd__thesis__offline__O0__machine_1_6__w20__debug_cpu
+  wandb_run_name: smd__thesis__offline__direct_branch_routing__machine_1_6__w20__debug_cpu
   log_hard_prediction_ratio: false
   log_row_normalized_confusion_matrix: false
+  enable_reconstruction_diagnostics: true
+  diagnostics_include_grad_norm: true
+  diagnostics_log_interval_steps: 1
   diagnostics_stages_for_classification:
     - train
     - val_synth
-two_stage:
-  expected_total_training_epochs: 2
-  stage_a_multitask_epochs: 1
-  stage_b_fusion_finetuning_epochs: 1
-  discrete_memory_label_source: synthetic_train_labels
-  freeze_encoder_and_memories_in_stage_b: true
 data_overrides:
   batch_size: 2
   num_workers: 0

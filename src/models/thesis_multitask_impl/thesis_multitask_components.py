@@ -228,10 +228,12 @@ class ActiveRuntimeConfig:
         if self.fusion_mode not in {
             "task_specific_concat_projection",
             "learnable_sigmoid_scalars",
+            "direct_branch_routing",
         }:
             raise ValueError(
                 "fusion_mode must be one of: "
-                "task_specific_concat_projection, learnable_sigmoid_scalars"
+                "task_specific_concat_projection, learnable_sigmoid_scalars, "
+                "direct_branch_routing"
             )
         if self.discrete_query_mode not in {"cosine_topk", "gumbel_softmax"}:
             raise ValueError(

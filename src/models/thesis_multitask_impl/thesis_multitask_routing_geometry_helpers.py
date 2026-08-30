@@ -31,6 +31,10 @@ def _build_sampled_fusion_hidden(
     ):
         raise ValueError("alpha and beta must match batch size")
 
+    if self.fusion_mode == "direct_branch_routing":
+        # The ablation sends each sampled branch to its matching task head.
+        return continuous_samples, discrete_samples
+
     if self.fusion_mode == "task_specific_concat_projection":
         concatenated_hidden = torch.cat([continuous_samples, discrete_samples], dim=-1)
         flattened_hidden = concatenated_hidden.reshape(
@@ -362,6 +366,30 @@ def _compute_fusion_outputs(
     base_hidden: torch.Tensor | None = None,
     paired_hidden: torch.Tensor | None = None,
 ) -> dict[str, Any]:
+    if self.fusion_mode == "direct_branch_routing":
+        # The ablation bypasses both fusion blocks and preserves branch identity.
+        zeros = continuous_hidden.new_zeros(continuous_hidden.shape[0])
+        return {
+            "hidden_reconstruction": continuous_hidden,
+            "hidden_classification": discrete_hidden,
+            "alpha": zeros,
+            "beta": zeros,
+            "aux": {
+                "fusion_mode": "direct_branch_routing",
+                "alpha": 0.0,
+                "beta": 0.0,
+                "alpha_std": 0.0,
+                "beta_std": 0.0,
+                "alpha_logit": float(self.alpha_logit.detach().cpu()),
+                "beta_logit": float(self.beta_logit.detach().cpu()),
+                "cka_reconstruction_mean": 0.0,
+                "cka_reconstruction_std": 0.0,
+                "cka_classification_mean": 0.0,
+                "cka_classification_std": 0.0,
+                "warmup_active": self.schedule_state["warmup_active"],
+                "temperature": self.gumbel_temperature,
+            },
+        }
     if self.fusion_mode == "task_specific_concat_projection":
         concatenated_hidden = torch.cat([continuous_hidden, discrete_hidden], dim=-1)
         hidden_reconstruction = self.reconstruction_concat_projection(

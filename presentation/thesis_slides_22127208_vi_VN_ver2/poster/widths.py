@@ -22,7 +22,9 @@ print(r"\setlength{\sepwid}{" + str(sepwid) + r"\paperwidth}")
 n = len(sizes)
 for key in sizes:
     sizes[key]["width"] = (
-        1 / n * (1 - (n + 1) * sepwid) if key == 1 else key * sizes[1]["width"] + (key - 1) * sepwid
+        1 / n * (1 - (n + 1) * sepwid)
+        if key == 1
+        else key * sizes[1]["width"] + (key - 1) * sepwid
     )
     print("\\newlength{\\" + sizes[key]["name"] + "colwid}")
     print(

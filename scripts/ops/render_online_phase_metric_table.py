@@ -142,8 +142,8 @@ def _render_table(
         "Mỗi ô là trung bình số học của 3 seed (`seed6`, `seed8`, `seed36`) "
         "cho cùng method, variant và entity.",
         "",
-            "VUS-PR và affiliation F1: càng cao càng tốt; FPR: càng thấp càng tốt. "
-            "Giá trị tốt nhất được in đậm; giá trị tốt thứ hai được gạch chân.",
+        "VUS-PR và affiliation F1: càng cao càng tốt; FPR: càng thấp càng tốt. "
+        "Giá trị tốt nhất được in đậm; giá trị tốt thứ hai được gạch chân.",
         "",
         "<style>",
         "  .report-shared { border-collapse: collapse; }",
