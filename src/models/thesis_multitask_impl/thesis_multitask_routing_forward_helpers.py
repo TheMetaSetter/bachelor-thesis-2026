@@ -17,6 +17,12 @@ from src.core.console import (
 from src.core.contracts import validate_batch, validate_model_outputs
 
 
+def _synchronize_cuda_if_needed(batch: dict[str, Any]) -> None:
+    input_tensor = batch.get("x")
+    if isinstance(input_tensor, torch.Tensor) and input_tensor.is_cuda:
+        torch.cuda.synchronize(input_tensor.device)
+
+
 def _prepare_clean_batch(
     self: Any, batch: dict[str, Any], stage_name: str
 ) -> dict[str, Any]:
@@ -127,6 +133,7 @@ def forward(
 ) -> dict[str, Any]:
     validate_batch(batch)
     console_print("MODEL", "Multitask forward input batch", **summarize_batch(batch))
+    _synchronize_cuda_if_needed(batch)
     forward_start_time = time.perf_counter()
     encoder_outputs = self.encoder(batch)
     hidden = encoder_outputs["hidden"]
@@ -268,6 +275,7 @@ def forward(
     elif self.enable_classification_path:
         logits = self.classification_head(flattened_classification_hidden)
         class_probabilities = torch.softmax(logits, dim=-1)
+    _synchronize_cuda_if_needed(batch)
     outputs = {
         "hidden": hidden,
         "pooled": flattened_classification_hidden,

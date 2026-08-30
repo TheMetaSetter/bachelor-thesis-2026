@@ -318,6 +318,14 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
             epochs=int(experiment_config["epochs"]),
         )
         best_checkpoint_path = training_outputs["best_checkpoint_path"]
+        resource_metrics = dict(training_outputs.get("resource_metrics", {}))
+        if resource_metrics:
+            experiment_logger.log_metrics(
+                {
+                    "event": "run_resource_summary",
+                    **resource_metrics,
+                }
+            )
         experiment_logger.log_summary(
             {
                 "run/output_dir": str(experiment_config["output_dir"]),
@@ -325,6 +333,7 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
                 "run/best_checkpoint_path": str(best_checkpoint_path)
                 if best_checkpoint_path is not None
                 else None,
+                **resource_metrics,
             }
         )
         experiment_logger.log_artifact_file(

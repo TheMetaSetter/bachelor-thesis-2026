@@ -789,6 +789,7 @@ class Trainer:
                     epoch_metrics["diag/grad/train_gradient_norm_std"] = float(
                         np.std(np.asarray(gradient_norm_history, dtype=np.float64))
                     )
+            epoch_metrics.update(resource_monitor.snapshot())
             epoch_metrics.update(self._step_learning_rate_scheduler(epoch_metrics))
             self.metric_history.append(epoch_metrics)
             self.experiment_logger.log_metrics(epoch_metrics)
@@ -923,8 +924,10 @@ class Trainer:
                 extra_state=final_checkpoint_extra_state,
             )
 
+        final_resource_metrics = resource_monitor.snapshot()
         return {
             "best_checkpoint_path": best_checkpoint_path,
             "final_checkpoint_path": final_checkpoint_path,
             "metric_history": self.metric_history,
+            "resource_metrics": final_resource_metrics,
         }
