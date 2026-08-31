@@ -1,9 +1,11 @@
 ---
 date: 2026-08-31T09:21:06+07:00
+updated: 2026-08-31T14:38:54+07:00
 researcher: OpenAI Codex
 topic: "Xác định nhiều nhất có thể các đoạn code, file hoặc module có thể xoá hoặc chỉnh sửa để codebase tối giản nhất có thể"
 status: complete
-revision: 6cd32ac94cc20876828f5c62fd2df5c3ac557587
+initial_revision: 6cd32ac94cc20876828f5c62fd2df5c3ac557587
+revision: 9e91829423d0f1e3d9f3a81656de9b990e36c0a3
 branch: dev
 ---
 
@@ -11,13 +13,14 @@ branch: dev
 
 ## Summary
 
-Ý chính ở đây là codebase có thể giảm rất nhiều file mà không cần đổi thuật toán chính. Phần dư lớn nhất nằm ở hai cây config song song, config cũ do generator không dọn, wrapper tương thích, artifact bị commit nhầm và các nhánh legacy. Phần khó hơn nằm ở model THESIS, config validation, trainer và online engine: chúng không nên xoá nguyên khối, nhưng cần giảm số đường chạy và làm rõ một owner cho mỗi trách nhiệm.
+Ý chính ở đây là codebase có thể giảm rất nhiều file mà không cần đổi thuật toán chính. So sánh với FuSAGNet cho thấy chênh lệch lớn nhất nằm ở số public entrypoint và config materialized, không phải chỉ ở việc repo hiện tại dùng `src/`. Phần dư lớn nhất nằm ở hai cây config song song, config cũ do generator không dọn, wrapper tương thích, artifact bị commit nhầm và các nhánh legacy. Phần khó hơn nằm ở model THESIS, config validation, trainer và online engine: chúng không nên xoá nguyên khối, nhưng cần giảm số đường chạy và làm rõ một owner cho mỗi trách nhiệm.
 
 Kiểm kê hiện tại ghi nhận:
 
-- 346 file Python first-party, tổng 59.865 dòng trong `src/`, `scripts/`, `tests/` và `demo/`.
+- 348 file Python first-party, tổng 60.259 dòng trong `src/`, `scripts/`, `tests/` và `demo/` tại revision cập nhật.
 - 9 file trong `src/` vượt giới hạn 500 dòng.
 - 92 callable trong `src/` vượt giới hạn 50 dòng.
+- 73 Python entrypoint trong `src/`, `scripts/` và `demo/` có khối `__main__`; FuSAGNet chỉ có một entrypoint public là `main.py`.
 - 365 config nằm trong cây phụ `scripts/configs/experiment/`, trong khi source và test hiện hành dùng `configs/experiment/`.
 - 306 config baseline online cũ không còn thuộc ma trận mà generator hiện tại sinh ra.
 - 18 config STUMPY offline nằm trong thư mục tên cũ `stumpy_channel_ab/`.
@@ -41,6 +44,149 @@ Codebase có ba đường chạy chính liên quan trực tiếp đến việc t
 3. Baseline offline/online: generator tạo ma trận YAML, runner chọn baseline, calibration chọn threshold, sau đó ghi report.
 
 `documents/spec/full-spec-v3.md` là spec normative hiện hành. Spec giữ một public model THESIS, một causal window online và yêu cầu bypass `view_a/view_b` trong v3 (`documents/spec/full-spec-v3.md:118-128`, `documents/spec/full-spec-v3.md:187-199`). `codebase_preferences.md` yêu cầu public model phải sở hữu lifecycle, helper không được phân tán lifecycle bằng mixin, file không quá 500 dòng và callable không quá 50 dòng (`codebase_preferences.md:71-75`, `codebase_preferences.md:99-104`).
+
+## Comparative reference: FuSAGNet tree
+
+### Cấu trúc thật của FuSAGNet
+
+FuSAGNet là một official research implementation cho một phương pháp. `README.md` và `basic_repo_structure.txt` cùng mô tả cây chính gồm 6 directory và 17 file nội dung. Hai dotfile nâng số file thật trên disk lên 19. Repo có 12 file Python với 1.326 dòng.
+
+```text
+FuSAGNet-main/
+├── main.py
+├── train.py
+├── test.py
+├── evaluate.py
+├── datasets/
+│   └── TimeDataset.py
+├── models/
+│   ├── FuSAGNet.py
+│   └── graph_layer.py
+├── util/
+│   ├── data.py
+│   ├── net_struct.py
+│   ├── preprocess.py
+│   └── time.py
+└── data/swat/
+```
+
+Tree này chia theo các bước mà người đọc nhìn thấy ngay: data, model, train, test, evaluate và utility. Nó không có layer facade, registry, config package, protocol package, benchmark package hay scripts wrapper song song.
+
+### Luồng owner trong FuSAGNet
+
+`main.py` là public entrypoint duy nhất. Nó trực tiếp:
+
+1. đọc CSV và xử lý dataset-specific branch (`FuSAGNet-main/main.py:35-61`);
+2. tạo `TimeDataset` và dataloader (`main.py:63-103`);
+3. khởi tạo `FuSAGNet` (`main.py:112-121`);
+4. gọi `train()` hoặc load checkpoint (`main.py:123-141`);
+5. gọi `test()` cho validation/test (`main.py:143-150`);
+6. gọi score/evaluation và lưu NumPy output (`main.py:152-235`);
+7. parse CLI và ghép hai dictionary config ngay cuối file (`main.py:252-336`).
+
+Owner còn lại cũng trực tiếp:
+
+| Tree node | Owner thật | Phạm vi |
+| --- | --- | --- |
+| `datasets/` | `TimeDataset.py:5-97` | normalize, windowize và trả sample |
+| `models/` | `FuSAGNet.py:21-347`, `graph_layer.py` | model components và forward |
+| `train.py` | `train():11-103` | optimizer, epoch loop, loss, early stop, best checkpoint |
+| `test.py` | `test():11-103` | inference, loss và thu prediction timeline |
+| `evaluate.py` | `get_full_err_scores`, `get_err_scores`, `get_best_performance_data` | anomaly score, threshold và metrics |
+| `util/` | bốn file 25-46 dòng | graph structure, preprocessing, scoring primitive và time formatting |
+
+### So sánh tree với repo hiện tại
+
+| Khu vực | FuSAGNet | bachelor-thesis-2026 | Nhận định tree |
+| --- | ---: | ---: | --- |
+| Python first-party | 12 file | 348 file | Chênh lệch phản lớn nằm ở scripts, tests và implementation helpers. |
+| Public Python entrypoint | 1 | 73 | Repo hiện tại không có một cửa vào rõ cho mỗi workflow. |
+| Source model tree | 2 file | 35 tracked file trong `src/models/` | Riêng `thesis_multitask_impl/` có 20 file và nhiều mixin. |
+| Script tree | 4 root workflow module | 461 tracked file trong `scripts/` | 365 file là config copy; phần còn lại vẫn có wrapper, CLI, benchmark, experiment và ops chồng nhau. |
+| Config files | 0 | 783 tracked file | FuSAGNet nhét config vào CLI/dictionary; repo luận văn materialize toàn bộ ma trận. |
+| Test files | 0 | 127 tracked file | Test là phần nên giữ; chỉ cần làm tree test bám theo owner runtime. |
+
+Tree first-party hiện tại có các node lớn sau:
+
+```text
+bachelor-thesis-2026/
+├── src/
+│   ├── core/          # 13 tracked files
+│   ├── data/          # 16
+│   ├── models/        # 35
+│   ├── engine/        # 29
+│   ├── baselines/     # 16
+│   ├── metrics/       # 3
+│   ├── protocols/     # 7
+│   ├── adapters/      # 3
+│   └── analysis/      # 3
+├── scripts/               # 461 tracked files
+│   ├── configs/       # 365 duplicate/stale config files
+│   ├── benchmarks/
+│   ├── experiments/
+│   ├── cli/
+│   ├── ops/
+│   └── visualization/
+├── configs/               # 783 tracked files
+├── tests/                 # 127 tracked files
+└── demo/                  # 8 tracked files
+```
+
+Số package cấp cao trong `src/` không phải vấn đề lớn nhất. `data`, `models`, `engine`, `baselines`, `metrics`, `protocols` và `core` đều là các owner có thật trong luận văn. Tree phức tạp chủ yếu do:
+
+- một owner bị chia thành nhiều mixin/helper subtree;
+- một workflow có cả top-level wrapper, package script và internal helper;
+- một experiment được materialize thành hàng trăm YAML;
+- script vận hành một lần được giữ ngang hàng với public workflow;
+- test tree chia theo lịch sử task thay vì bám chặt runtime owner.
+
+### Không nên sao chép FuSAGNet nguyên xi
+
+FuSAGNet đơn giản vì nó giải một bài toán hẹp. Nó cũng bỏ qua nhiều safety boundary mà repo luận văn cần:
+
+- không có test suite hoặc config schema;
+- không có protocol/artifact provenance tách biệt;
+- `main.py` chứa dataset-specific branches và process metadata;
+- `train.py` và `test.py` dùng wildcard imports;
+- model trả tuple 11 phần tử (`models/FuSAGNet.py:335-347`);
+- evaluation tìm threshold tốt nhất bằng ground-truth test labels (`evaluate.py:49-72`), không phù hợp causal benchmark contract của THESIS.
+
+Vì vậy FuSAGNet là bằng chứng tốt cho cách đặt tên tree và giảm cửa vào. Nó không phải bằng chứng rằng repo luận văn nên rút về 17 file.
+
+### Target tree nên dùng làm ràng buộc trước khi lập plan
+
+Đây chưa phải plan di chuyển file. Đây là cây đích tối thiểu để kiểm tra mọi đề xuất refactor sau này:
+
+```text
+bachelor-thesis-2026/
+├── src/
+│   ├── core/          # config, contracts, registry, artifacts
+│   ├── data/          # parse, window, stream, augmentation
+│   ├── models/        # one public file per model
+│   ├── baselines/     # one file/folder per baseline family
+│   ├── engine/        # train, evaluate, online runtime
+│   ├── metrics/       # metric math only
+│   └── protocols/     # benchmark/calibration contracts
+├── scripts/
+│   ├── train.py
+│   ├── evaluate.py
+│   ├── run_offline_benchmark.py
+│   ├── run_online_benchmark.py
+│   ├── generate_configs.py
+│   └── build_report.py
+├── configs/
+│   ├── data/
+│   ├── model/
+│   ├── protocol/
+│   └── experiment/    # compact SSOT, not two materialized trees
+├── tests/                 # mirror the seven src owners + public workflows
+├── documents/
+└── demo/
+```
+
+Hai package `src/adapters/` và `src/analysis/` không xuất hiện trong target tree. Adapter nên đặt cùng model/baseline mà nó chuyển đổi. Analysis entrypoint nên nằm trong một reporting workflow hoặc `documents`-backed reproducibility command, không nằm trong runtime package.
+
+Target `scripts/` chỉ nêu sáu public workflow. Ops một lần có thể tồn tại trong lúc migration, nhưng không được xem là public tree bền vững. Plan refactor sau này cần giải thích rõ mỗi node ngoài target tree này giải quyết yêu cầu nào.
 
 ## Method and evidence levels
 
@@ -381,6 +527,14 @@ Failure này tồn tại trước khi có thay đổi implementation trong resea
 - `src/baselines/online/adaptive.py:84-205` — hai checkpoint parameter và tên state nội bộ hiện tại.
 - `src/baselines/online/redlamp_encoder_checkpoint.py:1-116` — strict encoder-only loader được contract nêu.
 - `src/engine/artifact_sinks.py:14-32` — protocol và no-op implementation không caller.
+- `/Users/conquerormikrokosmos/Downloads/FuSAGNet-main/basic_repo_structure.txt:1-25` — cây research repo FuSAGNet do chính repository ghi lại.
+- `/Users/conquerormikrokosmos/Downloads/FuSAGNet-main/main.py:25-150` — một entrypoint sở hữu data setup, model construction, train và test orchestration.
+- `/Users/conquerormikrokosmos/Downloads/FuSAGNet-main/main.py:152-235` — score/report flow nằm ngay trong entrypoint.
+- `/Users/conquerormikrokosmos/Downloads/FuSAGNet-main/main.py:252-336` — CLI và config dictionary được khai báo trực tiếp.
+- `/Users/conquerormikrokosmos/Downloads/FuSAGNet-main/train.py:11-103` — một train owner cho optimizer, loss, early stop và checkpoint.
+- `/Users/conquerormikrokosmos/Downloads/FuSAGNet-main/test.py:11-103` — một inference owner cho validation/test timeline.
+- `/Users/conquerormikrokosmos/Downloads/FuSAGNet-main/evaluate.py:7-72` — score, threshold và metric owner; threshold dùng test labels.
+- `/Users/conquerormikrokosmos/Downloads/FuSAGNet-main/models/FuSAGNet.py:157-347` — model owner và output tuple 11 phần tử.
 
 ## Configuration observed
 
@@ -402,6 +556,8 @@ Failure này tồn tại trước khi có thay đổi implementation trong resea
 4. q95 là protocol hợp lệ theo spec dù generator q99 hiện hành không sinh nó.
 5. Direct branch routing là code mới, nhưng chưa có bằng chứng trong phạm vi research này rằng nó sẽ thuộc final method.
 6. Snapshot state dict đang stale. Chưa biết source hay snapshot là phía sai nếu chỉ dựa trên test output.
+7. FuSAGNet là một reference repository, không phải khảo sát nhiều research repository. Nó chứng minh một tree đơn giản có thể chạy một method, nhưng không đủ để khẳng định đây là cấu trúc phổ biến của mọi research repo.
+8. Checkout FuSAGNet không có Git metadata cục bộ, nên report không ghi được revision bất biến của reference.
 
 ## Open questions
 
@@ -411,9 +567,13 @@ Failure này tồn tại trước khi có thay đổi implementation trong resea
 4. Generic `online_loop.py` còn là public demo API hay `src/engine/online_tta/` đã thay thế hoàn toàn?
 5. RedLamp baseline online phải load encoder-only theo contract cũ hay load reconstruction model theo runtime hiện tại?
 6. Bốn reference checkout không có reference còn được dùng cho chapter/appendix nào ngoài Git không?
+7. Generated experiment YAML cần được commit để audit hay có thể sinh vào ignored directory từ compact manifests?
+8. Sáu public scripts trong target tree đã đủ cho workflow thật hay còn một workflow bắt buộc khác cần public entrypoint riêng?
 
 ## Final assessment
 
-Phần nên làm đầu tiên không phải refactor model. Nên xoá artifact và exact duplicate, hợp nhất config SSOT, dọn stale generator outputs, rồi xoá nhánh two-view legacy. Bốn bước này giảm hàng trăm file và một đường chạy cũ mà không đổi thuật toán THESIS.
+FuSAGNet xác nhận hướng refactor tree nên bắt đầu từ cửa vào và owner. Mỗi workflow cần một public script. Mỗi runtime concept cần một source owner. Config chỉ cần một SSOT. Ops tạm thời không nên trở thành public tree bền vững.
 
-Sau đó mới xử lý mixin model, config validation, trainer/evaluator và online engine. Các thay đổi này cần snapshot/checkpoint/full-flow safety net đúng trước, vì test snapshot hiện đang stale.
+Phần nên làm đầu tiên vẫn không phải refactor model. Nên xoá artifact và exact duplicate, hợp nhất config SSOT, dọn stale generator outputs, rồi giảm 73 Python entrypoint xuống một tập public workflow nhỏ. Các bước này làm tree dễ đọc trước khi động vào thuật toán THESIS.
+
+Sau đó mới xử lý mixin model, config validation, trainer/evaluator, online engine và nhánh two-view legacy. Các thay đổi này cần snapshot/checkpoint/full-flow safety net đúng trước, vì test snapshot tại lần kiểm tra ban đầu đang stale.
