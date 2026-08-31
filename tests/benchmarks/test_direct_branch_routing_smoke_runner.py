@@ -12,8 +12,9 @@ def test_smoke_runner_builds_one_gpu_direct_routing_config() -> None:
     assert config["model"]["training_phase"] == "stage_b_fusion_finetuning"
     assert config["model"]["fusion_mode"] == "direct_branch_routing"
     assert config["initialization_checkpoint_path"] == (
-        "outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/"
-        "stage_a_multitask_pretraining/checkpoints/best.pt"
+        "outputs/benchmark_smoke/smd/machine_1_6/seed6/"
+        "thesis_direct_branch_routing_O0/offline/stage_b/"
+        "initializations/stage_b_init.pt"
     )
     assert config["output_dir"] == (
         "outputs/benchmark_smoke/smd/machine_1_6/seed6/"

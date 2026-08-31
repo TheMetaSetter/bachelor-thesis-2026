@@ -6,6 +6,8 @@ from scripts.run_direct_branch_routing_full import (
     ENTITIES,
     build_run_configs,
     build_direct_experiment_config,
+    build_stage_a_source_checkpoint_path,
+    build_stage_b_initialization_checkpoint_path,
 )
 
 
@@ -24,7 +26,7 @@ def test_full_runner_builds_all_18_baseline_configs() -> None:
     }
 
 
-def test_direct_config_uses_matching_stage_a_best_checkpoint_and_output() -> None:
+def test_direct_config_uses_bridge_checkpoint_and_output() -> None:
     baseline_config = build_run_configs()[0]
 
     direct_config = build_direct_experiment_config(baseline_config)
@@ -35,8 +37,9 @@ def test_direct_config_uses_matching_stage_a_best_checkpoint_and_output() -> Non
     assert direct_config["model"]["training_phase"] == "stage_b_fusion_finetuning"
     assert direct_config["model"]["fusion_mode"] == "direct_branch_routing"
     assert direct_config["initialization_checkpoint_path"] == (
-        "outputs/benchmark/smd/thesis/O0/machine_1_6/seed6/two_stage/"
-        "stage_a_multitask_pretraining/checkpoints/best.pt"
+        "outputs/benchmark/smd/machine_1_6/seed6/"
+        "thesis_direct_branch_routing_O0/offline/stage_b/"
+        "initializations/stage_b_init.pt"
     )
     assert direct_config["output_dir"] == (
         "outputs/benchmark/smd/"
@@ -51,11 +54,17 @@ def test_all_direct_configs_have_unique_stage_a_and_output_paths() -> None:
     ]
 
     initialization_paths = {
-        config["initialization_checkpoint_path"] for config in direct_configs
+        str(build_stage_b_initialization_checkpoint_path(config))
+        for config in direct_configs
+    }
+    stage_a_paths = {
+        str(build_stage_a_source_checkpoint_path(config_path))
+        for config_path in build_run_configs()
     }
     output_paths = {config["output_dir"] for config in direct_configs}
 
     assert len(initialization_paths) == 18
+    assert len(stage_a_paths) == 18
     assert len(output_paths) == 18
     assert all(config["epochs"] == 5 for config in direct_configs)
     assert all("two_stage" not in config for config in direct_configs)

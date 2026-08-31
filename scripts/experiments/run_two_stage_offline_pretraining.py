@@ -241,14 +241,15 @@ def _load_stage_a_state_into_stage_b_model(
         )
 
 
-def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path:
-    stage_a_record = manifest["training_stages"][0]
-    stage_b_record = manifest["training_stages"][1]
-    stage_b_config = load_experiment_config(stage_b_record["config_path"])
-    stage_a_checkpoint_path = Path(str(stage_a_record["best_checkpoint_path"]))
-    initialization_checkpoint_path = Path(
-        str(stage_b_record["initialization_checkpoint_path"])
-    )
+def prepare_stage_b_initialization_checkpoint(
+    *,
+    stage_b_config: dict[str, Any],
+    stage_a_checkpoint_path: Path,
+    initialization_checkpoint_path: Path,
+) -> Path:
+    """Create a Stage B initialization checkpoint from one Stage A checkpoint."""
+    stage_a_checkpoint_path = Path(stage_a_checkpoint_path)
+    initialization_checkpoint_path = Path(initialization_checkpoint_path)
     initialization_checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
     register_runtime_components()
@@ -335,6 +336,19 @@ def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path
     )
     torch.save(initialization_payload, initialization_checkpoint_path)
     return initialization_checkpoint_path
+
+
+def _prepare_stage_b_initialization_checkpoint(manifest: dict[str, Any]) -> Path:
+    stage_a_record = manifest["training_stages"][0]
+    stage_b_record = manifest["training_stages"][1]
+    stage_b_config = load_experiment_config(stage_b_record["config_path"])
+    return prepare_stage_b_initialization_checkpoint(
+        stage_b_config=stage_b_config,
+        stage_a_checkpoint_path=Path(str(stage_a_record["best_checkpoint_path"])),
+        initialization_checkpoint_path=Path(
+            str(stage_b_record["initialization_checkpoint_path"])
+        ),
+    )
 
 
 def _build_module_command(module_name: str, *arguments: str) -> list[str]:

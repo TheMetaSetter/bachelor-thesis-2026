@@ -8,6 +8,8 @@ from scripts.run_direct_branch_routing_full import (
     BASELINE_CONFIG_DIRECTORY,
     _cloud_path,
     _validate_direct_config,
+    build_stage_a_source_checkpoint_path,
+    ensure_stage_b_initialization_checkpoint,
     build_direct_experiment_config,
 )
 
@@ -67,14 +69,23 @@ def build_smoke_experiment_config() -> dict[str, Any]:
         }
     )
     config["logging"] = smoke_logging_config
+    config["initialization_checkpoint_path"] = (
+        f"{SMOKE_OUTPUT_DIR}/initializations/stage_b_init.pt"
+    )
     return config
 
 
 def main() -> None:
     config = build_smoke_experiment_config()
     _validate_direct_config(config)
-    print(f"init={_cloud_path(config['initialization_checkpoint_path'])}")
+    source_path = build_stage_a_source_checkpoint_path(BASELINE_CONFIG_PATH)
+    print(f"stage_a_source={_cloud_path(str(source_path))}")
+    print(f"stage_b_init={_cloud_path(config['initialization_checkpoint_path'])}")
     print(f"output={_cloud_path(config['output_dir'])}")
+    ensure_stage_b_initialization_checkpoint(
+        stage_b_config=config,
+        stage_a_source_checkpoint_path=source_path,
+    )
     run_training_experiment(config)
 
 
