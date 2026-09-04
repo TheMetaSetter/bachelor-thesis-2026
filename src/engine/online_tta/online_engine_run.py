@@ -227,6 +227,7 @@ def _run_online_sequence(
         )
     from src.engine.online_tta import online_engine as public_online_engine
 
+    # step 1: Build the causal online window stream.
     batcher = public_online_engine._build_online_stream(
         sequences=[sequence],
         window_size=int(protocol_config.get("window_size", 1)),
@@ -248,7 +249,9 @@ def _run_online_sequence(
     if timing_logger is None:
         timing_logger = OnlineTtaTimingLogger(enabled=False, device=device)
 
+    # step 2: Process each online window in temporal order.
     for batch in batcher:
+        # step 3: Validate the window and enforce the online-step limit.
         _validate_single_window_online_batch(batch)
         if max_online_steps is not None and len(metric_history) >= max_online_steps:
             break
@@ -256,6 +259,7 @@ def _run_online_sequence(
 
         timing_logger.set_window(batch)
 
+        # step 4: Score the window and perform the variant-specific update.
         active_ewma_point_scores, metric, record = (
             public_online_engine._process_online_window(
                 model=model,
@@ -274,6 +278,7 @@ def _run_online_sequence(
                 timing_logger=timing_logger,
             )
         )
+        # step 5: Update runtime state, metrics, records, and callbacks.
         active_ewma_point_scores = active_ewma_point_scores or {}
         metric["online/step"] = len(metric_history) + 1
         _sync_online_runtime_state(

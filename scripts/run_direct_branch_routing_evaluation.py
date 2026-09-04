@@ -35,7 +35,9 @@ def build_checkpoint_path(seed: int) -> Path:
     )
 
 
-def prepare_evaluation_config(experiment_config: dict[str, object]) -> dict[str, object]:
+def prepare_evaluation_config(
+    experiment_config: dict[str, object],
+) -> dict[str, object]:
     evaluation_config = dict(experiment_config)
     logging_config = dict(evaluation_config.get("logging", {}))
     logging_config.update(
@@ -60,7 +62,9 @@ def main() -> None:
         if not config_path.exists():
             raise FileNotFoundError(f"Missing experiment config: {config_path}")
         if not checkpoint_path.exists():
-            raise FileNotFoundError(f"Missing direct-routing checkpoint: {checkpoint_path}")
+            raise FileNotFoundError(
+                f"Missing direct-routing checkpoint: {checkpoint_path}"
+            )
 
         experiment_config = prepare_evaluation_config(
             build_direct_experiment_config(config_path)

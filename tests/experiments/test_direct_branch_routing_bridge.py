@@ -169,9 +169,7 @@ def test_bridge_output_loads_strictly(
         stage_b_model,
         strict=True,
     )
-    assert loaded_payload["config"]["model"]["fusion_mode"] == (
-        "direct_branch_routing"
-    )
+    assert loaded_payload["config"]["model"]["fusion_mode"] == ("direct_branch_routing")
 
 
 def test_bridge_requires_a_normal_token(

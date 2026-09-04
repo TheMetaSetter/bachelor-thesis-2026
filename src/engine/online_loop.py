@@ -78,6 +78,7 @@ class OnlineLoop:
         log_every_n_steps: int,
         checkpoint_every_n_steps: int,
     ) -> dict[str, Any]:
+        # step 1: Prepare the model and output state for online adaptation.
         self.model.to(self.device)
         records: list[dict[str, Any]] = []
         final_checkpoint_path = None
@@ -90,13 +91,17 @@ class OnlineLoop:
             checkpoint_every_n_steps=checkpoint_every_n_steps,
         )
 
+        # step 2: Process the stream one causal batch at a time.
         for step_index, batch in enumerate(online_batcher, start=1):
+            # step 3: Stop when the configured online-step limit is reached.
             if step_index > max_online_steps:
                 break
 
+            # step 4: Move the current batch to the selected device.
             batch_on_device = self._move_batch_to_device(batch)
             console_print("ONLINE", "Processing online step", step_index=step_index)
 
+            # step 5: Measure scores before changing model parameters.
             self.model.eval()
             with torch.no_grad():
                 pre_outputs = self.model.forward(batch_on_device)
@@ -104,6 +109,7 @@ class OnlineLoop:
                 pre_outputs["window_scores"].mean().detach().cpu()
             )
 
+            # step 6: Snapshot the parameters that online adaptation may change.
             trainable_parameters = [
                 parameter.detach().clone()
                 for parameter in self.model.get_parameter_group(
@@ -111,13 +117,17 @@ class OnlineLoop:
                 )
             ]
 
+            # step 7: Compute the adaptation loss for the current batch.
             self.model.train()
             step_output = self.model.training_step(batch_on_device)
             loss = step_output["loss"]
+
+            # step 8: Apply one optimizer update.
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
 
+            # step 9: Measure scores and parameter changes after adaptation.
             self.model.eval()
             with torch.no_grad():
                 post_outputs = self.model.forward(batch_on_device)
@@ -135,6 +145,7 @@ class OnlineLoop:
                 trainable_parameters, updated_parameters
             )
 
+            # step 10: Record and periodically log online metrics.
             step_metrics = {
                 "online/step": step_index,
                 "online/pre_window_score_mean": pre_window_score_mean,
@@ -174,6 +185,7 @@ class OnlineLoop:
                 }
             )
 
+            # step 11: Save a periodic checkpoint when the interval is reached.
             if step_index % checkpoint_every_n_steps == 0:
                 console_print(
                     "CHECKPOINT",
@@ -192,6 +204,7 @@ class OnlineLoop:
                     extra_state=self._build_checkpoint_extra_state(online_batcher),
                 )
 
+        # step 12: Save the final online checkpoint after the stream ends.
         console_print(
             "CHECKPOINT",
             "Saving final online checkpoint",

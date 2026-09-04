@@ -7,9 +7,10 @@ def test_cpu_snapshot_reports_rss_in_bytes_and_host_os() -> None:
     metrics = RuntimeResourceMonitor(device="cpu").snapshot()
 
     assert metrics["runtime_ram_rss_bytes"] > 0
-    assert metrics["runtime_ram_rss_peak_sampled_bytes"] >= metrics[
-        "runtime_ram_rss_bytes"
-    ]
+    assert (
+        metrics["runtime_ram_rss_peak_sampled_bytes"]
+        >= metrics["runtime_ram_rss_bytes"]
+    )
     assert metrics["runtime_ram_unit"] == "bytes"
     assert metrics["runtime_ram_source_os"] in {"macOS", "Linux"}
 

@@ -34,8 +34,7 @@ def test_evaluation_runner_uses_machine_3_4_three_seed_direct_checkpoints(
     ]
     assert all("machine_3_4" in checkpoint for _, checkpoint, _ in captured)
     assert all(
-        "thesis_direct_branch_routing_O0" in checkpoint
-        for _, checkpoint, _ in captured
+        "thesis_direct_branch_routing_O0" in checkpoint for _, checkpoint, _ in captured
     )
     assert all(logging["use_wandb"] is True for _, _, logging in captured)
     assert all(logging["wandb_mode"] == "online" for _, _, logging in captured)

@@ -93,7 +93,9 @@ def plot_runs(raw_dir: Path, output_dir: Path) -> list[dict]:
     (output_dir / "anomaly_score_distribution_summary.json").write_text(
         json.dumps(summaries, indent=2) + "\n"
     )
-    with (output_dir / "anomaly_score_distribution_summary.csv").open("w", newline="") as handle:
+    with (output_dir / "anomaly_score_distribution_summary.csv").open(
+        "w", newline=""
+    ) as handle:
         writer = csv.DictWriter(handle, fieldnames=summaries[0].keys())
         writer.writeheader()
         writer.writerows(summaries)

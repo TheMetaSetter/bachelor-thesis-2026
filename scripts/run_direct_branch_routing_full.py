@@ -66,9 +66,7 @@ def build_stage_b_initialization_checkpoint_path(
     direct_config: dict[str, Any],
 ) -> Path:
     return (
-        Path(str(direct_config["output_dir"]))
-        / "initializations"
-        / "stage_b_init.pt"
+        Path(str(direct_config["output_dir"])) / "initializations" / "stage_b_init.pt"
     )
 
 
@@ -154,9 +152,7 @@ def ensure_stage_b_initialization_checkpoint(
         raise ValueError("Stage A source and Stage B initialization paths must differ")
     if not target_path.exists():
         if not source_path.is_file():
-            raise FileNotFoundError(
-                f"Missing Stage A best checkpoint: {source_path}"
-            )
+            raise FileNotFoundError(f"Missing Stage A best checkpoint: {source_path}")
         prepare_stage_b_initialization_checkpoint(
             stage_b_config=stage_b_config,
             stage_a_checkpoint_path=source_path,

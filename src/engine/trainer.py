@@ -542,6 +542,7 @@ class Trainer:
     ) -> dict[str, Any]:
         # The trainer owns loop mechanics only. The model owns the meaning of a
         # training step, including optional schedules such as fusion warm-up.
+        # step 1: Resolve checkpoint monitoring and initialize training state.
         (
             best_checkpoint_monitor_metric,
             best_checkpoint_monitor_mode,
@@ -554,6 +555,8 @@ class Trainer:
         best_checkpoint_memory_initialized = False
         best_checkpoint_extra_state: dict[str, Any] | None = None
         last_epoch_metrics: dict[str, Any] | None = None
+
+        # step 2: Prepare runtime monitoring and move the model to the device.
         resource_monitor = RuntimeResourceMonitor(self.device)
         resource_monitor.reset()
         self.model.to(self.device)
@@ -565,7 +568,9 @@ class Trainer:
             train_batches=len(train_loader),
             val_batches=len(val_loader),
         )
+        # step 3: Repeat training and validation for each epoch.
         for epoch_index in range(epochs):
+            # step 4: Prepare the model and epoch-specific state.
             # Call model-owned training step
             self.model.train()
             if hasattr(self.model, "set_epoch_context"):
@@ -588,6 +593,7 @@ class Trainer:
                     memory_initialized=memory_initialized,
                 )
 
+            # step 5: Reset accumulators for this epoch.
             train_logs: list[dict[str, float]] = []
             train_logits_history: list[torch.Tensor] = []
             train_label_history: list[torch.Tensor] = []
@@ -596,7 +602,9 @@ class Trainer:
             gradient_norm_history: list[float] = []
             clipped_step_count = 0
             console_print("TRAIN", "Starting epoch", epoch=epoch_index + 1)
+            # step 6: Process each training batch.
             for train_batch_index, train_batch in enumerate(train_loader, start=1):
+                # step 7: Update the optional per-batch learning rate.
                 if self.cosine_scheduler_config is not None:
                     batch_learning_rates.append(
                         self._step_cosine_learning_rate_scheduler(
@@ -605,6 +613,7 @@ class Trainer:
                             num_training_batches=len(train_loader),
                         )
                     )
+                # step 8: Move the batch and run the model-owned training step.
                 batch_on_device = self._move_batch_to_device(train_batch)
                 console_print(
                     "TRAIN",
@@ -618,6 +627,7 @@ class Trainer:
                     step_index=train_batch_index,
                 )
                 loss = step_output["loss"]
+                # step 9: Backpropagate the loss and update model parameters.
                 self.optimizer.zero_grad()
                 loss.backward()
                 if self.gradient_clip_norm is not None:
@@ -654,6 +664,7 @@ class Trainer:
                         float(step_output["outputs"]["aux"]["forward_pass_seconds"])
                     )
 
+            # step 10: Run validation after all training batches are complete.
             self.model.eval()
             (
                 val_logs,
@@ -667,6 +678,7 @@ class Trainer:
                 stage_name="val",
                 step_method_name="validation_step",
             )
+            # step 11: Optionally run synthetic validation.
             validation_aux_stage_name = "val_synth"
             validation_aux_logs: list[dict[str, float]] = []
             validation_aux_logits_history: list[torch.Tensor] = []
@@ -691,6 +703,7 @@ class Trainer:
                     pointwise_label_batch_key="synthetic_anomaly_mask",
                 )
 
+            # step 12: Aggregate training and validation results for the epoch.
             epoch_metrics = {"epoch": epoch_index + 1}
             epoch_metrics.update(self._aggregate_logs(train_logs))
             epoch_metrics.update(self._aggregate_logs(val_logs))
@@ -789,6 +802,7 @@ class Trainer:
                     epoch_metrics["diag/grad/train_gradient_norm_std"] = float(
                         np.std(np.asarray(gradient_norm_history, dtype=np.float64))
                     )
+            # step 13: Update schedulers, record metrics, and finish the epoch.
             epoch_metrics.update(resource_monitor.snapshot())
             epoch_metrics.update(self._step_learning_rate_scheduler(epoch_metrics))
             self.metric_history.append(epoch_metrics)
@@ -805,6 +819,7 @@ class Trainer:
             )
             last_epoch_metrics = dict(epoch_metrics)
 
+            # step 14: Save a checkpoint when the monitored metric improves.
             if best_checkpoint_monitor_metric not in epoch_metrics:
                 raise KeyError(
                     f"Best checkpoint monitor metric '{best_checkpoint_monitor_metric}' is missing from epoch metrics"
@@ -854,6 +869,7 @@ class Trainer:
                     extra_state=checkpoint_extra_state,
                 )
 
+        # step 15: Save final state and complete checkpoint fallback handling.
         if (
             best_checkpoint_path is not None
             and hasattr(self.model, "memory_initialized")

@@ -15,10 +15,7 @@ def test_full_runner_builds_all_18_baseline_configs() -> None:
     configs = build_run_configs()
 
     assert len(configs) == 18
-    assert {
-        path.name
-        for path in configs
-    } == {
+    assert {path.name for path in configs} == {
         f"smd__thesis__offline__{variant}__{entity}__w20__seed{seed}__main.yaml"
         for variant in OFFLINE_VARIANTS
         for entity in ENTITIES

@@ -276,13 +276,15 @@ class ThesisMultitaskLossCoreMixin:
         This method calculates balanced point-level anomaly score loss.
         This loss pulls anomaly score of normal points to be lower than anomalous points.
         """
-        
+
         diagnostics: dict[str, torch.Tensor] = {
             "point_score_normal_count": torch.tensor(0, device=outputs["recon"].device),
             "point_score_anomaly_count": torch.tensor(
                 0, device=outputs["recon"].device
             ),
         }
+
+        # step 1: Check whether this loss variant is active.
         if not self.enable_score_loss:
             return None, diagnostics
         if self.training_phase != TWO_STAGE_A_PHASE_NAME:
@@ -299,14 +301,18 @@ class ThesisMultitaskLossCoreMixin:
         }:
             return None, diagnostics
 
+        # step 2: Compute one reconstruction error for every point.
         pointwise_reconstruction_error = ((outputs["recon"] - batch["x"]) ** 2).mean(
             dim=-1
         )
+
+        # step 3: Build normal and anomalous point masks.
         anomaly_mask = self._point_mask_from_synthetic_mask(
             batch["synthetic_anomaly_mask"]
         )
         normal_mask = ~anomaly_mask
 
+        # step 4: Require both classes so both balanced loss terms are defined.
         normal_count = normal_mask.sum()
         anomaly_count = anomaly_mask.sum()
         diagnostics["point_score_normal_count"] = normal_count.detach()
@@ -314,20 +320,31 @@ class ThesisMultitaskLossCoreMixin:
         if int(normal_count.item()) == 0 or int(anomaly_count.item()) == 0:
             return None, diagnostics
 
+        # step 5: Select reconstruction errors from normal points.
         normal_scores = pointwise_reconstruction_error[normal_mask]
+
+        # step 6: Estimate normal-score mean and standard deviation.
         score_mean = normal_scores.mean().detach()
         score_std = normal_scores.std(unbiased=False).detach().clamp_min(self.epsilon)
+
+        # step 7: Normalize every point score using normal-point statistics.
         normalized_scores = (pointwise_reconstruction_error - score_mean) / score_std
+
+        # step 8: Use 0 for normal points and 1 for anomalous points.
         point_targets = anomaly_mask.float()
+
+        # step 9: Treat normalized reconstruction scores as BCE logits.
         loss_per_token = F.binary_cross_entropy_with_logits(
             normalized_scores,
             point_targets,
             reduction="none",
         )
+
+        # step 10: Average the loss separately for normal and anomalous points.
         loss_normal = loss_per_token[normal_mask].mean()
         loss_anomaly = loss_per_token[anomaly_mask].mean()
 
-        # calculate final BPSL (balanced point-score loss)
+        # step 11: Give the normal and anomalous groups equal weight.
         score_loss = 0.5 * loss_normal + 0.5 * loss_anomaly
 
         with torch.no_grad():

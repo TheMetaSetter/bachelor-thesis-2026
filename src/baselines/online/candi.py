@@ -301,6 +301,7 @@ class CANDIStreamingBaseline(AdaptiveStreamingBaselineBase):
     def _adapt_pool(self, pool: list[torch.Tensor]) -> float:
         if not pool:
             raise ValueError("CANDI cannot adapt an empty pool")
+        # step 1: Combine the selected pool and enter training mode.
         batch = torch.cat(pool, dim=0)
         was_training = self.backbone_.training
         self.backbone_.train()
@@ -309,14 +310,19 @@ class CANDIStreamingBaseline(AdaptiveStreamingBaselineBase):
         if self._sana_out is not None:
             self._sana_out.train()
         loss = torch.zeros((), dtype=batch.dtype)
+        # step 2: Repeat the CANDI adaptation update for the configured steps.
         for _ in range(self.candi_steps):
+            # step 3: Compute the reconstruction loss for the selected pool.
             loss = F.mse_loss(self._candi_reconstruction(batch), batch)
             if not torch.isfinite(loss):
                 self.backbone_.train(was_training)
                 raise FloatingPointError("CANDI SANA loss is not finite")
+            # step 4: Backpropagate and update the CANDI parameters.
             self.optimizer_.zero_grad(set_to_none=True)
             loss.backward()
             self.optimizer_.step()
+
+        # step 5: Restore evaluation mode and return the final adaptation loss.
         self.backbone_.train(was_training)
         self.backbone_.eval()
         return float(loss.detach().cpu())
