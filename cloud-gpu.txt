@@ -1,0 +1,3 @@
+ssh -p 20007 root@159.48.242.13
+root
+rri_Lcj7UyGyObeS8kW7

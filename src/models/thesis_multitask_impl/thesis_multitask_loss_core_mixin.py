@@ -272,6 +272,11 @@ class ThesisMultitaskLossCoreMixin:
         outputs: dict[str, Any],
         batch: dict[str, Any],
     ) -> tuple[torch.Tensor | None, dict[str, torch.Tensor]]:
+        """
+        This method calculates balanced point-level anomaly score loss.
+        This loss pulls anomaly score of normal points to be lower than anomalous points.
+        """
+        
         diagnostics: dict[str, torch.Tensor] = {
             "point_score_normal_count": torch.tensor(0, device=outputs["recon"].device),
             "point_score_anomaly_count": torch.tensor(
@@ -321,6 +326,8 @@ class ThesisMultitaskLossCoreMixin:
         )
         loss_normal = loss_per_token[normal_mask].mean()
         loss_anomaly = loss_per_token[anomaly_mask].mean()
+
+        # calculate final BPSL (balanced point-score loss)
         score_loss = 0.5 * loss_normal + 0.5 * loss_anomaly
 
         with torch.no_grad():

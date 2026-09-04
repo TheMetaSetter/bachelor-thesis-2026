@@ -244,10 +244,13 @@ class ThesisMultitaskLossStepMixin:
         reconstruction_loss = self._compute_reconstruction_loss(outputs, prepared_batch)
         classification_loss = self._compute_classification_loss(outputs, prepared_batch)
         optional_loss_values = self._compute_optional_loss_terms(outputs)
+
+        # compute balanced point-score loss
         score_loss, score_loss_diagnostics = self._compute_point_score_loss(
             outputs,
             prepared_batch,
         )
+
         score_loss, classification_branch_loss, score_loss_was_skipped = (
             self._resolve_score_and_classification_loss(
                 classification_loss,
