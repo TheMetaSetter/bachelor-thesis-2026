@@ -293,3 +293,115 @@ def test_build_runtime_online_context_keeps_none_max_online_steps(monkeypatch) -
     assert [key for key in context if key.endswith("_buffer")] == [
         "verification_buffer"
     ]
+
+
+def test_build_runtime_online_context_rebuilds_raw_scaler_from_checkpoint(
+    monkeypatch, tmp_path: Path
+) -> None:
+    class _DummyScaler:
+        def state_dict(self) -> dict[str, Any]:
+            return {"source": "rebuilt"}
+
+    class _DummyModel(torch.nn.Module):
+        def to(self, *args: Any, **kwargs: Any) -> "_DummyModel":
+            return self
+
+    class _DummyCheckpointManager:
+        def __init__(self, checkpoint_dir: Path) -> None:
+            self.checkpoint_dir = checkpoint_dir
+
+    reference_checkpoint_path = tmp_path / "reference.pt"
+    reference_checkpoint_path.write_bytes(b"reference")
+    raw_sequence = {"x": torch.zeros(3, 2)}
+    rebuilt_bundle = {
+        "raw_sequences": {"test": [raw_sequence]},
+        "scaled_sequences": {"test": [raw_sequence]},
+        "scaler": _DummyScaler(),
+    }
+    rebuild_calls: list[dict[str, Any]] = []
+
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "build_dataset",
+        lambda dataset_name, data_config: {
+            "raw_sequences": {"test": [raw_sequence]},
+            "scaled_sequences": {"test": [raw_sequence]},
+            "scaler": _DummyScaler(),
+        },
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "rebuild_dataset_bundle_with_scaler_state",
+        lambda **kwargs: (rebuild_calls.append(kwargs) or rebuilt_bundle),
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "torch",
+        type("Torch", (), {"load": staticmethod(lambda *args, **kwargs: {
+            "scaler_state_dict": {"source": "checkpoint"}
+        })}),
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "_build_model_from_experiment_config",
+        lambda experiment_config: _DummyModel(),
+    )
+    monkeypatch.setattr(
+        online_engine_run_module, "CheckpointManager", _DummyCheckpointManager
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "resolve_threshold_artifact",
+        lambda _: Path("/tmp/raw-thresholds.json"),
+    )
+    monkeypatch.setattr(
+        online_engine_run_module, "sha256_file", lambda _: "checkpoint-sha"
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "load_threshold_artifact",
+        lambda _: {
+            "entity_id": "machine-1-6",
+            "variant_name": "O0",
+            "seed": 6,
+            "window_size": 20,
+            "checkpoint_sha256": "checkpoint-sha",
+            "ewma_current_weight": 0.9,
+            "ewma_previous_weight": 0.1,
+            "score_space": "raw_input",
+            "point_score_transform": "identity",
+            "thresholds": {"online_ewma_point": {"value": 0.5}},
+        },
+    )
+    monkeypatch.setattr(
+        online_engine_run_module,
+        "build_online_runtime_state",
+        lambda **kwargs: {"entity_id": "machine-1-6"},
+    )
+
+    context = online_engine_run_module._build_runtime_online_context(
+        experiment_config={
+            "data": {"dataset_name": "smd", "batch_size": 1, "window_size": 20},
+            "task": {
+                "reference_checkpoint_path": str(reference_checkpoint_path),
+                "offline_variant": "O0",
+                "entity_id": "machine-1-6",
+                "seed": 6,
+            },
+            "device": "cpu",
+            "checkpoint_dir": str(tmp_path / "checkpoints"),
+            "output_dir": str(tmp_path / "outputs"),
+        },
+        protocol_config={
+            "window_size": 20,
+            "online_ewma_current_weight": 0.9,
+            "online_ewma_previous_weight": 0.1,
+            "score_space": "raw_input",
+            "point_score_transform": "identity",
+        },
+        online_variant="A0",
+    )
+
+    assert len(rebuild_calls) == 1
+    assert rebuild_calls[0]["scaler_state_dict"] == {"source": "checkpoint"}
+    assert context["scaler"] is rebuilt_bundle["scaler"]

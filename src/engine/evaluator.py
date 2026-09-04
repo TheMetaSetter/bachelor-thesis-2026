@@ -44,6 +44,7 @@ import torch
 from src.core.console import console_print, summarize_batch, summarize_tensor
 from src.core.contracts import validate_evaluation_record
 from src.data.split_protocol import describe_label_regime
+from src.data.api import point_labels_to_window_labels
 from src.metrics.pointwise import (
     compute_pointwise_curve_payload,
     compute_pointwise_metrics,
@@ -53,6 +54,7 @@ from src.engine.thresholding import (
     # select_point_score_threshold,
 )
 from src.models.base_model import BaseModel
+from src.protocols.reconstruction_scores import score_reconstruction
 
 
 def _describe_benchmark_comparability(
@@ -89,7 +91,9 @@ def _build_entity_raw_point_labels(
     return raw_point_labels.detach().cpu().clone().to(fallback_dtype)
 
 
-def _validate_window_payload(batch_payload: dict[str, Any]) -> tuple[Any, Any, Any]:
+def _validate_window_payload(
+    batch_payload: dict[str, Any],
+) -> tuple[Any, Any, Any, torch.Tensor | None, torch.Tensor | None]:
     batch_meta = batch_payload["meta"]
     point_scores = batch_payload["point_scores"]
     point_labels = batch_payload["point_labels"]
@@ -99,7 +103,19 @@ def _validate_window_payload(batch_payload: dict[str, Any]) -> tuple[Any, Any, A
         raise ValueError("window scores and labels must share the same shape")
     if len(batch_meta) != point_scores.shape[0]:
         raise ValueError("window metadata length must match batch size")
-    return batch_meta, point_scores, point_labels
+    raw_scores = batch_payload.get("raw_input_point_mse")
+    normalized_scores = batch_payload.get("normalized_input_point_mse")
+    for name, scores in {
+        "raw_input_point_mse": raw_scores,
+        "normalized_input_point_mse": normalized_scores,
+    }.items():
+        if scores is not None and (
+            not isinstance(scores, torch.Tensor) or scores.shape != point_scores.shape
+        ):
+            raise ValueError(f"{name} must have shape [B, L] matching point_scores")
+    if (raw_scores is None) != (normalized_scores is None):
+        raise ValueError("raw and normalized point scores must be provided together")
+    return batch_meta, point_scores, point_labels, raw_scores, normalized_scores
 
 
 def _initialize_entity_accumulators(
@@ -110,6 +126,8 @@ def _initialize_entity_accumulators(
     score_sums: dict[str, torch.Tensor],
     score_counts: dict[str, torch.Tensor],
     entity_labels: dict[str, torch.Tensor],
+    raw_score_sums: dict[str, torch.Tensor] | None = None,
+    normalized_score_sums: dict[str, torch.Tensor] | None = None,
 ) -> None:
     sequence_length = int(sequence_by_entity["x"].shape[0])
     score_sums[entity_id] = torch.zeros(sequence_length, dtype=torch.float32)
@@ -117,6 +135,12 @@ def _initialize_entity_accumulators(
     entity_labels[entity_id] = _build_entity_raw_point_labels(
         sequence_by_entity, fallback_dtype=point_labels.dtype
     )
+    if raw_score_sums is not None:
+        raw_score_sums[entity_id] = torch.zeros(sequence_length, dtype=torch.float32)
+    if normalized_score_sums is not None:
+        normalized_score_sums[entity_id] = torch.zeros(
+            sequence_length, dtype=torch.float32
+        )
 
 
 def accumulate_pointwise_window_payload(
@@ -126,6 +150,8 @@ def accumulate_pointwise_window_payload(
     entity_score_sums: dict[str, torch.Tensor],
     entity_score_counts: dict[str, torch.Tensor],
     entity_point_labels: dict[str, torch.Tensor],
+    entity_raw_score_sums: dict[str, torch.Tensor] | None = None,
+    entity_normalized_score_sums: dict[str, torch.Tensor] | None = None,
 ) -> None:
     """Add window-level scores back onto the full entity timeline.
 
@@ -133,7 +159,13 @@ def accumulate_pointwise_window_payload(
     This function keeps a running sum and count so overlapping points
     can later be averaged cleanly.
     """
-    batch_meta, point_scores, point_labels = _validate_window_payload(batch_payload)
+    (
+        batch_meta,
+        point_scores,
+        point_labels,
+        raw_input_point_mse,
+        normalized_input_point_mse,
+    ) = _validate_window_payload(batch_payload)
 
     # For each window inside the batch, add scores back to the full entity timeline.
 
@@ -149,12 +181,25 @@ def accumulate_pointwise_window_payload(
                 score_sums=entity_score_sums,
                 score_counts=entity_score_counts,
                 entity_labels=entity_point_labels,
+                raw_score_sums=entity_raw_score_sums,
+                normalized_score_sums=entity_normalized_score_sums,
             )
 
         entity_score_sums[entity_id][start_index:end_index] += point_scores[
             window_index
         ]
         entity_score_counts[entity_id][start_index:end_index] += 1.0
+        if raw_input_point_mse is not None and entity_raw_score_sums is not None:
+            entity_raw_score_sums[entity_id][start_index:end_index] += (
+                raw_input_point_mse[window_index]
+            )
+        if (
+            normalized_input_point_mse is not None
+            and entity_normalized_score_sums is not None
+        ):
+            entity_normalized_score_sums[entity_id][start_index:end_index] += (
+                normalized_input_point_mse[window_index]
+            )
         entity_point_labels[entity_id][start_index:end_index] = torch.maximum(
             entity_point_labels[entity_id][start_index:end_index],
             point_labels[window_index].to(entity_point_labels[entity_id].dtype),
@@ -175,6 +220,11 @@ def reconstruct_pointwise_records_from_window_payload(
     entity_score_sums: dict[str, torch.Tensor] = {}
     entity_score_counts: dict[str, torch.Tensor] = {}
     entity_point_labels: dict[str, torch.Tensor] = {}
+    has_raw_scores = any(
+        "raw_input_point_mse" in payload for payload in batch_payloads
+    )
+    entity_raw_score_sums = {} if has_raw_scores else None
+    entity_normalized_score_sums = {} if has_raw_scores else None
 
     for batch_payload in batch_payloads:
         accumulate_pointwise_window_payload(
@@ -183,6 +233,8 @@ def reconstruct_pointwise_records_from_window_payload(
             entity_score_sums=entity_score_sums,
             entity_score_counts=entity_score_counts,
             entity_point_labels=entity_point_labels,
+            entity_raw_score_sums=entity_raw_score_sums,
+            entity_normalized_score_sums=entity_normalized_score_sums,
         )
 
     evaluation_records: list[dict[str, Any]] = []
@@ -192,6 +244,16 @@ def reconstruct_pointwise_records_from_window_payload(
             score_sum=score_sum,
             raw_counts=entity_score_counts[entity_id],
             point_labels=entity_point_labels[entity_id],
+            raw_score_sum=(
+                None
+                if entity_raw_score_sums is None
+                else entity_raw_score_sums[entity_id]
+            ),
+            normalized_score_sum=(
+                None
+                if entity_normalized_score_sums is None
+                else entity_normalized_score_sums[entity_id]
+            ),
         )
         validate_evaluation_record(evaluation_record)
         evaluation_records.append(evaluation_record)
@@ -205,6 +267,8 @@ def _build_reconstructed_evaluation_record(
     score_sum: torch.Tensor,
     raw_counts: torch.Tensor,
     point_labels: torch.Tensor,
+    raw_score_sum: torch.Tensor | None = None,
+    normalized_score_sum: torch.Tensor | None = None,
 ) -> dict[str, Any]:
     averaged_scores = score_sum / torch.clamp(raw_counts, min=1.0)
     covered_indices = torch.nonzero(raw_counts > 0.0, as_tuple=False).reshape(-1)
@@ -214,7 +278,7 @@ def _build_reconstructed_evaluation_record(
         start_index = int(covered_indices[0].item())
         end_index = int(covered_indices[-1].item()) + 1
         num_evaluated_points = int(covered_indices.numel())
-    return {
+    record = {
         "entity_id": entity_id,
         "point_scores": averaged_scores,
         "point_labels": point_labels,
@@ -225,6 +289,16 @@ def _build_reconstructed_evaluation_record(
         "evaluated_num_points": num_evaluated_points,
         "raw_num_points": int(averaged_scores.shape[0]),
     }
+    if raw_score_sum is not None and normalized_score_sum is not None:
+        record["raw_input_point_mse"] = raw_score_sum / torch.clamp(
+            raw_counts, min=1.0
+        )
+        record["normalized_input_point_mse"] = normalized_score_sum / torch.clamp(
+            raw_counts, min=1.0
+        )
+        record["score_space"] = "raw_input"
+        record["point_score_transform"] = "identity"
+    return record
 
 
 def extract_covered_pointwise_arrays(
@@ -274,6 +348,47 @@ def _json_safe_value(value: Any) -> Any:
     return value
 
 
+def _extract_raw_reconstruction(step_output: dict[str, Any]) -> torch.Tensor:
+    outputs = step_output["outputs"]
+    stochastic_query = outputs["aux"].get("stochastic_query") or {}
+    reconstruction_samples = stochastic_query.get("reconstruction_samples")
+    if isinstance(reconstruction_samples, torch.Tensor):
+        return reconstruction_samples
+    reconstruction = outputs.get("recon")
+    if not isinstance(reconstruction, torch.Tensor):
+        raise ValueError("raw_input scoring requires reconstruction tensors")
+    return reconstruction
+
+
+def _build_window_score_records(
+    *,
+    batch_meta: list[dict[str, Any]],
+    raw_window_scores: torch.Tensor,
+    normalized_window_scores: torch.Tensor,
+    point_labels: torch.Tensor,
+    window_score_threshold: float | None,
+) -> list[dict[str, Any]]:
+    window_labels = point_labels_to_window_labels(point_labels)
+    records = []
+    for index, meta in enumerate(batch_meta):
+        record = {
+            "entity_id": str(meta["entity_id"]),
+            "start_index": int(meta["start_index"]),
+            "end_index": int(meta["end_index"]),
+            "raw_input_window_mse": float(raw_window_scores[index]),
+            "normalized_input_window_mse": float(normalized_window_scores[index]),
+            "window_label": int(window_labels[index]),
+            "score_space": "raw_input",
+            "point_score_transform": "identity",
+        }
+        if window_score_threshold is not None:
+            record["window_prediction"] = int(
+                record["raw_input_window_mse"] > window_score_threshold
+            )
+        records.append(record)
+    return records
+
+
 class Evaluator:
     def __init__(
         self,
@@ -298,6 +413,7 @@ class Evaluator:
         model: BaseModel,
         batch_index: int,
         batch_on_device: dict[str, Any],
+        evaluation_stage: str = "test",
     ) -> dict[str, Any]:
         console_print(
             "EVAL",
@@ -308,7 +424,17 @@ class Evaluator:
 
         # Tính anomaly score cho từng điểm dữ liệu (timestep)
         # trong từng window của batch.
-        return model.test_step(batch_on_device)
+        method_name = {
+            "val_synth": "synthetic_validation_step",
+            "val": "validation_step",
+            "test": "test_step",
+        }.get(evaluation_stage, f"{evaluation_stage}_step")
+        step_method = getattr(model, method_name, None)
+        if step_method is None:
+            raise AttributeError(
+                f"model does not expose evaluation stage method: {method_name}"
+            )
+        return step_method(batch_on_device)
 
     @staticmethod
     def _remember_forward_pass_seconds(
@@ -418,7 +544,16 @@ class Evaluator:
         data_loader: Any,
         point_score_threshold: float | None = None,
         threshold_source: str | None = None,
+        *,
+        score_space: str = "model_output",
+        scaler: Any | None = None,
+        window_score_threshold: float | None = None,
+        evaluation_stage: str = "test",
     ) -> dict[str, Any]:
+        if score_space not in {"model_output", "raw_input"}:
+            raise ValueError("score_space must be model_output or raw_input")
+        if score_space == "raw_input" and scaler is None:
+            raise ValueError("raw_input scoring requires a fitted scaler")
         # Window-level scores are accumulated back onto each entity because the
         # downstream metrics should be interpreted on the original timeline.
         model.to(self.device)
@@ -433,6 +568,7 @@ class Evaluator:
         sequences_by_entity = self._build_sequences_by_entity(data_loader)
         pointwise_batch_payloads: list[dict[str, Any]] = []
         trace_payloads: list[dict[str, Any]] = []
+        window_records: list[dict[str, Any]] = []
 
         with torch.no_grad():
             # Với mỗi batch dữ liệu đọc được từ data_loader,
@@ -442,8 +578,43 @@ class Evaluator:
                     model=model,
                     batch_index=batch_index,
                     batch_on_device=batch_on_device,
+                    evaluation_stage=evaluation_stage,
                 )
-                point_scores = step_output["outputs"]["point_scores"].detach().cpu()
+                scoring_batch = step_output.get("batch", batch_on_device)
+                point_labels = scoring_batch.get("point_labels")
+                synthetic_labels = scoring_batch.get("synthetic_anomaly_mask")
+                if evaluation_stage == "val_synth" and synthetic_labels is not None:
+                    point_labels = synthetic_labels
+                    if point_labels.ndim == 3:
+                        point_labels = point_labels.any(dim=-1).long()
+                if not isinstance(point_labels, torch.Tensor):
+                    raise ValueError("evaluation stage must provide point_labels")
+                if score_space == "raw_input":
+                    scores = score_reconstruction(
+                        scoring_batch["x"],
+                        _extract_raw_reconstruction(step_output),
+                        scaler,
+                    )
+                    point_scores = scores["raw_input_point_mse"].detach().cpu()
+                    normalized_point_scores = scores[
+                        "normalized_input_point_mse"
+                    ].detach().cpu()
+                    raw_window_scores = scores["raw_input_window_mse"].detach().cpu()
+                    normalized_window_scores = scores[
+                        "normalized_input_window_mse"
+                    ].detach().cpu()
+                    window_records.extend(
+                        _build_window_score_records(
+                            batch_meta=batch["meta"],
+                            raw_window_scores=raw_window_scores,
+                            normalized_window_scores=normalized_window_scores,
+                            point_labels=point_labels.detach().cpu(),
+                            window_score_threshold=window_score_threshold,
+                        )
+                    )
+                else:
+                    point_scores = step_output["outputs"]["point_scores"].detach().cpu()
+                    normalized_point_scores = None
                 self._remember_forward_pass_seconds(
                     step_output=step_output,
                     forward_pass_seconds_history=forward_pass_seconds_history,
@@ -461,16 +632,20 @@ class Evaluator:
                         point_scores=point_scores,
                     )
                 )
-                pointwise_batch_payloads.append(
-                    {
-                        "meta": batch["meta"],
-                        "point_scores": point_scores,
-                        "point_labels": batch["point_labels"].detach().cpu(),
-                        "uncertainty": self._detach_uncertainty_to_cpu(
-                            step_output["outputs"]["aux"].get("uncertainty")
-                        ),
-                    }
-                )
+                batch_payload = {
+                    "meta": batch["meta"],
+                    "point_scores": point_scores,
+                    "point_labels": point_labels.detach().cpu(),
+                    "uncertainty": self._detach_uncertainty_to_cpu(
+                        step_output["outputs"]["aux"].get("uncertainty")
+                    ),
+                }
+                if normalized_point_scores is not None:
+                    batch_payload["raw_input_point_mse"] = point_scores
+                    batch_payload["normalized_input_point_mse"] = (
+                        normalized_point_scores
+                    )
+                pointwise_batch_payloads.append(batch_payload)
 
         # After the loop, we have all window-level scores for every entity.
         # Next we reconstruct the full entity timelines from those windows.
@@ -491,6 +666,23 @@ class Evaluator:
             threshold_source=threshold_source,
             quantile=0.99,
         )
+        if score_space == "raw_input":
+            for record in evaluation_records:
+                record["point_predictions"] = (
+                    record["raw_input_point_mse"] > threshold
+                ).long()
+                entity_windows = [
+                    item for item in window_records
+                    if item["entity_id"] == record["entity_id"]
+                ]
+                record["window_labels"] = torch.tensor(
+                    [item["window_label"] for item in entity_windows],
+                    dtype=torch.long,
+                )
+                record["window_predictions"] = torch.tensor(
+                    [item.get("window_prediction", 0) for item in entity_windows],
+                    dtype=torch.long,
+                )
 
         # Tính toán các độ đo pointwise (pointwise metric)
         metrics = compute_pointwise_metrics(
@@ -526,6 +718,11 @@ class Evaluator:
         metrics["benchmark_comparability"] = benchmark_comparability
         metrics["protocol_status"] = protocol_status
         metrics["threshold_source"] = resolved_threshold_source
+        if score_space == "raw_input":
+            metrics["score_space"] = "raw_input"
+            metrics["point_score_transform"] = "identity"
+            if window_score_threshold is not None:
+                metrics["window_threshold"] = float(window_score_threshold)
         if forward_pass_seconds_history:
             metrics["forward_pass_seconds_mean"] = sum(
                 forward_pass_seconds_history
@@ -551,4 +748,5 @@ class Evaluator:
             "records": evaluation_records,
             "curves": curves,
             "traces": trace_payloads,
+            "window_records": window_records,
         }

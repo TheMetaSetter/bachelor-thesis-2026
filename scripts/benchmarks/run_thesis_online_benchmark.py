@@ -270,7 +270,7 @@ def run_thesis_online_benchmark(
 
     protocol_config = _load_yaml_config(protocol_config_path)
     retention_policy = _resolve_retention_policy(experiment_config)
-    validate_protocol_config(protocol_config)
+    validate_protocol_config(protocol_config, require_score_identity=False)
 
     # Checkpoint from stage B of offline phase
     # Có thể là offline variant (biển thể thí nghiệm) O0 hoặc O1.

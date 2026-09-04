@@ -29,6 +29,8 @@ def test_protocol_yaml_matches_locked_online_offline_rules() -> None:
     assert config["online_window_stride"] == 1
     assert config["online_ewma_current_weight"] == 0.9
     assert config["test_label_usage"] == "metrics_only"
+    assert config["score_space"] == "raw_input"
+    assert config["point_score_transform"] == "identity"
 
 
 def test_protocol_config_rejects_label_leakage() -> None:
@@ -49,3 +51,23 @@ def test_protocol_config_rejects_label_leakage() -> None:
 
     with pytest.raises(ValueError, match="test labels"):
         validate_protocol_config(bad_config)
+
+
+def test_protocol_config_rejects_missing_or_mismatched_raw_score_identity() -> None:
+    config = yaml.safe_load(
+        Path("configs/protocol/smd_window20_cleanval_q99_ewma09.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    config.pop("score_space")
+    with pytest.raises(ValueError, match="score_space"):
+        validate_protocol_config(config)
+
+    config["score_space"] = "normalized_input"
+    with pytest.raises(ValueError, match="score_space"):
+        validate_protocol_config(config)
+
+    config["score_space"] = "raw_input"
+    config["point_score_transform"] = "sigmoid"
+    with pytest.raises(ValueError, match="point_score_transform"):
+        validate_protocol_config(config)

@@ -33,6 +33,34 @@ class SequenceStandardScaler:
             raise RuntimeError("Scaler must be fit before transform")
         return torch.clamp(self.feature_std, min=self.epsilon)
 
+    def inverse_transform_tensor(self, values: torch.Tensor) -> torch.Tensor:
+        """Restore scaled values to the original sensor-value space."""
+        if not isinstance(values, torch.Tensor):
+            raise TypeError("values must be a torch.Tensor")
+        if (
+            self.feature_mean is None
+            or self.feature_std is None
+            or self.feature_active_mask is None
+        ):
+            raise RuntimeError("Scaler must be fit before inverse transform")
+        if values.ndim == 0 or values.shape[-1] != self.feature_mean.shape[0]:
+            raise ValueError("values feature dimension must match fitted scaler")
+
+        restored_values = values.clone()
+        active_mask = self.feature_active_mask.to(device=values.device)
+        if bool(active_mask.any()):
+            feature_mean = self.feature_mean.to(
+                device=values.device, dtype=values.dtype
+            )
+            active_feature_std = self._resolve_active_feature_std().to(
+                device=values.device, dtype=values.dtype
+            )
+            restored_values[..., active_mask] = (
+                values[..., active_mask] * active_feature_std[active_mask]
+                + feature_mean[active_mask]
+            )
+        return restored_values
+
     def transform_sequence(self, sequence: dict[str, Any]) -> dict[str, Any]:
         validate_raw_sequence(sequence)
         if (

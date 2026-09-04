@@ -352,6 +352,15 @@ def validate_evaluation_record(evaluation_record: dict[str, Any]) -> None:
     )
     if evaluation_record["point_scores"].shape[0] != evaluation_record["num_points"]:
         raise ValueError("point_scores length must equal num_points")
+    for field_name in ["raw_input_point_mse", "normalized_input_point_mse"]:
+        score_values = evaluation_record.get(field_name)
+        if score_values is None:
+            continue
+        _require_tensor_rank(score_values, 1, f"evaluation_record['{field_name}']")
+        if score_values.shape[0] != evaluation_record["num_points"]:
+            raise ValueError(f"{field_name} length must equal num_points")
+        if not torch.isfinite(score_values.float()).all().item():
+            raise ValueError(f"{field_name} must contain only finite values")
     covered_point_mask = evaluation_record.get("covered_point_mask")
     if covered_point_mask is not None:
         _require_tensor_rank(

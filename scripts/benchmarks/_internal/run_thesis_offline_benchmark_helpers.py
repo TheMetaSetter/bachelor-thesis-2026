@@ -107,7 +107,7 @@ def validate_protocol_config(protocol_config: dict[str, Any]) -> None:
         validate_protocol_config as _validate_protocol_config,
     )
 
-    return _validate_protocol_config(protocol_config)
+    return _validate_protocol_config(protocol_config, require_score_identity=False)
 
 
 def _utc_now_iso() -> str:

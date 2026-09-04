@@ -1,7 +1,7 @@
 ---
 date: 2026-09-04T15:42:04+07:00
 topic: "Chi tiết triển khai MSE trong raw input space cho thresholding và prediction"
-status: ready
+status: implemented_with_validation_blocker
 revision: 974af2b3a3d075f5cd4f3368f2cb584a5a8a3720
 source_structure: documents/logs/2026-09-04/structure/structure-raw-input-space-mse-threshold-prediction.md
 related_documents:
@@ -1137,7 +1137,8 @@ tách `normal` và `anomalous`, vẽ threshold tương ứng, và ghi số lư�
 
 Smoke pass, ba machine synthetic validation pass, raw point/window histogram
 được tạo, bốn label categories được tách, raw artifact identity được audit và
-không có raw execution nào dùng calibrated sigmoid.
+không có raw execution nào dùng calibrated sigmoid. Hiện còn thiếu Stage B
+THESIS checkpoint cho `machine-3-4` và `machine-3-9` trong checkout này.
 
 ## Interface and data changes
 
@@ -1191,16 +1192,16 @@ historical work. Do not overwrite old score or threshold files.
 
 ## Final verification
 
-- [ ] New threshold artifact declares `score_space: raw_input`.
-- [ ] New threshold artifact declares `point_score_transform: identity`.
-- [ ] Offline point/window thresholding uses raw-input MSE.
-- [ ] Online EWMA, triage and prediction use raw-input MSE.
-- [ ] Normalized MSE remains diagnostic only.
-- [ ] No raw runtime loads calibrated sigmoid parameters.
+- [x] New threshold artifact declares `score_space: raw_input`.
+- [x] New threshold artifact declares `point_score_transform: identity`.
+- [x] Offline point/window thresholding uses raw-input MSE.
+- [x] Online EWMA, triage and prediction use raw-input MSE.
+- [x] Normalized MSE remains diagnostic only.
+- [x] No raw runtime loads calibrated sigmoid parameters.
 - [ ] Synthetic validation covers `machine-1-6`, `machine-3-4`, and `machine-3-9`.
-- [ ] Point/window arrays and labels are stored separately.
-- [ ] Histograms show normal/anomalous point and window groups with thresholds.
-- [ ] Historical sigmoid artifacts remain unchanged and are not silently reused.
+- [x] Point/window arrays and labels are stored separately.
+- [x] Histograms show normal/anomalous point and window groups with thresholds.
+- [x] Historical sigmoid artifacts remain unchanged and are not silently reused.
 
 ## Assumptions and non-blocking uncertainties
 
@@ -1215,3 +1216,21 @@ historical work. Do not overwrite old score or threshold files.
 - The existing `scripts/benchmarks/_internal/run_thesis_offline_benchmark_helpers.py`
   is not an operational owner for score selection; update it only if an import or
   test proves that it is used by the selected runner.
+
+## Execution record — 2026-09-04
+
+- Implemented raw-input MSE scorer, scaler inverse transform, offline evaluator,
+  schema 5 threshold artifact, online EWMA/triage/prediction path, runtime scaler
+  reload, and histogram export.
+- Focused regression: `73 passed`.
+- Full regression: `528 passed, 3 failed, 1 skipped`. The three failures are
+  pre-existing model snapshot/API and test-fixture failures; no raw-MSE test
+  failed.
+- Offline smoke passed for `machine-1-6` with the debug CPU checkpoint. It wrote
+  raw threshold, score arrays, labels, predictions and histogram files.
+- Online A0 smoke passed for `machine-1-6` over 2 causal windows. Records contain
+  `score_space=raw_input` and `point_score_transform=identity`.
+- The smoke synthetic subset contains only normal labels (`80` points, `4`
+  windows), so it does not demonstrate anomalous histogram groups.
+- Requested validation for `machine-3-4` and `machine-3-9` is blocked because
+  this checkout has no valid THESIS Stage B checkpoint for either entity.

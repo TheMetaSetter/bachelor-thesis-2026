@@ -21,6 +21,7 @@ from src.engine.online_tta.verification_adapter import (
 )
 from src.engine.online_tta.verification_buffer import VerificationBuffer
 from src.engine.online_tta.verification_cycle import VerificationCycleController
+from src.protocols.reconstruction_scores import score_reconstruction
 
 
 def _verify_and_adapt_entries(
@@ -65,9 +66,16 @@ def _verify_and_adapt_entries(
             online_variant=online_variant,
             threshold_value=threshold_value,
             ewma_point_score=float(entry["point_score"]),
-            raw_point_score=float(entry["input_window_score"]),
+            raw_point_score=float(
+                entry.get("raw_input_point_mse", entry["point_score"])
+            ),
             latent_window_score=float(entry["latent_window_score"]),
             triage_decision="pnn_verified",
+            score_space=(
+                "raw_input"
+                if "raw_input_point_mse" in entry
+                else "model_output"
+            ),
         )
         finalized[entry_id] = VerificationResult(
             bool(step["did_update"]),
@@ -87,11 +95,13 @@ def _score_online_window(
     ewma_current_weight: float,
     ewma_previous_weight: float,
     device: str,
+    scaler: Any | None = None,
     timing_logger: OnlineTtaTimingLogger | None = None,
 ) -> tuple[
     dict[str, Any],
     torch.Tensor,
     torch.Tensor,
+    float,
     float,
     float,
     torch.Tensor,
@@ -107,11 +117,17 @@ def _score_online_window(
         "model_forward",
         lambda: _forward_online_window(model, batch_on_device, online_variant),
     )
-    window_point_scores, raw_point_scores, input_window_score, latent_window_score = (
-        timing_logger.measure(
-            "score_extraction",
-            lambda: _extract_online_window_scores(pre_outputs, batch_on_device),
-        )
+    (
+        window_point_scores,
+        normalized_point_scores,
+        raw_input_window_score,
+        normalized_input_window_score,
+        latent_window_score,
+    ) = timing_logger.measure(
+        "score_extraction",
+        lambda: _extract_online_window_scores(
+            pre_outputs, batch_on_device, scaler=scaler
+        ),
     )
 
     current_window_ewma_point_scores, active_ewma_point_scores = (
@@ -127,8 +143,9 @@ def _score_online_window(
     return (
         batch_on_device,
         window_point_scores,
-        raw_point_scores,
-        input_window_score,
+        normalized_point_scores,
+        raw_input_window_score,
+        normalized_input_window_score,
         latent_window_score,
         current_window_ewma_point_scores,
         active_ewma_point_scores,
@@ -148,25 +165,42 @@ def _forward_online_window(
 
 
 def _extract_online_window_scores(
-    outputs: dict[str, Any], batch_on_device: dict[str, Any]
-) -> tuple[torch.Tensor, torch.Tensor, float, float]:
-    window_point_scores = outputs["point_scores"][0].detach()
-    scoring_aux = outputs["aux"].get("scoring", outputs["aux"])
-    raw_point_scores = scoring_aux.get("raw_point_scores")
-    if not isinstance(raw_point_scores, torch.Tensor):
-        raise ValueError("online model must expose raw point scores under aux.scoring")
-    raw_point_scores = raw_point_scores[0].detach()
+    outputs: dict[str, Any],
+    batch_on_device: dict[str, Any],
+    scaler: Any | None = None,
+) -> tuple[torch.Tensor, torch.Tensor, float, float, float]:
+    if scaler is not None:
+        stochastic_query = outputs["aux"].get("stochastic_query") or {}
+        reconstruction = stochastic_query.get("reconstruction_samples")
+        if not isinstance(reconstruction, torch.Tensor):
+            reconstruction = outputs["recon"]
+        scores = score_reconstruction(batch_on_device["x"], reconstruction, scaler)
+        point_scores = scores["raw_input_point_mse"][0].detach()
+        normalized_point_scores = scores["normalized_input_point_mse"][0].detach()
+        input_window_score = float(scores["raw_input_window_mse"][0].detach().cpu())
+        normalized_input_window_score = float(
+            scores["normalized_input_window_mse"][0].detach().cpu()
+        )
+    else:
+        point_scores = outputs["point_scores"][0].detach()
+        scoring_aux = outputs["aux"].get("scoring", outputs["aux"])
+        normalized_point_scores = scoring_aux.get("raw_point_scores")
+        if not isinstance(normalized_point_scores, torch.Tensor):
+            raise ValueError("online model must expose raw point scores under aux.scoring")
+        normalized_point_scores = normalized_point_scores[0].detach()
+        input_window_score = float(
+            torch.mean((outputs["recon"] - batch_on_device["x"]) ** 2).detach().cpu()
+        )
+        normalized_input_window_score = input_window_score
     latent_value = outputs["aux"].get("latent_window_score")
     if latent_value is None:
         latent_value = outputs["window_scores"]
     latent_window_score = float(torch.as_tensor(latent_value).mean().detach().cpu())
-    input_window_score = float(
-        torch.mean((outputs["recon"] - batch_on_device["x"]) ** 2).detach().cpu()
-    )
     return (
-        window_point_scores,
-        raw_point_scores,
+        point_scores,
+        normalized_point_scores,
         input_window_score,
+        normalized_input_window_score,
         latent_window_score,
     )
 
@@ -191,13 +225,17 @@ def _update_online_window_buffers(
                 "window_start": int(batch_on_device["meta"][0]["start_index"]),
                 "window_end": int(batch_on_device["meta"][0]["end_index"]),
                 "point_score": raw_point_score,
+                "raw_input_point_mse": raw_point_score,
                 "input_window_score": input_window_score,
+                "raw_input_window_mse": input_window_score,
                 "latent_window_score": latent_window_score,
                 "entity_id": str(batch_on_device["meta"][0]["entity_id"]),
                 "stream_step": int(batch_on_device["meta"][0]["stream_step"]),
                 "window": batch_on_device["x"][0].detach().cpu().tolist(),
                 "x": batch_on_device["x"][0].detach().cpu().tolist(),
                 "admitted_at_cursor": int(batch_on_device["meta"][0]["stream_step"]),
+                "score_space": "raw_input",
+                "point_score_transform": "identity",
             }
         )
         rejected = not admitted
@@ -210,11 +248,14 @@ def _build_online_window_outputs(
     threshold_value: float,
     absolute_indices: torch.Tensor,
     window_point_scores: torch.Tensor,
-    raw_point_scores: torch.Tensor,
+    normalized_point_scores: torch.Tensor,
+    raw_input_window_score: float,
+    normalized_input_window_score: float,
     input_window_score: float,
     current_window_ewma_point_scores: torch.Tensor,
     triage_decision: str,
     verification_buffer: VerificationBuffer,
+    score_space: str,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     record = dict(step_result["record"])
     record["causal_window"] = {
@@ -225,8 +266,10 @@ def _build_online_window_outputs(
     record["window_point_scores"] = [
         float(score) for score in window_point_scores.detach().cpu().tolist()
     ]
-    record["raw_window_point_scores"] = [
-        float(score) for score in raw_point_scores.detach().cpu().tolist()
+    record["raw_input_point_mse"] = record["window_point_scores"]
+    record["raw_window_point_scores"] = record["window_point_scores"]
+    record["normalized_input_point_mse"] = [
+        float(score) for score in normalized_point_scores.detach().cpu().tolist()
     ]
     record["current_window_ewma_point_scores"] = [
         float(score)
@@ -237,11 +280,21 @@ def _build_online_window_outputs(
         for score in current_window_ewma_point_scores.detach().cpu().tolist()
     ]
     record["threshold"] = float(threshold_value)
+    record["raw_input_window_mse"] = float(raw_input_window_score)
+    record["normalized_input_window_mse"] = float(normalized_input_window_score)
     record["input_window_score"] = float(input_window_score)
+    record["score_space"] = score_space
+    record["point_score_transform"] = (
+        "identity" if score_space == "raw_input" else None
+    )
     record["verification_cycle_ready"] = verification_buffer.should_verify()
     metric = {
         "online/step": 0,
-        "online/raw_point_score": float(raw_point_scores[-1].detach().cpu()),
+        "online/raw_input_point_mse": float(window_point_scores[-1].detach().cpu()),
+        "online/raw_point_score": float(window_point_scores[-1].detach().cpu()),
+        "online/normalized_input_point_mse": float(
+            normalized_point_scores[-1].detach().cpu()
+        ),
         "online/ewma_point_score": float(
             current_window_ewma_point_scores[-1].detach().cpu()
         ),
@@ -250,6 +303,8 @@ def _build_online_window_outputs(
         "online/did_update": record["did_update"],
         "online/loss_total": record["loss_total"],
         "online/triage_decision": triage_decision,
+        "online/raw_input_window_mse": raw_input_window_score,
+        "online/normalized_input_window_mse": normalized_input_window_score,
         "online/input_window_score": input_window_score,
         "online/latent_window_score": float(
             step_result["record"].get("latent_window_score", 0.0)

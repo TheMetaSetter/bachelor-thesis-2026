@@ -52,6 +52,7 @@ def _prepare_online_window_event(
     hard_old_guard: NonOverlapGuard,
     device: str,
     timing_logger: OnlineTtaTimingLogger,
+    scaler: Any | None = None,
 ) -> dict[str, Any]:
     scored = _score_online_window(
         model=model,
@@ -61,13 +62,15 @@ def _prepare_online_window_event(
         ewma_current_weight=ewma_current_weight,
         ewma_previous_weight=ewma_previous_weight,
         device=device,
+        scaler=scaler,
         timing_logger=timing_logger,
     )
     (
         batch_on_device,
         point_scores,
-        raw_point_scores,
+        normalized_point_scores,
         input_score,
+        normalized_input_score,
         latent_score,
         ewma_scores,
         active_scores,
@@ -88,12 +91,15 @@ def _prepare_online_window_event(
     return {
         "batch": batch_on_device,
         "window_point_scores": point_scores,
-        "raw_window_point_scores": raw_point_scores,
+        "raw_window_point_scores": point_scores,
+        "normalized_window_point_scores": normalized_point_scores,
         "input_window_score": input_score,
+        "normalized_input_window_score": normalized_input_score,
         "latent_window_score": latent_score,
         "current_window_ewma_point_scores": ewma_scores,
         "active_ewma_point_scores": active_scores,
         "source_hidden": scoring_outputs.get("aux", {}).get("reference_hidden"),
+        "score_space": "raw_input" if scaler is not None else "model_output",
         "triage_region": triage_region,
         "hard_old_is_admissible": hard_old_is_admissible,
     }
@@ -176,11 +182,14 @@ def _build_event_outputs(
         threshold_value=threshold_value,
         absolute_indices=event["batch"]["absolute_indices"][0],
         window_point_scores=event["window_point_scores"],
-        raw_point_scores=event["raw_window_point_scores"],
+        normalized_point_scores=event["normalized_window_point_scores"],
+        raw_input_window_score=event["input_window_score"],
+        normalized_input_window_score=event["normalized_input_window_score"],
         input_window_score=event["input_window_score"],
         current_window_ewma_point_scores=event["current_window_ewma_point_scores"],
         triage_decision=event["triage_region"],
         verification_buffer=verification_buffer,
+        score_space=event["score_space"],
     )
 
 
@@ -200,6 +209,7 @@ def _process_online_window(
     verification_controller: VerificationCycleController,
     hard_old_guard: NonOverlapGuard,
     timing_logger: OnlineTtaTimingLogger | None = None,
+    scaler: Any | None = None,
 ) -> tuple[dict[int, float], dict[str, Any], dict[str, Any]]:
     timing_logger = timing_logger or OnlineTtaTimingLogger(enabled=False, device=device)
     timing_logger.set_window(batch)
@@ -215,6 +225,7 @@ def _process_online_window(
             triage_thresholds=triage_thresholds,
             hard_old_guard=hard_old_guard,
             device=device,
+            scaler=scaler,
             timing_logger=timing_logger,
         ),
     )

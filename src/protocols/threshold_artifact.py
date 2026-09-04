@@ -8,7 +8,8 @@ from typing import Any
 from src.core.config_aliases import normalize_variance_correction_value
 
 
-THRESHOLD_ARTIFACT_SCHEMA_VERSION = 4
+THRESHOLD_ARTIFACT_SCHEMA_VERSION = 5
+HISTORICAL_THESIS_SCHEMA_VERSION = 4
 
 _REQUIRED_ONLINE_THRESHOLDS = {
     "online_ewma_point",
@@ -49,12 +50,11 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
     if missing_keys:
         raise ValueError(f"threshold artifact is missing required keys: {missing_keys}")
     schema_version = int(artifact["schema_version"])
-    if schema_version not in {3, THRESHOLD_ARTIFACT_SCHEMA_VERSION}:
+    if schema_version not in {3, HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION}:
         raise ValueError(
-            "threshold artifact schema_version must be "
-            f"{THRESHOLD_ARTIFACT_SCHEMA_VERSION}"
+            "threshold artifact schema_version must be one of: 3, 4, 5"
         )
-    if schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION and (
+    if schema_version in {HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION} and (
         not isinstance(artifact.get("checkpoint_sha256"), str)
         or not artifact["checkpoint_sha256"]
     ):
@@ -62,9 +62,10 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
             "threshold artifact checkpoint_sha256 must be a non-empty string"
         )
     requires_point_score_calibration = (
-        schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION
+        schema_version == HISTORICAL_THESIS_SCHEMA_VERSION
         and artifact["method_name"] == "THESIS"
     )
+    requires_raw_score_identity = schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION
     if requires_point_score_calibration:
         calibration_fields = {
             "point_score_transform",
@@ -92,6 +93,35 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
             raise ValueError(
                 "threshold artifact point_score_mad_normalizer must be 0.6745"
             )
+    if requires_raw_score_identity:
+        raw_identity_fields = {
+            "score_space",
+            "point_score_transform",
+            "point_score_definition",
+            "window_score_definition",
+        }
+        missing_raw_identity_fields = sorted(raw_identity_fields - set(artifact))
+        if missing_raw_identity_fields:
+            raise ValueError(
+                "raw schema v5 artifact is missing score identity fields: "
+                f"{missing_raw_identity_fields}"
+            )
+        if artifact["score_space"] != "raw_input":
+            raise ValueError("raw schema v5 artifact score_space must be raw_input")
+        if artifact["point_score_transform"] != "identity":
+            raise ValueError("raw schema v5 artifact point_score_transform must be identity")
+        if artifact["point_score_definition"] != "raw_input_point_mse":
+            raise ValueError("raw schema v5 artifact has unsupported point score definition")
+        if artifact["window_score_definition"] != "raw_input_window_mse":
+            raise ValueError("raw schema v5 artifact has unsupported window score definition")
+        calibration_fields = {
+            "point_score_c",
+            "point_score_tau",
+            "point_score_tau_estimator",
+            "point_score_mad_normalizer",
+        }
+        if calibration_fields.intersection(artifact):
+            raise ValueError("raw schema v5 artifact must not contain sigmoid calibration fields")
     if not isinstance(artifact["entity_id"], str) or not artifact["entity_id"]:
         raise ValueError("threshold artifact entity_id must be a non-empty string")
     if not isinstance(artifact["method_name"], str) or not artifact["method_name"]:
@@ -179,6 +209,18 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
                     "threshold artifact provenance calibration field must match "
                     f"{field_name}"
                 )
+    if requires_raw_score_identity:
+        for field_name in [
+            "score_space",
+            "point_score_transform",
+            "point_score_definition",
+            "window_score_definition",
+        ]:
+            if provenance.get(field_name) != artifact.get(field_name):
+                raise ValueError(
+                    "threshold artifact provenance raw identity field must match "
+                    f"{field_name}"
+                )
     if "checkpoint_sha256" in artifact and artifact["checkpoint_sha256"] is not None:
         if (
             not isinstance(artifact["checkpoint_sha256"], str)
@@ -215,7 +257,7 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
     if not isinstance(thresholds, dict) or not thresholds:
         raise TypeError("threshold artifact thresholds must be a non-empty mapping")
     missing_thresholds = sorted(_REQUIRED_ONLINE_THRESHOLDS - set(thresholds))
-    if schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION and missing_thresholds:
+    if schema_version in {HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION} and missing_thresholds:
         raise ValueError(
             "threshold artifact is missing required online thresholds: "
             f"{missing_thresholds}"
@@ -268,12 +310,12 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
             ):
                 raise ValueError("EWMA threshold weights must be positive")
     if (
-        schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION
+        schema_version in {HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION}
         and thresholds["online_ewma_point"]["score_rule"]
         != "stride1_causal_window_vector_ewma"
     ):
         raise ValueError("online_ewma_point must use stride1_causal_window_vector_ewma")
-    if schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION and float(
+    if schema_version in {HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION} and float(
         thresholds["latent_window_low"]["value"]
     ) > float(thresholds["latent_window_high"]["value"]):
         raise ValueError("latent window low threshold must not exceed high threshold")
@@ -316,23 +358,27 @@ def build_threshold_artifact(
     point_score_transform: str = "shifted-and-scaled logistic sigmoid",
     point_score_tau_estimator: str = "mad_based_robust_scale",
     point_score_mad_normalizer: float = 0.6745,
+    score_space: str = "model_output",
 ) -> dict[str, Any]:
     if not 0.0 < float(quantile) <= 1.0:
         raise ValueError("quantile must be in (0, 1]")
-    is_thesis_v4 = method_name == "THESIS"
-    if is_thesis_v4 and (
+    is_raw_input_protocol = score_space == "raw_input"
+    if score_space not in {"model_output", "raw_input"}:
+        raise ValueError("score_space must be model_output or raw_input")
+    is_historical_thesis_v4 = method_name == "THESIS" and not is_raw_input_protocol
+    if is_historical_thesis_v4 and (
         not isinstance(checkpoint_sha256, str) or not checkpoint_sha256
     ):
         raise ValueError("checkpoint_sha256 must be a non-empty string")
-    if is_thesis_v4 and (
+    if method_name == "THESIS" and (
         input_window_threshold is None
         or latent_window_low_threshold is None
         or latent_window_high_threshold is None
     ):
-        raise ValueError("THESIS schema version 4 requires all triage thresholds")
-    if is_thesis_v4 and (point_score_c is None or point_score_tau is None):
+        raise ValueError("THESIS schema versions 4 and 5 require all triage thresholds")
+    if is_historical_thesis_v4 and (point_score_c is None or point_score_tau is None):
         raise ValueError("THESIS schema version 4 requires point score calibration")
-    if is_thesis_v4:
+    if is_historical_thesis_v4:
         if not math.isfinite(float(point_score_c)):
             raise ValueError("point_score_c must be finite")
         if not math.isfinite(float(point_score_tau)) or float(point_score_tau) <= 0.0:
@@ -356,7 +402,7 @@ def build_threshold_artifact(
             "source_split": calibration_split,
             "score_rule": (
                 "stride1_causal_window_vector_ewma"
-                if is_thesis_v4
+                if is_historical_thesis_v4 or is_raw_input_protocol
                 else "stride1_causal_endpoint_ewma"
             ),
             "quantile": float(quantile),
@@ -368,7 +414,11 @@ def build_threshold_artifact(
         thresholds["input_window"] = {
             "value": float(input_window_threshold),
             "source_split": calibration_split,
-            "score_rule": "window_mean_squared_error",
+            "score_rule": (
+                "raw_input_window_mse"
+                if is_raw_input_protocol
+                else "window_mean_squared_error"
+            ),
             "quantile": 0.99,
         }
     if (
@@ -388,8 +438,20 @@ def build_threshold_artifact(
             "quantile": 0.99,
         }
     artifact = {
-        "artifact_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION if is_thesis_v4 else 3,
-        "schema_version": THRESHOLD_ARTIFACT_SCHEMA_VERSION if is_thesis_v4 else 3,
+        "artifact_version": (
+            THRESHOLD_ARTIFACT_SCHEMA_VERSION
+            if is_raw_input_protocol
+            else HISTORICAL_THESIS_SCHEMA_VERSION
+            if is_historical_thesis_v4
+            else 3
+        ),
+        "schema_version": (
+            THRESHOLD_ARTIFACT_SCHEMA_VERSION
+            if is_raw_input_protocol
+            else HISTORICAL_THESIS_SCHEMA_VERSION
+            if is_historical_thesis_v4
+            else 3
+        ),
         "method_name": method_name,
         "variant_name": variant_name,
         "entity_id": entity_id,
@@ -428,7 +490,24 @@ def build_threshold_artifact(
             "resolved_config_sha256": resolved_config_sha256,
         },
     }
-    if is_thesis_v4:
+    if is_raw_input_protocol:
+        artifact.update(
+            {
+                "score_space": "raw_input",
+                "point_score_transform": "identity",
+                "point_score_definition": "raw_input_point_mse",
+                "window_score_definition": "raw_input_window_mse",
+            }
+        )
+        artifact["provenance"].update(
+            {
+                "score_space": "raw_input",
+                "point_score_transform": "identity",
+                "point_score_definition": "raw_input_point_mse",
+                "window_score_definition": "raw_input_window_mse",
+            }
+        )
+    elif is_historical_thesis_v4:
         artifact.update(
             {
                 "point_score_transform": point_score_transform,

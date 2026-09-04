@@ -427,6 +427,19 @@ Nhóm output của `offline_evaluation`, gồm score artifacts, `offline_metrics
 
 ## 10. Terminology changes from older specifications
 
+### 10.1 Raw-input-space MSE v4
+
+Version 4 splits the old ambiguous point-score names. The operational raw
+fields are `raw_input_point_mse` and `raw_input_window_mse`. The diagnostic
+fields are `normalized_input_point_mse` and `normalized_input_window_mse`.
+Raw input means original sensor units restored with the fitted train-only
+scaler. The v4 raw protocol uses `score_space: raw_input` and
+`point_score_transform: identity`; sigmoid calibration is outside this path.
+
+`point_labels` and `window_labels` are ground truth categories. Predictions are
+separate threshold outputs. A window is anomalous when any point label is
+anomalous.
+
 | Old name | Canonical name | Status | Runtime owner | Migration boundary |
 | --- | --- | --- | --- | --- |
 | `offline pre-training` | `offline_pretraining_phase` | unchanged, normalized identifier | benchmark runner | Docs/pseudocode identifiers |

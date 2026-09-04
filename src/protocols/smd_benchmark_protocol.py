@@ -24,7 +24,9 @@ def _require_quantile(config: dict[str, Any], key: str) -> None:
         raise ValueError(f"{key} must be between 0 and 1")
 
 
-def validate_protocol_config(config: dict[str, Any]) -> None:
+def validate_protocol_config(
+    config: dict[str, Any], *, require_score_identity: bool = True
+) -> None:
     """Validate locked SMD benchmark rules before any run starts.
 
     ( ˶˘ ³˘)♡ Fairness guard
@@ -38,6 +40,11 @@ def validate_protocol_config(config: dict[str, Any]) -> None:
         raise ValueError("test labels cannot be used for threshold selection")
     if config.get("test_label_usage") != "metrics_only":
         raise ValueError("test labels must be used for metrics_only")
+
+    if require_score_identity or "score_space" in config:
+        _require_equal(config, "score_space", "raw_input")
+    if require_score_identity or "point_score_transform" in config:
+        _require_equal(config, "point_score_transform", "identity")
 
     _require_equal(config, "window_size", 20)
     _require_equal(config, "offline_tail_policy", "end_align")

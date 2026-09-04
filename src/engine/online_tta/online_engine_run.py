@@ -6,6 +6,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable
 
+import torch
+
 from src.core.artifact_integrity import (
     build_artifact_manifest,
     verify_artifact_manifest,
@@ -15,6 +17,7 @@ from src.core.artifact_integrity import (
 from src.core.registry import build_dataset
 from src.core.runtime_components import register_online_runtime_components
 from src.core.seed import seed_everything
+from src.data.loaders import rebuild_dataset_bundle_with_scaler_state
 from src.engine.checkpoint import CheckpointManager
 from src.engine.online_tta.non_overlap_guard import NonOverlapGuard
 from src.engine.online_tta.online_calibration import (
@@ -98,6 +101,41 @@ def _validate_online_artifact_identity(
         expected_weight = float(protocol_config[f"online_{field_name}"])
         if float(artifact[field_name]) != expected_weight:
             raise ValueError(f"threshold artifact identity mismatch for {field_name}")
+    expected_score_space = protocol_config.get("score_space")
+    artifact_score_space = artifact.get("score_space", "model_output")
+    if expected_score_space is not None and expected_score_space != artifact_score_space:
+        raise ValueError(
+            "threshold artifact identity mismatch for score_space: "
+            f"expected {expected_score_space!r}, got {artifact_score_space!r}"
+        )
+    expected_transform = protocol_config.get("point_score_transform")
+    artifact_transform = artifact.get("point_score_transform")
+    if expected_transform is not None and expected_transform != artifact_transform:
+        raise ValueError(
+            "threshold artifact identity mismatch for point_score_transform: "
+            f"expected {expected_transform!r}, got {artifact_transform!r}"
+        )
+
+
+def _maybe_rebuild_with_checkpoint_scaler(
+    *,
+    data_bundle: dict[str, Any],
+    experiment_config: dict[str, Any],
+    checkpoint_path: str,
+) -> dict[str, Any]:
+    if "raw_sequences" not in data_bundle:
+        return data_bundle
+    checkpoint_payload = torch.load(
+        checkpoint_path, map_location="cpu", weights_only=True
+    )
+    scaler_state = checkpoint_payload.get("scaler_state_dict")
+    if scaler_state is None:
+        return data_bundle
+    return rebuild_dataset_bundle_with_scaler_state(
+        data_bundle=data_bundle,
+        data_config=experiment_config["data"],
+        scaler_state_dict=scaler_state,
+    )
 
 
 def _build_runtime_online_context(
@@ -121,14 +159,21 @@ def _build_runtime_online_context(
     data_bundle = build_dataset(
         experiment_config["data"]["dataset_name"], experiment_config["data"]
     )
+    if threshold_artifact.get("score_space", "model_output") == "raw_input":
+        data_bundle = _maybe_rebuild_with_checkpoint_scaler(
+            data_bundle=data_bundle,
+            experiment_config=experiment_config,
+            checkpoint_path=reference_checkpoint_path,
+        )
     model = _build_model_from_experiment_config(
         {**experiment_config, "online_variant": online_variant}
     )
-    if not hasattr(model, "set_point_score_calibration"):
-        raise TypeError("THESIS online model must support point-score calibration")
-    model.set_point_score_calibration(
-        PointScoreCalibration.from_artifact(threshold_artifact)
-    )
+    if threshold_artifact.get("score_space", "model_output") != "raw_input":
+        if not hasattr(model, "set_point_score_calibration"):
+            raise TypeError("THESIS online model must support point-score calibration")
+        model.set_point_score_calibration(
+            PointScoreCalibration.from_artifact(threshold_artifact)
+        )
     optimizer = (
         None
         if online_variant == "A0"
@@ -167,6 +212,7 @@ def _build_runtime_online_context(
         "created_at_utc": _utc_now_iso(),
         "online_variant": online_variant,
         "data_bundle": data_bundle,
+        "scaler": data_bundle["scaler"],
         "model": model,
         "optimizer": optimizer,
         "checkpoint_manager": checkpoint_manager,
@@ -207,6 +253,7 @@ def _run_online_sequence(
     view_dropout_probability: float,
     device: str,
     verification_buffer: VerificationBuffer,
+    scaler: Any | None = None,
     runtime_state=None,
     max_online_steps: int | None,
     hard_old_guard: NonOverlapGuard | None = None,
@@ -225,6 +272,12 @@ def _run_online_sequence(
                 "thresholds": {},
             },
         )
+    if (
+        threshold_artifact is not None
+        and threshold_artifact.get("score_space", "model_output") == "raw_input"
+        and scaler is None
+    ):
+        raise ValueError("raw_input online processing requires a fitted scaler")
     from src.engine.online_tta import online_engine as public_online_engine
 
     # step 1: Build the causal online window stream.
@@ -273,6 +326,7 @@ def _run_online_sequence(
                 verification_buffer=verification_buffer,
                 previous_ewma_point_scores=active_ewma_point_scores,
                 device=device,
+                scaler=scaler,
                 verification_controller=verification_controller,
                 hard_old_guard=hard_old_guard,
                 timing_logger=timing_logger,
@@ -352,6 +406,7 @@ def _run_online_execution_sequences(
                 view_dropout_probability=context["view_dropout_probability"],
                 device=context["device"],
                 verification_buffer=context["verification_buffer"],
+                scaler=context.get("scaler"),
                 runtime_state=context.get("runtime_state"),
                 hard_old_guard=context["hard_old_guard"],
                 max_online_steps=(
@@ -559,6 +614,7 @@ def run_thesis_online_tta_experiment(
         hard_old_guard=context["hard_old_guard"],
         # Môi trường, giới hạn thực thi và đo thời gian.
         device=context["device"],
+        scaler=context["scaler"],
         max_online_steps=_resolve_max_online_steps(context.get("max_online_steps")),
         timing_logger=OnlineTtaTimingLogger(
             enabled=bool(context["debug_timing"]),

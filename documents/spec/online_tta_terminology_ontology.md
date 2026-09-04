@@ -486,6 +486,19 @@ compatibility reader mới dùng scalar endpoint fields.
 
 ## 13. Terminology changes
 
+### 13.1 Raw-input-space MSE v4
+
+Raw input always means original sensor units after applying the fitted scaler's
+inverse transform. Use `raw_input_point_mse` and `raw_input_window_mse` for
+operational online scores. Use `normalized_input_point_mse` and
+`normalized_input_window_mse` for diagnostics only. The raw protocol declares
+`score_space: raw_input` and `point_score_transform: identity`; it does not load
+the historical sigmoid calibration.
+
+`point_labels` and `window_labels` are ground truth. `point_predictions` and
+`window_predictions` are threshold results. A window label is anomalous when
+any point label in that window is anomalous.
+
 | Old name | New canonical name | Status | Runtime owner | Migration boundary |
 | --- | --- | --- | --- | --- |
 | `raw_point_scores` | `window_point_scores` | legacy name replaced; canonical value is transformed anomaly score, not raw MSE | model output | Desired pseudocode |

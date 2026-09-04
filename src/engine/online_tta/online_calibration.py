@@ -14,6 +14,7 @@ from src.protocols.point_scores import (
     window_scores_to_causal_endpoint_scores,
 )
 from src.engine.online_tta.point_ewma import update_window_point_ewma
+from src.protocols.reconstruction_scores import score_reconstruction
 
 
 def build_online_stream(
@@ -59,26 +60,47 @@ def _forward_calibration_window(
 
 
 def _collect_batch_scores(
-    outputs: dict[str, Any], batch_on_device: dict[str, Any]
-) -> tuple[torch.Tensor, list[float], list[float]]:
-    point_scores = outputs["point_scores"].detach()
-    input_scores = (
-        ((outputs["recon"] - batch_on_device["x"]) ** 2)
-        .mean(dim=(1, 2))
-        .detach()
-        .cpu()
-        .tolist()
-    )
+    outputs: dict[str, Any],
+    batch_on_device: dict[str, Any],
+    scaler: Any | None = None,
+) -> tuple[torch.Tensor, torch.Tensor, list[float], list[float], list[float]]:
+    if scaler is None:
+        point_scores = outputs["point_scores"].detach()
+        normalized_point_scores = point_scores
+        input_scores = (
+            ((outputs["recon"] - batch_on_device["x"]) ** 2)
+            .mean(dim=(1, 2))
+            .detach()
+            .cpu()
+            .tolist()
+        )
+        normalized_input_scores = input_scores
+    else:
+        stochastic_query = outputs["aux"].get("stochastic_query") or {}
+        reconstruction = stochastic_query.get("reconstruction_samples")
+        if not isinstance(reconstruction, torch.Tensor):
+            reconstruction = outputs["recon"]
+        scores = score_reconstruction(batch_on_device["x"], reconstruction, scaler)
+        point_scores = scores["raw_input_point_mse"].detach()
+        normalized_point_scores = scores["normalized_input_point_mse"].detach()
+        input_scores = scores["raw_input_window_mse"].detach().cpu().tolist()
+        normalized_input_scores = (
+            scores["normalized_input_window_mse"].detach().cpu().tolist()
+        )
     latent_scores = outputs["aux"].get("latent_window_score")
     if not isinstance(latent_scores, torch.Tensor):
         geometry = outputs["aux"].get("deterministic_geometry")
         if isinstance(geometry, dict):
             latent_scores = geometry.get("latent_window_score")
     if not isinstance(latent_scores, torch.Tensor):
+        latent_scores = outputs.get("window_scores")
+    if not isinstance(latent_scores, torch.Tensor):
         raise KeyError("online model must expose aux.latent_window_score")
     return (
         point_scores,
+        normalized_point_scores,
         input_scores,
+        normalized_input_scores,
         latent_scores.reshape(-1).detach().cpu().tolist(),
     )
 
@@ -94,6 +116,7 @@ def run_stride1_sequence_scores(
     device: str,
     current_weight: float,
     previous_weight: float,
+    scaler: Any | None = None,
 ) -> dict[str, list[float]]:
     batcher = build_online_stream(
         sequences=[sequence],
@@ -104,15 +127,23 @@ def run_stride1_sequence_scores(
     )
     active_ewma_point_scores: dict[int, float] = {}
     point_scores: list[float] = []
+    normalized_point_score_values: list[float] = []
     input_window_scores: list[float] = []
+    normalized_input_window_scores: list[float] = []
     latent_window_scores: list[float] = []
     for batch in batcher:
         batch_on_device = move_batch_to_device(batch, device)
         model.eval()
         with torch.no_grad():
             outputs = _forward_calibration_window(model, batch_on_device)
-        current_point_scores, input_scores, latent_scores = _collect_batch_scores(
-            outputs, batch_on_device
+        (
+            current_point_scores,
+            normalized_point_scores,
+            input_scores,
+            normalized_input_scores,
+            latent_scores,
+        ) = _collect_batch_scores(
+            outputs, batch_on_device, scaler=scaler
         )
         if current_point_scores.shape[0] != 1:
             raise ValueError("online threshold calibration requires batch_size=1")
@@ -124,17 +155,27 @@ def run_stride1_sequence_scores(
             previous_weight=previous_weight,
         )
         point_scores.extend(float(value) for value in current_ewma_scores.tolist())
+        normalized_point_score_values.extend(
+            float(value) for value in normalized_point_scores[0].tolist()
+        )
         input_window_scores.extend(input_scores)
+        normalized_input_window_scores.extend(normalized_input_scores)
         latent_window_scores.extend(latent_scores)
     return {
         "point": point_scores,
+        "normalized_point": normalized_point_score_values,
         "input_window": [float(value) for value in input_window_scores],
+        "normalized_input_window": normalized_input_window_scores,
         "latent_window": [float(value) for value in latent_window_scores],
     }
 
 
 def _collect_offline_scores(
-    model: torch.nn.Module, sequence: dict[str, Any], window_size: int, device: str
+    model: torch.nn.Module,
+    sequence: dict[str, Any],
+    window_size: int,
+    device: str,
+    scaler: Any | None = None,
 ) -> list[float]:
     collected: list[float] = []
     windows = slice_sequence_into_windows(
@@ -163,7 +204,17 @@ def _collect_offline_scores(
                 if hasattr(model, "forward_source")
                 else model.forward(batch)
             )
-        collected.extend(outputs["point_scores"].reshape(-1).detach().cpu().tolist())
+        if scaler is None:
+            window_scores = outputs["point_scores"]
+        else:
+            stochastic_query = outputs["aux"].get("stochastic_query") or {}
+            reconstruction = stochastic_query.get("reconstruction_samples")
+            if not isinstance(reconstruction, torch.Tensor):
+                reconstruction = outputs["recon"]
+            window_scores = score_reconstruction(
+                batch["x"], reconstruction, scaler
+            )["raw_input_point_mse"]
+        collected.extend(window_scores.reshape(-1).detach().cpu().tolist())
     return collected
 
 
@@ -173,11 +224,16 @@ def collect_nonoverlap_offline_scores(
     clean_validation_sequences: list[dict[str, Any]],
     window_size: int,
     device: str,
+    scaler: Any | None = None,
 ) -> list[float]:
     """Collect offline calibration scores from non-overlapping validation windows."""
     collected: list[float] = []
     for sequence in clean_validation_sequences:
-        collected.extend(_collect_offline_scores(model, sequence, window_size, device))
+        collected.extend(
+            _collect_offline_scores(
+                model, sequence, window_size, device, scaler=scaler
+            )
+        )
     return collected
 
 
@@ -192,9 +248,20 @@ def collect_stride1_online_scores(
     device: str,
     current_weight: float,
     previous_weight: float,
+    scaler: Any | None = None,
 ) -> dict[str, list[float]]:
     """Collect stride-1 causal validation scores for online thresholding."""
-    collected = {key: [] for key in ("point", "ewma", "input_window", "latent_window")}
+    collected = {
+        key: []
+        for key in (
+            "point",
+            "ewma",
+            "normalized_point",
+            "input_window",
+            "normalized_input_window",
+            "latent_window",
+        )
+    }
     for sequence in clean_validation_sequences:
         scores = run_stride1_sequence_scores(
             model=model,
@@ -206,10 +273,15 @@ def collect_stride1_online_scores(
             device=device,
             current_weight=current_weight,
             previous_weight=previous_weight,
+            scaler=scaler,
         )
         collected["point"].extend(scores["point"])
         collected["ewma"].extend(scores["point"])
+        collected["normalized_point"].extend(scores["normalized_point"])
         collected["input_window"].extend(scores["input_window"])
+        collected["normalized_input_window"].extend(
+            scores["normalized_input_window"]
+        )
         collected["latent_window"].extend(scores["latent_window"])
     return collected
 
@@ -225,6 +297,7 @@ def collect_clean_validation_scores(
     device: str,
     current_weight: float,
     previous_weight: float,
+    scaler: Any | None = None,
 ) -> dict[str, list[float]]:
     collected = {"offline_point": []}
     collected["offline_point"] = collect_nonoverlap_offline_scores(
@@ -232,6 +305,7 @@ def collect_clean_validation_scores(
         clean_validation_sequences=clean_validation_sequences,
         window_size=window_size,
         device=device,
+        scaler=scaler,
     )
     stride1_scores = collect_stride1_online_scores(
         model=model,
@@ -243,6 +317,7 @@ def collect_clean_validation_scores(
         device=device,
         current_weight=current_weight,
         previous_weight=previous_weight,
+        scaler=scaler,
     )
     collected.update(stride1_scores)
     return collected

@@ -41,7 +41,12 @@ def _compute_step_scores(
     ewma_point_score: float | None,
     raw_point_score: float | None,
     latent_window_score: float | None,
+    score_space: str,
 ) -> tuple[float, float, float]:
+    if score_space == "raw_input" and raw_point_score is None:
+        raise ValueError(
+            "raw_input step scoring requires an operational raw_input point score"
+        )
     if raw_point_score is None or latent_window_score is None:
         model.eval()
         with torch.no_grad():
@@ -82,6 +87,7 @@ def _build_step_record(
     raw_point_score: float,
     latent_window_score: float,
     triage_decision: str | None,
+    score_space: str,
 ) -> dict[str, Any]:
     meta = batch["meta"][0]
     return {
@@ -90,10 +96,15 @@ def _build_step_record(
         "window_start_index": int(meta["start_index"]),
         "window_end_index": int(meta["end_index"]),
         "raw_point_score": raw_point_score,
+        "raw_input_point_mse": raw_point_score,
         "ewma_point_score": ewma_point_score,
+        "ewma_raw_input_point_mse": ewma_point_score,
         "latent_window_score": latent_window_score,
         "threshold": float(threshold_value),
         "prediction": int(ewma_point_score > float(threshold_value)),
+        "point_prediction": int(ewma_point_score > float(threshold_value)),
+        "score_space": score_space,
+        "point_score_transform": "identity" if score_space == "raw_input" else None,
         "online_variant": online_variant,
         "triage_decision": triage_decision,
         "did_update": False,
@@ -193,7 +204,10 @@ def execute_online_tta_step(
     raw_point_score: float | None = None,
     latent_window_score: float | None = None,
     triage_decision: str | None,
+    score_space: str = "model_output",
 ) -> dict[str, Any]:
+    if score_space not in {"model_output", "raw_input"}:
+        raise ValueError("score_space must be model_output or raw_input")
     ewma_point_score, raw_point_score, latent_window_score = _compute_step_scores(
         model=model,
         batch=batch,
@@ -201,6 +215,7 @@ def execute_online_tta_step(
         ewma_point_score=ewma_point_score,
         raw_point_score=raw_point_score,
         latent_window_score=latent_window_score,
+        score_space=score_space,
     )
     record = _build_step_record(
         batch=batch,
@@ -210,6 +225,7 @@ def execute_online_tta_step(
         raw_point_score=raw_point_score,
         latent_window_score=latent_window_score,
         triage_decision=triage_decision,
+        score_space=score_space,
     )
     if optimizer is None or online_variant == "A0":
         return _step_result(record=record, did_update=False, loss_total=None)

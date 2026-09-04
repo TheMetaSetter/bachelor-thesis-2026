@@ -220,6 +220,10 @@ def test_thesis_offline_wrapper_exports_protocol_artifacts(
         np.array([0.1, 0.2, 0.3], dtype=float),
         0.99,
     )
+    assert threshold_payload["schema_version"] == 5
+    assert threshold_payload["score_space"] == "raw_input"
+    assert threshold_payload["point_score_transform"] == "identity"
+    assert "point_score_c" not in threshold_payload
     clean_scores = np.load(output_dir / "scores" / "clean_validation_point_scores.npz")
     assert np.allclose(clean_scores["point_scores"], [0.1, 0.2, 0.3])
     uq_summary_payload = json.loads(

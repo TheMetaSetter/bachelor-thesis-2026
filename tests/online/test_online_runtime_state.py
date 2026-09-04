@@ -102,6 +102,26 @@ def test_runtime_state_rejects_schema_mismatch() -> None:
         validate_resume_state(payload, "machine-1-6", "A2")
 
 
+def test_runtime_state_rejects_mismatched_raw_score_identity() -> None:
+    artifact = {
+        "entity_id": "machine-1-6",
+        "score_space": "raw_input",
+        "point_score_transform": "identity",
+        "thresholds": {"online_ewma_point": {"value": 1.0}},
+    }
+    state = OnlineRuntimeState("machine-1-6", "A2", artifact)
+    mismatched_artifact = dict(artifact)
+    mismatched_artifact["point_score_transform"] = "sigmoid"
+
+    with pytest.raises(ValueError, match="threshold artifact"):
+        validate_resume_state(
+            state.to_dict(),
+            "machine-1-6",
+            "A2",
+            threshold_artifact=mismatched_artifact,
+        )
+
+
 def test_resumed_next_event_matches_uninterrupted_execution() -> None:
     entries = [
         {"entry_id": f"e{i}", "window_start": i * 3, "window_end": i * 3 + 2}

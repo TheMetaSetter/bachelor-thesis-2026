@@ -1,4 +1,6 @@
 protocol_name: smd_window20_cleanval_q99_ewma09
+score_space: raw_input
+point_score_transform: identity
 window_size: 20
 offline_tail_policy: end_align
 offline_threshold_split: clean_validation

@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import pytest
 import torch
 
 from src.engine.checkpoint import CheckpointManager
@@ -216,3 +217,30 @@ def test_execute_online_tta_step_keeps_a0_frozen(tmp_path: Path) -> None:
             projector_before, model.online_mlp_projector.parameters()
         )
     )
+
+
+def test_raw_step_rejects_missing_operational_raw_score() -> None:
+    class _Model(torch.nn.Module):
+        def forward(self, batch):
+            return {
+                "point_scores": torch.ones(1, 2),
+                "window_scores": torch.ones(1),
+                "recon": batch["x"],
+                "aux": {},
+            }
+
+    batch = {
+        "x": torch.zeros(1, 2, 1),
+        "meta": [{"entity_id": "machine-1-6", "start_index": 0, "end_index": 2}],
+    }
+    with pytest.raises(ValueError, match="raw_input"):
+        execute_online_tta_step(
+            model=_Model(),
+            optimizer=None,
+            batch=batch,
+            online_variant="A0",
+            threshold_value=0.5,
+            raw_point_score=None,
+            triage_decision=None,
+            score_space="raw_input",
+        )

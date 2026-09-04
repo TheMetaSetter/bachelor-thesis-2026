@@ -262,7 +262,7 @@ def run_online_streaming_benchmark(
         "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml",
     )
     protocol_config = _load_json_config(resolved_protocol_config_path)
-    validate_protocol_config(protocol_config)
+    validate_protocol_config(protocol_config, require_score_identity=False)
 
     output_dir = Path(str(benchmark_config["output_dir"]))
     if not output_dir.is_absolute():

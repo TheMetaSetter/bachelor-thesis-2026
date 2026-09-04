@@ -3,9 +3,13 @@ from __future__ import annotations
 import numpy as np
 import torch
 
+from src.data.scalers import SequenceStandardScaler
 from src.engine.online_tta.online_calibration import (
     collect_nonoverlap_offline_scores,
     collect_stride1_online_scores,
+)
+from src.engine.online_tta.online_engine_window_metrics import (
+    _extract_online_window_scores,
 )
 
 
@@ -116,3 +120,48 @@ def test_collect_stride1_online_scores_uses_a0_source_path() -> None:
 
     assert model.forward_source_calls > 0
     assert model.forward_calls == 0
+
+
+def test_collect_stride1_online_scores_uses_raw_input_mse_when_scaler_is_given() -> None:
+    model = _CalibrationModel()
+    scaler = SequenceStandardScaler()
+    scaler.fit([_sequence()])
+
+    scores = collect_stride1_online_scores(
+        model=model,
+        clean_validation_sequences=[_sequence()],
+        window_size=2,
+        batch_size=1,
+        view_noise_std=0.0,
+        view_dropout_probability=0.0,
+        device="cpu",
+        current_weight=0.9,
+        previous_weight=0.1,
+        scaler=scaler,
+    )
+
+    assert scores["point"] == [0.0] * 10
+    assert scores["input_window"] == [0.0] * 5
+
+
+def test_online_window_score_extraction_uses_raw_input_mse() -> None:
+    scaler = SequenceStandardScaler()
+    scaler.fit([_sequence()])
+    batch = {"x": torch.zeros(1, 2, 2)}
+    outputs = {
+        "recon": torch.ones(1, 2, 2),
+        "point_scores": torch.full((1, 2), 99.0),
+        "window_scores": torch.tensor([7.0]),
+        "aux": {"latent_window_score": torch.tensor([8.0])},
+    }
+
+    raw_point, normalized_point, raw_window, normalized_window, latent = (
+        _extract_online_window_scores(outputs, batch, scaler=scaler)
+    )
+
+    expected_raw_mse = scaler.feature_std.square().mean()
+    assert torch.allclose(raw_point, torch.full((2,), expected_raw_mse))
+    assert torch.allclose(normalized_point, torch.tensor([1.0, 1.0]))
+    assert raw_window == float(expected_raw_mse)
+    assert normalized_window == 1.0
+    assert latent == 8.0

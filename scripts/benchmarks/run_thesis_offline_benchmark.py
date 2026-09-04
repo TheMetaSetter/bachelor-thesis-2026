@@ -117,7 +117,7 @@ def validate_protocol_config(protocol_config: dict[str, Any]) -> None:
         validate_protocol_config as _validate_protocol_config,
     )
 
-    return _validate_protocol_config(protocol_config)
+    return _validate_protocol_config(protocol_config, require_score_identity=False)
 
 
 def _utc_now_iso() -> str:
@@ -146,12 +146,24 @@ def _write_json(path: Path, payload: dict[str, Any]) -> str:
 
 def _write_score_npz(path: Path, payload: dict[str, Any]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez(
-        path,
-        point_scores=np.asarray(payload["point_scores"], dtype=float),
-        point_labels=np.asarray(payload["point_labels"], dtype=np.int64),
-        covered_point_mask=np.asarray(payload["covered_point_mask"], dtype=bool),
-    )
+    arrays = {
+        "point_scores": np.asarray(payload["point_scores"], dtype=float),
+        "point_labels": np.asarray(payload["point_labels"], dtype=np.int64),
+        "covered_point_mask": np.asarray(payload["covered_point_mask"], dtype=bool),
+    }
+    optional_fields = {
+        "raw_input_point_mse": float,
+        "normalized_input_point_mse": float,
+        "point_predictions": np.int64,
+        "raw_input_window_mse": float,
+        "normalized_input_window_mse": float,
+        "window_labels": np.int64,
+        "window_predictions": np.int64,
+    }
+    for field_name, dtype in optional_fields.items():
+        if field_name in payload:
+            arrays[field_name] = np.asarray(payload[field_name], dtype=dtype)
+    np.savez(path, **arrays)
     return str(path)
 
 
@@ -342,6 +354,7 @@ def collect_offline_artifact_inputs(
         model=model,
         loaders=data_bundle["loaders"],
         protocol_config=protocol_config,
+        scaler=data_bundle.get("scaler"),
     )
     return {
         "entity_id": _require_single_entity_id(split_outputs["test"], "test"),
@@ -349,6 +362,7 @@ def collect_offline_artifact_inputs(
         "variant_name": str(experiment_config.get("offline_variant", "O0")),
         "model": model,
         "checkpoint_path": checkpoint_path,
+        "scaler": data_bundle.get("scaler"),
         "clean_validation_sequences": data_bundle.get("scaled_sequences", {}).get(
             "val", []
         ),
@@ -441,7 +455,58 @@ def _evaluate_offline_benchmark_splits(
     model: Any,
     loaders: dict[str, Any],
     protocol_config: dict[str, Any],
+    scaler: Any | None = None,
 ) -> dict[str, Any]:
+    score_space = str(protocol_config.get("score_space", "model_output"))
+    raw_protocol = score_space == "raw_input" and scaler is not None
+    if score_space == "raw_input" and scaler is None:
+        raise ValueError("raw_input offline evaluation requires a fitted scaler")
+    if raw_protocol:
+        clean_outputs = evaluator.evaluate(
+            model,
+            loaders["val"],
+            score_space="raw_input",
+            scaler=scaler,
+        )
+        clean_payload = _evaluation_outputs_to_score_payload(clean_outputs)
+        clean_threshold = select_clean_validation_point_threshold(
+            clean_payload["point_scores"],
+            quantile=float(protocol_config["offline_threshold_quantile"]),
+        )
+        clean_window_threshold = float(
+            np.quantile(
+                clean_payload["raw_input_window_mse"],
+                float(protocol_config["B_window_quantile"]),
+            )
+        )
+        synthetic_outputs = _evaluate_named_split(
+            evaluator,
+            model,
+            loaders,
+            split_name="val_synth",
+            fallback_split_name="val",
+            point_score_threshold=clean_threshold,
+            window_score_threshold=clean_window_threshold,
+            score_space="raw_input",
+            scaler=scaler,
+        )
+        test_outputs = evaluator.evaluate(
+            model,
+            loaders["test"],
+            point_score_threshold=clean_threshold,
+            threshold_source="clean_validation_quantile",
+            window_score_threshold=clean_window_threshold,
+            score_space="raw_input",
+            scaler=scaler,
+        )
+        return {
+            "clean_validation": clean_outputs,
+            "clean_validation_payload": clean_payload,
+            "raw_clean_validation_payload": clean_payload,
+            "point_score_calibration": None,
+            "synthetic_validation": synthetic_outputs,
+            "test": test_outputs,
+        }
     raw_clean_outputs = evaluator.evaluate(model, loaders["val"])
     _require_single_entity_id(raw_clean_outputs, "clean_validation")
     raw_clean_payload = _evaluation_outputs_to_score_payload(raw_clean_outputs)
@@ -487,32 +552,85 @@ def _evaluate_named_split(
     split_name: str,
     fallback_split_name: str,
     point_score_threshold: float,
+    window_score_threshold: float | None = None,
+    score_space: str = "model_output",
+    scaler: Any | None = None,
 ) -> dict[str, Any]:
     loader = loaders.get(split_name, loaders[fallback_split_name])
-    return evaluator.evaluate(
-        model,
-        loader,
-        point_score_threshold=point_score_threshold,
-        threshold_source="clean_validation_quantile",
-    )
+    kwargs: dict[str, Any] = {
+        "point_score_threshold": point_score_threshold,
+        "threshold_source": "clean_validation_quantile",
+    }
+    if score_space == "raw_input":
+        kwargs.update(
+            {
+                "score_space": score_space,
+                "scaler": scaler,
+                "window_score_threshold": window_score_threshold,
+                "evaluation_stage": "val_synth",
+            }
+        )
+    return evaluator.evaluate(model, loader, **kwargs)
 
 
 def _evaluation_outputs_to_score_payload(
     evaluation_outputs: dict[str, Any],
 ) -> dict[str, np.ndarray]:
     score_arrays: list[np.ndarray] = []
+    raw_score_arrays: list[np.ndarray] = []
+    normalized_score_arrays: list[np.ndarray] = []
+    prediction_arrays: list[np.ndarray] = []
     label_arrays: list[np.ndarray] = []
     mask_arrays: list[np.ndarray] = []
     for record in evaluation_outputs["records"]:
         mask = np.asarray(record["covered_point_mask"], dtype=bool)
-        score_arrays.append(np.asarray(record["point_scores"], dtype=float)[mask])
+        point_scores = np.asarray(record["point_scores"], dtype=float)[mask]
+        score_arrays.append(point_scores)
+        if "raw_input_point_mse" in record:
+            raw_score_arrays.append(
+                np.asarray(record["raw_input_point_mse"], dtype=float)[mask]
+            )
+        if "normalized_input_point_mse" in record:
+            normalized_score_arrays.append(
+                np.asarray(record["normalized_input_point_mse"], dtype=float)[mask]
+            )
+        if "point_predictions" in record:
+            prediction_arrays.append(
+                np.asarray(record["point_predictions"], dtype=np.int64)[mask]
+            )
         label_arrays.append(np.asarray(record["point_labels"], dtype=np.int64)[mask])
         mask_arrays.append(np.ones(int(mask.sum()), dtype=bool))
-    return {
+    payload = {
         "point_scores": np.concatenate(score_arrays),
         "point_labels": np.concatenate(label_arrays),
         "covered_point_mask": np.concatenate(mask_arrays),
     }
+    if raw_score_arrays:
+        payload["raw_input_point_mse"] = np.concatenate(raw_score_arrays)
+    if normalized_score_arrays:
+        payload["normalized_input_point_mse"] = np.concatenate(
+            normalized_score_arrays
+        )
+    if prediction_arrays:
+        payload["point_predictions"] = np.concatenate(prediction_arrays)
+    window_records = evaluation_outputs.get("window_records", [])
+    if window_records:
+        payload["raw_input_window_mse"] = np.asarray(
+            [item["raw_input_window_mse"] for item in window_records], dtype=float
+        )
+        payload["normalized_input_window_mse"] = np.asarray(
+            [item["normalized_input_window_mse"] for item in window_records],
+            dtype=float,
+        )
+        payload["window_labels"] = np.asarray(
+            [item["window_label"] for item in window_records], dtype=np.int64
+        )
+        if all("window_prediction" in item for item in window_records):
+            payload["window_predictions"] = np.asarray(
+                [item["window_prediction"] for item in window_records],
+                dtype=np.int64,
+            )
+    return payload
 
 
 def _first_entity_id(evaluation_outputs: dict[str, Any]) -> str:
@@ -542,12 +660,16 @@ def _build_thresholds(
     experiment_config_path: str,
     checkpoint_sha256: str,
 ) -> dict[str, Any]:
+    raw_protocol = str(protocol_config.get("score_space", "model_output")) == "raw_input"
     clean_scores = np.asarray(
-        artifact_inputs["clean_validation"]["point_scores"],
+        artifact_inputs["clean_validation"].get(
+            "raw_input_point_mse",
+            artifact_inputs["clean_validation"]["point_scores"],
+        ),
         dtype=float,
     )
     quantile = float(protocol_config["offline_threshold_quantile"])
-    checkpoint_path = Path(str(artifact_inputs["checkpoint_path"]))
+    checkpoint_path = Path(str(artifact_inputs.get("checkpoint_path", "")))
     entry = StageBInventoryEntry(
         experiment_config_path=Path(experiment_config_path),
         offline_variant=str(artifact_inputs["variant_name"]),
@@ -563,9 +685,15 @@ def _build_thresholds(
         entry,
         int(protocol_config["window_size"]),
     )
-    online_model = _build_model_from_experiment_config(online_config)
-    online_model.set_point_score_calibration(artifact_inputs["point_score_calibration"])
-    online_model.to(str(artifact_inputs["device"]))
+    if raw_protocol:
+        online_model = artifact_inputs["model"]
+    else:
+        online_model = _build_model_from_experiment_config(online_config)
+        online_model.set_point_score_calibration(
+            artifact_inputs["point_score_calibration"]
+        )
+    if hasattr(online_model, "to"):
+        online_model.to(str(artifact_inputs["device"]))
     online_calibration = collect_stride1_online_scores(
         model=online_model,
         clean_validation_sequences=artifact_inputs["clean_validation_sequences"],
@@ -576,49 +704,58 @@ def _build_thresholds(
         device=artifact_inputs["device"],
         current_weight=float(protocol_config["online_ewma_current_weight"]),
         previous_weight=float(protocol_config["online_ewma_previous_weight"]),
+        scaler=artifact_inputs.get("scaler") if raw_protocol else None,
     )
-    return build_threshold_artifact(
-        method_name="THESIS",
-        variant_name=str(artifact_inputs["variant_name"]),
-        entity_id=str(artifact_inputs["entity_id"]),
-        seed=int(artifact_inputs["seed"]),
-        window_size=int(protocol_config["window_size"]),
-        offline_point_threshold=select_clean_validation_point_threshold(
+    builder_kwargs: dict[str, Any] = {
+        "method_name": "THESIS",
+        "variant_name": str(artifact_inputs["variant_name"]),
+        "entity_id": str(artifact_inputs["entity_id"]),
+        "seed": int(artifact_inputs["seed"]),
+        "window_size": int(protocol_config["window_size"]),
+        "offline_point_threshold": select_clean_validation_point_threshold(
             clean_scores,
             quantile=quantile,
         ),
-        online_ewma_point_threshold=select_online_ewma_threshold(
+        "online_ewma_point_threshold": select_online_ewma_threshold(
             np.asarray(online_calibration["ewma"], dtype=float),
             quantile=float(protocol_config["online_threshold_quantile"]),
         ),
-        quantile=quantile,
-        ewma_current_weight=float(protocol_config["online_ewma_current_weight"]),
-        ewma_previous_weight=float(protocol_config["online_ewma_previous_weight"]),
-        created_by="scripts/run_thesis_offline_benchmark.py",
-        config_path=experiment_config_path,
-        checkpoint_sha256=checkpoint_sha256,
-        point_score_c=float(artifact_inputs["point_score_calibration"].center),
-        point_score_tau=float(artifact_inputs["point_score_calibration"].tau),
-        input_window_threshold=float(
+        "quantile": quantile,
+        "ewma_current_weight": float(protocol_config["online_ewma_current_weight"]),
+        "ewma_previous_weight": float(protocol_config["online_ewma_previous_weight"]),
+        "created_by": "scripts/run_thesis_offline_benchmark.py",
+        "config_path": experiment_config_path,
+        "checkpoint_sha256": checkpoint_sha256,
+        "resolved_config_sha256": sha256_file(experiment_config_path),
+        "input_window_threshold": float(
             np.quantile(
                 np.asarray(online_calibration["input_window"], dtype=float),
                 float(protocol_config["B_window_quantile"]),
             )
         ),
-        latent_window_low_threshold=float(
+        "latent_window_low_threshold": float(
             np.quantile(
                 np.asarray(online_calibration["latent_window"], dtype=float),
                 float(protocol_config["A_low_quantile"]),
             )
         ),
-        latent_window_high_threshold=float(
+        "latent_window_high_threshold": float(
             np.quantile(
                 np.asarray(online_calibration["latent_window"], dtype=float),
                 float(protocol_config["A_high_quantile"]),
             )
         ),
-        latent_window_low_quantile=float(protocol_config["A_low_quantile"]),
-    )
+        "latent_window_low_quantile": float(protocol_config["A_low_quantile"]),
+        "score_space": "raw_input" if raw_protocol else "model_output",
+    }
+    if not raw_protocol:
+        builder_kwargs.update(
+            {
+                "point_score_c": float(artifact_inputs["point_score_calibration"].center),
+                "point_score_tau": float(artifact_inputs["point_score_calibration"].tau),
+            }
+        )
+    return build_threshold_artifact(**builder_kwargs)
 
 
 def _export_offline_artifacts(
