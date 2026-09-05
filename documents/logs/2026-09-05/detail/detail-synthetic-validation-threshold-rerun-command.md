@@ -7,6 +7,17 @@ related_detail: documents/logs/2026-09-05/detail/detail-synthetic-validation-thr
 
 # Rerun command
 
+The matrix can be run with
+`scripts/benchmarks/run_synthetic_validation_threshold_rerun.sh`. The script
+checks all 18 checkpoints, creates a new timestamped rerun root, and calls the
+evaluation CLI with the synthetic-normal q99 protocol.
+
+```bash
+bash scripts/benchmarks/run_synthetic_validation_threshold_rerun.sh
+```
+
+Run that command only after the one-combination preflight below passes.
+
 The command below evaluates the 18 Stage-B `best.pt` checkpoints for `O0` and
 `O1`, three entities, and seeds `6`, `8`, and `36`. It uses the opt-in protocol
 `smd_window20_synthnormal_q99_ewma09.yaml`. Every checkpoint writes to its own
