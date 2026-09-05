@@ -101,3 +101,24 @@ done
 
 Do not run the matrix against a checkout that does not contain the new protocol
 file and `--output-dir` implementation. Do not reuse an existing benchmark root.
+
+## Direct-branch-routing rerun
+
+To evaluate the 21 Stage-B best checkpoints whose resolved model config uses
+`fusion_mode: direct_branch_routing`, run:
+
+```bash
+bash scripts/benchmarks/run_direct_branch_synthetic_validation_threshold_rerun.sh
+```
+
+The script checks 3 unsuffixed seed-6 checkpoints and 18 `O0`/`O1`
+checkpoints. It creates a separate timestamped rerun root and keeps the
+generated experiment YAML files under `configs/` there. It does not train
+Stage A or Stage B and does not modify the original benchmark outputs.
+The first direct checkpoint is validated before the remaining 20 evaluations
+start.
+
+The script sets `logging.use_wandb: false` in the generated evaluation configs,
+so this rerun writes local artifacts only. Set `PYTHON=/path/to/python` or
+`RERUN_ROOT=outputs/...` before the command only when a non-default interpreter
+or output root is required.
