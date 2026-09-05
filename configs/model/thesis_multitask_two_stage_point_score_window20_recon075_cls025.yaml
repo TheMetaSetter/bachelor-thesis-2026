@@ -82,7 +82,7 @@ memory_initialization_with_synthetic_windows: true
 
 training_phase: stage_a_multitask_pretraining
 
-fusion_mode: task_specific_concat_projection
+fusion_mode: direct_branch_routing
 discrete_query_mode: cosine_topk
 discrete_topk: 3
 discrete_query_temperature: 0.1
