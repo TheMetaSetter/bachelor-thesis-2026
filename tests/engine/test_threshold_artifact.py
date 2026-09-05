@@ -73,6 +73,7 @@ def test_raw_threshold_artifact_uses_schema_five_and_identity_transform(
         input_window_threshold=3.0,
         latent_window_low_threshold=4.0,
         latent_window_high_threshold=5.0,
+        offline_point_threshold_source_split="synthetic_validation_normal",
     )
 
     assert artifact["schema_version"] == 5
@@ -80,6 +81,13 @@ def test_raw_threshold_artifact_uses_schema_five_and_identity_transform(
     assert artifact["point_score_transform"] == "identity"
     assert artifact["point_score_definition"] == "raw_input_point_mse"
     assert artifact["window_score_definition"] == "raw_input_window_mse"
+    assert artifact["calibration_split"] == "clean_validation"
+    assert artifact["thresholds"]["offline_point"]["source_split"] == (
+        "synthetic_validation_normal"
+    )
+    assert artifact["thresholds"]["online_ewma_point"]["source_split"] == (
+        "clean_validation"
+    )
     output_path = tmp_path / "raw-thresholds.json"
     write_threshold_artifact(artifact, output_path)
     assert load_threshold_artifact(output_path) == artifact

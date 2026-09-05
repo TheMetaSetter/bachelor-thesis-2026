@@ -71,3 +71,29 @@ def test_protocol_config_rejects_missing_or_mismatched_raw_score_identity() -> N
     config["point_score_transform"] = "sigmoid"
     with pytest.raises(ValueError, match="point_score_transform"):
         validate_protocol_config(config)
+
+
+def test_protocol_config_accepts_synthetic_normal_point_source() -> None:
+    config = yaml.safe_load(
+        Path("configs/protocol/smd_window20_synthnormal_q99_ewma09.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    validate_protocol_config(config)
+
+    assert config["offline_point_threshold_source_split"] == (
+        "synthetic_validation_normal"
+    )
+
+
+def test_protocol_config_rejects_unsupported_point_source() -> None:
+    config = yaml.safe_load(
+        Path("configs/protocol/smd_window20_cleanval_q99_ewma09.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    config["offline_point_threshold_source_split"] = "test"
+
+    with pytest.raises(ValueError, match="offline_point_threshold_source_split"):
+        validate_protocol_config(config)

@@ -45,6 +45,7 @@ from src.engine.evaluator import Evaluator
 from src.engine.thresholding import (
     select_clean_validation_point_threshold,
     select_online_ewma_threshold,
+    select_synthetic_validation_normal_point_threshold,
 )
 from src.engine.online_tta.online_calibration import collect_stride1_online_scores
 from src.engine.online_tta.online_engine_shared import (
@@ -368,6 +369,10 @@ def collect_offline_artifact_inputs(
         ),
         "device": str(experiment_config["device"]),
         "point_score_calibration": split_outputs["point_score_calibration"],
+        "offline_point_threshold": float(split_outputs["offline_point_threshold"]),
+        "offline_point_threshold_source": str(
+            split_outputs["offline_point_threshold_source"]
+        ),
         "clean_validation": split_outputs["clean_validation_payload"],
         "clean_validation_traces": split_outputs["clean_validation"].get("traces", []),
         "synthetic_validation": _evaluation_outputs_to_score_payload(
@@ -479,22 +484,63 @@ def _evaluate_offline_benchmark_splits(
                 float(protocol_config["B_window_quantile"]),
             )
         )
-        synthetic_outputs = _evaluate_named_split(
-            evaluator,
-            model,
-            loaders,
-            split_name="val_synth",
-            fallback_split_name="val",
-            point_score_threshold=clean_threshold,
-            window_score_threshold=clean_window_threshold,
-            score_space="raw_input",
-            scaler=scaler,
+        point_source = protocol_config.get(
+            "offline_point_threshold_source_split", "clean_validation"
         )
+        if point_source == "synthetic_validation_normal":
+            synthetic_calibration_outputs = _evaluate_named_split(
+                evaluator,
+                model,
+                loaders,
+                split_name="val_synth",
+                fallback_split_name="val",
+                point_score_threshold=None,
+                window_score_threshold=clean_window_threshold,
+                score_space="raw_input",
+                scaler=scaler,
+            )
+            synthetic_calibration_payload = _evaluation_outputs_to_score_payload(
+                synthetic_calibration_outputs
+            )
+            selected_point_threshold = (
+                select_synthetic_validation_normal_point_threshold(
+                    synthetic_calibration_payload["point_scores"],
+                    synthetic_calibration_payload["point_labels"],
+                    quantile=float(protocol_config["offline_threshold_quantile"]),
+                )
+            )
+            threshold_source = "synthetic_validation_normal_quantile"
+            synthetic_outputs = _evaluate_named_split(
+                evaluator,
+                model,
+                loaders,
+                split_name="val_synth",
+                fallback_split_name="val",
+                point_score_threshold=selected_point_threshold,
+                threshold_source=threshold_source,
+                window_score_threshold=clean_window_threshold,
+                score_space="raw_input",
+                scaler=scaler,
+            )
+        else:
+            selected_point_threshold = clean_threshold
+            threshold_source = "clean_validation_quantile"
+            synthetic_outputs = _evaluate_named_split(
+                evaluator,
+                model,
+                loaders,
+                split_name="val_synth",
+                fallback_split_name="val",
+                point_score_threshold=selected_point_threshold,
+                window_score_threshold=clean_window_threshold,
+                score_space="raw_input",
+                scaler=scaler,
+            )
         test_outputs = evaluator.evaluate(
             model,
             loaders["test"],
-            point_score_threshold=clean_threshold,
-            threshold_source="clean_validation_quantile",
+            point_score_threshold=selected_point_threshold,
+            threshold_source=threshold_source,
             window_score_threshold=clean_window_threshold,
             score_space="raw_input",
             scaler=scaler,
@@ -506,6 +552,8 @@ def _evaluate_offline_benchmark_splits(
             "point_score_calibration": None,
             "synthetic_validation": synthetic_outputs,
             "test": test_outputs,
+            "offline_point_threshold": selected_point_threshold,
+            "offline_point_threshold_source": point_source,
         }
     raw_clean_outputs = evaluator.evaluate(model, loaders["val"])
     _require_single_entity_id(raw_clean_outputs, "clean_validation")
@@ -541,6 +589,8 @@ def _evaluate_offline_benchmark_splits(
         "point_score_calibration": calibration,
         "synthetic_validation": synthetic_outputs,
         "test": test_outputs,
+        "offline_point_threshold": clean_threshold,
+        "offline_point_threshold_source": "clean_validation",
     }
 
 
@@ -551,16 +601,17 @@ def _evaluate_named_split(
     *,
     split_name: str,
     fallback_split_name: str,
-    point_score_threshold: float,
+    point_score_threshold: float | None,
+    threshold_source: str | None = None,
     window_score_threshold: float | None = None,
     score_space: str = "model_output",
     scaler: Any | None = None,
 ) -> dict[str, Any]:
     loader = loaders.get(split_name, loaders[fallback_split_name])
-    kwargs: dict[str, Any] = {
-        "point_score_threshold": point_score_threshold,
-        "threshold_source": "clean_validation_quantile",
-    }
+    kwargs: dict[str, Any] = {}
+    if point_score_threshold is not None:
+        kwargs["point_score_threshold"] = point_score_threshold
+        kwargs["threshold_source"] = threshold_source or "clean_validation_quantile"
     if score_space == "raw_input":
         kwargs.update(
             {
@@ -706,16 +757,24 @@ def _build_thresholds(
         previous_weight=float(protocol_config["online_ewma_previous_weight"]),
         scaler=artifact_inputs.get("scaler") if raw_protocol else None,
     )
+    selected_offline_threshold = float(
+        artifact_inputs.get(
+            "offline_point_threshold",
+            select_clean_validation_point_threshold(
+                clean_scores,
+                quantile=quantile,
+            ),
+        )
+    )
+    if not np.isfinite(selected_offline_threshold):
+        raise ValueError("offline point threshold must be finite")
     builder_kwargs: dict[str, Any] = {
         "method_name": "THESIS",
         "variant_name": str(artifact_inputs["variant_name"]),
         "entity_id": str(artifact_inputs["entity_id"]),
         "seed": int(artifact_inputs["seed"]),
         "window_size": int(protocol_config["window_size"]),
-        "offline_point_threshold": select_clean_validation_point_threshold(
-            clean_scores,
-            quantile=quantile,
-        ),
+        "offline_point_threshold": selected_offline_threshold,
         "online_ewma_point_threshold": select_online_ewma_threshold(
             np.asarray(online_calibration["ewma"], dtype=float),
             quantile=float(protocol_config["online_threshold_quantile"]),
@@ -748,6 +807,13 @@ def _build_thresholds(
         "latent_window_low_quantile": float(protocol_config["A_low_quantile"]),
         "score_space": "raw_input" if raw_protocol else "model_output",
     }
+    offline_point_source = artifact_inputs.get(
+        "offline_point_threshold_source", "clean_validation"
+    )
+    if offline_point_source != "clean_validation":
+        builder_kwargs["offline_point_threshold_source_split"] = str(
+            offline_point_source
+        )
     if not raw_protocol:
         builder_kwargs.update(
             {
@@ -863,9 +929,10 @@ from scripts.benchmarks._internal.run_thesis_offline_benchmark_helpers import (
 def _build_evaluation_only_run(
     experiment_config: dict[str, Any],
     checkpoint_path: str,
+    output_dir: Path,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     manifest = {
-        "manifest_root": str(Path(experiment_config["output_dir"]) / "evaluation_only"),
+        "manifest_root": str(output_dir / "evaluation_only"),
         "evaluation": {"checkpoint_path": checkpoint_path},
         "evaluation_only": True,
     }
@@ -895,12 +962,31 @@ def run_thesis_offline_benchmark(
     skip_completed: bool,
     evaluation_only: bool = False,
     checkpoint_path: str | None = None,
+    output_dir: str | None = None,
 ) -> dict[str, Any]:
+    if output_dir is not None and not str(output_dir).strip():
+        raise ValueError("output_dir must be a non-empty path")
+    if output_dir is not None and not evaluation_only:
+        raise ValueError("output_dir is only supported with --evaluation-only")
     experiment_config = load_experiment_config(experiment_config_path)
     protocol_config = _load_yaml_config(protocol_config_path)
     retention_policy = _resolve_retention_policy(experiment_config)
+    effective_output_dir = Path(
+        str(output_dir) if output_dir is not None else str(experiment_config["output_dir"])
+    )
 
     validate_protocol_config(protocol_config)
+    if (
+        output_dir is not None
+        and evaluation_only
+        and protocol_config.get("offline_point_threshold_source_split")
+        == "synthetic_validation_normal"
+        and effective_output_dir.resolve()
+        == Path(str(experiment_config["output_dir"])).resolve()
+    ):
+        raise ValueError(
+            "synthetic validation reruns require a new rerun root, not the legacy output root"
+        )
     if evaluation_only:
         if dry_run:
             raise ValueError("--dry-run cannot be combined with --evaluation-only")
@@ -911,6 +997,7 @@ def run_thesis_offline_benchmark(
         manifest, execution_report = _build_evaluation_only_run(
             experiment_config,
             checkpoint_path,
+            effective_output_dir,
         )
     else:
         validate_two_stage_epoch_budget(experiment_config)
@@ -932,7 +1019,7 @@ def run_thesis_offline_benchmark(
         )
         variance_trace_audit = artifact_inputs.get("variance_trace_audit")
         artifact_paths = _export_offline_artifacts(
-            output_dir=Path(str(experiment_config["output_dir"])),
+            output_dir=effective_output_dir,
             artifact_inputs=artifact_inputs,
             experiment_config=experiment_config,
             protocol_config=protocol_config,
@@ -941,7 +1028,7 @@ def run_thesis_offline_benchmark(
             manifest=manifest,
         )
         retention_artifact_paths = _export_offline_retention_bundle(
-            output_dir=Path(str(experiment_config["output_dir"])),
+            output_dir=effective_output_dir,
             artifact_inputs=artifact_inputs,
             artifact_paths=artifact_paths,
             manifest=manifest,
@@ -967,7 +1054,7 @@ def run_thesis_offline_benchmark(
         "two_stage_manifest": manifest,
         "two_stage_execution": execution_report,
     }
-    report_path = _write_report(Path(str(experiment_config["output_dir"])), report)
+    report_path = _write_report(effective_output_dir, report)
     report["report_path"] = str(report_path)
     return report
 
@@ -983,6 +1070,7 @@ def main() -> None:
     parser.add_argument("--skip-completed", action="store_true")
     parser.add_argument("--evaluation-only", action="store_true")
     parser.add_argument("--checkpoint-path")
+    parser.add_argument("--output-dir")
     args = parser.parse_args()
     report = run_thesis_offline_benchmark(
         experiment_config_path=args.experiment_config,
@@ -991,6 +1079,7 @@ def main() -> None:
         skip_completed=args.skip_completed,
         evaluation_only=args.evaluation_only,
         checkpoint_path=args.checkpoint_path,
+        output_dir=args.output_dir,
     )
     print(json.dumps(report, indent=2, sort_keys=True))
 

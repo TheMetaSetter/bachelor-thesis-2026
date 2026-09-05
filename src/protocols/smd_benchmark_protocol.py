@@ -4,6 +4,10 @@ from typing import Any
 
 SMD_BENCHMARK_ENTITIES = ("machine-1-6", "machine-3-4", "machine-3-9")
 SMD_BENCHMARK_SEEDS = (6, 8, 36)
+OFFLINE_POINT_THRESHOLD_SOURCES = {
+    "clean_validation",
+    "synthetic_validation_normal",
+}
 
 
 def _require_key(config: dict[str, Any], key: str) -> None:
@@ -49,6 +53,15 @@ def validate_protocol_config(
     _require_equal(config, "window_size", 20)
     _require_equal(config, "offline_tail_policy", "end_align")
     _require_equal(config, "offline_threshold_split", "clean_validation")
+    offline_point_source = config.get(
+        "offline_point_threshold_source_split", "clean_validation"
+    )
+    if offline_point_source not in OFFLINE_POINT_THRESHOLD_SOURCES:
+        raise ValueError(
+            "offline_point_threshold_source_split must be one of "
+            f"{sorted(OFFLINE_POINT_THRESHOLD_SOURCES)!r}, "
+            f"got {offline_point_source!r}"
+        )
     _require_equal(config, "online_window_stride", 1)
     _require_equal(config, "online_threshold_split", "clean_validation")
     _require_equal(config, "test_label_usage", "metrics_only")

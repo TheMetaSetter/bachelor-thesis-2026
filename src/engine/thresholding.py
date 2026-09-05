@@ -44,6 +44,22 @@ def select_clean_validation_point_threshold(
     )
 
 
+def select_synthetic_validation_normal_point_threshold(
+    synthetic_point_scores: np.ndarray,
+    synthetic_point_labels: np.ndarray,
+    quantile: float,
+) -> float:
+    """Select a point threshold from finite normal synthetic scores only."""
+    scores = np.asarray(synthetic_point_scores, dtype=float).reshape(-1)
+    labels = np.asarray(synthetic_point_labels).reshape(-1)
+    if scores.size != labels.size:
+        raise ValueError("synthetic point scores and labels must have the same length")
+    normal_finite_scores = scores[(labels == 0) & np.isfinite(scores)]
+    if normal_finite_scores.size == 0:
+        raise ValueError("Cannot select a threshold from normal finite synthetic scores")
+    return float(np.quantile(normal_finite_scores, _validate_quantile(quantile)))
+
+
 def select_online_ewma_threshold(
     clean_validation_ewma_scores: np.ndarray,
     quantile: float,

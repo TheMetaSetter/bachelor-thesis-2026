@@ -17,6 +17,10 @@ _REQUIRED_ONLINE_THRESHOLDS = {
     "latent_window_low",
     "latent_window_high",
 }
+_OFFLINE_POINT_SOURCE_SPLITS = {
+    "clean_validation",
+    "synthetic_validation_normal",
+}
 
 
 def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
@@ -314,6 +318,14 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
                 f"threshold artifact threshold {threshold_name} source_split must be a non-empty string"
             )
         if (
+            threshold_name == "offline_point"
+            and threshold_record["source_split"] not in _OFFLINE_POINT_SOURCE_SPLITS
+        ):
+            raise ValueError(
+                "threshold artifact offline_point source_split must be one of "
+                f"{sorted(_OFFLINE_POINT_SOURCE_SPLITS)!r}"
+            )
+        if (
             "ewma_current_weight" in threshold_record
             or "ewma_previous_weight" in threshold_record
         ):
@@ -357,6 +369,7 @@ def build_threshold_artifact(
     created_by: str,
     config_path: str,
     calibration_split: str = "clean_validation",
+    offline_point_threshold_source_split: str | None = None,
     stochastic_inference: bool = True,
     monte_carlo_samples: int = 10,
     continuous_temperature: float = 0.9,
@@ -386,6 +399,16 @@ def build_threshold_artifact(
     is_raw_input_protocol = score_space == "raw_input"
     if score_space not in {"model_output", "raw_input"}:
         raise ValueError("score_space must be model_output or raw_input")
+    offline_point_source = (
+        calibration_split
+        if offline_point_threshold_source_split is None
+        else str(offline_point_threshold_source_split)
+    )
+    if offline_point_source not in _OFFLINE_POINT_SOURCE_SPLITS:
+        raise ValueError(
+            "offline_point_threshold_source_split must be one of "
+            f"{sorted(_OFFLINE_POINT_SOURCE_SPLITS)!r}"
+        )
     is_historical_thesis_v4 = method_name == "THESIS" and not is_raw_input_protocol
     if is_historical_thesis_v4 and (
         not isinstance(checkpoint_sha256, str) or not checkpoint_sha256
@@ -414,7 +437,7 @@ def build_threshold_artifact(
     thresholds = {
         "offline_point": {
             "value": float(offline_point_threshold),
-            "source_split": calibration_split,
+            "source_split": offline_point_source,
             "score_rule": "nonoverlap_tail_average",
             "quantile": float(quantile),
         },

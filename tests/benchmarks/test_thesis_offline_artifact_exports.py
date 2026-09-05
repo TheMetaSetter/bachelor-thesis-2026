@@ -4,15 +4,85 @@ from pathlib import Path
 
 import json
 import numpy as np
+import pytest
 import torch
 import yaml
 
 from scripts.run_thesis_offline_benchmark import (
+    _evaluate_offline_benchmark_splits,
     collect_offline_artifact_inputs,
     run_thesis_offline_benchmark,
 )
 from src.core.uq_summary import validate_uq_summary_payload
 from src.protocols.point_score_calibration import PointScoreCalibration
+
+
+def test_synthetic_normal_protocol_uses_two_pass_point_threshold() -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    class FakeEvaluator:
+        def evaluate(self, model, loader, **kwargs):
+            split_name = loader["split_name"]
+            calls.append((split_name, kwargs))
+            if split_name == "val_synth" and kwargs.get("point_score_threshold") is None:
+                scores = [1.0, 2.0, 100.0, np.nan, 0.001]
+                labels = [0, 0, 1, 0, 0]
+                covered = [True, True, True, True, False]
+            else:
+                scores = [0.5, 0.6]
+                labels = [0, 1]
+                covered = [True, True]
+            return {
+                "records": [
+                    {
+                        "entity_id": "machine-1-6",
+                        "point_scores": torch.tensor(scores),
+                        "point_labels": torch.tensor(labels),
+                        "covered_point_mask": torch.tensor(covered),
+                        "raw_input_point_mse": torch.tensor(scores),
+                    }
+                ],
+                "window_records": [
+                    {
+                        "raw_input_window_mse": 0.5,
+                        "normalized_input_window_mse": 0.5,
+                        "window_label": 0,
+                    }
+                ],
+                "metrics": {"split_name": split_name},
+            }
+
+    protocol_config = {
+        "score_space": "raw_input",
+        "offline_threshold_quantile": 0.99,
+        "B_window_quantile": 0.99,
+        "offline_point_threshold_source_split": "synthetic_validation_normal",
+    }
+    outputs = _evaluate_offline_benchmark_splits(
+        evaluator=FakeEvaluator(),
+        model=object(),
+        loaders={
+            "val": {"split_name": "val"},
+            "val_synth": {"split_name": "val_synth"},
+            "test": {"split_name": "test"},
+        },
+        protocol_config=protocol_config,
+        scaler=object(),
+    )
+
+    assert [split_name for split_name, _ in calls] == [
+        "val",
+        "val_synth",
+        "val_synth",
+        "test",
+    ]
+    selected_threshold = float(np.quantile(np.asarray([1.0, 2.0]), 0.99))
+    assert calls[1][1].get("point_score_threshold") is None
+    assert calls[2][1]["point_score_threshold"] == selected_threshold
+    assert calls[3][1]["point_score_threshold"] == selected_threshold
+    assert calls[3][1]["threshold_source"] == "synthetic_validation_normal_quantile"
+    assert outputs["offline_point_threshold"] == selected_threshold
+    assert outputs["offline_point_threshold_source"] == "synthetic_validation_normal"
 
 
 def _write_experiment_config(path: Path, output_dir: Path) -> None:
@@ -337,6 +407,7 @@ def test_thesis_offline_wrapper_supports_evaluation_only_checkpoint_rerun(
 ) -> None:
     experiment_config_path = tmp_path / "experiment.yaml"
     output_dir = tmp_path / "outputs"
+    rerun_dir = tmp_path / "rerun"
     _write_experiment_config(experiment_config_path, output_dir)
     checkpoint_path = str(output_dir / "checkpoints" / "best.pt")
     collected_checkpoint_paths: list[str] = []
@@ -485,6 +556,7 @@ def test_thesis_offline_wrapper_supports_evaluation_only_checkpoint_rerun(
         skip_completed=True,
         evaluation_only=True,
         checkpoint_path=checkpoint_path,
+        output_dir=str(rerun_dir),
     )
 
     assert collected_checkpoint_paths == [checkpoint_path]
@@ -496,8 +568,53 @@ def test_thesis_offline_wrapper_supports_evaluation_only_checkpoint_rerun(
         == checkpoint_path
     )
     assert (
+        rerun_dir / "retention" / "machine-1-6" / "offline" / "retention_summary.json"
+    ).exists()
+    assert not (
         output_dir / "retention" / "machine-1-6" / "offline" / "retention_summary.json"
     ).exists()
+
+
+def test_output_dir_override_requires_evaluation_only(tmp_path) -> None:
+    experiment_config_path = tmp_path / "experiment.yaml"
+    _write_experiment_config(experiment_config_path, tmp_path / "outputs")
+
+    with pytest.raises(ValueError, match="only supported"):
+        run_thesis_offline_benchmark(
+            experiment_config_path=str(experiment_config_path),
+            protocol_config_path="configs/protocol/smd_window20_cleanval_q99_ewma09.yaml",
+            dry_run=True,
+            skip_completed=True,
+            output_dir=str(tmp_path / "rerun"),
+        )
+
+
+def test_synthetic_rerun_rejects_legacy_output_root(tmp_path, monkeypatch) -> None:
+    experiment_config_path = tmp_path / "experiment.yaml"
+    output_dir = tmp_path / "outputs"
+    _write_experiment_config(experiment_config_path, output_dir)
+    protocol_path = tmp_path / "synthetic_protocol.yaml"
+    protocol_path.write_text(
+        Path("configs/protocol/smd_window20_synthnormal_q99_ewma09.yaml").read_text(
+            encoding="utf-8"
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.load_experiment_config",
+        lambda path: yaml.safe_load(Path(path).read_text(encoding="utf-8")),
+    )
+
+    with pytest.raises(ValueError, match="new rerun root"):
+        run_thesis_offline_benchmark(
+            experiment_config_path=str(experiment_config_path),
+            protocol_config_path=str(protocol_path),
+            dry_run=False,
+            skip_completed=True,
+            evaluation_only=True,
+            checkpoint_path=str(output_dir / "best.pt"),
+            output_dir=str(output_dir),
+        )
 
 
 def test_collect_offline_artifact_inputs_uses_checkpoint_and_three_splits(
