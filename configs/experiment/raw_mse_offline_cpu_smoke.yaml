@@ -1,0 +1,43 @@
+experiment_name: raw_mse_offline_cpu_smoke_20260905
+seed: 6
+experiment_variant: two_stage_base_v1
+device: cpu
+output_dir: outputs/benchmark_smoke/smd/machine_1_6/seed6/thesis_raw_mse_20260905/offline
+checkpoint_dir: outputs/benchmark_smoke/smd/machine_1_6/seed6/thesis_raw_mse_20260905/offline/stage_b_fusion_finetuning
+reconstruction_loss_space: raw_input
+data_config_path: configs/data/smd_benchmark_machine_1_6_window20.yaml
+model_config_path: configs/model/thesis_multitask_two_stage_window20.yaml
+task_config_path: configs/task/multitask_tsad_redlamp_multiclass_window20_benchmark_fixed_synth.yaml
+data_overrides:
+  batch_size: 16
+  num_workers: 0
+  max_train_windows: 64
+  max_val_windows: 32
+  max_test_windows: 32
+model_overrides:
+  training_phase: stage_b_fusion_finetuning
+  encoder_dim: 16
+  hidden_dim: 8
+  cnn_hidden_channels: 8
+  continuous_num_prototypes: 4
+optimizer:
+  optimizer_name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0
+  gradient_clip_norm: 0.5
+checkpoint_monitor_metric: val_synth_vus_pr
+epochs: 2
+evaluation:
+  score_space: raw_input
+  point_score_transform: identity
+  vus_max_buffer_size: 2
+  vus_num_thresholds: 10
+logging:
+  use_wandb: false
+  enable_reconstruction_diagnostics: true
+two_stage:
+  expected_total_training_epochs: 2
+  stage_a_multitask_epochs: 1
+  stage_b_fusion_finetuning_epochs: 1
+  discrete_memory_label_source: synthetic_train_labels
+  freeze_encoder_and_memories_in_stage_b: true

@@ -98,4 +98,15 @@ def build_checkpoint_evaluation_metadata(
     checkpoint_metadata["evaluation_threshold_source"] = (
         f"checkpoint::{threshold_metric_name}"
     )
+    if epoch_metrics.get("val_score_space") == "raw_input":
+        checkpoint_metadata.update(
+            evaluation_threshold=float(epoch_metrics["val_threshold"]),
+            evaluation_threshold_metric_name="val_threshold",
+            evaluation_threshold_source="clean_validation_quantile",
+            score_space="raw_input",
+            point_score_transform="identity",
+            reconstruction_loss_space="raw_input",
+            checkpoint_monitor_metric=checkpoint_monitor_metric,
+            checkpoint_monitor_value=float(epoch_metrics[checkpoint_monitor_metric]),
+        )
     return checkpoint_metadata

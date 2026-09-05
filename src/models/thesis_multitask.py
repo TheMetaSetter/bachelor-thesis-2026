@@ -9,6 +9,10 @@ without changing behavior.
 
 from typing import Any
 
+import torch
+
+from src.data.scalers import SequenceStandardScaler
+
 from src.models.base_model import BaseModel
 from src.models.thesis_multitask_impl.thesis_multitask_components import (
     TWO_STAGE_A_PHASE_NAME,
@@ -70,6 +74,8 @@ class ThesisMultitaskModel(
     ) -> None:
         super().__init__()
         self._point_score_calibration = None
+        self.reconstruction_loss_space = "normalized_input"
+        self.reconstruction_scaler = None
         config = self._resolve_model_config(config, flat_kwargs)
 
         self._store_config_values(config)
@@ -83,3 +89,34 @@ class ThesisMultitaskModel(
         self._configure_trainable_parameters_for_phase()
         self.set_epoch_context(epoch_index=0, total_epochs=1)
         self._print_model_summary(config)
+
+    def configure_reconstruction_loss(
+        self, space: str, scaler_state: dict[str, Any]
+    ) -> None:
+        """Use the train-fitted scaler at the loss boundary, without refitting."""
+        if space not in {"normalized_input", "raw_input"}:
+            raise ValueError("reconstruction_loss_space must be normalized_input or raw_input")
+        scaler = None
+        if space == "raw_input":
+            scaler = SequenceStandardScaler()
+            scaler.load_state_dict(scaler_state)
+            scaler.inverse_transform_tensor(torch.zeros_like(scaler.feature_mean))
+        self.reconstruction_loss_space = space
+        self.reconstruction_scaler = scaler
+
+    def reconstruction_squared_error(self, outputs, batch) -> torch.Tensor:
+        """Compute errors before averaging stochastic reconstruction samples."""
+        reconstruction = outputs["recon"]
+        target = batch["x"]
+        if self.reconstruction_loss_space == "normalized_input":
+            return (reconstruction - target).square()
+        samples = (outputs.get("aux", {}).get("stochastic_query") or {}).get(
+            "reconstruction_samples"
+        )
+        if isinstance(samples, torch.Tensor):
+            reconstruction = samples
+            target = target.unsqueeze(1)
+        raw_target = self.reconstruction_scaler.inverse_transform_tensor(target)
+        raw_reconstruction = self.reconstruction_scaler.inverse_transform_tensor(reconstruction)
+        errors = (raw_reconstruction - raw_target).square()
+        return errors.mean(dim=1) if errors.ndim == 4 else errors

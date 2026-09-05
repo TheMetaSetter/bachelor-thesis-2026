@@ -32,7 +32,7 @@ class ThesisMultitaskLossCoreMixin:
         outputs: dict[str, Any],
         batch: dict[str, Any],
     ) -> torch.Tensor:
-        squared_reconstruction_error = (outputs["recon"] - batch["x"]) ** 2
+        squared_reconstruction_error = self.reconstruction_squared_error(outputs, batch)
         if not self.reconstruction_normal_only or "synthetic_anomaly_mask" not in batch:
             return torch.mean(squared_reconstruction_error)
 
@@ -56,9 +56,19 @@ class ThesisMultitaskLossCoreMixin:
         outputs: dict[str, Any],
         batch: dict[str, Any],
     ) -> dict[str, float]:
-        squared_reconstruction_error = (outputs["recon"] - batch["x"]) ** 2
+        squared_reconstruction_error = self.reconstruction_squared_error(outputs, batch)
         per_window_error = squared_reconstruction_error.mean(dim=(1, 2))
+        reconstruction = outputs["recon"]
+        target = batch["x"]
+        samples = (outputs.get("aux", {}).get("stochastic_query") or {}).get(
+            "reconstruction_samples"
+        )
+        if isinstance(samples, torch.Tensor):
+            reconstruction, target = samples, target.unsqueeze(1)
         diagnostics = {
+            "normalized_input_recon_mse_mean": float(
+                (reconstruction - target).square().mean().detach().cpu()
+            ),
             "recon_mse_mean": float(torch.mean(per_window_error).detach().cpu()),
             "recon_mse_std": float(
                 torch.std(per_window_error, unbiased=False).detach().cpu()
@@ -302,7 +312,7 @@ class ThesisMultitaskLossCoreMixin:
             return None, diagnostics
 
         # step 2: Compute one reconstruction error for every point.
-        pointwise_reconstruction_error = ((outputs["recon"] - batch["x"]) ** 2).mean(
+        pointwise_reconstruction_error = self.reconstruction_squared_error(outputs, batch).mean(
             dim=-1
         )
 

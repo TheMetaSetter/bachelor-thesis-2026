@@ -259,6 +259,7 @@ def _validate_experiment_top_level_structure(
         "stage_global_epoch_start",
         "stage_global_epoch_end",
         "initialization_checkpoint_path",
+        "reconstruction_loss_space",
     }
     unknown_top_level_keys = sorted(set(experiment_config) - allowed_top_level_keys)
     if unknown_top_level_keys:
@@ -266,6 +267,10 @@ def _validate_experiment_top_level_structure(
             "Unknown top-level config keys: "
             f"{unknown_top_level_keys}. Remove these keys from the experiment YAML."
         )
+    if experiment_config.get("reconstruction_loss_space", "normalized_input") not in {
+        "normalized_input", "raw_input"
+    }:
+        raise ValueError("reconstruction_loss_space must be normalized_input or raw_input")
     return required_sections
 
 

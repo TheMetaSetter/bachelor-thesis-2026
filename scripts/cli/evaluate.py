@@ -33,8 +33,25 @@ from src.data.loaders import (
     rebuild_dataset_bundle_with_scaler_state,
 )
 from src.engine.checkpoint import CheckpointManager
-from src.engine.evaluator import Evaluator
+from src.engine.evaluator import Evaluator, extract_covered_pointwise_arrays
+from src.engine.thresholding import select_clean_validation_point_threshold
 from src.engine.logger import ExperimentLogger
+
+
+def evaluate_raw_checkpoint(evaluator, model, data_bundle):
+    """Fit thresholds on clean validation, then evaluate the test timeline."""
+    import numpy as np
+
+    raw_kwargs = {"score_space": "raw_input", "scaler": data_bundle["scaler"]}
+    clean = evaluator.evaluate(model, data_bundle["loaders"]["val"], **raw_kwargs)
+    clean_scores, _ = extract_covered_pointwise_arrays(clean["records"])
+    threshold = select_clean_validation_point_threshold(clean_scores, quantile=0.99)
+    window_scores = [record["raw_input_window_mse"] for record in clean["window_records"]]
+    return evaluator.evaluate(
+        model, data_bundle["loaders"]["test"], **raw_kwargs,
+        point_score_threshold=threshold, window_score_threshold=float(np.quantile(window_scores, .99)),
+        threshold_source="clean_validation_quantile",
+    )
 
 
 def _serialize_evaluation_record(record: dict[str, object]) -> dict[str, object]:
@@ -184,12 +201,15 @@ def run_evaluation_experiment(
     evaluation_threshold_source = checkpoint_extra_state.get(
         "evaluation_threshold_source"
     )
-    evaluation_outputs = evaluator.evaluate(
-        model,
-        data_bundle["loaders"]["test"],
-        point_score_threshold=evaluation_threshold,
-        threshold_source=evaluation_threshold_source,
-    )
+    if experiment_config.get("reconstruction_loss_space") == "raw_input":
+        evaluation_outputs = evaluate_raw_checkpoint(evaluator, model, data_bundle)
+    else:
+        evaluation_outputs = evaluator.evaluate(
+            model,
+            data_bundle["loaders"]["test"],
+            point_score_threshold=evaluation_threshold,
+            threshold_source=evaluation_threshold_source,
+        )
 
     logging_config = dict(experiment_config.get("logging", {}))
     quiet_terminal = bool(logging_config.get("quiet_terminal", False))

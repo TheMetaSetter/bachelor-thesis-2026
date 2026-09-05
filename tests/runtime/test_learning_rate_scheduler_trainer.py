@@ -303,7 +303,9 @@ def test_trainer_tracks_best_checkpoint_from_val_synth_vus_pr(
         data_loader: Any,
         batch_payloads: list[dict[str, Any]],
         stage_name: str,
+        threshold: float | None = None,
     ) -> dict[str, float]:
+        assert threshold is None  # This fixture exercises the historical score path.
         del data_loader, batch_payloads
         if stage_name != "val_synth":
             return {}

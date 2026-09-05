@@ -18,6 +18,7 @@ from src.core.console import console_print, summarize_batch
 from src.engine.checkpoint import CheckpointManager
 from src.engine.evaluator import (
     Evaluator,
+    _extract_raw_reconstruction,
     extract_covered_pointwise_arrays,
     reconstruct_pointwise_records_from_window_payload,
 )
@@ -25,6 +26,7 @@ from src.engine.logger import ExperimentLogger
 from src.engine.runtime_resource_monitor import RuntimeResourceMonitor
 from src.engine.thresholding import (
     build_checkpoint_evaluation_metadata,
+    select_clean_validation_point_threshold,
     select_point_score_threshold,
 )
 from src.metrics.pointwise import (
@@ -37,6 +39,7 @@ from src.metrics.classification_diagnostics import (
     compute_row_normalized_confusion_matrix,
 )
 from src.models.base_model import BaseModel
+from src.protocols.reconstruction_scores import score_reconstruction
 
 
 class Trainer:
@@ -82,6 +85,30 @@ class Trainer:
         self.log_row_normalized_confusion_matrix = log_row_normalized_confusion_matrix
         self.focus_metrics = focus_metrics or []
         self.metric_history: list[dict[str, Any]] = []
+        self.raw_loss_scaler = None
+
+    def _configure_reconstruction_context(self, config, scaler_state) -> None:
+        space = config.get("reconstruction_loss_space", "normalized_input")
+        if hasattr(self.model, "configure_reconstruction_loss"):
+            self.model.configure_reconstruction_loss(space, scaler_state)
+        elif space == "raw_input":
+            raise ValueError("raw_input reconstruction loss requires model support")
+        self.raw_loss_scaler = None
+        if space == "raw_input":
+            evaluation = config.get("evaluation", {})
+            if evaluation.get("score_space", "raw_input") != "raw_input" or (
+                evaluation.get("point_score_transform", "identity") != "identity"
+            ):
+                raise ValueError("raw training requires raw_input scores and identity transform")
+            self.raw_loss_scaler = self.model.reconstruction_scaler
+
+    def _validation_point_scores(self, step_output) -> torch.Tensor:
+        if self.raw_loss_scaler is None:
+            return step_output["outputs"]["point_scores"]
+        return score_reconstruction(
+            step_output["batch"]["x"], _extract_raw_reconstruction(step_output),
+            self.raw_loss_scaler,
+        )["raw_input_point_mse"]
 
     def _compute_and_persist_classification_diagnostics(
         self,
@@ -461,7 +488,7 @@ class Trainer:
                     pointwise_payloads.append(
                         {
                             "meta": step_output["batch"]["meta"],
-                            "point_scores": step_output["outputs"]["point_scores"]
+                            "point_scores": self._validation_point_scores(step_output)
                             .detach()
                             .cpu(),
                             "point_labels": step_output["batch"][
@@ -486,6 +513,7 @@ class Trainer:
         data_loader: Any,
         batch_payloads: list[dict[str, Any]],
         stage_name: str,
+        threshold: float | None = None,
     ) -> dict[str, float]:
         if not batch_payloads:
             return {}
@@ -502,7 +530,10 @@ class Trainer:
         concatenated_scores, concatenated_labels = extract_covered_pointwise_arrays(
             reconstructed_records
         )
-        threshold = select_point_score_threshold(concatenated_scores, quantile=0.99)
+        if threshold is None:
+            if self.raw_loss_scaler is not None:
+                raise ValueError("Raw synthetic metrics require a clean-validation threshold")
+            threshold = select_point_score_threshold(concatenated_scores, quantile=0.99)
         if self.validation_evaluator_config is None:
             vus_max_buffer_size = 0
             vus_num_thresholds = 200
@@ -542,6 +573,7 @@ class Trainer:
     ) -> dict[str, Any]:
         # The trainer owns loop mechanics only. The model owns the meaning of a
         # training step, including optional schedules such as fusion warm-up.
+        self._configure_reconstruction_context(config, scaler_state)
         # step 1: Resolve checkpoint monitoring and initialize training state.
         (
             best_checkpoint_monitor_metric,
@@ -560,6 +592,11 @@ class Trainer:
         resource_monitor = RuntimeResourceMonitor(self.device)
         resource_monitor.reset()
         self.model.to(self.device)
+        if self.raw_loss_scaler is not None:
+            self.checkpoint_manager.save_checkpoint(
+                "initial.pt", self.model, None, None, scaler_state, config, 0, [],
+                extra_state=self.model.get_checkpoint_extra_state(),
+            )
         console_print(
             "TRAIN",
             "Starting offline training loop",
@@ -759,23 +796,26 @@ class Trainer:
                     stage_name=validation_aux_stage_name,
                 )
             )
-            epoch_metrics.update(
-                self._aggregate_reconstructed_pointwise_metrics(
-                    data_loader=val_loader,
-                    batch_payloads=validation_aux_pointwise_payloads,
-                    stage_name=validation_aux_stage_name,
-                )
-            )
-            if self.validation_evaluator_config is not None:
+            clean_threshold = None
+            if self.validation_evaluator_config is not None or self.raw_loss_scaler is not None:
+                evaluator_config = self.validation_evaluator_config or {}
+                raw_evaluation_kwargs = {}
+                if self.raw_loss_scaler is not None:
+                    raw_evaluation_kwargs = {"score_space": "raw_input", "scaler": self.raw_loss_scaler}
                 validation_evaluation_outputs = Evaluator(
                     device=self.device,
-                    vus_max_buffer_size=self.validation_evaluator_config.get(
+                    vus_max_buffer_size=evaluator_config.get(
                         "vus_max_buffer_size"
                     ),
                     vus_num_thresholds=int(
-                        self.validation_evaluator_config.get("vus_num_thresholds", 200)
+                        evaluator_config.get("vus_num_thresholds", 200)
                     ),
-                ).evaluate(model=self.model, data_loader=val_loader)
+                ).evaluate(model=self.model, data_loader=val_loader, **raw_evaluation_kwargs)
+                if self.raw_loss_scaler is not None:
+                    clean_scores, _ = extract_covered_pointwise_arrays(validation_evaluation_outputs["records"])
+                    clean_threshold = select_clean_validation_point_threshold(clean_scores, quantile=0.99)
+                    validation_evaluation_outputs["metrics"]["threshold"] = clean_threshold
+                    validation_evaluation_outputs["metrics"]["threshold_source"] = "clean_validation_quantile"
                 epoch_metrics.update(
                     {
                         f"val_{metric_name}": metric_value
@@ -784,6 +824,12 @@ class Trainer:
                         ].items()
                     }
                 )
+            epoch_metrics.update(
+                self._aggregate_reconstructed_pointwise_metrics(
+                    data_loader=val_loader, batch_payloads=validation_aux_pointwise_payloads,
+                    stage_name=validation_aux_stage_name, threshold=clean_threshold,
+                )
+            )
             if batch_learning_rates:
                 epoch_metrics["optimizer_lr_start"] = batch_learning_rates[0]
                 epoch_metrics["optimizer_lr_end"] = batch_learning_rates[-1]

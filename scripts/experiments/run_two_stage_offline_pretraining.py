@@ -126,6 +126,10 @@ def _build_stage_experiment_config(
     )
     stage_config["output_dir"] = str(stage_output_dir)
     stage_config["checkpoint_dir"] = str(stage_output_dir / "checkpoints")
+    if experiment_config.get("reconstruction_loss_space") == "raw_input":
+        stage_output_dir = Path(str(experiment_config["output_dir"])) / stage_name
+        stage_config["output_dir"] = str(stage_output_dir)
+        stage_config["checkpoint_dir"] = str(stage_output_dir)
     stage_config["epochs"] = int(stage_record["epochs"])
     for reference_field in [
         "data_config_path",
@@ -159,6 +163,8 @@ def _build_stage_experiment_config(
             / "initializations"
             / "stage_b_init.pt"
         )
+        if experiment_config.get("reconstruction_loss_space") == "raw_input":
+            stage_config["initialization_checkpoint_path"] = str(stage_output_dir / "stage_b_init.pt")
     return stage_config
 
 
@@ -412,7 +418,8 @@ def execute_two_stage_plan(
                     existing_execution_report.get("completed_stage_names", [])
                 ),
                 "stage_b_initialization_checkpoint_path": str(
-                    manifest_root / "initializations" / "stage_b_init.pt"
+                    manifest["training_stages"][1].get("initialization_checkpoint_path")
+                    or manifest_root / "initializations" / "stage_b_init.pt"
                 ),
                 "evaluation_checkpoint_path": str(
                     manifest["evaluation"]["checkpoint_path"]
@@ -447,7 +454,8 @@ def execute_two_stage_plan(
                 "completed_stage_names": completed_stage_names,
                 "skipped_stage_names": skipped_stage_names,
                 "stage_b_initialization_checkpoint_path": str(
-                    manifest_root / "initializations" / "stage_b_init.pt"
+                    manifest["training_stages"][1].get("initialization_checkpoint_path")
+                    or manifest_root / "initializations" / "stage_b_init.pt"
                 ),
                 "evaluation_checkpoint_path": str(
                     manifest["evaluation"]["checkpoint_path"]
@@ -485,7 +493,8 @@ def execute_two_stage_plan(
         "completed_stage_names": completed_stage_names,
         "skipped_stage_names": skipped_stage_names,
         "stage_b_initialization_checkpoint_path": str(
-            manifest_root / "initializations" / "stage_b_init.pt"
+            manifest["training_stages"][1].get("initialization_checkpoint_path")
+            or manifest_root / "initializations" / "stage_b_init.pt"
         ),
         "evaluation_checkpoint_path": str(manifest["evaluation"]["checkpoint_path"]),
     }
