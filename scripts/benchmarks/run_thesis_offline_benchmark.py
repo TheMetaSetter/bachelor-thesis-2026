@@ -608,9 +608,7 @@ def _evaluation_outputs_to_score_payload(
     if raw_score_arrays:
         payload["raw_input_point_mse"] = np.concatenate(raw_score_arrays)
     if normalized_score_arrays:
-        payload["normalized_input_point_mse"] = np.concatenate(
-            normalized_score_arrays
-        )
+        payload["normalized_input_point_mse"] = np.concatenate(normalized_score_arrays)
     if prediction_arrays:
         payload["point_predictions"] = np.concatenate(prediction_arrays)
     window_records = evaluation_outputs.get("window_records", [])
@@ -660,7 +658,9 @@ def _build_thresholds(
     experiment_config_path: str,
     checkpoint_sha256: str,
 ) -> dict[str, Any]:
-    raw_protocol = str(protocol_config.get("score_space", "model_output")) == "raw_input"
+    raw_protocol = (
+        str(protocol_config.get("score_space", "model_output")) == "raw_input"
+    )
     clean_scores = np.asarray(
         artifact_inputs["clean_validation"].get(
             "raw_input_point_mse",
@@ -751,8 +751,12 @@ def _build_thresholds(
     if not raw_protocol:
         builder_kwargs.update(
             {
-                "point_score_c": float(artifact_inputs["point_score_calibration"].center),
-                "point_score_tau": float(artifact_inputs["point_score_calibration"].tau),
+                "point_score_c": float(
+                    artifact_inputs["point_score_calibration"].center
+                ),
+                "point_score_tau": float(
+                    artifact_inputs["point_score_calibration"].tau
+                ),
             }
         )
     return build_threshold_artifact(**builder_kwargs)

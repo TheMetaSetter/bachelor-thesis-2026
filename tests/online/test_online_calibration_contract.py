@@ -122,7 +122,9 @@ def test_collect_stride1_online_scores_uses_a0_source_path() -> None:
     assert model.forward_calls == 0
 
 
-def test_collect_stride1_online_scores_uses_raw_input_mse_when_scaler_is_given() -> None:
+def test_collect_stride1_online_scores_uses_raw_input_mse_when_scaler_is_given() -> (
+    None
+):
     model = _CalibrationModel()
     scaler = SequenceStandardScaler()
     scaler.fit([_sequence()])

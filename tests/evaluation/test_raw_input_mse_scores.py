@@ -5,7 +5,10 @@ import torch
 
 from src.data.scalers import SequenceStandardScaler
 from src.core.contracts import validate_evaluation_record
-from src.engine.evaluator import Evaluator, reconstruct_pointwise_records_from_window_payload
+from src.engine.evaluator import (
+    Evaluator,
+    reconstruct_pointwise_records_from_window_payload,
+)
 from src.protocols.reconstruction_scores import score_reconstruction
 
 
@@ -55,7 +58,9 @@ def _fit_one_feature_scaler() -> SequenceStandardScaler:
     return scaler
 
 
-def test_inverse_transform_restores_active_features_and_keeps_inactive_features() -> None:
+def test_inverse_transform_restores_active_features_and_keeps_inactive_features() -> (
+    None
+):
     scaler = _fit_scaler()
     scaled_values = torch.tensor([[0.0, 99.0, -1.0]], dtype=torch.float32)
 
@@ -65,7 +70,9 @@ def test_inverse_transform_restores_active_features_and_keeps_inactive_features(
     assert torch.equal(scaled_values, torch.tensor([[0.0, 99.0, -1.0]]))
 
 
-def test_inverse_transform_rejects_unfitted_scaler_and_wrong_feature_dimension() -> None:
+def test_inverse_transform_rejects_unfitted_scaler_and_wrong_feature_dimension() -> (
+    None
+):
     with pytest.raises(RuntimeError, match="fit"):
         SequenceStandardScaler().inverse_transform_tensor(torch.zeros(1, 1))
 
@@ -89,9 +96,7 @@ def test_score_reconstruction_returns_raw_and_normalized_point_and_window_mse() 
     assert torch.allclose(
         scores["raw_input_point_mse"], torch.tensor([[5.0 / 12.0, 5.0 / 3.0]])
     )
-    assert torch.allclose(
-        scores["raw_input_window_mse"], torch.tensor([25.0 / 24.0])
-    )
+    assert torch.allclose(scores["raw_input_window_mse"], torch.tensor([25.0 / 24.0]))
     assert torch.allclose(
         scores["normalized_input_point_mse"],
         torch.tensor([[1.0 / 6.0, 2.0 / 3.0]]),
@@ -157,7 +162,9 @@ def test_reconstruct_raw_and_normalized_scores_averages_overlap_independently() 
     )
 
     record = records[0]
-    assert torch.equal(record["raw_input_point_mse"], torch.tensor([10.0, 30.0, 40.0, 60.0]))
+    assert torch.equal(
+        record["raw_input_point_mse"], torch.tensor([10.0, 30.0, 40.0, 60.0])
+    )
     assert torch.equal(
         record["normalized_input_point_mse"], torch.tensor([1.0, 3.0, 4.0, 6.0])
     )
@@ -244,15 +251,21 @@ def test_evaluator_uses_raw_input_mse_for_threshold_and_prediction() -> None:
     )
 
     record = result["records"][0]
-    assert torch.allclose(record["raw_input_point_mse"], torch.tensor([0.25, 0.0, 0.25]))
-    assert torch.allclose(record["normalized_input_point_mse"], torch.tensor([1.0, 0.0, 1.0]))
+    assert torch.allclose(
+        record["raw_input_point_mse"], torch.tensor([0.25, 0.0, 0.25])
+    )
+    assert torch.allclose(
+        record["normalized_input_point_mse"], torch.tensor([1.0, 0.0, 1.0])
+    )
     assert torch.equal(record["window_labels"], torch.tensor([1]))
     assert torch.equal(record["point_predictions"], torch.tensor([1, 0, 1]))
     assert torch.equal(record["window_predictions"], torch.ones(1, dtype=torch.long))
     assert result["metrics"]["threshold"] == 0.1
 
 
-def test_evaluator_scores_after_synthetic_preparation_and_uses_synthetic_labels() -> None:
+def test_evaluator_scores_after_synthetic_preparation_and_uses_synthetic_labels() -> (
+    None
+):
     result = Evaluator(device="cpu").evaluate(
         model=_SyntheticEvaluationModel(),
         data_loader=_RawEvaluationLoader(),
@@ -266,7 +279,6 @@ def test_evaluator_scores_after_synthetic_preparation_and_uses_synthetic_labels(
     record = result["records"][0]
     assert torch.equal(record["point_labels"], torch.tensor([0, 1, 0]))
     assert torch.equal(record["window_labels"], torch.tensor([1]))
-
 
 
 def test_evaluation_record_validates_optional_raw_and_normalized_scores() -> None:

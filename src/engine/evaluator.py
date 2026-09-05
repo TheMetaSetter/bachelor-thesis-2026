@@ -220,9 +220,7 @@ def reconstruct_pointwise_records_from_window_payload(
     entity_score_sums: dict[str, torch.Tensor] = {}
     entity_score_counts: dict[str, torch.Tensor] = {}
     entity_point_labels: dict[str, torch.Tensor] = {}
-    has_raw_scores = any(
-        "raw_input_point_mse" in payload for payload in batch_payloads
-    )
+    has_raw_scores = any("raw_input_point_mse" in payload for payload in batch_payloads)
     entity_raw_score_sums = {} if has_raw_scores else None
     entity_normalized_score_sums = {} if has_raw_scores else None
 
@@ -290,9 +288,7 @@ def _build_reconstructed_evaluation_record(
         "raw_num_points": int(averaged_scores.shape[0]),
     }
     if raw_score_sum is not None and normalized_score_sum is not None:
-        record["raw_input_point_mse"] = raw_score_sum / torch.clamp(
-            raw_counts, min=1.0
-        )
+        record["raw_input_point_mse"] = raw_score_sum / torch.clamp(raw_counts, min=1.0)
         record["normalized_input_point_mse"] = normalized_score_sum / torch.clamp(
             raw_counts, min=1.0
         )
@@ -596,13 +592,13 @@ class Evaluator:
                         scaler,
                     )
                     point_scores = scores["raw_input_point_mse"].detach().cpu()
-                    normalized_point_scores = scores[
-                        "normalized_input_point_mse"
-                    ].detach().cpu()
+                    normalized_point_scores = (
+                        scores["normalized_input_point_mse"].detach().cpu()
+                    )
                     raw_window_scores = scores["raw_input_window_mse"].detach().cpu()
-                    normalized_window_scores = scores[
-                        "normalized_input_window_mse"
-                    ].detach().cpu()
+                    normalized_window_scores = (
+                        scores["normalized_input_window_mse"].detach().cpu()
+                    )
                     window_records.extend(
                         _build_window_score_records(
                             batch_meta=batch["meta"],
@@ -672,7 +668,8 @@ class Evaluator:
                     record["raw_input_point_mse"] > threshold
                 ).long()
                 entity_windows = [
-                    item for item in window_records
+                    item
+                    for item in window_records
                     if item["entity_id"] == record["entity_id"]
                 ]
                 record["window_labels"] = torch.tensor(

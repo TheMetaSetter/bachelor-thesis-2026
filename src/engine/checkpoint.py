@@ -313,7 +313,9 @@ class CheckpointManager:
             model.load_checkpoint_extra_state(loaded_checkpoint.get("extra_state"))
         if hasattr(model, "configure_reconstruction_loss"):
             model.configure_reconstruction_loss(
-                loaded_checkpoint["config"].get("reconstruction_loss_space", "normalized_input"),
+                loaded_checkpoint["config"].get(
+                    "reconstruction_loss_space", "normalized_input"
+                ),
                 loaded_checkpoint["scaler_state_dict"],
             )
         if optimizer is not None and "optimizer_state_dict" in loaded_checkpoint:

@@ -20,8 +20,13 @@ def _validate_score_inputs(
         raise ValueError("reconstruction must have shape [B, L, D] or [B, M, L, D]")
     if reconstruction.ndim == 3:
         reconstruction = reconstruction.unsqueeze(1)
-    if reconstruction.shape[0] != input_scaled.shape[0] or reconstruction.shape[2:] != input_scaled.shape[1:]:
-        raise ValueError("reconstruction batch, window, and feature shapes must match input_scaled")
+    if (
+        reconstruction.shape[0] != input_scaled.shape[0]
+        or reconstruction.shape[2:] != input_scaled.shape[1:]
+    ):
+        raise ValueError(
+            "reconstruction batch, window, and feature shapes must match input_scaled"
+        )
     if not torch.isfinite(input_scaled.float()).all().item():
         raise ValueError("input_scaled must contain only finite values")
     if not torch.isfinite(reconstruction.float()).all().item():
@@ -46,11 +51,11 @@ def score_reconstruction(
     ).reshape_as(reconstruction_samples)
 
     normalized_point_mse_samples = (
-        input_scaled.unsqueeze(1) - reconstruction_samples
-    ).square().mean(dim=-1)
+        (input_scaled.unsqueeze(1) - reconstruction_samples).square().mean(dim=-1)
+    )
     raw_point_mse_samples = (
-        raw_input.unsqueeze(1) - raw_reconstruction
-    ).square().mean(dim=-1)
+        (raw_input.unsqueeze(1) - raw_reconstruction).square().mean(dim=-1)
+    )
     scores = {
         "raw_input_point_mse": raw_point_mse_samples.mean(dim=1),
         "raw_input_window_mse": raw_point_mse_samples.mean(dim=(1, 2)),

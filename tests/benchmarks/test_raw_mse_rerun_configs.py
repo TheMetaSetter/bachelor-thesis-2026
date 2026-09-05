@@ -3,7 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.core.config import load_experiment_config
-from scripts.experiments.run_two_stage_offline_pretraining import materialize_two_stage_run_manifest
+from scripts.experiments.run_two_stage_offline_pretraining import (
+    materialize_two_stage_run_manifest,
+)
 
 
 def test_generated_matrix_preserves_budget_and_raw_stage_contract(tmp_path):
@@ -26,4 +28,7 @@ def test_generated_matrix_preserves_budget_and_raw_stage_contract(tmp_path):
         assert stage_config["reconstruction_loss_space"] == "raw_input"
         assert Path(stage_config["output_dir"]).parent == tmp_path / "offline"
         assert stage_config["checkpoint_dir"] == stage_config["output_dir"]
-    assert manifest["evaluation"]["checkpoint_path"] == manifest["training_stages"][1]["best_checkpoint_path"]
+    assert (
+        manifest["evaluation"]["checkpoint_path"]
+        == manifest["training_stages"][1]["best_checkpoint_path"]
+    )

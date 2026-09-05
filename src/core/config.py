@@ -268,9 +268,12 @@ def _validate_experiment_top_level_structure(
             f"{unknown_top_level_keys}. Remove these keys from the experiment YAML."
         )
     if experiment_config.get("reconstruction_loss_space", "normalized_input") not in {
-        "normalized_input", "raw_input"
+        "normalized_input",
+        "raw_input",
     }:
-        raise ValueError("reconstruction_loss_space must be normalized_input or raw_input")
+        raise ValueError(
+            "reconstruction_loss_space must be normalized_input or raw_input"
+        )
     return required_sections
 
 

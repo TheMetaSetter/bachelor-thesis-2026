@@ -337,9 +337,17 @@ def test_build_runtime_online_context_rebuilds_raw_scaler_from_checkpoint(
     monkeypatch.setattr(
         online_engine_run_module,
         "torch",
-        type("Torch", (), {"load": staticmethod(lambda *args, **kwargs: {
-            "scaler_state_dict": {"source": "checkpoint"}
-        })}),
+        type(
+            "Torch",
+            (),
+            {
+                "load": staticmethod(
+                    lambda *args, **kwargs: {
+                        "scaler_state_dict": {"source": "checkpoint"}
+                    }
+                )
+            },
+        ),
     )
     monkeypatch.setattr(
         online_engine_run_module,

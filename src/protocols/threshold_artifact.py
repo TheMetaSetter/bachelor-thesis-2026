@@ -50,11 +50,16 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
     if missing_keys:
         raise ValueError(f"threshold artifact is missing required keys: {missing_keys}")
     schema_version = int(artifact["schema_version"])
-    if schema_version not in {3, HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION}:
-        raise ValueError(
-            "threshold artifact schema_version must be one of: 3, 4, 5"
-        )
-    if schema_version in {HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION} and (
+    if schema_version not in {
+        3,
+        HISTORICAL_THESIS_SCHEMA_VERSION,
+        THRESHOLD_ARTIFACT_SCHEMA_VERSION,
+    }:
+        raise ValueError("threshold artifact schema_version must be one of: 3, 4, 5")
+    if schema_version in {
+        HISTORICAL_THESIS_SCHEMA_VERSION,
+        THRESHOLD_ARTIFACT_SCHEMA_VERSION,
+    } and (
         not isinstance(artifact.get("checkpoint_sha256"), str)
         or not artifact["checkpoint_sha256"]
     ):
@@ -109,11 +114,17 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
         if artifact["score_space"] != "raw_input":
             raise ValueError("raw schema v5 artifact score_space must be raw_input")
         if artifact["point_score_transform"] != "identity":
-            raise ValueError("raw schema v5 artifact point_score_transform must be identity")
+            raise ValueError(
+                "raw schema v5 artifact point_score_transform must be identity"
+            )
         if artifact["point_score_definition"] != "raw_input_point_mse":
-            raise ValueError("raw schema v5 artifact has unsupported point score definition")
+            raise ValueError(
+                "raw schema v5 artifact has unsupported point score definition"
+            )
         if artifact["window_score_definition"] != "raw_input_window_mse":
-            raise ValueError("raw schema v5 artifact has unsupported window score definition")
+            raise ValueError(
+                "raw schema v5 artifact has unsupported window score definition"
+            )
         calibration_fields = {
             "point_score_c",
             "point_score_tau",
@@ -121,7 +132,9 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
             "point_score_mad_normalizer",
         }
         if calibration_fields.intersection(artifact):
-            raise ValueError("raw schema v5 artifact must not contain sigmoid calibration fields")
+            raise ValueError(
+                "raw schema v5 artifact must not contain sigmoid calibration fields"
+            )
     if not isinstance(artifact["entity_id"], str) or not artifact["entity_id"]:
         raise ValueError("threshold artifact entity_id must be a non-empty string")
     if not isinstance(artifact["method_name"], str) or not artifact["method_name"]:
@@ -257,7 +270,11 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
     if not isinstance(thresholds, dict) or not thresholds:
         raise TypeError("threshold artifact thresholds must be a non-empty mapping")
     missing_thresholds = sorted(_REQUIRED_ONLINE_THRESHOLDS - set(thresholds))
-    if schema_version in {HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION} and missing_thresholds:
+    if (
+        schema_version
+        in {HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION}
+        and missing_thresholds
+    ):
         raise ValueError(
             "threshold artifact is missing required online thresholds: "
             f"{missing_thresholds}"
@@ -310,14 +327,18 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
             ):
                 raise ValueError("EWMA threshold weights must be positive")
     if (
-        schema_version in {HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION}
+        schema_version
+        in {HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION}
         and thresholds["online_ewma_point"]["score_rule"]
         != "stride1_causal_window_vector_ewma"
     ):
         raise ValueError("online_ewma_point must use stride1_causal_window_vector_ewma")
-    if schema_version in {HISTORICAL_THESIS_SCHEMA_VERSION, THRESHOLD_ARTIFACT_SCHEMA_VERSION} and float(
-        thresholds["latent_window_low"]["value"]
-    ) > float(thresholds["latent_window_high"]["value"]):
+    if schema_version in {
+        HISTORICAL_THESIS_SCHEMA_VERSION,
+        THRESHOLD_ARTIFACT_SCHEMA_VERSION,
+    } and float(thresholds["latent_window_low"]["value"]) > float(
+        thresholds["latent_window_high"]["value"]
+    ):
         raise ValueError("latent window low threshold must not exceed high threshold")
 
 

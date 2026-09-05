@@ -54,7 +54,9 @@ def load_raw_score_arrays(
     return arrays
 
 
-def _summary_for_values(values: np.ndarray, labels: np.ndarray, threshold: float) -> dict[str, Any]:
+def _summary_for_values(
+    values: np.ndarray, labels: np.ndarray, threshold: float
+) -> dict[str, Any]:
     normal_values = values[labels == 0]
     anomalous_values = values[labels == 1]
     return {
@@ -117,25 +119,61 @@ def plot_raw_input_mse_histograms(
     window_values = arrays["raw_input_window_mse"]
     point_bins = _shared_histogram_bins(point_values)
     window_bins = _shared_histogram_bins(window_values)
-    axes[0].hist(point_values[arrays["point_labels"] == 0], bins=point_bins, alpha=0.7, label="normal point")
-    axes[0].hist(point_values[arrays["point_labels"] == 1], bins=point_bins, alpha=0.7, label="anomalous point")
-    axes[0].axvline(point_threshold, color="black", linestyle="--", label=f"threshold={point_threshold:.4g}")
+    axes[0].hist(
+        point_values[arrays["point_labels"] == 0],
+        bins=point_bins,
+        alpha=0.7,
+        label="normal point",
+    )
+    axes[0].hist(
+        point_values[arrays["point_labels"] == 1],
+        bins=point_bins,
+        alpha=0.7,
+        label="anomalous point",
+    )
+    axes[0].axvline(
+        point_threshold,
+        color="black",
+        linestyle="--",
+        label=f"threshold={point_threshold:.4g}",
+    )
     axes[0].set_title("Point-level raw input MSE")
     axes[0].set_xlabel("raw input MSE")
     axes[0].set_ylabel("count")
     axes[0].legend()
 
-    axes[1].hist(window_values[arrays["window_labels"] == 0], bins=window_bins, alpha=0.7, label="normal window")
-    axes[1].hist(window_values[arrays["window_labels"] == 1], bins=window_bins, alpha=0.7, label="anomalous window")
-    axes[1].axvline(window_threshold, color="black", linestyle="--", label=f"threshold={window_threshold:.4g}")
+    axes[1].hist(
+        window_values[arrays["window_labels"] == 0],
+        bins=window_bins,
+        alpha=0.7,
+        label="normal window",
+    )
+    axes[1].hist(
+        window_values[arrays["window_labels"] == 1],
+        bins=window_bins,
+        alpha=0.7,
+        label="anomalous window",
+    )
+    axes[1].axvline(
+        window_threshold,
+        color="black",
+        linestyle="--",
+        label=f"threshold={window_threshold:.4g}",
+    )
     axes[1].set_title("Window-level raw input MSE")
     axes[1].set_xlabel("raw input MSE")
     axes[1].set_ylabel("count")
     axes[1].legend()
     figure.suptitle(f"{entity_id} | score_space=raw_input | transform=identity")
-    figure.savefig(figure_path, dpi=160, metadata={"score_space": "raw_input", "entity_id": entity_id})
+    figure.savefig(
+        figure_path,
+        dpi=160,
+        metadata={"score_space": "raw_input", "entity_id": entity_id},
+    )
     plt.close(figure)
-    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    summary_path.write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return figure_path, summary_path
 
 
@@ -152,7 +190,9 @@ def main() -> None:
         threshold_artifact=threshold_artifact,
         output_dir=args.output_dir,
     )
-    print(json.dumps({"figure": str(figure_path), "summary": str(summary_path)}, indent=2))
+    print(
+        json.dumps({"figure": str(figure_path), "summary": str(summary_path)}, indent=2)
+    )
 
 
 if __name__ == "__main__":

@@ -164,7 +164,9 @@ def _build_stage_experiment_config(
             / "stage_b_init.pt"
         )
         if experiment_config.get("reconstruction_loss_space") == "raw_input":
-            stage_config["initialization_checkpoint_path"] = str(stage_output_dir / "stage_b_init.pt")
+            stage_config["initialization_checkpoint_path"] = str(
+                stage_output_dir / "stage_b_init.pt"
+            )
     return stage_config
 
 

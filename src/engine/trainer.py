@@ -99,14 +99,17 @@ class Trainer:
             if evaluation.get("score_space", "raw_input") != "raw_input" or (
                 evaluation.get("point_score_transform", "identity") != "identity"
             ):
-                raise ValueError("raw training requires raw_input scores and identity transform")
+                raise ValueError(
+                    "raw training requires raw_input scores and identity transform"
+                )
             self.raw_loss_scaler = self.model.reconstruction_scaler
 
     def _validation_point_scores(self, step_output) -> torch.Tensor:
         if self.raw_loss_scaler is None:
             return step_output["outputs"]["point_scores"]
         return score_reconstruction(
-            step_output["batch"]["x"], _extract_raw_reconstruction(step_output),
+            step_output["batch"]["x"],
+            _extract_raw_reconstruction(step_output),
             self.raw_loss_scaler,
         )["raw_input_point_mse"]
 
@@ -532,7 +535,9 @@ class Trainer:
         )
         if threshold is None:
             if self.raw_loss_scaler is not None:
-                raise ValueError("Raw synthetic metrics require a clean-validation threshold")
+                raise ValueError(
+                    "Raw synthetic metrics require a clean-validation threshold"
+                )
             threshold = select_point_score_threshold(concatenated_scores, quantile=0.99)
         if self.validation_evaluator_config is None:
             vus_max_buffer_size = 0
@@ -594,7 +599,14 @@ class Trainer:
         self.model.to(self.device)
         if self.raw_loss_scaler is not None:
             self.checkpoint_manager.save_checkpoint(
-                "initial.pt", self.model, None, None, scaler_state, config, 0, [],
+                "initial.pt",
+                self.model,
+                None,
+                None,
+                scaler_state,
+                config,
+                0,
+                [],
                 extra_state=self.model.get_checkpoint_extra_state(),
             )
         console_print(
@@ -797,25 +809,39 @@ class Trainer:
                 )
             )
             clean_threshold = None
-            if self.validation_evaluator_config is not None or self.raw_loss_scaler is not None:
+            if (
+                self.validation_evaluator_config is not None
+                or self.raw_loss_scaler is not None
+            ):
                 evaluator_config = self.validation_evaluator_config or {}
                 raw_evaluation_kwargs = {}
                 if self.raw_loss_scaler is not None:
-                    raw_evaluation_kwargs = {"score_space": "raw_input", "scaler": self.raw_loss_scaler}
+                    raw_evaluation_kwargs = {
+                        "score_space": "raw_input",
+                        "scaler": self.raw_loss_scaler,
+                    }
                 validation_evaluation_outputs = Evaluator(
                     device=self.device,
-                    vus_max_buffer_size=evaluator_config.get(
-                        "vus_max_buffer_size"
-                    ),
+                    vus_max_buffer_size=evaluator_config.get("vus_max_buffer_size"),
                     vus_num_thresholds=int(
                         evaluator_config.get("vus_num_thresholds", 200)
                     ),
-                ).evaluate(model=self.model, data_loader=val_loader, **raw_evaluation_kwargs)
+                ).evaluate(
+                    model=self.model, data_loader=val_loader, **raw_evaluation_kwargs
+                )
                 if self.raw_loss_scaler is not None:
-                    clean_scores, _ = extract_covered_pointwise_arrays(validation_evaluation_outputs["records"])
-                    clean_threshold = select_clean_validation_point_threshold(clean_scores, quantile=0.99)
-                    validation_evaluation_outputs["metrics"]["threshold"] = clean_threshold
-                    validation_evaluation_outputs["metrics"]["threshold_source"] = "clean_validation_quantile"
+                    clean_scores, _ = extract_covered_pointwise_arrays(
+                        validation_evaluation_outputs["records"]
+                    )
+                    clean_threshold = select_clean_validation_point_threshold(
+                        clean_scores, quantile=0.99
+                    )
+                    validation_evaluation_outputs["metrics"]["threshold"] = (
+                        clean_threshold
+                    )
+                    validation_evaluation_outputs["metrics"]["threshold_source"] = (
+                        "clean_validation_quantile"
+                    )
                 epoch_metrics.update(
                     {
                         f"val_{metric_name}": metric_value
@@ -826,8 +852,10 @@ class Trainer:
                 )
             epoch_metrics.update(
                 self._aggregate_reconstructed_pointwise_metrics(
-                    data_loader=val_loader, batch_payloads=validation_aux_pointwise_payloads,
-                    stage_name=validation_aux_stage_name, threshold=clean_threshold,
+                    data_loader=val_loader,
+                    batch_payloads=validation_aux_pointwise_payloads,
+                    stage_name=validation_aux_stage_name,
+                    threshold=clean_threshold,
                 )
             )
             if batch_learning_rates:

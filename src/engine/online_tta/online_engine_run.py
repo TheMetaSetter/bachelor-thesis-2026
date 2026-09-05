@@ -103,7 +103,10 @@ def _validate_online_artifact_identity(
             raise ValueError(f"threshold artifact identity mismatch for {field_name}")
     expected_score_space = protocol_config.get("score_space")
     artifact_score_space = artifact.get("score_space", "model_output")
-    if expected_score_space is not None and expected_score_space != artifact_score_space:
+    if (
+        expected_score_space is not None
+        and expected_score_space != artifact_score_space
+    ):
         raise ValueError(
             "threshold artifact identity mismatch for score_space: "
             f"expected {expected_score_space!r}, got {artifact_score_space!r}"

@@ -95,7 +95,9 @@ class ThesisMultitaskModel(
     ) -> None:
         """Use the train-fitted scaler at the loss boundary, without refitting."""
         if space not in {"normalized_input", "raw_input"}:
-            raise ValueError("reconstruction_loss_space must be normalized_input or raw_input")
+            raise ValueError(
+                "reconstruction_loss_space must be normalized_input or raw_input"
+            )
         scaler = None
         if space == "raw_input":
             scaler = SequenceStandardScaler()
@@ -117,6 +119,8 @@ class ThesisMultitaskModel(
             reconstruction = samples
             target = target.unsqueeze(1)
         raw_target = self.reconstruction_scaler.inverse_transform_tensor(target)
-        raw_reconstruction = self.reconstruction_scaler.inverse_transform_tensor(reconstruction)
+        raw_reconstruction = self.reconstruction_scaler.inverse_transform_tensor(
+            reconstruction
+        )
         errors = (raw_reconstruction - raw_target).square()
         return errors.mean(dim=1) if errors.ndim == 4 else errors

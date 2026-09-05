@@ -72,9 +72,7 @@ def _verify_and_adapt_entries(
             latent_window_score=float(entry["latent_window_score"]),
             triage_decision="pnn_verified",
             score_space=(
-                "raw_input"
-                if "raw_input_point_mse" in entry
-                else "model_output"
+                "raw_input" if "raw_input_point_mse" in entry else "model_output"
             ),
         )
         finalized[entry_id] = VerificationResult(
@@ -186,7 +184,9 @@ def _extract_online_window_scores(
         scoring_aux = outputs["aux"].get("scoring", outputs["aux"])
         normalized_point_scores = scoring_aux.get("raw_point_scores")
         if not isinstance(normalized_point_scores, torch.Tensor):
-            raise ValueError("online model must expose raw point scores under aux.scoring")
+            raise ValueError(
+                "online model must expose raw point scores under aux.scoring"
+            )
         normalized_point_scores = normalized_point_scores[0].detach()
         input_window_score = float(
             torch.mean((outputs["recon"] - batch_on_device["x"]) ** 2).detach().cpu()
@@ -284,9 +284,7 @@ def _build_online_window_outputs(
     record["normalized_input_window_mse"] = float(normalized_input_window_score)
     record["input_window_score"] = float(input_window_score)
     record["score_space"] = score_space
-    record["point_score_transform"] = (
-        "identity" if score_space == "raw_input" else None
-    )
+    record["point_score_transform"] = "identity" if score_space == "raw_input" else None
     record["verification_cycle_ready"] = verification_buffer.should_verify()
     metric = {
         "online/step": 0,

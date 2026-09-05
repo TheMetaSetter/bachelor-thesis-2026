@@ -312,9 +312,9 @@ class ThesisMultitaskLossCoreMixin:
             return None, diagnostics
 
         # step 2: Compute one reconstruction error for every point.
-        pointwise_reconstruction_error = self.reconstruction_squared_error(outputs, batch).mean(
-            dim=-1
-        )
+        pointwise_reconstruction_error = self.reconstruction_squared_error(
+            outputs, batch
+        ).mean(dim=-1)
 
         # step 3: Build normal and anomalous point masks.
         anomaly_mask = self._point_mask_from_synthetic_mask(

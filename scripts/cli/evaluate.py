@@ -46,10 +46,15 @@ def evaluate_raw_checkpoint(evaluator, model, data_bundle):
     clean = evaluator.evaluate(model, data_bundle["loaders"]["val"], **raw_kwargs)
     clean_scores, _ = extract_covered_pointwise_arrays(clean["records"])
     threshold = select_clean_validation_point_threshold(clean_scores, quantile=0.99)
-    window_scores = [record["raw_input_window_mse"] for record in clean["window_records"]]
+    window_scores = [
+        record["raw_input_window_mse"] for record in clean["window_records"]
+    ]
     return evaluator.evaluate(
-        model, data_bundle["loaders"]["test"], **raw_kwargs,
-        point_score_threshold=threshold, window_score_threshold=float(np.quantile(window_scores, .99)),
+        model,
+        data_bundle["loaders"]["test"],
+        **raw_kwargs,
+        point_score_threshold=threshold,
+        window_score_threshold=float(np.quantile(window_scores, 0.99)),
         threshold_source="clean_validation_quantile",
     )
 

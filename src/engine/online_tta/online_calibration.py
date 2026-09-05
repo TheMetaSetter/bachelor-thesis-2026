@@ -142,9 +142,7 @@ def run_stride1_sequence_scores(
             input_scores,
             normalized_input_scores,
             latent_scores,
-        ) = _collect_batch_scores(
-            outputs, batch_on_device, scaler=scaler
-        )
+        ) = _collect_batch_scores(outputs, batch_on_device, scaler=scaler)
         if current_point_scores.shape[0] != 1:
             raise ValueError("online threshold calibration requires batch_size=1")
         current_ewma_scores, active_ewma_point_scores = update_window_point_ewma(
@@ -211,9 +209,9 @@ def _collect_offline_scores(
             reconstruction = stochastic_query.get("reconstruction_samples")
             if not isinstance(reconstruction, torch.Tensor):
                 reconstruction = outputs["recon"]
-            window_scores = score_reconstruction(
-                batch["x"], reconstruction, scaler
-            )["raw_input_point_mse"]
+            window_scores = score_reconstruction(batch["x"], reconstruction, scaler)[
+                "raw_input_point_mse"
+            ]
         collected.extend(window_scores.reshape(-1).detach().cpu().tolist())
     return collected
 
@@ -230,9 +228,7 @@ def collect_nonoverlap_offline_scores(
     collected: list[float] = []
     for sequence in clean_validation_sequences:
         collected.extend(
-            _collect_offline_scores(
-                model, sequence, window_size, device, scaler=scaler
-            )
+            _collect_offline_scores(model, sequence, window_size, device, scaler=scaler)
         )
     return collected
 
@@ -279,9 +275,7 @@ def collect_stride1_online_scores(
         collected["ewma"].extend(scores["point"])
         collected["normalized_point"].extend(scores["normalized_point"])
         collected["input_window"].extend(scores["input_window"])
-        collected["normalized_input_window"].extend(
-            scores["normalized_input_window"]
-        )
+        collected["normalized_input_window"].extend(scores["normalized_input_window"])
         collected["latent_window"].extend(scores["latent_window"])
     return collected
 
