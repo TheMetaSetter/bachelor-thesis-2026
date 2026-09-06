@@ -218,7 +218,7 @@ data/
 *.csvbackup-*.zip
 *.zip
 
-ssh-gpu.txt
+cloud-gpu.txt
 
 # MemPalace per-project files (issue #185)
 mempalace.yaml
