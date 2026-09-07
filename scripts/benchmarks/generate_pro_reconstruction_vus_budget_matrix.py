@@ -104,7 +104,7 @@ def build_config(
             "checkpoint_dir": str(run_root / "checkpoints"),
             "reconstruction_loss_space": "normalized_input",
             "checkpoint_monitor_metric": _monitor_metric(fpr_budget),
-            "data_overrides": {"num_workers": 12},
+            "data_overrides": {"num_workers": 10},
             "model_overrides": _model_overrides(variant),
             "evaluation": evaluation,
         }

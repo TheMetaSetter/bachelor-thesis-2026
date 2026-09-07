@@ -20,7 +20,7 @@ Status: agreed experiment contract; local implementation and smoke preflight are
 - O0 disables point-score loss.
 - O1 enables balanced point-score loss in Stage A.
 - Both Stage A and Stage B use `fusion_mode: direct_branch_routing`.
-- Use 12 data-loading workers.
+- Use 10 data-loading workers.
 - The 54 combinations create 108 W&B training runs because each combination has Stage A and Stage B.
 
 ## Score and calibration contract

@@ -28,7 +28,7 @@ def test_generator_writes_54_budget_specific_configs(tmp_path: Path) -> None:
         run_names.add(config["logging"]["wandb_run_name"])
         assert config["reconstruction_loss_space"] == "normalized_input"
         assert config["evaluation"]["score_space"] == "normalized_input"
-        assert config["data_overrides"]["num_workers"] == 12
+        assert config["data_overrides"]["num_workers"] == 10
         assert config["model_overrides"]["fusion_mode"] == "direct_branch_routing"
 
     assert monitors == {

@@ -21,7 +21,7 @@ The implementation will evaluate RedLamp and the three traditional baselines und
 ## Request
 
 - Use normalized-input reconstruction MSE for main-method and RedLamp training-score evaluation.
-- Keep `lambda_recon: 0.75`, `lambda_cls: 0.25`, O0 without point-score loss, O1 with balanced point-score loss, direct branch routing in both stages, and 12 workers.
+- Keep `lambda_recon: 0.75`, `lambda_cls: 0.25`, O0 without point-score loss, O1 with balanced point-score loss, direct branch routing in both stages, and 10 workers.
 - Select point q99 from finite synthetic-validation normal points, including normal points inside anomalous windows.
 - Select window q99 from finite synthetic-validation normal windows.
 - Keep iForest negative decision score, KMeans-AD nearest-centroid distance, and StumPy AB-join distance as native baseline scores.
