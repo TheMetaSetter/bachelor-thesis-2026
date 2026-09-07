@@ -30,8 +30,12 @@ from src.baselines.traditional import (
 )
 from src.core.config import load_yaml_config
 from src.core.registry import build_dataset
+from src.engine.thresholding import (
+    select_synthetic_validation_normal_point_threshold,
+    select_synthetic_validation_normal_window_threshold,
+)
 from src.metrics.pointwise import compute_pointwise_metrics
-from src.protocols.point_scores import ewma_scores
+from src.protocols.point_scores import build_nonoverlap_tail_window_starts, ewma_scores
 from src.protocols.threshold_artifact import (
     build_threshold_artifact,
     write_threshold_artifact,
@@ -166,6 +170,45 @@ def _score_validation_split(
     return payload, dict(split_sequence.get("meta", {}))
 
 
+def _score_native_validation_split(
+    *,
+    baseline: TraditionalBaselineProtocol,
+    data_bundle: dict[str, Any],
+    split_name: str,
+    window_size: int,
+) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+    split_sequence = _single_sequence(
+        _resolve_split_sequences(data_bundle, split_name), split_name
+    )
+    if not hasattr(baseline, "native_score"):
+        raise ValueError("Baseline does not expose the native-score contract")
+    native_scores = baseline.native_score(
+        _to_numpy(split_sequence["x"], dtype=np.float64)
+    )
+    point_labels = _to_numpy(split_sequence["point_labels"], dtype=np.int64).reshape(-1)
+    point_scores = np.asarray(native_scores["point_scores"], dtype=np.float64).reshape(-1)
+    window_scores = np.asarray(native_scores["window_scores"], dtype=np.float64).reshape(-1)
+    starts = build_nonoverlap_tail_window_starts(point_scores.size, window_size)
+    if len(starts) != window_scores.size:
+        raise ValueError("Native window scores must match non-overlap window starts")
+    window_labels = np.asarray(
+        [int(np.any(point_labels[start : start + window_size])) for start in starts],
+        dtype=np.int64,
+    )
+    return (
+        {
+            "point_scores": point_scores,
+            "point_labels": point_labels,
+            "covered_point_mask": np.isfinite(point_scores),
+            "window_scores": window_scores,
+            "window_labels": window_labels,
+            "point_predictions": np.zeros_like(point_labels),
+            "window_predictions": np.zeros_like(window_labels),
+        },
+        dict(split_sequence.get("meta", {})),
+    )
+
+
 def _build_metrics(
     *,
     point_labels: np.ndarray,
@@ -272,33 +315,95 @@ def run_offline_benchmark(
     )
     baseline.fit(_to_numpy(train_sequence["x"], dtype=np.float64))
 
-    clean_validation_sequence = _single_sequence(
-        _resolve_split_sequences(data_bundle, "val"),
-        "val",
+    use_native_synthetic_protocol = protocol_config.get("score_space") == (
+        "normalized_input"
     )
-    calibration = baseline.calibrate(
-        _to_numpy(clean_validation_sequence["x"], dtype=np.float64)
-    )
-    # Re-score clean validation after calibration so the score artifact and
-    # threshold artifact share the exact same contract.
-    clean_validation_payload, clean_validation_meta = _score_validation_split(
-        baseline=baseline,
-        data_bundle=data_bundle,
-        split_name="val",
-    )
-    synthetic_validation_split = "val_synth"
-    if synthetic_validation_split not in (data_bundle.get("scaled_sequences") or {}):
-        synthetic_validation_split = "val"
-    synthetic_validation_payload, synthetic_validation_meta = _score_validation_split(
-        baseline=baseline,
-        data_bundle=data_bundle,
-        split_name=synthetic_validation_split,
-    )
-    test_payload, test_meta = _score_validation_split(
-        baseline=baseline,
-        data_bundle=data_bundle,
-        split_name="test",
-    )
+    if use_native_synthetic_protocol:
+        if "val_synth" not in (data_bundle.get("scaled_sequences") or {}):
+            raise ValueError(
+                "normalized_input baseline evaluation requires val_synth"
+            )
+        window_size = int(protocol_config["window_size"])
+        synthetic_validation_payload, synthetic_validation_meta = (
+            _score_native_validation_split(
+                baseline=baseline,
+                data_bundle=data_bundle,
+                split_name="val_synth",
+                window_size=window_size,
+            )
+        )
+        offline_point_threshold = (
+            select_synthetic_validation_normal_point_threshold(
+                synthetic_validation_payload["point_scores"],
+                synthetic_validation_payload["point_labels"],
+                float(protocol_config["offline_threshold_quantile"]),
+            )
+        )
+        offline_window_threshold = (
+            select_synthetic_validation_normal_window_threshold(
+                synthetic_validation_payload["window_scores"],
+                synthetic_validation_payload["window_labels"],
+                float(protocol_config["offline_threshold_quantile"]),
+            )
+        )
+        clean_validation_payload, clean_validation_meta = (
+            _score_native_validation_split(
+                baseline=baseline,
+                data_bundle=data_bundle,
+                split_name="val",
+                window_size=window_size,
+            )
+        )
+        test_payload, test_meta = _score_native_validation_split(
+            baseline=baseline,
+            data_bundle=data_bundle,
+            split_name="test",
+            window_size=window_size,
+        )
+        test_payload["point_predictions"] = (
+            test_payload["point_scores"] > offline_point_threshold
+        ).astype(np.int64)
+        test_payload["window_predictions"] = (
+            test_payload["window_scores"] > offline_window_threshold
+        ).astype(np.int64)
+        calibration = {
+            "method_metadata": {
+                "score_definition": f"{baseline_name}_native_score",
+                "threshold_source": "synthetic_validation_normal",
+            }
+        }
+    else:
+        offline_window_threshold = None
+
+        clean_validation_sequence = _single_sequence(
+            _resolve_split_sequences(data_bundle, "val"),
+            "val",
+        )
+        calibration = baseline.calibrate(
+            _to_numpy(clean_validation_sequence["x"], dtype=np.float64)
+        )
+        clean_validation_payload, clean_validation_meta = _score_validation_split(
+            baseline=baseline,
+            data_bundle=data_bundle,
+            split_name="val",
+        )
+        synthetic_validation_split = "val_synth"
+        if synthetic_validation_split not in (
+            data_bundle.get("scaled_sequences") or {}
+        ):
+            synthetic_validation_split = "val"
+        synthetic_validation_payload, synthetic_validation_meta = (
+            _score_validation_split(
+                baseline=baseline,
+                data_bundle=data_bundle,
+                split_name=synthetic_validation_split,
+            )
+        )
+        test_payload, test_meta = _score_validation_split(
+            baseline=baseline,
+            data_bundle=data_bundle,
+            split_name="test",
+        )
 
     entity_id = str(
         clean_validation_meta.get(
@@ -308,7 +413,8 @@ def run_offline_benchmark(
     )
     seed = int(benchmark_config.get("seed", 0))
     window_size = int(protocol_config["window_size"])
-    offline_point_threshold = float(calibration["threshold"])
+    if not use_native_synthetic_protocol:
+        offline_point_threshold = float(calibration["threshold"])
     online_ewma_point_threshold = _ewma_threshold(
         clean_validation_payload["point_scores"],
         protocol_config,
@@ -327,7 +433,26 @@ def run_offline_benchmark(
         ewma_previous_weight=float(protocol_config["online_ewma_previous_weight"]),
         created_by="scripts/run_offline_benchmark.py",
         config_path=str(benchmark_config_path),
+        offline_window_threshold=offline_window_threshold,
+        calibration_split=(
+            "synthetic_validation" if use_native_synthetic_protocol else "clean_validation"
+        ),
+        offline_point_threshold_source_split=(
+            "synthetic_validation_normal"
+            if use_native_synthetic_protocol
+            else None
+        ),
+        offline_window_threshold_source_split=(
+            "synthetic_validation_normal"
+            if use_native_synthetic_protocol
+            else None
+        ),
+        score_space="model_output",
     )
+    if use_native_synthetic_protocol:
+        native_score_definition = f"{baseline_name}_native_score"
+        threshold_artifact["provenance"]["score_definition"] = native_score_definition
+        threshold_artifact["score_definition"] = native_score_definition
     threshold_path = output_dir / "thresholds" / "thresholds.json"
     write_threshold_artifact(threshold_artifact, threshold_path)
 

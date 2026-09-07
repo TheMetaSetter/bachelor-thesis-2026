@@ -46,6 +46,7 @@ from src.engine.thresholding import (
     select_clean_validation_point_threshold,
     select_online_ewma_threshold,
     select_synthetic_validation_normal_point_threshold,
+    select_synthetic_validation_normal_window_threshold,
 )
 from src.engine.online_tta.online_calibration import collect_stride1_online_scores
 from src.engine.online_tta.online_engine_shared import (
@@ -373,6 +374,10 @@ def collect_offline_artifact_inputs(
         "offline_point_threshold_source": str(
             split_outputs["offline_point_threshold_source"]
         ),
+        "offline_window_threshold": split_outputs.get("offline_window_threshold"),
+        "offline_window_threshold_source": split_outputs.get(
+            "offline_window_threshold_source"
+        ),
         "clean_validation": split_outputs["clean_validation_payload"],
         "clean_validation_traces": split_outputs["clean_validation"].get("traces", []),
         "synthetic_validation": _evaluation_outputs_to_score_payload(
@@ -454,6 +459,74 @@ def _build_evaluator(experiment_config: dict[str, Any]) -> Evaluator:
     )
 
 
+def _select_normalized_synthetic_thresholds(
+    synthetic_calibration_payload: dict[str, np.ndarray],
+    quantile: float,
+) -> tuple[float, float]:
+    point_threshold = select_synthetic_validation_normal_point_threshold(
+        synthetic_calibration_payload["point_scores"],
+        synthetic_calibration_payload["point_labels"],
+        quantile=quantile,
+    )
+    window_threshold = select_synthetic_validation_normal_window_threshold(
+        synthetic_calibration_payload["normalized_input_window_mse"],
+        synthetic_calibration_payload["window_labels"],
+        quantile=quantile,
+    )
+    return point_threshold, window_threshold
+
+
+def _evaluate_normalized_synthetic_threshold_protocol(
+    *,
+    evaluator: Evaluator,
+    model: Any,
+    loaders: dict[str, Any],
+    protocol_config: dict[str, Any],
+    scaler: Any,
+) -> dict[str, Any]:
+    if "val_synth" not in loaders:
+        raise ValueError("normalized_input requires a val_synth loader")
+    quantile = float(protocol_config["offline_threshold_quantile"])
+    synthetic_calibration_outputs = _evaluate_named_split(
+        evaluator, model, loaders, split_name="val_synth", fallback_split_name="val",
+        point_score_threshold=None, score_space="normalized_input", scaler=scaler,
+    )
+    synthetic_calibration_payload = _evaluation_outputs_to_score_payload(
+        synthetic_calibration_outputs
+    )
+    point_threshold, window_threshold = _select_normalized_synthetic_thresholds(
+        synthetic_calibration_payload, quantile
+    )
+    threshold_source = "synthetic_validation_normal_quantile"
+    clean_outputs = _evaluate_named_split(
+        evaluator, model, loaders, split_name="val", fallback_split_name="val",
+        point_score_threshold=None, score_space="normalized_input", scaler=scaler,
+    )
+    synthetic_outputs = _evaluate_named_split(
+        evaluator, model, loaders, split_name="val_synth", fallback_split_name="val",
+        point_score_threshold=point_threshold, threshold_source=threshold_source,
+        window_score_threshold=window_threshold, score_space="normalized_input", scaler=scaler,
+    )
+    test_outputs = evaluator.evaluate(
+        model, loaders["test"], point_score_threshold=point_threshold,
+        threshold_source=threshold_source, window_score_threshold=window_threshold,
+        score_space="normalized_input", scaler=scaler,
+    )
+    clean_payload = _evaluation_outputs_to_score_payload(clean_outputs)
+    return {
+        "clean_validation": clean_outputs,
+        "clean_validation_payload": clean_payload,
+        "raw_clean_validation_payload": clean_payload,
+        "point_score_calibration": None,
+        "synthetic_validation": synthetic_outputs,
+        "test": test_outputs,
+        "offline_point_threshold": point_threshold,
+        "offline_window_threshold": window_threshold,
+        "offline_point_threshold_source": "synthetic_validation_normal",
+        "offline_window_threshold_source": "synthetic_validation_normal",
+    }
+
+
 def _evaluate_offline_benchmark_splits(
     *,
     evaluator: Evaluator,
@@ -464,8 +537,19 @@ def _evaluate_offline_benchmark_splits(
 ) -> dict[str, Any]:
     score_space = str(protocol_config.get("score_space", "model_output"))
     raw_protocol = score_space == "raw_input" and scaler is not None
+    normalized_protocol = score_space == "normalized_input" and scaler is not None
     if score_space == "raw_input" and scaler is None:
         raise ValueError("raw_input offline evaluation requires a fitted scaler")
+    if score_space == "normalized_input" and scaler is None:
+        raise ValueError("normalized_input offline evaluation requires a fitted scaler")
+    if normalized_protocol:
+        return _evaluate_normalized_synthetic_threshold_protocol(
+            evaluator=evaluator,
+            model=model,
+            loaders=loaders,
+            protocol_config=protocol_config,
+            scaler=scaler,
+        )
     if raw_protocol:
         clean_outputs = evaluator.evaluate(
             model,
@@ -612,7 +696,7 @@ def _evaluate_named_split(
     if point_score_threshold is not None:
         kwargs["point_score_threshold"] = point_score_threshold
         kwargs["threshold_source"] = threshold_source or "clean_validation_quantile"
-    if score_space == "raw_input":
+    if score_space in {"raw_input", "normalized_input"}:
         kwargs.update(
             {
                 "score_space": score_space,
@@ -709,9 +793,9 @@ def _build_thresholds(
     experiment_config_path: str,
     checkpoint_sha256: str,
 ) -> dict[str, Any]:
-    raw_protocol = (
-        str(protocol_config.get("score_space", "model_output")) == "raw_input"
-    )
+    score_space = str(protocol_config.get("score_space", "model_output"))
+    raw_protocol = score_space == "raw_input"
+    normalized_protocol = score_space == "normalized_input"
     clean_scores = np.asarray(
         artifact_inputs["clean_validation"].get(
             "raw_input_point_mse",
@@ -736,7 +820,7 @@ def _build_thresholds(
         entry,
         int(protocol_config["window_size"]),
     )
-    if raw_protocol:
+    if raw_protocol or normalized_protocol:
         online_model = artifact_inputs["model"]
     else:
         online_model = _build_model_from_experiment_config(online_config)
@@ -755,7 +839,7 @@ def _build_thresholds(
         device=artifact_inputs["device"],
         current_weight=float(protocol_config["online_ewma_current_weight"]),
         previous_weight=float(protocol_config["online_ewma_previous_weight"]),
-        scaler=artifact_inputs.get("scaler") if raw_protocol else None,
+        scaler=artifact_inputs.get("scaler") if raw_protocol or normalized_protocol else None,
     )
     selected_offline_threshold = float(
         artifact_inputs.get(
@@ -805,12 +889,27 @@ def _build_thresholds(
             )
         ),
         "latent_window_low_quantile": float(protocol_config["A_low_quantile"]),
-        "score_space": "raw_input" if raw_protocol else "model_output",
+        "score_space": score_space,
     }
     offline_point_source = artifact_inputs.get(
         "offline_point_threshold_source", "clean_validation"
     )
-    if offline_point_source != "clean_validation":
+    if normalized_protocol:
+        offline_window_threshold = artifact_inputs.get("offline_window_threshold")
+        if offline_window_threshold is None:
+            raise ValueError("normalized_input artifact requires an offline window threshold")
+        builder_kwargs.update(
+            {
+                "calibration_split": "synthetic_validation",
+                "offline_point_threshold_source_split": str(offline_point_source),
+                "offline_window_threshold": float(offline_window_threshold),
+                "offline_window_threshold_source_split": str(
+                    artifact_inputs["offline_window_threshold_source"]
+                ),
+                "online_threshold_source_split": "clean_validation",
+            }
+        )
+    elif offline_point_source != "clean_validation":
         builder_kwargs["offline_point_threshold_source_split"] = str(
             offline_point_source
         )

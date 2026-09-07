@@ -160,6 +160,9 @@ def build_scheduler_from_experiment_config(
         "val_synth_roc_auc": "max",
         "val_synth_pr_auc": "max",
         "val_synth_vus_pr": "max",
+        "val_synth_vus_pr_at_fpr_budget_0_001": "max",
+        "val_synth_vus_pr_at_fpr_budget_0_005": "max",
+        "val_synth_vus_pr_at_fpr_budget_0_01": "max",
     }
     if monitor_metric not in scheduler_mode_by_metric:
         raise ValueError(f"Unsupported scheduler monitor metric: {monitor_metric}")

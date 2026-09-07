@@ -141,3 +141,16 @@ class IForestWindowBaseline(TraditionalBaselineProtocol):
         return transform_point_scores(
             point_scores, self.calibration_.robust_point_calibration
         )
+
+    def native_score(self, query_sequence: np.ndarray) -> dict[str, np.ndarray]:
+        window_scores, sequence_length = self._score_windows(query_sequence)
+        point_scores, covered_mask = pointify_nonoverlap_tail_window_scores(
+            sequence_length=sequence_length,
+            window_scores=window_scores,
+            window_size=self.window_size,
+        )
+        return {
+            "window_scores": window_scores,
+            "point_scores": point_scores,
+            "covered_point_mask": covered_mask,
+        }

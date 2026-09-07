@@ -8,6 +8,7 @@ OFFLINE_POINT_THRESHOLD_SOURCES = {
     "clean_validation",
     "synthetic_validation_normal",
 }
+OFFLINE_WINDOW_THRESHOLD_SOURCES = OFFLINE_POINT_THRESHOLD_SOURCES
 
 
 def _require_key(config: dict[str, Any], key: str) -> None:
@@ -45,14 +46,21 @@ def validate_protocol_config(
     if config.get("test_label_usage") != "metrics_only":
         raise ValueError("test labels must be used for metrics_only")
 
-    if require_score_identity or "score_space" in config:
-        _require_equal(config, "score_space", "raw_input")
+    score_space = config.get("score_space")
+    if require_score_identity and score_space is None:
+        _require_key(config, "score_space")
+    if score_space not in {None, "raw_input", "normalized_input"}:
+        raise ValueError("score_space must be raw_input or normalized_input")
     if require_score_identity or "point_score_transform" in config:
         _require_equal(config, "point_score_transform", "identity")
 
     _require_equal(config, "window_size", 20)
     _require_equal(config, "offline_tail_policy", "end_align")
-    _require_equal(config, "offline_threshold_split", "clean_validation")
+    offline_threshold_split = config.get("offline_threshold_split")
+    if offline_threshold_split not in {"clean_validation", "synthetic_validation"}:
+        raise ValueError(
+            "offline_threshold_split must be clean_validation or synthetic_validation"
+        )
     offline_point_source = config.get(
         "offline_point_threshold_source_split", "clean_validation"
     )
@@ -62,6 +70,22 @@ def validate_protocol_config(
             f"{sorted(OFFLINE_POINT_THRESHOLD_SOURCES)!r}, "
             f"got {offline_point_source!r}"
         )
+    offline_window_source = config.get(
+        "offline_window_threshold_source_split", "clean_validation"
+    )
+    if offline_window_source not in OFFLINE_WINDOW_THRESHOLD_SOURCES:
+        raise ValueError(
+            "offline_window_threshold_source_split must be one of "
+            f"{sorted(OFFLINE_WINDOW_THRESHOLD_SOURCES)!r}, "
+            f"got {offline_window_source!r}"
+        )
+    if score_space == "normalized_input":
+        if offline_threshold_split != "synthetic_validation":
+            raise ValueError("normalized_input requires synthetic_validation thresholds")
+        if offline_point_source != "synthetic_validation_normal":
+            raise ValueError("normalized_input requires synthetic-normal point scores")
+        if offline_window_source != "synthetic_validation_normal":
+            raise ValueError("normalized_input requires synthetic-normal window scores")
     _require_equal(config, "online_window_stride", 1)
     _require_equal(config, "online_threshold_split", "clean_validation")
     _require_equal(config, "test_label_usage", "metrics_only")

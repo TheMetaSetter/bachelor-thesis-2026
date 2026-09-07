@@ -265,3 +265,37 @@ class StumpyChannelABFrozenTrainRef(TraditionalBaselineProtocol):
             window_size=self.window_size,
         )
         return point_scores
+
+    def native_score(self, query_sequence: np.ndarray) -> dict[str, np.ndarray]:
+        if self.reference_sequence_ is None:
+            raise RuntimeError("Call fit() before native_score().")
+        query_array = _as_2d_sequence(query_sequence)
+        subsequence_scores = compute_stumpy_channel_ab_subsequence_scores(
+            query_sequence=query_array,
+            reference_sequence=self.reference_sequence_,
+            window_size=self.window_size,
+            normalize=self.normalize,
+            p=self.p,
+        )
+        if subsequence_scores.shape[0] == 0:
+            point_scores = np.full(query_array.shape[0], np.nan, dtype=np.float64)
+            return {
+                "window_scores": np.zeros(0, dtype=np.float64),
+                "point_scores": point_scores,
+                "covered_point_mask": np.isfinite(point_scores),
+            }
+        window_scores = _aggregate_channel_scores(subsequence_scores)
+        window_starts = build_nonoverlap_tail_window_starts(
+            sequence_length=query_array.shape[0],
+            window_size=self.window_size,
+        )
+        point_scores, covered_mask = _pointify_offline_subsequence_scores(
+            sequence_length=query_array.shape[0],
+            subsequence_scores=window_scores,
+            window_size=self.window_size,
+        )
+        return {
+            "window_scores": window_scores[window_starts],
+            "point_scores": point_scores,
+            "covered_point_mask": covered_mask,
+        }

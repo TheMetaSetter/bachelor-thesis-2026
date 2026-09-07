@@ -45,6 +45,34 @@ class _ToyEvaluationModel(BaseModel):
         }
 
 
+class _ToyReconstructionEvaluationModel(BaseModel):
+    def __init__(self, reconstructions: list[torch.Tensor]) -> None:
+        super().__init__()
+        self.reconstructions = reconstructions
+        self.next_batch_index = 0
+
+    def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def training_step(self, batch: dict[str, Any]) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def validation_step(self, batch: dict[str, Any]) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def test_step(self, batch: dict[str, Any]) -> dict[str, Any]:
+        reconstruction = self.reconstructions[self.next_batch_index]
+        self.next_batch_index += 1
+        return {
+            "outputs": {
+                "recon": reconstruction,
+                "point_scores": reconstruction.square().mean(dim=-1),
+                "window_scores": reconstruction.square().mean(dim=(1, 2)),
+                "aux": {"forward_pass_seconds": 0.1},
+            }
+        }
+
+
 class _ToyEvaluationDataset:
     def __init__(self) -> None:
         self.sequences = [
@@ -167,6 +195,38 @@ def test_evaluator_uses_explicit_threshold_when_provided() -> None:
         evaluation_outputs["metrics"]["threshold_source"]
         == "checkpoint_val_synth_threshold"
     )
+
+
+def test_evaluator_uses_normalized_input_mse_for_two_threshold_predictions() -> None:
+    class _TenfoldScaler:
+        def inverse_transform_tensor(self, values: torch.Tensor) -> torch.Tensor:
+            return values * 10.0
+
+    model = _ToyReconstructionEvaluationModel(
+        reconstructions=[
+            torch.tensor([[[1.0], [2.0], [3.0]]]),
+            torch.tensor([[[3.0], [5.0], [7.0]]]),
+        ]
+    )
+
+    evaluation_outputs = Evaluator(device="cpu").evaluate(
+        model=model,
+        data_loader=_ToyEvaluationDataLoader(),
+        point_score_threshold=5.0,
+        window_score_threshold=5.0,
+        score_space="normalized_input",
+        scaler=_TenfoldScaler(),
+    )
+
+    record = evaluation_outputs["records"][0]
+    assert torch.allclose(
+        record["point_scores"],
+        torch.tensor([1.0, 6.5, 17.0, 49.0]),
+    )
+    assert record["point_predictions"].tolist() == [0, 1, 1, 1]
+    assert record["window_predictions"].tolist() == [0, 1]
+    assert evaluation_outputs["metrics"]["score_space"] == "normalized_input"
+    assert evaluation_outputs["metrics"]["window_threshold"] == 5.0
 
 
 def test_reconstruct_pointwise_records_from_window_payload_averages_overlaps() -> None:

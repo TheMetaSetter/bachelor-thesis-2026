@@ -85,6 +85,84 @@ def test_synthetic_normal_protocol_uses_two_pass_point_threshold() -> None:
     assert outputs["offline_point_threshold_source"] == "synthetic_validation_normal"
 
 
+def test_normalized_protocol_uses_synthetic_normal_point_and_window_thresholds() -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    class FakeEvaluator:
+        def evaluate(self, model, loader, **kwargs):
+            split_name = loader["split_name"]
+            calls.append((split_name, kwargs))
+            if split_name == "val_synth" and kwargs.get("point_score_threshold") is None:
+                point_scores = [1.0, 2.0, 100.0, np.nan, 0.001]
+                point_labels = [0, 0, 1, 0, 0]
+                covered = [True, True, True, True, False]
+                window_records = [
+                    {
+                        "raw_input_window_mse": 100.0,
+                        "normalized_input_window_mse": 1.0,
+                        "window_label": 0,
+                    },
+                    {
+                        "raw_input_window_mse": 10_000.0,
+                        "normalized_input_window_mse": 100.0,
+                        "window_label": 1,
+                    },
+                    {
+                        "raw_input_window_mse": 300.0,
+                        "normalized_input_window_mse": 3.0,
+                        "window_label": 0,
+                    },
+                ]
+            else:
+                point_scores = [0.5, 0.6]
+                point_labels = [0, 1]
+                covered = [True, True]
+                window_records = []
+            return {
+                "records": [
+                    {
+                        "entity_id": "machine-1-6",
+                        "point_scores": torch.tensor(point_scores),
+                        "point_labels": torch.tensor(point_labels),
+                        "covered_point_mask": torch.tensor(covered),
+                        "raw_input_point_mse": torch.tensor(point_scores) * 100.0,
+                        "normalized_input_point_mse": torch.tensor(point_scores),
+                    }
+                ],
+                "window_records": window_records,
+                "metrics": {"split_name": split_name},
+            }
+
+    outputs = _evaluate_offline_benchmark_splits(
+        evaluator=FakeEvaluator(),
+        model=object(),
+        loaders={
+            "val": {"split_name": "val"},
+            "val_synth": {"split_name": "val_synth"},
+            "test": {"split_name": "test"},
+        },
+        protocol_config={
+            "score_space": "normalized_input",
+            "offline_threshold_quantile": 0.99,
+            "offline_point_threshold_source_split": "synthetic_validation_normal",
+            "offline_window_threshold_source_split": "synthetic_validation_normal",
+        },
+        scaler=object(),
+    )
+
+    point_threshold = float(np.quantile(np.asarray([1.0, 2.0]), 0.99))
+    window_threshold = float(np.quantile(np.asarray([1.0, 3.0]), 0.99))
+    assert [split_name for split_name, _ in calls] == ["val_synth", "val", "val_synth", "test"]
+    assert calls[2][1]["point_score_threshold"] == point_threshold
+    assert calls[2][1]["window_score_threshold"] == window_threshold
+    assert calls[3][1]["point_score_threshold"] == point_threshold
+    assert calls[3][1]["window_score_threshold"] == window_threshold
+    assert outputs["offline_point_threshold"] == point_threshold
+    assert outputs["offline_window_threshold"] == window_threshold
+    assert outputs["offline_point_threshold_source"] == "synthetic_validation_normal"
+    assert outputs["offline_window_threshold_source"] == "synthetic_validation_normal"
+
+
 def _write_experiment_config(path: Path, output_dir: Path) -> None:
     config = {
         "experiment_name": "pytest-thesis-offline",

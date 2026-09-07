@@ -363,6 +363,7 @@ def _build_window_score_records(
     normalized_window_scores: torch.Tensor,
     point_labels: torch.Tensor,
     window_score_threshold: float | None,
+    score_space: str,
 ) -> list[dict[str, Any]]:
     window_labels = point_labels_to_window_labels(point_labels)
     records = []
@@ -374,12 +375,13 @@ def _build_window_score_records(
             "raw_input_window_mse": float(raw_window_scores[index]),
             "normalized_input_window_mse": float(normalized_window_scores[index]),
             "window_label": int(window_labels[index]),
-            "score_space": "raw_input",
+            "score_space": score_space,
             "point_score_transform": "identity",
         }
         if window_score_threshold is not None:
+            window_score_key = f"{score_space}_window_mse"
             record["window_prediction"] = int(
-                record["raw_input_window_mse"] > window_score_threshold
+                record[window_score_key] > window_score_threshold
             )
         records.append(record)
     return records
@@ -546,10 +548,12 @@ class Evaluator:
         window_score_threshold: float | None = None,
         evaluation_stage: str = "test",
     ) -> dict[str, Any]:
-        if score_space not in {"model_output", "raw_input"}:
-            raise ValueError("score_space must be model_output or raw_input")
-        if score_space == "raw_input" and scaler is None:
-            raise ValueError("raw_input scoring requires a fitted scaler")
+        if score_space not in {"model_output", "raw_input", "normalized_input"}:
+            raise ValueError(
+                "score_space must be model_output, raw_input, or normalized_input"
+            )
+        if score_space in {"raw_input", "normalized_input"} and scaler is None:
+            raise ValueError("reconstruction MSE scoring requires a fitted scaler")
         # Window-level scores are accumulated back onto each entity because the
         # downstream metrics should be interpreted on the original timeline.
         model.to(self.device)
@@ -585,15 +589,20 @@ class Evaluator:
                         point_labels = point_labels.any(dim=-1).long()
                 if not isinstance(point_labels, torch.Tensor):
                     raise ValueError("evaluation stage must provide point_labels")
-                if score_space == "raw_input":
+                if score_space in {"raw_input", "normalized_input"}:
                     scores = score_reconstruction(
                         scoring_batch["x"],
                         _extract_raw_reconstruction(step_output),
                         scaler,
                     )
-                    point_scores = scores["raw_input_point_mse"].detach().cpu()
+                    raw_point_scores = scores["raw_input_point_mse"].detach().cpu()
                     normalized_point_scores = (
                         scores["normalized_input_point_mse"].detach().cpu()
+                    )
+                    point_scores = (
+                        raw_point_scores
+                        if score_space == "raw_input"
+                        else normalized_point_scores
                     )
                     raw_window_scores = scores["raw_input_window_mse"].detach().cpu()
                     normalized_window_scores = (
@@ -606,6 +615,7 @@ class Evaluator:
                             normalized_window_scores=normalized_window_scores,
                             point_labels=point_labels.detach().cpu(),
                             window_score_threshold=window_score_threshold,
+                            score_space=score_space,
                         )
                     )
                 else:
@@ -637,7 +647,7 @@ class Evaluator:
                     ),
                 }
                 if normalized_point_scores is not None:
-                    batch_payload["raw_input_point_mse"] = point_scores
+                    batch_payload["raw_input_point_mse"] = raw_point_scores
                     batch_payload["normalized_input_point_mse"] = (
                         normalized_point_scores
                     )
@@ -662,11 +672,12 @@ class Evaluator:
             threshold_source=threshold_source,
             quantile=0.99,
         )
-        if score_space == "raw_input":
+        if score_space in {"raw_input", "normalized_input"}:
             for record in evaluation_records:
                 record["point_predictions"] = (
-                    record["raw_input_point_mse"] > threshold
+                    record["point_scores"] > threshold
                 ).long()
+                record["score_space"] = score_space
                 entity_windows = [
                     item
                     for item in window_records
@@ -715,8 +726,8 @@ class Evaluator:
         metrics["benchmark_comparability"] = benchmark_comparability
         metrics["protocol_status"] = protocol_status
         metrics["threshold_source"] = resolved_threshold_source
-        if score_space == "raw_input":
-            metrics["score_space"] = "raw_input"
+        if score_space in {"raw_input", "normalized_input"}:
+            metrics["score_space"] = score_space
             metrics["point_score_transform"] = "identity"
             if window_score_threshold is not None:
                 metrics["window_threshold"] = float(window_score_threshold)

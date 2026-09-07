@@ -24,7 +24,7 @@ from src.analysis.evaluation_protocol_audit import (
     render_dataset_protocol_audit_markdown,
 )
 from src.core.console import console_print
-from src.core.config import load_experiment_config
+from src.core.config import load_experiment_config, load_yaml_config
 from src.core.config_help import build_config_help_text
 from src.core.evaluation_trace_compaction import compact_evaluation_trace_payloads
 from src.core.registry import build_dataset, build_model
@@ -33,8 +33,17 @@ from src.data.loaders import (
     rebuild_dataset_bundle_with_scaler_state,
 )
 from src.engine.checkpoint import CheckpointManager
-from src.engine.evaluator import Evaluator, extract_covered_pointwise_arrays
-from src.engine.thresholding import select_clean_validation_point_threshold
+from src.engine.evaluator import (
+    Evaluator,
+    _extract_raw_reconstruction,
+    extract_covered_pointwise_arrays,
+    reconstruct_pointwise_records_from_window_payload,
+)
+from src.engine.thresholding import (
+    select_clean_validation_point_threshold,
+    select_synthetic_validation_normal_point_threshold,
+    select_synthetic_validation_normal_window_threshold,
+)
 from src.engine.logger import ExperimentLogger
 
 
@@ -56,6 +65,62 @@ def evaluate_raw_checkpoint(evaluator, model, data_bundle):
         point_score_threshold=threshold,
         window_score_threshold=float(np.quantile(window_scores, 0.99)),
         threshold_source="clean_validation_quantile",
+    )
+
+
+def evaluate_normalized_checkpoint(evaluator, model, data_bundle):
+    """Calibrate normalized reconstruction MSE on synthetic validation only."""
+    import numpy as np
+
+    validation_loader = data_bundle["loaders"]["val"]
+    pointwise_payloads = []
+    window_scores = []
+    window_labels = []
+    model.to(evaluator.device)
+    model.eval()
+    with torch.no_grad():
+        for batch in validation_loader:
+            step_output = model.synthetic_validation_step(
+                evaluator._move_batch_to_device(batch)
+            )
+            prepared_batch = step_output["batch"]
+            reconstruction = _extract_raw_reconstruction(step_output)
+            if reconstruction.ndim == 3:
+                reconstruction = reconstruction.unsqueeze(1)
+            point_scores = (
+                prepared_batch["x"].unsqueeze(1) - reconstruction
+            ).square().mean(dim=-1).mean(dim=1)
+            point_labels = prepared_batch["synthetic_anomaly_mask"]
+            pointwise_payloads.append(
+                {
+                    "meta": prepared_batch["meta"],
+                    "point_scores": point_scores.cpu(),
+                    "point_labels": point_labels.cpu(),
+                }
+            )
+            window_scores.extend(point_scores.mean(dim=1).cpu().numpy().tolist())
+            window_labels.extend(point_labels.any(dim=1).long().cpu().numpy().tolist())
+
+    sequences_by_entity = Evaluator._build_sequences_by_entity(validation_loader)
+    records = reconstruct_pointwise_records_from_window_payload(
+        sequences_by_entity=sequences_by_entity,
+        batch_payloads=pointwise_payloads,
+    )
+    point_scores, point_labels = extract_covered_pointwise_arrays(records)
+    point_threshold = select_synthetic_validation_normal_point_threshold(
+        point_scores, point_labels, quantile=0.99
+    )
+    window_threshold = select_synthetic_validation_normal_window_threshold(
+        np.asarray(window_scores), np.asarray(window_labels), quantile=0.99
+    )
+    return evaluator.evaluate(
+        model,
+        data_bundle["loaders"]["test"],
+        score_space="normalized_input",
+        scaler=data_bundle["scaler"],
+        point_score_threshold=point_threshold,
+        window_score_threshold=window_threshold,
+        threshold_source="synthetic_validation_normal",
     )
 
 
@@ -149,6 +214,8 @@ def build_model_from_experiment_config(experiment_config: dict) -> torch.nn.Modu
 def run_evaluation_experiment(
     experiment_config: dict[str, object],
     checkpoint_path: str,
+    protocol_config_path: str | None = None,
+    output_dir_override: str | None = None,
 ) -> dict[str, object]:
     # Persisting both metrics and the resolved config makes later thesis figures
     # easier to reproduce without hidden notebook state.
@@ -206,7 +273,17 @@ def run_evaluation_experiment(
     evaluation_threshold_source = checkpoint_extra_state.get(
         "evaluation_threshold_source"
     )
-    if experiment_config.get("reconstruction_loss_space") == "raw_input":
+    protocol_config = None
+    if protocol_config_path is not None:
+        protocol_config = load_yaml_config(protocol_config_path)
+        from src.protocols.smd_benchmark_protocol import validate_protocol_config
+
+        validate_protocol_config(protocol_config, require_score_identity=False)
+    if protocol_config is not None and protocol_config.get("score_space") == (
+        "normalized_input"
+    ):
+        evaluation_outputs = evaluate_normalized_checkpoint(evaluator, model, data_bundle)
+    elif experiment_config.get("reconstruction_loss_space") == "raw_input":
         evaluation_outputs = evaluate_raw_checkpoint(evaluator, model, data_bundle)
     else:
         evaluation_outputs = evaluator.evaluate(
@@ -223,7 +300,7 @@ def run_evaluation_experiment(
         "wandb_run_name", f"{experiment_config['experiment_name']}-evaluate"
     )
     experiment_logger = ExperimentLogger(
-        experiment_config["output_dir"],
+        output_dir_override or experiment_config["output_dir"],
         experiment_config=experiment_config,
         logging_config=logging_config,
         write_run_start_record=False,
@@ -231,7 +308,7 @@ def run_evaluation_experiment(
         quiet_terminal=quiet_terminal,
     )
 
-    output_dir = Path(experiment_config["output_dir"])
+    output_dir = Path(output_dir_override or experiment_config["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
     records_path = output_dir / "evaluation_records.json"
     metrics_path = output_dir / "evaluation_metrics.json"
@@ -392,6 +469,8 @@ def main() -> None:
         "--checkpoint-path",
         default="outputs/smd_vertical_slice/checkpoints/best.pt",
     )
+    parser.add_argument("--protocol-config")
+    parser.add_argument("--output-dir")
     parser.add_argument(
         "--print-config-help",
         action="store_true",
@@ -409,7 +488,12 @@ def main() -> None:
         experiment_config_path=args.experiment_config,
         checkpoint_path=args.checkpoint_path,
     )
-    run_evaluation_experiment(experiment_config, args.checkpoint_path)
+    run_evaluation_experiment(
+        experiment_config,
+        args.checkpoint_path,
+        protocol_config_path=args.protocol_config,
+        output_dir_override=args.output_dir,
+    )
 
 
 if __name__ == "__main__":

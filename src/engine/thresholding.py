@@ -5,6 +5,13 @@ from typing import Any
 import numpy as np
 
 
+_BUDGETED_VUS_PR_MONITORS = {
+    "val_synth_vus_pr_at_fpr_budget_0_001",
+    "val_synth_vus_pr_at_fpr_budget_0_005",
+    "val_synth_vus_pr_at_fpr_budget_0_01",
+}
+
+
 def _validate_quantile(quantile: float) -> float:
     quantile_value = float(quantile)
     if not 0.0 < quantile_value <= 1.0:
@@ -60,6 +67,22 @@ def select_synthetic_validation_normal_point_threshold(
     return float(np.quantile(normal_finite_scores, _validate_quantile(quantile)))
 
 
+def select_synthetic_validation_normal_window_threshold(
+    synthetic_window_scores: np.ndarray,
+    synthetic_window_labels: np.ndarray,
+    quantile: float,
+) -> float:
+    """Select a window threshold from finite normal synthetic windows only."""
+    scores = np.asarray(synthetic_window_scores, dtype=float).reshape(-1)
+    labels = np.asarray(synthetic_window_labels).reshape(-1)
+    if scores.size != labels.size:
+        raise ValueError("synthetic window scores and labels must have the same length")
+    normal_finite_scores = scores[(labels == 0) & np.isfinite(scores)]
+    if normal_finite_scores.size == 0:
+        raise ValueError("Cannot select a threshold from normal finite synthetic windows")
+    return float(np.quantile(normal_finite_scores, _validate_quantile(quantile)))
+
+
 def select_online_ewma_threshold(
     clean_validation_ewma_scores: np.ndarray,
     quantile: float,
@@ -102,6 +125,17 @@ def build_checkpoint_evaluation_metadata(
     base_extra_state: dict[str, Any] | None,
 ) -> dict[str, Any] | None:
     checkpoint_metadata = dict(base_extra_state or {})
+    if checkpoint_monitor_metric in _BUDGETED_VUS_PR_MONITORS:
+        if checkpoint_monitor_metric not in epoch_metrics:
+            return checkpoint_metadata or None
+        checkpoint_metadata.update(
+            checkpoint_monitor_metric=checkpoint_monitor_metric,
+            checkpoint_monitor_value=float(epoch_metrics[checkpoint_monitor_metric]),
+            score_space="normalized_input",
+            point_score_transform="identity",
+            reconstruction_loss_space="normalized_input",
+        )
+        return checkpoint_metadata
     threshold_metric_name = resolve_checkpoint_threshold_metric_name(
         checkpoint_monitor_metric
     )

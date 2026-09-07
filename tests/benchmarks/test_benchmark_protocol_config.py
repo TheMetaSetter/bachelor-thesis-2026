@@ -53,7 +53,7 @@ def test_protocol_config_rejects_label_leakage() -> None:
         validate_protocol_config(bad_config)
 
 
-def test_protocol_config_rejects_missing_or_mismatched_raw_score_identity() -> None:
+def test_protocol_config_rejects_missing_or_incomplete_score_identity() -> None:
     config = yaml.safe_load(
         Path("configs/protocol/smd_window20_cleanval_q99_ewma09.yaml").read_text(
             encoding="utf-8"
@@ -64,7 +64,7 @@ def test_protocol_config_rejects_missing_or_mismatched_raw_score_identity() -> N
         validate_protocol_config(config)
 
     config["score_space"] = "normalized_input"
-    with pytest.raises(ValueError, match="score_space"):
+    with pytest.raises(ValueError, match="synthetic_validation"):
         validate_protocol_config(config)
 
     config["score_space"] = "raw_input"
@@ -83,6 +83,25 @@ def test_protocol_config_accepts_synthetic_normal_point_source() -> None:
     validate_protocol_config(config)
 
     assert config["offline_point_threshold_source_split"] == (
+        "synthetic_validation_normal"
+    )
+
+
+def test_normalized_synthetic_normal_protocol_defines_two_offline_sources() -> None:
+    config_path = Path(
+        "configs/protocol/"
+        "smd_window20_synthnormal_q99_normalized_input_mse_ewma09.yaml"
+    )
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+
+    validate_protocol_config(config)
+
+    assert config["score_space"] == "normalized_input"
+    assert config["offline_threshold_split"] == "synthetic_validation"
+    assert config["offline_point_threshold_source_split"] == (
+        "synthetic_validation_normal"
+    )
+    assert config["offline_window_threshold_source_split"] == (
         "synthetic_validation_normal"
     )
 

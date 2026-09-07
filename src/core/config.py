@@ -407,12 +407,15 @@ def _validate_optimizer_config(
         "val_synth_pr_auc",
         "val_synth_vus_pr",
         "val_vus_pr",
+        "val_synth_vus_pr_at_fpr_budget_0_001",
+        "val_synth_vus_pr_at_fpr_budget_0_005",
+        "val_synth_vus_pr_at_fpr_budget_0_01",
     }
     if checkpoint_monitor_metric not in checkpoint_monitor_metric_values:
         raise ValueError(
             "checkpoint_monitor_metric must be one of: val_loss, "
             "val_synth_loss, val_synth_roc_auc, val_synth_pr_auc, "
-            "val_synth_vus_pr, val_vus_pr"
+            "val_synth_vus_pr, val_vus_pr, or one locked VUS-PR FPR-budget metric"
         )
 
     scheduler_config = optimizer_config.get("scheduler")
@@ -465,11 +468,14 @@ def _validate_optimizer_config(
             "val_synth_roc_auc",
             "val_synth_pr_auc",
             "val_synth_vus_pr",
+            "val_synth_vus_pr_at_fpr_budget_0_001",
+            "val_synth_vus_pr_at_fpr_budget_0_005",
+            "val_synth_vus_pr_at_fpr_budget_0_01",
         }:
             raise ValueError(
                 "optimizer.scheduler.monitor_metric must be one of: val_loss, "
                 "val_synth_loss, val_synth_roc_auc, val_synth_pr_auc, "
-                "val_synth_vus_pr"
+                "val_synth_vus_pr, or one locked VUS-PR FPR-budget metric"
             )
         scheduler_factor = scheduler_config.get("factor")
         if (

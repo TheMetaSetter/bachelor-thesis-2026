@@ -42,6 +42,17 @@ from src.models.base_model import BaseModel
 from src.protocols.reconstruction_scores import score_reconstruction
 
 
+_BUDGETED_VUS_MONITOR_METRICS = {
+    "val_synth_vus_pr_at_fpr_budget_0_001",
+    "val_synth_vus_pr_at_fpr_budget_0_005",
+    "val_synth_vus_pr_at_fpr_budget_0_01",
+}
+
+
+def _budget_metric_suffix(fpr_budget: str) -> str:
+    return str(fpr_budget).replace(".", "_")
+
+
 class Trainer:
     def __init__(
         self,
@@ -86,9 +97,14 @@ class Trainer:
         self.focus_metrics = focus_metrics or []
         self.metric_history: list[dict[str, Any]] = []
         self.raw_loss_scaler = None
+        self.reconstruction_loss_space = None
 
     def _configure_reconstruction_context(self, config, scaler_state) -> None:
-        space = config.get("reconstruction_loss_space", "normalized_input")
+        space = config.get("reconstruction_loss_space")
+        self.reconstruction_loss_space = space
+        if space is None:
+            self.raw_loss_scaler = None
+            return
         if hasattr(self.model, "configure_reconstruction_loss"):
             self.model.configure_reconstruction_loss(space, scaler_state)
         elif space == "raw_input":
@@ -106,6 +122,14 @@ class Trainer:
 
     def _validation_point_scores(self, step_output) -> torch.Tensor:
         if self.raw_loss_scaler is None:
+            if self.reconstruction_loss_space == "normalized_input":
+                reconstruction = _extract_raw_reconstruction(step_output)
+                if reconstruction.ndim == 3:
+                    reconstruction = reconstruction.unsqueeze(1)
+                normalized_point_mse_samples = (
+                    step_output["batch"]["x"].unsqueeze(1) - reconstruction
+                ).square().mean(dim=-1)
+                return normalized_point_mse_samples.mean(dim=1)
             return step_output["outputs"]["point_scores"]
         return score_reconstruction(
             step_output["batch"]["x"],
@@ -397,6 +421,9 @@ class Trainer:
             "val_synth_vus_pr": "max",
             "val_vus_pr": "max",
         }
+        checkpoint_monitor_modes.update(
+            {metric_name: "max" for metric_name in _BUDGETED_VUS_MONITOR_METRICS}
+        )
         if checkpoint_monitor_metric not in checkpoint_monitor_modes:
             raise ValueError(
                 f"Unsupported checkpoint monitor metric: {checkpoint_monitor_metric}"
@@ -557,13 +584,20 @@ class Trainer:
             vus_num_thresholds=vus_num_thresholds,
         )
         pointwise_metrics["threshold"] = threshold
-        return {
-            f"{stage_name}_{metric_name}_pointwise": metric_value
-            if metric_name not in {"vus_pr", "threshold"}
-            else metric_value
-            for metric_name, metric_value in pointwise_metrics.items()
-            if metric_name not in {"vus_pr", "threshold"}
-        } | {
+        flattened_metrics: dict[str, float] = {}
+        for metric_name, metric_value in pointwise_metrics.items():
+            if metric_name in {"vus_pr", "threshold"}:
+                continue
+            if metric_name in {"vus_pr_at_fpr_budget", "vus_roc_at_fpr_budget"}:
+                for fpr_budget, budget_value in metric_value.items():
+                    flattened_metrics[
+                        f"{stage_name}_{metric_name}_{_budget_metric_suffix(fpr_budget)}"
+                    ] = float(budget_value)
+                continue
+            flattened_metrics[f"{stage_name}_{metric_name}_pointwise"] = float(
+                metric_value
+            )
+        return flattened_metrics | {
             f"{stage_name}_vus_pr": pointwise_metrics["vus_pr"],
             f"{stage_name}_threshold": pointwise_metrics["threshold"],
         }

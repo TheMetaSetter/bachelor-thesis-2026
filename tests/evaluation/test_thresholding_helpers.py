@@ -7,6 +7,7 @@ from src.engine.thresholding import (
     build_checkpoint_evaluation_metadata,
     resolve_evaluation_threshold,
     select_synthetic_validation_normal_point_threshold,
+    select_synthetic_validation_normal_window_threshold,
 )
 
 
@@ -24,6 +25,28 @@ def test_synthetic_normal_threshold_rejects_empty_or_mismatched_inputs() -> None
     with pytest.raises(ValueError, match="same length"):
         select_synthetic_validation_normal_point_threshold(
             np.asarray([1.0]), np.asarray([0, 0]), quantile=0.99
+        )
+
+
+def test_synthetic_normal_window_threshold_uses_only_finite_normal_windows() -> None:
+    threshold = select_synthetic_validation_normal_window_threshold(
+        np.asarray([1.0, 2.0, 100.0, np.nan, np.inf, 3.0]),
+        np.asarray([0, 0, 1, 0, 0, 0]),
+        quantile=0.99,
+    )
+
+    assert threshold == np.quantile(np.asarray([1.0, 2.0, 3.0]), 0.99)
+
+
+def test_synthetic_normal_window_threshold_rejects_empty_or_mismatched_inputs() -> None:
+    with pytest.raises(ValueError, match="same length"):
+        select_synthetic_validation_normal_window_threshold(
+            np.asarray([1.0]), np.asarray([0, 0]), quantile=0.99
+        )
+
+    with pytest.raises(ValueError, match="normal finite"):
+        select_synthetic_validation_normal_window_threshold(
+            np.asarray([np.nan, np.inf]), np.asarray([0, 0]), quantile=0.99
         )
 
     with pytest.raises(ValueError, match="normal finite"):
@@ -52,3 +75,20 @@ def test_build_checkpoint_evaluation_metadata_keeps_base_state_when_threshold_mi
     )
 
     assert metadata == {"memory_initialized": False}
+
+
+def test_build_checkpoint_evaluation_metadata_records_budgeted_vus_monitor() -> None:
+    metadata = build_checkpoint_evaluation_metadata(
+        checkpoint_monitor_metric="val_synth_vus_pr_at_fpr_budget_0_001",
+        epoch_metrics={"val_synth_vus_pr_at_fpr_budget_0_001": 0.73},
+        base_extra_state={"memory_initialized": False},
+    )
+
+    assert metadata == {
+        "memory_initialized": False,
+        "checkpoint_monitor_metric": "val_synth_vus_pr_at_fpr_budget_0_001",
+        "checkpoint_monitor_value": 0.73,
+        "score_space": "normalized_input",
+        "point_score_transform": "identity",
+        "reconstruction_loss_space": "normalized_input",
+    }

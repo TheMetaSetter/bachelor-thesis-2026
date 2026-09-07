@@ -37,6 +37,20 @@ class _FakeBaseline:
         return np.linspace(0.0, 1.0, query_sequence.shape[0], dtype=float)
 
 
+class _NativeFakeBaseline(_FakeBaseline):
+    def native_score(self, query_sequence):
+        sequence_length = query_sequence.shape[0]
+        window_scores = np.asarray(
+            [0.1, 0.2, 9.0][: sequence_length // 20], dtype=float
+        )
+        point_scores = np.repeat(window_scores, 20)[:sequence_length]
+        return {
+            "window_scores": window_scores,
+            "point_scores": point_scores,
+            "covered_point_mask": np.isfinite(point_scores),
+        }
+
+
 def _sequence(values: list[float], labels: list[int]) -> dict[str, object]:
     return {
         "x": torch.tensor(values, dtype=torch.float32).unsqueeze(1),
@@ -220,3 +234,84 @@ def test_run_offline_benchmark_applies_data_overrides(tmp_path, monkeypatch) -> 
     assert captured_data_configs[0]["max_train_windows"] == 3
     assert captured_data_configs[0]["max_val_windows"] == 2
     assert captured_data_configs[0]["max_test_windows"] == 2
+
+
+def test_run_offline_benchmark_uses_native_synthetic_normal_thresholds(
+    tmp_path, monkeypatch
+) -> None:
+    config_path = tmp_path / "native_benchmark.yaml"
+    protocol_path = tmp_path / "native_protocol.yaml"
+    output_dir = tmp_path / "native_outputs"
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "benchmark_name": "native-fake",
+                "baseline_name": "native_fake",
+                "data_config_path": "configs/data/smd_benchmark_machine_1_6_window20.yaml",
+                "output_dir": str(output_dir),
+                "protocol_config_path": str(protocol_path),
+            }
+        ),
+        encoding="utf-8",
+    )
+    protocol_path.write_text(
+        yaml.safe_dump(
+            {
+                "protocol_name": "native",
+                "score_space": "normalized_input",
+                "point_score_transform": "identity",
+                "window_size": 20,
+                "offline_tail_policy": "end_align",
+                "offline_threshold_split": "synthetic_validation",
+                "offline_point_threshold_source_split": "synthetic_validation_normal",
+                "offline_window_threshold_source_split": "synthetic_validation_normal",
+                "offline_threshold_quantile": 0.99,
+                "online_window_stride": 1,
+                "online_threshold_split": "clean_validation",
+                "online_threshold_quantile": 0.99,
+                "online_ewma_current_weight": 0.9,
+                "online_ewma_previous_weight": 0.1,
+                "test_label_usage": "metrics_only",
+                "point_adjustment": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+    baseline = _NativeFakeBaseline()
+    monkeypatch.setattr(
+        "scripts.run_offline_benchmark.BASELINE_BUILDERS",
+        {"native_fake": lambda **kwargs: baseline},
+    )
+    monkeypatch.setattr(
+        "scripts.run_offline_benchmark.register_evaluation_runtime_components",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        "scripts.run_offline_benchmark.load_yaml_config",
+        lambda path: yaml.safe_load(Path(path).read_text(encoding="utf-8")),
+    )
+    monkeypatch.setattr(
+        "scripts.run_offline_benchmark.build_dataset",
+        lambda name, config: {
+            "scaled_sequences": {
+                "train": [_sequence([0.0] * 60, [0] * 60)],
+                "val": [_sequence([0.0] * 60, [0] * 60)],
+                "val_synth": [_sequence([0.0] * 60, [0] * 40 + [1] * 20)],
+                "test": [_sequence([0.0] * 60, [0] * 60)],
+            }
+        },
+    )
+
+    report = run_offline_benchmark(
+        benchmark_config_path=str(config_path),
+        dry_run=False,
+    )
+
+    assert baseline.calibrate_calls == 0
+    assert report["thresholds"]["offline_point"]["source_split"] == (
+        "synthetic_validation_normal"
+    )
+    assert report["thresholds"]["offline_window"]["source_split"] == (
+        "synthetic_validation_normal"
+    )
+    assert report["thresholds"]["offline_window"]["value"] == 0.199

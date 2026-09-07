@@ -45,6 +45,34 @@ def test_trainer_attaches_raw_train_scaler_and_scores_mc_errors(tmp_path):
     assert trainer.model.reconstruction_loss_space == "raw_input"
 
 
+def test_trainer_scores_normalized_validation_mse_from_reconstruction(tmp_path):
+    trainer = build_trainer(tmp_path)
+    trainer._configure_reconstruction_context(
+        {
+            "reconstruction_loss_space": "normalized_input",
+            "evaluation": {
+                "score_space": "normalized_input",
+                "point_score_transform": "identity",
+            },
+        },
+        scaler_state(),
+    )
+    step = {
+        "batch": {
+            "x": torch.tensor([[[1.0, 2.0], [3.0, 4.0]]]),
+        },
+        "outputs": {
+            "point_scores": torch.tensor([[999.0, 999.0]]),
+            "recon": torch.tensor([[[0.0, 1.0], [2.0, 3.0]]]),
+            "aux": {},
+        },
+    }
+
+    torch.testing.assert_close(
+        trainer._validation_point_scores(step), torch.ones(1, 2)
+    )
+
+
 def test_synthetic_metrics_use_supplied_clean_threshold(tmp_path):
     trainer = build_trainer(tmp_path)
     trainer._configure_reconstruction_context(

@@ -20,6 +20,9 @@ from sklearn.metrics import (
 from src.metrics.affiliation import compute_affiliation_precision_recall
 
 
+FPR_BUDGETS = (0.001, 0.005, 0.01)
+
+
 def _safe_metric(metric_function: Any, *args: Any, **kwargs: Any) -> float:
     try:
         return float(metric_function(*args, **kwargs))
@@ -324,6 +327,175 @@ def _compute_range_roc_rates(
     return false_positive_rate, true_positive_rate
 
 
+def _normalised_partial_roc_area(
+    false_positive_rates: list[float],
+    true_positive_rates: list[float],
+    budget: float,
+) -> float:
+    curve = np.asarray(
+        [
+            (false_positive_rate, true_positive_rate)
+            for false_positive_rate, true_positive_rate in zip(
+                false_positive_rates,
+                true_positive_rates,
+                strict=True,
+            )
+            if np.isfinite(false_positive_rate) and np.isfinite(true_positive_rate)
+        ],
+        dtype=np.float64,
+    )
+    if curve.size == 0:
+        return float("nan")
+    curve = curve[np.argsort(curve[:, 0], kind="stable")]
+    unique_fprs, inverse = np.unique(curve[:, 0], return_inverse=True)
+    curve = np.column_stack(
+        [
+            unique_fprs,
+            np.asarray(
+                [np.max(curve[inverse == index, 1]) for index in range(unique_fprs.size)],
+                dtype=np.float64,
+            ),
+        ]
+    )
+    curve[:, 1] = np.maximum.accumulate(curve[:, 1])
+    allowed_curve = curve[curve[:, 0] <= budget]
+    if allowed_curve.size == 0:
+        return float("nan")
+    if float(allowed_curve[-1, 0]) < budget:
+        boundary_tpr = float(
+            np.interp(
+                budget,
+                curve[:, 0],
+                curve[:, 1],
+            )
+        )
+        allowed_curve = np.vstack(
+            [allowed_curve, np.asarray([[budget, boundary_tpr]], dtype=np.float64)]
+        )
+    trapezoid_function = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
+    area = float(trapezoid_function(allowed_curve[:, 1], allowed_curve[:, 0]))
+    return min(1.0, max(0.0, area / budget))
+
+
+def _constrained_pr_area(
+    precision_values: list[float],
+    recall_values: list[float],
+    false_positive_rates: list[float],
+    budget: float,
+) -> float:
+    curve = np.asarray(
+        [
+            (precision, recall)
+            for precision, recall, false_positive_rate in zip(
+                precision_values,
+                recall_values,
+                false_positive_rates,
+                strict=True,
+            )
+            if (
+                np.isfinite(precision)
+                and np.isfinite(recall)
+                and np.isfinite(false_positive_rate)
+                and false_positive_rate <= budget
+            )
+        ],
+        dtype=np.float64,
+    )
+    if curve.size == 0:
+        return float("nan")
+    curve = curve[np.argsort(curve[:, 1], kind="stable")]
+    area = 0.0
+    for index in range(1, curve.shape[0]):
+        recall_change = float(curve[index, 1] - curve[index - 1, 1])
+        if recall_change > 0.0:
+            area += float(curve[index, 0]) * recall_change
+    return min(1.0, max(0.0, area))
+
+
+def compute_budgeted_vus_metrics(
+    point_labels: np.ndarray,
+    point_scores: np.ndarray,
+    max_buffer_size: int,
+    num_thresholds: int = 200,
+) -> dict[str, dict[str, float]]:
+    label_array, score_array = _validate_pointwise_array_shapes(
+        point_labels=point_labels,
+        point_scores=point_scores,
+    )
+    if max_buffer_size < 0:
+        raise ValueError("max_buffer_size must be non-negative")
+    if len(np.unique(label_array)) < 2:
+        return {
+            "vus_pr": {str(budget): float("nan") for budget in FPR_BUDGETS},
+            "vus_roc": {str(budget): float("nan") for budget in FPR_BUDGETS},
+        }
+
+    thresholds = _build_score_thresholds(score_array, num_thresholds)
+    pr_values_by_budget = {budget: [] for budget in FPR_BUDGETS}
+    roc_values_by_budget = {budget: [] for budget in FPR_BUDGETS}
+    for buffer_size in range(max_buffer_size + 1):
+        precision_values: list[float] = []
+        recall_values: list[float] = []
+        false_positive_rates: list[float] = []
+        true_positive_rates: list[float] = []
+        for threshold in thresholds:
+            precision, recall = _compute_range_precision_recall(
+                point_labels=label_array,
+                point_scores=score_array,
+                threshold=float(threshold),
+                buffer_size=buffer_size,
+            )
+            false_positive_rate, true_positive_rate = _compute_range_roc_rates(
+                point_labels=label_array,
+                point_scores=score_array,
+                threshold=float(threshold),
+                buffer_size=buffer_size,
+            )
+            precision_values.append(precision)
+            recall_values.append(recall)
+            false_positive_rates.append(false_positive_rate)
+            true_positive_rates.append(true_positive_rate)
+        for budget in FPR_BUDGETS:
+            pr_values_by_budget[budget].append(
+                _constrained_pr_area(
+                    precision_values=precision_values,
+                    recall_values=recall_values,
+                    false_positive_rates=false_positive_rates,
+                    budget=budget,
+                )
+            )
+            roc_values_by_budget[budget].append(
+                _normalised_partial_roc_area(
+                    false_positive_rates=false_positive_rates,
+                    true_positive_rates=true_positive_rates,
+                    budget=budget,
+                )
+            )
+
+    def aggregate(values: list[float]) -> float:
+        finite_values = np.asarray(values, dtype=np.float64)
+        if not np.all(np.isfinite(finite_values)):
+            return float("nan")
+        if max_buffer_size == 0:
+            return float(finite_values[0])
+        trapezoid_function = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
+        return float(
+            trapezoid_function(finite_values, np.arange(max_buffer_size + 1))
+            / max_buffer_size
+        )
+
+    return {
+        "vus_pr": {
+            str(budget): aggregate(pr_values_by_budget[budget])
+            for budget in FPR_BUDGETS
+        },
+        "vus_roc": {
+            str(budget): aggregate(roc_values_by_budget[budget])
+            for budget in FPR_BUDGETS
+        },
+    }
+
+
 def _compute_roc_area_from_points(
     false_positive_rates: list[float],
     true_positive_rates: list[float],
@@ -585,6 +757,12 @@ def compute_pointwise_metrics(
         ),
         "vus_pr": float("nan"),
         "vus_roc": float("nan"),
+        "vus_pr_at_fpr_budget": {
+            str(budget): float("nan") for budget in FPR_BUDGETS
+        },
+        "vus_roc_at_fpr_budget": {
+            str(budget): float("nan") for budget in FPR_BUDGETS
+        },
     }
 
     # Gọi hàm để tính toán độ đo VUS-PR
@@ -601,6 +779,14 @@ def compute_pointwise_metrics(
             max_buffer_size=vus_max_buffer_size,
             num_thresholds=vus_num_thresholds,
         )
+        budgeted_vus = compute_budgeted_vus_metrics(
+            point_labels=label_array,
+            point_scores=score_array,
+            max_buffer_size=vus_max_buffer_size,
+            num_thresholds=vus_num_thresholds,
+        )
+        metrics["vus_pr_at_fpr_budget"] = budgeted_vus["vus_pr"]
+        metrics["vus_roc_at_fpr_budget"] = budgeted_vus["vus_roc"]
 
     metrics.update(
         _compute_pointwise_diagnostics(

@@ -11,6 +11,13 @@ from src.engine.trainer import Trainer, build_checkpoint_evaluation_metadata
 from src.models.base_model import BaseModel
 
 
+FPR_BUDGET_MONITORS = (
+    "val_synth_vus_pr_at_fpr_budget_0_001",
+    "val_synth_vus_pr_at_fpr_budget_0_005",
+    "val_synth_vus_pr_at_fpr_budget_0_01",
+)
+
+
 class _NaNValidationModel(BaseModel):
     def __init__(self) -> None:
         super().__init__()
@@ -151,3 +158,83 @@ def test_build_checkpoint_evaluation_metadata_preserves_base_state_when_threshol
     )
 
     assert metadata == {"memory_initialized": False}
+
+
+def test_trainer_accepts_each_budgeted_vus_pr_checkpoint_monitor(tmp_path: Path) -> None:
+    model = _NaNValidationModel()
+    optimizer = torch.optim.Adam(model.parameters(), lr=1.0e-3)
+    logger = ExperimentLogger(
+        tmp_path / "outputs",
+        experiment_config={"experiment_name": "budget-monitor"},
+        logging_config={"use_wandb": False},
+    )
+    try:
+        for monitor_name in FPR_BUDGET_MONITORS:
+            trainer = Trainer(
+                model=model,
+                optimizer=optimizer,
+                scheduler=None,
+                scheduler_monitor_metric=None,
+                checkpoint_manager=CheckpointManager(tmp_path / monitor_name),
+                experiment_logger=logger,
+                checkpoint_monitor_metric=monitor_name,
+            )
+            assert trainer._resolve_best_checkpoint_monitor() == (monitor_name, "max")
+    finally:
+        logger.close()
+
+
+def test_trainer_flattens_budgeted_vus_metrics_for_checkpoint_monitoring(
+    tmp_path: Path,
+) -> None:
+    model = _NaNValidationModel()
+    trainer = Trainer(
+        model=model,
+        optimizer=torch.optim.Adam(model.parameters(), lr=1.0e-3),
+        scheduler=None,
+        scheduler_monitor_metric=None,
+        checkpoint_manager=CheckpointManager(tmp_path / "checkpoints"),
+        experiment_logger=ExperimentLogger(
+            tmp_path / "outputs",
+            experiment_config={"experiment_name": "flatten-budgeted-vus"},
+            logging_config={"use_wandb": False},
+        ),
+        validation_evaluator_config={"vus_max_buffer_size": 1, "vus_num_thresholds": 5},
+    )
+    data_loader = type(
+        "DataLoader",
+        (),
+        {
+            "dataset": type(
+                "Dataset",
+                (),
+                {
+                    "sequences": [
+                        {
+                            "x": torch.zeros(4, 1),
+                            "point_labels": torch.tensor([0, 1, 0, 1]),
+                            "meta": {"entity_id": "machine-1-6"},
+                        }
+                    ]
+                },
+            )()
+        },
+    )()
+    metrics = trainer._aggregate_reconstructed_pointwise_metrics(
+        data_loader=data_loader,
+        batch_payloads=[
+            {
+                "meta": [
+                    {"entity_id": "machine-1-6", "start_index": 0, "end_index": 4}
+                ],
+                "point_scores": torch.tensor([[0.1, 0.9, 0.2, 0.8]]),
+                "point_labels": torch.tensor([[0, 1, 0, 1]]),
+            }
+        ],
+        stage_name="val_synth",
+    )
+    trainer.experiment_logger.close()
+
+    assert set(FPR_BUDGET_MONITORS).issubset(metrics)
+    assert "val_synth_vus_roc_at_fpr_budget_0_001" in metrics
+    assert all(isinstance(metrics[monitor_name], float) for monitor_name in FPR_BUDGET_MONITORS)
