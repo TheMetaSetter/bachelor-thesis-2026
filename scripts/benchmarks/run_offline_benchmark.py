@@ -79,6 +79,23 @@ def _load_json_config(path_like: str | Path) -> dict[str, Any]:
     return load_yaml_config(path)
 
 
+def _resolve_retention_policy(benchmark_config: dict[str, Any]) -> str:
+    evaluation_config = benchmark_config.get("evaluation", {})
+    if not isinstance(evaluation_config, dict):
+        evaluation_config = {}
+    retention_policy = str(
+        benchmark_config.get(
+            "retention_policy",
+            evaluation_config.get("retention_policy", "summary_only"),
+        )
+    )
+    if retention_policy not in {"retain_for_eda", "summary_only"}:
+        raise ValueError(
+            "retention_policy must be one of: retain_for_eda, summary_only"
+        )
+    return retention_policy
+
+
 def _apply_data_overrides(
     data_config: dict[str, Any], data_overrides: dict[str, Any] | None
 ) -> dict[str, Any]:
@@ -278,6 +295,7 @@ def run_offline_benchmark(
     )
     protocol_config = _load_json_config(resolved_protocol_config_path)
     validate_protocol_config(protocol_config)
+    retention_policy = _resolve_retention_policy(benchmark_config)
 
     output_dir = Path(str(benchmark_config["output_dir"]))
     if not output_dir.is_absolute():
@@ -290,6 +308,7 @@ def run_offline_benchmark(
         "protocol_config_path": str(resolved_protocol_config_path),
         "benchmark_config": benchmark_config,
         "protocol": protocol_config,
+        "retention_policy": retention_policy,
         "artifact_paths": {},
     }
     report_path = output_dir / "benchmark" / "offline_benchmark_report.json"
@@ -457,9 +476,18 @@ def run_offline_benchmark(
         output_dir / "scores" / "synthetic_validation_point_scores.npz"
     )
     test_scores_path = output_dir / "scores" / "test_point_scores.npz"
-    _write_npz(clean_scores_path, clean_validation_payload)
-    _write_npz(synthetic_scores_path, synthetic_validation_payload)
-    _write_npz(test_scores_path, test_payload)
+    artifact_paths = {"thresholds": str(threshold_path)}
+    if retention_policy == "retain_for_eda":
+        _write_npz(clean_scores_path, clean_validation_payload)
+        _write_npz(synthetic_scores_path, synthetic_validation_payload)
+        _write_npz(test_scores_path, test_payload)
+        artifact_paths.update(
+            {
+                "clean_validation_scores": str(clean_scores_path),
+                "synthetic_validation_scores": str(synthetic_scores_path),
+                "test_scores": str(test_scores_path),
+            }
+        )
 
     test_metrics = _build_metrics(
         point_labels=test_payload["point_labels"],
@@ -468,21 +496,18 @@ def run_offline_benchmark(
         protocol_config=protocol_config,
     )
     metrics_path = output_dir / "metrics" / "offline_metrics.json"
-    _write_json(metrics_path, test_metrics)
+    if retention_policy == "retain_for_eda":
+        _write_json(metrics_path, test_metrics)
 
     report["entity_id"] = entity_id
     report["seed"] = seed
     report["baseline_name"] = baseline_name
     report["method_metadata"] = calibration["method_metadata"]
     report["thresholds"] = threshold_artifact["thresholds"]
-    report["artifact_paths"] = {
-        "thresholds": str(threshold_path),
-        "clean_validation_scores": str(clean_scores_path),
-        "synthetic_validation_scores": str(synthetic_scores_path),
-        "test_scores": str(test_scores_path),
-        "metrics": str(metrics_path),
-        "report": str(report_path),
-    }
+    artifact_paths["report"] = str(report_path)
+    if retention_policy == "retain_for_eda":
+        artifact_paths["metrics"] = str(metrics_path)
+    report["artifact_paths"] = artifact_paths
     report["offline_metrics"] = test_metrics
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(

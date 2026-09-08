@@ -16,11 +16,13 @@ from src.engine.logger import ExperimentLogger
 class _FakeLogger:
     def __init__(self) -> None:
         self.logged_files: list[str] = []
+        self.logged_artifact_names: list[str] = []
 
     def log_artifact_file(
         self, *, file_path, artifact_name, artifact_type, aliases=None, metadata=None
     ) -> None:
         self.logged_files.append(str(file_path))
+        self.logged_artifact_names.append(artifact_name)
 
     def log_artifact_directory(
         self,
@@ -32,6 +34,7 @@ class _FakeLogger:
         metadata=None,
     ) -> None:
         self.logged_files.append(str(directory_path))
+        self.logged_artifact_names.append(artifact_name)
 
 
 def test_build_artifact_sinks_returns_expected_sink_variants() -> None:
@@ -108,3 +111,27 @@ def test_kaggle_artifact_sink_requires_kagglehub_when_used(
 
     with pytest.raises(ImportError, match="kagglehub"):
         sink.save_file(checkpoint_path)
+
+
+def test_wandb_checkpoint_sink_uses_role_and_run_identity(
+    tmp_path: Path,
+) -> None:
+    fake_logger = _FakeLogger()
+    checkpoint_path = tmp_path / "best.pt"
+    checkpoint_path.write_bytes(b"checkpoint")
+    sink = WandbArtifactSink(
+        experiment_logger=fake_logger,
+        identity={
+            "dataset": "smd",
+            "variant": "O0",
+            "entity": "machine_1_6",
+            "seed": 36,
+            "stage": "stageB",
+        },
+    )
+
+    sink.save_file(checkpoint_path)
+
+    assert fake_logger.logged_artifact_names == [
+        "ckpt-stageB-O0-machine_1_6-s36"
+    ]

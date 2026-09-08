@@ -89,6 +89,8 @@ def test_run_training_experiment_logs_multitask_epoch_metrics(tmp_path: Path) ->
     experiment_config = {
         "experiment_name": "multitask_epoch_metrics_smoke",
         "seed": 7,
+        "entity_id": "machine_1_6",
+        "offline_variant": "O0",
         "device": "cpu",
         "output_dir": str(tmp_path / "outputs"),
         "checkpoint_dir": str(tmp_path / "outputs" / "checkpoints"),
@@ -316,12 +318,17 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
 
     experiment_config = {
         "experiment_name": "evaluation-metrics-test",
+        "seed": 6,
         "device": "cpu",
         "output_dir": str(tmp_path / "outputs"),
         "checkpoint_dir": str(tmp_path / "checkpoints"),
         "data": {"dataset_name": "smd"},
         "model": {"model_name": "thesis_multitask"},
-        "task": {"task_name": "multitask_tsad"},
+        "task": {
+            "task_name": "multitask_tsad",
+            "entity_id": "machine-a",
+            "offline_variant": "O0",
+        },
         "logging": {
             "use_wandb": True,
             "wandb_project": "bachelor-thesis-2026",
@@ -359,11 +366,11 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
         for logged_metrics in fake_run.logged_metrics
     )
     assert any(
-        artifact.name == "evaluation-metrics-test-evaluation-curves"
+        artifact.name == "curves-eval-O0-machine-a-s6"
         for artifact, _ in fake_run.logged_artifacts
     )
     assert any(
-        artifact.name == "evaluation-metrics-test-evaluation-traces"
+        artifact.name == "traces-eval-O0-machine-a-s6"
         for artifact, _ in fake_run.logged_artifacts
     )
 

@@ -115,7 +115,11 @@ def build_config(
     )
     logging_config = dict(config.get("logging", {}))
     logging_config.update(
-        {"use_wandb": True, "wandb_mode": "online", "wandb_run_name": experiment_name}
+        {
+            "use_wandb": True,
+            "wandb_mode": "online",
+            "wandb_run_name": f"off-{variant}-{entity}-s{seed}-{budget_name}",
+        }
     )
     logging_config["wandb_tags"] = list(logging_config.get("wandb_tags", [])) + [
         "pro-reconstruction",

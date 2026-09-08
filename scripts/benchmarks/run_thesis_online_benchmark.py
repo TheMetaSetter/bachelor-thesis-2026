@@ -27,6 +27,7 @@ import torch
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from src.core.config import load_experiment_config
+from src.core.artifact_naming import build_wandb_run_name
 from src.core.artifact_integrity import (
     build_artifact_manifest,
     build_retention_bundle_manifest,
@@ -114,7 +115,7 @@ def _write_json(path: Path, payload: Any) -> str:
 
 def _resolve_retention_policy(experiment_config: dict[str, Any]) -> str:
     evaluation_config = dict(experiment_config.get("evaluation", {}))
-    return str(evaluation_config.get("retention_policy", "retain_for_eda"))
+    return str(evaluation_config.get("retention_policy", "summary_only"))
 
 
 def _online_wandb_metrics(record: dict[str, Any]) -> dict[str, Any]:
@@ -125,6 +126,29 @@ def _online_wandb_metrics(record: dict[str, Any]) -> dict[str, Any]:
         elif isinstance(value, Real):
             metrics[f"online/{key}"] = float(value)
     return metrics
+
+
+def _compact_online_execution(online_outputs: dict[str, Any]) -> dict[str, Any]:
+    metric_history = list(online_outputs.get("metric_history", []))
+    records = list(online_outputs.get("records", []))
+    compact_execution = {
+        key: online_outputs[key]
+        for key in (
+            "final_checkpoint_path",
+            "threshold_artifact",
+            "stream_selections",
+            "pre_tta_test_score_summary",
+        )
+        if key in online_outputs
+    }
+    compact_execution.update(
+        {
+            "metric_history_length": len(metric_history),
+            "record_length": len(records),
+            "final_metrics": dict(metric_history[-1]) if metric_history else {},
+        }
+    )
+    return compact_execution
 
 
 def _build_online_event_callback(
@@ -211,6 +235,10 @@ def _export_online_retention_bundle(
             retention_root / "retention_summary.json", summary_payload
         )
     }
+    bundle_paths["threshold_artifact"] = _write_json(
+        retention_root / "threshold_artifact.json",
+        threshold_artifact,
+    )
     if retention_policy == "retain_for_eda":
         bundle_paths["metrics"] = _write_json(
             retention_root / "online_metrics.json",
@@ -219,10 +247,6 @@ def _export_online_retention_bundle(
         bundle_paths["records"] = _write_json(
             retention_root / "online_records.json",
             online_outputs.get("records", []),
-        )
-        bundle_paths["threshold_artifact"] = _write_json(
-            retention_root / "threshold_artifact.json",
-            threshold_artifact,
         )
         if runtime_state is not None:
             bundle_paths["runtime_state"] = _write_json(
@@ -284,8 +308,10 @@ def run_thesis_online_benchmark(
         logging_config = dict(experiment_config.get("logging", {}))
         if logging_config.get("use_wandb", False):
             logging_config.setdefault("wandb_job_type", "online_benchmark")
-            logging_config.setdefault(
-                "wandb_run_name", experiment_config["experiment_name"]
+            logging_config["wandb_run_name"] = build_wandb_run_name(
+                experiment_config,
+                stage="online",
+                online_variant=online_variant,
             )
             experiment_logger = ExperimentLogger(
                 experiment_config["output_dir"],
@@ -319,7 +345,7 @@ def run_thesis_online_benchmark(
             "online_variant": online_variant,
             "protocol_config_path": protocol_config_path,
             "protocol": protocol_config,
-            "online_execution": online_outputs,
+            "online_execution": _compact_online_execution(online_outputs),
             "retention_policy": retention_policy,
         }
         report_path = _write_report(

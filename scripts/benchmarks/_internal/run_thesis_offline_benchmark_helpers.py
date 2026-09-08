@@ -188,7 +188,7 @@ def _build_uq_summary_inputs(
 
 def _resolve_retention_policy(experiment_config: dict[str, Any]) -> str:
     evaluation_config = dict(experiment_config.get("evaluation", {}))
-    return str(evaluation_config.get("retention_policy", "retain_for_eda"))
+    return str(evaluation_config.get("retention_policy", "summary_only"))
 
 
 def collect_offline_artifact_inputs(
@@ -519,35 +519,19 @@ def _export_offline_retention_bundle(
         "two_stage_execution": dict(execution_report),
         "inspection_ready": retention_policy == "retain_for_eda",
     }
-    uq_summary_payload = build_uq_summary_payload(
-        benchmark_kind="offline",
-        experiment_name=str(experiment_config.get("experiment_name")),
-        method_name="THESIS",
-        variant_name=str(artifact_inputs["variant_name"]),
-        entity_id=entity_id,
-        seed=int(artifact_inputs["seed"]),
-        stage_name=str(
-            experiment_config.get("stage_name")
-            or experiment_config.get("model", {}).get("stage_name")
-            or "stage_b_fusion_finetuning"
-        ),
-        checkpoint_path=str(candidate_checkpoint) if candidate_checkpoint else "",
-        checkpoint_sha256=checkpoint_sha256,
-        experiment_config_path=experiment_config_path,
-        protocol_config_path=protocol_config_path,
-        output_dir=str(output_dir),
-        run_scalar_logs=_build_run_scalar_logs(experiment_config),
-        split_inputs=_build_uq_summary_inputs(artifact_inputs),
-    )
-    bundle_paths["uq_summary"] = _write_json(
-        retention_root / "uq_summary.json",
-        uq_summary_payload,
-    )
     bundle_paths["summary"] = _write_json(
         retention_root / "retention_summary.json",
         summary_payload,
     )
+    if "thresholds" in artifact_paths:
+        bundle_paths["threshold_artifact"] = artifact_paths["thresholds"]
     if retention_policy == "retain_for_eda":
+        if "uq_summary" in artifact_paths:
+            uq_summary_source = Path(artifact_paths["uq_summary"])
+            bundle_paths["uq_summary"] = _write_json(
+                retention_root / "uq_summary.json",
+                json.loads(uq_summary_source.read_text(encoding="utf-8")),
+            )
         compacted_clean_validation_traces = compact_evaluation_trace_payloads(
             artifact_inputs["clean_validation_traces"]
         )

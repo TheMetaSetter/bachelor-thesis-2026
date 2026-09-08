@@ -14,6 +14,8 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 import torch
 import yaml
 
+from src.core.artifact_naming import build_wandb_run_name
+
 from scripts.cli.train import (
     build_model_from_experiment_config,
     register_runtime_components,
@@ -154,7 +156,9 @@ def _build_stage_experiment_config(
     stage_config["model_overrides"] = model_overrides
     logging_config = copy.deepcopy(stage_config.get("logging", {}))
     logging_config["wandb_job_type"] = stage_name
-    logging_config["wandb_run_name"] = stage_config["experiment_name"]
+    logging_config["wandb_run_name"] = build_wandb_run_name(
+        stage_config, stage=stage_name
+    )
     stage_config["logging"] = logging_config
     if stage_name == TWO_STAGE_B_PHASE_NAME:
         stage_config["initialization_checkpoint_path"] = str(

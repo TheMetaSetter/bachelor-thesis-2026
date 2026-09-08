@@ -99,7 +99,7 @@ def build_config(
         {
             "use_wandb": True,
             "wandb_mode": "online",
-            "wandb_run_name": experiment_name,
+            "wandb_run_name": f"off-{variant}-{entity}-s{seed}-direct",
         }
     )
     logging_config["wandb_tags"] = list(logging_config.get("wandb_tags", [])) + [

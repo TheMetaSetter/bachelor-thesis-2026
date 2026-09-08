@@ -50,7 +50,7 @@ logging:
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
   wandb_job_type: online_benchmark
-  wandb_run_name: smd__candi__online_reference_adapter_redlamp_encoder__machine_3_4__w20__seed8__main
+  wandb_run_name: on-candi-reference_adapter_redlamp_encoder-machine_3_4-s8-main
   wandb_tags:
   - online-benchmark
   - candi

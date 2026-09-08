@@ -97,12 +97,7 @@ def _variant_logging(
         "use_wandb": use_wandb,
         "wandb_project": "bachelor-thesis-2026",
         "wandb_mode": wandb_mode,
-        "wandb_run_name": _variant_experiment_name(
-            variant=variant,
-            entity_id=entity_id,
-            seed=seed,
-            smoke=smoke,
-        ),
+        "wandb_run_name": f"off-{variant}-{_entity_token(entity_id)}-s{seed}-{'smoke' if smoke else 'main'}",
         "wandb_tags": tags,
         "log_hard_prediction_ratio": not smoke,
         "log_row_normalized_confusion_matrix": not smoke,
@@ -177,7 +172,7 @@ def build_offline_benchmark_config(
         "evaluation": {
             "vus_max_buffer_size": 10 if smoke else 20,
             "vus_num_thresholds": 20 if smoke else 200,
-            "retention_policy": "retain_for_eda",
+            "retention_policy": "summary_only",
         },
         "logging": _variant_logging(smoke, variant, entity_id, seed),
         "two_stage": {

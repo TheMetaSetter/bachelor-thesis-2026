@@ -263,6 +263,14 @@ The structure preserves stable local filenames and avoids changes to model or me
 - The internal duplicate offline helper has no active caller in the current search, so its update can follow the active public path.
 - The exact final report summary fields depend on the thesis report requirements, but they do not change phase order.
 
+## Implementation result
+
+All phases and their sequential stages were executed.
+
+The selected policy is `summary_only` by default, with `retain_for_eda` preserved as an explicit compatibility mode.
+
+The full benchmark matrix was not started.
+
 ## Feedback requested
 
 - Confirm whether `summary_only` should become the default for generic benchmark scripts as well as thesis benchmark scripts.

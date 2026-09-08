@@ -2,9 +2,9 @@ from __future__ import annotations
 
 """Experiment logging for metrics and resolved configs.
 
-This logger is intentionally small: it writes a JSONL metrics stream, persists
-the resolved experiment config, and optionally mirrors metrics to Weights &
-Biases when that is explicitly enabled in config.
+This logger is intentionally small: it persists the resolved experiment config,
+optionally writes a JSONL metrics stream, and optionally mirrors metrics to
+Weights & Biases when that is explicitly enabled in config.
 """
 
 import json
@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from src.core.console import console_print
+from src.core.artifact_naming import validate_wandb_artifact_name
 from src.engine.artifact_sinks import build_artifact_sinks, build_output_artifact_sinks
 
 
@@ -31,6 +32,9 @@ class ExperimentLogger:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.metrics_path = self.output_dir / "metrics.jsonl"
+        self.log_raw_metrics_jsonl = bool(
+            logging_config and logging_config.get("log_raw_metrics_jsonl", False)
+        )
         self.focused_metrics_path: Path | None = None
         self.resolved_config_path = self.output_dir / "resolved_experiment_config.json"
         self._wandb_run = None
@@ -76,9 +80,10 @@ class ExperimentLogger:
                     "logging", {}
                 ).get("enable_reconstruction_diagnostics", False),
             }
-            with self.metrics_path.open("a", encoding="utf-8") as handle:
-                handle.write(json.dumps(run_start_record, sort_keys=True) + "\n")
-            if not self.quiet_terminal:
+            if self.log_raw_metrics_jsonl:
+                with self.metrics_path.open("a", encoding="utf-8") as handle:
+                    handle.write(json.dumps(run_start_record, sort_keys=True) + "\n")
+            if self.log_raw_metrics_jsonl and not self.quiet_terminal:
                 console_print(
                     "WANDB",
                     "Wrote run start record",
@@ -141,9 +146,10 @@ class ExperimentLogger:
 
     def log_metrics(self, metrics: dict[str, Any]) -> None:
         serializable_metrics = json.dumps(metrics, sort_keys=True)
-        with self.metrics_path.open("a", encoding="utf-8") as handle:
-            handle.write(serializable_metrics + "\n")
-        if not self.quiet_terminal:
+        if self.log_raw_metrics_jsonl:
+            with self.metrics_path.open("a", encoding="utf-8") as handle:
+                handle.write(serializable_metrics + "\n")
+        if not self.quiet_terminal and self.log_raw_metrics_jsonl:
             console_print(
                 "WANDB",
                 "Logged metrics to JSONL",
@@ -211,6 +217,7 @@ class ExperimentLogger:
 
         import wandb
 
+        artifact_name = validate_wandb_artifact_name(artifact_name)
         artifact = wandb.Artifact(
             name=artifact_name,
             type=artifact_type,
@@ -252,6 +259,7 @@ class ExperimentLogger:
 
         import wandb
 
+        artifact_name = validate_wandb_artifact_name(artifact_name)
         artifact = wandb.Artifact(
             name=artifact_name,
             type=artifact_type,

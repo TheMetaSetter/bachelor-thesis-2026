@@ -179,14 +179,14 @@ Add the selected default and the compatibility boundary to the implementation re
 
 ## Final verification
 
-- [ ] All direct `artifact_name` constructions no longer prefix the full `experiment_name`.
-- [ ] The common W&B boundary rejects or derives invalid names before `wandb.Artifact`.
-- [ ] The default retention path does not persist large derived files.
-- [ ] Summary-only online bundles retain the threshold contract.
-- [ ] Reports no longer duplicate complete online records or metric histories.
-- [ ] Focused tests pass.
-- [ ] One end-to-end smoke combination passes.
-- [ ] `git diff --check` passes.
+- [x] All direct `artifact_name` constructions no longer prefix the full `experiment_name`.
+- [x] The common W&B boundary rejects or derives invalid names before `wandb.Artifact`.
+- [x] The default retention path does not persist large derived files.
+- [x] Summary-only online bundles retain the threshold contract.
+- [x] Reports no longer duplicate complete online records or metric histories.
+- [x] Focused tests pass.
+- [x] One end-to-end smoke combination passes.
+- [x] `git diff --check` passes.
 
 ## Assumptions and non-blocking uncertainties
 
@@ -194,3 +194,11 @@ Add the selected default and the compatibility boundary to the implementation re
 - The exact final short-name token for a dataset may use the current `dataset_name` or an existing compact dataset token after checking active configs.
 - The generic benchmark scripts may be retained for backward compatibility, so their output gates should be implemented rather than removed.
 - The internal duplicate offline helper has no active caller in the current search, but it should be aligned if a future entry point uses it.
+
+## Implementation result
+
+The plan was executed through all five phases.
+
+The shared naming helper, direct W&B producers, retention gates, report compaction, focused tests, and smoke checks were implemented.
+
+The final verification commands and their results are recorded in the detail log.

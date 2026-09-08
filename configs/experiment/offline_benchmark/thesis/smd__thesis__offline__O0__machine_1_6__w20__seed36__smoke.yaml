@@ -23,12 +23,12 @@ epochs: 3
 evaluation:
   vus_max_buffer_size: 10
   vus_num_thresholds: 20
-  retention_policy: retain_for_eda
+  retention_policy: summary_only
 logging:
   use_wandb: false
   wandb_project: bachelor-thesis-2026
   wandb_mode: disabled
-  wandb_run_name: smd__thesis__offline__O0__machine_1_6__w20__seed36__smoke
+  wandb_run_name: off-O0-machine_1_6-s36-smoke
   wandb_tags:
   - offline-benchmark
   - thesis

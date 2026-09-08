@@ -154,4 +154,5 @@ def test_run_training_experiment_emits_runtime_console_messages(
     assert training_outputs["best_checkpoint_path"] is not None
     assert "[TRAIN] Completed optimizer step" in captured.out
     assert "[CHECKPOINT] Saving checkpoint" in captured.out
-    assert "[WANDB] Logged metrics to JSONL" in captured.out
+    assert "[WANDB] Logged metrics to JSONL" not in captured.out
+    assert not (tmp_path / "outputs" / "metrics.jsonl").exists()

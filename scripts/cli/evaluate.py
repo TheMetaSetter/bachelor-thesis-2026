@@ -24,6 +24,11 @@ from src.analysis.evaluation_protocol_audit import (
     render_dataset_protocol_audit_markdown,
 )
 from src.core.console import console_print
+from src.core.artifact_naming import (
+    build_artifact_identity,
+    build_wandb_artifact_name,
+    build_wandb_run_name,
+)
 from src.core.config import load_experiment_config, load_yaml_config
 from src.core.config_help import build_config_help_text
 from src.core.evaluation_trace_compaction import compact_evaluation_trace_payloads
@@ -301,9 +306,10 @@ def run_evaluation_experiment(
     logging_config = dict(experiment_config.get("logging", {}))
     quiet_terminal = bool(logging_config.get("quiet_terminal", False))
     logging_config.setdefault("wandb_job_type", "evaluate")
-    logging_config.setdefault(
-        "wandb_run_name", f"{experiment_config['experiment_name']}-evaluate"
-    )
+    if logging_config.get("use_wandb", False):
+        logging_config["wandb_run_name"] = build_wandb_run_name(
+            experiment_config, stage="evaluation"
+        )
     experiment_logger = ExperimentLogger(
         output_dir_override or experiment_config["output_dir"],
         experiment_config=experiment_config,
@@ -392,66 +398,31 @@ def run_evaluation_experiment(
     experiment_logger.log_summary(
         prefixed_metrics | {"evaluation/checkpoint_path": checkpoint_path}
     )
-    experiment_logger.log_artifact_file(
-        file_path=resolved_config_path,
-        artifact_name=f"{experiment_config['experiment_name']}-resolved-config",
-        artifact_type="config",
-        aliases=["latest"],
-        metadata={
+    if logging_config.get("use_wandb", False):
+        artifact_identity = build_artifact_identity(
+            experiment_config, stage="evaluation"
+        )
+        artifact_metadata = {
             "experiment_name": experiment_config["experiment_name"],
             "job_type": "evaluate",
-        },
-    )
-    experiment_logger.log_artifact_file(
-        file_path=metrics_path,
-        artifact_name=f"{experiment_config['experiment_name']}-evaluation-metrics",
-        artifact_type="evaluation",
-        aliases=["latest"],
-        metadata={
-            "experiment_name": experiment_config["experiment_name"],
-            "job_type": "evaluate",
-        },
-    )
-    experiment_logger.log_artifact_file(
-        file_path=records_path,
-        artifact_name=f"{experiment_config['experiment_name']}-evaluation-records",
-        artifact_type="evaluation",
-        aliases=["latest"],
-        metadata={
-            "experiment_name": experiment_config["experiment_name"],
-            "job_type": "evaluate",
-        },
-    )
-    experiment_logger.log_artifact_file(
-        file_path=curves_path,
-        artifact_name=f"{experiment_config['experiment_name']}-evaluation-curves",
-        artifact_type="evaluation",
-        aliases=["latest"],
-        metadata={
-            "experiment_name": experiment_config["experiment_name"],
-            "job_type": "evaluate",
-        },
-    )
-    experiment_logger.log_artifact_file(
-        file_path=traces_path,
-        artifact_name=f"{experiment_config['experiment_name']}-evaluation-traces",
-        artifact_type="evaluation",
-        aliases=["latest"],
-        metadata={
-            "experiment_name": experiment_config["experiment_name"],
-            "job_type": "evaluate",
-        },
-    )
-    experiment_logger.log_artifact_file(
-        file_path=protocol_audit_path,
-        artifact_name=f"{experiment_config['experiment_name']}-evaluation-protocol-audit",
-        artifact_type="evaluation",
-        aliases=["latest"],
-        metadata={
-            "experiment_name": experiment_config["experiment_name"],
-            "job_type": "evaluate",
-        },
-    )
+        }
+        for path, role in (
+            (resolved_config_path, "cfg"),
+            (metrics_path, "eval"),
+            (records_path, "records"),
+            (curves_path, "curves"),
+            (traces_path, "traces"),
+            (protocol_audit_path, "audit"),
+        ):
+            experiment_logger.log_artifact_file(
+                file_path=path,
+                artifact_name=build_wandb_artifact_name(
+                    role=role, identity=artifact_identity
+                ),
+                artifact_type="evaluation" if role != "cfg" else "config",
+                aliases=["latest"],
+                metadata=artifact_metadata,
+            )
     experiment_logger.close()
     console_print(
         "EVAL",

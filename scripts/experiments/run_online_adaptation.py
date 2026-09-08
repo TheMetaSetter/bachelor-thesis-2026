@@ -18,6 +18,11 @@ import torch
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.console import console_print
+from src.core.artifact_naming import (
+    build_artifact_identity,
+    build_wandb_artifact_name,
+    build_wandb_run_name,
+)
 from src.core.config import load_experiment_config
 from src.core.registry import build_dataset, build_model
 from src.core.runtime_components import register_online_runtime_components
@@ -124,11 +129,21 @@ def run_online_adaptation_experiment(
     )
     model = public_build_model_from_experiment_config(experiment_config)
     optimizer = build_optimizer_from_experiment_config(model, experiment_config)
+    evaluation_config = experiment_config.get("evaluation", {})
+    evaluation_config = evaluation_config if isinstance(evaluation_config, dict) else {}
+    retention_policy = str(evaluation_config.get("retention_policy", "summary_only"))
+    if retention_policy not in {"retain_for_eda", "summary_only"}:
+        raise ValueError(
+            "retention_policy must be one of: retain_for_eda, summary_only"
+        )
     optimizer_name = str(experiment_config["optimizer"].get("optimizer_name", "adam"))
     logging_config = dict(experiment_config.get("logging", {}))
     quiet_terminal = bool(logging_config.get("quiet_terminal", False))
     logging_config.setdefault("wandb_job_type", "online_adaptation")
-    logging_config.setdefault("wandb_run_name", experiment_config["experiment_name"])
+    if logging_config.get("use_wandb", False):
+        logging_config["wandb_run_name"] = build_wandb_run_name(
+            experiment_config, stage="online"
+        )
     experiment_logger = ExperimentLogger(
         experiment_config["output_dir"],
         experiment_config=experiment_config,
@@ -184,12 +199,13 @@ def run_online_adaptation_experiment(
         metrics_path = output_dir / "online_metrics.json"
         records_path = output_dir / "online_records.json"
 
-        metrics_path.write_text(
-            json.dumps(online_outputs["metric_history"], indent=2), encoding="utf-8"
-        )
-        records_path.write_text(
-            json.dumps(online_outputs["records"], indent=2), encoding="utf-8"
-        )
+        if retention_policy == "retain_for_eda":
+            metrics_path.write_text(
+                json.dumps(online_outputs["metric_history"], indent=2), encoding="utf-8"
+            )
+            records_path.write_text(
+                json.dumps(online_outputs["records"], indent=2), encoding="utf-8"
+            )
         experiment_logger.log_summary(
             {
                 "online/final_checkpoint_path": str(
@@ -198,9 +214,22 @@ def run_online_adaptation_experiment(
                 "online/num_logged_steps": len(online_outputs["metric_history"]),
             }
         )
+        artifact_identity_config = dict(experiment_config)
+        artifact_identity_task = dict(experiment_config.get("task", {}))
+        test_sequences = data_bundle.get("scaled_sequences", {}).get("test", [])
+        if test_sequences and "entity_id" not in artifact_identity_task:
+            artifact_identity_task["entity_id"] = test_sequences[0].get(
+                "meta", {}
+            ).get("entity_id")
+        artifact_identity_config["task"] = artifact_identity_task
+        artifact_identity = build_artifact_identity(
+            artifact_identity_config, stage="online"
+        )
         experiment_logger.log_artifact_file(
             file_path=experiment_logger.resolved_config_path,
-            artifact_name=f"{experiment_config['experiment_name']}-resolved-config",
+            artifact_name=build_wandb_artifact_name(
+                role="cfg", identity=artifact_identity
+            ),
             artifact_type="config",
             aliases=["latest"],
             metadata={
@@ -208,39 +237,49 @@ def run_online_adaptation_experiment(
                 "job_type": "online_adaptation",
             },
         )
-        experiment_logger.log_artifact_file(
-            file_path=experiment_logger.metrics_path,
-            artifact_name=f"{experiment_config['experiment_name']}-metrics",
-            artifact_type="metrics",
-            aliases=["latest"],
-            metadata={
-                "experiment_name": experiment_config["experiment_name"],
-                "job_type": "online_adaptation",
-            },
-        )
-        experiment_logger.log_artifact_file(
-            file_path=metrics_path,
-            artifact_name=f"{experiment_config['experiment_name']}-online-metrics",
-            artifact_type="online-evaluation",
-            aliases=["latest"],
-            metadata={
-                "experiment_name": experiment_config["experiment_name"],
-                "job_type": "online_adaptation",
-            },
-        )
-        experiment_logger.log_artifact_file(
-            file_path=records_path,
-            artifact_name=f"{experiment_config['experiment_name']}-online-records",
-            artifact_type="online-evaluation",
-            aliases=["latest"],
-            metadata={
-                "experiment_name": experiment_config["experiment_name"],
-                "job_type": "online_adaptation",
-            },
-        )
+        if experiment_logger.metrics_path.exists():
+            experiment_logger.log_artifact_file(
+                file_path=experiment_logger.metrics_path,
+                artifact_name=build_wandb_artifact_name(
+                    role="met", identity=artifact_identity
+                ),
+                artifact_type="metrics",
+                aliases=["latest"],
+                metadata={
+                    "experiment_name": experiment_config["experiment_name"],
+                    "job_type": "online_adaptation",
+                },
+            )
+        if retention_policy == "retain_for_eda":
+            experiment_logger.log_artifact_file(
+                file_path=metrics_path,
+                artifact_name=build_wandb_artifact_name(
+                    role="on-met", identity=artifact_identity
+                ),
+                artifact_type="online-evaluation",
+                aliases=["latest"],
+                metadata={
+                    "experiment_name": experiment_config["experiment_name"],
+                    "job_type": "online_adaptation",
+                },
+            )
+            experiment_logger.log_artifact_file(
+                file_path=records_path,
+                artifact_name=build_wandb_artifact_name(
+                    role="on-rec", identity=artifact_identity
+                ),
+                artifact_type="online-evaluation",
+                aliases=["latest"],
+                metadata={
+                    "experiment_name": experiment_config["experiment_name"],
+                    "job_type": "online_adaptation",
+                },
+            )
         experiment_logger.log_artifact_file(
             file_path=online_outputs["final_checkpoint_path"],
-            artifact_name=f"{experiment_config['experiment_name']}-checkpoint",
+            artifact_name=build_wandb_artifact_name(
+                role="ckpt", identity=artifact_identity
+            ),
             artifact_type="checkpoint",
             aliases=["final", "latest"],
             metadata={

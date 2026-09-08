@@ -66,7 +66,9 @@ def build_benchmark_smoke_config(
     config["two_stage"]["stage_a_multitask_epochs"] = 2
     config["two_stage"]["stage_b_fusion_finetuning_epochs"] = 1
     logging_config = dict(config["logging"])
-    logging_config["wandb_run_name"] = config["experiment_name"]
+    logging_config["wandb_run_name"] = (
+        f"off-O0-{_entity_token(entity_id)}-s{seed}-smoke"
+    )
     logging_config["wandb_tags"] = [
         "benchmark",
         "thesis-two-stage",

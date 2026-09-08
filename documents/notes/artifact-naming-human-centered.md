@@ -1,8 +1,8 @@
 # Human-Centered Artifact Naming Notes
 
-Date: 2026-09-07
+Date: 2026-09-08
 
-Status: design note only; no source code was changed.
+Status: implemented policy and verification note.
 
 ## Main conclusion
 
@@ -13,6 +13,10 @@ The full experiment identity should remain in the resolved config, artifact meta
 Short names solve the W&B limit, but they do not by themselves minimize retained data.
 
 The retention rule should be: keep immutable root inputs, then regenerate derived outputs when needed.
+
+The implementation uses `summary_only` as the default retention policy.
+
+The explicit `retain_for_eda` policy keeps derived records and diagnostics for analysis.
 
 ## Minimal-retention principle
 
@@ -235,6 +239,14 @@ The local output hierarchy can keep stable filenames such as `best.pt`, `evaluat
 
 The safest design is to shorten the W&B name separately instead of renaming every local file and breaking path-based consumers.
 
+The implementation uses `src/core/artifact_naming.py` as the shared naming boundary.
+
+The helper builds role-first names from the smallest human-useful identity: role, stage or online variant, model variant, entity, seed, and an optional budget.
+
+The helper rejects invalid names longer than 128 characters instead of silently truncating them.
+
+The common logger and artifact sink validate every name before constructing `wandb.Artifact`.
+
 ## Evidence from the codebase
 
 The experiment logger writes `metrics.jsonl` and `resolved_experiment_config.json`, and it creates W&B file or directory artifacts when W&B logging is enabled.
@@ -261,6 +273,16 @@ Evidence files:
 - [Online runtime](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/engine/online_tta/online_engine_run.py>)
 - [Artifact sinks](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/engine/artifact_sinks.py>)
 - [Artifact integrity](</Users/conquerormikrokosmos/Downloads/LAPTOP MAC/MYUNIVERSITY/ĐẠI HỌC QUỐC GIA TPHCM/ĐH KHOA HỌC TỰ NHIÊN/Khoá luận tốt nghiệp/bachelor-thesis-2026/src/core/artifact_integrity.py>)
+
+The verified smoke training run uses `configs/experiment/raw_mse_offline_cpu_smoke.yaml` and exits successfully with W&B disabled.
+
+The fresh summary-only evaluation smoke writes only the resolved protocol, threshold contract, retention manifest, and retention summary.
+
+The existing output tree was not cleaned, so old derived files may still exist in previously used directories.
+
+The focused verification passed 50 tests.
+
+The full suite passed 568 tests and skipped one test, with six failures in existing benchmark, compliance, model, and checkpoint-contract tests outside this change.
 
 ## Artifact inventory
 
@@ -430,6 +452,10 @@ That builder should receive structured fields from the config instead of truncat
 The builder should validate its output length before calling `wandb.Artifact`.
 
 The full name should remain in `metadata["experiment_name"]` and in the uploaded config artifact.
+
+The direct traceback is fixed at the artifact-construction boundary when the active caller uses the shared helper.
+
+W&B upload activation remains unchanged because enabling new external uploads is outside this naming and retention change.
 
 ## Decision record
 

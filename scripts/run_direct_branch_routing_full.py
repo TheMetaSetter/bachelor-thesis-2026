@@ -111,7 +111,9 @@ def build_direct_experiment_config(config_path: Path) -> dict[str, Any]:
     direct_config["model"] = direct_model_config
 
     direct_logging_config = dict(direct_config.get("logging", {}))
-    direct_logging_config["wandb_run_name"] = direct_config["experiment_name"]
+    direct_logging_config["wandb_run_name"] = (
+        f"off-{offline_variant}-{entity}-s{seed}-direct"
+    )
     direct_config["logging"] = direct_logging_config
     return direct_config
 

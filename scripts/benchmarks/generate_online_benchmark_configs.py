@@ -214,20 +214,14 @@ def build_online_benchmark_config(
         "evaluation": {
             "vus_max_buffer_size": 10 if smoke else 20,
             "vus_num_thresholds": 20 if smoke else 200,
-            "retention_policy": "retain_for_eda",
+            "retention_policy": "summary_only",
         },
         "logging": {
             "use_wandb": not smoke,
             "wandb_project": "bachelor-thesis-2026",
             "wandb_mode": "disabled" if smoke else "online",
             "wandb_job_type": "online_benchmark",
-            "wandb_run_name": _experiment_name(
-                offline_variant=offline_variant,
-                online_variant=online_variant,
-                entity_id=entity_id,
-                seed=seed,
-                smoke=smoke,
-            ),
+            "wandb_run_name": f"on-{offline_variant}-{online_variant}-{_entity_token(entity_id)}-s{seed}-{'smoke' if smoke else 'main'}",
             "wandb_tags": [
                 "online-benchmark",
                 "thesis",

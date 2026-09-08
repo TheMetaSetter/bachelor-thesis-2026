@@ -223,7 +223,7 @@ def build_online_streaming_benchmark_config(
             "wandb_project": "bachelor-thesis-2026",
             "wandb_mode": "disabled" if smoke else "online",
             "wandb_job_type": "online_benchmark",
-            "wandb_run_name": benchmark_name,
+            "wandb_run_name": f"on-{method}-{online_variant}-{_entity_token(entity_id)}-s{seed}-{'smoke' if smoke else 'main'}",
             "wandb_tags": [
                 "online-benchmark",
                 method,

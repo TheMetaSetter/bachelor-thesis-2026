@@ -52,13 +52,13 @@ epochs: 1
 evaluation:
   vus_max_buffer_size: 20
   vus_num_thresholds: 200
-  retention_policy: retain_for_eda
+  retention_policy: summary_only
 logging:
   use_wandb: true
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
   wandb_job_type: online_benchmark
-  wandb_run_name: smd__thesis__online__O1_A0__machine_1_6__w20__seed8__main
+  wandb_run_name: on-O1-A0-machine_1_6-s8-main
   wandb_tags:
   - online-benchmark
   - thesis

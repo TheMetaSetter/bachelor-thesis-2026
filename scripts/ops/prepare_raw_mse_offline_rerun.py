@@ -37,7 +37,9 @@ def prepare_configs(destination: Path, run_id: str) -> list[Path]:
                 config["evaluation"].update(
                     score_space="raw_input", point_score_transform="identity"
                 )
-                config["logging"]["wandb_run_name"] = config["experiment_name"]
+                config["logging"]["wandb_run_name"] = (
+                    f"off-{variant}-{entity}-s{seed}-raw-mse"
+                )
                 config["logging"]["wandb_tags"].extend(
                     [run_id, "raw-input-mse-training"]
                 )

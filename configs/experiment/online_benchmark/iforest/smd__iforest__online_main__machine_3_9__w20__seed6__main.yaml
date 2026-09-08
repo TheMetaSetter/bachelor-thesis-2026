@@ -24,7 +24,7 @@ logging:
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
   wandb_job_type: online_benchmark
-  wandb_run_name: smd__iforest__online_main__machine_3_9__w20__seed6__main
+  wandb_run_name: on-iforest-main-machine_3_9-s6-main
   wandb_tags:
   - online-benchmark
   - iforest

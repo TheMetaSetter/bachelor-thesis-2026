@@ -212,7 +212,7 @@ def _build_uq_summary_inputs(
 
 def _resolve_retention_policy(experiment_config: dict[str, Any]) -> str:
     evaluation_config = dict(experiment_config.get("evaluation", {}))
-    return str(evaluation_config.get("retention_policy", "retain_for_eda"))
+    return str(evaluation_config.get("retention_policy", "summary_only"))
 
 
 def _summarize_loaded_checkpoint_contract(
@@ -409,12 +409,12 @@ def collect_offline_artifact_inputs(
             "retention": {
                 "retention_policy": str(
                     experiment_config.get("evaluation", {}).get(
-                        "retention_policy", "retain_for_eda"
+                        "retention_policy", "summary_only"
                     )
                 ),
                 "inspection_ready": bool(
                     experiment_config.get("evaluation", {}).get(
-                        "retention_policy", "retain_for_eda"
+                        "retention_policy", "summary_only"
                     )
                     == "retain_for_eda"
                 ),
@@ -963,7 +963,12 @@ def _export_offline_artifacts(
     experiment_config_path: str,
     protocol_config_path: str,
     manifest: dict[str, Any],
+    retention_policy: str,
 ) -> dict[str, str]:
+    if retention_policy not in {"retain_for_eda", "summary_only"}:
+        raise ValueError(
+            "retention_policy must be one of: retain_for_eda, summary_only"
+        )
     checkpoint_path = manifest.get("evaluation", {}).get("checkpoint_path")
     if not checkpoint_path or not Path(str(checkpoint_path)).is_file():
         raise FileNotFoundError(
@@ -978,73 +983,79 @@ def _export_offline_artifacts(
     )
     threshold_path = output_dir / "thresholds" / "thresholds.json"
     write_threshold_artifact(threshold_artifact, threshold_path)
-    uq_summary_payload = build_uq_summary_payload(
-        benchmark_kind="offline",
-        experiment_name=str(experiment_config.get("experiment_name")),
-        method_name="THESIS",
-        variant_name=str(artifact_inputs["variant_name"]),
-        entity_id=str(artifact_inputs["entity_id"]),
-        seed=int(artifact_inputs["seed"]),
-        stage_name=str(
-            experiment_config.get("stage_name")
-            or experiment_config.get("model", {}).get("stage_name")
-            or "stage_b_fusion_finetuning"
-        ),
-        checkpoint_path=str(checkpoint_path) if checkpoint_path else "",
-        checkpoint_sha256=checkpoint_sha256,
-        experiment_config_path=experiment_config_path,
-        protocol_config_path=protocol_config_path,
-        output_dir=str(output_dir),
-        run_scalar_logs=_build_run_scalar_logs(experiment_config),
-        split_inputs=_build_uq_summary_inputs(artifact_inputs),
-    )
-    uq_summary_path = output_dir / "metrics" / "uq_summary.json"
-    write_uq_summary_json(uq_summary_path, uq_summary_payload)
-    compacted_clean_validation_traces = compact_evaluation_trace_payloads(
-        artifact_inputs["clean_validation_traces"]
-    )
-    compacted_synthetic_validation_traces = compact_evaluation_trace_payloads(
-        artifact_inputs["synthetic_validation_traces"]
-    )
-    compacted_test_traces = compact_evaluation_trace_payloads(
-        artifact_inputs["test_traces"]
-    )
-    return {
+    artifact_paths: dict[str, str] = {
         "thresholds": str(threshold_path),
-        "uq_summary": str(uq_summary_path),
-        "clean_validation_scores": _write_score_npz(
-            output_dir / "scores" / "clean_validation_point_scores.npz",
-            artifact_inputs["clean_validation"],
-        ),
-        "clean_validation_traces": _write_trace_json(
-            output_dir / "traces" / "clean_validation_traces.json",
-            compacted_clean_validation_traces,
-        ),
-        "synthetic_validation_scores": _write_score_npz(
-            output_dir / "scores" / "synthetic_validation_point_scores.npz",
-            artifact_inputs["synthetic_validation"],
-        ),
-        "synthetic_validation_traces": _write_trace_json(
-            output_dir / "traces" / "synthetic_validation_traces.json",
-            compacted_synthetic_validation_traces,
-        ),
-        "test_scores": _write_score_npz(
-            output_dir / "scores" / "test_point_scores.npz",
-            artifact_inputs["test"],
-        ),
-        "test_traces": _write_trace_json(
-            output_dir / "traces" / "test_traces.json",
-            compacted_test_traces,
-        ),
-        "offline_metrics": _write_json(
-            output_dir / "metrics" / "offline_metrics.json",
-            artifact_inputs["offline_metrics"],
-        ),
-        "resolved_protocol": _write_json(
-            output_dir / "protocol" / "resolved_protocol.json",
-            protocol_config,
-        ),
     }
+    if retention_policy == "retain_for_eda":
+        uq_summary_payload = build_uq_summary_payload(
+            benchmark_kind="offline",
+            experiment_name=str(experiment_config.get("experiment_name")),
+            method_name="THESIS",
+            variant_name=str(artifact_inputs["variant_name"]),
+            entity_id=str(artifact_inputs["entity_id"]),
+            seed=int(artifact_inputs["seed"]),
+            stage_name=str(
+                experiment_config.get("stage_name")
+                or experiment_config.get("model", {}).get("stage_name")
+                or "stage_b_fusion_finetuning"
+            ),
+            checkpoint_path=str(checkpoint_path) if checkpoint_path else "",
+            checkpoint_sha256=checkpoint_sha256,
+            experiment_config_path=experiment_config_path,
+            protocol_config_path=protocol_config_path,
+            output_dir=str(output_dir),
+            run_scalar_logs=_build_run_scalar_logs(experiment_config),
+            split_inputs=_build_uq_summary_inputs(artifact_inputs),
+        )
+        uq_summary_path = output_dir / "metrics" / "uq_summary.json"
+        write_uq_summary_json(uq_summary_path, uq_summary_payload)
+        compacted_clean_validation_traces = compact_evaluation_trace_payloads(
+            artifact_inputs["clean_validation_traces"]
+        )
+        compacted_synthetic_validation_traces = compact_evaluation_trace_payloads(
+            artifact_inputs["synthetic_validation_traces"]
+        )
+        compacted_test_traces = compact_evaluation_trace_payloads(
+            artifact_inputs["test_traces"]
+        )
+        artifact_paths.update(
+            {
+                "uq_summary": str(uq_summary_path),
+                "clean_validation_scores": _write_score_npz(
+                    output_dir / "scores" / "clean_validation_point_scores.npz",
+                    artifact_inputs["clean_validation"],
+                ),
+                "clean_validation_traces": _write_trace_json(
+                    output_dir / "traces" / "clean_validation_traces.json",
+                    compacted_clean_validation_traces,
+                ),
+                "synthetic_validation_scores": _write_score_npz(
+                    output_dir / "scores" / "synthetic_validation_point_scores.npz",
+                    artifact_inputs["synthetic_validation"],
+                ),
+                "synthetic_validation_traces": _write_trace_json(
+                    output_dir / "traces" / "synthetic_validation_traces.json",
+                    compacted_synthetic_validation_traces,
+                ),
+                "test_scores": _write_score_npz(
+                    output_dir / "scores" / "test_point_scores.npz",
+                    artifact_inputs["test"],
+                ),
+                "test_traces": _write_trace_json(
+                    output_dir / "traces" / "test_traces.json",
+                    compacted_test_traces,
+                ),
+                "offline_metrics": _write_json(
+                    output_dir / "metrics" / "offline_metrics.json",
+                    artifact_inputs["offline_metrics"],
+                ),
+            }
+        )
+    artifact_paths["resolved_protocol"] = _write_json(
+        output_dir / "protocol" / "resolved_protocol.json",
+        protocol_config,
+    )
+    return artifact_paths
 
 
 from scripts.benchmarks._internal.run_thesis_offline_benchmark_helpers import (
@@ -1154,6 +1165,7 @@ def run_thesis_offline_benchmark(
             experiment_config_path=experiment_config_path,
             protocol_config_path=protocol_config_path,
             manifest=manifest,
+            retention_policy=retention_policy,
         )
         retention_artifact_paths = _export_offline_retention_bundle(
             output_dir=effective_output_dir,

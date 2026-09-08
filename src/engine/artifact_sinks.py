@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
+from src.core.artifact_naming import build_wandb_artifact_name
 from src.core.console import console_print
 
 
@@ -34,6 +35,15 @@ class NoOpArtifactSink:
 class WandbArtifactSink:
     experiment_logger: Any
     artifact_type: str = "checkpoint"
+    identity: dict[str, str | int] | None = None
+
+    def _artifact_name(self) -> str:
+        if self.identity is None:
+            raise ValueError(
+                "W&B artifact sink requires normalized run identity"
+            )
+        role = "ckpt" if self.artifact_type == "checkpoint" else "out"
+        return build_wandb_artifact_name(role=role, identity=self.identity)
 
     def save_file(
         self, path: str | Path, metadata: dict[str, Any] | None = None
@@ -47,7 +57,7 @@ class WandbArtifactSink:
         )
         self.experiment_logger.log_artifact_file(
             file_path=path_obj,
-            artifact_name=path_obj.stem,
+            artifact_name=self._artifact_name(),
             artifact_type=self.artifact_type,
             aliases=["latest"],
             metadata=metadata,
@@ -65,7 +75,7 @@ class WandbArtifactSink:
         )
         self.experiment_logger.log_artifact_directory(
             directory_path=path_obj,
-            artifact_name=path_obj.name,
+            artifact_name=self._artifact_name(),
             artifact_type=self.artifact_type,
             aliases=["latest"],
             metadata=metadata,
@@ -128,6 +138,7 @@ def build_artifact_sinks(
     *,
     experiment_logger: Any | None = None,
     include_wandb_sink: bool = False,
+    artifact_identity: dict[str, str | int] | None = None,
 ) -> list[ArtifactSink]:
     if not logging_config:
         console_print(
@@ -141,7 +152,12 @@ def build_artifact_sinks(
         and logging_config.get("use_wandb", False)
         and experiment_logger is not None
     ):
-        artifact_sinks.append(WandbArtifactSink(experiment_logger=experiment_logger))
+        artifact_sinks.append(
+            WandbArtifactSink(
+                experiment_logger=experiment_logger,
+                identity=artifact_identity,
+            )
+        )
     if logging_config.get("mirror_best_checkpoint_to_kaggle", False):
         artifact_sinks.append(_build_kaggle_sink(logging_config))
     console_print(
@@ -157,6 +173,7 @@ def build_output_artifact_sinks(
     *,
     experiment_logger: Any | None = None,
     include_wandb_sink: bool = False,
+    artifact_identity: dict[str, str | int] | None = None,
 ) -> list[ArtifactSink]:
     if not logging_config:
         console_print("WANDB", "No logging config provided for output artifact sinks")
@@ -170,7 +187,9 @@ def build_output_artifact_sinks(
     ):
         artifact_sinks.append(
             WandbArtifactSink(
-                experiment_logger=experiment_logger, artifact_type="run-output"
+                experiment_logger=experiment_logger,
+                artifact_type="run-output",
+                identity=artifact_identity,
             )
         )
     if logging_config.get("mirror_output_dir_to_kaggle", False):

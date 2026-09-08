@@ -13,7 +13,10 @@ def test_evaluation_runner_uses_machine_3_4_three_seed_direct_checkpoints(
     def fake_build_config(config_path: Path) -> dict[str, object]:
         return {
             "experiment_name": config_path.stem,
+            "seed": int(config_path.stem.split("__seed", 1)[1].split("__", 1)[0]),
             "output_dir": "outputs/direct",
+            "data": {"dataset_name": "smd"},
+            "task": {"entity_id": "machine_3_4", "offline_variant": "O0"},
             "logging": {"wandb_project": "bachelor-thesis-2026"},
         }
 

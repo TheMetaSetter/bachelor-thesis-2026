@@ -49,7 +49,7 @@ def build_retention_bundle_manifest(
     identity: dict[str, Any],
     provenance: dict[str, Any] | None = None,
     *,
-    retention_policy: str = "retain_for_eda",
+    retention_policy: str = "summary_only",
     compression: str = "none",
     export_scope: str = "entity",
 ) -> dict[str, Any]:

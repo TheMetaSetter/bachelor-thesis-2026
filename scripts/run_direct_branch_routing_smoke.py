@@ -64,7 +64,7 @@ def build_smoke_experiment_config() -> dict[str, Any]:
         {
             "use_wandb": False,
             "wandb_mode": "disabled",
-            "wandb_run_name": config["experiment_name"],
+            "wandb_run_name": "off-O0-machine_1_6-s6-direct-smoke",
             "wandb_tags": ["offline-ablation", "direct-branch-routing", "smoke"],
         }
     )

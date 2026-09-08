@@ -34,6 +34,9 @@ def test_thesis_online_a0_wrapper_writes_protocol_report(tmp_path, monkeypatch) 
     config_path = tmp_path / "online.yaml"
     output_dir = tmp_path / "outputs"
     _write_online_config(config_path, output_dir)
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    config["evaluation"] = {"retention_policy": "retain_for_eda"}
+    config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
     final_checkpoint_path = output_dir / "checkpoints" / "final.pt"
     final_checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
@@ -90,7 +93,9 @@ def test_thesis_online_a0_wrapper_writes_protocol_report(tmp_path, monkeypatch) 
     assert report_path.exists()
     assert report["online_variant"] == "A0"
     assert report["protocol"]["online_window_stride"] == 1
-    assert report["online_execution"]["records"][0]["did_update"] is False
+    assert report["online_execution"]["record_length"] == 1
+    assert "records" not in report["online_execution"]
+    assert "metric_history" not in report["online_execution"]
     assert report["retention_policy"] == "retain_for_eda"
     assert (
         output_dir / "retention" / "machine-1-6" / "A0" / "retention_summary.json"
@@ -170,7 +175,10 @@ def test_thesis_online_a0_wrapper_can_reduce_retention_to_summary_only(
 
     retention_root = output_dir / "retention" / "machine-1-6" / "A0"
     assert (retention_root / "retention_summary.json").exists()
+    assert (retention_root / "threshold_artifact.json").exists()
     assert (retention_root / "retention_bundle_manifest.json").exists()
     assert not (retention_root / "online_metrics.json").exists()
     assert not (retention_root / "online_records.json").exists()
+    assert "metric_history" not in report["online_execution"]
+    assert "records" not in report["online_execution"]
     assert report["retention_policy"] == "summary_only"

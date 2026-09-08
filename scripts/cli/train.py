@@ -21,6 +21,11 @@ sys.path.append(str(Path(__file__).parent.parent))
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from src.core.console import console_print
+from src.core.artifact_naming import (
+    build_artifact_identity,
+    build_wandb_artifact_name,
+    build_wandb_run_name,
+)
 from src.core.config import load_experiment_config
 from src.core.config_help import build_config_help_text
 from src.core.registry import build_dataset, build_model
@@ -259,7 +264,8 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
     # Initialize experiment logger for tracking metrics, hyperparameters, and
     # artifacts. Logs are written to output_dir; config validates logging format.
     logging_config.setdefault("wandb_job_type", "train")
-    logging_config.setdefault("wandb_run_name", experiment_config["experiment_name"])
+    if logging_config.get("use_wandb", False):
+        logging_config["wandb_run_name"] = build_wandb_run_name(experiment_config)
     experiment_logger = ExperimentLogger(
         experiment_config["output_dir"],
         experiment_config=experiment_config,
@@ -339,28 +345,37 @@ def run_training_experiment(experiment_config: dict[str, object]) -> dict[str, o
                 **resource_metrics,
             }
         )
-        experiment_logger.log_artifact_file(
-            file_path=experiment_logger.resolved_config_path,
-            artifact_name=f"{experiment_config['experiment_name']}-resolved-config",
-            artifact_type="config",
-            aliases=["latest"],
-            metadata={"experiment_name": experiment_config["experiment_name"]},
-        )
-        experiment_logger.log_artifact_file(
-            file_path=experiment_logger.metrics_path,
-            artifact_name=f"{experiment_config['experiment_name']}-metrics",
-            artifact_type="metrics",
-            aliases=["latest"],
-            metadata={"experiment_name": experiment_config["experiment_name"]},
-        )
-        if best_checkpoint_path is not None:
+        if logging_config.get("use_wandb", False):
+            artifact_identity = build_artifact_identity(experiment_config)
             experiment_logger.log_artifact_file(
-                file_path=best_checkpoint_path,
-                artifact_name=f"{experiment_config['experiment_name']}-checkpoint",
-                artifact_type="checkpoint",
-                aliases=["best", "latest"],
+                file_path=experiment_logger.resolved_config_path,
+                artifact_name=build_wandb_artifact_name(
+                    role="cfg", identity=artifact_identity
+                ),
+                artifact_type="config",
+                aliases=["latest"],
                 metadata={"experiment_name": experiment_config["experiment_name"]},
             )
+            if experiment_logger.metrics_path.exists():
+                experiment_logger.log_artifact_file(
+                    file_path=experiment_logger.metrics_path,
+                    artifact_name=build_wandb_artifact_name(
+                        role="met", identity=artifact_identity
+                    ),
+                    artifact_type="metrics",
+                    aliases=["latest"],
+                    metadata={"experiment_name": experiment_config["experiment_name"]},
+                )
+            if best_checkpoint_path is not None:
+                experiment_logger.log_artifact_file(
+                    file_path=best_checkpoint_path,
+                    artifact_name=build_wandb_artifact_name(
+                        role="ckpt", identity=artifact_identity
+                    ),
+                    artifact_type="checkpoint",
+                    aliases=["best", "latest"],
+                    metadata={"experiment_name": experiment_config["experiment_name"]},
+                )
         experiment_logger.mirror_output_directory(
             logging_config,
             metadata={

@@ -22,6 +22,11 @@ from typing import Any
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.core.console import console_print
+from src.core.artifact_naming import (
+    build_artifact_identity,
+    build_wandb_artifact_name,
+    build_wandb_run_name,
+)
 from src.core.config import load_experiment_config
 from src.engine.logger import ExperimentLogger
 from scripts.cli.evaluate import run_evaluation_experiment
@@ -91,13 +96,25 @@ def run_ablation_suite(
     suite_logging_config = dict(first_experiment_config.get("logging", {}))
     quiet_terminal = bool(suite_logging_config.get("quiet_terminal", False))
     suite_logging_config.setdefault("wandb_job_type", "ablation_summary")
-    suite_logging_config.setdefault(
-        "wandb_run_name",
-        f"{first_experiment_config['experiment_name']}-ablation-summary",
+    suite_logging_config["wandb_run_name"] = build_wandb_run_name(
+        {
+            "experiment_name": first_experiment_config["experiment_name"],
+            "seed": first_experiment_config.get("seed"),
+            "data": first_experiment_config.get("data", {}),
+            "task": first_experiment_config.get("task", {}),
+            "offline_variant": first_experiment_config.get("offline_variant"),
+        },
+        stage="ablation",
     )
     suite_experiment_config = {
         "experiment_name": f"{first_experiment_config['experiment_name']}_ablation_suite",
-        "task": {"task_name": "ablation_suite"},
+        "seed": first_experiment_config.get("seed"),
+        "data": first_experiment_config.get("data", {}),
+        "offline_variant": first_experiment_config.get("offline_variant"),
+        "task": {
+            **dict(first_experiment_config.get("task", {})),
+            "task_name": "ablation_suite",
+        },
         "ablation_experiment_configs": experiment_config_paths,
     }
     suite_logger = ExperimentLogger(
@@ -137,6 +154,9 @@ def run_ablation_suite(
                 writer.writeheader()
                 writer.writerows(summary_rows)
 
+        artifact_identity = build_artifact_identity(
+            suite_experiment_config, stage="ablation"
+        )
         suite_logger.log_summary(
             {
                 "ablation/num_runs": len(summary_rows),
@@ -146,28 +166,36 @@ def run_ablation_suite(
         )
         suite_logger.log_artifact_file(
             file_path=suite_logger.resolved_config_path,
-            artifact_name=f"{suite_experiment_config['experiment_name']}-resolved-config",
+            artifact_name=build_wandb_artifact_name(
+                role="cfg", identity=artifact_identity
+            ),
             artifact_type="config",
             aliases=["latest"],
             metadata={"job_type": "ablation_summary"},
         )
         suite_logger.log_artifact_file(
             file_path=suite_logger.metrics_path,
-            artifact_name=f"{suite_experiment_config['experiment_name']}-metrics",
+            artifact_name=build_wandb_artifact_name(
+                role="met", identity=artifact_identity
+            ),
             artifact_type="metrics",
             aliases=["latest"],
             metadata={"job_type": "ablation_summary"},
         )
         suite_logger.log_artifact_file(
             file_path=summary_json_path,
-            artifact_name=f"{suite_experiment_config['experiment_name']}-summary-json",
+            artifact_name=build_wandb_artifact_name(
+                role="abl", identity=artifact_identity
+            ),
             artifact_type="ablation-summary",
             aliases=["latest"],
             metadata={"job_type": "ablation_summary"},
         )
         suite_logger.log_artifact_file(
             file_path=summary_csv_path,
-            artifact_name=f"{suite_experiment_config['experiment_name']}-summary-csv",
+            artifact_name=build_wandb_artifact_name(
+                role="abl", identity={**artifact_identity, "stage": "ablation-csv"}
+            ),
             artifact_type="ablation-summary",
             aliases=["latest"],
             metadata={"job_type": "ablation_summary"},

@@ -186,6 +186,7 @@ def _write_experiment_config(path: Path, output_dir: Path) -> None:
         "data": {"dataset_name": "smd", "window_size": 20},
         "model": {"model_name": "thesis_multitask"},
         "task": {"task_name": "multitask_tsad"},
+        "evaluation": {"retention_policy": "retain_for_eda"},
         "two_stage": {
             "expected_total_training_epochs": 30,
             "stage_a_multitask_epochs": 25,
@@ -483,10 +484,11 @@ def test_thesis_offline_wrapper_supports_summary_only_retention(
 
     retention_root = output_dir / "retention" / "machine-1-6" / "offline"
     assert (retention_root / "retention_summary.json").exists()
-    assert (retention_root / "uq_summary.json").exists()
+    assert (output_dir / "thresholds" / "thresholds.json").exists()
     assert (retention_root / "retention_bundle_manifest.json").exists()
     assert not (retention_root / "clean_validation_traces.json").exists()
     assert not (retention_root / "test_point_scores.npz").exists()
+    assert not (retention_root / "uq_summary.json").exists()
     assert report["retention_policy"] == "summary_only"
     assert report["retention_artifact_paths"]["summary"].endswith(
         "retention_summary.json"

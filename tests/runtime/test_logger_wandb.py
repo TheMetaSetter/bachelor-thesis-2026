@@ -4,6 +4,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from src.engine.logger import ExperimentLogger
 
 
@@ -117,3 +119,37 @@ def test_experiment_logger_quiet_terminal_suppresses_console_noise(
 
     assert captured.out == ""
     assert fake_run.logged_metrics
+
+
+def test_experiment_logger_rejects_wandb_artifact_name_over_128_characters(
+    monkeypatch, tmp_path: Path
+) -> None:
+    fake_run = _FakeRun()
+    fake_wandb = SimpleNamespace(
+        init=lambda **kwargs: fake_run,
+        Artifact=_FakeArtifact,
+    )
+    monkeypatch.setitem(sys.modules, "wandb", fake_wandb)
+
+    artifact_file = tmp_path / "artifact.json"
+    artifact_file.write_text("{}", encoding="utf-8")
+    logger = ExperimentLogger(
+        tmp_path / "outputs",
+        experiment_config={"experiment_name": "logger-test"},
+        logging_config={
+            "use_wandb": True,
+            "wandb_project": "bachelor-thesis-2026",
+            "wandb_mode": "offline",
+        },
+        quiet_terminal=True,
+    )
+
+    with pytest.raises(ValueError, match="128"):
+        logger.log_artifact_file(
+            file_path=artifact_file,
+            artifact_name="x" * 129,
+            artifact_type="metrics",
+        )
+
+    assert fake_run.logged_artifacts == []
+    logger.close()

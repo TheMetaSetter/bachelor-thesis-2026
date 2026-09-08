@@ -153,6 +153,7 @@ def test_run_online_adaptation_experiment_writes_summary_artifacts(
         },
         "optimizer": {"learning_rate": 0.001, "weight_decay": 0.0},
         "epochs": 1,
+        "evaluation": {"retention_policy": "retain_for_eda"},
     }
 
     outputs = run_online_adaptation_experiment(experiment_config)

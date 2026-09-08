@@ -72,6 +72,7 @@ def test_run_offline_benchmark_writes_shared_artifacts(tmp_path, monkeypatch) ->
                 "data_config_path": "configs/data/smd_benchmark_machine_1_6_window20.yaml",
                 "output_dir": str(output_dir),
                 "protocol_config_path": str(protocol_path),
+                "retention_policy": "retain_for_eda",
             },
             sort_keys=False,
         ),

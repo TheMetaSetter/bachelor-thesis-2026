@@ -763,17 +763,17 @@ Only then consider a larger benchmark matrix.
 
 ## Final verification
 
-- [ ] The direct training traceback no longer reaches W&B with a long artifact name.
-- [ ] All W&B artifact names are short and role-first.
-- [ ] Full experiment identity remains in metadata or resolved config.
-- [ ] Local filenames remain compatible.
-- [ ] Default retention is `summary_only`.
-- [ ] Threshold contracts remain available for online execution.
-- [ ] Large derived files are opt-in.
-- [ ] Reports do not contain complete records or metric histories.
-- [ ] Focused tests pass.
-- [ ] One smoke combination passes.
-- [ ] `git diff --check` passes.
+- [x] The direct training traceback no longer reaches W&B with a long artifact name.
+- [x] All W&B artifact names are short and role-first.
+- [x] Full experiment identity remains in metadata or resolved config.
+- [x] Local filenames remain compatible.
+- [x] Default retention is `summary_only`.
+- [x] Threshold contracts remain available for online execution.
+- [x] Large derived files are opt-in.
+- [x] Reports do not contain complete records or metric histories.
+- [x] Focused tests pass.
+- [x] One smoke combination passes.
+- [x] `git diff --check` passes.
 
 ## Assumptions and non-blocking uncertainties
 
@@ -781,3 +781,31 @@ Only then consider a larger benchmark matrix.
 - The final compact dataset token will be selected from active config fields during implementation.
 - The exact set of report-ready scalar metrics may depend on thesis reporting needs.
 - The internal duplicate offline helper may be removed or aligned after a separate caller audit; it is not the first active path to change.
+
+## Execution record
+
+The shared naming helper and its focused tests were added.
+
+The common logger and artifact sink now validate W&B names before artifact construction.
+
+Direct producers and configuration generators now use compact role-first names.
+
+Offline and online benchmark paths now default to `summary_only` and keep large derived outputs only under explicit `retain_for_eda`.
+
+Reports no longer retain complete online records or metric histories in summary-only mode.
+
+Focused verification passed with 50 tests and eight pre-existing scikit-learn warnings.
+
+The offline CPU smoke benchmark completed successfully with W&B disabled.
+
+A fresh summary-only evaluation smoke completed and produced only the resolved protocol, threshold contract, retention manifest, and retention summary.
+
+The existing output tree was not cleaned, so old derived files can remain in previously used directories.
+
+The full benchmark matrix was not started.
+
+The full suite passed 568 tests and skipped one test, with six failures in existing benchmark preflight, runtime readiness, compliance snapshots, checkpoint bridging, and model-shape tests.
+
+The failing nodes are `test_full_benchmark_matrix_preflight_is_complete_and_safe`, `test_full_spec_runtime_readiness_exports_retention_for_offline_and_online`, two `test_src_refactor_contracts` tests, `test_bridge_output_loads_strictly`, and `test_multitask_model_uses_shared_three_layer_mlp_depth`.
+
+These failures require a separate audit because they do not fail in the 50-test naming, artifact-sink, retention, benchmark-wrapper, and runtime-producer verification set.

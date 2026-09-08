@@ -594,6 +594,7 @@ def _validate_logging_config(logging_config: dict[str, Any]) -> None:
         "log_hard_prediction_ratio",
         "log_row_normalized_confusion_matrix",
         "log_focused_metrics_jsonl",
+        "log_raw_metrics_jsonl",
         "quiet_terminal",
         "diagnostics_stages_for_classification",
         "focus_metrics",
@@ -715,6 +716,7 @@ def _validate_logging_config(logging_config: dict[str, Any]) -> None:
         "log_hard_prediction_ratio",
         "log_row_normalized_confusion_matrix",
         "log_focused_metrics_jsonl",
+        "log_raw_metrics_jsonl",
         "quiet_terminal",
     ]:
         field_value = logging_config.get(field_name)

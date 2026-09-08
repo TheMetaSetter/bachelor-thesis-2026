@@ -69,6 +69,15 @@ def _load_json_config(path_like: str | Path) -> dict[str, Any]:
     return load_yaml_config(path)
 
 
+def _resolve_retention_policy(benchmark_config: dict[str, Any]) -> str:
+    retention_policy = str(benchmark_config.get("retention_policy", "summary_only"))
+    if retention_policy not in {"retain_for_eda", "summary_only"}:
+        raise ValueError(
+            "retention_policy must be one of: retain_for_eda, summary_only"
+        )
+    return retention_policy
+
+
 def _apply_data_overrides(
     data_config: dict[str, Any], data_overrides: dict[str, Any] | None
 ) -> dict[str, Any]:
@@ -263,6 +272,7 @@ def run_online_streaming_benchmark(
     )
     protocol_config = _load_json_config(resolved_protocol_config_path)
     validate_protocol_config(protocol_config, require_score_identity=False)
+    retention_policy = _resolve_retention_policy(benchmark_config)
 
     output_dir = Path(str(benchmark_config["output_dir"]))
     if not output_dir.is_absolute():
@@ -274,7 +284,10 @@ def run_online_streaming_benchmark(
         if logging_config.get("use_wandb", False):
             logging_config.setdefault("wandb_job_type", "online_benchmark")
             logging_config.setdefault(
-                "wandb_run_name", benchmark_config["benchmark_name"]
+                "wandb_run_name",
+                f"on-{benchmark_config.get('baseline_name', 'run')}-"
+                f"{benchmark_config.get('online_variant', 'main')}-"
+                f"s{benchmark_config.get('seed', 0)}",
             )
             experiment_logger = ExperimentLogger(
                 output_dir,
@@ -440,8 +453,9 @@ def run_online_streaming_benchmark(
     normalized_records = _normalize_online_records(records, online_variant)
     metrics_path = output_dir / "online_metrics.json"
     records_path = output_dir / "online_records.json"
-    _write_json(metrics_path, metric_history)
-    _write_json(records_path, normalized_records)
+    if retention_policy == "retain_for_eda":
+        _write_json(metrics_path, metric_history)
+        _write_json(records_path, normalized_records)
 
     report["entity_id"] = entity_id
     report["seed"] = seed
@@ -460,16 +474,16 @@ def run_online_streaming_benchmark(
         "method_metadata": calibration.get("method_metadata", {}),
         "stream_selections": stream_selections,
         "pre_tta_test_score_summary": pre_tta_test_score_summary,
-        "metric_history": metric_history,
-        "records": normalized_records,
-        "online_metrics_path": str(metrics_path),
-        "online_records_path": str(records_path),
+        "metric_history_length": len(metric_history),
+        "record_length": len(normalized_records),
+        "final_metrics": dict(metric_history[-1]) if metric_history else {},
     }
-    report["artifact_paths"] = {
-        "thresholds": str(threshold_path),
-        "metrics": str(metrics_path),
-        "records": str(records_path),
-    }
+    report["retention_policy"] = retention_policy
+    report["artifact_paths"] = {"thresholds": str(threshold_path)}
+    if retention_policy == "retain_for_eda":
+        report["artifact_paths"].update(
+            {"metrics": str(metrics_path), "records": str(records_path)}
+        )
     report["report_path"] = str(_write_report(output_dir, report))
     if experiment_logger is not None:
         experiment_logger.log_summary(

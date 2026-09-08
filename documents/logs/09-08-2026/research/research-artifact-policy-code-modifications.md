@@ -349,3 +349,17 @@ The recommendation to change W&B run names is a consistency improvement, not the
 The recommendation to change local output persistence is based on the stated minimal-retention policy and the observed unconditional writes.
 
 It should be implemented only after deciding which final summaries are required for the thesis report.
+
+## Implementation result
+
+The code now uses `src/core/artifact_naming.py` to build role-first W&B names from minimal human-facing identity fields.
+
+The logger and artifact sink validate the final W&B name before constructing `wandb.Artifact`.
+
+Training, evaluation, online adaptation, ablation, benchmark, and generator paths now use compact run or artifact names where they construct names directly.
+
+The default retention policy is now `summary_only` in the thesis and generic benchmark paths.
+
+Summary-only retention keeps root files and the threshold contract, while EDA retention keeps derived records and diagnostics.
+
+Existing local basenames and old output trees were not renamed or deleted.
