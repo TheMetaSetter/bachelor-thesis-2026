@@ -68,9 +68,7 @@ def test_trainer_scores_normalized_validation_mse_from_reconstruction(tmp_path):
         },
     }
 
-    torch.testing.assert_close(
-        trainer._validation_point_scores(step), torch.ones(1, 2)
-    )
+    torch.testing.assert_close(trainer._validation_point_scores(step), torch.ones(1, 2))
 
 
 def test_synthetic_metrics_use_supplied_clean_threshold(tmp_path):

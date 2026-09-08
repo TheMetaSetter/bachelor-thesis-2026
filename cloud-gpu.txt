@@ -1,3 +1,3 @@
-ssh -p 20611 root@159.48.242.10
+ssh -p 20602 root@159.48.242.10
 root
-rri_Aj9860EJ93YuW0zk
+rri_B0UwO9LB8bBoWaMh

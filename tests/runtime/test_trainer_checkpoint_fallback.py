@@ -160,7 +160,9 @@ def test_build_checkpoint_evaluation_metadata_preserves_base_state_when_threshol
     assert metadata == {"memory_initialized": False}
 
 
-def test_trainer_accepts_each_budgeted_vus_pr_checkpoint_monitor(tmp_path: Path) -> None:
+def test_trainer_accepts_each_budgeted_vus_pr_checkpoint_monitor(
+    tmp_path: Path,
+) -> None:
     model = _NaNValidationModel()
     optimizer = torch.optim.Adam(model.parameters(), lr=1.0e-3)
     logger = ExperimentLogger(
@@ -237,4 +239,6 @@ def test_trainer_flattens_budgeted_vus_metrics_for_checkpoint_monitoring(
 
     assert set(FPR_BUDGET_MONITORS).issubset(metrics)
     assert "val_synth_vus_roc_at_fpr_budget_0_001" in metrics
-    assert all(isinstance(metrics[monitor_name], float) for monitor_name in FPR_BUDGET_MONITORS)
+    assert all(
+        isinstance(metrics[monitor_name], float) for monitor_name in FPR_BUDGET_MONITORS
+    )

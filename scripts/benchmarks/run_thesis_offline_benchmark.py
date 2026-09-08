@@ -488,8 +488,14 @@ def _evaluate_normalized_synthetic_threshold_protocol(
         raise ValueError("normalized_input requires a val_synth loader")
     quantile = float(protocol_config["offline_threshold_quantile"])
     synthetic_calibration_outputs = _evaluate_named_split(
-        evaluator, model, loaders, split_name="val_synth", fallback_split_name="val",
-        point_score_threshold=None, score_space="normalized_input", scaler=scaler,
+        evaluator,
+        model,
+        loaders,
+        split_name="val_synth",
+        fallback_split_name="val",
+        point_score_threshold=None,
+        score_space="normalized_input",
+        scaler=scaler,
     )
     synthetic_calibration_payload = _evaluation_outputs_to_score_payload(
         synthetic_calibration_outputs
@@ -499,18 +505,35 @@ def _evaluate_normalized_synthetic_threshold_protocol(
     )
     threshold_source = "synthetic_validation_normal_quantile"
     clean_outputs = _evaluate_named_split(
-        evaluator, model, loaders, split_name="val", fallback_split_name="val",
-        point_score_threshold=None, score_space="normalized_input", scaler=scaler,
+        evaluator,
+        model,
+        loaders,
+        split_name="val",
+        fallback_split_name="val",
+        point_score_threshold=None,
+        score_space="normalized_input",
+        scaler=scaler,
     )
     synthetic_outputs = _evaluate_named_split(
-        evaluator, model, loaders, split_name="val_synth", fallback_split_name="val",
-        point_score_threshold=point_threshold, threshold_source=threshold_source,
-        window_score_threshold=window_threshold, score_space="normalized_input", scaler=scaler,
+        evaluator,
+        model,
+        loaders,
+        split_name="val_synth",
+        fallback_split_name="val",
+        point_score_threshold=point_threshold,
+        threshold_source=threshold_source,
+        window_score_threshold=window_threshold,
+        score_space="normalized_input",
+        scaler=scaler,
     )
     test_outputs = evaluator.evaluate(
-        model, loaders["test"], point_score_threshold=point_threshold,
-        threshold_source=threshold_source, window_score_threshold=window_threshold,
-        score_space="normalized_input", scaler=scaler,
+        model,
+        loaders["test"],
+        point_score_threshold=point_threshold,
+        threshold_source=threshold_source,
+        window_score_threshold=window_threshold,
+        score_space="normalized_input",
+        scaler=scaler,
     )
     clean_payload = _evaluation_outputs_to_score_payload(clean_outputs)
     return {
@@ -839,7 +862,9 @@ def _build_thresholds(
         device=artifact_inputs["device"],
         current_weight=float(protocol_config["online_ewma_current_weight"]),
         previous_weight=float(protocol_config["online_ewma_previous_weight"]),
-        scaler=artifact_inputs.get("scaler") if raw_protocol or normalized_protocol else None,
+        scaler=artifact_inputs.get("scaler")
+        if raw_protocol or normalized_protocol
+        else None,
     )
     selected_offline_threshold = float(
         artifact_inputs.get(
@@ -897,7 +922,9 @@ def _build_thresholds(
     if normalized_protocol:
         offline_window_threshold = artifact_inputs.get("offline_window_threshold")
         if offline_window_threshold is None:
-            raise ValueError("normalized_input artifact requires an offline window threshold")
+            raise ValueError(
+                "normalized_input artifact requires an offline window threshold"
+            )
         builder_kwargs.update(
             {
                 "calibration_split": "synthetic_validation",
@@ -1071,7 +1098,9 @@ def run_thesis_offline_benchmark(
     protocol_config = _load_yaml_config(protocol_config_path)
     retention_policy = _resolve_retention_policy(experiment_config)
     effective_output_dir = Path(
-        str(output_dir) if output_dir is not None else str(experiment_config["output_dir"])
+        str(output_dir)
+        if output_dir is not None
+        else str(experiment_config["output_dir"])
     )
 
     validate_protocol_config(protocol_config)

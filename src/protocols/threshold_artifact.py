@@ -79,7 +79,9 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
         and artifact["method_name"] == "THESIS"
     )
     requires_raw_score_identity = schema_version == THRESHOLD_ARTIFACT_SCHEMA_VERSION
-    requires_normalized_score_identity = schema_version == NORMALIZED_INPUT_SCHEMA_VERSION
+    requires_normalized_score_identity = (
+        schema_version == NORMALIZED_INPUT_SCHEMA_VERSION
+    )
     if requires_point_score_calibration:
         calibration_fields = {
             "point_score_transform",
@@ -165,7 +167,9 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
         }
         for field_name, expected_value in expected_identity.items():
             if artifact[field_name] != expected_value:
-                raise ValueError(f"normalized schema v6 artifact {field_name} is invalid")
+                raise ValueError(
+                    f"normalized schema v6 artifact {field_name} is invalid"
+                )
     if not isinstance(artifact["entity_id"], str) or not artifact["entity_id"]:
         raise ValueError("threshold artifact entity_id must be a non-empty string")
     if not isinstance(artifact["method_name"], str) or not artifact["method_name"]:
@@ -176,7 +180,10 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
         raise ValueError("threshold artifact seed must be a non-negative integer")
     if not isinstance(artifact["window_size"], int) or artifact["window_size"] <= 0:
         raise ValueError("threshold artifact window_size must be a positive integer")
-    if artifact["calibration_split"] not in {"clean_validation", "synthetic_validation"}:
+    if artifact["calibration_split"] not in {
+        "clean_validation",
+        "synthetic_validation",
+    }:
         raise ValueError(
             "threshold artifact calibration_split must be clean_validation or synthetic_validation"
         )
@@ -408,9 +415,16 @@ def validate_threshold_artifact(artifact: dict[str, Any]) -> None:
         if "offline_window" not in thresholds:
             raise ValueError("normalized schema v6 artifact is missing offline_window")
         if thresholds["offline_point"]["source_split"] != "synthetic_validation_normal":
-            raise ValueError("normalized schema v6 point threshold must be synthetic normal")
-        if thresholds["offline_window"]["source_split"] != "synthetic_validation_normal":
-            raise ValueError("normalized schema v6 window threshold must be synthetic normal")
+            raise ValueError(
+                "normalized schema v6 point threshold must be synthetic normal"
+            )
+        if (
+            thresholds["offline_window"]["source_split"]
+            != "synthetic_validation_normal"
+        ):
+            raise ValueError(
+                "normalized schema v6 window threshold must be synthetic normal"
+            )
 
 
 def build_threshold_artifact(
@@ -461,7 +475,9 @@ def build_threshold_artifact(
     is_raw_input_protocol = score_space == "raw_input"
     is_normalized_input_protocol = score_space == "normalized_input"
     if score_space not in {"model_output", "raw_input", "normalized_input"}:
-        raise ValueError("score_space must be model_output, raw_input, or normalized_input")
+        raise ValueError(
+            "score_space must be model_output, raw_input, or normalized_input"
+        )
     offline_point_source = (
         calibration_split
         if offline_point_threshold_source_split is None
@@ -507,7 +523,9 @@ def build_threshold_artifact(
         or latent_window_low_threshold is None
         or latent_window_high_threshold is None
     ):
-        raise ValueError("THESIS schema versions 4, 5, and 6 require all triage thresholds")
+        raise ValueError(
+            "THESIS schema versions 4, 5, and 6 require all triage thresholds"
+        )
     if is_historical_thesis_v4 and (point_score_c is None or point_score_tau is None):
         raise ValueError("THESIS schema version 4 requires point score calibration")
     if is_historical_thesis_v4:
@@ -616,7 +634,9 @@ def build_threshold_artifact(
         "sample_retention_policy": sample_retention_policy,
         "offline_point_threshold_nonoverlap": float(offline_point_threshold),
         "offline_window_threshold_nonoverlap": (
-            None if offline_window_threshold is None else float(offline_window_threshold)
+            None
+            if offline_window_threshold is None
+            else float(offline_window_threshold)
         ),
         "online_point_threshold_ewma": float(online_ewma_point_threshold),
         "ewma_current_weight": float(ewma_current_weight),

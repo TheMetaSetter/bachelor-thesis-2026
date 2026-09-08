@@ -20,8 +20,7 @@ DEFAULT_OUTPUT_ROOT = (
     / "generated_configs"
 )
 MODEL_CONFIG_PATH = (
-    "configs/model/"
-    "thesis_multitask_two_stage_point_score_window20_recon075_cls025.yaml"
+    "configs/model/thesis_multitask_two_stage_point_score_window20_recon075_cls025.yaml"
 )
 VARIANTS = ("O0", "O1")
 ENTITIES = ("machine_1_6", "machine_3_4", "machine_3_9")
@@ -88,8 +87,13 @@ def build_config(
     experiment_name = _generated_config_name(
         variant, entity, seed, budget_name
     ).removesuffix(".yaml")
-    run_root = output_root.parent / "smd" / "thesis" / variant / entity / (
-        f"seed{seed}_{budget_name}"
+    run_root = (
+        output_root.parent
+        / "smd"
+        / "thesis"
+        / variant
+        / entity
+        / (f"seed{seed}_{budget_name}")
     )
     evaluation = dict(config.get("evaluation", {}))
     evaluation.update(

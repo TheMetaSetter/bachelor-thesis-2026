@@ -88,8 +88,11 @@ def evaluate_normalized_checkpoint(evaluator, model, data_bundle):
             if reconstruction.ndim == 3:
                 reconstruction = reconstruction.unsqueeze(1)
             point_scores = (
-                prepared_batch["x"].unsqueeze(1) - reconstruction
-            ).square().mean(dim=-1).mean(dim=1)
+                (prepared_batch["x"].unsqueeze(1) - reconstruction)
+                .square()
+                .mean(dim=-1)
+                .mean(dim=1)
+            )
             point_labels = prepared_batch["synthetic_anomaly_mask"]
             pointwise_payloads.append(
                 {
@@ -282,7 +285,9 @@ def run_evaluation_experiment(
     if protocol_config is not None and protocol_config.get("score_space") == (
         "normalized_input"
     ):
-        evaluation_outputs = evaluate_normalized_checkpoint(evaluator, model, data_bundle)
+        evaluation_outputs = evaluate_normalized_checkpoint(
+            evaluator, model, data_bundle
+        )
     elif experiment_config.get("reconstruction_loss_space") == "raw_input":
         evaluation_outputs = evaluate_raw_checkpoint(evaluator, model, data_bundle)
     else:

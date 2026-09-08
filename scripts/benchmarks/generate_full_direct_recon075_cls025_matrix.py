@@ -20,8 +20,7 @@ DEFAULT_OUTPUT_ROOT = (
     / "generated_configs"
 )
 MODEL_CONFIG_PATH = (
-    "configs/model/"
-    "thesis_multitask_two_stage_point_score_window20_recon075_cls025.yaml"
+    "configs/model/thesis_multitask_two_stage_point_score_window20_recon075_cls025.yaml"
 )
 VARIANTS = ("O0", "O1")
 ENTITIES = ("machine_1_6", "machine_3_4", "machine_3_9")
@@ -67,7 +66,9 @@ def _model_overrides(variant: str) -> dict[str, Any]:
     return overrides
 
 
-def build_config(variant: str, entity: str, seed: int, output_root: Path) -> dict[str, Any]:
+def build_config(
+    variant: str, entity: str, seed: int, output_root: Path
+) -> dict[str, Any]:
     source_path = _source_config_path(variant, entity, seed)
     if not source_path.exists():
         raise FileNotFoundError(f"Missing source config: {source_path}")
@@ -117,7 +118,9 @@ def generate_configs(output_root: Path) -> list[Path]:
         for entity in ENTITIES:
             for seed in SEEDS:
                 config = build_config(variant, entity, seed, output_root)
-                output_path = output_root / _generated_config_name(variant, entity, seed)
+                output_path = output_root / _generated_config_name(
+                    variant, entity, seed
+                )
                 output_path.write_text(
                     yaml.safe_dump(config, sort_keys=False, allow_unicode=True),
                     encoding="utf-8",

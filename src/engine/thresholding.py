@@ -63,7 +63,9 @@ def select_synthetic_validation_normal_point_threshold(
         raise ValueError("synthetic point scores and labels must have the same length")
     normal_finite_scores = scores[(labels == 0) & np.isfinite(scores)]
     if normal_finite_scores.size == 0:
-        raise ValueError("Cannot select a threshold from normal finite synthetic scores")
+        raise ValueError(
+            "Cannot select a threshold from normal finite synthetic scores"
+        )
     return float(np.quantile(normal_finite_scores, _validate_quantile(quantile)))
 
 
@@ -79,7 +81,9 @@ def select_synthetic_validation_normal_window_threshold(
         raise ValueError("synthetic window scores and labels must have the same length")
     normal_finite_scores = scores[(labels == 0) & np.isfinite(scores)]
     if normal_finite_scores.size == 0:
-        raise ValueError("Cannot select a threshold from normal finite synthetic windows")
+        raise ValueError(
+            "Cannot select a threshold from normal finite synthetic windows"
+        )
     return float(np.quantile(normal_finite_scores, _validate_quantile(quantile)))
 
 

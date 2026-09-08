@@ -127,8 +127,10 @@ class Trainer:
                 if reconstruction.ndim == 3:
                     reconstruction = reconstruction.unsqueeze(1)
                 normalized_point_mse_samples = (
-                    step_output["batch"]["x"].unsqueeze(1) - reconstruction
-                ).square().mean(dim=-1)
+                    (step_output["batch"]["x"].unsqueeze(1) - reconstruction)
+                    .square()
+                    .mean(dim=-1)
+                )
                 return normalized_point_mse_samples.mean(dim=1)
             return step_output["outputs"]["point_scores"]
         return score_reconstruction(

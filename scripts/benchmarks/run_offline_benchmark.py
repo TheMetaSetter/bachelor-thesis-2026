@@ -186,8 +186,12 @@ def _score_native_validation_split(
         _to_numpy(split_sequence["x"], dtype=np.float64)
     )
     point_labels = _to_numpy(split_sequence["point_labels"], dtype=np.int64).reshape(-1)
-    point_scores = np.asarray(native_scores["point_scores"], dtype=np.float64).reshape(-1)
-    window_scores = np.asarray(native_scores["window_scores"], dtype=np.float64).reshape(-1)
+    point_scores = np.asarray(native_scores["point_scores"], dtype=np.float64).reshape(
+        -1
+    )
+    window_scores = np.asarray(
+        native_scores["window_scores"], dtype=np.float64
+    ).reshape(-1)
     starts = build_nonoverlap_tail_window_starts(point_scores.size, window_size)
     if len(starts) != window_scores.size:
         raise ValueError("Native window scores must match non-overlap window starts")
@@ -320,9 +324,7 @@ def run_offline_benchmark(
     )
     if use_native_synthetic_protocol:
         if "val_synth" not in (data_bundle.get("scaled_sequences") or {}):
-            raise ValueError(
-                "normalized_input baseline evaluation requires val_synth"
-            )
+            raise ValueError("normalized_input baseline evaluation requires val_synth")
         window_size = int(protocol_config["window_size"])
         synthetic_validation_payload, synthetic_validation_meta = (
             _score_native_validation_split(
@@ -332,19 +334,15 @@ def run_offline_benchmark(
                 window_size=window_size,
             )
         )
-        offline_point_threshold = (
-            select_synthetic_validation_normal_point_threshold(
-                synthetic_validation_payload["point_scores"],
-                synthetic_validation_payload["point_labels"],
-                float(protocol_config["offline_threshold_quantile"]),
-            )
+        offline_point_threshold = select_synthetic_validation_normal_point_threshold(
+            synthetic_validation_payload["point_scores"],
+            synthetic_validation_payload["point_labels"],
+            float(protocol_config["offline_threshold_quantile"]),
         )
-        offline_window_threshold = (
-            select_synthetic_validation_normal_window_threshold(
-                synthetic_validation_payload["window_scores"],
-                synthetic_validation_payload["window_labels"],
-                float(protocol_config["offline_threshold_quantile"]),
-            )
+        offline_window_threshold = select_synthetic_validation_normal_window_threshold(
+            synthetic_validation_payload["window_scores"],
+            synthetic_validation_payload["window_labels"],
+            float(protocol_config["offline_threshold_quantile"]),
         )
         clean_validation_payload, clean_validation_meta = (
             _score_native_validation_split(
@@ -435,17 +433,15 @@ def run_offline_benchmark(
         config_path=str(benchmark_config_path),
         offline_window_threshold=offline_window_threshold,
         calibration_split=(
-            "synthetic_validation" if use_native_synthetic_protocol else "clean_validation"
+            "synthetic_validation"
+            if use_native_synthetic_protocol
+            else "clean_validation"
         ),
         offline_point_threshold_source_split=(
-            "synthetic_validation_normal"
-            if use_native_synthetic_protocol
-            else None
+            "synthetic_validation_normal" if use_native_synthetic_protocol else None
         ),
         offline_window_threshold_source_split=(
-            "synthetic_validation_normal"
-            if use_native_synthetic_protocol
-            else None
+            "synthetic_validation_normal" if use_native_synthetic_protocol else None
         ),
         score_space="model_output",
     )

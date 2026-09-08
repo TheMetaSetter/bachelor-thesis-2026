@@ -81,7 +81,9 @@ def validate_protocol_config(
         )
     if score_space == "normalized_input":
         if offline_threshold_split != "synthetic_validation":
-            raise ValueError("normalized_input requires synthetic_validation thresholds")
+            raise ValueError(
+                "normalized_input requires synthetic_validation thresholds"
+            )
         if offline_point_source != "synthetic_validation_normal":
             raise ValueError("normalized_input requires synthetic-normal point scores")
         if offline_window_source != "synthetic_validation_normal":

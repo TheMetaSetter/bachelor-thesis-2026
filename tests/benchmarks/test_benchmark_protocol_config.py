@@ -89,8 +89,7 @@ def test_protocol_config_accepts_synthetic_normal_point_source() -> None:
 
 def test_normalized_synthetic_normal_protocol_defines_two_offline_sources() -> None:
     config_path = Path(
-        "configs/protocol/"
-        "smd_window20_synthnormal_q99_normalized_input_mse_ewma09.yaml"
+        "configs/protocol/smd_window20_synthnormal_q99_normalized_input_mse_ewma09.yaml"
     )
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
 

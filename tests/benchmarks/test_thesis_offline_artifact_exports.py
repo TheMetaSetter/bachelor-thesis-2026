@@ -24,7 +24,10 @@ def test_synthetic_normal_protocol_uses_two_pass_point_threshold() -> None:
         def evaluate(self, model, loader, **kwargs):
             split_name = loader["split_name"]
             calls.append((split_name, kwargs))
-            if split_name == "val_synth" and kwargs.get("point_score_threshold") is None:
+            if (
+                split_name == "val_synth"
+                and kwargs.get("point_score_threshold") is None
+            ):
                 scores = [1.0, 2.0, 100.0, np.nan, 0.001]
                 labels = [0, 0, 1, 0, 0]
                 covered = [True, True, True, True, False]
@@ -85,14 +88,19 @@ def test_synthetic_normal_protocol_uses_two_pass_point_threshold() -> None:
     assert outputs["offline_point_threshold_source"] == "synthetic_validation_normal"
 
 
-def test_normalized_protocol_uses_synthetic_normal_point_and_window_thresholds() -> None:
+def test_normalized_protocol_uses_synthetic_normal_point_and_window_thresholds() -> (
+    None
+):
     calls: list[tuple[str, dict[str, object]]] = []
 
     class FakeEvaluator:
         def evaluate(self, model, loader, **kwargs):
             split_name = loader["split_name"]
             calls.append((split_name, kwargs))
-            if split_name == "val_synth" and kwargs.get("point_score_threshold") is None:
+            if (
+                split_name == "val_synth"
+                and kwargs.get("point_score_threshold") is None
+            ):
                 point_scores = [1.0, 2.0, 100.0, np.nan, 0.001]
                 point_labels = [0, 0, 1, 0, 0]
                 covered = [True, True, True, True, False]
@@ -152,7 +160,12 @@ def test_normalized_protocol_uses_synthetic_normal_point_and_window_thresholds()
 
     point_threshold = float(np.quantile(np.asarray([1.0, 2.0]), 0.99))
     window_threshold = float(np.quantile(np.asarray([1.0, 3.0]), 0.99))
-    assert [split_name for split_name, _ in calls] == ["val_synth", "val", "val_synth", "test"]
+    assert [split_name for split_name, _ in calls] == [
+        "val_synth",
+        "val",
+        "val_synth",
+        "test",
+    ]
     assert calls[2][1]["point_score_threshold"] == point_threshold
     assert calls[2][1]["window_score_threshold"] == window_threshold
     assert calls[3][1]["point_score_threshold"] == point_threshold

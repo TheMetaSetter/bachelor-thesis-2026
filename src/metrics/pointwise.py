@@ -187,6 +187,11 @@ def _build_score_thresholds(
     point_scores: np.ndarray, num_thresholds: int
 ) -> np.ndarray:
     score_array = np.asarray(point_scores).astype(np.float64).reshape(-1)
+
+    # debug
+    print("score_array w/ reshape(-1):", score_array)
+    print("score_array w/o reshape(-1):", np.asarray(point_scores).astype(np.float64))
+
     if num_thresholds <= 0:
         raise ValueError("num_thresholds must be positive")
     if score_array.size == 0:
@@ -352,7 +357,10 @@ def _normalised_partial_roc_area(
         [
             unique_fprs,
             np.asarray(
-                [np.max(curve[inverse == index, 1]) for index in range(unique_fprs.size)],
+                [
+                    np.max(curve[inverse == index, 1])
+                    for index in range(unique_fprs.size)
+                ],
                 dtype=np.float64,
             ),
         ]
@@ -757,12 +765,8 @@ def compute_pointwise_metrics(
         ),
         "vus_pr": float("nan"),
         "vus_roc": float("nan"),
-        "vus_pr_at_fpr_budget": {
-            str(budget): float("nan") for budget in FPR_BUDGETS
-        },
-        "vus_roc_at_fpr_budget": {
-            str(budget): float("nan") for budget in FPR_BUDGETS
-        },
+        "vus_pr_at_fpr_budget": {str(budget): float("nan") for budget in FPR_BUDGETS},
+        "vus_roc_at_fpr_budget": {str(budget): float("nan") for budget in FPR_BUDGETS},
     }
 
     # Gọi hàm để tính toán độ đo VUS-PR

@@ -49,9 +49,10 @@ def test_budget_configs_materialize_108_unique_stage_runs(tmp_path: Path) -> Non
         for stage in manifest["training_stages"]:
             stage_config = load_experiment_config(Path(stage["config_path"]))
             stage_run_names.add(stage_config["logging"]["wandb_run_name"])
-            assert stage_config["checkpoint_monitor_metric"] == config[
-                "checkpoint_monitor_metric"
-            ]
+            assert (
+                stage_config["checkpoint_monitor_metric"]
+                == config["checkpoint_monitor_metric"]
+            )
             assert stage_config["model_overrides"]["fusion_mode"] == (
                 "direct_branch_routing"
             )
