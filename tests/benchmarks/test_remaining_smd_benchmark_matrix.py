@@ -316,6 +316,19 @@ def test_cloud_launcher_main_method_dry_run_lists_only_gpu_queues(tmp_path: Path
     assert "cpu-1" not in completed.stdout
 
 
+def test_cloud_resource_orchestration_uses_runtime_allowed_cpu_ids() -> None:
+    launcher = Path("scripts/benchmarks/run_remaining_smd_cloud_tmux.sh").read_text(
+        encoding="utf-8"
+    )
+    resource_env = Path(
+        "scripts/benchmarks/_remaining_smd_resource_env.sh"
+    ).read_text(encoding="utf-8")
+
+    assert "Cpus_allowed_list" in launcher
+    assert 'rm -f "$marker"' in launcher
+    assert 'taskset -c "$cpu_mask" true' in resource_env
+
+
 def test_config_builder_rejects_disabled_wandb_logging(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         generator,

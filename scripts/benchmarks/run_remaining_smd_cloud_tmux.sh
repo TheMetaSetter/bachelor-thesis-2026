@@ -19,6 +19,7 @@ MAX_ONLINE_STEPS=""
 ENTITY_IDS=()
 GPU_MASKS=("0-7" "8-15" "16-23" "24-31")
 CPU_MASKS=("32-37" "38-43")
+ALLOWED_CPU_IDS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -69,6 +70,52 @@ if [[ "$OUTPUT_ROOT" != /* ]]; then
 fi
 MANIFEST="$OUTPUT_ROOT/remaining_smd_manifest.json"
 LOG_ROOT="$OUTPUT_ROOT/tmux_logs/remaining_smd/$MODE"
+
+join_cpu_ids() {
+    local start="$1" count="$2" output="" index
+    for ((index = start; index < start + count; index++)); do
+        [[ -n "$output" ]] && output+=","
+        output+="${ALLOWED_CPU_IDS[$index]}"
+    done
+    printf '%s' "$output"
+}
+
+configure_cpu_masks() {
+    local allowed_cpu_list
+    [[ -r /proc/self/status ]] || return 0
+    allowed_cpu_list="$(awk -F: '$1 == "Cpus_allowed_list" {gsub(/[[:space:]]/, "", $2); print $2}' /proc/self/status)"
+    [[ -n "$allowed_cpu_list" ]] || return 0
+
+    local -a entries=()
+    local entry start end cpu
+    IFS=',' read -r -a entries <<< "$allowed_cpu_list"
+    ALLOWED_CPU_IDS=()
+    for entry in "${entries[@]}"; do
+        if [[ "$entry" == *-* ]]; then
+            IFS='-' read -r start end <<< "$entry"
+            for ((cpu = start; cpu <= end; cpu++)); do
+                ALLOWED_CPU_IDS+=("$cpu")
+            done
+        elif [[ "$entry" =~ ^[0-9]+$ ]]; then
+            ALLOWED_CPU_IDS+=("$entry")
+        fi
+    done
+    if [[ "${#ALLOWED_CPU_IDS[@]}" -lt 44 ]]; then
+        ALLOWED_CPU_IDS=()
+        return 0
+    fi
+
+    GPU_MASKS=()
+    for start in 0 8 16 24; do
+        GPU_MASKS+=("$(join_cpu_ids "$start" 8)")
+    done
+    CPU_MASKS=()
+    for start in 32 38; do
+        CPU_MASKS+=("$(join_cpu_ids "$start" 6)")
+    done
+}
+
+configure_cpu_masks
 
 run_generator_dry() {
     local -a args=(-m scripts.benchmarks.generate_remaining_smd_benchmark_configs
@@ -162,6 +209,13 @@ preflight() {
             done
         done
     fi
+    local cpu_mask
+    for cpu_mask in "${GPU_MASKS[@]}" "${CPU_MASKS[@]}"; do
+        taskset -c "$cpu_mask" true >/dev/null 2>&1 || {
+            echo "CPU mask is not valid or not allowed: $cpu_mask" >&2
+            return 2
+        }
+    done
     run_generator_dry
     echo "Preflight passed: GPUs=$visible_gpu_count CPUs=$cpu_count"
 }
@@ -174,6 +228,7 @@ start_worker_session() {
         echo "Refusing to overwrite existing tmux session: $session_name" >&2
         return 2
     fi
+    rm -f "$marker"
     local -a args=("$MATRIX_SCRIPT" --mode "$MODE" --role worker
         --gpu-count "$GPU_COUNT" --worker-index "$index" --worker-count "$worker_count"
         --resource-class "$resource_class" --phase-group "$phase" --cpu-mask "$cpu_mask"
