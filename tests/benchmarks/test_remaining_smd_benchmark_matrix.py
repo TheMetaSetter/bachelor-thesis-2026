@@ -315,6 +315,35 @@ def test_generated_configs_use_resource_specific_worker_limits(tmp_path: Path) -
     assert configs[("online_baseline", "iforest")]["device"] == "cpu"
 
 
+def test_all_remaining_smd_configs_enable_online_wandb_for_smoke_and_wet(
+    tmp_path: Path,
+) -> None:
+    dataset_root = tmp_path / "dataset"
+    _write_entity_files(dataset_root, [*EXCLUDED_ENTITY_IDS, "machine-2-1"])
+    labels = [0] * 2048
+    labels[10] = 1
+    (dataset_root / "test_label" / "machine-2-1.txt").write_text(
+        "\n".join(map(str, labels)) + "\n", encoding="utf-8"
+    )
+
+    for smoke in (True, False):
+        manifest_path = write_matrix_configs(
+            dataset_root=dataset_root,
+            output_root=tmp_path / ("smoke" if smoke else "wet"),
+            smoke=smoke,
+            seed_values=(6,),
+            selected_entity_ids=("machine-2-1",),
+        )
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+        for run in manifest["runs"]:
+            config = yaml.safe_load(
+                Path(run["config_path"]).read_text(encoding="utf-8")
+            )
+            assert config["logging"]["use_wandb"] is True
+            assert config["logging"]["wandb_mode"] == "online"
+
+
 def test_online_thesis_config_points_to_matching_stage_b_output(tmp_path: Path) -> None:
     dataset_root = tmp_path / "dataset"
     _write_entity_files(dataset_root, [*EXCLUDED_ENTITY_IDS, "machine-2-1"])

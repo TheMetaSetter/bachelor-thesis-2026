@@ -305,9 +305,9 @@ def _data_config(dataset_root: Path, entity_id: str, smoke: bool) -> dict[str, A
 def _common_logging(*, mode: str, run_name: str, tags: list[str]) -> dict[str, Any]:
     smoke = mode == "smoke"
     return {
-        "use_wandb": not smoke,
+        "use_wandb": True,
         "wandb_project": "bachelor-thesis-2026",
-        "wandb_mode": "disabled" if smoke else "online",
+        "wandb_mode": "online",
         "wandb_run_name": run_name,
         "wandb_tags": tags,
         "log_hard_prediction_ratio": not smoke,
@@ -418,6 +418,19 @@ def _traditional_offline_config(run: dict[str, Any], data_path: Path, settings: 
         "retention_policy": "summary_only",
     }
     config["data_overrides"] = {"num_workers": 0}
+    config["logging"] = _common_logging(
+        mode=settings["mode"],
+        run_name=run["run_id"],
+        tags=[
+            "benchmark",
+            "traditional",
+            "offline",
+            str(run["method"]),
+            str(run["entity_id"]),
+            f"seed{int(run['seed'])}",
+        ],
+    )
+    config["logging"]["wandb_job_type"] = "offline_benchmark"
     return config
 
 
@@ -535,11 +548,12 @@ def _online_baseline_config(run: dict[str, Any], data_path: Path, settings: dict
         "benchmark_mode": settings["mode"],
         "retention_policy": "summary_only",
         "logging": {
-            "use_wandb": False,
-            "wandb_mode": "disabled",
-            "wandb_project": "bachelor-thesis-2026",
-            "wandb_run_name": run["run_id"],
-            "wandb_tags": ["benchmark", "online", method, entity_id, f"seed{seed}"],
+            **_common_logging(
+                mode=settings["mode"],
+                run_name=run["run_id"],
+                tags=["benchmark", "online", method, entity_id, f"seed{seed}"],
+            ),
+            "wandb_job_type": "online_benchmark",
         },
     }
 
