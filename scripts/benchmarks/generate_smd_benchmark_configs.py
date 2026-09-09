@@ -81,8 +81,6 @@ def _variant_epochs(smoke: bool) -> dict[str, int]:
 def _variant_logging(
     smoke: bool, variant: str, entity_id: str, seed: int
 ) -> dict[str, Any]:
-    wandb_mode = "disabled" if smoke else "online"
-    use_wandb = not smoke
     tags = [
         "offline-benchmark",
         "thesis",
@@ -94,9 +92,9 @@ def _variant_logging(
     if smoke:
         tags.append("smoke")
     return {
-        "use_wandb": use_wandb,
+        "use_wandb": True,
         "wandb_project": "bachelor-thesis-2026",
-        "wandb_mode": wandb_mode,
+        "wandb_mode": "online",
         "wandb_run_name": f"off-{variant}-{_entity_token(entity_id)}-s{seed}-{'smoke' if smoke else 'main'}",
         "wandb_tags": tags,
         "log_hard_prediction_ratio": not smoke,

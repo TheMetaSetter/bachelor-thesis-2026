@@ -33,7 +33,14 @@ evaluation:
   vus_max_buffer_size: 2
   vus_num_thresholds: 10
 logging:
-  use_wandb: false
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_job_type: train
+  wandb_run_name: raw_mse_offline_cpu_smoke_20260905
+  wandb_tags:
+    - benchmark-smoke
+    - raw-mse
   enable_reconstruction_diagnostics: true
 two_stage:
   expected_total_training_epochs: 2

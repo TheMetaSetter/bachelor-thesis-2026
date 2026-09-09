@@ -14,3 +14,11 @@ baseline_kwargs:
   adaptation_momentum: 0.02
   seed: 8
 benchmark_mode: smoke
+logging:
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_job_type: smoke
+  wandb_run_name: smd__candi__online_A0__machine_3_9__w20__seed8__smoke
+  wandb_tags:
+    - smoke

@@ -28,9 +28,9 @@ evaluation:
   vus_num_thresholds: 20
   retention_policy: retain_for_eda
 logging:
-  use_wandb: false
+  use_wandb: true
   wandb_project: bachelor-thesis-2026
-  wandb_mode: disabled
+  wandb_mode: online
   wandb_run_name: smd__thesis__online__O0_A2__machine_1_6__w20__seed6__checkpoint_smoke_5608_5909
   wandb_tags:
     - online-smoke

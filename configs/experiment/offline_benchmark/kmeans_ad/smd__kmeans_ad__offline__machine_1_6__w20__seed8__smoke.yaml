@@ -13,3 +13,15 @@ baseline_kwargs:
   normalize_windows: true
   threshold_quantile: 0.99
   random_state: 8
+logging:
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_job_type: offline_benchmark
+  wandb_run_name: smd__kmeans_ad__offline__machine_1_6__w20__seed8__smoke
+  wandb_tags:
+  - offline-benchmark
+  - kmeans_ad
+  - machine-1-6
+  - seed8
+  - smoke

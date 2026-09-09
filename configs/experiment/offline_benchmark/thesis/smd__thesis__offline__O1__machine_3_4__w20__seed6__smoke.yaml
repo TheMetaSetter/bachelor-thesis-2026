@@ -25,9 +25,9 @@ evaluation:
   vus_num_thresholds: 20
   retention_policy: summary_only
 logging:
-  use_wandb: false
+  use_wandb: true
   wandb_project: bachelor-thesis-2026
-  wandb_mode: disabled
+  wandb_mode: online
   wandb_run_name: off-O1-machine_3_4-s6-smoke
   wandb_tags:
   - offline-benchmark

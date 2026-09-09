@@ -35,7 +35,9 @@ evaluation:
   vus_num_thresholds: 50
 logging:
   use_wandb: true
-  wandb_mode: offline
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_job_type: train
   wandb_tags:
     - comparative
     - thesis-two-stage

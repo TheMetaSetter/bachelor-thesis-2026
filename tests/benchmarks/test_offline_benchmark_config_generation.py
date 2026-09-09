@@ -30,3 +30,10 @@ def test_generate_offline_benchmark_configs_writes_all_expected_files() -> None:
     assert sample_config["protocol_config_path"].endswith(
         "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
     )
+    smoke_config_path = Path(
+        "configs/experiment/offline_benchmark/stumpy/"
+        "smd__stumpy_channel_ab__offline__machine_1_6__w20__seed6__smoke.yaml"
+    )
+    smoke_config = yaml.safe_load(smoke_config_path.read_text(encoding="utf-8"))
+    assert smoke_config["logging"]["use_wandb"] is True
+    assert smoke_config["logging"]["wandb_mode"] == "online"

@@ -12,3 +12,15 @@ baseline_kwargs:
   normalize: true
   p: 2.0
   threshold_quantile: 0.99
+logging:
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_job_type: offline_benchmark
+  wandb_run_name: smd__stumpy_channel_ab__offline__machine_1_6__w20__seed36__smoke
+  wandb_tags:
+  - offline-benchmark
+  - stumpy_channel_ab
+  - machine-1-6
+  - seed36
+  - smoke

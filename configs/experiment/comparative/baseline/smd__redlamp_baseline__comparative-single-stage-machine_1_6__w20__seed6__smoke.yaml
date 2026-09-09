@@ -34,8 +34,10 @@ evaluation:
   vus_max_buffer_size: 20
   vus_num_thresholds: 50
 logging:
-  use_wandb: false
-  wandb_mode: disabled
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_job_type: train
   wandb_tags:
     - comparative
     - baseline-single-stage

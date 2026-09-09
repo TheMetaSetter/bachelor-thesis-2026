@@ -217,9 +217,9 @@ def build_online_benchmark_config(
             "retention_policy": "summary_only",
         },
         "logging": {
-            "use_wandb": not smoke,
+            "use_wandb": True,
             "wandb_project": "bachelor-thesis-2026",
-            "wandb_mode": "disabled" if smoke else "online",
+            "wandb_mode": "online",
             "wandb_job_type": "online_benchmark",
             "wandb_run_name": f"on-{offline_variant}-{online_variant}-{_entity_token(entity_id)}-s{seed}-{'smoke' if smoke else 'main'}",
             "wandb_tags": [

@@ -96,7 +96,7 @@ def build_offline_benchmark_config(
     smoke: bool,
 ) -> dict[str, Any]:
     benchmark_name = _benchmark_name(method, entity_id, seed, smoke)
-    return {
+    config: dict[str, Any] = {
         "benchmark_name": benchmark_name,
         "baseline_name": method,
         "entity_id": entity_id,
@@ -108,6 +108,22 @@ def build_offline_benchmark_config(
         "output_dir": _output_dir(method, entity_id, seed, smoke),
         "baseline_kwargs": _baseline_kwargs(method, seed, smoke),
     }
+    if smoke:
+        config["logging"] = {
+            "use_wandb": True,
+            "wandb_project": "bachelor-thesis-2026",
+            "wandb_mode": "online",
+            "wandb_job_type": "offline_benchmark",
+            "wandb_run_name": benchmark_name,
+            "wandb_tags": [
+                "offline-benchmark",
+                method,
+                entity_id,
+                f"seed{seed}",
+                "smoke",
+            ],
+        }
+    return config
 
 
 def generate_offline_benchmark_configs() -> list[Path]:

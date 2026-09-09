@@ -62,8 +62,8 @@ def build_smoke_experiment_config() -> dict[str, Any]:
     smoke_logging_config = dict(config.get("logging", {}))
     smoke_logging_config.update(
         {
-            "use_wandb": False,
-            "wandb_mode": "disabled",
+            "use_wandb": True,
+            "wandb_mode": "online",
             "wandb_run_name": "off-O0-machine_1_6-s6-direct-smoke",
             "wandb_tags": ["offline-ablation", "direct-branch-routing", "smoke"],
         }

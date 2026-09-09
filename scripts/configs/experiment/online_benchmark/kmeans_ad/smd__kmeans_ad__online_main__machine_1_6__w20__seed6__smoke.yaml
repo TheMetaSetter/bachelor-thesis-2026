@@ -15,3 +15,11 @@ baseline_kwargs:
   threshold_quantile: 0.99
   seed: 6
 benchmark_mode: smoke
+logging:
+  use_wandb: true
+  wandb_project: bachelor-thesis-2026
+  wandb_mode: online
+  wandb_job_type: smoke
+  wandb_run_name: smd__kmeans_ad__online_main__machine_1_6__w20__seed6__smoke
+  wandb_tags:
+    - smoke
