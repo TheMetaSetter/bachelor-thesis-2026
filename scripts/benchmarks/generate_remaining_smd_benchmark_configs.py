@@ -104,9 +104,15 @@ def select_short_online_range(
     }
 
 
-def mode_settings(*, smoke: bool) -> dict[str, Any]:
+def mode_settings(
+    *,
+    smoke: bool,
+    stage_a_epochs: int | None = None,
+    stage_b_epochs: int | None = None,
+    max_online_steps: int | None = None,
+) -> dict[str, Any]:
     if smoke:
-        return {
+        settings = {
             "mode": "smoke",
             "stage_a_epochs": 3,
             "stage_b_epochs": 2,
@@ -115,15 +121,26 @@ def mode_settings(*, smoke: bool) -> dict[str, Any]:
             "vus_max_buffer_size": 10,
             "vus_num_thresholds": 20,
         }
-    return {
-        "mode": "wet",
-        "stage_a_epochs": 25,
-        "stage_b_epochs": 5,
-        "redlamp_epochs": 30,
-        "max_online_steps": None,
-        "vus_max_buffer_size": 20,
-        "vus_num_thresholds": 200,
-    }
+    else:
+        settings = {
+            "mode": "wet",
+            "stage_a_epochs": 25,
+            "stage_b_epochs": 5,
+            "redlamp_epochs": 30,
+            "max_online_steps": None,
+            "vus_max_buffer_size": 20,
+            "vus_num_thresholds": 200,
+        }
+    for name, value in (
+        ("stage_a_epochs", stage_a_epochs),
+        ("stage_b_epochs", stage_b_epochs),
+        ("max_online_steps", max_online_steps),
+    ):
+        if value is not None:
+            if value <= 0:
+                raise ValueError(f"{name} must be positive")
+            settings[name] = value
+    return settings
 
 
 def _run_output_root(output_root: Path, entity_id: str, seed: int, method: str) -> Path:
@@ -216,6 +233,7 @@ def build_matrix_plan(
     smoke: bool,
     output_root: Path,
     online_ranges: dict[str, dict[str, int]] | None = None,
+    main_method_only: bool = False,
 ) -> list[dict[str, Any]]:
     """Build the minimal run identity manifest without touching the dataset."""
     plan: list[dict[str, Any]] = []
@@ -232,25 +250,26 @@ def build_matrix_plan(
                     seed=seed,
                     runner="thesis_offline",
                 )
-            _add_run(
-                plan,
-                output_root=output_root,
-                phase="offline",
-                method="redlamp_baseline",
-                entity_id=entity_id,
-                seed=seed,
-                runner="redlamp",
-            )
-            for method in OFFLINE_BASELINES:
+            if not main_method_only:
                 _add_run(
                     plan,
                     output_root=output_root,
                     phase="offline",
-                    method=method,
+                    method="redlamp_baseline",
                     entity_id=entity_id,
                     seed=seed,
-                    runner="offline_baseline",
+                    runner="redlamp",
                 )
+                for method in OFFLINE_BASELINES:
+                    _add_run(
+                        plan,
+                        output_root=output_root,
+                        phase="offline",
+                        method=method,
+                        entity_id=entity_id,
+                        seed=seed,
+                        runner="offline_baseline",
+                    )
             for offline_variant in THESIS_OFFLINE_VARIANTS:
                 for online_variant in THESIS_ONLINE_VARIANTS:
                     _add_run(
@@ -264,17 +283,18 @@ def build_matrix_plan(
                         online_range=(online_ranges or {}).get(entity_id),
                         runner="thesis_online",
                     )
-            for method in ONLINE_BASELINES:
-                _add_run(
-                    plan,
-                    output_root=output_root,
-                    phase="online",
-                    method=method,
-                    entity_id=entity_id,
-                    seed=seed,
-                    online_range=(online_ranges or {}).get(entity_id),
-                    runner="online_baseline",
-                )
+            if not main_method_only:
+                for method in ONLINE_BASELINES:
+                    _add_run(
+                        plan,
+                        output_root=output_root,
+                        phase="online",
+                        method=method,
+                        entity_id=entity_id,
+                        seed=seed,
+                        online_range=(online_ranges or {}).get(entity_id),
+                        runner="online_baseline",
+                    )
     return plan
 
 
@@ -576,8 +596,17 @@ def write_matrix_configs(
     smoke: bool,
     seed_values: tuple[int, ...] = SEED_VALUES,
     selected_entity_ids: tuple[str, ...] | None = None,
+    main_method_only: bool = False,
+    stage_a_epochs: int | None = None,
+    stage_b_epochs: int | None = None,
+    max_online_steps: int | None = None,
 ) -> Path:
-    settings = mode_settings(smoke=smoke)
+    settings = mode_settings(
+        smoke=smoke,
+        stage_a_epochs=stage_a_epochs,
+        stage_b_epochs=stage_b_epochs,
+        max_online_steps=max_online_steps,
+    )
     output_root = output_root.resolve()
     entities = discover_remaining_entities(
         dataset_root, selected_entity_ids=selected_entity_ids
@@ -594,6 +623,7 @@ def write_matrix_configs(
         smoke=smoke,
         output_root=output_root,
         online_ranges=online_ranges,
+        main_method_only=main_method_only,
     )
     data_paths: dict[str, Path] = {}
     for entity_id in entities:
@@ -637,8 +667,17 @@ def main() -> None:
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--entity-id", action="append", dest="entity_ids")
+    parser.add_argument("--main-method-only", action="store_true")
+    parser.add_argument("--stage-a-epochs", type=int)
+    parser.add_argument("--stage-b-epochs", type=int)
+    parser.add_argument("--max-online-steps", type=int)
     args = parser.parse_args()
-    settings = mode_settings(smoke=args.smoke)
+    settings = mode_settings(
+        smoke=args.smoke,
+        stage_a_epochs=args.stage_a_epochs,
+        stage_b_epochs=args.stage_b_epochs,
+        max_online_steps=args.max_online_steps,
+    )
     selected_entity_ids = (
         tuple(args.entity_ids) if args.entity_ids is not None else None
     )
@@ -649,6 +688,7 @@ def main() -> None:
         entity_ids=entities,
         smoke=args.smoke,
         output_root=args.output_root,
+        main_method_only=args.main_method_only,
     )
     if args.dry_run:
         print(json.dumps({"mode": settings["mode"], "entities": list(entities), "runs": len(plan), "online_subsequence_length": ONLINE_SUBSEQUENCE_LENGTH, "metrics": ["VUS-PR@FPR-budget", "VUS-PR", "Affiliation F1-score", "VUS-ROC", "raw-FPR"]}, indent=2))
@@ -659,6 +699,10 @@ def main() -> None:
             output_root=args.output_root,
             smoke=args.smoke,
             selected_entity_ids=selected_entity_ids,
+            main_method_only=args.main_method_only,
+            stage_a_epochs=args.stage_a_epochs,
+            stage_b_epochs=args.stage_b_epochs,
+            max_online_steps=args.max_online_steps,
         )
     )
 

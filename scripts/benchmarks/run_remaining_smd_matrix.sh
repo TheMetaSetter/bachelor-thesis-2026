@@ -18,6 +18,10 @@ NO_TMUX=0
 SKIP_COMPLETED=0
 PRE_FLIGHT=0
 COMPLETION_MARKER=""
+MAIN_METHOD_ONLY=0
+STAGE_A_EPOCHS=""
+STAGE_B_EPOCHS=""
+MAX_ONLINE_STEPS=""
 ENTITY_IDS=()
 
 while [[ $# -gt 0 ]]; do
@@ -36,6 +40,10 @@ while [[ $# -gt 0 ]]; do
         --output-root) OUTPUT_ROOT="$2"; shift 2 ;;
         --session-prefix) SESSION_PREFIX="$2"; shift 2 ;;
         --completion-marker) COMPLETION_MARKER="$2"; shift 2 ;;
+        --main-method-only) MAIN_METHOD_ONLY=1; shift ;;
+        --stage-a-epochs) STAGE_A_EPOCHS="$2"; shift 2 ;;
+        --stage-b-epochs) STAGE_B_EPOCHS="$2"; shift 2 ;;
+        --max-online-steps) MAX_ONLINE_STEPS="$2"; shift 2 ;;
         --dry-run) DRY_RUN=1; shift ;;
         --preflight) PRE_FLIGHT=1; shift ;;
         --no-tmux) NO_TMUX=1; shift ;;
@@ -95,6 +103,18 @@ generate_manifest() {
     )
     if [[ "$MODE" == "smoke" ]]; then
         generator_args+=(--smoke)
+    fi
+    if [[ "$MAIN_METHOD_ONLY" -eq 1 ]]; then
+        generator_args+=(--main-method-only)
+    fi
+    if [[ -n "$STAGE_A_EPOCHS" ]]; then
+        generator_args+=(--stage-a-epochs "$STAGE_A_EPOCHS")
+    fi
+    if [[ -n "$STAGE_B_EPOCHS" ]]; then
+        generator_args+=(--stage-b-epochs "$STAGE_B_EPOCHS")
+    fi
+    if [[ -n "$MAX_ONLINE_STEPS" ]]; then
+        generator_args+=(--max-online-steps "$MAX_ONLINE_STEPS")
     fi
     if [[ "${#ENTITY_IDS[@]}" -gt 0 ]]; then
         for entity_id in "${ENTITY_IDS[@]}"; do

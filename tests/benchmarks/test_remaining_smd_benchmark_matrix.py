@@ -103,6 +103,41 @@ def test_matrix_plan_has_expected_method_counts() -> None:
     assert counts["online", "iforest"] == 1
 
 
+def test_main_method_plan_excludes_all_baselines() -> None:
+    plan = build_matrix_plan(
+        entity_ids=("machine-2-1",),
+        seed_values=(6,),
+        smoke=True,
+        main_method_only=True,
+        output_root=Path("outputs/benchmark_smoke/smd_main_method"),
+    )
+
+    assert [(run["phase"], run["variant"]) for run in plan] == [
+        ("offline", "O0"),
+        ("offline", "O1"),
+        ("online", "O0-A0"),
+        ("online", "O0-A1"),
+        ("online", "O0-A2"),
+        ("online", "O1-A0"),
+        ("online", "O1-A1"),
+        ("online", "O1-A2"),
+    ]
+    assert {run["method"] for run in plan} == {"thesis"}
+
+
+def test_mode_settings_accept_custom_thesis_smoke_epochs() -> None:
+    settings = mode_settings(
+        smoke=True,
+        stage_a_epochs=4,
+        stage_b_epochs=2,
+        max_online_steps=16,
+    )
+
+    assert settings["stage_a_epochs"] == 4
+    assert settings["stage_b_epochs"] == 2
+    assert settings["max_online_steps"] == 16
+
+
 def test_metric_extraction_uses_exact_report_names() -> None:
     payload = {
         "offline_metrics": {
@@ -236,6 +271,45 @@ def test_cloud_launcher_dry_run_lists_four_gpu_and_two_cpu_queues(tmp_path: Path
         "offline-cpu-1",
     ):
         assert queue in completed.stdout
+
+
+def test_cloud_launcher_main_method_dry_run_lists_only_gpu_queues(tmp_path: Path) -> None:
+    _write_entity_files(tmp_path, [*EXCLUDED_ENTITY_IDS, "machine-2-1"])
+    script = Path("scripts/benchmarks/run_remaining_smd_cloud_tmux.sh")
+    completed = subprocess.run(
+        [
+            "bash",
+            str(script),
+            "--mode",
+            "smoke",
+            "--gpu-count",
+            "4",
+            "--main-method-only",
+            "--gpu-only",
+            "--stage-a-epochs",
+            "4",
+            "--stage-b-epochs",
+            "2",
+            "--max-online-steps",
+            "16",
+            "--entity-id",
+            "machine-2-1",
+            "--dataset-root",
+            str(tmp_path),
+            "--output-root",
+            str(tmp_path / "outputs"),
+            "--dry-run",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert '"runs": 8' in completed.stdout
+    for queue in ("gpu-0", "gpu-1", "gpu-2", "gpu-3"):
+        assert f"smoke-{queue}" in completed.stdout
+    assert "cpu-0" not in completed.stdout
+    assert "cpu-1" not in completed.stdout
 
 
 def test_manifest_records_resource_and_dependency_metadata(tmp_path: Path) -> None:

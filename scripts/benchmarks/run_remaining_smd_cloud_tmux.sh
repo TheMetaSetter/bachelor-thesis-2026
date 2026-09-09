@@ -11,6 +11,11 @@ DRY_RUN=0
 NO_TMUX=0
 SKIP_COMPLETED=0
 PRE_FLIGHT=0
+MAIN_METHOD_ONLY=0
+GPU_ONLY=0
+STAGE_A_EPOCHS=""
+STAGE_B_EPOCHS=""
+MAX_ONLINE_STEPS=""
 ENTITY_IDS=()
 GPU_MASKS=("0-7" "8-15" "16-23" "24-31")
 CPU_MASKS=("32-37" "38-43")
@@ -28,6 +33,11 @@ while [[ $# -gt 0 ]]; do
         --no-tmux) NO_TMUX=1; shift ;;
         --skip-completed) SKIP_COMPLETED=1; shift ;;
         --preflight) PRE_FLIGHT=1; shift ;;
+        --main-method-only) MAIN_METHOD_ONLY=1; shift ;;
+        --gpu-only) GPU_ONLY=1; shift ;;
+        --stage-a-epochs) STAGE_A_EPOCHS="$2"; shift 2 ;;
+        --stage-b-epochs) STAGE_B_EPOCHS="$2"; shift 2 ;;
+        --max-online-steps) MAX_ONLINE_STEPS="$2"; shift 2 ;;
         *) echo "Unknown argument: $1" >&2; exit 2 ;;
     esac
 done
@@ -65,6 +75,18 @@ run_generator_dry() {
         --dataset-root "$DATASET_ROOT" --output-root "$OUTPUT_ROOT" --dry-run)
     if [[ "$MODE" == "smoke" ]]; then
         args+=(--smoke)
+    fi
+    if [[ "$MAIN_METHOD_ONLY" -eq 1 ]]; then
+        args+=(--main-method-only)
+    fi
+    if [[ -n "$STAGE_A_EPOCHS" ]]; then
+        args+=(--stage-a-epochs "$STAGE_A_EPOCHS")
+    fi
+    if [[ -n "$STAGE_B_EPOCHS" ]]; then
+        args+=(--stage-b-epochs "$STAGE_B_EPOCHS")
+    fi
+    if [[ -n "$MAX_ONLINE_STEPS" ]]; then
+        args+=(--max-online-steps "$MAX_ONLINE_STEPS")
     fi
     if [[ "${#ENTITY_IDS[@]}" -gt 0 ]]; then
         for entity_id in "${ENTITY_IDS[@]}"; do
@@ -145,6 +167,18 @@ start_worker_session() {
         --resource-class "$resource_class" --phase-group "$phase" --cpu-mask "$cpu_mask"
         --dataset-root "$DATASET_ROOT" --output-root "$OUTPUT_ROOT"
         --completion-marker "$marker")
+    if [[ "$MAIN_METHOD_ONLY" -eq 1 ]]; then
+        args+=(--main-method-only)
+    fi
+    if [[ -n "$STAGE_A_EPOCHS" ]]; then
+        args+=(--stage-a-epochs "$STAGE_A_EPOCHS")
+    fi
+    if [[ -n "$STAGE_B_EPOCHS" ]]; then
+        args+=(--stage-b-epochs "$STAGE_B_EPOCHS")
+    fi
+    if [[ -n "$MAX_ONLINE_STEPS" ]]; then
+        args+=(--max-online-steps "$MAX_ONLINE_STEPS")
+    fi
     if [[ "$resource_class" == "gpu" ]]; then
         args+=(--gpu-index "$index")
     fi
@@ -165,14 +199,20 @@ start_phase() {
     for gpu in 0 1 2 3; do
         start_worker_session "$phase" gpu "$gpu" "${GPU_MASKS[$gpu]}" 4
     done
-    for cpu in 0 1; do
-        start_worker_session "$phase" cpu "$cpu" "${CPU_MASKS[$cpu]}" 2
-    done
+    if [[ "$GPU_ONLY" -eq 0 ]]; then
+        for cpu in 0 1; do
+            start_worker_session "$phase" cpu "$cpu" "${CPU_MASKS[$cpu]}" 2
+        done
+    fi
 }
 
 wait_phase() {
     local phase="$1" status=0 class index session marker value limit
-    for class in gpu cpu; do
+    local classes=(gpu)
+    if [[ "$GPU_ONLY" -eq 0 ]]; then
+        classes+=(cpu)
+    fi
+    for class in "${classes[@]}"; do
         limit=4
         [[ "$class" == "cpu" ]] && limit=2
         for ((index = 0; index < limit; index++)); do
@@ -244,9 +284,11 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
         for gpu in 0 1 2 3; do
             echo "${SESSION_PREFIX}-${phase}-gpu-${gpu} cpu_mask=${GPU_MASKS[$gpu]} gpu=${gpu}"
         done
-        for cpu in 0 1; do
-            echo "${SESSION_PREFIX}-${phase}-cpu-${cpu} cpu_mask=${CPU_MASKS[$cpu]} gpu=none"
-        done
+        if [[ "$GPU_ONLY" -eq 0 ]]; then
+            for cpu in 0 1; do
+                echo "${SESSION_PREFIX}-${phase}-cpu-${cpu} cpu_mask=${CPU_MASKS[$cpu]} gpu=none"
+            done
+        fi
     done
     exit 0
 fi
@@ -272,6 +314,21 @@ if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
 fi
 coordinator_args=("$0" --mode "$MODE" --role coordinator --gpu-count "$GPU_COUNT"
     --dataset-root "$DATASET_ROOT" --output-root "$OUTPUT_ROOT")
+if [[ "$MAIN_METHOD_ONLY" -eq 1 ]]; then
+    coordinator_args+=(--main-method-only)
+fi
+if [[ "$GPU_ONLY" -eq 1 ]]; then
+    coordinator_args+=(--gpu-only)
+fi
+if [[ -n "$STAGE_A_EPOCHS" ]]; then
+    coordinator_args+=(--stage-a-epochs "$STAGE_A_EPOCHS")
+fi
+if [[ -n "$STAGE_B_EPOCHS" ]]; then
+    coordinator_args+=(--stage-b-epochs "$STAGE_B_EPOCHS")
+fi
+if [[ -n "$MAX_ONLINE_STEPS" ]]; then
+    coordinator_args+=(--max-online-steps "$MAX_ONLINE_STEPS")
+fi
 if [[ "${#ENTITY_IDS[@]}" -gt 0 ]]; then
     for entity_id in "${ENTITY_IDS[@]}"; do
         coordinator_args+=(--entity-id "$entity_id")
