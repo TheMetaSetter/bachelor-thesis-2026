@@ -252,11 +252,31 @@ run_coordinator() {
     local worker_pids=()
     local gpu
     for gpu in 0 1; do
-        (
-            "$0" --mode "$MODE" --role worker --gpu-index "$gpu" --gpu-count 2 \
-                --dataset-root "$DATASET_ROOT" --output-root "$OUTPUT_ROOT" \
-                --no-tmux $([[ "$SKIP_COMPLETED" -eq 1 ]] && echo --skip-completed)
-        ) &
+        local -a worker_args=(
+            "$0" --mode "$MODE" --role worker --gpu-index "$gpu" --gpu-count 2
+            --dataset-root "$DATASET_ROOT" --output-root "$OUTPUT_ROOT" --no-tmux
+        )
+        if [[ "$MAIN_METHOD_ONLY" -eq 1 ]]; then
+            worker_args+=(--main-method-only)
+        fi
+        if [[ -n "$STAGE_A_EPOCHS" ]]; then
+            worker_args+=(--stage-a-epochs "$STAGE_A_EPOCHS")
+        fi
+        if [[ -n "$STAGE_B_EPOCHS" ]]; then
+            worker_args+=(--stage-b-epochs "$STAGE_B_EPOCHS")
+        fi
+        if [[ -n "$MAX_ONLINE_STEPS" ]]; then
+            worker_args+=(--max-online-steps "$MAX_ONLINE_STEPS")
+        fi
+        if [[ "${#ENTITY_IDS[@]}" -gt 0 ]]; then
+            for entity_id in "${ENTITY_IDS[@]}"; do
+                worker_args+=(--entity-id "$entity_id")
+            done
+        fi
+        if [[ "$SKIP_COMPLETED" -eq 1 ]]; then
+            worker_args+=(--skip-completed)
+        fi
+        ("${worker_args[@]}") &
         worker_pids+=("$!")
     done
     local status=0

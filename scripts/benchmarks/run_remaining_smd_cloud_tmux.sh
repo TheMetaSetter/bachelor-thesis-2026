@@ -102,6 +102,18 @@ write_manifest() {
     if [[ "$MODE" == "smoke" ]]; then
         args+=(--smoke)
     fi
+    if [[ "$MAIN_METHOD_ONLY" -eq 1 ]]; then
+        args+=(--main-method-only)
+    fi
+    if [[ -n "$STAGE_A_EPOCHS" ]]; then
+        args+=(--stage-a-epochs "$STAGE_A_EPOCHS")
+    fi
+    if [[ -n "$STAGE_B_EPOCHS" ]]; then
+        args+=(--stage-b-epochs "$STAGE_B_EPOCHS")
+    fi
+    if [[ -n "$MAX_ONLINE_STEPS" ]]; then
+        args+=(--max-online-steps "$MAX_ONLINE_STEPS")
+    fi
     if [[ "${#ENTITY_IDS[@]}" -gt 0 ]]; then
         for entity_id in "${ENTITY_IDS[@]}"; do
             args+=(--entity-id "$entity_id")

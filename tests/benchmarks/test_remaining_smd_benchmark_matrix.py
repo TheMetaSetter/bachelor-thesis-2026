@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+import scripts.benchmarks.generate_remaining_smd_benchmark_configs as generator
 from scripts.benchmarks.collect_remaining_smd_metrics import (
     extract_requested_metrics,
 )
@@ -306,11 +307,40 @@ def test_cloud_launcher_main_method_dry_run_lists_only_gpu_queues(tmp_path: Path
         text=True,
     )
 
-    assert '"runs": 8' in completed.stdout
-    for queue in ("gpu-0", "gpu-1", "gpu-2", "gpu-3"):
-        assert f"smoke-{queue}" in completed.stdout
+    assert '"runs": 24' in completed.stdout
+    for queue in ("offline-gpu-0", "offline-gpu-1", "offline-gpu-2", "offline-gpu-3"):
+        assert f"smd-{queue}" in completed.stdout
+    for queue in ("online-gpu-0", "online-gpu-1", "online-gpu-2", "online-gpu-3"):
+        assert f"smd-{queue}" in completed.stdout
     assert "cpu-0" not in completed.stdout
     assert "cpu-1" not in completed.stdout
+
+
+def test_config_builder_rejects_disabled_wandb_logging(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        generator,
+        "_common_logging",
+        lambda **_: {
+            "use_wandb": False,
+            "wandb_project": "bachelor-thesis-2026",
+            "wandb_mode": "disabled",
+        },
+    )
+    run = {
+        "runner": "thesis_offline",
+        "run_id": "off-thesis-machine-2-1-s6",
+        "variant": "O0",
+        "entity_id": "machine-2-1",
+        "seed": 6,
+        "output_dir": "outputs/test",
+    }
+
+    with pytest.raises(ValueError, match="W&B logging must be enabled"):
+        generator._build_config(
+            run,
+            Path("configs/data/smd_benchmark_machine_2_1_window20.yaml"),
+            generator.mode_settings(smoke=True),
+        )
 
 
 def test_manifest_records_resource_and_dependency_metadata(tmp_path: Path) -> None:

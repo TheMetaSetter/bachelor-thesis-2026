@@ -636,7 +636,17 @@ def _build_config(run: dict[str, Any], data_path: Path, settings: dict[str, Any]
         "thesis_online": _thesis_online_config,
         "online_baseline": _online_baseline_config,
     }
-    return builders[str(run["runner"])](run, data_path, settings)
+    config = builders[str(run["runner"])](run, data_path, settings)
+    logging_config = config.get("logging")
+    if not isinstance(logging_config, dict):
+        raise ValueError(f"W&B logging must be enabled for {run['run_id']}")
+    if (
+        logging_config.get("use_wandb") is not True
+        or logging_config.get("wandb_mode") != "online"
+        or logging_config.get("wandb_project") != "bachelor-thesis-2026"
+    ):
+        raise ValueError(f"W&B logging must be enabled for {run['run_id']}")
+    return config
 
 
 def write_matrix_configs(
