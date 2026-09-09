@@ -106,6 +106,7 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         adaptation_dampening: float = 0.0,
         adaptation_nesterov: bool = True,
         adaptation_batch_size: int = 1,
+        device: str = "cpu",
     ) -> None:
         if window_size <= 0:
             raise ValueError("window_size must be positive")
@@ -182,7 +183,11 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         self.adaptation_dampening = float(adaptation_dampening)
         self.adaptation_nesterov = bool(adaptation_nesterov)
         self.adaptation_batch_size = int(adaptation_batch_size)
-        self.backbone_device = torch.device("cpu")
+        self.backbone_device = torch.device(device)
+        if self.backbone_device.type == "cuda" and not torch.cuda.is_available():
+            raise RuntimeError(
+                "CUDA was requested for the online baseline but is unavailable"
+            )
         self.backbone_: RedLampReconstructionModel | None = None
         self.checkpoint_identity_: RedLampReconstructionCheckpoint | None = None
         self.optimizer_: torch.optim.Optimizer | None = None
@@ -283,6 +288,7 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             "encoder_family": self.encoder_family,
             "input_dim": self.input_dim,
             "window_size": self.window_size,
+            "device": str(self.backbone_device),
             "encoder_dim": self.encoder_dim,
             "cnn_num_layers": self.cnn_num_layers,
             "cnn_kernel_size": self.cnn_kernel_size,
@@ -314,7 +320,9 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             all_windows.append(windows)
             for start in range(0, windows.shape[0], 256):
                 batch = torch.as_tensor(
-                    windows[start : start + 256], dtype=torch.float32
+                    windows[start : start + 256],
+                    dtype=torch.float32,
+                    device=self.backbone_device,
                 )
                 scores, _ = self._score_tensor_batch(batch)
                 all_scores.extend(scores.tolist())
@@ -324,6 +332,23 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             all_scores, dtype=np.float64
         )
 
+    def _validate_runtime_device(self, device: str) -> None:
+        requested_device = torch.device(device)
+        if requested_device.type != self.backbone_device.type:
+            raise ValueError(
+                f"Runtime device {requested_device} does not match baseline device "
+                f"{self.backbone_device}"
+            )
+        if (
+            requested_device.index is not None
+            and self.backbone_device.index is not None
+            and requested_device.index != self.backbone_device.index
+        ):
+            raise ValueError(
+                f"Runtime device {requested_device} does not match baseline device "
+                f"{self.backbone_device}"
+            )
+
     def calibrate(
         self,
         *,
@@ -331,7 +356,7 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         protocol_config: dict[str, Any],
         device: str,
     ) -> dict[str, Any]:
-        del device
+        self._validate_runtime_device(device)
         if not clean_validation_sequences:
             raise ValueError("clean_validation_sequences must not be empty")
         validation_windows, validation_window_scores = self._score_validation_sequences(
@@ -399,7 +424,7 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
         protocol_config: dict[str, Any],
         device: str,
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-        del device
+        self._validate_runtime_device(device)
         if self.calibration_ is None:
             raise RuntimeError("Call calibrate() before run_sequence().")
         sequence_array = as_2d_sequence(sequence["x"])
@@ -417,7 +442,11 @@ class AdaptiveStreamingBaselineBase(OnlineStreamingBaselineProtocol):
             batch_windows = windows[
                 batch_start : batch_start + self.adaptation_batch_size
             ]
-            tensor_batch = torch.as_tensor(batch_windows, dtype=torch.float32)
+            tensor_batch = torch.as_tensor(
+                batch_windows,
+                dtype=torch.float32,
+                device=self.backbone_device,
+            )
             if tensor_batch.shape[0] == 1:
                 raw_score, latent_score = self._score_tensor(tensor_batch)
                 raw_scores = np.asarray([raw_score], dtype=np.float64)

@@ -7,7 +7,16 @@ import numpy as np
 import torch
 import yaml
 
-from scripts.run_online_streaming_benchmark import run_online_streaming_benchmark
+from scripts.run_online_streaming_benchmark import (
+    _prepare_baseline_kwargs,
+    run_online_streaming_benchmark,
+)
+
+
+def test_adaptive_baselines_receive_configured_device() -> None:
+    assert _prepare_baseline_kwargs("candi", {}, "cuda")["device"] == "cuda"
+    assert _prepare_baseline_kwargs("m2n2", {}, "cuda")["device"] == "cuda"
+    assert "device" not in _prepare_baseline_kwargs("iforest", {}, "cuda")
 
 
 class _FakeOnlineBaseline:

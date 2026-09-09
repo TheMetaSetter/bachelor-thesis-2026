@@ -55,6 +55,7 @@ class CANDIStreamingBaseline(AdaptiveStreamingBaselineBase):
         adaptation_dampening: float = 0.0,
         adaptation_nesterov: bool = True,
         adaptation_batch_size: int = 1,
+        device: str = "cpu",
     ) -> None:
         if candi_min_samples <= 0:
             raise ValueError("candi_min_samples must be positive")
@@ -113,6 +114,7 @@ class CANDIStreamingBaseline(AdaptiveStreamingBaselineBase):
             adaptation_dampening=adaptation_dampening,
             adaptation_nesterov=adaptation_nesterov,
             adaptation_batch_size=adaptation_batch_size,
+            device=device,
         )
 
     def _initialize_method_state(self) -> None:
@@ -198,7 +200,11 @@ class CANDIStreamingBaseline(AdaptiveStreamingBaselineBase):
             return
         if validation_windows.shape[0] < 2:
             raise ValueError("CANDI FPM requires at least two validation windows")
-        windows = torch.as_tensor(validation_windows, dtype=torch.float32)
+        windows = torch.as_tensor(
+            validation_windows,
+            dtype=torch.float32,
+            device=self.backbone_device,
+        )
         with torch.no_grad():
             representations = self.backbone_.get_representations(windows)
         self._val_representations = representations
@@ -309,7 +315,7 @@ class CANDIStreamingBaseline(AdaptiveStreamingBaselineBase):
             self._sana_in.train()
         if self._sana_out is not None:
             self._sana_out.train()
-        loss = torch.zeros((), dtype=batch.dtype)
+        loss = torch.zeros((), dtype=batch.dtype, device=batch.device)
         # step 2: Repeat the CANDI adaptation update for the configured steps.
         for _ in range(self.candi_steps):
             # step 3: Compute the reconstruction loss for the selected pool.

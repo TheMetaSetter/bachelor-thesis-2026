@@ -24,6 +24,7 @@ def score_sequence_before_adaptation(
         batch = torch.as_tensor(
             windows[batch_start : batch_start + baseline.adaptation_batch_size],
             dtype=torch.float32,
+            device=baseline.backbone_device,
         )
         batch_scores, _ = baseline._score_tensor_batch(batch)
         scores.extend(batch_scores.tolist())

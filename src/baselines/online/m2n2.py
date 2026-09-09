@@ -42,6 +42,7 @@ class M2N2StreamingBaseline(AdaptiveStreamingBaselineBase):
         adaptation_dampening: float = 0.0,
         adaptation_nesterov: bool = True,
         adaptation_batch_size: int = 1,
+        device: str = "cpu",
     ) -> None:
         self.m2n2_gamma = float(m2n2_gamma)
         self.m2n2_steps = int(m2n2_steps)
@@ -70,6 +71,7 @@ class M2N2StreamingBaseline(AdaptiveStreamingBaselineBase):
             adaptation_dampening=adaptation_dampening,
             adaptation_nesterov=adaptation_nesterov,
             adaptation_batch_size=adaptation_batch_size,
+            device=device,
         )
 
     def _initialize_method_state(self) -> None:

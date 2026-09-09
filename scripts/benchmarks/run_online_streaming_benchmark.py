@@ -44,6 +44,7 @@ from src.protocols.threshold_artifact import (
     write_threshold_artifact,
 )
 from src.protocols.smd_benchmark_protocol import validate_protocol_config
+from src.metrics.online_contract import compute_final_online_metrics
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -188,6 +189,18 @@ def _instantiate_baseline(
     return builder(**baseline_kwargs)
 
 
+def _prepare_baseline_kwargs(
+    baseline_name: str,
+    baseline_kwargs: dict[str, Any],
+    device: str,
+) -> dict[str, Any]:
+    """Pass GPU placement to adaptive baselines without changing CPU baselines."""
+    prepared_kwargs = dict(baseline_kwargs)
+    if baseline_name in {"candi", "m2n2"}:
+        prepared_kwargs["device"] = device
+    return prepared_kwargs
+
+
 def _normalize_online_records(
     records: list[dict[str, Any]],
     online_variant: str,
@@ -199,6 +212,38 @@ def _normalize_online_records(
         normalized_record.setdefault("did_update", False)
         normalized_records.append(normalized_record)
     return normalized_records
+
+
+def _compute_final_metrics(
+    *,
+    selected_sequences: list[dict[str, Any]],
+    records: list[dict[str, Any]],
+    threshold: float,
+    window_size: int,
+    evaluation_config: dict[str, Any],
+) -> dict[str, Any]:
+    labels: list[np.ndarray] = []
+    scores: list[float] = []
+    for sequence in selected_sequences:
+        entity_id = str(sequence.get("meta", {}).get("entity_id", "unknown"))
+        entity_records = [
+            record for record in records if str(record.get("entity_id")) == entity_id
+        ]
+        sequence_labels = _to_numpy(sequence["point_labels"], dtype=np.int64).reshape(-1)
+        point_start = window_size - 1
+        labels.append(sequence_labels[point_start : point_start + len(entity_records)])
+        scores.extend(
+            float(record.get("ewma_point_score", record["raw_point_score"]))
+            for record in entity_records
+        )
+    point_labels = np.concatenate(labels) if labels else np.asarray([], dtype=np.int64)
+    return compute_final_online_metrics(
+        point_labels=point_labels,
+        point_scores=scores,
+        threshold=threshold,
+        vus_max_buffer_size=int(evaluation_config.get("vus_max_buffer_size", 20)),
+        vus_num_thresholds=int(evaluation_config.get("vus_num_thresholds", 200)),
+    )
 
 
 def _build_threshold_artifact_from_calibration(
@@ -336,6 +381,11 @@ def run_online_streaming_benchmark(
     )
     baseline_kwargs.setdefault("online_variant", online_variant)
     baseline_kwargs.setdefault("seed", seed)
+    baseline_kwargs = _prepare_baseline_kwargs(
+        baseline_name,
+        baseline_kwargs,
+        str(benchmark_config.get("device", "cpu")),
+    )
     baseline = _instantiate_baseline(baseline_name, baseline_kwargs)
 
     max_online_steps_override = benchmark_config.get("task_overrides", {}).get(
@@ -451,6 +501,19 @@ def run_online_streaming_benchmark(
                     experiment_logger.log_metrics(scalar_metrics)
 
     normalized_records = _normalize_online_records(records, online_variant)
+    evaluation_config = dict(benchmark_config.get("evaluation", {}))
+    try:
+        final_metrics = _compute_final_metrics(
+            selected_sequences=selected_test_sequences,
+            records=normalized_records,
+            threshold=float(calibration["threshold_value"]),
+            window_size=int(protocol_config["window_size"]),
+            evaluation_config=evaluation_config,
+        )
+        metric_availability_status = "complete"
+    except (KeyError, TypeError, ValueError, IndexError) as error:
+        final_metrics = {}
+        metric_availability_status = f"incomplete: {error}"
     metrics_path = output_dir / "online_metrics.json"
     records_path = output_dir / "online_records.json"
     if retention_policy == "retain_for_eda":
@@ -474,9 +537,10 @@ def run_online_streaming_benchmark(
         "method_metadata": calibration.get("method_metadata", {}),
         "stream_selections": stream_selections,
         "pre_tta_test_score_summary": pre_tta_test_score_summary,
+        "metric_availability_status": metric_availability_status,
         "metric_history_length": len(metric_history),
         "record_length": len(normalized_records),
-        "final_metrics": dict(metric_history[-1]) if metric_history else {},
+        "final_metrics": final_metrics,
     }
     report["retention_policy"] = retention_policy
     report["artifact_paths"] = {"thresholds": str(threshold_path)}

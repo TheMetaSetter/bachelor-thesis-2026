@@ -105,6 +105,31 @@ def test_m2n2_uses_detrender_mask_and_optimizer_step(tmp_path: Path) -> None:
     assert float(baseline.detrender.mean.abs().sum()) > 0.0
 
 
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
+def test_adaptive_baselines_place_state_on_configured_gpu(tmp_path: Path) -> None:
+    checkpoint = _encoder_checkpoint(tmp_path)
+    m2n2 = M2N2StreamingBaseline(
+        train_sequence=_sequence(0)["x"],
+        window_size=8,
+        pretrained_encoder_checkpoint=checkpoint,
+        device="cuda",
+    )
+    candi = CANDIStreamingBaseline(
+        train_sequence=_sequence(0)["x"],
+        window_size=8,
+        pretrained_encoder_checkpoint=checkpoint,
+        sana_type="Linear",
+        device="cuda",
+    )
+
+    assert m2n2.backbone_device.type == "cuda"
+    assert next(m2n2.backbone_.parameters()).is_cuda
+    assert m2n2.detrender.mean.is_cuda
+    assert candi.backbone_device.type == "cuda"
+    assert next(candi.backbone_.parameters()).is_cuda
+    assert next(candi._sana_in.parameters()).is_cuda
+
+
 def test_candi_pool_gate_and_sana_update_are_method_owned(tmp_path: Path) -> None:
     baseline = CANDIStreamingBaseline(
         train_sequence=_sequence(0)["x"],

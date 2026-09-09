@@ -6,6 +6,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable
 
+import numpy as np
 import torch
 
 from src.core.artifact_integrity import (
@@ -46,6 +47,7 @@ from src.engine.online_tta.checkpoint_resolution import resolve_threshold_artifa
 from src.protocols.online_stream_range import select_online_stream_sequence
 from src.protocols.threshold_artifact import load_threshold_artifact
 from src.protocols.point_score_calibration import PointScoreCalibration
+from src.metrics.online_contract import compute_final_online_metrics
 
 
 def _resolve_max_online_steps(value: Any) -> int | None:
@@ -194,6 +196,7 @@ def _build_runtime_online_context(
         Path(str(experiment_config["checkpoint_dir"]))
     )
     output_dir = Path(str(experiment_config["output_dir"]))
+    evaluation_config = dict(experiment_config.get("evaluation", {}))
 
     batch_size = int(experiment_config["data"]["batch_size"])
     if batch_size != 1:
@@ -238,6 +241,10 @@ def _build_runtime_online_context(
             experiment_config["task"].get("max_online_steps")
         ),
         "debug_timing": bool(experiment_config["task"].get("debug_timing", False)),
+        "retention_policy": str(
+            evaluation_config.get("retention_policy", "retain_for_eda")
+        ),
+        "evaluation_config": evaluation_config,
         "verification_buffer": VerificationBuffer(max_size=64, non_overlap_gap=0),
         "hard_old_guard": NonOverlapGuard(max_size=1),
     }
@@ -449,8 +456,40 @@ def _finalize_online_execution(
         else expected_windows
     )
     coverage_status = "complete" if len(records) == expected_processed else "incomplete"
-    metrics_path = _write_json(output_dir / "online_metrics.json", metric_history)
-    records_path = _write_json(output_dir / "online_records.json", records)
+    retention_policy = str(context.get("retention_policy", "retain_for_eda"))
+    metrics_path = None
+    records_path = None
+    if retention_policy == "retain_for_eda":
+        metrics_path = _write_json(output_dir / "online_metrics.json", metric_history)
+        records_path = _write_json(output_dir / "online_records.json", records)
+
+    final_metrics: dict[str, Any] = {}
+    metric_availability_status = "incomplete"
+    try:
+        test_sequences = context["data_bundle"]["scaled_sequences"]["test"]
+        if len(test_sequences) != 1:
+            raise ValueError("online metric aggregation expects one test sequence")
+        sequence = test_sequences[0]
+        labels = np.asarray(sequence["point_labels"], dtype=np.int64).reshape(-1)
+        scores = np.asarray(
+            [metric["online/ewma_point_score"] for metric in metric_history],
+            dtype=np.float64,
+        )
+        point_start = window_size - 1
+        final_metrics = compute_final_online_metrics(
+            point_labels=labels[point_start : point_start + len(scores)],
+            point_scores=scores,
+            threshold=float(context["threshold_value"]),
+            vus_max_buffer_size=int(
+                context.get("evaluation_config", {}).get("vus_max_buffer_size", 20)
+            ),
+            vus_num_thresholds=int(
+                context.get("evaluation_config", {}).get("vus_num_thresholds", 200)
+            ),
+        )
+        metric_availability_status = "complete"
+    except (KeyError, TypeError, ValueError, IndexError) as error:
+        metric_availability_status = f"incomplete: {error}"
 
     final_checkpoint_path = context["checkpoint_manager"].save_checkpoint(
         checkpoint_name="online_final.pt",
@@ -488,8 +527,6 @@ def _finalize_online_execution(
     artifact_manifest = build_artifact_manifest(
         {
             "checkpoint": final_checkpoint_path,
-            "metrics": metrics_path,
-            "records": records_path,
             "threshold": context["threshold_artifact_path"],
         },
         identity=artifact_identity,
@@ -506,6 +543,16 @@ def _finalize_online_execution(
             "reference_checkpoint_sha256": context["reference_checkpoint_sha256"],
         },
     )
+    if metrics_path is not None:
+        artifact_manifest["artifacts"]["metrics"] = {
+            "path": str(metrics_path),
+            "sha256": sha256_file(metrics_path),
+        }
+    if records_path is not None:
+        artifact_manifest["artifacts"]["records"] = {
+            "path": str(records_path),
+            "sha256": sha256_file(records_path),
+        }
 
     artifact_manifest_path = write_artifact_manifest(
         output_dir / "online_artifact_manifest.json", artifact_manifest
@@ -539,7 +586,7 @@ def _finalize_online_execution(
         "artifact_manifest": artifact_manifest,
         "artifact_manifest_path": str(artifact_manifest_path),
         # Stream coverage and metric availability counts.
-        "metric_availability_status": "recorded",
+        "metric_availability_status": metric_availability_status,
         "expected_windows": expected_windows,
         "processed_windows": len(records),
         # Runtime identity and threshold artifacts.
@@ -551,6 +598,7 @@ def _finalize_online_execution(
         "final_checkpoint_path": str(final_checkpoint_path),
         "metric_history": metric_history,
         "records": records,
+        "final_metrics": final_metrics,
         # Output file paths and threshold provenance.
         "online_metrics_path": metrics_path,
         "online_records_path": records_path,

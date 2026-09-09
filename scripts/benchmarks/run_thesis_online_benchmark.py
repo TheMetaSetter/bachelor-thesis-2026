@@ -141,11 +141,15 @@ def _compact_online_execution(online_outputs: dict[str, Any]) -> dict[str, Any]:
         )
         if key in online_outputs
     }
+    if "metric_availability_status" in online_outputs:
+        compact_execution["metric_availability_status"] = online_outputs[
+            "metric_availability_status"
+        ]
     compact_execution.update(
         {
             "metric_history_length": len(metric_history),
             "record_length": len(records),
-            "final_metrics": dict(metric_history[-1]) if metric_history else {},
+            "final_metrics": dict(online_outputs.get("final_metrics", {})),
         }
     )
     return compact_execution
