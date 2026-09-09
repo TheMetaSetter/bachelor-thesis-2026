@@ -121,6 +121,38 @@ def test_experiment_logger_quiet_terminal_suppresses_console_noise(
     assert fake_run.logged_metrics
 
 
+def test_experiment_logger_passes_configured_smoke_name_to_wandb(
+    monkeypatch, tmp_path: Path
+) -> None:
+    fake_run = _FakeRun()
+    init_kwargs: dict[str, object] = {}
+
+    def fake_init(**kwargs):
+        init_kwargs.update(kwargs)
+        return fake_run
+
+    fake_wandb = SimpleNamespace(
+        init=fake_init,
+        Artifact=_FakeArtifact,
+    )
+    monkeypatch.setitem(sys.modules, "wandb", fake_wandb)
+
+    logger = ExperimentLogger(
+        tmp_path / "outputs",
+        experiment_config={"experiment_name": "logger-test"},
+        logging_config={
+            "use_wandb": True,
+            "wandb_project": "bachelor-thesis-2026",
+            "wandb_mode": "online",
+            "wandb_run_name": "smk-off-O0-e1_6-s8",
+        },
+        quiet_terminal=True,
+    )
+    logger.close()
+
+    assert init_kwargs["name"] == "smk-off-O0-e1_6-s8"
+
+
 def test_experiment_logger_rejects_wandb_artifact_name_over_128_characters(
     monkeypatch, tmp_path: Path
 ) -> None:

@@ -19,6 +19,6 @@ logging:
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
   wandb_job_type: smoke
-  wandb_run_name: smd__m2n2__online_A0__machine_3_9__w20__seed6__smoke
+  wandb_run_name: smk-on-m2n2-A0-e3_9-s6
   wandb_tags:
     - smoke

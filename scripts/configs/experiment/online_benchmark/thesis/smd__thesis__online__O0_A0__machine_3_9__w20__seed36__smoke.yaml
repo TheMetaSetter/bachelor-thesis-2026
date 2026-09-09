@@ -53,7 +53,7 @@ logging:
   use_wandb: true
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
-  wandb_run_name: smd__thesis__online__O0_A0__machine_3_9__w20__seed36__smoke
+  wandb_run_name: smk-on-O0-A0-e3_9-s36
   wandb_tags:
   - online-benchmark
   - thesis

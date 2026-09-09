@@ -24,6 +24,6 @@ logging:
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
   wandb_job_type: smoke
-  wandb_run_name: smd__stumpy__online_A1__machine_3_9__w20__seed36__smoke
+  wandb_run_name: smk-on-stumpy-A1-e3_9-s36
   wandb_tags:
     - smoke

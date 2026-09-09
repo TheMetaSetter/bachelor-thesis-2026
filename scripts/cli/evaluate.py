@@ -27,7 +27,7 @@ from src.core.console import console_print
 from src.core.artifact_naming import (
     build_artifact_identity,
     build_wandb_artifact_name,
-    build_wandb_run_name,
+    resolve_wandb_run_name,
 )
 from src.core.config import load_experiment_config, load_yaml_config
 from src.core.config_help import build_config_help_text
@@ -307,8 +307,10 @@ def run_evaluation_experiment(
     quiet_terminal = bool(logging_config.get("quiet_terminal", False))
     logging_config.setdefault("wandb_job_type", "evaluate")
     if logging_config.get("use_wandb", False):
-        logging_config["wandb_run_name"] = build_wandb_run_name(
-            experiment_config, stage="evaluation"
+        logging_config["wandb_run_name"] = resolve_wandb_run_name(
+            logging_config,
+            experiment_config,
+            stage="evaluation",
         )
     experiment_logger = ExperimentLogger(
         output_dir_override or experiment_config["output_dir"],

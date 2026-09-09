@@ -10,6 +10,9 @@ from scripts.generate_offline_benchmark_configs import (
     BENCHMARK_SEEDS,
     generate_offline_benchmark_configs,
 )
+from scripts.benchmarks.generate_offline_benchmark_configs import (
+    build_offline_benchmark_config,
+)
 
 
 def test_generate_offline_benchmark_configs_writes_all_expected_files() -> None:
@@ -37,3 +40,14 @@ def test_generate_offline_benchmark_configs_writes_all_expected_files() -> None:
     smoke_config = yaml.safe_load(smoke_config_path.read_text(encoding="utf-8"))
     assert smoke_config["logging"]["use_wandb"] is True
     assert smoke_config["logging"]["wandb_mode"] == "online"
+
+
+def test_kmeans_offline_smoke_uses_selected_short_wandb_name() -> None:
+    config = build_offline_benchmark_config(
+        method="kmeans_ad",
+        entity_id="machine-3-4",
+        seed=6,
+        smoke=True,
+    )
+
+    assert config["logging"]["wandb_run_name"] == "smk-off-KA-e3_4-s6"

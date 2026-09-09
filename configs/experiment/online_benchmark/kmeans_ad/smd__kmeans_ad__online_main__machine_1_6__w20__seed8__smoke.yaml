@@ -24,7 +24,7 @@ logging:
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
   wandb_job_type: online_benchmark
-  wandb_run_name: on-kmeans_ad-main-machine_1_6-s8-smoke
+  wandb_run_name: smk-on-KA-main-e1_6-s8
   wandb_tags:
   - online-benchmark
   - kmeans_ad

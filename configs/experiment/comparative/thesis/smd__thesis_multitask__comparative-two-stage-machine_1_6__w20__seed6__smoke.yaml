@@ -44,7 +44,7 @@ logging:
     - smd
     - machine-1-6
     - smoke
-  wandb_run_name: smd_comparative_thesis_multitask_two_stage_machine_1_6_smoke_seed6
+  wandb_run_name: smk-off-redlamp_baseline-e1_6-s6
 two_stage:
   expected_total_training_epochs: 3
   stage_a_multitask_epochs: 2

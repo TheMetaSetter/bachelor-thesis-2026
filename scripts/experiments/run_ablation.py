@@ -25,7 +25,7 @@ from src.core.console import console_print
 from src.core.artifact_naming import (
     build_artifact_identity,
     build_wandb_artifact_name,
-    build_wandb_run_name,
+    resolve_wandb_run_name,
 )
 from src.core.config import load_experiment_config
 from src.engine.logger import ExperimentLogger
@@ -96,14 +96,9 @@ def run_ablation_suite(
     suite_logging_config = dict(first_experiment_config.get("logging", {}))
     quiet_terminal = bool(suite_logging_config.get("quiet_terminal", False))
     suite_logging_config.setdefault("wandb_job_type", "ablation_summary")
-    suite_logging_config["wandb_run_name"] = build_wandb_run_name(
-        {
-            "experiment_name": first_experiment_config["experiment_name"],
-            "seed": first_experiment_config.get("seed"),
-            "data": first_experiment_config.get("data", {}),
-            "task": first_experiment_config.get("task", {}),
-            "offline_variant": first_experiment_config.get("offline_variant"),
-        },
+    suite_logging_config["wandb_run_name"] = resolve_wandb_run_name(
+        suite_logging_config,
+        first_experiment_config,
         stage="ablation",
     )
     suite_experiment_config = {

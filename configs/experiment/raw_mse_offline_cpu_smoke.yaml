@@ -37,7 +37,7 @@ logging:
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
   wandb_job_type: train
-  wandb_run_name: raw_mse_offline_cpu_smoke_20260905
+  wandb_run_name: smk-off-redlamp_baseline-e1_6-s6
   wandb_tags:
     - benchmark-smoke
     - raw-mse

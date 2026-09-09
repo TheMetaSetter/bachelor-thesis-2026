@@ -19,6 +19,7 @@ from scripts.benchmarks.generate_remaining_smd_benchmark_configs import (
     select_short_online_range,
     write_matrix_configs,
 )
+from src.core.artifact_naming import is_valid_wandb_smoke_run_name
 
 
 def _write_entity_files(dataset_root: Path, entity_ids: list[str]) -> None:
@@ -416,6 +417,10 @@ def test_all_remaining_smd_configs_enable_online_wandb_for_smoke_and_wet(
             )
             assert config["logging"]["use_wandb"] is True
             assert config["logging"]["wandb_mode"] == "online"
+            if smoke:
+                assert is_valid_wandb_smoke_run_name(
+                    config["logging"]["wandb_run_name"]
+                )
 
 
 def test_online_thesis_config_points_to_matching_stage_b_output(tmp_path: Path) -> None:

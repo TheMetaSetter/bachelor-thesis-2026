@@ -26,3 +26,4 @@ def test_smoke_runner_builds_one_gpu_direct_routing_config() -> None:
     assert config["data"]["max_test_windows"] == 2048
     assert config["logging"]["use_wandb"] is True
     assert config["logging"]["wandb_mode"] == "online"
+    assert config["logging"]["wandb_run_name"] == "smk-off-O0-e1_6-s6"

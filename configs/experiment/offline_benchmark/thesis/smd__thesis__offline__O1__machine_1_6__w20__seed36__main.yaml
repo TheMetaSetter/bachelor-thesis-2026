@@ -1,5 +1,6 @@
 experiment_name: smd__thesis__offline__O1__machine_1_6__w20__seed36__main
 seed: 36
+offline_variant: O1
 experiment_variant: two_stage_point_score_supervised_v1
 device: cuda
 output_dir: outputs/benchmark/smd/thesis/O1/machine_1_6/seed36

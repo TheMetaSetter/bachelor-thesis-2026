@@ -44,4 +44,4 @@ logging:
     - smd
     - machine-1-6
     - stress-smoke
-  wandb_run_name: smd_comparative_redlamp_baseline_single_stage_machine_1_6_stress_smoke_seed6
+  wandb_run_name: smk-off-redlamp_baseline-e1_6-s6

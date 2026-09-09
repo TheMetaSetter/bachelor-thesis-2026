@@ -4,6 +4,8 @@ from pathlib import Path
 
 import yaml
 
+from src.core.artifact_naming import is_valid_wandb_smoke_run_name
+
 
 def test_every_smoke_experiment_config_enables_online_wandb() -> None:
     config_roots = (Path("configs/experiment"), Path("scripts/configs/experiment"))
@@ -25,3 +27,6 @@ def test_every_smoke_experiment_config_enables_online_wandb() -> None:
         assert logging_config["use_wandb"] is True, config_path
         assert logging_config["wandb_project"] == "bachelor-thesis-2026", config_path
         assert logging_config["wandb_mode"] == "online", config_path
+        assert is_valid_wandb_smoke_run_name(
+            logging_config.get("wandb_run_name")
+        ), config_path

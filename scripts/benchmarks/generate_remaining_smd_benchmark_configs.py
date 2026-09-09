@@ -11,6 +11,11 @@ import numpy as np
 import yaml
 
 from scripts.benchmarks._config_generation_helpers import entity_token, write_yaml_config
+from src.core.artifact_naming import (
+    build_wandb_smoke_run_name,
+    wandb_entity_token,
+    wandb_method_display_token,
+)
 from scripts.benchmarks.generate_offline_benchmark_configs import (
     build_offline_benchmark_config as build_traditional_offline_config,
 )
@@ -322,13 +327,31 @@ def _data_config(dataset_root: Path, entity_id: str, smoke: bool) -> dict[str, A
     return config
 
 
-def _common_logging(*, mode: str, run_name: str, tags: list[str]) -> dict[str, Any]:
+def _common_logging(
+    *,
+    mode: str,
+    run_name: str,
+    tags: list[str],
+    phase_token: str,
+    identity_tokens: list[str],
+    entity_id: str,
+    seed: int,
+) -> dict[str, Any]:
     smoke = mode == "smoke"
     return {
         "use_wandb": True,
         "wandb_project": "bachelor-thesis-2026",
         "wandb_mode": "online",
-        "wandb_run_name": run_name,
+        "wandb_run_name": (
+            build_wandb_smoke_run_name(
+                phase_token=phase_token,
+                identity_tokens=identity_tokens,
+                entity_token=wandb_entity_token(entity_id),
+                seed=seed,
+            )
+            if smoke
+            else run_name
+        ),
         "wandb_tags": tags,
         "log_hard_prediction_ratio": not smoke,
         "log_row_normalized_confusion_matrix": not smoke,
@@ -368,6 +391,10 @@ def _thesis_offline_config(run: dict[str, Any], data_path: Path, settings: dict[
         mode=settings["mode"],
         run_name=run["run_id"],
         tags=["benchmark", "thesis", "offline", variant.lower(), str(run["entity_id"])],
+        phase_token="off",
+        identity_tokens=[variant],
+        entity_id=str(run["entity_id"]),
+        seed=int(run["seed"]),
     )
     return config
 
@@ -409,6 +436,10 @@ def _redlamp_config(run: dict[str, Any], data_path: Path, settings: dict[str, An
             mode=settings["mode"],
             run_name=run["run_id"],
             tags=["benchmark", "redlamp", "offline", entity_id, f"seed{seed}"],
+            phase_token="off",
+            identity_tokens=[wandb_method_display_token("redlamp_baseline")],
+            entity_id=entity_id,
+            seed=seed,
         ),
     }
     if settings["mode"] == "smoke":
@@ -449,6 +480,10 @@ def _traditional_offline_config(run: dict[str, Any], data_path: Path, settings: 
             str(run["entity_id"]),
             f"seed{int(run['seed'])}",
         ],
+        phase_token="off",
+        identity_tokens=[wandb_method_display_token(str(run["method"]))],
+        entity_id=str(run["entity_id"]),
+        seed=int(run["seed"]),
     )
     config["logging"]["wandb_job_type"] = "offline_benchmark"
     return config
@@ -466,6 +501,8 @@ def _thesis_online_config(run: dict[str, Any], data_path: Path, settings: dict[s
     config: dict[str, Any] = {
         "experiment_name": run["run_id"],
         "seed": int(run["seed"]),
+        "offline_variant": offline_variant,
+        "online_variant": online_variant,
         "experiment_variant": f"online_tta_{online_variant.lower()}_v1",
         "device": "cuda",
         "output_dir": str(output_dir),
@@ -525,6 +562,10 @@ def _thesis_online_config(run: dict[str, Any], data_path: Path, settings: dict[s
             mode=settings["mode"],
             run_name=run["run_id"],
             tags=["benchmark", "thesis", "online", offline_variant.lower(), online_variant.lower(), str(run["entity_id"])],
+            phase_token="on",
+            identity_tokens=[offline_variant, online_variant],
+            entity_id=str(run["entity_id"]),
+            seed=int(run["seed"]),
         ),
     }
     config["logging"]["wandb_job_type"] = "online_benchmark"
@@ -535,6 +576,11 @@ def _online_baseline_config(run: dict[str, Any], data_path: Path, settings: dict
     method = str(run["method"])
     entity_id = str(run["entity_id"])
     seed = int(run["seed"])
+    online_variant = (
+        "reference_adapter_redlamp_encoder"
+        if method in {"candi", "m2n2"}
+        else "main"
+    )
     kwargs = build_online_baseline_kwargs(method, entity_id, seed, settings["mode"] == "smoke")
     kwargs["threshold_quantile"] = 0.99
     if method in {"candi", "m2n2"}:
@@ -548,7 +594,7 @@ def _online_baseline_config(run: dict[str, Any], data_path: Path, settings: dict
     return {
         "benchmark_name": run["run_id"],
         "baseline_name": method,
-        "online_variant": "reference_adapter_redlamp_encoder" if method in {"candi", "m2n2"} else "main",
+        "online_variant": online_variant,
         "entity_id": entity_id,
         "seed": seed,
         "device": "cuda" if method in {"candi", "m2n2"} else "cpu",
@@ -572,6 +618,10 @@ def _online_baseline_config(run: dict[str, Any], data_path: Path, settings: dict
                 mode=settings["mode"],
                 run_name=run["run_id"],
                 tags=["benchmark", "online", method, entity_id, f"seed{seed}"],
+                phase_token="on",
+                identity_tokens=[wandb_method_display_token(method), online_variant],
+                entity_id=entity_id,
+                seed=seed,
             ),
             "wandb_job_type": "online_benchmark",
         },

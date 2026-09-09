@@ -340,6 +340,34 @@ The ontologies do not define one canonical W&B display-name format, so any compa
 
 Keep the full experiment identity in configuration, tags, metadata, or provenance even when the W&B display name is shortened.
 
+The selected project convention for W&B smoke-run display names is:
+
+```text
+smk-<phase>-<method_or_variant>-<entity>-s<seed>
+```
+
+Selected examples are:
+
+```text
+smk-off-O0-e1_6-s8
+smk-on-KA-A2-e3_9-s36
+smk-off-KA-e3_4-s6
+```
+
+In these display names, `off` and `on` are short display tokens for the offline and online phases.
+
+The canonical phase identifiers remain `offline_pretraining_phase` and `online_tta_phase`.
+
+`O0` is the canonical `offline_variant` value.
+
+`A2` is the canonical `online_variant` value.
+
+`KA` is a display token for the `kmeans_ad` method and is not a new ontology object.
+
+The `KA-A2` sequence combines a method display token with the online variant; it is not a new value of `online_variant`.
+
+The full stage, checkpoint, window, protocol, and artifact identity remains in configuration, tags, metadata, or provenance.
+
 ## 11. Required terminology checklist
 
 Before writing or reviewing a new specification, variable, configuration key, checkpoint, metric, artifact, or experiment name:

@@ -18,6 +18,10 @@ from scripts.benchmarks._config_generation_helpers import (
     entity_token,
     write_yaml_config,
 )
+from src.core.artifact_naming import (
+    build_wandb_smoke_run_name,
+    wandb_entity_token,
+)
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 OFFLINE_BENCHMARK_CONFIG_DIR = (
@@ -91,11 +95,21 @@ def _variant_logging(
     ]
     if smoke:
         tags.append("smoke")
+    wandb_run_name = (
+        build_wandb_smoke_run_name(
+            phase_token="off",
+            identity_tokens=[variant],
+            entity_token=wandb_entity_token(entity_id),
+            seed=seed,
+        )
+        if smoke
+        else f"off-{variant}-{_entity_token(entity_id)}-s{seed}-main"
+    )
     return {
         "use_wandb": True,
         "wandb_project": "bachelor-thesis-2026",
         "wandb_mode": "online",
-        "wandb_run_name": f"off-{variant}-{_entity_token(entity_id)}-s{seed}-{'smoke' if smoke else 'main'}",
+        "wandb_run_name": wandb_run_name,
         "wandb_tags": tags,
         "log_hard_prediction_ratio": not smoke,
         "log_row_normalized_confusion_matrix": not smoke,
@@ -132,6 +146,7 @@ def build_offline_benchmark_config(
             smoke=smoke,
         ),
         "seed": seed,
+        "offline_variant": variant,
         "experiment_variant": (
             "two_stage_base_v1"
             if variant == "O0"

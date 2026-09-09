@@ -39,7 +39,7 @@ logging:
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
   wandb_job_type: online_benchmark
-  wandb_run_name: on-m2n2-reference_adapter_redlamp_encoder-machine_3_4-s6-smoke
+  wandb_run_name: smk-on-m2n2-reference_adapter_redlamp_encoder-e3_4-s6
   wandb_tags:
   - online-benchmark
   - m2n2

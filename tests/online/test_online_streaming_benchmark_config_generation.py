@@ -12,6 +12,9 @@ from scripts.generate_online_streaming_benchmark_configs import (
     BENCHMARK_VARIANTS,
     generate_online_streaming_benchmark_configs,
 )
+from scripts.benchmarks.generate_online_streaming_benchmark_configs import (
+    build_online_streaming_benchmark_config,
+)
 
 
 def test_generate_online_streaming_benchmark_configs_writes_all_expected_files() -> (
@@ -60,3 +63,18 @@ def test_generate_online_streaming_benchmark_configs_writes_all_expected_files()
     assert smoke_config["task_overrides"]["absolute_end_index"] == 2200
     assert smoke_config["logging"]["use_wandb"] is True
     assert smoke_config["logging"]["wandb_mode"] == "online"
+    assert smoke_config["logging"]["wandb_run_name"] == (
+        "smk-on-candi-reference_adapter_redlamp_encoder-e1_6-s6"
+    )
+
+
+def test_kmeans_online_smoke_uses_selected_method_token() -> None:
+    config = build_online_streaming_benchmark_config(
+        method="kmeans_ad",
+        online_variant="main",
+        entity_id="machine_1_6",
+        seed=36,
+        smoke=True,
+    )
+
+    assert config["logging"]["wandb_run_name"] == "smk-on-KA-main-e1_6-s36"

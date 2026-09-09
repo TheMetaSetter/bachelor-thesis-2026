@@ -11,6 +11,7 @@ from scripts.benchmarks._config_generation_helpers import (
     entity_token,
     write_yaml_config,
 )
+from src.core.artifact_naming import build_wandb_smoke_run_name, wandb_entity_token
 
 from scripts.benchmarks.generate_smd_benchmark_configs import (
     BENCHMARK_ENTITY_IDS,
@@ -66,8 +67,11 @@ def build_benchmark_smoke_config(
     config["two_stage"]["stage_a_multitask_epochs"] = 2
     config["two_stage"]["stage_b_fusion_finetuning_epochs"] = 1
     logging_config = dict(config["logging"])
-    logging_config["wandb_run_name"] = (
-        f"off-O0-{_entity_token(entity_id)}-s{seed}-smoke"
+    logging_config["wandb_run_name"] = build_wandb_smoke_run_name(
+        phase_token="off",
+        identity_tokens=["O0"],
+        entity_token=wandb_entity_token(entity_id),
+        seed=seed,
     )
     logging_config["wandb_tags"] = [
         "benchmark",

@@ -21,7 +21,7 @@ from src.core.console import console_print
 from src.core.artifact_naming import (
     build_artifact_identity,
     build_wandb_artifact_name,
-    build_wandb_run_name,
+    resolve_wandb_run_name,
 )
 from src.core.config import load_experiment_config
 from src.core.registry import build_dataset, build_model
@@ -141,8 +141,10 @@ def run_online_adaptation_experiment(
     quiet_terminal = bool(logging_config.get("quiet_terminal", False))
     logging_config.setdefault("wandb_job_type", "online_adaptation")
     if logging_config.get("use_wandb", False):
-        logging_config["wandb_run_name"] = build_wandb_run_name(
-            experiment_config, stage="online"
+        logging_config["wandb_run_name"] = resolve_wandb_run_name(
+            logging_config,
+            experiment_config,
+            stage="online",
         )
     experiment_logger = ExperimentLogger(
         experiment_config["output_dir"],

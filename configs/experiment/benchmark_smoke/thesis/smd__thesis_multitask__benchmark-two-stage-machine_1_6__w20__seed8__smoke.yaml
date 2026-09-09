@@ -1,5 +1,6 @@
 experiment_name: smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed8__smoke
 seed: 8
+offline_variant: O0
 experiment_variant: two_stage_base_v1
 device: cuda
 output_dir: outputs/benchmark_smoke/smd/thesis_multitask/machine_1_6/seed8
@@ -28,7 +29,7 @@ logging:
   use_wandb: true
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
-  wandb_run_name: off-O0-machine_1_6-s8-smoke
+  wandb_run_name: smk-off-O0-e1_6-s8
   wandb_tags:
   - benchmark
   - thesis-two-stage

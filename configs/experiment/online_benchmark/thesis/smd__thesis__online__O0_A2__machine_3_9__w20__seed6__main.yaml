@@ -1,5 +1,7 @@
 experiment_name: smd__thesis__online__O0_A2__machine_3_9__w20__seed6__main
 seed: 6
+offline_variant: O0
+online_variant: A2
 experiment_variant: online_tta_a2_v1
 device: cuda
 output_dir: outputs/benchmark/online/smd/thesis/O0_A2/machine_3_9/seed6

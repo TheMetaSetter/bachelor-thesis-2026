@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Sequence
 
 
 WANDB_ARTIFACT_NAME_LIMIT = 128
@@ -25,6 +25,12 @@ _ALLOWED_ROLES = {
     "out",
     "run",
 }
+
+_ALLOWED_SMOKE_PHASE_TOKENS = {"off", "on"}
+_SMOKE_RUN_NAME_PATTERN = re.compile(
+    r"smk-(?:off|on)-[A-Za-z0-9_.-]+-e[A-Za-z0-9_.-]+-s-?\d+"
+)
+_WANDB_METHOD_DISPLAY_TOKENS = {"kmeans_ad": "KA"}
 
 
 def _first_non_empty(*values: Any) -> Any:
@@ -214,6 +220,79 @@ def build_wandb_run_name(
         online_variant=online_variant,
     )
     return build_wandb_artifact_name(role="run", identity=identity)
+
+
+def wandb_entity_token(entity_id: Any) -> str:
+    """Return the compact entity token used by smoke W&B display names."""
+    normalized = _required_text("entity", entity_id).replace("-", "_")
+    if normalized.startswith("machine_"):
+        return f"e{normalized.removeprefix('machine_')}"
+    return normalized
+
+
+def wandb_method_display_token(method: Any) -> str:
+    """Return a selected short method token without changing method identity."""
+    normalized = _required_text("method", method)
+    return _WANDB_METHOD_DISPLAY_TOKENS.get(normalized, normalized)
+
+
+def build_wandb_smoke_run_name(
+    *,
+    phase_token: str,
+    identity_tokens: Sequence[str],
+    entity_token: str,
+    seed: Any,
+) -> str:
+    """Build the selected short W&B display name for a smoke run."""
+    if phase_token not in _ALLOWED_SMOKE_PHASE_TOKENS:
+        raise ValueError(f"unsupported smoke phase token: {phase_token!r}")
+    if isinstance(identity_tokens, str) or not identity_tokens:
+        raise ValueError("smoke run name requires at least one identity token")
+    normalized_identity_tokens = [
+        _required_text("identity token", token) for token in identity_tokens
+    ]
+    normalized_entity_token = _required_text("entity", entity_token)
+    normalized_seed = _required_seed(seed)
+    return validate_wandb_artifact_name(
+        "-".join(
+            [
+                "smk",
+                phase_token,
+                *normalized_identity_tokens,
+                normalized_entity_token,
+                f"s{normalized_seed}",
+            ]
+        )
+    )
+
+
+def is_valid_wandb_smoke_run_name(name: Any) -> bool:
+    """Return whether a value follows the selected smoke W&B grammar."""
+    if not isinstance(name, str):
+        return False
+    try:
+        validated_name = validate_wandb_artifact_name(name)
+    except ValueError:
+        return False
+    return _SMOKE_RUN_NAME_PATTERN.fullmatch(validated_name) is not None
+
+
+def resolve_wandb_run_name(
+    logging_config: Mapping[str, Any],
+    experiment_config: Mapping[str, Any],
+    *,
+    stage: str | None = None,
+    online_variant: str | None = None,
+) -> str:
+    """Preserve a valid configured smoke name and retain legacy fallbacks."""
+    configured_name = logging_config.get("wandb_run_name")
+    if is_valid_wandb_smoke_run_name(configured_name):
+        return str(configured_name).strip()
+    return build_wandb_run_name(
+        experiment_config,
+        stage=stage,
+        online_variant=online_variant,
+    )
 
 
 def validate_wandb_artifact_name(name: str) -> str:

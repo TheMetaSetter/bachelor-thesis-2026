@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from scripts.cli.evaluate import run_evaluation_experiment
-from src.core.artifact_naming import build_wandb_run_name
+from src.core.artifact_naming import resolve_wandb_run_name
 from scripts.run_direct_branch_routing_full import build_direct_experiment_config
 
 
@@ -49,8 +49,10 @@ def prepare_evaluation_config(
         }
     )
     if logging_config.get("use_wandb", False):
-        logging_config["wandb_run_name"] = build_wandb_run_name(
-            evaluation_config, stage="evaluation"
+        logging_config["wandb_run_name"] = resolve_wandb_run_name(
+            logging_config,
+            evaluation_config,
+            stage="evaluation",
         )
     evaluation_config["logging"] = logging_config
     return evaluation_config

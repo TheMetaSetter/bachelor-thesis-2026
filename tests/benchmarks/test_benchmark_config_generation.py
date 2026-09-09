@@ -93,6 +93,12 @@ def test_generate_thesis_offline_benchmark_configs_writes_all_expected_files() -
                             loaded_config["model_overrides"]["score_loss_target"]
                             == "synthetic_anomaly_mask"
                         )
+                    assert loaded_config["offline_variant"] == variant
+                    if smoke:
+                        assert loaded_config["logging"]["wandb_run_name"] == (
+                            f"smk-off-{variant}-"
+                            f"e{entity_id.removeprefix('machine_')}-s{seed}"
+                        )
 
 
 def test_generate_benchmark_smoke_configs_writes_all_expected_files() -> None:
@@ -111,3 +117,5 @@ def test_generate_benchmark_smoke_configs_writes_all_expected_files() -> None:
     assert sample_config["two_stage"]["expected_total_training_epochs"] == 3
     assert sample_config["two_stage"]["stage_a_multitask_epochs"] == 2
     assert sample_config["two_stage"]["stage_b_fusion_finetuning_epochs"] == 1
+    assert sample_config["offline_variant"] == "O0"
+    assert sample_config["logging"]["wandb_run_name"] == "smk-off-O0-e1_6-s6"

@@ -118,6 +118,7 @@
         "checkpoint_dir", "checkpoint_monitor_metric", "data_config_path",
         "data_overrides", "device", "epochs", "evaluation",
         "experiment_name", "experiment_variant", "logging", "model_config_path",
+        "offline_variant",
         "optimizer", "output_dir", "seed", "task_config_path", "two_stage"
       ],
       "nested": {
@@ -138,6 +139,7 @@
       "top_level": [
         "checkpoint_dir", "data_config_path", "data_overrides", "device", "epochs", "evaluation",
         "experiment_name", "experiment_variant", "logging", "model_config_path", "model_overrides",
+        "offline_variant", "online_variant",
         "optimizer", "output_dir", "seed", "task_config_path", "task_overrides"
       ]
     }

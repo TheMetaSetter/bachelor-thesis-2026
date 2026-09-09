@@ -10,6 +10,11 @@ from scripts.benchmarks._config_generation_helpers import (
     entity_token,
     write_yaml_config,
 )
+from src.core.artifact_naming import (
+    build_wandb_smoke_run_name,
+    wandb_entity_token,
+    wandb_method_display_token,
+)
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -223,7 +228,19 @@ def build_online_streaming_benchmark_config(
             "wandb_project": "bachelor-thesis-2026",
             "wandb_mode": "online",
             "wandb_job_type": "online_benchmark",
-            "wandb_run_name": f"on-{method}-{online_variant}-{_entity_token(entity_id)}-s{seed}-{'smoke' if smoke else 'main'}",
+            "wandb_run_name": (
+                build_wandb_smoke_run_name(
+                    phase_token="on",
+                    identity_tokens=[
+                        wandb_method_display_token(method),
+                        online_variant,
+                    ],
+                    entity_token=wandb_entity_token(entity_id),
+                    seed=seed,
+                )
+                if smoke
+                else f"on-{method}-{online_variant}-{_entity_token(entity_id)}-s{seed}-main"
+            ),
             "wandb_tags": [
                 "online-benchmark",
                 method,

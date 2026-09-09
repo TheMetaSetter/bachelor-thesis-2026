@@ -1,5 +1,6 @@
 experiment_name: smd__thesis__offline__O1__machine_3_9__w20__seed36__smoke
 seed: 36
+offline_variant: O1
 experiment_variant: two_stage_point_score_supervised_v1
 device: cuda
 output_dir: outputs/benchmark_smoke/smd/thesis/O1/machine_3_9/seed36
@@ -28,7 +29,7 @@ logging:
   use_wandb: true
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
-  wandb_run_name: off-O1-machine_3_9-s36-smoke
+  wandb_run_name: smk-off-O1-e3_9-s36
   wandb_tags:
   - offline-benchmark
   - thesis

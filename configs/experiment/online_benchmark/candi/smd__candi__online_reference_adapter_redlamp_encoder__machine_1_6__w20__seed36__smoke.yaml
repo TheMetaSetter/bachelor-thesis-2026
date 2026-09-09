@@ -50,7 +50,7 @@ logging:
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
   wandb_job_type: online_benchmark
-  wandb_run_name: on-candi-reference_adapter_redlamp_encoder-machine_1_6-s36-smoke
+  wandb_run_name: smk-on-candi-reference_adapter_redlamp_encoder-e1_6-s36
   wandb_tags:
   - online-benchmark
   - candi

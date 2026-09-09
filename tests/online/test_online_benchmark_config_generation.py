@@ -78,6 +78,8 @@ def test_generate_thesis_online_benchmark_configs_writes_all_expected_files() ->
                         assert (
                             loaded_config["task"]["offline_variant"] == offline_variant
                         )
+                        assert loaded_config["offline_variant"] == offline_variant
+                        assert loaded_config["online_variant"] == online_variant
                         assert loaded_config["task"]["entity_id"] == entity_id
                         assert loaded_config["task"]["seed"] == seed
                         assert loaded_config["task"]["benchmark_mode"] == (
@@ -113,4 +115,9 @@ def test_generate_thesis_online_benchmark_configs_writes_all_expected_files() ->
                         )
                         assert loaded_config["logging"]["use_wandb"] is True
                         assert loaded_config["logging"]["wandb_mode"] == "online"
+                        if smoke:
+                            assert loaded_config["logging"]["wandb_run_name"] == (
+                                f"smk-on-{offline_variant}-{online_variant}-"
+                                f"e{entity_id.replace('machine-', '').replace('-', '_')}-s{seed}"
+                            )
                         assert loaded_config["optimizer"]["optimizer_name"] == "adamw"

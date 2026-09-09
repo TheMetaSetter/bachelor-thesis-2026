@@ -20,6 +20,6 @@ logging:
   wandb_project: bachelor-thesis-2026
   wandb_mode: online
   wandb_job_type: smoke
-  wandb_run_name: smd__iforest__online_main__machine_1_6__w20__seed6__smoke
+  wandb_run_name: smk-on-iforest-main-e1_6-s6
   wandb_tags:
     - smoke

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from scripts.cli.train import run_training_experiment
+from src.core.artifact_naming import build_wandb_smoke_run_name, wandb_entity_token
 from scripts.run_direct_branch_routing_full import (
     BASELINE_CONFIG_DIRECTORY,
     _cloud_path,
@@ -64,7 +65,12 @@ def build_smoke_experiment_config() -> dict[str, Any]:
         {
             "use_wandb": True,
             "wandb_mode": "online",
-            "wandb_run_name": "off-O0-machine_1_6-s6-direct-smoke",
+            "wandb_run_name": build_wandb_smoke_run_name(
+                phase_token="off",
+                identity_tokens=["O0"],
+                entity_token=wandb_entity_token("machine_1_6"),
+                seed=6,
+            ),
             "wandb_tags": ["offline-ablation", "direct-branch-routing", "smoke"],
         }
     )

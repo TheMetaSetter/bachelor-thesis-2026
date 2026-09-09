@@ -27,7 +27,7 @@ import torch
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from src.core.config import load_experiment_config
-from src.core.artifact_naming import build_wandb_run_name
+from src.core.artifact_naming import resolve_wandb_run_name
 from src.core.artifact_integrity import (
     build_artifact_manifest,
     build_retention_bundle_manifest,
@@ -312,7 +312,8 @@ def run_thesis_online_benchmark(
         logging_config = dict(experiment_config.get("logging", {}))
         if logging_config.get("use_wandb", False):
             logging_config.setdefault("wandb_job_type", "online_benchmark")
-            logging_config["wandb_run_name"] = build_wandb_run_name(
+            logging_config["wandb_run_name"] = resolve_wandb_run_name(
+                logging_config,
                 experiment_config,
                 stage="online",
                 online_variant=online_variant,

@@ -18,6 +18,7 @@ from scripts.benchmarks._config_generation_helpers import (
     entity_token,
     write_yaml_config,
 )
+from src.core.artifact_naming import build_wandb_smoke_run_name, wandb_entity_token
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 ONLINE_BENCHMARK_CONFIG_DIR = (
@@ -174,6 +175,8 @@ def build_online_benchmark_config(
             smoke=smoke,
         ),
         "seed": seed,
+        "offline_variant": offline_variant,
+        "online_variant": online_variant,
         "experiment_variant": _variant_experiment_name(online_variant),
         "device": "cuda",
         "output_dir": _output_dir(
@@ -221,7 +224,16 @@ def build_online_benchmark_config(
             "wandb_project": "bachelor-thesis-2026",
             "wandb_mode": "online",
             "wandb_job_type": "online_benchmark",
-            "wandb_run_name": f"on-{offline_variant}-{online_variant}-{_entity_token(entity_id)}-s{seed}-{'smoke' if smoke else 'main'}",
+            "wandb_run_name": (
+                build_wandb_smoke_run_name(
+                    phase_token="on",
+                    identity_tokens=[offline_variant, online_variant],
+                    entity_token=wandb_entity_token(entity_id),
+                    seed=seed,
+                )
+                if smoke
+                else f"on-{offline_variant}-{online_variant}-{_entity_token(entity_id)}-s{seed}-main"
+            ),
             "wandb_tags": [
                 "online-benchmark",
                 "thesis",
