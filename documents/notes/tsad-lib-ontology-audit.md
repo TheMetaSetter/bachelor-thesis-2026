@@ -84,8 +84,8 @@ THESIS
     → continuous_prototype_bank
     → discrete_codebook
     → anomaly_verification_metadata
-    → reconstruction_fusion_projection
-    → classification_fusion_projection
+    → reconstruction_fusion_projection (skip this node by default)
+    → classification_fusion_projection (skip this node by default)
     → reconstruction_head
     → classification_head
 ```
