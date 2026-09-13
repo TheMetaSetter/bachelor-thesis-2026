@@ -55,6 +55,7 @@ from src.engine.online_tta.online_engine_shared import (
 from scripts.ops.threshold_artifact_v4_online_scoring import (
     StageBInventoryEntry,
     load_a0_scoring_config,
+    resolve_a0_scoring_config_path,
 )
 from src.protocols.point_scores import ewma_scores
 from src.protocols.threshold_artifact import (
@@ -120,6 +121,33 @@ def validate_protocol_config(protocol_config: dict[str, Any]) -> None:
     )
 
     return _validate_protocol_config(protocol_config, require_score_identity=False)
+
+
+def validate_a0_scoring_config_path(
+    experiment_config: dict[str, Any], experiment_config_path: str
+) -> None:
+    """Fail before training when the matching A0 config is unavailable."""
+    entity_ids = experiment_config.get("data", {}).get("entity_ids", [])
+    if len(entity_ids) != 1:
+        return
+    entry = StageBInventoryEntry(
+        experiment_config_path=Path(experiment_config_path),
+        offline_variant=str(experiment_config.get("offline_variant", "O0")),
+        entity_id=str(entity_ids[0]),
+        seed=int(experiment_config.get("seed", 0)),
+        threshold_artifact_v3_path=Path(),
+        stage_b_best_checkpoint_path=Path(
+            str(experiment_config.get("checkpoint_dir", ""))
+        )
+        / "best.pt",
+        threshold_artifact_v4_path=Path(),
+        audit_path=Path(),
+    )
+    config_path = resolve_a0_scoring_config_path(
+        entry,
+        window_size=int(experiment_config["data"]["window_size"]),
+    )
+    load_experiment_config(config_path)
 
 
 def _utc_now_iso() -> str:
@@ -1106,6 +1134,7 @@ def run_thesis_offline_benchmark(
     if output_dir is not None and not evaluation_only:
         raise ValueError("output_dir is only supported with --evaluation-only")
     experiment_config = load_experiment_config(experiment_config_path)
+    validate_a0_scoring_config_path(experiment_config, experiment_config_path)
     protocol_config = _load_yaml_config(protocol_config_path)
     retention_policy = _resolve_retention_policy(experiment_config)
     effective_output_dir = Path(

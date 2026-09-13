@@ -10,7 +10,10 @@ from typing import Any
 import numpy as np
 import yaml
 
-from scripts.benchmarks._config_generation_helpers import entity_token, write_yaml_config
+from scripts.benchmarks._config_generation_helpers import (
+    entity_token,
+    write_yaml_config,
+)
 from src.core.artifact_naming import (
     build_wandb_smoke_run_name,
     wandb_entity_token,
@@ -35,7 +38,9 @@ OFFLINE_BASELINES = ("stumpy_channel_ab", "kmeans_ad", "iforest")
 ONLINE_BASELINES = ("candi", "m2n2", "stumpy", "kmeans_ad", "iforest")
 WINDOW_SIZE = 20
 ONLINE_SUBSEQUENCE_LENGTH = 2048
-PROTOCOL_CONFIG = REPOSITORY_ROOT / "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
+PROTOCOL_CONFIG = (
+    REPOSITORY_ROOT / "configs/protocol/smd_window20_cleanval_q99_ewma09.yaml"
+)
 
 
 def discover_remaining_entities(
@@ -44,7 +49,9 @@ def discover_remaining_entities(
     selected_entity_ids: tuple[str, ...] | None = None,
 ) -> tuple[str, ...]:
     """Return valid SMD entities after applying the explicit exclusion list."""
-    split_dirs = {split: dataset_root / split for split in ("train", "test", "test_label")}
+    split_dirs = {
+        split: dataset_root / split for split in ("train", "test", "test_label")
+    }
     missing_dirs = [str(path) for path in split_dirs.values() if not path.is_dir()]
     if missing_dirs:
         raise FileNotFoundError(f"Missing SMD split directories: {missing_dirs}")
@@ -66,8 +73,7 @@ def discover_remaining_entities(
         excluded_selected = sorted(set(selected) & set(excluded_entity_ids))
         if excluded_selected:
             raise ValueError(
-                "Selected entity IDs are explicitly excluded: "
-                f"{excluded_selected}"
+                f"Selected entity IDs are explicitly excluded: {excluded_selected}"
             )
         unknown_selected = sorted(set(selected) - set(remaining))
         if unknown_selected:
@@ -188,7 +194,9 @@ def _add_run(
         "online_baseline": "online_streaming_benchmark_report.json",
     }[runner]
     if runner == "thesis_online":
-        report_name = f"thesis_online_{str(variant).split('-', 1)[1]}_benchmark_report.json"
+        report_name = (
+            f"thesis_online_{str(variant).split('-', 1)[1]}_benchmark_report.json"
+        )
     run = {
         "run_id": run_id,
         "phase": phase,
@@ -220,9 +228,10 @@ def _add_run(
             "threshold_artifact": str(offline_output / "thresholds/thresholds.json"),
         }
     elif runner == "online_baseline" and method in {"candi", "m2n2"}:
-        redlamp_output = _run_output_root(
-            output_root, entity_id, seed, "redlamp_baseline"
-        ) / "offline"
+        redlamp_output = (
+            _run_output_root(output_root, entity_id, seed, "redlamp_baseline")
+            / "offline"
+        )
         run["dependencies"] = {
             "redlamp_checkpoint": str(redlamp_output / "checkpoints/best.pt")
         }
@@ -359,14 +368,18 @@ def _common_logging(
     }
 
 
-def _patch_common(config: dict[str, Any], run: dict[str, Any], data_path: Path) -> dict[str, Any]:
+def _patch_common(
+    config: dict[str, Any], run: dict[str, Any], data_path: Path
+) -> dict[str, Any]:
     config["data_config_path"] = str(data_path)
     config["output_dir"] = run["output_dir"]
     config["checkpoint_dir"] = str(Path(run["output_dir"]) / "checkpoints")
     return config
 
 
-def _thesis_offline_config(run: dict[str, Any], data_path: Path, settings: dict[str, Any]) -> dict[str, Any]:
+def _thesis_offline_config(
+    run: dict[str, Any], data_path: Path, settings: dict[str, Any]
+) -> dict[str, Any]:
     variant = str(run["variant"])
     config = build_thesis_offline_config(
         variant=variant,
@@ -399,7 +412,9 @@ def _thesis_offline_config(run: dict[str, Any], data_path: Path, settings: dict[
     return config
 
 
-def _redlamp_config(run: dict[str, Any], data_path: Path, settings: dict[str, Any]) -> dict[str, Any]:
+def _redlamp_config(
+    run: dict[str, Any], data_path: Path, settings: dict[str, Any]
+) -> dict[str, Any]:
     output_dir = Path(run["output_dir"])
     entity_id = str(run["entity_id"])
     seed = int(run["seed"])
@@ -410,8 +425,13 @@ def _redlamp_config(run: dict[str, Any], data_path: Path, settings: dict[str, An
         "output_dir": str(output_dir),
         "checkpoint_dir": str(output_dir / "checkpoints"),
         "data_config_path": str(data_path),
-        "model_config_path": str(REPOSITORY_ROOT / "configs/model/redlamp_baseline_comparative_smd.yaml"),
-        "task_config_path": str(REPOSITORY_ROOT / "configs/task/multitask_tsad_redlamp_multiclass_window20_benchmark_fixed_synth.yaml"),
+        "model_config_path": str(
+            REPOSITORY_ROOT / "configs/model/redlamp_baseline_comparative_smd.yaml"
+        ),
+        "task_config_path": str(
+            REPOSITORY_ROOT
+            / "configs/task/multitask_tsad_redlamp_multiclass_window20_benchmark_fixed_synth.yaml"
+        ),
         "optimizer": {
             "optimizer_name": "adamw",
             "learning_rate": 0.001,
@@ -453,7 +473,9 @@ def _redlamp_config(run: dict[str, Any], data_path: Path, settings: dict[str, An
     return config
 
 
-def _traditional_offline_config(run: dict[str, Any], data_path: Path, settings: dict[str, Any]) -> dict[str, Any]:
+def _traditional_offline_config(
+    run: dict[str, Any], data_path: Path, settings: dict[str, Any]
+) -> dict[str, Any]:
     config = build_traditional_offline_config(
         method=str(run["method"]),
         entity_id=str(run["entity_id"]),
@@ -489,11 +511,15 @@ def _traditional_offline_config(run: dict[str, Any], data_path: Path, settings: 
     return config
 
 
-def _thesis_online_config(run: dict[str, Any], data_path: Path, settings: dict[str, Any]) -> dict[str, Any]:
+def _thesis_online_config(
+    run: dict[str, Any], data_path: Path, settings: dict[str, Any]
+) -> dict[str, Any]:
     offline_variant, online_variant = str(run["variant"]).split("-", 1)
     output_dir = Path(run["output_dir"])
     offline_output = output_dir.parents[1] / offline_variant / "offline"
-    stage_b_checkpoint = offline_output / "two_stage/stage_b_fusion_finetuning/checkpoints/best.pt"
+    stage_b_checkpoint = (
+        offline_output / "two_stage/stage_b_fusion_finetuning/checkpoints/best.pt"
+    )
     threshold_path = offline_output / "thresholds/thresholds.json"
     online_range = run.get("online_range")
     if online_range is None:
@@ -508,8 +534,12 @@ def _thesis_online_config(run: dict[str, Any], data_path: Path, settings: dict[s
         "output_dir": str(output_dir),
         "checkpoint_dir": str(output_dir / "checkpoints"),
         "data_config_path": str(data_path),
-        "model_config_path": str(REPOSITORY_ROOT / "configs/model/online_adaptation.yaml"),
-        "task_config_path": str(REPOSITORY_ROOT / "configs/task/online_adaptation.yaml"),
+        "model_config_path": str(
+            REPOSITORY_ROOT / "configs/model/online_adaptation.yaml"
+        ),
+        "task_config_path": str(
+            REPOSITORY_ROOT / "configs/task/online_adaptation.yaml"
+        ),
         "data_overrides": {
             "window_size": WINDOW_SIZE,
             "stride": 1,
@@ -551,7 +581,11 @@ def _thesis_online_config(run: dict[str, Any], data_path: Path, settings: dict[s
             "reset_policy": "disabled",
             "reset_alignment_threshold": 0.0,
         },
-        "optimizer": {"optimizer_name": "adamw", "learning_rate": 0.001, "weight_decay": 0.0},
+        "optimizer": {
+            "optimizer_name": "adamw",
+            "learning_rate": 0.001,
+            "weight_decay": 0.0,
+        },
         "epochs": 1,
         "evaluation": {
             "vus_max_buffer_size": settings["vus_max_buffer_size"],
@@ -561,7 +595,14 @@ def _thesis_online_config(run: dict[str, Any], data_path: Path, settings: dict[s
         "logging": _common_logging(
             mode=settings["mode"],
             run_name=run["run_id"],
-            tags=["benchmark", "thesis", "online", offline_variant.lower(), online_variant.lower(), str(run["entity_id"])],
+            tags=[
+                "benchmark",
+                "thesis",
+                "online",
+                offline_variant.lower(),
+                online_variant.lower(),
+                str(run["entity_id"]),
+            ],
             phase_token="on",
             identity_tokens=[offline_variant, online_variant],
             entity_id=str(run["entity_id"]),
@@ -572,20 +613,24 @@ def _thesis_online_config(run: dict[str, Any], data_path: Path, settings: dict[s
     return config
 
 
-def _online_baseline_config(run: dict[str, Any], data_path: Path, settings: dict[str, Any]) -> dict[str, Any]:
+def _online_baseline_config(
+    run: dict[str, Any], data_path: Path, settings: dict[str, Any]
+) -> dict[str, Any]:
     method = str(run["method"])
     entity_id = str(run["entity_id"])
     seed = int(run["seed"])
     online_variant = (
-        "reference_adapter_redlamp_encoder"
-        if method in {"candi", "m2n2"}
-        else "main"
+        "reference_adapter_redlamp_encoder" if method in {"candi", "m2n2"} else "main"
     )
-    kwargs = build_online_baseline_kwargs(method, entity_id, seed, settings["mode"] == "smoke")
+    kwargs = build_online_baseline_kwargs(
+        method, entity_id, seed, settings["mode"] == "smoke"
+    )
     kwargs["threshold_quantile"] = 0.99
     if method in {"candi", "m2n2"}:
         kwargs["pretrained_encoder_checkpoint"] = str(
-            _run_output_root(Path(run["output_dir"]).parents[3], entity_id, seed, "redlamp_baseline")
+            _run_output_root(
+                Path(run["output_dir"]).parents[3], entity_id, seed, "redlamp_baseline"
+            )
             / "offline/checkpoints/best.pt"
         )
     online_range = run.get("online_range")
@@ -598,9 +643,7 @@ def _online_baseline_config(run: dict[str, Any], data_path: Path, settings: dict
         "entity_id": entity_id,
         "seed": seed,
         "device": "cuda" if method in {"candi", "m2n2"} else "cpu",
-        "data_overrides": {
-            "num_workers": 2 if method in {"candi", "m2n2"} else 0
-        },
+        "data_overrides": {"num_workers": 2 if method in {"candi", "m2n2"} else 0},
         "window_size": WINDOW_SIZE,
         "data_config_path": str(data_path),
         "protocol_config_path": str(PROTOCOL_CONFIG),
@@ -628,7 +671,9 @@ def _online_baseline_config(run: dict[str, Any], data_path: Path, settings: dict
     }
 
 
-def _build_config(run: dict[str, Any], data_path: Path, settings: dict[str, Any]) -> dict[str, Any]:
+def _build_config(
+    run: dict[str, Any], data_path: Path, settings: dict[str, Any]
+) -> dict[str, Any]:
     builders = {
         "thesis_offline": _thesis_offline_config,
         "redlamp": _redlamp_config,
@@ -687,13 +732,17 @@ def write_matrix_configs(
     )
     data_paths: dict[str, Path] = {}
     for entity_id in entities:
-        data_path = output_root / "generated_configs/data" / f"{entity_token(entity_id)}.yaml"
+        data_path = (
+            output_root / "generated_configs/data" / f"{entity_token(entity_id)}.yaml"
+        )
         write_yaml_config(data_path, _data_config(dataset_root, entity_id, smoke))
         data_paths[entity_id] = data_path
     for run in plan:
         config_path = output_root / "generated_configs/runs" / f"{run['run_id']}.yaml"
         run["config_path"] = str(config_path)
-        write_yaml_config(config_path, _build_config(run, data_paths[str(run["entity_id"])], settings))
+        write_yaml_config(
+            config_path, _build_config(run, data_paths[str(run["entity_id"])], settings)
+        )
     manifest = {
         "mode": settings["mode"],
         "dataset_root": str(dataset_root.resolve()),
@@ -716,7 +765,9 @@ def write_matrix_configs(
     }
     manifest_path = output_root / "remaining_smd_manifest.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return manifest_path
 
 
@@ -751,7 +802,24 @@ def main() -> None:
         main_method_only=args.main_method_only,
     )
     if args.dry_run:
-        print(json.dumps({"mode": settings["mode"], "entities": list(entities), "runs": len(plan), "online_subsequence_length": ONLINE_SUBSEQUENCE_LENGTH, "metrics": ["VUS-PR@FPR-budget", "VUS-PR", "Affiliation F1-score", "VUS-ROC", "raw-FPR"]}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "mode": settings["mode"],
+                    "entities": list(entities),
+                    "runs": len(plan),
+                    "online_subsequence_length": ONLINE_SUBSEQUENCE_LENGTH,
+                    "metrics": [
+                        "VUS-PR@FPR-budget",
+                        "VUS-PR",
+                        "Affiliation F1-score",
+                        "VUS-ROC",
+                        "raw-FPR",
+                    ],
+                },
+                indent=2,
+            )
+        )
         return
     print(
         write_matrix_configs(

@@ -132,6 +132,4 @@ def test_wandb_checkpoint_sink_uses_role_and_run_identity(
 
     sink.save_file(checkpoint_path)
 
-    assert fake_logger.logged_artifact_names == [
-        "ckpt-stageB-O0-machine_1_6-s36"
-    ]
+    assert fake_logger.logged_artifact_names == ["ckpt-stageB-O0-machine_1_6-s36"]

@@ -220,9 +220,9 @@ def run_online_adaptation_experiment(
         artifact_identity_task = dict(experiment_config.get("task", {}))
         test_sequences = data_bundle.get("scaled_sequences", {}).get("test", [])
         if test_sequences and "entity_id" not in artifact_identity_task:
-            artifact_identity_task["entity_id"] = test_sequences[0].get(
-                "meta", {}
-            ).get("entity_id")
+            artifact_identity_task["entity_id"] = (
+                test_sequences[0].get("meta", {}).get("entity_id")
+            )
         artifact_identity_config["task"] = artifact_identity_task
         artifact_identity = build_artifact_identity(
             artifact_identity_config, stage="online"

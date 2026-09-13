@@ -234,3 +234,5 @@ mempalace.yaml
 entities.json
 
 *.tar.zst
+
+personalized_prompt.md

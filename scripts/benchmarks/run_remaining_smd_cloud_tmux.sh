@@ -167,6 +167,38 @@ write_manifest() {
         done
     fi
     "$PYTHON" "${args[@]}"
+    validate_manifest_configs
+}
+
+validate_manifest_configs() {
+    "$PYTHON" - "$MANIFEST" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+missing: list[str] = []
+for run in manifest.get("runs", []):
+    config_path = Path(str(run.get("config_path", "")))
+    if not config_path.is_file():
+        missing.append(f"{run.get('run_id', '<unknown>')}: {config_path}")
+    if run.get("runner") != "thesis_offline":
+        continue
+    entity_token = str(run["entity_id"]).replace("-", "_")
+    a0_path = config_path.with_name(
+        f"on-thesis-{run['variant']}-A0-{entity_token}-s{int(run['seed'])}.yaml"
+    )
+    if not a0_path.is_file():
+        missing.append(f"{run['run_id']}: missing generated A0 config {a0_path}")
+
+if missing:
+    print("Generated config validation failed:", file=sys.stderr)
+    for path in missing:
+        print(f"- {path}", file=sys.stderr)
+    raise SystemExit(2)
+
+print(f"Validated generated configs: {len(manifest.get('runs', []))} files")
+PY
 }
 
 preflight() {

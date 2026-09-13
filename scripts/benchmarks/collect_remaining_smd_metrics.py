@@ -55,7 +55,9 @@ def extract_requested_metrics(payload: dict[str, Any]) -> dict[str, Any]:
         "VUS-ROC": _number(metrics.get("vus_roc")),
         "raw-FPR": _number(metrics.get("fpr")),
     }
-    if any(value is None for value in normalized.values() if not isinstance(value, dict)):
+    if any(
+        value is None for value in normalized.values() if not isinstance(value, dict)
+    ):
         return {}
     if any(value is None for value in normalized["VUS-PR@FPR-budget"].values()):
         return {}
@@ -99,11 +101,7 @@ def collect_manifest_metrics(manifest_path: Path) -> dict[str, Any]:
                 "entity_id": run["entity_id"],
                 "seed": run["seed"],
                 "status": (
-                    "completed"
-                    if metrics
-                    else "incomplete"
-                    if payload
-                    else "missing"
+                    "completed" if metrics else "incomplete" if payload else "missing"
                 ),
                 "metrics": metrics,
             }
@@ -123,12 +121,22 @@ def _markdown(report: dict[str, Any]) -> str:
     for row in report["runs"]:
         metrics = row["metrics"]
         budget = metrics.get("VUS-PR@FPR-budget", {})
-        budget_text = " / ".join(str(budget.get(label)) for label in ("0.1%", "0.5%", "1%"))
+        budget_text = " / ".join(
+            str(budget.get(label)) for label in ("0.1%", "0.5%", "1%")
+        )
         values = [
-            row["run_id"], row["phase"], row["method"], row.get("variant") or "-",
-            row["entity_id"], str(row["seed"]), row["status"], budget_text,
-            str(metrics.get("VUS-PR")), str(metrics.get("Affiliation F1-score")),
-            str(metrics.get("VUS-ROC")), str(metrics.get("raw-FPR")),
+            row["run_id"],
+            row["phase"],
+            row["method"],
+            row.get("variant") or "-",
+            row["entity_id"],
+            str(row["seed"]),
+            row["status"],
+            budget_text,
+            str(metrics.get("VUS-PR")),
+            str(metrics.get("Affiliation F1-score")),
+            str(metrics.get("VUS-ROC")),
+            str(metrics.get("raw-FPR")),
         ]
         lines.append("| " + " | ".join(values) + " |")
     return "\n".join(lines) + "\n"
@@ -142,7 +150,9 @@ def main() -> None:
     output_root = args.manifest.parent
     json_path = output_root / "remaining_smd_metrics.json"
     markdown_path = output_root / "remaining_smd_metrics.md"
-    json_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    json_path.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     markdown_path.write_text(_markdown(report), encoding="utf-8")
     print(markdown_path)
 

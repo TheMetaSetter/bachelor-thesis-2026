@@ -209,3 +209,41 @@ def test_a0_scoring_config_uses_the_matching_stage_b_checkpoint(
         entry.stage_b_best_checkpoint_path
     )
     assert config["online_variant"] == "A0"
+
+
+def test_a0_scoring_config_uses_generated_config_for_remaining_entity(
+    tmp_path: Path, monkeypatch
+) -> None:
+    offline_config_path = (
+        tmp_path / "generated_configs" / "runs" / "off-thesis-O1-machine_2_1-s6.yaml"
+    )
+    online_config_path = offline_config_path.with_name(
+        "on-thesis-O1-A0-machine_2_1-s6.yaml"
+    )
+    offline_config_path.parent.mkdir(parents=True)
+    offline_config_path.write_text("offline: true\n", encoding="utf-8")
+    online_config_path.write_text("online: true\n", encoding="utf-8")
+    entry = StageBInventoryEntry(
+        experiment_config_path=offline_config_path,
+        offline_variant="O1",
+        entity_id="machine-2-1",
+        seed=6,
+        threshold_artifact_v3_path=tmp_path / "thresholds.json",
+        stage_b_best_checkpoint_path=tmp_path / "best.pt",
+        threshold_artifact_v4_path=tmp_path / "thresholds_v4.json",
+        audit_path=tmp_path / "audit.json",
+    )
+    captured: dict[str, Path] = {}
+
+    def fake_load(config_path: Path) -> dict:
+        captured["path"] = config_path
+        return {"task": {}, "device": "cpu"}
+
+    monkeypatch.setattr(
+        "scripts.ops.threshold_artifact_v4_online_scoring.load_experiment_config",
+        fake_load,
+    )
+
+    load_a0_scoring_config(entry, window_size=20)
+
+    assert captured["path"] == online_config_path

@@ -31,9 +31,7 @@ def test_builds_short_config_name_from_human_identity() -> None:
 
 
 def test_builds_online_checkpoint_name_with_online_variant() -> None:
-    identity = build_artifact_identity(
-        _config(), stage="online", online_variant="A1"
-    )
+    identity = build_artifact_identity(_config(), stage="online", online_variant="A1")
 
     assert build_wandb_artifact_name(role="ckpt", identity=identity) == (
         "ckpt-online-A1-O0-machine_1_6-s36"

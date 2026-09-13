@@ -113,7 +113,8 @@ def build_artifact_identity(
         experiment_config.get("online_variant"),
         task_config.get("online_variant"),
         _token_from_experiment_name(
-            experiment_config.get("experiment_name"), r"(?:^|[_-])((?:A[0-2])|main)(?:[_-]|$)"
+            experiment_config.get("experiment_name"),
+            r"(?:^|[_-])((?:A[0-2])|main)(?:[_-]|$)",
         ),
     )
     resolved_variant = _first_non_empty(
@@ -145,7 +146,10 @@ def build_artifact_identity(
 
     identity: dict[str, str | int] = {
         "dataset": _required_text(
-            "dataset", _first_non_empty(experiment_config.get("dataset"), data_config.get("dataset_name"))
+            "dataset",
+            _first_non_empty(
+                experiment_config.get("dataset"), data_config.get("dataset_name")
+            ),
         ),
         "variant": _required_text("variant", resolved_variant),
         "entity": _required_text(
@@ -195,7 +199,9 @@ def build_wandb_artifact_name(
     variant = _identity_text(identity, "variant")
     entity = _identity_text(identity, "entity")
     seed = _identity_text(identity, "seed")
-    stage_or_variant = _identity_text(identity, "stage") if identity.get("stage") else variant
+    stage_or_variant = (
+        _identity_text(identity, "stage") if identity.get("stage") else variant
+    )
 
     parts = [role, stage_or_variant]
     if identity.get("online_variant"):

@@ -240,7 +240,9 @@ def test_smoke_launcher_dry_run_mentions_two_gpus(tmp_path: Path) -> None:
     assert "VUS-PR@FPR-budget" in completed.stdout
 
 
-def test_cloud_launcher_dry_run_lists_four_gpu_and_two_cpu_queues(tmp_path: Path) -> None:
+def test_cloud_launcher_dry_run_lists_four_gpu_and_two_cpu_queues(
+    tmp_path: Path,
+) -> None:
     _write_entity_files(tmp_path, [*EXCLUDED_ENTITY_IDS, "machine-2-1"])
     script = Path("scripts/benchmarks/run_remaining_smd_cloud_tmux.sh")
     completed = subprocess.run(
@@ -275,7 +277,9 @@ def test_cloud_launcher_dry_run_lists_four_gpu_and_two_cpu_queues(tmp_path: Path
         assert queue in completed.stdout
 
 
-def test_cloud_launcher_main_method_dry_run_lists_only_gpu_queues(tmp_path: Path) -> None:
+def test_cloud_launcher_main_method_dry_run_lists_only_gpu_queues(
+    tmp_path: Path,
+) -> None:
     _write_entity_files(tmp_path, [*EXCLUDED_ENTITY_IDS, "machine-2-1"])
     script = Path("scripts/benchmarks/run_remaining_smd_cloud_tmux.sh")
     completed = subprocess.run(
@@ -320,16 +324,18 @@ def test_cloud_resource_orchestration_uses_runtime_allowed_cpu_ids() -> None:
     launcher = Path("scripts/benchmarks/run_remaining_smd_cloud_tmux.sh").read_text(
         encoding="utf-8"
     )
-    resource_env = Path(
-        "scripts/benchmarks/_remaining_smd_resource_env.sh"
-    ).read_text(encoding="utf-8")
+    resource_env = Path("scripts/benchmarks/_remaining_smd_resource_env.sh").read_text(
+        encoding="utf-8"
+    )
 
     assert "Cpus_allowed_list" in launcher
     assert 'rm -f "$marker"' in launcher
     assert 'taskset -c "$cpu_mask" true' in resource_env
 
 
-def test_config_builder_rejects_disabled_wandb_logging(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_config_builder_rejects_disabled_wandb_logging(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         generator,
         "_common_logging",
@@ -376,11 +382,11 @@ def test_manifest_records_resource_and_dependency_metadata(tmp_path: Path) -> No
     thesis_online = next(
         run for run in manifest["runs"] if run["runner"] == "thesis_online"
     )
-    candi = next(
-        run for run in manifest["runs"] if run["method"] == "candi"
-    )
+    candi = next(run for run in manifest["runs"] if run["method"] == "candi")
     iforest = next(
-        run for run in manifest["runs"] if run["method"] == "iforest" and run["phase"] == "offline"
+        run
+        for run in manifest["runs"]
+        if run["method"] == "iforest" and run["phase"] == "offline"
     )
 
     assert thesis_online["resource_class"] == "gpu"
@@ -422,13 +428,20 @@ def test_generated_configs_use_resource_specific_worker_limits(tmp_path: Path) -
     assert configs[("thesis_offline", "thesis")]["data_config_path"]
     data_config = yaml.safe_load(
         next(
-            path for path in (tmp_path / "outputs" / "generated_configs" / "data").glob("*.yaml")
+            path
+            for path in (tmp_path / "outputs" / "generated_configs" / "data").glob(
+                "*.yaml"
+            )
         ).read_text(encoding="utf-8")
     )
     assert data_config["num_workers"] == 4
-    assert configs[("redlamp", "redlamp_baseline")]["data_overrides"]["num_workers"] == 4
+    assert (
+        configs[("redlamp", "redlamp_baseline")]["data_overrides"]["num_workers"] == 4
+    )
     assert configs[("thesis_online", "thesis")]["data_overrides"]["num_workers"] == 2
-    assert configs[("offline_baseline", "iforest")]["data_overrides"]["num_workers"] == 0
+    assert (
+        configs[("offline_baseline", "iforest")]["data_overrides"]["num_workers"] == 0
+    )
     assert configs[("online_baseline", "candi")]["device"] == "cuda"
     assert configs[("online_baseline", "iforest")]["device"] == "cpu"
 

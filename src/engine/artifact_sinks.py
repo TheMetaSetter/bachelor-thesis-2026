@@ -39,9 +39,7 @@ class WandbArtifactSink:
 
     def _artifact_name(self) -> str:
         if self.identity is None:
-            raise ValueError(
-                "W&B artifact sink requires normalized run identity"
-            )
+            raise ValueError("W&B artifact sink requires normalized run identity")
         role = "ckpt" if self.artifact_type == "checkpoint" else "out"
         return build_wandb_artifact_name(role=role, identity=self.identity)
 

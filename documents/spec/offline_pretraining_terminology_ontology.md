@@ -328,6 +328,29 @@ logistic sigmoid is applied after raw MSE computation for inference, score
 timeline construction, and threshold calibration; it is not an additional
 training loss term.
 
+### 7.2.1 Point-level contrastive loss: cùng loss, giữ nguyên computation
+
+Quyết định của người dùng ngày 2026-09-12: `point-level contrastive loss` và loss do `_compute_two_view_contrastive_loss` tính là cùng một loss offline, không phải hai loss cộng riêng.
+Giữ canonical identifier `two_view_contrastive_loss` và toàn bộ luồng tính hiện hành.
+
+| Tên | Mapping tới `two_view_contrastive_loss` |
+| --- | --- |
+| `point-level contrastive loss`, `point_level_contrastive_loss` | exact alias trong phạm vi offline |
+| `_compute_two_view_contrastive_loss` | Hàm runtime tính cùng loss |
+| `contrastive_loss` | Runtime local-variable alias trong offline loss step |
+
+Contract `implemented`, được giữ nguyên:
+
+1. Trải hai latent tensors `[B,L,H]` thành `[B*L,H]` và giữ cùng các vị trí có `synthetic_anomaly_mask == 0` ở cả hai view.
+2. Chuẩn hóa từng token bằng `F.normalize` với `epsilon`, rồi tính ma trận cosine similarity `[K,K]` chia cho `max(contrastive_temperature, epsilon)`; `K` là tổng số điểm được giữ trong toàn batch.
+3. Mỗi clean anchor có một positive augmented cùng cửa sổ và cùng vị trí; mọi augmented token còn lại sau lọc là negative, kể cả từ cửa sổ khác trong batch.
+4. Dùng `F.cross_entropy(logits, arange(K))`, lấy trung bình theo anchor, chỉ theo chiều clean → augmented; nếu `K = 0`, trả zero loss.
+
+Nguồn runtime: `src/models/thesis_multitask_impl/thesis_multitask_routing_mixin.py`, hàm `_compute_two_view_contrastive_loss`.
+Đây không phải `point_score_loss` và không phải `online_contrastive_loss`.
+Không thay cách chọn positive/negative bằng diễn giải Equation (3.28) của báo cáo PDF.
+Việc chuẩn hóa tên này không tạo thêm loss cho O2 và không tự thay đổi cấu hình ablation.
+
 ### 7.3 Stage B losses
 
 | Canonical name | Active |
@@ -426,6 +449,9 @@ Nhóm output của `offline_evaluation`, gồm score artifacts, `offline_metrics
 | `online_tta_phase` | `inherits` | `threshold_artifact` |
 
 ## 10. Terminology changes from older specifications
+
+Quyết định 2026-09-12: `point-level contrastive loss` là exact alias của `two_view_contrastive_loss` (§7.2.1), với semantics `unchanged` và owner là offline model.
+Chỉ bổ sung mapping trong tài liệu; không đổi tên hàm, config, metric, checkpoint hoặc artifact, không đổi callers hay luồng tính.
 
 ### 10.1 Raw-input-space MSE v4
 

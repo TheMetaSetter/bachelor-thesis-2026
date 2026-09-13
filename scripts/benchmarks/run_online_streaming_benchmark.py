@@ -229,7 +229,9 @@ def _compute_final_metrics(
         entity_records = [
             record for record in records if str(record.get("entity_id")) == entity_id
         ]
-        sequence_labels = _to_numpy(sequence["point_labels"], dtype=np.int64).reshape(-1)
+        sequence_labels = _to_numpy(sequence["point_labels"], dtype=np.int64).reshape(
+            -1
+        )
         point_start = window_size - 1
         labels.append(sequence_labels[point_start : point_start + len(entity_records)])
         scores.extend(

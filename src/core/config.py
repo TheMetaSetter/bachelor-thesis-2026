@@ -271,9 +271,7 @@ def _validate_experiment_top_level_structure(
         )
     offline_variant = experiment_config.get("offline_variant")
     if offline_variant is not None and offline_variant not in {"O0", "O1"}:
-        raise ValueError(
-            "offline_variant must be one of: O0, O1 when provided"
-        )
+        raise ValueError("offline_variant must be one of: O0, O1 when provided")
     online_variant = experiment_config.get("online_variant")
     model_config = experiment_config.get("model")
     canonical_online_identity = (
@@ -286,9 +284,7 @@ def _validate_experiment_top_level_structure(
         and online_variant is not None
         and online_variant not in {"A0", "A1", "A2"}
     ):
-        raise ValueError(
-            "online_variant must be one of: A0, A1, A2 when provided"
-        )
+        raise ValueError("online_variant must be one of: A0, A1, A2 when provided")
     if experiment_config.get("reconstruction_loss_space", "normalized_input") not in {
         "normalized_input",
         "raw_input",
