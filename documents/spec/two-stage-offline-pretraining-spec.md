@@ -402,7 +402,7 @@ total_epochs: 100
 
 ### 5.1 Required existing config
 
-The following config values are expected:
+The following config values are expected for Server Machine Dataset.
 
 ```yaml
 model_name: thesis_multitask
@@ -2157,6 +2157,9 @@ Implementation is accepted only if all criteria pass.
 ```
 
 ### 21.2 Shape criteria
+
+Number of input and latent dimensions are
+for Server Machine Dataset only.
 
 ```text
 [ ] hidden tensor shape is [B, 20, 32].
