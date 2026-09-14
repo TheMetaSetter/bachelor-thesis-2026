@@ -1,7 +1,25 @@
-# Development Specification: Two-Phase THESIS Pipeline
+# The THESIS Story v1: Two-Phase Pipeline
 
 > **Notation authority:** Khi đối chiếu anomaly score mức điểm, tài liệu lịch sử này dùng mapping trong [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime và ngữ nghĩa lịch sử trong thân tài liệu được giữ nguyên.
 
+## The story begins
+
+THESIS starts with a source model that does not know how the future test stream
+will change. During offline pre-training, it learns representations and
+reconstructions from the train split. Memories are then initialized, Stage B
+trains the needed heads, and clean validation sets the thresholds.
+
+When the test stream arrives, the source model stays frozen. Online TTA reacts
+only to windows that pass triage and verification. The Parts below record each
+step of this journey. Objects are the actors, lifecycle rules are the events,
+and pseudocode is the required order of action.
+
+## Default score rule
+
+The default anomaly score in this specification is simple reconstruction MSE
+with the identity transform. Use raw input MSE by default. A run may choose a
+named latent-space MSE, but it must record that score space and compute its
+thresholds there. The sigmoid protocol is historical and opt-in only.
 
 ## 0. Status
 
@@ -2145,6 +2163,11 @@ stage_b_trainable_modules:
 # Threshold calibration
 # ------------------------------------------------------------
 threshold_source: clean_validation
+score_space: raw_input
+point_score_definition: raw_input_point_mse
+point_score_transform: identity
+# A latent-space MSE is an explicit alternative.
+# The sigmoid protocol is historical and opt-in only.
 
 offline_point_threshold_enabled: true
 offline_point_threshold_quantile: 0.99

@@ -1,7 +1,23 @@
-# Development Specification: THESIS Offline/Online Experiments and Demo Software
+# The THESIS Story v2: Experiments and Demo Software
 
 > **Notation authority:** Khi đối chiếu anomaly score mức điểm, tài liệu lịch sử này dùng mapping trong [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime và ngữ nghĩa lịch sử trong thân tài liệu được giữ nguyên.
 
+## The story of this version
+
+After v1, THESIS needs a clear stage for comparison. O0 and O1 tell the story
+of offline training. A0, A1, and A2 tell the story of online behavior: no TTA,
+PNN reconstruction-only, or full online TTA. The demo lets a reader watch both
+offline replay and online stream replay.
+
+The sections below define the rules of this stage: allowed data, frozen state,
+logged events, and launch gates that must pass before a benchmark run.
+
+## Default score rule
+
+The default anomaly score is simple reconstruction MSE with the identity
+transform. Current runs use raw input MSE by default. A run may choose a named
+latent-space MSE, but it must record the score space and calibrate thresholds in
+that same space. The sigmoid protocol is historical and opt-in only.
 
 ## 0. Status
 
@@ -313,6 +329,12 @@ window_size: 20
 input_dim: 38
 hidden_dim: 32
 num_classes: 12
+
+score_space: raw_input
+point_score_definition: raw_input_point_mse
+point_score_transform: identity
+# A named latent-MSE score is an explicit alternative.
+# The sigmoid transform is historical and opt-in only.
 
 lambda_recon: 0.5
 lambda_cls: 0.5
@@ -765,7 +787,10 @@ No point-wise score BCE loss in Stage B by default.
 
 ## 8. Threshold Calibration
 
-Threshold calibration is no-gradient only.
+Threshold calibration is no-gradient only. The default thresholds are computed
+directly from the selected raw MSE timeline with the identity transform. Raw
+input MSE is the default score space; a named latent-space MSE is an explicit
+alternative. The sigmoid protocol is historical and opt-in only.
 
 ```python
 model.eval()

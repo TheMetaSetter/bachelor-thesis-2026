@@ -1,10 +1,28 @@
-# Development Specification v4: Raw-input-space MSE thresholding and prediction
+# The THESIS Story v4: Raw-input-space MSE
 
 **Status:** normative raw-score implementation specification  
 **Date:** 2026-09-04  
-**Supersedes:** raw-score decisions in v3 only; v1-v3 remain historical  
+**Supersedes:** all earlier default score decisions; v1-v3 remain historical
 **Primary model:** `ThesisMultitaskModel`  
 **Window length:** `L = 20`
+
+## The story of v4
+
+V4 asks a simple question: how large is the reconstruction error in the
+original sensor units? The model still receives scaled input, but both input and
+reconstruction are inverse-transformed before MSE is computed. V4 therefore
+adds a new score contract without changing the historical training loss or
+sigmoid protocol.
+
+The next sections explain three things: how the score is made, why labels and
+predictions are different, and which artifact proves that a run used the raw
+protocol instead of the historical protocol.
+
+V4 is now the default score contract for current offline and online runs. A
+run uses raw-input MSE with `point_score_transform: identity` unless it
+explicitly selects a named latent-space MSE. The shifted-and-scaled logistic
+sigmoid is never the default and is allowed only for a historical or labeled
+ablation run.
 
 ## 1. Purpose
 
@@ -13,8 +31,8 @@ online anomaly detection. Raw input space means the original sensor units
 before standardization. The model still receives scaled tensors, and the scaler
 restores both input and reconstruction before the raw MSE is computed.
 
-Training loss and the historical sigmoid protocol are unchanged. A v4 raw run
-must declare `score_space: raw_input` and
+Training loss remains unchanged. A current raw run must declare
+`score_space: raw_input` and
 `point_score_transform: identity`.
 
 ## 2. Score contract
@@ -77,7 +95,9 @@ window_prediction = raw_input_window_mse > window_threshold
 The raw protocol uses the identity transform. It must not fit, load, or apply
 the shifted-and-scaled logistic sigmoid. The v3 `point_scores` field remains
 available only for historical compatibility and must not be selected by the
-raw evaluator or online runtime.
+raw evaluator or online runtime. A latent-MSE run may use
+`score_space: latent` and must use an identity transform unless it explicitly
+declares a legacy sigmoid ablation.
 
 ## 5. Terminology mapping
 
@@ -90,8 +110,8 @@ raw evaluator or online runtime.
 | derived window label | `window_labels` | new | any anomalous point in window | evaluator/export | v4 payload/export |
 | `prediction` | `point_predictions` or `window_predictions` | split | threshold result, not label | evaluator/online runtime | v4 records |
 
-Schema v3 and sigmoid schema v4 artifacts remain historical-readable. Raw
-artifacts use schema v5 and must declare the raw identity fields below.
+Schema v3 sigmoid artifacts remain historical-readable. Current raw artifacts
+use schema v5 and must declare the raw identity fields below.
 
 ## 6. Threshold artifact identity
 
@@ -107,16 +127,17 @@ artifacts use schema v5 and must declare the raw identity fields below.
 ```
 
 Point, online EWMA, and input-window thresholds are calibrated from clean
-validation for one entity. Test labels are metrics-only. Latent geometry
-thresholds remain separate from input-space MSE thresholds.
+validation for one entity. Test labels are metrics-only. A latent-MSE run
+calibrates thresholds in latent space. Raw-input and latent-MSE thresholds
+remain separate.
 
 ## 7. Compatibility and provenance
 
-The raw artifact must record entity, seed, variant, window size, stride,
-checkpoint SHA256, resolved-config SHA256, score identity, and threshold source.
-The runtime rejects a raw protocol with a historical sigmoid artifact or a
-checkpoint/config/entity/variant mismatch. Historical sigmoid files and paths
-must not be overwritten.
+Every current score artifact must record entity, seed, variant, window size,
+stride, checkpoint SHA256, resolved-config SHA256, score identity, and threshold
+source. The runtime rejects an identity protocol with a historical sigmoid
+artifact or a checkpoint/config/entity/variant mismatch. Historical sigmoid
+files and paths must not be overwritten.
 
 ## 8. Validation scope
 
@@ -131,7 +152,9 @@ and include point-level and window-level raw-MSE histograms.
 
 ## 9. Terminology-change statement
 
-This version splits the ambiguous v3 `point_scores`/`raw_point_scores` pair
+This version makes simple MSE with the identity transform the current default
+and splits the ambiguous v3 `point_scores`/`raw_point_scores` pair
 into explicit raw-input and normalized-input names. It introduces
 `window_labels`, `point_predictions`, and `window_predictions`. Historical v1-v3
-names remain readable at their original compatibility boundary.
+names remain readable at their original compatibility boundary. The sigmoid
+protocol remains opt-in and historical.

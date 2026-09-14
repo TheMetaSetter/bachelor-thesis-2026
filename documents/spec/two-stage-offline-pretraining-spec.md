@@ -1,35 +1,70 @@
-# Development Specification: Two-Stage Offline Pre-training with Point-wise Balanced Reconstruction-Score Loss for `thesis_multitask.py`
+# The THESIS Story: Two-Stage Offline Pre-training and Point-wise Score Loss
 
-> **Notation authority:** Khi đối chiếu anomaly score mức điểm, tài liệu lịch sử này dùng mapping trong [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime và ngữ nghĩa lịch sử trong thân tài liệu được giữ nguyên.
+## The story of the source model
+
+The source model starts with a window that contains many time-points. Stage A
+learns reconstruction, classification, and contrastive representation. In the
+supervised variant, it also learns point-wise balanced reconstruction-score
+loss. Memory is then built from train latents, the encoder and memory are
+frozen, and Stage B trains the remaining heads.
+
+The key point is that the final anomaly score lives on the point timeline, not
+only at the window level. This specification therefore follows how point
+labels, point scores, overlap aggregation, validation, checkpoints, and leakage
+safety form one testable pipeline.
+
+## Default score rule
+
+The default anomaly score is simple reconstruction MSE with the identity
+transform. Use MSE between raw input and raw output by default.
+A run may choose a named latent-space MSE,
+but it must record the score space and calibrate thresholds in that same space.
+The sigmoid protocol is historical and opt-in only.
+
+> **Notation authority:** When this historical document discusses point-wise
+> anomaly scores, it follows the mapping in [Point-level anomaly score designs
+> and standard notation](anomaly-score-designs-and-notation.md). Runtime names
+> and historical meanings in this document remain unchanged.
 
 
 ## 1. Purpose
 
-Tài liệu này đặc tả cách implement thí nghiệm **two-stage offline pre-training** cho mô hình `thesis_multitask.py`, với thay đổi chính là sử dụng **point-wise balanced reconstruction-score loss** thay cho bản balanced reconstruction-score loss ở mức window.
+This document tells the implementation story for **two-stage offline
+pre-training** with `thesis_multitask.py`. The main change is to use
+**point-wise balanced reconstruction-score loss** instead of the older
+window-level balanced reconstruction-score loss.
 
-Mục tiêu kỹ thuật là giữ thí nghiệm đơn giản, kiểm soát được, không vi phạm data leakage, và làm cho reconstruction MSE có ý nghĩa trực tiếp hơn như **point-wise anomaly score**. Lý do chính: các metric cuối như `VUS-PR`, `VUS-ROC`, và `Affiliation F1` cuối cùng đều được tính từ chuỗi point-wise scores đã được sắp xếp lại theo timeline.
+The experiment should remain simple, controlled, and safe from data leakage.
+Its reconstruction MSE should also become a direct **point-wise anomaly score**.
+This matters because the final metrics, such as `VUS-PR`, `VUS-ROC`, and
+`Affiliation F1`, are computed from point-wise scores restored to the original
+timeline.
 
-Bản spec này định nghĩa hai chế độ chạy:
+The specification tells two run stories:
 
-1. **Base two-stage run**: giữ thiết kế gốc, Stage A dùng 3 loss:
+1. **Base two-stage run**: the original design remains in place. Stage A uses
+   three losses:
    - reconstruction loss,
    - classification loss,
    - contrastive loss.
 
-2. **Point-score-supervised two-stage run**: thêm point-wise balanced reconstruction-score loss vào Stage A:
+2. **Point-score-supervised two-stage run**: Stage A receives one additional
+   point-wise balanced reconstruction-score loss:
    - reconstruction loss,
    - classification loss,
    - contrastive loss,
    - point-wise balanced reconstruction-score loss.
 
-Để tránh nhầm với SSOT cũ, bản có point-wise score loss phải được đặt tên rõ trong config/log, ví dụ:
+To keep the new run distinct from the older SSOT, the point-score-supervised
+run must have an explicit name in configuration and logs. For example:
 
 ```yaml
 experiment_variant: two_stage_point_score_supervised_v1
 score_loss_granularity: point
 ```
 
-Không được âm thầm thay thế base two-stage run mà không đổi tên variant.
+The new run must not silently replace the base two-stage run without changing
+the variant name.
 
 ---
 
@@ -37,15 +72,16 @@ Không được âm thầm thay thế base two-stage run mà không đổi tên 
 
 ### 2.1 In scope
 
-Spec này áp dụng cho:
+This specification applies to:
 
 ```text
 src/models/thesis_multitask.py
 ```
 
-và các training scripts/configs liên quan đến benchmark-style thesis experiment.
+and to the training scripts and configurations used by the benchmark-style
+thesis experiment.
 
-Các thành phần nằm trong scope:
+The story includes these components:
 
 ```text
 1. Stage A multitask pre-training
@@ -60,13 +96,13 @@ Các thành phần nằm trong scope:
 
 ### 2.2 Out of scope
 
-Không áp dụng cho:
+It does not apply to:
 
 ```text
 src/models/redlamp_baseline.py
 ```
 
-Không implement trong bản này:
+This version does not implement:
 
 ```text
 1. Online test-time adaptation
@@ -91,13 +127,13 @@ $$
 x_i \in \mathbb{R}^{L \times C}
 $$
 
-Với config hiện tại:
+Within Server Machine Dataset:
 
 $$
 L=20,\qquad C=38
 $$
 
-Nên:
+Therefore:
 
 $$
 x_i \in \mathbb{R}^{20 \times 38}
@@ -111,25 +147,26 @@ $$
 
 ### 3.2 Time-point / token
 
-Một time-point trong window là:
+A time-point inside a window is:
 
 $$
 x_{i,t} \in \mathbb{R}^{C}
 $$
 
-với:
+where:
 
 $$
 t \in \{1,\dots,L\}
 $$
 
-Trong spec này, **token** nghĩa là một latent vector tương ứng với một time-point:
+In this specification, **token** means the latent vector that corresponds to
+one time-point:
 
 $$
 z_{i,t} \in \mathbb{R}^{d_h}
 $$
 
-Không dùng từ token để chỉ channel riêng lẻ.
+The word token does not mean an individual channel.
 
 ### 3.3 Latent tensor
 
@@ -139,19 +176,19 @@ $$
 Z = E_\theta(X)
 $$
 
-Shape kỳ vọng:
+The expected shape is:
 
 $$
 Z \in \mathbb{R}^{B \times L \times d_h}
 $$
 
-Với config hiện tại:
+With the current configuration:
 
 $$
 d_h=32
 $$
 
-Nên:
+Therefore:
 
 $$
 Z \in \mathbb{R}^{B \times 20 \times 32}
@@ -165,19 +202,19 @@ $$
 P^{(c)} \in \mathbb{R}^{K_c \times d_h}
 $$
 
-Với:
+where:
 
 $$
 K_c=32,\qquad d_h=32
 $$
 
-Nên:
+Therefore:
 
 $$
 P^{(c)} \in \mathbb{R}^{32 \times 32}
 $$
 
-Continuous memory đại diện cho **clean / normal latent structure**.
+The continuous memory represents **clean / normal latent structure**.
 
 ### 3.5 Discrete codebook
 
@@ -187,27 +224,28 @@ $$
 E^{(d)} \in \mathbb{R}^{K_d \times d_h}
 $$
 
-Với:
+where:
 
 $$
 K_d=60,\qquad d_h=32
 $$
 
-Nên:
+Therefore:
 
 $$
 E^{(d)} \in \mathbb{R}^{60 \times 32}
 $$
 
-Discrete codebook đại diện cho **class-stratified synthetic pattern structure**.
+The discrete codebook represents **class-stratified synthetic pattern
+structure**.
 
-Thiết kế hiện tại có:
+The current design contains:
 
 ```text
 12 classes = 1 normal class + 11 synthetic anomaly classes
 ```
 
-Với 5 codewords mỗi class:
+With five codewords for each class:
 
 $$
 12 \times 5 = 60
@@ -215,13 +253,13 @@ $$
 
 ### 3.6 Point-wise reconstruction score
 
-Với reconstruction output:
+Given the reconstruction output:
 
 $$
 \hat{x}_i \in \mathbb{R}^{L \times C}
 $$
 
-point-wise reconstruction score tại time-point `t` là:
+the point-wise reconstruction score at time-point `t` is:
 
 $$
 r_{i,t}
@@ -237,11 +275,13 @@ $$
 R = [r_{i,t}] \in \mathbb{R}^{B \times L}
 $$
 
-Trong bản point-wise score-supervised run, `L_score` dùng `r_{i,t}`, không dùng window-level score `r_i`.
+In the point-score-supervised run, `L_score` uses `r_{i,t}`. It does not use
+the window-level score `r_i`.
 
 ### 3.7 Window-level reconstruction score
 
-Window-level score vẫn có thể dùng cho diagnostic hoặc backward compatibility:
+The window-level score may still be used for diagnostics or backward
+compatibility:
 
 $$
 r_i
@@ -250,45 +290,47 @@ r_i
 \sum_{t=1}^{L} r_{i,t}
 $$
 
-Tuy nhiên, đây không phải score chính của `point-wise balanced reconstruction-score loss`.
+However, it is not the main score used by `point-wise balanced
+reconstruction-score loss`.
 
 ### 3.8 Point-wise binary score label
 
-Từ synthetic anomaly mask, tạo point-wise binary score label:
+The synthetic anomaly mask creates a point-wise binary score label:
 
 $$
 a_{i,t} \in \{0,1\}
 $$
 
-Trong đó:
+where:
 
 $$
-a_{i,t}=0 \quad \text{nếu time-point } t \text{ là normal / non-injected}
+a_{i,t}=0 \quad \text{if time-point } t \text{ is normal / non-injected}
 $$
 
 $$
-a_{i,t}=1 \quad \text{nếu time-point } t \text{ chứa synthetic injected anomaly}
+a_{i,t}=1 \quad \text{if time-point } t \text{ contains a synthetic injected anomaly}
 $$
 
-Nếu `synthetic_anomaly_mask` có shape `[B, L, C]`, quy về point-level bằng:
+If `synthetic_anomaly_mask` has shape `[B, L, C]`, reduce it to point level:
 
 $$
 a_{i,t} = \mathbf{1}\left[\sum_{c=1}^{C} M_{i,t,c} > 0\right]
 $$
 
-Nếu `synthetic_anomaly_mask` có shape `[B, L]`, dùng trực tiếp:
+If `synthetic_anomaly_mask` has shape `[B, L]`, use it directly:
 
 $$
 a_{i,t}=M_{i,t}
 $$
 
-Quan trọng: không được gán toàn bộ synthetic anomalous window là anomalous tokens. Chỉ những vị trí thật sự bị injected mới có `a_{i,t}=1`.
+Do not mark every token in a synthetic anomalous window as anomalous. Only
+positions that were truly injected receive `a_{i,t}=1`.
 
 ---
 
 ## 4. High-Level Training Topology
 
-Toàn bộ offline pre-training gồm hai stage.
+The complete offline pre-training story has two stages.
 
 ```text
 ┌────────────────────────────────────────────┐
@@ -332,13 +374,19 @@ Toàn bộ offline pre-training gồm hai stage.
 │   - continuous_prototype_bank               │
 │   - discrete_codebook                       │
 │                                            │
-│ trainable:                                 │
+│ default routing: direct_branch_routing      │
+│ fusion blocks: skipped by default            │
 │   - reconstruction fusion head              │
 │   - classification fusion head              │
+│                                            │
+│ trainable:                                 │
 │   - reconstruction prediction head          │
 │   - classification prediction head          │
 └────────────────────────────────────────────┘
 ```
+
+An explicit `fusion_mode` override may enable the fusion blocks. The
+canonical default keeps the two branches separate.
 
 Epoch budget:
 
@@ -362,6 +410,10 @@ enable_classification_path: true
 input_dim: 38
 window_size: 20
 num_classes: 12
+
+score_space: raw_input
+point_score_definition: raw_input_point_mse
+point_score_transform: identity
 
 encoder_dim: 64
 hidden_dim: 32
@@ -397,7 +449,7 @@ memory_initialization_batches: 16
 memory_initialization_with_synthetic_windows: true
 freeze_memories_after_initialization: true
 
-fusion_mode: task_specific_concat_projection
+fusion_mode: direct_branch_routing
 ```
 
 ### 5.2 Recommended naming update
@@ -1685,7 +1737,7 @@ point_score_timeline_aggregation: mean
 
 This field records a deterministic evaluation choice. It should not be tuned on test labels.
 
-### 16.4 Optional threshold calibration
+### 16.4 Threshold calibration
 
 After training, clean validation set may be used to compute threshold `B` from timeline-level or window-level clean validation point scores.
 

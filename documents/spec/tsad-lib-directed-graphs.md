@@ -15,6 +15,25 @@ The library finds the data, prepares it, runs the method, computes metrics, and 
 
 This document turns that story into directed graphs.
 
+The graphs are the chapter map of the library. The student starts the request,
+`tsad` carries it through data and method objects, and the report makes the
+journey inspectable. Each edge records a dependency or transition. Its status
+states whether the proposal names it, implies it, or leaves it unknown.
+
+## Default score rule
+
+Methods report simple MSE with the identity transform by default. The default
+score space is raw input when the method supports inverse transformation. A
+latent-space MSE is an explicit alternative. Any other score transform, such as
+sigmoid scoring, must be named in the method contract and must not become a
+hidden library default.
+
+```yaml
+default_score_space: raw_input
+default_point_score_definition: raw_input_point_mse
+default_point_score_transform: identity
+```
+
 `A → B` means that the story moves from `A` to `B`.
 
 `explicit` means that `proposal-tsad-lib.md` states the relation.

@@ -15,6 +15,31 @@ tags:
 
 # Offline Pre-Training Three-Stage First Implementation Spec
 
+## The story of the first implementation
+
+The first implementation does not begin with the full benchmark. It begins with
+a small, reproducible SMD `machine-3-4` run: window size 20, stride 1,
+train-only preparation, three stages, and test-timeline evaluation through the
+existing evaluator.
+
+The three stages have different jobs. Stage 1 learns task-specific behavior.
+Stage 2 joins the tasks and gives the model a short recovery period. Stage 3
+initializes memory and warms up fusion. The rest of this document records the
+checkpoints, code changes, tests, and gates for this journey.
+
+## Default score rule
+
+The first implementation uses simple reconstruction MSE with the identity
+transform. Raw input MSE is the default score space. A latent-space MSE is an
+explicit alternative and must have its own score definition and threshold
+artifact. The sigmoid protocol is historical and opt-in only.
+
+```yaml
+score_space: raw_input
+point_score_definition: raw_input_point_mse
+point_score_transform: identity
+```
+
 > **Notation authority:** Khi đối chiếu anomaly score mức điểm, tài liệu lịch sử này dùng mapping trong [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime và ngữ nghĩa lịch sử trong thân tài liệu được giữ nguyên.
 
 

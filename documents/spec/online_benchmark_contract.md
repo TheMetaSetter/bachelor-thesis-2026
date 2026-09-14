@@ -1,4 +1,4 @@
-# Online benchmark contract giữa THESIS và các baseline
+# The Fairness Story of the Online Benchmark
 
 > **Notation authority:** Ký hiệu anomaly score mức điểm trong tài liệu này tuân theo [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime, config và artifact không bị đổi bởi việc chuẩn hóa ký hiệu.
 
@@ -7,7 +7,18 @@
 **Phạm vi:** online test-time adaptation trên SMD cho THESIS, M2N2, CANDI và traditional ML baselines  
 **Trạng thái:** contract đã chốt; runtime adapter đã triển khai, cần nghiệm thu trước main run
 
-## Kết luận chính
+## Main conclusion
+
+This benchmark is a comparison in which every method sees the same test-stream
+range, windowing rule, threshold source, and evaluation procedure. Each method
+keeps its own scoring and update protocol. Fairness means shared data and shared
+measurement rules; it does not mean forcing every method to use the same
+encoder or latent dimension.
+
+The default THESIS online score is simple reconstruction MSE with
+`point_score_transform: identity` in `raw_input` space. A latent-space MSE is
+allowed only when the run declares `score_space: latent` and uses a separate
+threshold artifact. No method may silently select the sigmoid protocol.
 
 Benchmark online sẽ stream cùng một đoạn ngắn của từng test series cho tất cả
 phương pháp. Đoạn này dùng chỉ số tuyệt đối của entity và có dạng nửa kín

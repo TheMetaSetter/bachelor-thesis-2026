@@ -1,9 +1,20 @@
-# Development Specification
+# The THESIS Story: Point Decisions and Online Verification
 
 > **Notation authority:** Khi đối chiếu anomaly score mức điểm, tài liệu lịch sử này dùng mapping trong [Thiết kế anomaly score mức điểm và bộ ký hiệu chuẩn](anomaly-score-designs-and-notation.md). Tên runtime và ngữ nghĩa lịch sử trong thân tài liệu được giữ nguyên.
 
 
-# Point-Level THESIS with Window-Level Online Verification Buffer
+## Point-Level THESIS with Window-Level Online Verification Buffer
+
+## The story of one online stream
+
+A point enters the system inside a causal window. THESIS scores the point,
+collects window signals, and decides whether the window needs verification. The
+window selects an action; the final anomaly decision remains point-level.
+
+If a candidate passes the rules, the buffer waits for more non-overlapping
+evidence. After verification, the online branch may update under the selected
+policy, while the source model and source memories stay frozen. The sections
+below follow this order and mark unresolved choices as `Undecided`.
 
 ## 0. Status
 
@@ -37,7 +48,11 @@ The model should learn to reconstruct normal time-points well and reconstruct an
 \left\|\mathbf{x}_{t,i}-\widehat{\mathbf{x}}^{(m)}_{t,i}\right\|_2^2.
 \]
 
-When the run uses calibrated input-space scoring, the score sent to the online timeline is \(s^{(\mathrm{cal})}_{t,i}\), as defined by the notation authority. A point is predicted anomalous if
+The default score sent to the online timeline is the raw input-space MSE
+\(\overline{s}_{t,i}\) with `point_score_transform: identity`. A run may select
+a named latent-space MSE instead, but it must record `score_space: latent`.
+The sigmoid protocol is historical and opt-in only. A point is predicted
+anomalous if
 
 \[
 \widehat{a}_n=\mathbb{I}\left(\widetilde{s}_n>T_{\mathrm{point}}\right).
@@ -142,7 +157,10 @@ T_{\mathrm{point}}
 Q_p\left(\widetilde{s}^{\mathrm{clean-val}}_n\right).
 \]
 
-The clean-validation timeline must use the same selected score design and EWMA path as online inference. The score may be \(\overline{s}_{t,i}\), \(s^{(\mathrm{cal})}_{t,i}\), \(\overline{\ell}^{(c)}_{t,i}\), or \(s^{(\mathrm{latent})}_{t,i}\), but one run MUST use one explicitly named score space.
+The clean-validation timeline must use the same selected MSE score and EWMA
+path as online inference. The score may be raw input MSE or a named raw latent
+MSE. A legacy sigmoid score is allowed only when the run explicitly selects it.
+One run MUST use one explicitly named score space.
 
 A point is predicted anomalous only when \(\widetilde{s}_n>T_{\mathrm{point}}\). The exact quantile \(p\) remains a protocol choice; candidates are \(0.95\) and \(0.99\), with the conservative historical default \(0.99\).
 
@@ -774,7 +792,7 @@ for tau in online_stream:
     input_window_score = outputs.window_reconstruction_mse
     latent_window_score = outputs.window_latent_mse
 
-    # 3. Update point-level EWMA scores
+        # 3. Update point-level raw-MSE EWMA scores
     for abs_t in W.absolute_points:
         cur_score = point_scores[abs_t]
 
@@ -828,6 +846,13 @@ for tau in online_stream:
 # ============================================================
 
 online_tta_enabled: true
+
+# Default score contract
+score_space: raw_input
+point_score_definition: raw_input_point_mse
+point_score_transform: identity
+# Use score_space: latent only with a named latent-MSE definition.
+# The sigmoid transform is historical and opt-in only.
 
 # Windowing
 online_window_mode: sliding
@@ -1124,6 +1149,9 @@ The design is internally consistent if the following statements remain true:
 
 ```text
 Final detection is point-level.
+Default point score is simple MSE with the identity transform.
+Raw input MSE is the default score space; latent MSE is an explicit alternative.
+Sigmoid scoring is historical and opt-in only.
 Buffer admission is window-level.
 Buffer verification is latent time-point-level.
 Validation/test offline windows are non-overlapping.

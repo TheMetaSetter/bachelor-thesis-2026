@@ -1,4 +1,20 @@
-# Raw-input MSE training addendum
+# The Raw-input MSE Story: Training Addendum
+
+## The story of the extension
+
+V4 defined raw-input MSE for prediction. This addendum asks what must also
+change when training losses and checkpoint selection use raw sensor units. The
+answer is an ordered record: compare contracts, test the arithmetic, connect
+the scaler to the loss, check metrics and checkpoints, then prepare isolated
+GPU configs.
+
+Each step below is a checkable milestone. No step silently changes the identity
+of `reconstruction_loss`, `score_loss`, or an older artifact.
+
+This addendum is the current default score path: raw-input MSE with
+`score_space: raw_input` and `point_score_transform: identity`. A latent-MSE
+experiment must be named separately. The sigmoid protocol is historical and
+opt-in only.
 
 Approved scope: 2026-09-04; implementation: 2026-09-05.
 This experiment extends `full-spec-v4.md` to reconstruction-based training
