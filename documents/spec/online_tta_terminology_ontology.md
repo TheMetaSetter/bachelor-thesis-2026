@@ -126,10 +126,9 @@ prediction is kept.
 `O0_A2` or `O1_A2` is a combined run label containing `offline_variant` and
 `online_variant`. It is not a new value of `online_variant`.
 
-`method_variant` is a different library-level choice. In the current
-`tsad-lib` proposal, `O2` is a `method_variant` with status
-`desired-contract`; it is not an online value and it is not silently mapped to
-`offline_variant`.
+`O2` is an offline value, not an online value. It inherits its fixed
+three-loss, no-Balanced-Point-Score-Loss, direct-routing checkpoint from the
+offline phase. It does not change the meanings of A0, A1, or A2.
 
 ## 4. Inherited offline objects
 
@@ -679,9 +678,10 @@ any point label in that window is anomalous.
 | `online_update_event` | `online_update_event` | unchanged | Optional projector update inside the event |
 | generic `variant` | `method_variant`, `offline_variant`, `online_variant` | split | Separate method choice from phase choices |
 
-The split is a terminology change, not a change to the current online loss or
-verification order. `O2` remains a desired `method_variant` until its offline
-loss set is explicitly defined.
+The split is a terminology change, not a change to the online loss or
+verification order. `O2` is a fixed `offline_variant`: reconstruction loss,
+classification loss, and the existing `two_view_contrastive_loss`. It has no
+Balanced Point-Score Loss and uses `direct_branch_routing`.
 
 ## 14. Required comparison for every new specification
 

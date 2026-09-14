@@ -1,7 +1,7 @@
 ---
 date: 2026-09-12 20:20:39 +07:00
 researcher: OpenAI Codex
-topic: Core computational flows for a minimal standalone SMD codebase
+topic: Core computational flows for a minimal codebase
 status: complete-with-explicit-unknowns
 revision: b8fff201cdfdb27aa9cec377d607487c4c2755cb
 branch: dev

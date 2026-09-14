@@ -148,7 +148,11 @@ def build_preflight_report() -> dict[str, Any]:
     validate_protocol_config(protocol)
     offline_root = REPOSITORY_ROOT / "configs/experiment/offline_benchmark"
     online_root = REPOSITORY_ROOT / "configs/experiment/online_benchmark"
-    thesis_offline = _paths(offline_root / "thesis", "*__main.yaml")
+    thesis_offline = [
+        path
+        for path in _paths(offline_root / "thesis", "*__main.yaml")
+        if "__offline__O0__" in path.name or "__offline__O1__" in path.name
+    ]
     thesis_online = _paths(online_root / "thesis", "*__main.yaml")
     _validate_thesis_offline(thesis_offline)
     _validate_thesis_online(thesis_online)

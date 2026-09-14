@@ -2,6 +2,7 @@
 __pycache__/
 *.py[codz]
 *$py.class
+.DS_Store
 
 # C extensions
 *.so
@@ -70,6 +71,16 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.nav
+*.out
+*.snm
+*.toc
+*.xdv
 
 # PyBuilder
 .pybuilder/

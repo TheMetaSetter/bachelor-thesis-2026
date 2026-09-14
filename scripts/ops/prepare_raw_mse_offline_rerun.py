@@ -10,7 +10,7 @@ import yaml
 from src.core.config import load_experiment_config
 
 
-SOURCE_CONFIGS = Path("scripts/configs/experiment/offline_benchmark/thesis")
+SOURCE_CONFIGS = Path("configs/experiment/offline_benchmark/thesis")
 
 
 def prepare_configs(destination: Path, run_id: str) -> list[Path]:

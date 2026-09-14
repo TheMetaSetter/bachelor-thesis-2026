@@ -84,34 +84,30 @@ Per the current design decision, `O2` uses point-level contrastive loss and does
 
 For combined online variants, the first two component columns describe the inherited offline checkpoint and the remaining columns describe online behavior.
 
-| Variant | Phase | Point-level contrastive loss | Balanced point-score loss | EWMA anomaly score smoothing | Online-to-source contrastive loss | Hard-old-normality adaptation | Pseudo-new-normality adaptation |
+| Variant | Phase | Point-level contrastive loss | Balanced point-score loss | EWMA anomaly score smoothing | Online contrastive loss | Guarded hard-old adaptation | Verified PNN reconstruction |
 |---|---|---:|---:|---:|---:|---:|---:|
 | `O0` | Offline | - | - | - | - | - | - |
 | `O1` | Offline | - | ✓ | - | - | - | - |
 | `O2` | Offline | ✓ | - | - | - | - | - |
 | `O0-A0` | Online | - | - | ✓ | - | - | - |
-| `O0-A1` | Online | - | - | ✓ | ✓ | ✓ | - |
+| `O0-A1` | Online | - | - | ✓ | - | - | ✓ |
 | `O0-A2` | Online | - | - | ✓ | ✓ | ✓ | ✓ |
 | `O1-A0` | Online | - | ✓ | ✓ | - | - | - |
-| `O1-A1` | Online | - | ✓ | ✓ | ✓ | ✓ | - |
+| `O1-A1` | Online | - | ✓ | ✓ | - | - | ✓ |
 | `O1-A2` | Online | - | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `O2-A0` | Online | ✓ | - | ✓ | - | - | - |
-| `O2-A1` | Online | ✓ | - | ✓ | ✓ | ✓ | - |
+| `O2-A1` | Online | ✓ | - | ✓ | - | - | ✓ |
 | `O2-A2` | Online | ✓ | - | ✓ | ✓ | ✓ | ✓ |
 
 `✓` means the component belongs to the variant contract.
 
 `-` means the component is not used by that variant.
 
-`A0` is inference only, `A1` uses EWMA anomaly score smoothing, online-to-source contrastive loss, and hard-old-normality adaptation, and `A2` adds pseudo-new-normality adaptation.
+`A0` is inference only. `A1` updates only through verified non-empty PNN reconstruction. `A2` updates through guarded hard-old adaptation or verified non-empty PNN reconstruction. Every accepted A2 update adds `online_contrastive_loss`.
 
 The table treats EWMA anomaly score smoothing as an online component because it operates on the causal online score stream.
 
-The current official ontology and remaining-SMD generator still enumerate only `O0` and `O1`, so adding `O2` requires a separate generator, config, dependency, and preflight update before execution.
-
-The current online runtime enumerates `A0`, `A1`, and `A2`, so the nine combined THESIS rows are the intended cross-product once `O2` is integrated.
-
-This A1/A2 component assignment follows the revised policy in this note and must be reconciled with the current online ontology and runtime before execution.
+The offline ontology, online ontology, and matrix now use the same O2, A1, and A2 meanings. The runner must preserve these meanings during preflight and execution.
 
 ## THESIS runtime flows
 
@@ -260,9 +256,13 @@ The current code therefore contains verification in every `A2` runtime, but not 
 
 The online result must retain only `VUS-PR@FPR-budget`, `VUS-PR`, `Affiliation F1-score`, `VUS-ROC`, and `raw-FPR`.
 
-The revised component table still differs from the current `A1` runtime because the table assigns direct hard-old adaptation and online-to-source contrastive loss to `A1`.
+The stories now agree. `A1` updates only after a verified non-empty PNN
+reconstruction. `A2` may update after guarded hard-old normality or a verified
+non-empty PNN reconstruction, and it adds `online_contrastive_loss`.
 
-The current O2 generator, ontology, and checkpoint inventory still need integration before O2 runs can execute.
+`tsad-lib` has completed one `O2-A0` machine smoke run. Its Stage A, memory,
+Stage B, threshold, metric, provenance, and online-state artifacts agree. This
+small run checks the path only; it does not start the 1,764-unit wet matrix.
 
 ## Target W&B run matrix
 

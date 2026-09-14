@@ -116,12 +116,13 @@ Similar names do not prove identity. When mapping a new name, compare the schema
 
 ### 4.2 `offline_variant`
 
-**Definition.** The ablation axis decides whether Stage A uses `point_score_loss`.
+**Definition.** The ablation axis selects the fixed Stage A loss set for one offline run.
 
 | Value | Canonical meaning |
 | --- | --- |
 | `O0` | `point_score_loss` is off; Stage A uses reconstruction, classification, and two-view contrastive losses |
 | `O1` | `point_score_loss` is on in Stage A; it is not on by default in Stage B |
+| `O2` | Stage A uses reconstruction, classification, and `two_view_contrastive_loss`; it does not use `point_score_loss` |
 
 `experiment_variant` values such as `two_stage_base_v1` and `two_stage_point_score_supervised_v1` describe detailed protocols. They do not replace the `offline_variant` object identity used for cross-phase checkpoint and artifact matching.
 
@@ -137,13 +138,13 @@ online_variant       → the online adaptation choice
 combined_run_label   → the offline_variant + online_variant pair
 ```
 
-In the `tsad-lib` proposal, `O2` is a `method_variant` with status
-`desired-contract`. The current ontology does not assign `O2` to
-`offline_variant` and does not silently map it to `O0` or `O1`. A later
-specification must state the loss set, checkpoint identity, and artifact
-identity of `O2` before a run can start.
+`O2` is an `offline_variant` in `tsad-lib` and in the SMD matrix. Its matrix
+name `point-level contrastive loss` is the existing
+`two_view_contrastive_loss`; it does not create another loss. O2 records the
+same checkpoint and artifact identities as O0/O1, plus its fixed loss set. O2
+uses `direct_branch_routing` in Stage B and skips fusion blocks by default.
 
-`O0` and `O1` are `offline_variant` values only in the offline context.
+`O0`, `O1`, and `O2` are `offline_variant` values only in the offline context.
 The same spelling does not create the same object in every context.
 
 ### 4.3 `stage_a_multitask_pretraining`

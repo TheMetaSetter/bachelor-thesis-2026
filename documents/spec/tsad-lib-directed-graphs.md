@@ -201,17 +201,20 @@ Several concrete entity edges are `inferred` or `unknown`.
 
 ## 5. Method graph
 
-The method graph has three possible levels.
-The first level is the selected method.
-The second level is an optional variant.
-The third level is a component.
+The method graph has four possible levels.
+The first level is the source library.
+The second level is the selected method.
+The third level is an optional variant.
+The fourth level is a component.
 
 ```mermaid
 flowchart TD
+    source[method source]
     method[method]
     variant[variant]
     component[component]
 
+    source --> method
     method --> variant
     method --> component
     variant --> component
@@ -228,6 +231,23 @@ method → Stumpy
 method → KMeansAD
 method → Isolation Forest
 ```
+
+The current native methods have source `tsad-lib`.
+The 40 additional model methods have source `Time-Series-Library`:
+
+```text
+Time-Series-Library → Autoformer, Chronos, Chronos2, Crossformer, DLinear,
+ETSformer, FEDformer, FiLM, FreTS, Informer, KANAD, Koopa, LightTS, MICN,
+MSGNet, Mamba, MambaSimple, Moirai, MultiPatchFormer,
+Nonstationary_Transformer, PAttn, PatchTST, Pyraformer, Reformer, SCINet,
+SegRNN, Sundial, TSMixer, TemporalFusionTransformer, TiDE, TiRex, TimeFilter,
+TimeMixer, TimeMoE, TimeXer, TimesFM, TimesNet, Transformer, WPMixer,
+iTransformer
+```
+
+The method-source edge does not mean that the reference experiment runner is
+part of `tsad-lib`. It means that `tsad-lib` owns a `ModelSpec` and an adapter
+for that source model.
 
 The proposal shows one concrete variant selection:
 
@@ -262,6 +282,62 @@ Status: method names and the `ModelRunner` boundary are `explicit`.
 The full method-variant-component graph is `partial`.
 The component inequality is `unknown` until component lists are written.
 
+### 5.1 Reference model readiness graph
+
+The reference library contains several task families. The model graph therefore
+needs one compatibility path before a student can run a model:
+
+```mermaid
+flowchart LR
+    source[Time-Series-Library model]
+    spec[ModelSpec]
+    task[task family]
+    adapter[anomaly adapter]
+    status[readiness status]
+    runner[TimeSeriesLibraryRunner]
+    boundary[MethodRunner]
+
+    source --> spec
+    spec --> task
+    spec --> adapter
+    adapter --> status
+    status --> runner
+    runner --> boundary
+```
+
+The reference repository lists 40 model files. Its anomaly-detection scripts
+cover 15 model names:
+
+```text
+Autoformer, Crossformer, DLinear, ETSformer, FEDformer,
+FiLM, Informer, KANAD, LightTS, MICN, Pyraformer, Reformer,
+TimesNet, Transformer, iTransformer
+```
+
+These 15 edges are `reference_anomaly_path`, not yet `ready`. The remaining 25
+model edges are `not_yet_tsad_ready` until `tsad-lib` proves their input shape,
+output shape, dependencies, reconstruction meaning, score protocol, threshold
+protocol, and artifact behavior.
+
+The readiness graph uses these states:
+
+| State | Meaning |
+| --- | --- |
+| `reference_anomaly_path` | A reference anomaly script exists. |
+| `not_yet_tsad_ready` | The model is registered but has no verified `tsad-lib` anomaly path. |
+| `blocked_dependency` | A required optional package is unavailable. |
+| `ready` | The adapter and the `tsad-lib` tests pass. |
+
+The model file is a component. A reusable attention or convolution layer is
+also a component. Neither file type becomes a separate student-selectable
+method.
+
+This readiness split follows the reference structure: `exp_basic.py` registers
+the model names, `exp_anomaly_detection.py` supplies the reconstruction-based
+task runner, and `scripts/anomaly_detection/` provides the current
+model-specific anomaly recipes. These files document the source evidence; the
+`tsad-lib` adapter remains a separate implementation.
+
 ## 6. Method implementation graph
 
 The proposal gives a small module map for the method choices.
@@ -276,6 +352,9 @@ flowchart LR
     stumpy[Stumpy] --> traditional[models/traditional.py]
     kmeans[KMeansAD] --> traditional
     isolation[Isolation Forest] --> traditional
+    time_series_library[Time-Series-Library] --> tsl_registry[models/time_series_library/registry.py]
+    tsl_registry --> tsl_runner[models/time_series_library/runner.py]
+    tsl_runner --> boundary[ModelRunner boundary]
     thesis_file --> boundary[ModelRunner boundary]
     redlamp_file --> boundary
     candi_file --> boundary
@@ -504,12 +583,15 @@ The smaller graphs join into one complete story.
 flowchart LR
     student[student] --> api[tsad API or CLI]
     api --> selection[dataset and method selection]
+    selection --> catalog[Catalog and ModelSpec]
+    catalog --> readiness[readiness check]
     selection --> request[RunRequest]
     request --> source[data source]
     source --> adapter[DatasetAdapter]
     adapter --> series[SeriesSet]
     series --> pipeline[DataPipeline]
     pipeline --> runner[ModelRunner]
+    readiness --> runner
     runner --> scores[scores and predictions]
     scores --> result[Result]
     result --> evaluator[metric evaluation]
@@ -523,6 +605,8 @@ The main runtime sentence is:
 student
 → API or CLI
 → selection
+→ Catalog and ModelSpec
+→ readiness check
 → RunRequest
 → source
 → adapter
@@ -543,6 +627,8 @@ The proposal is ready to describe the first architecture, but four graph parts s
 2. The variants owned by each method.
 3. The entity naming rule for every dataset family.
 4. The formal metric-family and priority objects.
+5. The adapter and dependency contracts for the 25 reference models without a
+   verified anomaly path.
 
 Until these parts are written, they remain `unknown` or `inferred`.
 They must not be treated as implemented runtime behavior.

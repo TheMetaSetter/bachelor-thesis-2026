@@ -8,7 +8,7 @@ from src.core.artifact_naming import is_valid_wandb_smoke_run_name
 
 
 def test_every_smoke_experiment_config_enables_online_wandb() -> None:
-    config_roots = (Path("configs/experiment"), Path("scripts/configs/experiment"))
+    config_roots = (Path("configs/experiment"),)
     smoke_config_paths = sorted(
         path
         for config_root in config_roots
