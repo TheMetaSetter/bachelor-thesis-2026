@@ -73,9 +73,10 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
         yaml.safe_dump(
             {
                 "protocol_name": "smd_window20_cleanval_q99_ewma09",
+                "score_space": "normalized_input",
                 "window_size": 20,
                 "offline_tail_policy": "end_align",
-                "offline_threshold_split": "clean_validation",
+                "offline_threshold_split": "synthetic_validation",
                 "offline_threshold_quantile": 0.99,
                 "online_window_stride": 1,
                 "online_threshold_split": "clean_validation",
@@ -195,6 +196,8 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
         "scripts.run_thesis_offline_benchmark.load_experiment_config",
         lambda path: yaml.safe_load(Path(path).read_text(encoding="utf-8")),
     )
+    offline_output_dir.mkdir(parents=True, exist_ok=True)
+    (offline_output_dir / "best.pt").write_bytes(b"stage-b-checkpoint")
 
     offline_report = run_thesis_offline_benchmark(
         experiment_config_path=str(offline_config_path),

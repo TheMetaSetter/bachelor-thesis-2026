@@ -441,7 +441,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--experiment-config",
-        default="configs/experiment/baseline/smd__thesis_multitask__vertical-slice__w100__seed7__default.yaml",
+        default="configs/experiment/benchmark_smoke/thesis/smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed6__smoke.yaml",
     )
     parser.add_argument(
         "--checkpoint-path",

@@ -39,6 +39,7 @@ def test_registry_and_model_output_surface_match_snapshot() -> None:
         bootstrap_encoder_epochs=0,
         use_synthetic_augmentation=False,
         training_phase="stage_a_multitask_pretraining",
+        encoder_family="mlp",
     )
     batch = {
         "x": torch.zeros(2, 5, 4),

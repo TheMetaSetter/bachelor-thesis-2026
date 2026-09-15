@@ -305,7 +305,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--experiment-config",
-        default="configs/experiment/baseline/smd__online_adaptation__online-adaptation__w100__seed7__default.yaml",
+        default="configs/experiment/online_diagnostic/thesis/smd__thesis__online__O0_A0__machine_1_6__w20__seed6__timing_5608_5909.yaml",
     )
     args = parser.parse_args()
 

@@ -33,9 +33,9 @@ def build_config_help_text(command_name: str) -> str:
         5) Useful commands
           - Print this help:
               python scripts/{command_name}.py --print-config-help
-          - Train:
-              python scripts/train.py --experiment-config configs/experiment/baseline/smd__redlamp_baseline__redlamp-baseline-window20__w20__seed11__default.yaml
-          - Evaluate:
-              python scripts/evaluate.py --experiment-config configs/experiment/baseline/smd__redlamp_baseline__redlamp-baseline-window20__w20__seed11__default.yaml --checkpoint-path outputs/.../best.pt
+           - Train:
+               python scripts/train.py --experiment-config configs/experiment/benchmark_smoke/thesis/smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed6__smoke.yaml
+           - Evaluate:
+               python scripts/evaluate.py --experiment-config configs/experiment/benchmark_smoke/thesis/smd__thesis_multitask__benchmark-two-stage-machine_1_6__w20__seed6__smoke.yaml --checkpoint-path outputs/.../best.pt
         """
     ).strip()

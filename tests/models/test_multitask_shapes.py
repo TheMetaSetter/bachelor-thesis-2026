@@ -256,6 +256,7 @@ def test_multitask_model_returns_monte_carlo_means_and_uncertainty_in_eval_mode(
         gumbel_temperature=1.5,
         alpha_logit_init=0.0,
         beta_logit_init=0.0,
+        encoder_family="mlp",
     )
     model.memory_initialized = True
     model.memory_training_enabled = False
@@ -472,6 +473,7 @@ def test_multitask_model_uses_shared_three_layer_mlp_depth() -> None:
         gumbel_temperature=1.5,
         alpha_logit_init=0.0,
         beta_logit_init=0.0,
+        encoder_family="mlp",
     )
 
     encoder_linear_layers = [

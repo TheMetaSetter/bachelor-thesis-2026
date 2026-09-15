@@ -316,7 +316,7 @@ class CheckpointManager:
                 loaded_checkpoint["config"].get(
                     "reconstruction_loss_space", "normalized_input"
                 ),
-                loaded_checkpoint["scaler_state_dict"],
+                loaded_checkpoint.get("scaler_state_dict"),
             )
         if optimizer is not None and "optimizer_state_dict" in loaded_checkpoint:
             optimizer.load_state_dict(loaded_checkpoint["optimizer_state_dict"])

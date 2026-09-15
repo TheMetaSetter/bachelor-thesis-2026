@@ -221,7 +221,7 @@ def main() -> None:
     args = parser.parse_args()
 
     experiment_config_paths = args.experiment_configs or [
-        "configs/experiment/smoke/smd__thesis_multitask__multitask-smoke__w100__seed7__smoke.yaml"
+        "configs/experiment/offline_ablation/thesis/smd__thesis__offline__direct_branch_routing__machine_1_6__w20__seed6__stage_b.yaml"
     ]
     console_print(
         "CONFIG",

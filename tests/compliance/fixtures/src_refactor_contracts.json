@@ -97,7 +97,9 @@
     "threshold",
     "unique_label_count",
     "vus_pr",
-    "vus_roc"
+    "vus_pr_at_fpr_budget",
+    "vus_roc",
+    "vus_roc_at_fpr_budget"
   ],
   "online_report_keys": [
     "benchmark_status",

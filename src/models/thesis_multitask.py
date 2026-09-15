@@ -91,7 +91,7 @@ class ThesisMultitaskModel(
         self._print_model_summary(config)
 
     def configure_reconstruction_loss(
-        self, space: str, scaler_state: dict[str, Any]
+        self, space: str, scaler_state: dict[str, Any] | None
     ) -> None:
         """Use the train-fitted scaler at the loss boundary, without refitting."""
         if space not in {"normalized_input", "raw_input"}:
@@ -100,6 +100,8 @@ class ThesisMultitaskModel(
             )
         scaler = None
         if space == "raw_input":
+            if scaler_state is None:
+                raise ValueError("raw_input reconstruction requires scaler state")
             scaler = SequenceStandardScaler()
             scaler.load_state_dict(scaler_state)
             scaler.inverse_transform_tensor(torch.zeros_like(scaler.feature_mean))
