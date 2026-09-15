@@ -20,7 +20,9 @@ All THESIS offline and online variants use `fusion_mode: direct_branch_routing` 
 
 The window size is `20` and the stride is `1`.
 
-Every online method uses the same entity-specific 2048-point test subsequence selected from ground-truth anomaly labels.
+Every wet online method uses the same entity-specific 2,048-point test subsequence selected from ground-truth anomaly labels.
+
+THESIS `benchmark_smoke` runs have one separate fixed contract for every dataset and every THESIS variant. They run Stage A for `3` epochs, Stage B for `2` epochs, and causal online TTA for `4,096` windows. With window size `20` and stride `1`, the smoke range has `4,115` points. This rule does not apply to non-THESIS methods or to wet runs.
 
 The W&B project is `bachelor-thesis-2026`.
 
@@ -260,9 +262,12 @@ The stories now agree. `A1` updates only after a verified non-empty PNN
 reconstruction. `A2` may update after guarded hard-old normality or a verified
 non-empty PNN reconstruction, and it adds `online_contrastive_loss`.
 
-`tsad-lib` has completed one `O2-A0` machine smoke run. Its Stage A, memory,
-Stage B, threshold, metric, provenance, and online-state artifacts agree. This
-small run checks the path only; it does not start the 1,764-unit wet matrix.
+`tsad-lib` has completed one `O2-A0` machine smoke run for
+`ServerMachineDataset/machine-1-2`, seed `6`. Its Stage A, memory, Stage B,
+threshold, metric, provenance, and online-state artifacts agree. The resolved
+configuration records Stage A `3` and Stage B `2`. The online artifact records
+`4,115` points and `4,096` windows. This small run checks the path only; it
+does not start the 1,764-unit wet matrix.
 
 ## Target W&B run matrix
 

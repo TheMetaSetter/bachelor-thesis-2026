@@ -307,7 +307,7 @@ def _run_online_sequence(
     triage_thresholds = (
         None
         if online_variant == "A0"
-        else _build_triage_thresholds(threshold_value, threshold_artifact)
+        else _build_triage_thresholds(threshold_artifact)
     )
     if timing_logger is None:
         timing_logger = OnlineTtaTimingLogger(enabled=False, device=device)

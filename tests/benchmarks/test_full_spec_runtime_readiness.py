@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import torch
 import yaml
@@ -78,9 +79,14 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
                 "offline_tail_policy": "end_align",
                 "offline_threshold_split": "synthetic_validation",
                 "offline_threshold_quantile": 0.99,
+                "offline_point_threshold_source_split": "synthetic_validation_normal",
+                "offline_window_threshold_source_split": "synthetic_validation_normal",
                 "online_window_stride": 1,
                 "online_threshold_split": "clean_validation",
                 "online_threshold_quantile": 0.99,
+                "B_window_quantile": 0.99,
+                "A_low_quantile": 0.75,
+                "A_high_quantile": 0.99,
                 "online_ewma_current_weight": 0.9,
                 "online_ewma_previous_weight": 0.1,
                 "test_label_usage": "metrics_only",
@@ -168,33 +174,48 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
     monkeypatch.setattr(
         "scripts.run_thesis_offline_benchmark.collect_offline_artifact_inputs",
         lambda **kwargs: {
-            "entity_id": "machine-1-6",
-            "seed": 6,
-            "variant_name": "O0",
-            "clean_validation": {
-                "point_scores": torch.tensor([0.1, 0.2]).numpy(),
-                "point_labels": torch.tensor([0, 0]).numpy(),
-                "covered_point_mask": torch.tensor([True, True]).numpy(),
-            },
-            "synthetic_validation": {
-                "point_scores": torch.tensor([0.3, 0.4]).numpy(),
-                "point_labels": torch.tensor([0, 1]).numpy(),
-                "covered_point_mask": torch.tensor([True, True]).numpy(),
-            },
-            "test": {
-                "point_scores": torch.tensor([0.5, 0.6]).numpy(),
-                "point_labels": torch.tensor([0, 1]).numpy(),
-                "covered_point_mask": torch.tensor([True, True]).numpy(),
-            },
-            "clean_validation_traces": [{"batch_index": 1}],
-            "synthetic_validation_traces": [{"batch_index": 2}],
-            "test_traces": [{"batch_index": 3}],
-            "offline_metrics": {"point_f1": 1.0},
+                "entity_id": "machine-1-6",
+                "seed": 6,
+                "variant_name": "O0",
+                "device": "cpu",
+                "model": torch.nn.Linear(1, 1),
+                "clean_validation_sequences": [],
+                "offline_window_threshold": 0.2,
+                "offline_window_threshold_source": "synthetic_validation_normal",
+                "offline_point_threshold_source": "synthetic_validation_normal",
+                "point_score_calibration": SimpleNamespace(center=0.0, tau=1.0),
+                "clean_validation": {
+                    "point_scores": torch.tensor([0.1, 0.2]).numpy(),
+                    "point_labels": torch.tensor([0, 0]).numpy(),
+                    "covered_point_mask": torch.tensor([True, True]).numpy(),
+                },
+                "synthetic_validation": {
+                    "point_scores": torch.tensor([0.3, 0.4]).numpy(),
+                    "point_labels": torch.tensor([0, 1]).numpy(),
+                    "covered_point_mask": torch.tensor([True, True]).numpy(),
+                },
+                "test": {
+                    "point_scores": torch.tensor([0.5, 0.6]).numpy(),
+                    "point_labels": torch.tensor([0, 1]).numpy(),
+                    "covered_point_mask": torch.tensor([True, True]).numpy(),
+                },
+                "clean_validation_traces": [{"batch_index": 1}],
+                "synthetic_validation_traces": [{"batch_index": 2}],
+                "test_traces": [{"batch_index": 3}],
+                "offline_metrics": {"point_f1": 1.0},
         },
     )
     monkeypatch.setattr(
         "scripts.run_thesis_offline_benchmark.load_experiment_config",
         lambda path: yaml.safe_load(Path(path).read_text(encoding="utf-8")),
+    )
+    monkeypatch.setattr(
+        "scripts.run_thesis_offline_benchmark.collect_stride1_online_scores",
+        lambda **kwargs: {
+            "ewma": torch.tensor([0.1, 0.2]).numpy(),
+            "input_window": torch.tensor([0.1, 0.2]).numpy(),
+            "latent_window": torch.tensor([0.1, 0.2]).numpy(),
+        },
     )
     offline_output_dir.mkdir(parents=True, exist_ok=True)
     (offline_output_dir / "best.pt").write_bytes(b"stage-b-checkpoint")
@@ -276,4 +297,4 @@ def test_full_spec_runtime_readiness_exports_retention_for_offline_and_online(
         / "retention_summary.json"
     ).exists()
     assert online_report["retention_policy"] == "retain_for_eda"
-    assert online_report["online_execution"]["records"][0]["did_update"] is False
+    assert online_report["online_execution"]["record_length"] == 1

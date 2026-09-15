@@ -71,9 +71,7 @@ def _verify_and_adapt_entries(
             ),
             latent_window_score=float(entry["latent_window_score"]),
             triage_decision="pnn_verified",
-            score_space=(
-                "raw_input" if "raw_input_point_mse" in entry else "model_output"
-            ),
+            score_space=str(entry.get("score_space", "model_output")),
         )
         finalized[entry_id] = VerificationResult(
             bool(step["did_update"]),
@@ -213,6 +211,7 @@ def _update_online_window_buffers(
     latent_window_score: float,
     triage_decision: str,
     verification_buffer: VerificationBuffer,
+    score_space: str = "raw_input",
 ) -> tuple[bool, bool]:
     admitted = False
     rejected = False
@@ -234,8 +233,10 @@ def _update_online_window_buffers(
                 "window": batch_on_device["x"][0].detach().cpu().tolist(),
                 "x": batch_on_device["x"][0].detach().cpu().tolist(),
                 "admitted_at_cursor": int(batch_on_device["meta"][0]["stream_step"]),
-                "score_space": "raw_input",
-                "point_score_transform": "identity",
+                "score_space": score_space,
+                "point_score_transform": (
+                    "identity" if score_space == "raw_input" else None
+                ),
             }
         )
         rejected = not admitted

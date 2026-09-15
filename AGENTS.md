@@ -53,7 +53,6 @@ Always start with the simplest solution that correctly satisfies the current req
 - Do not add explicit state, flags, guards, abstractions, classes, configuration options, or lifecycle steps unless a concrete requirement or observed failure needs them.
 - Do not design for hypothetical future cases before the current case requires that support.
 - Prefer a small extension of the current code path over a parallel framework or a general-purpose redesign.
-- Add complexity only after identifying the specific problem it solves. Record that reason where future readers can verify it.
 - When two solutions are both correct, choose the one with fewer concepts, fewer state transitions, and fewer code paths.
 - Reconsider a proposed mechanism when the runtime's natural behavior already enforces the intended result. For example, if a point stops changing because later sliding windows no longer contain it, do not add a separate point-finalization mechanism.
 

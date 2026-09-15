@@ -1729,7 +1729,7 @@ silently replacing missing work or overwriting old research outputs.
 - [x] 4. Validate seed `36`.
 - [x] 5. Validate window size `20`.
 - [x] 6. Validate online stride `1`.
-- [x] 7. Validate the selected 2048-point ranges.
+- [x] 7. Validate the selected wet 2,048-point ranges.
 - [x] 8. Validate the `0.001` FPR budget.
 - [x] 9. Validate the `0.005` FPR budget.
 - [x] 10. Validate the `0.01` FPR budget.
@@ -1747,6 +1747,8 @@ silently replacing missing work or overwriting old research outputs.
 - [x] 3. Select one complete model and variant combination.
 - [x] 4. Read the generated report.
 - [x] 5. Check the generated provenance.
+- [x] 6. Run THESIS Stage A for `3` epochs and Stage B for `2` epochs.
+- [x] 7. Run `4,096` causal THESIS online windows from `4,115` labelled test points.
 
 **Stage verification:** run the complete offline and online flow for the selected combination.
 
@@ -1781,10 +1783,13 @@ accounted for, and the open launch gates are either closed or explicitly shown
 as blocking.
 
 **Evidence story:** The library counted 1,764 logical units and wrote a
-preflight report. One `ServerMachineDataset/machine-1-1`, seed `6`, `O2-A0`
+preflight report. One `ServerMachineDataset/machine-1-2`, seed `6`, `O2-A0`
 smoke run completed under `benchmark_smoke`. Its threshold records the matching
-Stage B checkpoint hash. Its online range records 2,048 points. The wet matrix
-has not started.
+Stage B checkpoint hash. Its online range records `4,115` points and `4,096`
+windows. Its resolved configuration records three Stage A epochs and two Stage
+B epochs. This THESIS smoke contract applies to every dataset. It does not
+change non-THESIS methods or the wet matrix, whose online ranges remain 2,048
+points. The wet matrix has not started.
 
 ## 18. Acceptance story
 

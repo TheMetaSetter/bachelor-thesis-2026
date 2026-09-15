@@ -193,6 +193,17 @@ Validation check:
 - checkpoint format and reload behavior
 - current evaluation semantics
 
+## Current Runtime Ownership
+
+The active benchmark system keeps four separate runtime lanes:
+
+- THESIS offline owns Stage A, Stage B, clean-validation calibration, evaluation, and artifact export.
+- THESIS online owns causal window scoring, triage, verification, projector-only adaptation, and runtime-state export.
+- Offline baselines own their native fit, score, calibration, and report flow.
+- Online baselines own their native frozen or adaptive stream protocol and share only outer reporting concerns.
+
+The v4 artifact remains the boundary between THESIS offline and online execution. Generic online adaptation is not merged into the THESIS event loop. `VerificationBuffer` remains the canonical verification owner; no `TTLBuffer` rename or compatibility mapping is implied.
+
 ## ASCII Architecture
 
 ### Before

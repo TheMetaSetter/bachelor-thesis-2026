@@ -7,6 +7,11 @@ import numpy as np
 import torch
 
 from src.core.config import load_yaml_config
+from src.core.contracts import (
+    validate_batch,
+    validate_model_outputs,
+    validate_online_batch,
+)
 from src.core.registry import MODEL_BUILDERS, clear_registry
 from src.core.runtime_components import (
     register_offline_runtime_components,
@@ -70,3 +75,28 @@ def test_config_key_trees_and_metric_surface_match_snapshot() -> None:
         np.array([0, 1, 0, 1]), np.array([0.1, 0.9, 0.2, 0.8]), threshold=0.5
     )
     assert sorted(metrics) == snapshot["pointwise_metric_keys"]
+
+
+def test_batch_and_online_contracts_protect_required_shapes() -> None:
+    batch = {
+        "x": torch.zeros(1, 3, 2),
+        "point_labels": torch.zeros(1, 3, dtype=torch.long),
+        "mask": torch.ones(1, 3, 2),
+        "timestamps": torch.arange(3).reshape(1, 3),
+        "meta": [{}],
+        "absolute_indices": torch.arange(3).reshape(1, 3),
+    }
+
+    validate_batch(batch)
+    validate_online_batch(batch)
+
+    outputs = {
+        "hidden": torch.zeros(1, 3, 4),
+        "pooled": torch.zeros(1, 4),
+        "recon": torch.zeros(1, 3, 2),
+        "logits": torch.zeros(1, 3, 2),
+        "point_scores": torch.zeros(1, 3),
+        "window_scores": torch.zeros(1),
+        "aux": {},
+    }
+    validate_model_outputs(outputs)

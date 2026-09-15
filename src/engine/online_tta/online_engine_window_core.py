@@ -20,7 +20,6 @@ from src.engine.online_tta.verification_cycle import VerificationCycleController
 
 
 def _build_triage_thresholds(
-    online_ewma_threshold: float,
     threshold_artifact: dict[str, Any] | None = None,
 ) -> dict[str, float]:
     if threshold_artifact is None:
@@ -151,6 +150,7 @@ def _admit_and_verify_gray_zone(
         latent_window_score=event["latent_window_score"],
         triage_decision=event["triage_region"],
         verification_buffer=verification_buffer,
+        score_space=event["score_space"],
     )
     source_hidden_by_entry_id: dict[str, Any] = {}
     source_hidden = event.get("source_hidden")
