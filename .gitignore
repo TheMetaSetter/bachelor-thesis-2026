@@ -219,11 +219,11 @@ __marimo__/
 
 .codex-test-deps/
 
-/.qodo
+.qodo/
 
 data/
 
-/outputs
+outputs/
 
 *.png
 *.csvbackup-*.zip
@@ -247,3 +247,23 @@ entities.json
 *.tar.zst
 
 personalized_prompt.md
+
+data/
+
+data-*.tar.zst
+
+wandb/
+
+bsc-thesis-ref-codebases/
+
+.vscode/
+
+tests/
+
+primitive_prompts/
+
+workflow_prompts/
+
+scripts/
+
+AGENTS.md

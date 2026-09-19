@@ -987,9 +987,31 @@ source files and tests provide evidence for the atomic step. `[ ]` means that
 the step is still open. A checked atomic step does not by itself close the
 stage or phase; the stage and phase completion checks still apply.
 
-The checklist was last audited on 2026-09-14. The sibling test suite passed
-45 tests. The public notebook API, full experiment runner, and CLI remain open
-where their source code is still a placeholder.
+The checklist was last audited on 2026-09-15. The sibling suite has five
+boundary-contract files and 28 collected pytest tests. The public notebook API,
+full experiment runner, and CLI are covered by the public contract tests.
+
+The command is:
+
+```bash
+cd tsad-lib
+PYTHONPATH=src .venv/bin/python -m pytest -q -p no:cacheprovider tests
+```
+
+The audit result was `28 passed`. Pytest also reported one environment warning
+from Joblib while it detected CPU cores. It did not fail a test. The tests are:
+
+```text
+tests/test_data_contracts.py       5
+tests/test_baseline_contracts.py   4
+tests/test_thesis_contracts.py     8
+tests/test_public_contracts.py     6
+tests/test_release_contracts.py    5
+```
+
+These five files replace the historical fine-grained test filenames named in
+the earlier atomic steps. The runtime source remains unchanged by this test
+suite reduction.
 
 ### 17.1 High-level phase map
 
