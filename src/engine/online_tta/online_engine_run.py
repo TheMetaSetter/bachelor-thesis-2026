@@ -305,9 +305,7 @@ def _run_online_sequence(
     ewma_current_weight = float(protocol_config["online_ewma_current_weight"])
     ewma_previous_weight = float(protocol_config["online_ewma_previous_weight"])
     triage_thresholds = (
-        None
-        if online_variant == "A0"
-        else _build_triage_thresholds(threshold_artifact)
+        None if online_variant == "A0" else _build_triage_thresholds(threshold_artifact)
     )
     if timing_logger is None:
         timing_logger = OnlineTtaTimingLogger(enabled=False, device=device)
