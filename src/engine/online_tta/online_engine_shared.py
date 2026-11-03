@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Shared construction and runtime-state helpers for THESIS online TTA."""
+"""Shared construction and runtime-state helpers for THESIS online test-time adaptation."""
 
 import json
 from datetime import datetime, timezone
@@ -85,7 +85,7 @@ def _build_model_from_experiment_config(
     model_kwargs["online_variant"] = str(experiment_config["online_variant"])
     console_print(
         "MODEL",
-        "Building online TTA model",
+        "Building online test-time adaptation model",
         model_name=model_name,
         model_kwargs_keys=sorted(model_kwargs.keys()),
     )
@@ -101,7 +101,7 @@ def _build_optimizer_from_experiment_config(
     target_param_group = str(experiment_config["task"]["target_param_group"])
     if target_param_group != "projector_params":
         raise ValueError(
-            "The Phase 4 online TTA core supports only target_param_group='projector_params'"
+            "The online test-time adaptation core supports only target_param_group='projector_params'"
         )
     optimizer_parameters = collect_projector_parameters(model)
     optimizer_kwargs = {

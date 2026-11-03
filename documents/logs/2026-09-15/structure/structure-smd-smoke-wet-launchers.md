@@ -58,7 +58,7 @@ Interrupt fake writers and workers. Exercise duplicate launch, bad hashes, full 
 
 ### Stage 4.2: run the real smoke
 
-Use the approved remote checkout. Run O2-A0 first, then the remaining smoke cells. Disconnect and reconnect tmux while a job runs. Tools: SSH, tmux, the smoke script, artifact verifier. Complete when all selected methods and variants have real training/evaluation evidence.
+Use the approved remote checkout. Run THESIS/MUSTARD O2-A0 first, then the remaining smoke cells under each method's own variant scheme. Disconnect and reconnect tmux while a job runs. Tools: SSH, tmux, the smoke script, artifact verifier. Complete when all selected methods and variants have real training/evaluation evidence.
 
 ### Stage 4.3: launch and audit wet results
 

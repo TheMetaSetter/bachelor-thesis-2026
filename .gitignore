@@ -260,10 +260,23 @@ bsc-thesis-ref-codebases/
 
 tests/
 
-primitive_prompts/
 
-workflow_prompts/
+
+
 
 scripts/
 
 AGENTS.md
+
+# Research source and tests are code; ignore rules for data/scripts must not hide them.
+!/src/data/
+!/src/data/*.py
+!/scripts/
+!/scripts/*.py
+!/tests/
+!/tests/*.py
+!/tests/fixtures/
+!/tests/fixtures/*.json
+
+# Local Codex project settings and reports
+.codex/

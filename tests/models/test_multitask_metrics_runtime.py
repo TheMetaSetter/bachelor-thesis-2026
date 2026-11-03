@@ -336,6 +336,12 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
         },
     }
 
+    audit_path = tmp_path / "logs" / "evaluation-metrics-test.md"
+    monkeypatch.setattr(
+        "scripts.evaluate.build_protocol_audit_log_path",
+        lambda *, experiment_name: audit_path,
+    )
+
     outputs = run_evaluation_experiment(
         experiment_config, checkpoint_path=str(tmp_path / "best.pt")
     )
@@ -360,6 +366,7 @@ def test_run_evaluation_experiment_writes_curves_and_logs_metrics_to_wandb(
     assert "label_regime" not in saved_metrics
     assert saved_metrics["threshold_source"] == "positive_support_quantile_0.99"
     assert saved_records[0]["covered_point_mask"] == [True, False]
+    assert audit_path.exists()
     assert saved_traces[0]["sample_retention_policy"] == "retain_for_eda"
     assert any(
         "evaluation/precision" in logged_metrics
@@ -491,6 +498,12 @@ def test_run_evaluation_experiment_reuses_checkpoint_threshold_and_rebuilt_loade
         "task": {"task_name": "multitask_tsad"},
         "logging": {"use_wandb": False},
     }
+
+    audit_path = tmp_path / "logs" / "evaluation-reuse-test.md"
+    monkeypatch.setattr(
+        "scripts.evaluate.build_protocol_audit_log_path",
+        lambda *, experiment_name: audit_path,
+    )
 
     run_evaluation_experiment(
         experiment_config, checkpoint_path=str(tmp_path / "best.pt")

@@ -29,7 +29,7 @@ Which source-code and configuration-generation lines must change so smoke W&B ru
 
 `documents/spec/online_tta_terminology_ontology.md` defines `online_tta_phase`, `online_variant`, `causal_window`, `verification_buffer`, `verification_entry`, and the inherited `stage_b_best_checkpoint` and `threshold_artifact` lineage.
 
-`documents/notes/terminology_ontology_naming_conventions.md:343-369` records the selected smoke display convention and the examples `smk-off-O0-e1_6-s8`, `smk-on-KA-A2-e3_9-s36`, and `smk-off-KA-e3_4-s6`.
+`documents/notes/terminology_ontology_naming_conventions.md:343-369` records the selected smoke display convention and the examples `smk-off-THESIS-O0-e1_6-s8`, `smk-on-THESIS-A2-e3_9-s36`, and `smk-off-KA-e3_4-s6`.
 
 The note records `off` and `on` as display tokens, `O0` as an `offline_variant` value, `A2` as an `online_variant` value, and `KA` as a display token for `kmeans_ad`.
 

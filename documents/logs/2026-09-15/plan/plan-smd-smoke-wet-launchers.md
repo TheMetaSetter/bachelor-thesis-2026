@@ -88,4 +88,4 @@ The scripts must not upload code, store credentials, kill unrelated jobs, or del
 
 ## Terminology
 
-`point-level contrastive loss` and `two_view_contrastive_loss` remain one computation. `benchmark_smoke`, `benchmark`, O0/O1/O2, and A0/A1/A2 retain their names. `matrix cell` keeps its method/phase/variant/entity/seed meaning. `worker` and `campaign manifest` are new orchestration objects; neither is a new model or scientific variant.
+`point-level contrastive loss` and `two_view_contrastive_loss` remain one computation. `benchmark_smoke` and `benchmark` retain their names. O0/O1/O2 and A0/A1/A2 are THESIS/MUSTARD ablations only. `matrix cell` keeps its method/phase/variant/entity/seed meaning. `worker` and `campaign manifest` are new orchestration objects; neither is a new model or scientific variant.

@@ -21,6 +21,7 @@ from src.analysis.anomaly_archive_kl import (
     rank_anomaly_archive_by_ks,
     split_series_by_annotation,
 )
+from src.core.log_paths import dated_log_directory
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -77,7 +78,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("documents/logs/06-15-2026/research/anomaly_archive_kl"),
+        default=dated_log_directory("research") / "anomaly_archive_kl",
         help="Directory for ranking tables and plots.",
     )
     return parser.parse_args()

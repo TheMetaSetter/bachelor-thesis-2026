@@ -1,4 +1,4 @@
-"""Opt-in timing logs for the THESIS online TTA runtime."""
+"""Opt-in timing logs for the THESIS online test-time adaptation runtime."""
 
 from collections.abc import Callable
 from time import perf_counter

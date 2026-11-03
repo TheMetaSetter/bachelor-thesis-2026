@@ -15,12 +15,13 @@ from src.data.augment import (  # noqa: E402
 )
 from src.data.collate import collate_windows  # noqa: E402
 from src.data.loaders import build_smd_dataset_bundle  # noqa: E402
+from src.core.log_paths import dated_log_directory  # noqa: E402
 
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTITY_ID = "machine-3-9"
 WINDOW_SIZE = 20
-OUTPUT_DIR = ROOT / "documents" / "logs" / "07-20-2026" / "detail"
+OUTPUT_DIR = ROOT / dated_log_directory("detail")
 
 
 def main() -> None:

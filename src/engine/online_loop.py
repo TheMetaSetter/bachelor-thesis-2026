@@ -78,13 +78,13 @@ class OnlineLoop:
         log_every_n_steps: int,
         checkpoint_every_n_steps: int,
     ) -> dict[str, Any]:
-        # step 1: Prepare the model and output state for online adaptation.
+        # step 1: Prepare the model and output state for online test-time adaptation.
         self.model.to(self.device)
         records: list[dict[str, Any]] = []
         final_checkpoint_path = None
         console_print(
             "ONLINE",
-            "Starting online adaptation loop",
+            "Starting online test-time adaptation loop",
             device=self.device,
             max_online_steps=max_online_steps,
             log_every_n_steps=log_every_n_steps,
@@ -109,7 +109,7 @@ class OnlineLoop:
                 pre_outputs["window_scores"].mean().detach().cpu()
             )
 
-            # step 6: Snapshot the parameters that online adaptation may change.
+            # step 6: Snapshot parameters that online test-time adaptation may change.
             trainable_parameters = [
                 parameter.detach().clone()
                 for parameter in self.model.get_parameter_group(
@@ -117,7 +117,7 @@ class OnlineLoop:
                 )
             ]
 
-            # step 7: Compute the adaptation loss for the current batch.
+            # step 7: Compute the online test-time adaptation loss for this batch.
             self.model.train()
             step_output = self.model.training_step(batch_on_device)
             loss = step_output["loss"]

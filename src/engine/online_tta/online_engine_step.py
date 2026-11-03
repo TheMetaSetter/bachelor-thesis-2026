@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Single-step online TTA update helpers."""
+"""Single-step online test-time adaptation update helpers."""
 
 from typing import Any
 

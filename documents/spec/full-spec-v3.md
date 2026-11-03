@@ -10,6 +10,11 @@
 **Primary model:** `ThesisMultitaskModel`  
 **Window length:** `L = 20`
 
+In this specification, `THESIS` is the runtime name for the MUSTARD method.
+`O0/O1/O2` are its offline ablation variants, and `A0/A1/A2` are its online
+ablation variants. These labels do not apply to baseline methods; each baseline
+uses its own method-specific profile.
+
 ## The story of v3
 
 In v3, the older story receives sharper boundaries. THESIS queries memory ten

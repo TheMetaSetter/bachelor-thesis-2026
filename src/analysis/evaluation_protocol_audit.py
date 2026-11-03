@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
+from src.core.log_paths import dated_log_directory
 from src.data.split_protocol import describe_label_regime
 from src.data.split_protocol import summarize_split_point_labels
 
@@ -356,14 +357,11 @@ def render_dataset_protocol_audit_markdown(
 def build_protocol_audit_log_path(
     *,
     experiment_name: str,
-    current_date: datetime | None = None,
+    current_date: date | datetime | None = None,
 ) -> Path:
-    resolved_date = current_date or datetime.now()
-    date_folder = resolved_date.strftime("%m-%d-%Y")
-    return (
-        Path("documents")
-        / "logs"
-        / date_folder
-        / "research"
-        / f"{experiment_name}__evaluation_protocol_audit.md"
-    )
+    resolved_date = current_date or datetime.now().date()
+    if isinstance(resolved_date, datetime):
+        resolved_date = resolved_date.date()
+    return dated_log_directory(
+        "research", current_date=resolved_date
+    ) / f"{experiment_name}__evaluation_protocol_audit.md"

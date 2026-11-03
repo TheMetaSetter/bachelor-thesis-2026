@@ -1,6 +1,11 @@
 ## Streaming simulation and drift generation design
 
-To support the online adaptation part of the thesis, I will not rely on a single all-in-one simulator. Instead, I will use a **hybrid streaming framework** composed of a real-dataset stream wrapper, a drift injection layer, and an optional synthetic multivariate time-series generator.
+To support the online test-time adaptation part of the thesis, I will not rely on a single all-in-one simulator. Instead, I will use a **hybrid streaming framework** composed of a real-dataset stream wrapper, a drift injection layer, and an optional synthetic multivariate time-series generator.
+
+Terminology note (2026-11-03): this note also discusses generic stream-time
+adaptation strategies. Use “online test-time adaptation” for the MUSTARD method
+family and “online phase” for its execution stage; do not treat every online
+streaming method as an adapting method.
 
 This choice is more suitable for my datasets: **SMD, MSL, SMAP, SWaT, and UCR Anomaly Archive**. These datasets are naturally offline benchmark datasets, so the most practical solution is to convert them into sequential streams and then inject controlled drift or non-stationarity on top of them.
 

@@ -685,7 +685,7 @@ Mục tiêu của lát cắt nhỏ là kiểm tra causal ordering, triage, buffe
 
 ### Slide C5 — Đối tượng so sánh
 
-- **Nội dung:** RedLamp-inspired baseline, THESIS offline O0/O1, online A0/A1/A2, deterministic/stochastic ablation.
+- **Nội dung:** RedLamp-inspired baseline, THESIS/MUSTARD offline O0/O1, and its online A0/A1/A2 ablations; deterministic/stochastic ablation.
 - **Trực quan:** Experiment matrix nhỏ, không tạo Cartesian product không cần thiết.
 
 ### Slide C6 — Cải tiến dựa trên cái gì

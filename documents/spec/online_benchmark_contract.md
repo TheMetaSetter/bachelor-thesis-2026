@@ -4,12 +4,20 @@
 
 
 **Ngày chốt:** 2026-08-05  
-**Phạm vi:** online test-time adaptation trên SMD cho THESIS, M2N2, CANDI và traditional ML baselines  
+**Phạm vi:** online-phase evaluation trên SMD cho THESIS, M2N2, CANDI và traditional ML baselines
 **Trạng thái:** contract đã chốt; runtime adapter đã triển khai, cần nghiệm thu trước main run
+
+Terminology: follow the [next-version experiment terminology spec](experiment-terminology-next-version.md).
+
+Terminology note (2026-11-03): “online phase” names the shared evaluation stage.
+“Online test-time adaptation” names a method family, not every method in this
+comparison. The table states each method's update behavior; MUSTARD A0 is the
+no-update control in its online test-time adaptation ablation family. No runtime
+object names changed.
 
 ## Main conclusion
 
-This benchmark is a comparison in which every method sees the same test-stream
+This experiment compares methods where in which every method sees the same test-stream
 range, windowing rule, threshold source, and evaluation procedure. Each method
 keeps its own scoring and update protocol. Fairness means shared data and shared
 measurement rules; it does not mean forcing every method to use the same
@@ -119,7 +127,7 @@ phương pháp nhìn một đoạn test khác nhau.
 
 ### 1.4 Protocol chung cho mọi phương pháp
 
-Các trường dưới đây là phần chung của benchmark. Nếu một baseline có thêm
+Các trường dưới đây là phần chung của experiment. Nếu một baseline có thêm
 tham số riêng, tham số đó không được thay đổi các trường chung này.
 
 | Thành phần | Giá trị chốt | Ý nghĩa |
@@ -138,7 +146,7 @@ tham số riêng, tham số đó không được thay đổi các trường chun
 | Stream update | theo method | Deep baselines có policy update riêng; traditional baselines frozen |
 
 `offline window stride` chỉ mô tả protocol tạo reference/calibration của
-baseline. Online benchmark luôn dùng `online_window_stride: 1`. Không được
+baseline. Online experiment luôn dùng `online_window_stride: 1`. Không được
 thay `max_online_steps` bằng một range khác; range tuyệt đối phải là cơ chế
 chọn đoạn stream.
 
@@ -199,6 +207,11 @@ THESIS có 18 offline combinations:
 × 3 seeds (6, 8, 36)
 = 18 Stage B best checkpoints
 ```
+
+Scope note: this 2026-08-05 checkpoint inventory covers the two then-available
+THESIS ablations, `O0` and `O1`. The later SMD matrix defines `O2` as another
+THESIS/MUSTARD ablation; this inventory does not redefine the variant family
+or establish an executable `O2` path.
 
 Mỗi online THESIS run phải dùng Stage B checkpoint cùng `offline_variant`,
 `entity` và `seed`:
@@ -294,30 +307,38 @@ freeze backbone và chỉ cập nhật `sana_in` cùng `sana_out`. Artifact ph�
 optimizer, batch size, checkpoint role và checkpoint SHA-256 để phân biệt
 profile corrected với artifact legacy.
 
-### 2.6 Contract riêng của online adaptation
+### 2.6 Contract riêng cho online-phase evaluation
 
 THESIS và hai deep-learning baseline không dùng chung quy tắc cập nhật. Bảng
 dưới đây ghi vai trò của từng phương pháp.
 
 | Phương pháp | Score chính | Cập nhật trong stream | Tham số riêng đã chốt |
 |---|---|---|---|
-| THESIS | Score theo model THESIS và threshold artifact tương ứng | Theo các policy A0/A1/A2; chỉ phần được contract cho online TTA được cập nhật | `O0/O1`, `A0/A1/A2`, latent `64` |
+| THESIS | Score theo model THESIS và threshold artifact tương ứng | A0 không update parameter; A1/A2 chỉ update phần được contract cho online test-time adaptation | `O0/O1`, `A0/A1/A2`, latent `64` |
 | M2N2 | Reconstruction MSE của RedLamp adapter model | Detrender mean-only, pseudo-anomaly mask theo timestep, masked reconstruction loss và một optimizer step; score được ghi trước update | `gamma = 0.99999`, `steps = 1`, latent `128` |
 | CANDI | Reconstruction MSE sau `sana_in`/`sana_out` | Validation representations, covariance pseudoinverse, hard/moderate Mahalanobis selection, pool gate `MIN_SAMPLES = 16`, SANA MSE và một optimizer step | `USE_FPM/SANA/HARD/MODERATE = true`, `MIN_SAMPLES = 16`, `steps = 1`, latent `128` |
 | Stumpy Channel AB | Matrix-profile AB-join theo từng channel, lấy `nanmax` giữa channels | Frozen, không update tham số | `p = 2.0`, `normalize = true` |
 | KMeansAD | Khoảng cách Euclidean tới cluster center gần nhất | Frozen, không update cluster center | `n_clusters = 20`, `n_init = 10`, `normalize_windows = true` |
 | Isolation Forest | Điểm từ `decision_function` của Isolation Forest | Frozen, không update forest | `n_estimators = 100`, `max_samples = auto`, `max_features = 1.0`, `contamination = auto`, `normalize_windows = true` |
 
-`A0`, `A1` và `A2` là tên variant của THESIS. Chúng không được dùng để tạo
-thêm combination chính thức cho M2N2, CANDI hoặc traditional ML. M2N2 và
-CANDI mỗi phương pháp có một online baseline configuration cho mỗi
-entity/seed. Traditional ML dùng tên `main` và luôn frozen.
+`O0/O1/O2` and `A0/A1/A2` are THESIS/MUSTARD ablation labels only. They do not
+create ablations for M2N2, CANDI, or traditional ML. Each baseline uses its
+own method profile: current CANDI/M2N2 configs use
+`reference_adapter_redlamp_encoder`; traditional ML configs use `main`. These
+profile names describe baseline configuration, not THESIS ablation behavior.
+Older generated baseline configs with `A0/A1/A2` labels are legacy files and
+are excluded from the official matrix.
 
-Nếu runner bắt buộc có trường `online_variant`, baseline dùng giá trị
-`main`. Giá trị này chỉ là nhãn configuration; nó không biến policy của
-baseline thành policy A0/A1/A2 của THESIS.
+The 2026-11-03 local inventory found 270 such non-THESIS YAML files. They are
+not official baseline combinations; the generator's method-profile mapping
+above defines the supported configurations.
 
 ### 2.6 Ma trận combination chính thức
+
+Ma trận 99 combination dưới đây là phạm vi contract đã chốt ngày
+2026-08-05, dùng các checkpoint THESIS `O0/O1` khi đó đã có. SMD matrix
+được viết sau bổ sung `O2` như một ablation THESIS/MUSTARD; config và
+checkpoint path `O2` trong checkout này vẫn chưa được xác lập đầy đủ.
 
 | Nhóm | Số combination | Cách tính |
 |---|---:|---|
@@ -330,9 +351,9 @@ baseline thành policy A0/A1/A2 của THESIS.
 | **Tổng comparison matrix** | **99** | Bao gồm cả ba traditional ML baselines |
 
 M2N2 và CANDI không nhân thành ba combination chỉ vì config có trường
-`online_variant`. Nếu cần giữ field này để tương thích runner, giá trị chính
-thức là `main`. Các file generated cũ có đường dẫn `A0`, `A1` hoặc `A2` cho
-baseline không thuộc matrix chính thức và không được dùng để báo cáo.
+`online_variant`. Field này giữ profile method-specific đã chốt ở trên.
+Các file generated cũ có đường dẫn `A0`, `A1` hoặc `A2` cho baseline không
+thuộc matrix chính thức và không được dùng để báo cáo.
 
 ## 3. Hyperparameter của traditional ML
 
@@ -361,9 +382,9 @@ calibrate threshold trên clean validation, sau đó chạy test stream frozen.
 Chúng không được cập nhật cluster center, forest hoặc matrix profile bằng
 test labels hay bằng anomaly span đã biết.
 
-## 4. Tiêu chí công bằng của benchmark
+## 4. Tiêu chí công bằng của experiment
 
-Benchmark này định nghĩa công bằng ở các điểm sau:
+Experiment này định nghĩa công bằng ở các điểm sau:
 
 1. Tất cả phương pháp nhìn cùng absolute range của cùng entity.
 2. Mọi phương pháp dùng cùng `input_dim=38`, `window_size=20` và online
@@ -389,7 +410,7 @@ cho mọi seed của cùng method.
 
 Việc THESIS dùng pipeline 30 epoch còn M2N2/CANDI dùng RedLamp checkpoint có
 metadata 100 epoch là một giới hạn thực nghiệm đã được chấp nhận. Mục tiêu hiện
-tại là so sánh online adaptation trên cùng stream, với nguồn encoder được ghi
+tại là đánh giá các method trong cùng online phase và trên cùng stream, với nguồn encoder được ghi
 rõ và tái lập được; không train lại encoder cho từng combination.
 
 ## 5. Provenance bắt buộc
@@ -426,7 +447,7 @@ chỉ tạo variant `main`, dùng latent 128 và path RedLamp theo entity/seed.
 Runner ghi `method_metadata` vào report. Preflight hiện kiểm tra 54 THESIS và
 45 baseline configs.
 
-Các điều kiện còn lại trước benchmark chính thức là:
+Các điều kiện còn lại trước experiment chính thức là:
 
 - M2N2 và CANDI đọc đúng `pretrained_encoder_checkpoint`.
 - Loader xác nhận shape encoder là `38 -> 64 -> 64 -> 128` theo các Conv1d.
@@ -435,8 +456,10 @@ Các điều kiện còn lại trước benchmark chính thức là:
 - Một smoke run ghi đúng checkpoint path, SHA-256, latent dimension và
   absolute range.
 - Smoke tests cho THESIS, M2N2 và CANDI đều đi qua cùng range contract.
-- Generator và YAML chính thức tạo đúng một config `main` cho mỗi baseline,
-  entity và seed; không chạy các config baseline cũ mang nhãn `A0/A1/A2`.
+- Generator và YAML chính thức tạo đúng một config theo profile của từng
+  baseline cho mỗi entity và seed: `reference_adapter_redlamp_encoder` cho
+  CANDI/M2N2, `main` cho traditional ML. Không chạy config baseline cũ mang
+  nhãn `A0/A1/A2`.
 
 Chỉ sau khi một combination chạy end-to-end với checkpoint RedLamp thật và
 các điều kiện trên pass mới chạy toàn bộ matrix. Remote inventory ngày
@@ -452,7 +475,7 @@ Spec này không đổi tên runtime object đã có. Mapping chính thức là:
 |---|---|---|
 | absolute range contract | `absolute_start_index` + `absolute_end_index` và `select_online_stream_sequence` | unchanged |
 | Stage B best checkpoint | `stage_b_fusion_finetuning/checkpoints/best.pt` | unchanged |
-| RedLamp pretrained encoder | encoder tensors lấy từ RedLamp `best.pt` | new benchmark contract |
+| RedLamp pretrained encoder | encoder tensors lấy từ RedLamp `best.pt` | new experiment contract |
 | traditional ML baseline encoder | Không có | not applicable, không phải alias |
 
 `absolute time range`, `absolute range` và `online stream range` trong các trao
@@ -463,7 +486,7 @@ Spec này không đổi tên runtime object đã có. Mapping chính thức là:
 
 - [SMD anomaly spans và partial stream](../notes/online_tta_partial_stream_anomaly_spans.md)
 - [Stage B best checkpoints](../notes/stage_b_best_checkpoints.md)
-- [Online benchmark matrix](../inventories/online-benchmark-combinations-and-smoke-checklist.md)
+- [Online experiment matrix](../inventories/online-benchmark-combinations-and-smoke-checklist.md)
 - [`online_stream_range.py`](../../src/protocols/online_stream_range.py)
 - [`adaptive.py`](../../src/baselines/online/adaptive.py)
 - [`neural_blocks.py`](../../src/models/neural_blocks.py)

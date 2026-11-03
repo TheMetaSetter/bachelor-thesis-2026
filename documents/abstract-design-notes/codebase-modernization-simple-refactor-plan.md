@@ -202,7 +202,7 @@ The active benchmark system keeps four separate runtime lanes:
 - Offline baselines own their native fit, score, calibration, and report flow.
 - Online baselines own their native frozen or adaptive stream protocol and share only outer reporting concerns.
 
-The v4 artifact remains the boundary between THESIS offline and online execution. Generic online adaptation is not merged into the THESIS event loop. `VerificationBuffer` remains the canonical verification owner; no `TTLBuffer` rename or compatibility mapping is implied.
+The v4 artifact remains the boundary between THESIS offline and online execution. Generic online adaptation is not merged into the MUSTARD online test-time adaptation event loop in the THESIS runtime. `VerificationBuffer` remains the canonical verification owner; no `TTLBuffer` rename or compatibility mapping is implied.
 
 ## ASCII Architecture
 

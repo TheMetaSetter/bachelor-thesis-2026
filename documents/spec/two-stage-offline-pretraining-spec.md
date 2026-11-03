@@ -27,6 +27,14 @@ The sigmoid protocol is historical and opt-in only.
 > and historical meanings in this document remain unchanged.
 
 
+## Retrieval wording and review (2026-11-03)
+
+Use **no retrieval / dense retrieval / sparse retrieval** when comparing classifier inputs. No retrieval uses encoder features directly. Dense retrieval is the **continuous attentional prototype bank**; sparse retrieval is the **discrete attentional codebook**. Both banks can store real-valued vectors. The cosine top-k contract in section 15 selects a subset and applies soft weights; it does not imply hard top-1 lookup. Record any alternative Gumbel branch's actual hard/soft behavior. Use “discrete attentional codebook,” not “anomaly codebook.”
+
+Before reviewing or simplifying, check the configured retrieval equations against the owning implementation. Separate support selection, weights, initialization pools, task routing, and loss terms. Apply the [review requirements](../logs/2026-11-01/detail/simplification-lessons.md#retrieval-wording-and-review-requirements-2026-11-03), including controlled ablations, mathematical assumptions, evidence limits, and publication-status wording.
+
+**Terminology-change statement:** Existing source/config/checkpoint/artifact names and historical equations remain unchanged. These comparison labels do not authorize implementation, redefine O0/O1/O2 or A0/A1/A2, or establish parity with `tsad-lib`.
+
 ## 1. Purpose
 
 This document tells the implementation story for **two-stage offline

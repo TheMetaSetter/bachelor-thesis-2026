@@ -11,13 +11,12 @@ That logic remains correct, but the current repository is no longer at the begin
 - a fixed contract surface for offline batches, online batches, model outputs, and evaluation records
 - an SMD-first offline vertical slice with a reconstruction baseline
 - an offline thesis model with continuous and discrete branches, task-specific fusion, and RedLamp-default synthetic anomaly injection
-- a conservative projector-first online adaptation slice
+- a conservative projector-first online test-time adaptation slice
 - YAML-driven experiments, checkpointing, JSONL metrics, evaluation artifacts, and Weights & Biases integration
 
 So this document is not a reset to "Phase 0". It is a **translated long-term roadmap** that starts from the current repository state and sets the order for future work without reviving outdated structure plans or adding unnecessary codepaths.
 
 This roadmap must also obey `codebase_preferences.md`:
-
 - readability first
 - one model per file
 - least amount of codepaths
@@ -25,6 +24,10 @@ This roadmap must also obey `codebase_preferences.md`:
 - Weights & Biases as the experiment-history surface
 - DVC for versioned derived synthetic-data artifacts when those artifacts are materialized
 - RedLamp as the active default synthetic anomaly taxonomy, with CARLA retained as a mechanism reference
+
+Terminology note (2026-11-03): this roadmap uses “online test-time adaptation”
+for the projector-first MUSTARD method family. “Online phase” remains the
+generic execution stage. No runtime object names changed.
 
 ## Current starting point
 
@@ -127,7 +130,7 @@ Examples:
 
 - one accepted baseline model file
 - one accepted offline thesis model file
-- one accepted online adaptation model file
+- one accepted online test-time adaptation model file
 - one accepted SMD data path
 
 Alternative ideas should usually appear as:
@@ -167,7 +170,7 @@ The repository should keep one strong paper-style path stable before expanding a
 - one real dataset
 - one accepted offline thesis result
 - one accepted drifted streaming baseline
-- one accepted conservative online adaptation result
+- one accepted conservative online test-time adaptation result
 
 This is still the correct anti-fragmentation rule for a bachelor thesis codebase.
 
@@ -190,7 +193,7 @@ The main work here is not new implementation. It is preventing regression while 
 
 **Acceptance rule**
 
-If the thesis model, online adaptation, or drift modules are temporarily removed, the repository must still run a clean offline SMD baseline end to end.
+If the thesis model, online test-time adaptation, or drift modules are temporarily removed, the repository must still run a clean offline SMD baseline end to end.
 
 ## Milestone B - Consolidate the reusable data and stream architecture
 
@@ -324,7 +327,7 @@ The current online slice already does projector-first adaptation on a clean stre
 
 Why this matters:
 
-- without that baseline, online adaptation gains are hard to interpret
+- without that baseline, online test-time adaptation gains are hard to interpret
 - offline evaluation and online evaluation are different experimental objects
 - drift robustness needs a fixed-model comparison point
 
@@ -332,7 +335,7 @@ The desired progression is:
 
 1. clean streaming inference
 2. drifted streaming inference with no adaptation
-3. conservative online adaptation under the same scenarios
+3. conservative online test-time adaptation under the same scenarios
 
 This ordering is more scientifically useful than immediately expanding adaptation mechanisms.
 
@@ -345,7 +348,7 @@ For at least one drift family on SMD, the repository should support direct compa
 - online drifted non-adaptive inference
 - online conservative adaptation
 
-## Milestone F - Extend online adaptation only conservatively
+## Milestone F - Extend online test-time adaptation only conservatively
 
 The current online direction is already the correct starting point:
 
@@ -365,7 +368,7 @@ This should remain explicitly separate from "full-network online finetuning", wh
 
 **Acceptance rule**
 
-Every expansion of online adaptation should be justified against a smaller accepted slice that already works.
+Every expansion of online test-time adaptation should be justified against a smaller accepted slice that already works.
 
 ## Milestone G - Generalize benchmark coverage only after the SMD path is strong
 
@@ -445,7 +448,7 @@ This is the preferred long-term order now, starting from the current codebase ra
 5. Add non-adaptive online evaluation under drift.
 6. Compare conservative projector-first adaptation against that baseline.
 7. Expand benchmark coverage only after one strong SMD paper-style result.
-8. Add broader online adaptation variants only if the smaller slice justifies them.
+8. Add broader online test-time adaptation variants only if the smaller slice justifies them.
 
 ## Consistency checks for the long-term roadmap
 
@@ -453,7 +456,7 @@ The repository is moving in the right direction when these statements remain tru
 
 - If the drift layer is removed, clean offline and clean streaming paths still run.
 - If the thesis model is removed, the baseline reconstruction model still runs end to end.
-- If online adaptation is removed, streaming inference and evaluation still run.
+- If online test-time adaptation is removed, streaming inference and evaluation still run.
 - If optional regularizers are turned off, the offline thesis path still runs with only reconstruction plus classification loss.
 - If a new dataset is added, the high-level experiment scripts do not need to be rewritten.
 

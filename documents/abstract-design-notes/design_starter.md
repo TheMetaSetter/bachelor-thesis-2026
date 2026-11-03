@@ -13,6 +13,9 @@ This design starter is the active design note under `documents/abstract-design-n
 Runtime behavior and current experiment settings remain authoritative over older
 design drafts.
 
+Terminology note (2026-11-03): use “online test-time adaptation” for the
+MUSTARD test-stream method family and state each variant's update behavior.
+
 Active window length for current thesis experiments is:
 
 $$
@@ -376,7 +379,7 @@ In this design surface, the `gate` weight denotes gate entropy regularization. C
 
 That is enough for reuse. A new dataset should mean a new `data` config. A new model or training stage should mean a new `model` config or `experiment` config, not a second file that steals its loss logic away from the model.
 
-Now, because your thesis has both **offline training** and **online adaptation**, I strongly recommend that you represent these as different **self-contained model files**, not as one fragmented model plus several task files. That is cleaner for this repository.
+Now, because your thesis has both **offline training** and **online test-time adaptation**, I strongly recommend that you represent these as different **self-contained model files**, not as one fragmented model plus several task files. That is cleaner for this repository.
 
 So for example:
 

@@ -7,6 +7,10 @@ This file is an active design note under `documents/abstract-design-notes/`.
 Runtime behavior and current experiment settings remain authoritative over older
 design drafts.
 
+Terminology note (2026-11-03): use “online test-time adaptation” for the
+MUSTARD test-stream method family. State variant behavior explicitly; A0 is
+the no-update control. “Online phase” names the shared execution stage.
+
 For the offline pre-training phase two-view contrastive design, use this companion specification as authoritative:
 
 - `documents/abstract-design-notes/offline_pretraining_phase_two_view_contrastive_design.md`
@@ -17,7 +21,7 @@ For the offline pre-training phase two-view contrastive design, use this compani
 Contrastive learning now appears in both phases but with different roles:
 
 - offline pre-training phase: two-view InfoNCE between normal and injected views.
-- online adaptation phase: contrastive alignment for adaptation with frozen-reference semantics.
+- online test-time adaptation phase: contrastive alignment for adaptation with frozen-reference semantics.
 
 ## Detailed description of the thesis idea
 
@@ -114,9 +118,9 @@ $$
 H_{\text{cls}} = \alpha \hat H^{(d)} + (1-\alpha)\hat H^{(c)}.
 $$
 
-The reconstruction branch should make predictions only from $H_{\text{rec}}$, while the classification branch should make predictions only from $H_{\text{cls}}$. In the default thesis design, you do not move the real prediction paths onto branch-local heads attached directly to $\hat H^{(c)}$ or $\hat H^{(d)}$. You plan to inject artificial anomalies during training and perform anomaly-type classification, with the active repository default now using the 11 anomaly types from RedLamp while retaining CARLA as a mechanism reference for subsequence-oriented corruption. SMD remains the first experimental dataset. This overall architecture and motivation are consistent with your proposal draft, including the emphasis on continuous and discrete prototypes, task-specialized fusion, uncertainty, and online adaptation.
+The reconstruction branch should make predictions only from $H_{\text{rec}}$, while the classification branch should make predictions only from $H_{\text{cls}}$. In the default thesis design, you do not move the real prediction paths onto branch-local heads attached directly to $\hat H^{(c)}$ or $\hat H^{(d)}$. You plan to inject artificial anomalies during training and perform anomaly-type classification, with the active repository default now using the 11 anomaly types from RedLamp while retaining CARLA as a mechanism reference for subsequence-oriented corruption. SMD remains the first experimental dataset. This overall architecture and motivation are consistent with your proposal draft, including the emphasis on continuous and discrete prototypes, task-specialized fusion, uncertainty, and online test-time adaptation.
 
-Then comes the **online adaptation phase**. For each online mini-batch of (k) windows,
+Then comes the **online test-time adaptation phase**. For each online mini-batch of (k) windows,
 
 $$
 {x_1, \dots, x_k},
@@ -154,11 +158,11 @@ $$
 \text{SMD loader} \rightarrow \text{encoder adapter} \rightarrow \text{simple head} \rightarrow \text{train/eval loop}.
 $$
 
-That gives you a stable base for later prototype modules and online adaptation.
+That gives you a stable base for later prototype modules and online test-time adaptation.
 
-For this repository specifically, that vertical slice should also obey the strict rule in `codebase_preferences.md` that one model stays in one file. So the reconstruction baseline, the offline multitask thesis model, and the online adaptation model should each keep their forward path, scoring path, and stage-specific losses in the same model file rather than splitting them across separate task or loss files.
+For this repository specifically, that vertical slice should also obey the strict rule in `codebase_preferences.md` that one model stays in one file. So the reconstruction baseline, the offline multitask thesis model, and the online test-time adaptation model should each keep their forward path, scoring path, and stage-specific losses in the same model file rather than splitting them across separate task or loss files.
 
-There should also be an explicit pre-Phase-4 gate in the implementation plan. Before attempting the online adaptation phase, phases 1 to 3 need to close the earlier debt around registry-only script construction, explicit RedLamp-default synthetic anomaly injection with CARLA-informed subsequence mechanics, and user-visible inspection of injected anomalies.
+There should also be an explicit pre-Phase-4 gate in the implementation plan. Before attempting the online test-time adaptation phase, phases 1 to 3 need to close the earlier debt around registry-only script construction, explicit RedLamp-default synthetic anomaly injection with CARLA-informed subsequence mechanics, and user-visible inspection of injected anomalies.
 
 ---
 
@@ -590,9 +594,9 @@ separately, a bad choice of fusion weights or losses may cause both tasks to rel
 
 This is especially likely if one branch is much easier to optimize early in training.
 
-### 3. Online adaptation may adapt to anomalies, not just drift
+### 3. Online test-time adaptation may adapt to anomalies, not just drift
 
-Because your online adaptation is label-free, the model cannot know whether the incoming mini-batch reflects genuine distribution shift or contains many anomalous windows.
+Because your online test-time adaptation is label-free, the model cannot know whether the incoming mini-batch reflects genuine distribution shift or contains many anomalous windows.
 
 So the adaptation signal may be contaminated. In the worst case, the model gradually aligns itself to anomalous structure and degrades future detection.
 
@@ -610,7 +614,7 @@ A single online mini-batch is a small and noisy estimate of the current stream d
 
 ### 6. The projector initially “knows nothing”
 
-At the beginning of online adaptation, the projector
+At the beginning of online test-time adaptation, the projector
 
 $$
 g(\cdot)
@@ -698,7 +702,7 @@ $$
 H \in \mathbb{R}^{B \times L \times d_h}.
 $$
 
-That way, your prototype modules, task heads, and online adaptation logic do not depend on the internal quirks of the encoder.
+That way, your prototype modules, task heads, and online test-time adaptation logic do not depend on the internal quirks of the encoder.
 
 For patch-based or spectral encoders, you can define an adapter
 
@@ -716,7 +720,7 @@ $$
 \text{SMD loader} \rightarrow \text{encoder adapter} \rightarrow \text{simple head} \rightarrow \text{train/eval loop}.
 $$
 
-Not full prototypes, not full online adaptation, not full uncertainty logic.
+Not full prototypes, not full online test-time adaptation, not full uncertainty logic.
 
 This keeps the codebase testable and reduces debugging chaos.
 
@@ -745,7 +749,7 @@ literal implementation sequence.
   encoder, continuous branch, discrete branch, task-specific fusion, and
   reconstruction/classification heads live inside the active multitask model.
 - Old Phase 8 is already realized as the accepted first online slice:
-  projector-first, clean-stream-only, frozen-reference online adaptation.
+  projector-first, clean-stream-only, frozen-reference online test-time adaptation.
 - Old Phase 9 is mostly closed for the currently accepted offline and online
   slices through shape tests, one-step train tests, checkpoint round-trips, and
   stream-state tests. Future drift-specific leakage checks remain later-slice
@@ -775,7 +779,7 @@ If fusion does not beat the single-branch variants, then the thesis claim about 
 
 The current consensus is that the real reconstruction and anomaly-type classification heads should stay on $H_{\text{rec}}$ and $H_{\text{cls}}$. The continuous and discrete branch outputs may still be exposed for regularization, monitoring, and ablations, but branch-local decoder or classifier heads should not be the default architecture.
 
-### D. Use conservative online adaptation at first
+### D. Use conservative online test-time adaptation at first
 
 Instead of updating many online parameters immediately, start conservatively.
 
@@ -801,7 +805,7 @@ That way, the projector starts as an identity map and learns only small correcti
 
 This fits your setup because the frozen reference encoder and the online encoder initially come from the same pretrained encoder, so the correct initial mapping is approximately identity anyway.
 
-### F. Warm-start the projector offline before real online adaptation
+### F. Warm-start the projector offline before real online test-time adaptation
 
 We also discussed an offline calibration stage:
 
@@ -937,8 +941,8 @@ H \in \mathbb{R}^{B \times L \times d_h}.
 $$
 
 5. Keep the real offline prediction heads only on the fused task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and use the modular objective surface above with $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}}$ as the default thesis starting point.
-6. Then add, in order: continuous prototypes, discrete prototypes, task-specific fusion, and only then online adaptation.
-7. Start online adaptation conservatively by updating only the projector or another very small adapter, with near-identity initialization, offline warm-start, and optional NGD-style preconditioning only on that small subset.
+6. Then add, in order: continuous prototypes, discrete prototypes, task-specific fusion, and only then online test-time adaptation.
+7. Start online test-time adaptation conservatively by updating only the projector or another very small adapter, with near-identity initialization, offline warm-start, and optional NGD-style preconditioning only on that small subset.
 8. In parallel, consider training **TFMAE**, **CATCH**, **TimesNet**, **TimeMixer**, or **FITS** yourself and extracting only the encoder if you decide that frequency-aware latent structure matters more than immediate open-weight reuse. ([GitHub][2])
 
 ---
@@ -947,11 +951,11 @@ $$
 
 You can paste this into a new chat:
 
-I am building a bachelor-thesis codebase for multivariate time-series anomaly detection on SMD with window length 20. The stable contract is $X \in \mathbb{R}^{B \times L \times D}$ and every encoder must expose $H \in \mathbb{R}^{B \times L \times d_h}$. The intended offline model has a continuous prototype branch with soft retrieval and a discrete prototype branch with distance-based top-$k$ codebook query. Their outputs are fused into two task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and the real prediction heads stay only on those fused states. The discrete codebook is initialized from class-balanced train-derived windows and frozen by default in the main method. The offline objective is designed as a modular weighted-sum surface, but the default starting point is only $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}}$. Additional terms such as $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ are added only when diagnostics reveal concrete failure modes, and each extra term must be justified by ablation. The main ablations are continuous-only, discrete-only, and fused. Later, an online adaptation phase uses two augmentations per incoming sample, a frozen reference encoder, a partially trainable online encoder, and a lightweight near-identity projector that is warm-started offline and aligned to the frozen reference and prototype geometry. NGD-style preconditioning is attractive mainly for that small adapted subset, not for the whole model. Current codebase decisions: freeze the encoder output contract first, build a minimal vertical slice first, keep one model per file, and keep the loss design ablation-friendly with explicit YAML-controlled objective modularity.
+I am building a bachelor-thesis codebase for multivariate time-series anomaly detection on SMD with window length 20. The stable contract is $X \in \mathbb{R}^{B \times L \times D}$ and every encoder must expose $H \in \mathbb{R}^{B \times L \times d_h}$. The intended offline model has a continuous prototype branch with soft retrieval and a discrete prototype branch with distance-based top-$k$ codebook query. Their outputs are fused into two task-specialized states $H_{\text{rec}}$ and $H_{\text{cls}}$, and the real prediction heads stay only on those fused states. The discrete codebook is initialized from class-balanced train-derived windows and frozen by default in the main method. The offline objective is designed as a modular weighted-sum surface, but the default starting point is only $\mathcal{L}_{\text{recon}} + \lambda_{\text{cls}}\mathcal{L}_{\text{cls}}$. Additional terms such as $\mathcal{L}_{\text{var}}$, $\mathcal{L}_{\text{cov}}$, $\mathcal{L}_{\text{div}}$, $\mathcal{L}_{\text{use}}$, and $\mathcal{L}_{\text{gate}}$ are added only when diagnostics reveal concrete failure modes, and each extra term must be justified by ablation. The main ablations are continuous-only, discrete-only, and fused. Later, an online test-time adaptation phase uses two augmentations per incoming sample, a frozen reference encoder, a partially trainable online encoder, and a lightweight near-identity projector that is warm-started offline and aligned to the frozen reference and prototype geometry. NGD-style preconditioning is attractive mainly for that small adapted subset, not for the whole model. Current codebase decisions: freeze the encoder output contract first, build a minimal vertical slice first, keep one model per file, and keep the loss design ablation-friendly with explicit YAML-controlled objective modularity.
 
 ## Check
 
-A good consistency check is this: if you remove the online adaptation block entirely, the remaining offline model is still a valid thesis core. If you remove one prototype branch, the model is still trainable. If you swap the encoder, the rest of the architecture should still work as long as the encoder wrapper preserves
+A good consistency check is this: if you remove the online test-time adaptation block entirely, the remaining offline model is still a valid thesis core. If you remove one prototype branch, the model is still trainable. If you swap the encoder, the rest of the architecture should still work as long as the encoder wrapper preserves
 
 $$
 H \in \mathbb{R}^{B \times L \times d_h}.
@@ -974,7 +978,7 @@ Main assumptions: you will keep the thesis-facing hidden-state contract fixed, a
 
 ## Streaming simulation and drift generation design
 
-To support the online adaptation part of the thesis, I will not rely on a single all-in-one simulator. Instead, I will use a **hybrid streaming framework** composed of a real-dataset stream wrapper, a drift injection layer, and an optional synthetic multivariate time-series generator.
+To support the online test-time adaptation part of the thesis, I will not rely on a single all-in-one simulator. Instead, I will use a **hybrid streaming framework** composed of a real-dataset stream wrapper, a drift injection layer, and an optional synthetic multivariate time-series generator.
 
 This choice is more suitable for my datasets: **SMD, MSL, SMAP, SWaT, and UCR Anomaly Archive**. These datasets are naturally offline benchmark datasets, so the most practical solution is to convert them into sequential streams and then inject controlled drift or non-stationarity on top of them.
 
@@ -997,7 +1001,7 @@ My thesis does not only need synthetic streams. It needs a framework that can:
 
 - evaluate models on realistic benchmark datasets in an online manner,
 - simulate multiple kinds of drift on top of those datasets,
-- remain modular enough to support different encoders, anomaly detectors, and online adaptation strategies,
+- remain modular enough to support different encoders, anomaly detectors, and online test-time adaptation strategies,
 - stay Python-first and easy to integrate into a reusable thesis codebase.
 
 A pure synthetic generator would not be enough, because the final evaluation should still be performed on realistic benchmark streams derived from SMD, MSL, SMAP, SWaT, and UCR. Therefore, the best design is:

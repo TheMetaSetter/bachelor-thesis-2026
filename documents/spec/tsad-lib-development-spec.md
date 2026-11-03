@@ -15,7 +15,19 @@ work: find the data, prepare it, train the selected method, evaluate it, and
 write a readable report.
 
 The library must stay small. It must still preserve the scientific rules in the
-current ontology, THESIS specifications, and SMD experiment matrix.
+current ontology, MUSTARD specifications, and SMD experiment matrix.
+
+## Method naming
+
+In `tsad-lib`, `MUSTARD` is the only unified name for this method in
+specifications, runtime metadata, and reports. Do not use another project’s
+runtime name as an alias here. The bachelor-thesis source may use its own
+runtime identifiers, but those identifiers do not change this library's method
+name.
+
+Terminology note (2026-11-03): use “online test-time adaptation” for the
+test-stream method behavior. “Online phase” names the broader execution stage.
+Runtime object names are unchanged.
 
 The story now has one larger method shelf. The reference
 `Time-Series-Library` contains 40 model files, but those files serve several
@@ -31,6 +43,14 @@ This document is the development contract for the sibling directory:
 
 The document is written in the thesis repository because `documents/` is the
 current source of truth.
+
+## Retrieval wording and review (2026-11-03)
+
+Use **no retrieval / dense retrieval / sparse retrieval** for the proposed classification comparison. Dense retrieval corresponds to the **continuous attentional prototype bank**; sparse retrieval corresponds to the **discrete attentional codebook**. No retrieval feeds encoder features directly to the task head. Both banks can store real-valued vectors, and weighted top-k output can remain continuous. Hard top-1 is a special case. Use “discrete attentional codebook,” not “anomaly codebook.”
+
+Trace the configured operator, initialization, task routing, and loss against source before asserting equivalence. Follow the [review requirements](../logs/2026-11-01/detail/simplification-lessons.md#retrieval-wording-and-review-requirements-2026-11-03). In particular, separate specified mathematics, observed behavior, and tested parity; isolate retrieval from other factors; state the classification target and limits of synthetic evidence. Do not collapse distinct operators during simplification.
+
+**Terminology-change statement:** Existing runtime, configuration, checkpoint, metric, and artifact identifiers are unchanged. The proposed comparison does not add approved matrix variants or certify that dense/sparse retrieval is implemented.
 
 ## How the coding agent should read this story
 
@@ -60,7 +80,10 @@ unfinished experiment is ready.
 
 ## 1. What the first user sees
 
-The first notebook should be short enough for a high-school student to read:
+The first notebook should be short enough for a high-school student to read.
+`variant="O0"` below applies because the selected method is MUSTARD.
+For a baseline method, choose its own profile or omit the field when it has a
+single supported profile.
 
 ```python
 from tsad import available, run
@@ -161,7 +184,7 @@ The public API may be simple. The runtime must still obey these rules.
 | --- | --- |
 | Data leakage | Fit scalers and memories from training data only. Use clean validation for thresholds. Use test labels only for final metrics. |
 | Default score | Use raw-input MSE with `score_space: raw_input` and `point_score_transform: identity`. |
-| Offline THESIS flow | Stage A → memory initialization → Stage B → threshold calibration → offline evaluation. |
+| Offline MUSTARD flow | Stage A → memory initialization → Stage B → threshold calibration → offline evaluation. |
 | Stage B routing | Use `direct_branch_routing` by default. Fusion blocks are skipped by default. An explicit override must be recorded. |
 | Contrastive name | `point-level contrastive loss` and `_compute_two_view_contrastive_loss` refer to the same computation. Do not add a second copy. |
 | Online state | Freeze the offline source model and update only the allowed online module. |
@@ -327,7 +350,7 @@ load
 The pipeline stores its scaler, window size, stride, and split identity in
 `PipelineState`. A test label can be carried to the evaluator, but it cannot
 reach scaler fitting, model fitting, memory initialization, threshold fitting,
-or online adaptation.
+online test-time adaptation, or another online model update.
 
 The default research values are:
 
@@ -352,7 +375,7 @@ class MethodRunner(Protocol):
     def predict(self, scores: ScoreSet, thresholds: Thresholds) -> PredictionSet: ...
 ```
 
-The boundary hides internal differences. THESIS, RedLamp, CANDI, M2N2,
+The boundary hides internal differences. MUSTARD, RedLamp, CANDI, M2N2,
 Stumpy, KMeansAD, and Isolation Forest keep their own native computations.
 
 The first catalog contains these method names:
@@ -414,13 +437,20 @@ TimesNet, Transformer, iTransformer
 The remaining models stay visible in `available(DATA)` but remain pending until
 their task, output shape, dependencies, and anomaly score meaning are checked.
 
+The library must distinguish method identity from method-specific profiles.
+`O0/O1/O2` and `A0/A1/A2` are offline and online ablations of MUSTARD only.
+Other methods use their own profile names, such as `main` or
+`reference_adapter_redlamp_encoder`. Old baseline configs that use A-labels
+are legacy and do not define baseline ablations.
+
 The library must distinguish:
 
 ```text
-method_variant  = the method's own variant
-offline_variant = O0, O1, or a later approved offline variant
-online_variant  = A0, A1, A2, or a method-specific name such as main
-combined_label  = offline_variant + online_variant
+method_variant  = the selected method's own profile
+offline_variant = O0/O1/O2 only when method = MUSTARD
+online_variant  = A0/A1/A2 only when method = MUSTARD;
+                  otherwise the selected baseline's method profile
+combined_label  = the method-specific fields that apply to that method
 ```
 
 `O2` is a defined offline variant in the current ontology and SMD matrix. Its
@@ -455,9 +485,9 @@ balanced_point_score_loss: false
 fusion_mode: direct_branch_routing
 ```
 
-## 9. THESIS offline runtime
+## 9. MUSTARD offline runtime
 
-The THESIS offline runner follows this story for one entity and seed:
+The MUSTARD offline runner follows this story for one entity and seed:
 
 ```text
 Stage A multitask training
@@ -514,7 +544,7 @@ to the classification head.
 
 ## 10. Stochastic retrieval and uncertainty
 
-When the selected THESIS configuration uses the current stochastic protocol,
+When the selected MUSTARD configuration uses the current stochastic protocol,
 the runner must preserve these values:
 
 ```yaml
@@ -618,14 +648,14 @@ strong_anomaly
 `A0` performs inference only. `A1` updates through the verified non-empty PNN
 reconstruction path. `A2` may update through the guarded hard-old path or the
 verified PNN path. Only `online_mlp_projector` may change in the accepted
-THESIS online paths.
+MUSTARD online paths.
 
 The online runner keeps `VerificationBuffer`, TTL state, non-overlap guards,
 absolute indices, event records, and resumable runtime state. Test labels stay
 outside scoring, triage, verification, and adaptation.
 
 Traditional methods remain frozen. CANDI and M2N2 keep their own adapter
-policies. They must not inherit THESIS triage or PNN rules automatically.
+policies. They must not inherit MUSTARD triage or PNN rules automatically.
 
 ## 13. Run, result, and report objects
 
@@ -863,7 +893,7 @@ class DataPipeline:
 
 Only `train` reaches `fit_scaler()`. The pipeline keeps labels available for
 final evaluation but never sends test labels to training, memory initialization,
-threshold fitting, or online adaptation.
+threshold fitting, online test-time adaptation, or another online model update.
 
 ### Method and runtime classes
 
@@ -918,8 +948,8 @@ it must not copy the reference threshold or detection-adjustment procedure.
 | `MemoryInitializer` | `continuous_bank_size`, `discrete_codebook_size`, `seed` | `fit(training_data)`, `save_metadata()` |
 | `ThesisOnlineState` | `thresholds`, `ewma_state`, `verification_state`, `projector_state`, `absolute_index` | `validate()`, `save()`, `load()` |
 
-The THESIS training methods are `fit_stage_a()`, `initialize_memory()`,
-`fit_stage_b()`, and `fit_thresholds()`. The THESIS scoring method uses the
+The MUSTARD training methods are `fit_stage_a()`, `initialize_memory()`,
+`fit_stage_b()`, and `fit_thresholds()`. The MUSTARD scoring method uses the
 existing `_compute_two_view_contrastive_loss` computation when O2 selects the
 matrix name `point-level contrastive loss`. It does not create a second loss.
 The default Stage B method is `direct_branch_routing`; it sends the continuous
@@ -1025,8 +1055,8 @@ suite reduction.
 | 6 | Metrics and reports have one stable contract. | Python, NumPy, pandas, pytest | Phase 5 |
 | 6A subphase | All 40 reference models appear in the catalog with readiness states. | Python, pathlib, pytest | Phase 6 |
 | 6B subphase | The 15 reference anomaly paths use the common adapter boundary. | Python, PyTorch, NumPy, pytest | Phase 6A subphase |
-| 7 | THESIS offline O0, O1, and O2 paths are represented and checked. | Python, PyTorch, scikit-learn, pytest | Phase 6B subphase |
-| 8 | The THESIS online causal path can resume safely. | Python, PyTorch, pytest | Phase 7 |
+| 7 | MUSTARD offline O0, O1, and O2 paths are represented and checked. | Python, PyTorch, scikit-learn, pytest | Phase 6B subphase |
+| 8 | The MUSTARD online causal path can resume safely. | Python, PyTorch, pytest | Phase 7 |
 | 9 | Notebook and CLI use one matrix runner. | Python, `argparse`, pytest | Phase 8 |
 | 10 | One smoke combination proves readiness for the SMD matrix. | Python, pytest, local artifacts, optional W&B | Phase 9 |
 
@@ -1537,7 +1567,7 @@ scientific contract.
 **Subphase complete when:** the 15 script-backed models pass the common anomaly
 adapter tests and the other 25 models remain visible without false readiness.
 
-### Phase 7: add THESIS offline training
+### Phase 7: add MUSTARD offline training
 
 **Story:** The agent now opens the research model’s offline chapters in order.
 Stage A learns the task. Memory initialization reads training data only. Stage B
@@ -1619,7 +1649,7 @@ skipped by default.
 **Phase complete when:** O2 runs one entity with its fixed losses, direct branch
 routing, checkpoints, threshold artifact, scores, metrics, and provenance.
 
-### Phase 8: add THESIS online execution
+### Phase 8: add MUSTARD online execution
 
 **Story:** The offline source is now frozen. The online runner receives its
 checkpoint and threshold artifact, moves through causal windows, and changes only
@@ -1769,8 +1799,8 @@ silently replacing missing work or overwriting old research outputs.
 - [x] 3. Select one complete model and variant combination.
 - [x] 4. Read the generated report.
 - [x] 5. Check the generated provenance.
-- [x] 6. Run THESIS Stage A for `3` epochs and Stage B for `2` epochs.
-- [x] 7. Run `4,096` causal THESIS online windows from `4,115` labelled test points.
+- [x] 6. Run MUSTARD Stage A for `3` epochs and Stage B for `2` epochs.
+- [x] 7. Run `4,096` causal MUSTARD online windows from `4,115` labelled test points.
 
 **Stage verification:** run the complete offline and online flow for the selected combination.
 
@@ -1809,8 +1839,8 @@ preflight report. One `ServerMachineDataset/machine-1-2`, seed `6`, `O2-A0`
 smoke run completed under `benchmark_smoke`. Its threshold records the matching
 Stage B checkpoint hash. Its online range records `4,115` points and `4,096`
 windows. Its resolved configuration records three Stage A epochs and two Stage
-B epochs. This THESIS smoke contract applies to every dataset. It does not
-change non-THESIS methods or the wet matrix, whose online ranges remain 2,048
+B epochs. This MUSTARD smoke contract applies to every dataset. It does not
+change non-MUSTARD methods or the wet matrix, whose online ranges remain 2,048
 points. The wet matrix has not started.
 
 ## 18. Acceptance story
@@ -1825,7 +1855,7 @@ with a clear reason.
 The second gate passes when every current dataset family can be inspected and
 loaded into `SeriesSet`, with clear capability errors for unsupported methods.
 
-The third gate passes when THESIS offline and online contracts produce complete
+The third gate passes when MUSTARD offline and online contracts produce complete
 checkpoints, thresholds, scores, metrics, and provenance.
 
 The final gate passes when the all-machine SMD matrix is structurally complete,
@@ -1848,7 +1878,7 @@ Only these decisions remain open in this development contract:
    the remaining 25 models.
 
 Until these gates close, the library may implement discovery, loading, simple
-baselines, reporting, and the already locked THESIS paths. It must not claim
+baselines, reporting, and the already locked MUSTARD paths. It must not claim
 that the complete O2 matrix is scientifically ready.
 
 ## Source story
@@ -1857,5 +1887,5 @@ This development contract combines the public API and adapter design from
 [proposal-tsad-lib.md](../logs/2026-09-12/structure/proposal-tsad-lib.md), the
 object relations from [tsad-lib-directed-graphs.md](tsad-lib-directed-graphs.md),
 the naming rules from the two ontology documents, the scientific runtime rules
-from the THESIS specifications, and the all-machine counts and dependencies
+from the MUSTARD specifications, and the all-machine counts and dependencies
 from [smd-all-machines-experiment-matrix.md](../notes/smd-all-machines-experiment-matrix.md).

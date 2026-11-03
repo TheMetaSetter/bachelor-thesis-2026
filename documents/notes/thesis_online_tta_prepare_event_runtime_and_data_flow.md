@@ -1,4 +1,4 @@
-# Phân tích `prepare_event` trong THESIS online TTA
+# Phân tích `prepare_event` trong online test-time adaptation của MUSTARD (THESIS runtime)
 
 Phạm vi: phân tích tĩnh từ mã nguồn và cấu hình. Tài liệu không suy luận một dependency nếu không có import, call, cấu hình, hoặc runtime wiring hỗ trợ.
 
@@ -21,7 +21,7 @@ Luồng chạy thật bắt đầu tại:
 
 Ví dụ cấu hình thật O1/A2 của `machine-1-6`, seed 6: `configs/experiment/online_benchmark/thesis/smd__thesis__online__O1_A2__machine_1_6__w20__seed6__main.yaml`.
 
-## 2. Runtime flow: O1 offline checkpoint đến A2 online TTA
+## 2. Runtime flow: O1 offline checkpoint đến A2 online test-time adaptation
 
 ```mermaid
 flowchart TD

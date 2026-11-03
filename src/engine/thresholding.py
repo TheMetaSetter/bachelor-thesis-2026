@@ -91,7 +91,7 @@ def select_online_ewma_threshold(
     clean_validation_ewma_scores: np.ndarray,
     quantile: float,
 ) -> float:
-    """Select the online TTA threshold after clean-val stride-1 EWMA simulation."""
+    """Select the online test-time adaptation threshold after clean-val stride-1 EWMA simulation."""
     return _select_nan_safe_quantile(
         clean_validation_ewma_scores, _validate_quantile(quantile)
     )

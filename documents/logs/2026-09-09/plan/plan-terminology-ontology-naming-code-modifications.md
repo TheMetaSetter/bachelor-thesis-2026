@@ -24,7 +24,7 @@ Read the four staged project prompts, detect code lines that need modification f
 
 The selected smoke display format is `smk-<phase>-<method_or_variant>-<entity>-s<seed>`.
 
-The selected examples are `smk-off-O0-e1_6-s8`, `smk-on-KA-A2-e3_9-s36`, and `smk-off-KA-e3_4-s6`.
+The selected examples are `smk-off-THESIS-O0-e1_6-s8`, `smk-on-THESIS-A2-e3_9-s36`, and `smk-off-KA-e3_4-s6`.
 
 ## Current state
 

@@ -17,9 +17,10 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data.datasets.anomaly_archive import _ANOMALY_ARCHIVE_FILENAME_PATTERN
 from scripts.analysis.summarize_anomaly_span_lengths_helpers import collect_span_rows
+from src.core.log_paths import dated_log_directory
 
 
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "documents" / "logs" / "07-03-2026" / "research"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / dated_log_directory("research")
 DEFAULT_DATASETS = ("anomaly_archive", "nasa", "smd", "iops", "swat")
 SPAN_COLUMNS = [
     "dataset_name",

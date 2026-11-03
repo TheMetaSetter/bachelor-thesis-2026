@@ -166,7 +166,7 @@ Atomic steps:
 - **Level:** Unit.
 - **Setup:** Pass explicit phase, token sequence, entity token, and seed values.
 - **Action:** Call the new smoke display-name helper.
-- **Expected result:** The helper returns `smk-off-O0-e1_6-s8`, `smk-on-KA-A2-e3_9-s36`, and `smk-off-KA-e3_4-s6` for the selected examples.
+- **Expected result:** The helper returns `smk-off-THESIS-O0-e1_6-s8`, `smk-on-THESIS-A2-e3_9-s36`, and `smk-off-KA-e3_4-s6` for the selected examples.
 - **Edge cases:** Empty tokens, unsupported phase, missing seed, and overlong output.
 
 ### Verification
@@ -336,7 +336,7 @@ Atomic steps:
 - **Setup:** Call each existing config-generator function with smoke mode.
 - **Action:** Read the generated logging and canonical identity fields.
 - **Expected result:** The display name matches the selected grammar and the full identity remains present.
-- **Edge cases:** THESIS O0, THESIS O1, online A0/A1/A2, `kmeans_ad`, and the remaining baseline method tokens.
+- **Edge cases:** THESIS/MUSTARD O0 and O1, its online A0/A1/A2, `kmeans_ad`, and the remaining baseline method tokens.
 
 #### Runtime name preservation
 

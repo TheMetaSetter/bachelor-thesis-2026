@@ -10,6 +10,12 @@ This matrix covers every local SMD entity, including `machine-1-6`, `machine-3-4
 
 The benchmark uses seeds `6`, `8`, and `36` for every entity.
 
+THESIS is the runtime name for the MUSTARD method in this repository. `O0`,
+`O1`, and `O2` are offline ablations of THESIS/MUSTARD only; `A0`, `A1`, and
+`A2` are its online ablations only. Other methods are separate comparisons
+with their own profile names. Older baseline configs carrying A-labels are
+legacy artifacts and do not create official ablation combinations.
+
 The THESIS offline variants are `O0`, `O1`, and `O2`.
 
 All THESIS offline and online variants use `fusion_mode: direct_branch_routing` by default.
@@ -22,7 +28,7 @@ The window size is `20` and the stride is `1`.
 
 Every wet online method uses the same entity-specific 2,048-point test subsequence selected from ground-truth anomaly labels.
 
-THESIS `benchmark_smoke` runs have one separate fixed contract for every dataset and every THESIS variant. They run Stage A for `3` epochs, Stage B for `2` epochs, and causal online TTA for `4,096` windows. With window size `20` and stride `1`, the smoke range has `4,115` points. This rule does not apply to non-THESIS methods or to wet runs.
+THESIS `benchmark_smoke` runs have one separate fixed contract for every dataset and every THESIS variant. They run Stage A for `3` epochs, Stage B for `2` epochs, and causal online test-time adaptation for `4,096` windows. With window size `20` and stride `1`, the smoke range has `4,115` points. This rule does not apply to non-THESIS methods or to wet runs.
 
 The W&B project is `bachelor-thesis-2026`.
 

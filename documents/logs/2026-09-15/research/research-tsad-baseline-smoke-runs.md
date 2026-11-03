@@ -21,7 +21,7 @@ The current local environment passed the focused catalog and reference boundary 
 
 Isolation Forest fits its native runner and scores its native anomaly values. A ready reference model uses `build_reference_model()`, `ReferenceForwardAdapter`, and `TimeSeriesLibraryRunner`. The reference runner creates a reconstruction model, trains it with reconstruction MSE for `stage_a_epochs`, converts reconstruction error to scores, then uses the common metric writer.
 
-Neither baseline path runs THESIS Stage A, memory initialization, Stage B, direct branch routing, or online TTA. The fixed THESIS smoke values of three Stage A epochs, two Stage B epochs, and 4,096 causal windows do not apply. The request still stores `O0-A0` in its artifact path because `RunRequest` has shared fields, but those names do not describe a baseline adaptation policy. Its resolved configuration also carries the shared `fusion_mode` field, but the baseline branch never reads that field for routing.
+Neither baseline path runs THESIS Stage A, memory initialization, Stage B, direct branch routing, or online TTA. The fixed THESIS smoke values of three Stage A epochs, two Stage B epochs, and 4,096 causal windows do not apply. The current shared `RunRequest` still creates an `O0-A0` baseline artifact identity. That identity is misleading: `O0/A0` are THESIS/MUSTARD ablation labels, not baseline adaptation policies. Do not run or report baseline cells under this identity; first make baseline requests omit those THESIS-only fields or use the selected method's own profile. Its resolved configuration also carries the shared `fusion_mode` field, but the baseline branch never reads that field for routing.
 
 ## One real source
 

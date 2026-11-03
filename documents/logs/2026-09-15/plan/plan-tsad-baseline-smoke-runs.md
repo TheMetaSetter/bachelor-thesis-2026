@@ -60,7 +60,7 @@ The batch uses `ServerMachineDataset/machine-1-3`, seed `6`, CPU, and `benchmark
 2. Set `datasets=["ServerMachineDataset"]`.
 3. Set `entities=["machine-1-3"]`.
 4. Set `seed=6`.
-5. Set `variant="O0"` and `online_variant="A0"` only because the existing shared request requires those fields.
+5. Do not set THESIS-only `variant="O0"` or `online_variant="A0"` for baseline methods. The existing shared request's requirement for these fields is an API mismatch; the batch is blocked until baseline requests can omit them or use the selected method's own profile without encoding THESIS ablations.
 6. Set `device="cpu"`.
 7. Set `experiment_type="benchmark_smoke"`.
 
@@ -142,8 +142,6 @@ report = run(
     datasets=["ServerMachineDataset"],
     models=models,
     entities=["machine-1-3"],
-    variant="O0",
-    online_variant="A0",
     seed=6,
     output_root=Path("outputs/tsad-baseline-smoke-20260915-001"),
     experiment_type="benchmark_smoke",
@@ -159,4 +157,4 @@ This plan does not run or implement the 25 unready Time-Series-Library paths. It
 
 ## Terminology note
 
-No runtime object is renamed. `O0-A0` in this batch remains the current shared request label. It is not a claim that a baseline uses THESIS O0 losses or A0 online behavior.
+Do not label baseline smoke cells `O0-A0`. Those are THESIS/MUSTARD ablation labels. A baseline smoke identity contains the baseline method and its method-specific profile only. Resolve the shared API requirement above before running this batch.

@@ -230,7 +230,7 @@ only confirmed duplicate routing.
 
 The public TTA entrypoint and causal stream contract remain stable. Use an
 adapter for legacy entrypoints and a strategy-style dispatcher only for already
-distinct A0/A1/A2 or baseline behavior. The risk is very high: online ordering,
+distinct THESIS A0/A1/A2 or method-specific baseline behavior. The risk is very high: online ordering,
 clean-stream admission, update counts, and checkpoint resolution are scientific
 protocols.
 

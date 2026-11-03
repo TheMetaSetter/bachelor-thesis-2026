@@ -1,13 +1,13 @@
 ---
-title: "Online TTA Terminology Ontology"
+title: "Online Test-Time Adaptation Terminology Ontology"
 status: authoritative-for-naming
-scope: "THESIS online test-time adaptation"
+scope: "The THESIS runtime's online test-time adaptation for the MUSTARD method"
 applies_to: "specifications, pseudocode, runtime code, tests, configuration, checkpoints, metrics, and experiment artifacts"
 root_ontology: "documents/spec/offline_pretraining_terminology_ontology.md"
 evidence_revision: e58602f45ee5439a1e001f060e8ea640aeddde9c
 ---
 
-# Online TTA Terminology Ontology
+# Online Test-Time Adaptation Terminology Ontology
 
 ## The story of names in the online phase
 
@@ -28,6 +28,10 @@ state may change.
 ## 1. Purpose and offline-first principle
 
 This document standardizes object names in `online_tta_phase`. It inherits object identity from [`offline_pretraining_terminology_ontology.md`](offline_pretraining_terminology_ontology.md) and does not create a new name for the same offline object.
+
+It also follows the offline ontology's naming rule: `THESIS` names this
+repository's runtime identifiers, while `MUSTARD` names the method in prose.
+The `A0/A1/A2` ablations belong to MUSTARD only.
 
 The base principle is:
 
@@ -61,7 +65,7 @@ override.
 Online also preserves the reason for this separation. The discrete codebook
 may carry anomaly patterns, so its output must not enter the reconstruction
 head. The continuous prototype bank describes normal patterns, so its output
-must not add noise to the classification head. Online adaptation therefore
+must not add noise to the classification head. Online test-time adaptation therefore
 keeps the inherited branch-specific inputs and does not introduce simple
 fusion.
 
@@ -87,7 +91,7 @@ The mapping types keep the offline ontology meanings: `canonical`, `exact alias`
 
 | Canonical name | Object type | Owner | Status |
 | --- | --- | --- | --- |
-| `online_tta_phase` | phase | online TTA engine | implemented |
+| `online_tta_phase` | phase | online test-time adaptation engine | implemented |
 | `offline_variant` | inherited experiment dimension | offline config/checkpoint identity | inherited |
 | `online_variant` | online experiment dimension | online config | implemented |
 | `causal_window` | online input object | online stream | implemented |
@@ -110,10 +114,15 @@ prediction is kept.
 
 | Name found in the repository | Mapping |
 | --- | --- |
-| `online TTA` | exact alias in prose |
-| `online phase` | contextual alias |
-| `online adaptation phase` | contextual alias |
+| `online test-time adaptation` | canonical prose term |
+| `online TTA` | shorthand; use the full term in new prose |
+| `online phase` | contextual name for the lifecycle stage; not the update behavior |
 | `Phase 4` | historical project-planning name; do not use it as a runtime identifier |
+
+Terminology change (2026-11-03): “online adaptation phase” is deprecated as a
+prose alias. Use “online test-time adaptation” for the method family and
+“online phase” for the execution stage. The runtime object `online_tta_phase`
+and all other object names are unchanged.
 
 ### 3.2 `online_variant`
 
@@ -126,7 +135,10 @@ prediction is kept.
 `O0_A2` or `O1_A2` is a combined run label containing `offline_variant` and
 `online_variant`. It is not a new value of `online_variant`.
 
-`O2` is an offline value, not an online value. It inherits its fixed
+`A0`, `A1`, and `A2` are online ablation variants of MUSTARD only. The THESIS
+runtime implements them in this repository. Other methods use their own online
+method profiles. `O2` is an offline value,
+not an online value. It inherits its fixed
 three-loss, no-Balanced-Point-Score-Loss, direct-routing checkpoint from the
 offline phase. It does not change the meanings of A0, A1, or A2.
 
@@ -682,6 +694,13 @@ The split is a terminology change, not a change to the online loss or
 verification order. `O2` is a fixed `offline_variant`: reconstruction loss,
 classification loss, and the existing `two_view_contrastive_loss`. It has no
 Balanced Point-Score Loss and uses `direct_branch_routing`.
+
+### 13.3 Method and runtime naming decision (2026-11-03)
+
+This repository uses `THESIS` for runtime and code-facing identifiers and
+`MUSTARD` for the scientific method in prose. This is a role clarification,
+not a runtime rename. The online ablation labels `A0/A1/A2` remain specific to
+MUSTARD.
 
 ## 14. Required comparison for every new specification
 

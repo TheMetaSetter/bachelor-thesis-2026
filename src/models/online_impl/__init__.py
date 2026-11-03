@@ -1,1 +1,1 @@
-"""Implementation package for online adaptation models."""
+"""Implementation package for online test-time adaptation models."""

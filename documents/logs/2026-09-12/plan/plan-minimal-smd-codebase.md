@@ -22,7 +22,7 @@ Research and planning artifacts stay under the current repository's `documents/`
 The new project will own its own `documents/` contract, environment, Git history, checkpoints, and outputs.
 Use an explicit external dataset path without copying SMD or importing the old repository at runtime.
 
-Include THESIS O0/O1/O2, revised A0/A1/A2, RedLamp, CANDI, M2N2, and all three traditional baselines.
+Include THESIS/MUSTARD offline ablations O0/O1/O2 and its online ablations A0/A1/A2, plus RedLamp, CANDI, M2N2, and all three traditional baselines under their own method profiles.
 Exclude other datasets, UI dashboards, historical checkpoint compatibility, plugin registries, and unused fusion/backbone modes.
 Retain library implementations for numerical primitives and baseline algorithms; from scratch means a new runtime, not reimplementing PyTorch or scikit-learn.
 

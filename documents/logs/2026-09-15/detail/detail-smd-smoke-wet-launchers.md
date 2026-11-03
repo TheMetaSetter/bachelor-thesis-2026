@@ -58,7 +58,7 @@ run_campaign(manifest, campaign_root, resources, resume=False) -> int
 
 The coordinator module accepts `--mode smoke|wet`, `--data-root PATH`, `--campaign-root PATH`, and `--resume`. The two scripts fix the mode and forward the remaining arguments as an argument array. Reject a forwarded second mode. Default resume is false. No `eval` or shell-generated command fragments are needed for model execution.
 
-One cell contains `id`, `dataset`, `entity`, `seed`, `method`, `phase`, `offline_variant`, `online_variant`, `resource`, `config`, `online_range`, `dependencies`, and `output_path`. It stores argument data rather than an executable shell string. A THESIS offline identity excludes A0/A1/A2. An online identity includes its O and A variants.
+One cell contains `id`, `dataset`, `entity`, `seed`, `method`, `phase`, `resource`, `config`, `online_range`, `dependencies`, and `output_path`. THESIS cells also carry `offline_variant` and, for online runs, `online_variant`. Baseline cells carry their method-specific profile instead. A THESIS offline identity excludes A0/A1/A2; a THESIS online identity includes its matching O and A variants. Baseline identities do not carry THESIS O/A ablations.
 
 One resource record contains `gpus: [{index, uuid, name, memory_total_mb, memory_free_mb}]`, `cpu_ids`, `cpu_quota`, `ram_available_bytes`, and `disk_available_bytes`. Worker records contain `name`, `gpu_uuid`, and `cpu_ids`. Keep the public notebook `devices()` output simple; detailed rental inventory belongs here.
 

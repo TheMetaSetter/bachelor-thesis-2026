@@ -140,7 +140,7 @@ The safe design is:
 ```text
 method_variant       → method choice
 offline_variant      → offline ablation
-online_variant       → online adaptation choice
+online_variant       → online-phase method/profile choice
 combined_run_label   → explicit pair of offline and online variants
 ```
 

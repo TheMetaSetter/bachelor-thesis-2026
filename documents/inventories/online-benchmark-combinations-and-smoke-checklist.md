@@ -131,10 +131,12 @@ methods and remain frozen during the test stream.
 
 ## Config status and required correction
 
-The generators now create 54 THESIS main configurations and 45 baseline main
-configurations. M2N2, CANDI, Stumpy, KMeansAD, and Isolation Forest all use the
-canonical `main` label. Older baseline files with `A0`, `A1`, or `A2` remain
-outside the official launch allow-list until an explicit cleanup is reviewed.
+The generators create 54 THESIS configurations and 45 official baseline
+configurations. CANDI and M2N2 use
+`reference_adapter_redlamp_encoder`; Stumpy, KMeansAD, and Isolation Forest
+use `main`. Older baseline files with `A0`, `A1`, or `A2` are legacy labels,
+not THESIS ablations, and remain outside the official launch allow-list until
+an explicit cleanup is reviewed.
 
 ## Checklist: prepare one smoke run for the new THESIS online runtime
 
@@ -218,8 +220,9 @@ and [runtime wiring](../../src/engine/online_tta/online_engine_run.py#L553-L562)
    corresponding artifact is V3 and invalid for the current V4 runtime.
 2. The generic generated THESIS smoke config has `max_online_steps: 16`; it is
    not a substitute for the `[5608,5909)` range smoke.
-3. Current baseline generated configs incorrectly reuse A0/A1/A2. They need a
-   separate correction before the official 90-run matrix starts.
+3. At this checklist's 2026-08-04 preparation date, generated baseline configs
+   still reused A0/A1/A2 labels. The current generator uses method-specific
+   profiles; old A-labeled configs remain outside the official allow-list.
 4. `runtime_protocol_status` remains `full_spec_v2` until focused tests and one
    real smoke path pass. A smoke run must not silently change that status.
 

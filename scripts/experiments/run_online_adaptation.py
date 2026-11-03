@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Entrypoint for the first online adaptation slice.
+"""Entrypoint for the first online test-time adaptation slice.
 
 Read this script after the offline train and evaluate scripts. It follows the
 same config-driven graph, then swaps the offline dataloader and trainer for the
@@ -81,7 +81,7 @@ def build_model_from_experiment_config(
     )
     console_print(
         "MODEL",
-        "Building online adaptation model from experiment config",
+        "Building online test-time adaptation model from experiment config",
         model_name=model_name,
         model_kwargs_keys=sorted(model_kwargs.keys()),
     )
@@ -312,7 +312,7 @@ def main() -> None:
     experiment_config = load_experiment_config(args.experiment_config)
     console_print(
         "CONFIG",
-        "Loaded CLI online adaptation config",
+        "Loaded CLI online test-time adaptation config",
         experiment_config_path=args.experiment_config,
     )
     run_online_adaptation_experiment(experiment_config)

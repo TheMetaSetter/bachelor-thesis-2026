@@ -4,7 +4,7 @@ from __future__ import annotations
 
 A new reader should start here when they want to understand what every model,
 loader, and engine loop agrees on. These validators keep the offline baseline,
-the multitask model, and the online adaptation path readable because they all
+the multitask model, and the online execution path readable because they all
 reuse the same batch and output vocabulary.
 """
 

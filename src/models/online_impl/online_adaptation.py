@@ -1,4 +1,4 @@
-"""Projector-first online adaptation model.
+"""Projector-first online test-time adaptation model.
 
 This file should be read after the offline multitask model. The online path is
 deliberately conservative: it reuses the offline encoder geometry, keeps the
@@ -66,11 +66,11 @@ class OnlineAdaptationModel(BaseModel):
         # can reason about one adaptation mechanism at a time.
         if not clean_stream_only:
             raise ValueError(
-                "The first online adaptation slice supports only clean_stream_only=True"
+        "The first online test-time adaptation slice supports only clean_stream_only=True"
             )
         if score_source != "projected_hidden":
             raise ValueError(
-                "The first online adaptation slice supports only score_source='projected_hidden'"
+        "The first online test-time adaptation slice supports only score_source='projected_hidden'"
             )
         if online_variant not in {"A0", "A1", "A2"}:
             raise ValueError("online_variant must be A0, A1, or A2")
@@ -342,7 +342,7 @@ class OnlineAdaptationModel(BaseModel):
         if self.online_variant == "A0":
             raise RuntimeError("A0 must use forward_source and has no online projector")
         console_print(
-            "MODEL", "Online adaptation forward input batch", **summarize_batch(batch)
+            "MODEL", "Online test-time adaptation forward input batch", **summarize_batch(batch)
         )
         reference_hidden = self.reference_encoder.encode_source(batch)
         online_hidden = reference_hidden
@@ -383,7 +383,7 @@ class OnlineAdaptationModel(BaseModel):
         validate_model_outputs(outputs)
         console_print(
             "MODEL",
-            "Online adaptation forward outputs",
+            "Online test-time adaptation forward outputs",
             reference_hidden=summarize_tensor(reference_hidden),
             online_hidden=summarize_tensor(online_hidden),
             projected_hidden=summarize_tensor(projected_hidden),
@@ -440,7 +440,7 @@ class OnlineAdaptationModel(BaseModel):
         }
         console_print(
             stage_name.upper(),
-            "Completed online adaptation stage step",
+            "Completed online test-time adaptation stage step",
             batch_size=batch["x"].shape[0],
             total_loss=float(total_loss.detach().cpu()),
             alignment_loss=float(outputs["aux"]["alignment_loss"].detach().cpu()),

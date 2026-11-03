@@ -1,4 +1,4 @@
-# THESIS Online TTA: Desired Flow and Current Runtime
+# MUSTARD Online Test-Time Adaptation in the THESIS Runtime: Desired Flow and Current Runtime
 
 Hai pseudocode dưới đây cùng dùng vector point scores cho cả `causal_window`.
 Khối bên trái mô tả ý tưởng đã chốt. Khối bên phải mô tả runtime hiện tại sau

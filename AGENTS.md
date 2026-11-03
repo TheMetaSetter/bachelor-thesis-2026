@@ -1,4 +1,6 @@
 # Repository Guidelines
+Respond in English by default.
+
 On macos environment, please use `realpath` command to get the full file path everytime you cite a file or a folder. File paths may contain language-specific unicode characters (e.g., Vietnamese) so you need to be extra careful with file paths while reasoning and also when respond to me.
 
 Responded file paths containing Vietnamese must be valid in NFC Unicode normalization. Please check using very quick Python command in CLI.

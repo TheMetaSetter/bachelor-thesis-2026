@@ -146,7 +146,8 @@ Do not implement code in this planning task.
 - `off` and `on` are display tokens, not replacements for canonical phase identifiers.
 - `O0`, `O1`, `A0`, `A1`, and `A2` retain their ontology meanings.
 - `KA` is a display token for `kmeans_ad`, not a new ontology object.
-- `KA-A2` is a combined display sequence and not a new `online_variant` value.
+- `THESIS-A2` combines the THESIS method token with its online ablation.
+- Do not combine a baseline token such as `KA` with a THESIS A-variant.
 - Stage, checkpoint, window, protocol, and artifact identity remain outside the short display name.
 - Generated YAML must be updated through generator sources.
 

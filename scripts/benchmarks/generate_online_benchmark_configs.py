@@ -4,7 +4,7 @@ from __future__ import annotations
 
 ₍^. .^₎⟆ Online config path
 
-offline checkpoint reference + online adaptation contract
+offline checkpoint reference + online-phase evaluation contract
   -> one experiment YAML
   -> one benchmark wrapper input
   -> one fair online run

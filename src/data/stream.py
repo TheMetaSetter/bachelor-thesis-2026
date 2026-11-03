@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Sequential window streaming for the first online adaptation slice.
+"""Sequential window streaming for the first online test-time adaptation slice.
 
 The offline data path exposes shuffled batches. This file instead preserves time
 order so the online loop can process windows as a stream. A new reader should
@@ -49,7 +49,7 @@ class SMDOnlineStream:
         # stream therefore supports only clean sequential windows right now.
         if not clean_stream_only:
             raise ValueError(
-                "The first online adaptation slice supports only clean_stream_only=True"
+                "The first online test-time adaptation slice supports only clean_stream_only=True"
             )
         if stream_window_mode not in {
             "sliding_stride_1",

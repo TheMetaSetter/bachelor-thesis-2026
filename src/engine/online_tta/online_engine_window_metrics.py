@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Window scoring and verification helpers for THESIS online TTA."""
+"""Window scoring and verification helpers for THESIS online test-time adaptation."""
 
 from typing import Any
 

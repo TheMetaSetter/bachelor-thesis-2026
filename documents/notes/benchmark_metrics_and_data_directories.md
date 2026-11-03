@@ -189,15 +189,17 @@ retention/{machine-1-6,machine-3-4,machine-3-9}/A{0,1,2}/
 
 ```text
 /root/bachelor-thesis-2026/outputs/benchmark/online_streaming/smd/
-└── {candi,m2n2,iforest,kmeans_ad,stumpy}/
-    └── {main,A0,A1,A2}/
-        └── {machine_1_6,machine_3_4,machine_3_9}/
-            └── seed{36,6,8}/
+├── {candi,m2n2}/reference_adapter_redlamp_encoder/
+│   └── {machine_1_6,machine_3_4,machine_3_9}/seed{36,6,8}/
+└── {iforest,kmeans_ad,stumpy}/main/
+    └── {machine_1_6,machine_3_4,machine_3_9}/seed{36,6,8}/
 ```
 
-For the current 99-run matrix, use only the `main` directories. The `A0`,
-`A1`, and `A2` directories of the traditional baselines are older outputs
-outside the current matrix.
+For the current matrix, use only the canonical profile directories: CANDI and
+M2N2 use `reference_adapter_redlamp_encoder`; traditional methods use `main`.
+Baseline directories named `A0`, `A1`, or `A2` are legacy outputs. Those labels
+do not denote THESIS/MUSTARD ablations for baseline methods, and these outputs
+are outside the official matrix.
 
 Important files are:
 

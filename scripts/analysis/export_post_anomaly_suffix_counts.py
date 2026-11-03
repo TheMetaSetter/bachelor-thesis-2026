@@ -9,13 +9,14 @@ import numpy as np
 import pandas as pd
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.datasets.anomaly_archive import _ANOMALY_ARCHIVE_FILENAME_PATTERN
+from src.core.log_paths import dated_log_directory
 
-OUTPUT_DIR = PROJECT_ROOT / "documents" / "logs" / "06-27-2026" / "research"
+OUTPUT_DIR = PROJECT_ROOT / dated_log_directory("research")
 DEFAULT_COLUMNS = [
     "series_id",
     "source_file",

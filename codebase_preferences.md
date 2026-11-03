@@ -11,9 +11,13 @@
 
 ---
 
+## Experiment terminology
+
+- Follow the [next-version experiment terminology spec](documents/spec/experiment-terminology-next-version.md).
+
 ## 2. Logging and task organization
 
-- Place logs under `documents/logs/MM-DD-YYYY/<task_type>` with `task_type` being one of the four following: `research`, `plan`, `structure`, or `detail`.
+- Place logs under `documents/logs/yyyy-mm-dd/<task_type>` with `task_type` being one of the four following: `research`, `plan`, `structure`, or `detail`. Use this date format for all new date-based directory names in the repository.
     - Research is following prompt under `prompts/1_research_prompt.md`
     - Plan is following prompt under `prompts/2_plan_prompt.md`
     - Structure is following prompt under `prompts/3_structure_prompt.md`
@@ -30,7 +34,7 @@
 - Use the canonical hierarchy:
   `outputs/<experiment_type>/<dataset_name>/<entity_name>/<seed_value>/<method_name>/<phase_name>/<stage_name>/`.
   For example, `outputs/benchmark/smd/machine_1_6/seed6/thesis/offline/stage_a/`.
-- `benchmark` and `benchmark_smoke` are experiment types. The folders below
+- The legacy `benchmark` and `benchmark_smoke` path names identify experiment types. The folders below
   them represent dataset, entity, seed, method, phase, and stage in that
   order. Existing historical trees may differ; discovery and adapters must
   handle them without redefining the canonical hierarchy.
@@ -111,7 +115,7 @@ This is important so I will repeat 3 times.
   - Treat broad `rm -rf` cleanup as a last resort and only after confirming the target tree is safe to remove.
   - Before leaving the host, re-check that no unrelated jobs, logs, or temporary files were touched.
 
-- Before running a full benchmark batch, always execute the full experiment flow on 1 concrete combination from the development specification first. If the project has enough time, this first-pass check may expand to 3 combinations. For this project, keep the first-pass check to 1 combination unless the user explicitly requests more. Only after that first end-to-end pass succeeds should you launch all combinations.
+- Before running a full experiment set, always execute the full experiment flow on 1 concrete combination from the development specification first. If the project has enough time, this first-pass check may expand to 3 combinations. For this project, keep the first-pass check to 1 combination unless the user explicitly requests more. Only after that first end-to-end pass succeeds should you launch all combinations.
 
 - Do not write overly long `for` loops. When a loop starts handling many responsibilities at once, split the work into small, clearly named helper functions or methods so each step can be read, reused, tested, and modified independently.
 

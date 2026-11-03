@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Public THESIS online TTA entrypoint.
+"""Public THESIS online test-time adaptation entrypoint.
 
 The implementation is split across smaller helper modules so every source file
 stays within the repository line limit.

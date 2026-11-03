@@ -14,10 +14,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.datasets.smd import SMDDatasetParser  # noqa: E402
+from src.core.log_paths import dated_log_directory  # noqa: E402
 
 
 DEFAULT_DATASET_ROOT = PROJECT_ROOT / "data" / "ServerMachineDataset"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "documents" / "logs" / "08-09-2026" / "research"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / dated_log_directory("research")
 SELECTED_ENTITY_IDS = ("machine-1-6", "machine-3-4", "machine-3-9")
 NUM_CHANNEL_GROUPS = 3
 TIME_START = 10_000

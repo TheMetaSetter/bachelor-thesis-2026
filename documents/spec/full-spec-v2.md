@@ -9,6 +9,10 @@ of offline training. A0, A1, and A2 tell the story of online behavior: no TTA,
 PNN reconstruction-only, or full online TTA. The demo lets a reader watch both
 offline replay and online stream replay.
 
+In this THESIS specification, `O0/O1` and `A0/A1/A2` name THESIS ablations
+only. They do not name variants of the comparison baselines. This v2 version
+predates the later matrix's THESIS-only `O2` ablation.
+
 The sections below define the rules of this stage: allowed data, frozen state,
 logged events, and launch gates that must pass before a benchmark run.
 
@@ -2189,9 +2193,10 @@ dataset registry -> train-fitted scaling -> windows -> model/baseline registry
 test prediction with labels withheld from scorer
        |-> offline THESIS / RedLamp / traditional -> scores -> predictions -> metrics
        |-> online THESIS: O0/O1 x A0/A1/A2 causal engine above
-       `-> online baselines: CANDI/M2N2 use their own A0/A1/A2 policies;
+       `-> online baselines: CANDI/M2N2 use their own method profiles;
            STUMPY/KMeansAD/Isolation Forest use frozen `online_main` scoring.
-           No baseline inherits THESIS triage, PNN, or projector updates.
+           Baselines do not use THESIS A0/A1/A2 ablations or inherit THESIS
+           triage, PNN, or projector updates.
        |
        v
 local artifacts + W&B logical mirror -> integrity/coverage readback

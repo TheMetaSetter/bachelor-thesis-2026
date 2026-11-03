@@ -1,7 +1,7 @@
 ---
 title: "Offline Pre-training Terminology Ontology"
 status: authoritative-for-naming
-scope: "THESIS offline pre-training, memory initialization, offline evaluation, and the offline-to-online handoff"
+scope: "The THESIS runtime for the MUSTARD method: offline pre-training, memory initialization, offline evaluation, and the offline-to-online handoff"
 applies_to: "specifications, pseudocode, runtime code, tests, configuration, checkpoints, metrics, and experiment artifacts"
 evidence_revision: e58602f45ee5439a1e001f060e8ea640aeddde9c
 ---
@@ -25,12 +25,16 @@ separate from design intent, so `implemented`, `configured`, `tested`,
 
 ## 1. Purpose
 
-This document is the naming source of truth for **objects** and **object relations** in the THESIS offline phase. It answers four questions for each name:
+This document is the naming source of truth for **objects** and **object relations** in the offline phase of this repository's THESIS runtime for the MUSTARD method. It answers four questions for each name:
 
 1. What is the object?
 2. Which phase, stage, or operation owns it?
 3. What input does it receive, and what output does it create?
 4. Which name in code or older documents refers to the same object?
+
+### 1.1 Method and runtime names
+
+In this repository, `THESIS` names the runtime and its code, configuration, and artifact identifiers. `MUSTARD` names the scientific method in explanatory prose. When both contexts matter, write “the MUSTARD method in the THESIS runtime.” These names have different roles; they are not interchangeable aliases. The `O0/O1/O2` and `A0/A1/A2` ablations belong to MUSTARD only.
 
 The ontology standardizes names without hiding differences between code and specification. Each behavior claim must have one of these statuses:
 
@@ -95,12 +99,12 @@ Similar names do not prove identity. When mapping a new name, compare the schema
 | Canonical name | Object type | Owner | Lifecycle |
 | --- | --- | --- | --- |
 | `offline_pretraining_phase` | phase | offline benchmark runner | Starts when the experiment config loads; ends after artifact export |
-| `offline_variant` | experiment dimension | experiment config | Fixed for one offline run; values are `O0`, `O1`, `O2` |
+| `offline_variant` | MUSTARD ablation dimension | THESIS experiment config | Fixed for one THESIS offline run; values are `O0`, `O1`, `O2`; only the MUSTARD method uses these ablations |
 | `stage_a_multitask_pretraining` | training stage | two-stage orchestrator + `ThesisMultitaskModel` | Runs before memory initialization |
 | `stage_b_memory_initialization` | transition operation | two-stage orchestrator + model memory state | Runs once between Stage A and Stage B |
 | `stage_b_fusion_finetuning` | training stage | two-stage orchestrator + `ThesisMultitaskModel` | Starts from the initialization checkpoint |
 | `offline_evaluation` | post-training operation | benchmark wrapper + `Evaluator` | Runs with the Stage B best checkpoint |
-| `online_tta_phase` | downstream phase | online TTA engine | Receives the checkpoint and threshold artifact from offline |
+| `online_tta_phase` | downstream phase | online test-time adaptation engine | Receives the checkpoint and threshold artifact from offline |
 
 ### 4.1 `offline_pretraining_phase`
 
@@ -128,15 +132,20 @@ Similar names do not prove identity. When mapping a new name, compare the schema
 
 ### 4.2.1 `method_variant` in `tsad-lib`
 
-When the story moves beyond THESIS, one `variant` name becomes ambiguous.
-Therefore, `tsad-lib` uses separate names:
+When the experiment library supports multiple methods, one `variant` name
+becomes ambiguous. Therefore, `tsad-lib` uses separate names:
 
 ```text
 method_variant       → the method choice
 offline_variant      → the offline ablation
-online_variant       → the online adaptation choice
+online_variant       → method-specific online profile for the online phase
 combined_run_label   → the offline_variant + online_variant pair
 ```
+
+Terminology change (2026-11-03): `online_variant` names a method-specific
+online profile and does not by itself mean online test-time adaptation.
+`online_tta_phase` keeps its existing runtime identity. No runtime object names
+changed.
 
 `O2` is an `offline_variant` in `tsad-lib` and in the SMD matrix. Its matrix
 name `point-level contrastive loss` is the existing
@@ -144,8 +153,10 @@ name `point-level contrastive loss` is the existing
 same checkpoint and artifact identities as O0/O1, plus its fixed loss set. O2
 uses `direct_branch_routing` in Stage B and skips fusion blocks by default.
 
-`O0`, `O1`, and `O2` are `offline_variant` values only in the offline context.
-The same spelling does not create the same object in every context.
+`O0`, `O1`, and `O2` are MUSTARD `offline_variant` values only. In this
+repository, the THESIS runtime owns their implementation. Other methods have
+their own method profiles. The same spelling does not create the same object
+in every context.
 
 ### 4.3 `stage_a_multitask_pretraining`
 
@@ -729,6 +740,13 @@ The audit adds library-level names without renaming the THESIS runtime objects:
 
 The bridge does not change the existing loss computation, checkpoint names, or
 offline-to-online handoff.
+
+### 10.3 Method and runtime naming decision (2026-11-03)
+
+This repository keeps `THESIS` for its runtime and code-facing identifiers and
+uses `MUSTARD` for the scientific method in prose. This clarifies naming roles;
+it does not rename a runtime object or change code, config, checkpoint, or
+artifact fields.
 
 ## 11. Known semantic conflicts
 

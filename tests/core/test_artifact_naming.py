@@ -81,8 +81,8 @@ def test_name_longer_than_wandb_limit_is_rejected() -> None:
 @pytest.mark.parametrize(
     ("phase_token", "identity_tokens", "entity_token", "seed", "expected"),
     [
-        ("off", ["O0"], "e1_6", 8, "smk-off-O0-e1_6-s8"),
-        ("on", ["KA", "A2"], "e3_9", 36, "smk-on-KA-A2-e3_9-s36"),
+        ("off", ["THESIS", "O0"], "e1_6", 8, "smk-off-THESIS-O0-e1_6-s8"),
+        ("on", ["THESIS", "A2"], "e3_9", 36, "smk-on-THESIS-A2-e3_9-s36"),
         ("off", ["KA"], "e3_4", 6, "smk-off-KA-e3_4-s6"),
     ],
 )
@@ -126,7 +126,7 @@ def test_smoke_run_name_rejects_unsupported_token_characters() -> None:
 
 
 def test_resolve_wandb_run_name_preserves_configured_smoke_name() -> None:
-    configured_name = "smk-on-KA-A2-e3_9-s36"
+    configured_name = "smk-on-THESIS-A2-e3_9-s36"
 
     resolved_name = resolve_wandb_run_name(
         {"wandb_run_name": configured_name},

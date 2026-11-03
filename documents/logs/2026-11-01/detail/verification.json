@@ -1,0 +1,13 @@
+{
+  "before_files": 243,
+  "after_files": 74,
+  "before_lines": 47514,
+  "after_lines": 13732,
+  "line_reduction_percent": 71.1,
+  "before_folders": 27,
+  "after_folders": 7,
+  "target_lines": 4751,
+  "target_reached": false,
+  "status": "superseded_by_baseline_restoration",
+  "notice": "Core simplification rolled back because it wrongly removed scientific baselines. Earlier reduction counts do not describe current code."
+}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +15,7 @@ from src.analysis.evaluation_protocol_audit import (
     describe_metric_regime_implications,
 )
 from src.core.config import load_experiment_config
+from src.core.log_paths import dated_log_directory
 from src.core.registry import build_dataset, register_dataset
 from src.data.loaders import (
     build_anomaly_archive_dataset_bundle,
@@ -32,6 +33,16 @@ def _load_observed_metrics(
     if metrics_json is not None:
         return json.loads(metrics_json)
     return None
+
+
+def build_forensic_audit_log_path(
+    *,
+    experiment_name: str,
+    current_date: date | None = None,
+) -> Path:
+    return dated_log_directory(
+        "research", current_date=current_date
+    ) / f"{experiment_name}__forensic_audit.md"
 
 
 def _build_forensic_markdown(
@@ -182,12 +193,8 @@ def main() -> None:
         observed_metrics=observed_metrics,
     )
     if args.output_path is None:
-        output_path = (
-            Path("documents")
-            / "logs"
-            / datetime.now().strftime("%m-%d-%Y")
-            / "research"
-            / f"{experiment_config['experiment_name']}__forensic_audit.md"
+        output_path = build_forensic_audit_log_path(
+            experiment_name=str(experiment_config["experiment_name"])
         )
     else:
         output_path = Path(args.output_path)

@@ -7,10 +7,14 @@ This document specifies the offline pre-training phase design for two-view learn
 Terminology is fixed:
 
 - `offline pre-training phase`: offline training before deployment.
-- `online adaptation phase`: adaptation after deployment during streaming.
+- `online test-time adaptation phase`: the MUSTARD method family evaluated on the test stream; state each variant's update behavior explicitly.
 - `computational stage`: a sub-step inside a phase.
 
-This document only covers the offline pre-training phase. The online adaptation phase has its own contrastive logic and remains separate.
+Terminology change (2026-11-03): “online adaptation phase” is deprecated for
+this method family. The method-family name is “online test-time adaptation”;
+runtime object names are unchanged.
+
+This document only covers the offline pre-training phase. MUSTARD online test-time adaptation has its own contrastive logic and remains separate.
 
 ## 2. Confirmed Experimental Plan
 

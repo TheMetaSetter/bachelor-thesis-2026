@@ -5,7 +5,7 @@ from __future__ import annotations
 The baseline keeps the repository batch and output contracts while using a
 timestep encoder for a controlled comparison against the thesis model. It
 remains a simple autoencoder and multi-class synthetic anomaly classifier
-without prototype memory, fusion gates, or online adaptation state.
+without prototype memory, fusion gates, or online test-time adaptation state.
 """
 
 from typing import Any
