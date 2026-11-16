@@ -110,6 +110,8 @@ class SequenceStandardScaler:
         self.feature_std = state_dict["feature_std"]
         feature_active_mask = state_dict.get("feature_active_mask")
         if feature_active_mask is None:
-            self.feature_active_mask = torch.ones_like(self.feature_std, dtype=torch.bool)
+            self.feature_active_mask = torch.ones_like(
+                self.feature_std, dtype=torch.bool
+            )
         else:
             self.feature_active_mask = feature_active_mask.to(dtype=torch.bool)

@@ -1,0 +1,1665 @@
+path,archive_member,size_bytes,type,classification
+.DS_Store,,24580,no extension,cache or OS metadata
+.cache/huggingface/.gitignore,,1,no extension,cache or OS metadata
+.cache/huggingface/download/SMD/SMD_test.npy.lock,,0,.lock,cache or OS metadata
+.cache/huggingface/download/SMD/SMD_test.npy.metadata,,124,.metadata,cache or OS metadata
+.cache/huggingface/download/SMD/SMD_test_label.npy.lock,,0,.lock,cache or OS metadata
+.cache/huggingface/download/SMD/SMD_test_label.npy.metadata,,124,.metadata,cache or OS metadata
+.cache/huggingface/download/SMD/SMD_train.npy.lock,,0,.lock,cache or OS metadata
+.cache/huggingface/download/SMD/SMD_train.npy.metadata,,125,.metadata,cache or OS metadata
+AnomalyArchive/001_UCR_Anomaly_DISTORTED1sddb40_35000_52000_52620.txt,,1436310,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/002_UCR_Anomaly_DISTORTED2sddb40_35000_56600_56900.txt,,1440018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/003_UCR_Anomaly_DISTORTED3sddb40_35000_46600_46900.txt,,1440000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/004_UCR_Anomaly_DISTORTEDBIDMC1_2500_5400_5600.txt,,198000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/005_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature1_4000_5391_5392.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/006_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature2_4000_5703_5727.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/007_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature3_4000_6520_6544.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/008_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature4_4000_5549_5597.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/009_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature5_4000_4852_4900.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/010_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature6_4000_6006_6054.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/011_UCR_Anomaly_DISTORTEDECG1_10000_11800_12100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/012_UCR_Anomaly_DISTORTEDECG2_15000_16000_16100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/013_UCR_Anomaly_DISTORTEDECG3_15000_16000_16100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/014_UCR_Anomaly_DISTORTEDECG3_8000_17000_17100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/015_UCR_Anomaly_DISTORTEDECG4_5000_16800_17100.txt,,3600000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/016_UCR_Anomaly_DISTORTEDECG4_5000_16900_17100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/017_UCR_Anomaly_DISTORTEDECG4_5000_17000_17100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/018_UCR_Anomaly_DISTORTEDECG4_8000_17000_17100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/019_UCR_Anomaly_DISTORTEDGP711MarkerLFM5z1_5000_6168_6212.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/020_UCR_Anomaly_DISTORTEDGP711MarkerLFM5z2_5000_7175_7388.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/021_UCR_Anomaly_DISTORTEDGP711MarkerLFM5z3_5000_5948_5993.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/022_UCR_Anomaly_DISTORTEDGP711MarkerLFM5z4_4000_6527_6645.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/023_UCR_Anomaly_DISTORTEDGP711MarkerLFM5z5_5000_8612_8716.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/024_UCR_Anomaly_DISTORTEDInternalBleeding10_3200_4526_4556.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/025_UCR_Anomaly_DISTORTEDInternalBleeding14_2800_5607_5634.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/026_UCR_Anomaly_DISTORTEDInternalBleeding15_1700_5684_5854.txt,,136818,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/027_UCR_Anomaly_DISTORTEDInternalBleeding16_1200_4187_4199.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/028_UCR_Anomaly_DISTORTEDInternalBleeding17_1600_3198_3309.txt,,135000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/029_UCR_Anomaly_DISTORTEDInternalBleeding18_2300_4485_4587.txt,,135000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/030_UCR_Anomaly_DISTORTEDInternalBleeding19_3000_4187_4197.txt,,135000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/031_UCR_Anomaly_DISTORTEDInternalBleeding20_2700_5759_5919.txt,,135000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/032_UCR_Anomaly_DISTORTEDInternalBleeding4_1000_4675_5033.txt,,131778,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/033_UCR_Anomaly_DISTORTEDInternalBleeding5_4000_6200_6370.txt,,133470,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/034_UCR_Anomaly_DISTORTEDInternalBleeding6_1500_3474_3629.txt,,137772,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/035_UCR_Anomaly_DISTORTEDInternalBleeding8_2500_5865_5974.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/036_UCR_Anomaly_DISTORTEDInternalBleeding9_4200_6599_6681.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/037_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG1_5000_17210_17260.txt,,540018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/038_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG2_5000_27862_27932.txt,,539100,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/039_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG3_5000_16390_16420.txt,,539100,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/040_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG4_6000_17390_17520.txt,,541188,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/041_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG5_7000_17390_17520.txt,,536868,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/042_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG6_7000_12190_12420.txt,,537462,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/043_UCR_Anomaly_DISTORTEDMesoplodonDensirostris_10000_19280_19440.txt,,444006,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/044_UCR_Anomaly_DISTORTEDPowerDemand1_9000_18485_18821.txt,,538758,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/045_UCR_Anomaly_DISTORTEDPowerDemand2_14000_23357_23717.txt,,538758,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/046_UCR_Anomaly_DISTORTEDPowerDemand3_16000_23405_23477.txt,,538758,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/047_UCR_Anomaly_DISTORTEDPowerDemand4_18000_24005_24077.txt,,538758,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/048_UCR_Anomaly_DISTORTEDTkeepFifthMARS_3500_5988_6085.txt,,204012,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/049_UCR_Anomaly_DISTORTEDTkeepFirstMARS_3500_5365_5380.txt,,205308,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/050_UCR_Anomaly_DISTORTEDTkeepForthMARS_3500_5988_6085.txt,,203544,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/051_UCR_Anomaly_DISTORTEDTkeepSecondMARS_3500_9330_9340.txt,,204984,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/052_UCR_Anomaly_DISTORTEDTkeepThirdMARS_3500_4711_4809.txt,,203544,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/053_UCR_Anomaly_DISTORTEDWalkingAceleration1_1500_2764_2995.txt,,120312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/054_UCR_Anomaly_DISTORTEDWalkingAceleration5_2700_5920_5979.txt,,120312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/055_UCR_Anomaly_DISTORTEDapneaecg2_10000_20950_21100.txt,,693018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/056_UCR_Anomaly_DISTORTEDapneaecg3_5000_11111_11211.txt,,690822,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/057_UCR_Anomaly_DISTORTEDapneaecg4_6000_16000_16100.txt,,688842,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/058_UCR_Anomaly_DISTORTEDapneaecg_10000_12240_12308.txt,,693018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/059_UCR_Anomaly_DISTORTEDgait1_20000_38500_38800.txt,,1170000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/060_UCR_Anomaly_DISTORTEDgait2_22000_46500_46800.txt,,1170000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/061_UCR_Anomaly_DISTORTEDgait3_24500_59900_60500.txt,,1170000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/062_UCR_Anomaly_DISTORTEDgaitHunt1_18500_33070_33180.txt,,1152000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/063_UCR_Anomaly_DISTORTEDgaitHunt2_18500_31200_31850.txt,,1152000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/064_UCR_Anomaly_DISTORTEDgaitHunt3_23400_38400_39200.txt,,1152000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/065_UCR_Anomaly_DISTORTEDinsectEPG1_3000_7000_7030.txt,,180018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/066_UCR_Anomaly_DISTORTEDinsectEPG2_3700_8000_8025.txt,,179964,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/067_UCR_Anomaly_DISTORTEDinsectEPG3_5200_7000_7050.txt,,179964,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/068_UCR_Anomaly_DISTORTEDinsectEPG4_1300_6508_6558.txt,,179964,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/069_UCR_Anomaly_DISTORTEDinsectEPG5_3200_8500_8501.txt,,180504,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/070_UCR_Anomaly_DISTORTEDltstdbs30791AI_17555_52600_52800.txt,,1010214,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/071_UCR_Anomaly_DISTORTEDltstdbs30791AS_23000_52600_52800.txt,,990000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/072_UCR_Anomaly_DISTORTEDltstdbs30791ES_20000_52600_52800.txt,,990000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/073_UCR_Anomaly_DISTORTEDpark3m_60000_72150_72495.txt,,1620000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/074_UCR_Anomaly_DISTORTEDqtdbSel1005V_4000_12400_12800.txt,,648018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/075_UCR_Anomaly_DISTORTEDqtdbSel100MLII_4000_13400_13800.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/076_UCR_Anomaly_DISTORTEDresperation10_48000_130700_131880.txt,,3510000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/077_UCR_Anomaly_DISTORTEDresperation11_58000_110800_110801.txt,,3510000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/078_UCR_Anomaly_DISTORTEDresperation1_100000_110260_110412.txt,,3600000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/079_UCR_Anomaly_DISTORTEDresperation2_30000_168250_168250.txt,,3600918,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/080_UCR_Anomaly_DISTORTEDresperation2_30000_168250_168251.txt,,3420900,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/081_UCR_Anomaly_DISTORTEDresperation3_45000_158250_158251.txt,,3421800,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/082_UCR_Anomaly_DISTORTEDresperation4_70000_128430_128431.txt,,3514500,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/083_UCR_Anomaly_DISTORTEDresperation9_38000_143411_143511.txt,,3510000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/084_UCR_Anomaly_DISTORTEDs20101mML2_12000_35774_35874.txt,,720000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/085_UCR_Anomaly_DISTORTEDs20101m_10000_35774_35874.txt,,720000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/086_UCR_Anomaly_DISTORTEDsddb49_20000_67950_68200.txt,,1440000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/087_UCR_Anomaly_DISTORTEDsel840mECG1_17000_51370_51740.txt,,1080000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/088_UCR_Anomaly_DISTORTEDsel840mECG2_20000_49370_49740.txt,,1026018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/089_UCR_Anomaly_DISTORTEDtiltAPB1_100000_114283_114350.txt,,2340018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/090_UCR_Anomaly_DISTORTEDtiltAPB2_50000_124159_124985.txt,,2317806,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/091_UCR_Anomaly_DISTORTEDtiltAPB3_40000_114000_114370.txt,,2330802,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/092_UCR_Anomaly_DISTORTEDtiltAPB4_20000_67995_67996.txt,,2304018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/093_UCR_Anomaly_NOISE1sddb40_35000_52000_52620.txt,,1436310,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/094_UCR_Anomaly_NOISEBIDMC1_2500_5400_5600.txt,,198000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/095_UCR_Anomaly_NOISECIMIS44AirTemperature4_4000_5549_5597.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/096_UCR_Anomaly_NOISEECG4_5000_16900_17100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/097_UCR_Anomaly_NOISEGP711MarkerLFM5z3_5000_5948_5993.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/098_UCR_Anomaly_NOISEInternalBleeding16_1200_4187_4199.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/099_UCR_Anomaly_NOISEInternalBleeding6_1500_3474_3629.txt,,137772,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/100_UCR_Anomaly_NOISELab2Cmac011215EPG1_5000_17210_17260.txt,,540018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/101_UCR_Anomaly_NOISELab2Cmac011215EPG4_6000_17390_17520.txt,,541188,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/102_UCR_Anomaly_NOISEMesoplodonDensirostris_10000_19280_19440.txt,,444006,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/103_UCR_Anomaly_NOISETkeepThirdMARS_3500_4711_4809.txt,,203544,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/104_UCR_Anomaly_NOISEapneaecg4_6000_16000_16100.txt,,688842,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/105_UCR_Anomaly_NOISEgait3_24500_59900_60500.txt,,1170000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/106_UCR_Anomaly_NOISEgaitHunt2_18500_31200_31850.txt,,1152000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/107_UCR_Anomaly_NOISEinsectEPG3_5200_7000_7050.txt,,179964,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/108_UCR_Anomaly_NOISEresperation2_30000_168250_168250.txt,,3600918,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/109_UCR_Anomaly_1sddb40_35000_52000_52620.txt,,1436310,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/110_UCR_Anomaly_2sddb40_35000_56600_56900.txt,,1440018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/111_UCR_Anomaly_3sddb40_35000_46600_46900.txt,,1440000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/112_UCR_Anomaly_BIDMC1_2500_5400_5600.txt,,198000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/113_UCR_Anomaly_CIMIS44AirTemperature1_4000_5391_5392.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/114_UCR_Anomaly_CIMIS44AirTemperature2_4000_5703_5727.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/115_UCR_Anomaly_CIMIS44AirTemperature3_4000_6520_6544.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/116_UCR_Anomaly_CIMIS44AirTemperature4_4000_5549_5597.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/117_UCR_Anomaly_CIMIS44AirTemperature5_4000_4852_4900.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/118_UCR_Anomaly_CIMIS44AirTemperature6_4000_6006_6054.txt,,147312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/119_UCR_Anomaly_ECG1_10000_11800_12100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/120_UCR_Anomaly_ECG2_15000_16000_16100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/121_UCR_Anomaly_ECG3_15000_16000_16100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/122_UCR_Anomaly_ECG3_8000_17000_17100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/123_UCR_Anomaly_ECG4_5000_16800_17100.txt,,3600000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/124_UCR_Anomaly_ECG4_5000_16900_17100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/125_UCR_Anomaly_ECG4_5000_17000_17100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/126_UCR_Anomaly_ECG4_8000_17000_17100.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/127_UCR_Anomaly_GP711MarkerLFM5z1_5000_6168_6212.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/128_UCR_Anomaly_GP711MarkerLFM5z2_5000_7175_7388.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/129_UCR_Anomaly_GP711MarkerLFM5z3_5000_5948_5993.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/130_UCR_Anomaly_GP711MarkerLFM5z4_4000_6527_6645.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/131_UCR_Anomaly_GP711MarkerLFM5z5_5000_8612_8716.txt,,216000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/132_UCR_Anomaly_InternalBleeding10_3200_4526_4556.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/133_UCR_Anomaly_InternalBleeding14_2800_5607_5634.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/134_UCR_Anomaly_InternalBleeding15_1700_5684_5854.txt,,136818,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/135_UCR_Anomaly_InternalBleeding16_1200_4187_4199.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/136_UCR_Anomaly_InternalBleeding17_1600_3198_3309.txt,,135000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/137_UCR_Anomaly_InternalBleeding18_2300_4485_4587.txt,,135000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/138_UCR_Anomaly_InternalBleeding19_3000_4187_4197.txt,,135000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/139_UCR_Anomaly_InternalBleeding20_2700_5759_5919.txt,,135000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/140_UCR_Anomaly_InternalBleeding4_1000_4675_5033.txt,,131778,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/141_UCR_Anomaly_InternalBleeding5_4000_6200_6370.txt,,133470,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/142_UCR_Anomaly_InternalBleeding6_1500_3474_3629.txt,,137772,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/143_UCR_Anomaly_InternalBleeding8_2500_5865_5974.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/144_UCR_Anomaly_InternalBleeding9_4200_6599_6681.txt,,135018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/145_UCR_Anomaly_Lab2Cmac011215EPG1_5000_17210_17260.txt,,540018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/146_UCR_Anomaly_Lab2Cmac011215EPG2_5000_27862_27932.txt,,539100,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/147_UCR_Anomaly_Lab2Cmac011215EPG3_5000_16390_16420.txt,,539100,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/148_UCR_Anomaly_Lab2Cmac011215EPG4_6000_17390_17520.txt,,541188,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/149_UCR_Anomaly_Lab2Cmac011215EPG5_7000_17390_17520.txt,,536868,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/150_UCR_Anomaly_Lab2Cmac011215EPG6_7000_12190_12420.txt,,537462,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/151_UCR_Anomaly_MesoplodonDensirostris_10000_19280_19440.txt,,444006,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/152_UCR_Anomaly_PowerDemand1_9000_18485_18821.txt,,538758,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/153_UCR_Anomaly_PowerDemand2_14000_23357_23717.txt,,538758,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/154_UCR_Anomaly_PowerDemand3_16000_23405_23477.txt,,538758,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/155_UCR_Anomaly_PowerDemand4_18000_24005_24077.txt,,538758,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/156_UCR_Anomaly_TkeepFifthMARS_3500_5988_6085.txt,,204012,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/157_UCR_Anomaly_TkeepFirstMARS_3500_5365_5380.txt,,205308,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/158_UCR_Anomaly_TkeepForthMARS_3500_5988_6085.txt,,203544,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/159_UCR_Anomaly_TkeepSecondMARS_3500_9330_9340.txt,,204984,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/160_UCR_Anomaly_TkeepThirdMARS_3500_4711_4809.txt,,203544,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/161_UCR_Anomaly_WalkingAceleration1_1500_2764_2995.txt,,120312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/162_UCR_Anomaly_WalkingAceleration5_2700_5920_5979.txt,,120312,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/163_UCR_Anomaly_apneaecg2_10000_20950_21100.txt,,693018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/164_UCR_Anomaly_apneaecg3_5000_11111_11211.txt,,690822,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/165_UCR_Anomaly_apneaecg4_6000_16000_16100.txt,,688842,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/166_UCR_Anomaly_apneaecg_10000_12240_12308.txt,,693018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/167_UCR_Anomaly_gait1_20000_38500_38800.txt,,1170000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/168_UCR_Anomaly_gait2_22000_46500_46800.txt,,1170000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/169_UCR_Anomaly_gait3_24500_59900_60500.txt,,1170000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/170_UCR_Anomaly_gaitHunt1_18500_33070_33180.txt,,1152000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/171_UCR_Anomaly_gaitHunt2_18500_31200_31850.txt,,1152000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/172_UCR_Anomaly_gaitHunt3_23400_38400_39200.txt,,1152000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/173_UCR_Anomaly_insectEPG1_3000_7000_7030.txt,,180018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/174_UCR_Anomaly_insectEPG2_3700_8000_8025.txt,,179964,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/175_UCR_Anomaly_insectEPG3_5200_7000_7050.txt,,179964,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/176_UCR_Anomaly_insectEPG4_1300_6508_6558.txt,,179964,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/177_UCR_Anomaly_insectEPG5_3200_8500_8501.txt,,180504,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/178_UCR_Anomaly_ltstdbs30791AI_17555_52600_52800.txt,,1010214,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/179_UCR_Anomaly_ltstdbs30791AS_23000_52600_52800.txt,,990000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/180_UCR_Anomaly_ltstdbs30791ES_20000_52600_52800.txt,,990000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/181_UCR_Anomaly_park3m_60000_72150_72495.txt,,1620000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/182_UCR_Anomaly_qtdbSel1005V_4000_12400_12800.txt,,648018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/183_UCR_Anomaly_qtdbSel100MLII_4000_13400_13800.txt,,540000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/184_UCR_Anomaly_resperation10_48000_130700_131880.txt,,3510000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/185_UCR_Anomaly_resperation11_58000_110800_110801.txt,,3510000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/186_UCR_Anomaly_resperation1_100000_110260_110412.txt,,3600000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/187_UCR_Anomaly_resperation2_30000_168250_168250.txt,,3600918,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/188_UCR_Anomaly_resperation2_30000_168250_168251.txt,,3420900,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/189_UCR_Anomaly_resperation3_45000_158250_158251.txt,,3421800,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/190_UCR_Anomaly_resperation4_70000_128430_128431.txt,,3514500,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/191_UCR_Anomaly_resperation9_38000_143411_143511.txt,,3510000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/192_UCR_Anomaly_s20101mML2_12000_35774_35874.txt,,720000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/193_UCR_Anomaly_s20101m_10000_35774_35874.txt,,720000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/194_UCR_Anomaly_sddb49_20000_67950_68200.txt,,1440000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/195_UCR_Anomaly_sel840mECG1_17000_51370_51740.txt,,1080000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/196_UCR_Anomaly_sel840mECG2_20000_49370_49740.txt,,1026018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/197_UCR_Anomaly_tiltAPB1_100000_114283_114350.txt,,2340018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/198_UCR_Anomaly_tiltAPB2_50000_124159_124985.txt,,2317806,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/199_UCR_Anomaly_tiltAPB3_40000_114000_114370.txt,,2330802,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/200_UCR_Anomaly_tiltAPB4_20000_67995_67996.txt,,2304018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/201_UCR_Anomaly_CHARISfive_10000_17001_17016.txt,,744246,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/202_UCR_Anomaly_CHARISfive_10411_10998_11028.txt,,752220,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/203_UCR_Anomaly_CHARISfive_10500_10995_11028.txt,,749016,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/204_UCR_Anomaly_CHARISfive_12412_15000_15070.txt,,671986,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/205_UCR_Anomaly_CHARISfive_9812_28995_29085.txt,,637922,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/206_UCR_Anomaly_CHARISten_25130_29080_29140.txt,,672002,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/207_UCR_Anomaly_CHARISten_3165_26929_26989.txt,,637922,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/208_UCR_Anomaly_CHARISten_5130_27929_27989.txt,,653922,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/209_UCR_Anomaly_Fantasia_19000_26970_27270.txt,,1656000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/210_UCR_Anomaly_Italianpowerdemand_36123_74900_74996.txt,,2156742,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/211_UCR_Anomaly_Italianpowerdemand_38113_39240_39336.txt,,2152440,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/212_UCR_Anomaly_Italianpowerdemand_8913_29480_29504.txt,,538758,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/213_UCR_Anomaly_STAFFIIIDatabase_33211_126920_127370.txt,,5400000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/214_UCR_Anomaly_STAFFIIIDatabase_34211_125720_126370.txt,,5394420,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/215_UCR_Anomaly_STAFFIIIDatabase_36276_106720_107370.txt,,5399820,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/216_UCR_Anomaly_STAFFIIIDatabase_37216_160720_161370.txt,,5398020,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/217_UCR_Anomaly_STAFFIIIDatabase_38211_150720_151370.txt,,5394420,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/218_UCR_Anomaly_STAFFIIIDatabase_41117_210720_211370.txt,,5398920,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/219_UCR_Anomaly_STAFFIIIDatabase_41612_64632_64852.txt,,5397120,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/220_UCR_Anomaly_STAFFIIIDatabase_43217_250720_251370.txt,,5396220,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/221_UCR_Anomaly_STAFFIIIDatabase_45616_163632_164852.txt,,5370120,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/222_UCR_Anomaly_mit14046longtermecg_56123_91200_91700.txt,,3807036,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/223_UCR_Anomaly_mit14046longtermecg_74123_131200_131700.txt,,3246948,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/224_UCR_Anomaly_mit14046longtermecg_76123_191200_191700.txt,,3595554,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/225_UCR_Anomaly_mit14046longtermecg_81214_143000_143300.txt,,3199986,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/226_UCR_Anomaly_mit14046longtermecg_96123_123000_123300.txt,,3040018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/227_UCR_Anomaly_mit14134longtermecg_11231_29000_29100.txt,,1067436,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/228_UCR_Anomaly_mit14134longtermecg_11361_47830_47850.txt,,1062000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/229_UCR_Anomaly_mit14134longtermecg_16363_57960_57970.txt,,1062000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/230_UCR_Anomaly_mit14134longtermecg_19363_19510_19610.txt,,1062000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/231_UCR_Anomaly_mit14134longtermecg_8763_47530_47790.txt,,1062000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/232_UCR_Anomaly_mit14134longtermecg_8763_57530_57790.txt,,1062000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/233_UCR_Anomaly_mit14157longtermecg_18913_24500_24501.txt,,1668780,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/234_UCR_Anomaly_mit14157longtermecg_18913_24600_24601.txt,,1776780,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/235_UCR_Anomaly_mit14157longtermecg_18913_75450_75451.txt,,1751400,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/236_UCR_Anomaly_mit14157longtermecg_19313_46350_46390.txt,,1746000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/237_UCR_Anomaly_mit14157longtermecg_19313_89560_90370.txt,,1746000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/238_UCR_Anomaly_mit14157longtermecg_21311_72600_72780.txt,,1782000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/239_UCR_Anomaly_taichidbS0715Master_190037_593450_593514.txt,,16158006,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/240_UCR_Anomaly_taichidbS0715Master_240030_884100_884200.txt,,16200000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/241_UCR_Anomaly_taichidbS0715Master_250000_837400_839100.txt,,16200000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/242_UCR_Anomaly_tilt12744mtable_100000_104630_104890.txt,,4586674,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/243_UCR_Anomaly_tilt12744mtable_100000_203355_203400.txt,,4000018,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/244_UCR_Anomaly_tilt12754table_100013_104630_104890.txt,,5404716,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/245_UCR_Anomaly_tilt12754table_100211_270800_271070.txt,,5377446,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/246_UCR_Anomaly_tilt12755mtable_100211_270800_271070.txt,,5397606,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/247_UCR_Anomaly_tilt12755mtable_50211_121900_121980.txt,,3600000,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/248_UCR_Anomaly_weallwalk_2000_4702_4707.txt,,151776,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/249_UCR_Anomaly_weallwalk_2753_8285_8315.txt,,189432,.txt,"source, annotation, or documentation; see dataset report"
+AnomalyArchive/250_UCR_Anomaly_weallwalk_2951_7290_7296.txt,,188424,.txt,"source, annotation, or documentation; see dataset report"
+Graph Based Fraud Detection Dataset for Financial/Figure_1.png,,120396,.png,"source, annotation, or documentation; see dataset report"
+Graph Based Fraud Detection Dataset for Financial/GraphSAGE for fraud detection_Adnan Malik.png,,2064234,.png,"source, annotation, or documentation; see dataset report"
+Graph Based Fraud Detection Dataset for Financial/Graphsage.docx,,858965,.docx,"source, annotation, or documentation; see dataset report"
+Graph Based Fraud Detection Dataset for Financial.zip,,2813870,.zip,archive
+Graph Based Fraud Detection Dataset for Financial.zip,Graph Based Fraud Detection Dataset for Financial/GraphSAGE for fraud detection_Adnan Malik.png,2064234,.png,archive member; see dataset report
+Graph Based Fraud Detection Dataset for Financial.zip,Graph Based Fraud Detection Dataset for Financial/Graphsage.docx,858965,.docx,archive member; see dataset report
+Graph Based Fraud Detection Dataset for Financial.zip,Graph Based Fraud Detection Dataset for Financial/Figure_1.png,120396,.png,archive member; see dataset report
+IOPS/KPI-05f10d3a-239c-3bef-9bdc-a2feeb0037aa.test.out,,1327247,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-05f10d3a-239c-3bef-9bdc-a2feeb0037aa.train.out,,1301429,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-0efb375b-b902-3661-ab23-9a0bb799f4e3.test.out,,192309,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-0efb375b-b902-3661-ab23-9a0bb799f4e3.train.out,,192366,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-1c6d7a26-1f1a-3321-bb4d-7a9d969ec8f0.test.out,,1327578,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-1c6d7a26-1f1a-3321-bb4d-7a9d969ec8f0.train.out,,1301785,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-301c70d8-1630-35ac-8f96-bc1b6f4359ea.test.out,,192248,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-301c70d8-1630-35ac-8f96-bc1b6f4359ea.train.out,,192328,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-42d6616d-c9c5-370a-a8ba-17ead74f3114.test.out,,1327485,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-42d6616d-c9c5-370a-a8ba-17ead74f3114.train.out,,1301599,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-43115f2a-baeb-3b01-96f7-4ea14188343c.test.out,,984627,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-43115f2a-baeb-3b01-96f7-4ea14188343c.train.out,,955327,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-431a8542-c468-3988-a508-3afd06a218da.test.out,,1091679,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-431a8542-c468-3988-a508-3afd06a218da.train.out,,1264340,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-4d2af31a-9916-3d9f-8a8e-8a268a48c095.test.out,,1776774,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-4d2af31a-9916-3d9f-8a8e-8a268a48c095.train.out,,2120879,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-54350a12-7a9d-3ca8-b81f-f886b9d156fd.test.out,,144654,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-54350a12-7a9d-3ca8-b81f-f886b9d156fd.train.out,,168125,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-55f8b8b8-b659-38df-b3df-e4a5a8a54bc9.test.out,,1466267,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-55f8b8b8-b659-38df-b3df-e4a5a8a54bc9.train.out,,1440372,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-57051487-3a40-3828-9084-a12f7f23ee38.test.out,,783697,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-57051487-3a40-3828-9084-a12f7f23ee38.train.out,,904529,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-6a757df4-95e5-3357-8406-165e2bd49360.test.out,,1671696,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-6a757df4-95e5-3357-8406-165e2bd49360.train.out,,1965050,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-6d1114ae-be04-3c46-b5aa-be1a003a57cd.test.out,,1470598,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-6d1114ae-be04-3c46-b5aa-be1a003a57cd.train.out,,1445315,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-6efa3a07-4544-34a0-b921-a155bd1a05e8.test.out,,1328308,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-6efa3a07-4544-34a0-b921-a155bd1a05e8.train.out,,1293363,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-7103fa0f-cac4-314f-addc-866190247439.test.out,,807777,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-7103fa0f-cac4-314f-addc-866190247439.train.out,,948878,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-847e8ecc-f8d2-3a93-9107-f367a0aab37d.test.out,,1327202,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-847e8ecc-f8d2-3a93-9107-f367a0aab37d.train.out,,1301230,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-8723f0fb-eaef-32e6-b372-6034c9c04b80.test.out,,1471306,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-8723f0fb-eaef-32e6-b372-6034c9c04b80.train.out,,1445234,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-9c639a46-34c8-39bc-aaf0-9144b37adfc8.test.out,,984580,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-9c639a46-34c8-39bc-aaf0-9144b37adfc8.train.out,,955235,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-a07ac296-de40-3a7c-8df3-91f642cc14d0.test.out,,1100607,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-a07ac296-de40-3a7c-8df3-91f642cc14d0.train.out,,1046609,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-a8c06b47-cc41-3738-9110-12df0ee4c721.test.out,,144896,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-a8c06b47-cc41-3738-9110-12df0ee4c721.train.out,,170230,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-ab216663-dcc2-3a24-b1ee-2c3e550e06c9.test.out,,204674,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-ab216663-dcc2-3a24-b1ee-2c3e550e06c9.train.out,,209208,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-adb2fde9-8589-3f5b-a410-5fe14386c7af.test.out,,1327449,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-adb2fde9-8589-3f5b-a410-5fe14386c7af.train.out,,1301357,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-ba5f3328-9f3f-3ff5-a683-84437d16d554.test.out,,1465659,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-ba5f3328-9f3f-3ff5-a683-84437d16d554.train.out,,1440233,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-c02607e8-7399-3dde-9d28-8a8da5e5d251.test.out,,192267,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-c02607e8-7399-3dde-9d28-8a8da5e5d251.train.out,,192268,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-c69a50cf-ee03-3bd7-831e-407d36c7ee91.test.out,,1327521,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-c69a50cf-ee03-3bd7-831e-407d36c7ee91.train.out,,1301800,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-da10a69f-d836-3baa-ad40-3e548ecf1fbd.test.out,,2079885,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-da10a69f-d836-3baa-ad40-3e548ecf1fbd.train.out,,2086122,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-e0747cad-8dc8-38a9-a9ab-855b61f5551d.test.out,,145385,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-e0747cad-8dc8-38a9-a9ab-855b61f5551d.train.out,,144637,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-f0932edd-6400-3e63-9559-0a9860a1baa9.test.out,,1203353,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-f0932edd-6400-3e63-9559-0a9860a1baa9.train.out,,1378777,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-ffb82d38-5f00-37db-abc0-5d2e4e4cb6aa.test.out,,1668318,.out,"source, annotation, or documentation; see dataset report"
+IOPS/KPI-ffb82d38-5f00-37db-abc0-5d2e4e4cb6aa.train.out,,1987749,.out,"source, annotation, or documentation; see dataset report"
+NASA/.DS_Store,,6148,no extension,cache or OS metadata
+NASA/labeled_anomalies.csv,,3956,.csv,"source, annotation, or documentation; see dataset report"
+NASA/test/A-1.npy,,1728128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/A-2.npy,,1582928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/A-3.npy,,1641128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/A-4.npy,,1616128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/A-5.npy,,938728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/A-6.npy,,890728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/A-7.npy,,1726328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/A-8.npy,,1675128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/A-9.npy,,1686928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/B-1.npy,,1608928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/C-1.npy,,996288,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/C-2.npy,,902568,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-1.npy,,1701928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-11.npy,,1486328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-12.npy,,1583728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-13.npy,,1532728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-14.npy,,1155128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-15.npy,,949648,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-16.npy,,964168,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-2.npy,,1719128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-3.npy,,1728128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-4.npy,,1694728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-5.npy,,1525728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-6.npy,,1576928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-7.npy,,1528528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-8.npy,,1574928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/D-9.npy,,1481328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-1.npy,,1703328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-10.npy,,1701128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-11.npy,,1702928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-12.npy,,1702528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-13.npy,,1728128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-2.npy,,1706528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-3.npy,,1661528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-4.npy,,1670928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-5.npy,,1658928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-6.npy,,1660128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-7.npy,,1662128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-8.npy,,1706528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/E-9.npy,,1660528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/F-1.npy,,1716928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/F-2.npy,,1725328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/F-3.npy,,1675328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/F-4.npy,,1505808,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/F-5.npy,,1725808,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/F-7.npy,,2223888,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/F-8.npy,,1094408,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/G-1.npy,,1693928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/G-2.npy,,1472328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/G-3.npy,,1581528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/G-4.npy,,1526528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/G-6.npy,,1728128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/G-7.npy,,1605928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/M-1.npy,,1002008,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/M-2.npy,,1002008,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/M-3.npy,,936008,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/M-4.npy,,896848,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/M-5.npy,,1013448,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/M-6.npy,,901688,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/M-7.npy,,948768,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/P-1.npy,,1701128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/P-10.npy,,2684128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/P-11.npy,,1555528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/P-14.npy,,2684128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/P-15.npy,,1256768,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/P-2.npy,,1641928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/P-3.npy,,1698728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/P-4.npy,,1556728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/P-7.npy,,1614328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/R-1.npy,,1448928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/S-1.npy,,1466328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/S-2.npy,,804008,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/T-1.npy,,1722528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/T-10.npy,,294928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/T-12.npy,,1069328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/T-13.npy,,1069328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/T-2.npy,,1725128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/T-3.npy,,1715928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/T-4.npy,,975608,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/T-5.npy,,976048,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/T-8.npy,,668488,.npy,"source, annotation, or documentation; see dataset report"
+NASA/test/T-9.npy,,482368,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/A-1.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/A-2.npy,,529728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/A-3.npy,,547328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/A-4.npy,,538128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/A-5.npy,,141128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/A-6.npy,,136528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/A-7.npy,,575928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/A-8.npy,,152528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/A-9.npy,,152528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/B-1.npy,,487128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/C-1.npy,,949648,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/C-2.npy,,336288,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-1.npy,,569928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-11.npy,,522328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-12.npy,,62528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-13.npy,,298128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-14.npy,,1617128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-15.npy,,912688,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-16.npy,,638568,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-2.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-3.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-4.npy,,566728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-5.npy,,512328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-6.npy,,518928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-7.npy,,516728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-8.npy,,520528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/D-9.npy,,516728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-1.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-10.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-11.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-12.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-13.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-2.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-3.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-4.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-5.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-6.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-7.npy,,553928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-8.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/E-9.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/F-1.npy,,573928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/F-2.npy,,572328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/F-3.npy,,576128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/F-4.npy,,987488,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/F-5.npy,,1143248,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/F-7.npy,,1104968,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/F-8.npy,,1470608,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/G-1.npy,,564128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/G-2.npy,,495728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/G-3.npy,,524928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/G-4.npy,,510328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/G-6.npy,,576328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/G-7.npy,,489328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/M-1.npy,,972088,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/M-2.npy,,971648,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/M-3.npy,,896408,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/M-4.npy,,913568,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/M-5.npy,,894208,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/M-6.npy,,688728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/M-7.npy,,698408,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/P-1.npy,,574528,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/P-10.npy,,1895648,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/P-11.npy,,1746488,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/P-14.npy,,1267328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/P-15.npy,,1620208,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/P-2.npy,,564328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/P-3.npy,,571128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/P-4.npy,,521928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/P-7.npy,,570728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/R-1.npy,,574928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/S-1.npy,,563728,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/S-2.npy,,407568,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/T-1.npy,,575128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/T-10.npy,,187128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/T-12.npy,,503928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/T-13.npy,,503928,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/T-2.npy,,571128,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/T-3.npy,,575328,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/T-4.npy,,999808,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/T-5.npy,,999808,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/T-8.npy,,329248,.npy,"source, annotation, or documentation; see dataset report"
+NASA/train/T-9.npy,,193288,.npy,"source, annotation, or documentation; see dataset report"
+SMD/SMD_test.npy,,107679968,.npy,"source, annotation, or documentation; see dataset report"
+SMD/SMD_test_label.npy,,2833808,.npy,"source, annotation, or documentation; see dataset report"
+SMD/SMD_train.npy,,107677688,.npy,"source, annotation, or documentation; see dataset report"
+SWaT/attack.csv,,15162438,.csv,"source, annotation, or documentation; see dataset report"
+SWaT/merged.csv,,426855390,.csv,"source, annotation, or documentation; see dataset report"
+SWaT/normal.csv,,402374633,.csv,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/.DS_Store,,12292,no extension,cache or OS metadata
+ServerMachineDataset/test/machine-1-1.txt,,9739818,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-1-2.txt,,8103348,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-1-3.txt,,8106426,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-1-4.txt,,8107794,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-1-5.txt,,8107452,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-1-6.txt,,8101638,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-1-7.txt,,8104374,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-1-8.txt,,8105058,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-2-1.txt,,8103348,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-2-2.txt,,8105400,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-2-3.txt,,8101638,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-2-4.txt,,8101638,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-2-5.txt,,8101638,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-2-6.txt,,9830106,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-2-7.txt,,8104032,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-2-8.txt,,8106426,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-2-9.txt,,9822924,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-1.txt,,9815400,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-10.txt,,8103006,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-11.txt,,9814032,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-2.txt,,8106426,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-3.txt,,8106426,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-4.txt,,8100954,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-5.txt,,8102322,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-6.txt,,9824292,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-7.txt,,9817110,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-8.txt,,9816768,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test/machine-3-9.txt,,9819846,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-1-1.txt,,56958,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-1-2.txt,,47388,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-1-3.txt,,47406,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-1-4.txt,,47414,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-1-5.txt,,47412,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-1-6.txt,,47378,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-1-7.txt,,47394,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-1-8.txt,,47398,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-2-1.txt,,47388,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-2-2.txt,,47400,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-2-3.txt,,47378,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-2-4.txt,,47378,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-2-5.txt,,47378,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-2-6.txt,,57486,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-2-7.txt,,47392,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-2-8.txt,,47406,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-2-9.txt,,57444,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-1.txt,,57400,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-10.txt,,47386,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-11.txt,,57392,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-2.txt,,47406,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-3.txt,,47406,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-4.txt,,47374,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-5.txt,,47382,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-6.txt,,57452,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-7.txt,,57410,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-8.txt,,57408,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/test_label/machine-3-9.txt,,57426,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-1-1.txt,,9739818,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-1-2.txt,,8103348,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-1-3.txt,,8106084,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-1-4.txt,,8107452,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-1-5.txt,,8107110,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-1-6.txt,,8101296,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-1-7.txt,,8104374,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-1-8.txt,,8104716,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-2-1.txt,,8103006,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-2-2.txt,,8105058,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-2-3.txt,,8101296,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-2-4.txt,,8101638,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-2-5.txt,,8101296,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-2-6.txt,,9830106,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-2-7.txt,,8104032,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-2-8.txt,,8106084,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-2-9.txt,,9822924,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-1.txt,,9815400,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-10.txt,,8102664,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-11.txt,,9813690,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-2.txt,,8106084,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-3.txt,,8106426,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-4.txt,,8100954,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-5.txt,,8101980,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-6.txt,,9824292,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-7.txt,,9817110,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-8.txt,,9816426,.txt,"source, annotation, or documentation; see dataset report"
+ServerMachineDataset/train/machine-3-9.txt,,9819846,.txt,"source, annotation, or documentation; see dataset report"
+TSB-AD-M.zip,,540383983,.zip,archive
+TSB-AD-M.zip,TSB-AD-M/097_SVDB_id_14_Medical_tr_1031_1st_1131.csv,2995798,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/085_SVDB_id_2_Medical_tr_50000_1st_54982.csv,2998309,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/050_GHL_id_19_Sensor_tr_43750_1st_55001.csv,35051769,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/098_SVDB_id_15_Medical_tr_500_1st_303.csv,2979079,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/067_SMD_id_11_Facility_tr_1980_1st_2080.csv,6203506,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/019_MITDB_id_1_Medical_tr_37500_1st_103211.csv,2222611,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/186_Exathlon_id_13_Facility_tr_10766_1st_12590.csv,11893438,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/080_LTDB_id_2_Medical_tr_500_1st_266.csv,1988170,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/046_GHL_id_15_Sensor_tr_50000_1st_156462.csv,39741008,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/141_CATSv2_id_4_Sensor_tr_41727_1st_41827.csv,51121682,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/189_Exathlon_id_16_Facility_tr_11663_1st_13482.csv,4872302,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/084_SVDB_id_1_Medical_tr_12973_1st_13073.csv,2954911,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/005_MSL_id_4_Sensor_tr_855_1st_2700.csv,813065,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/169_SMAP_id_26_Sensor_tr_1811_1st_4510.csv,738960,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/071_SMD_id_15_Facility_tr_1109_1st_1209.csv,8365941,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/065_SMD_id_9_Facility_tr_737_1st_837.csv,7046857,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/099_SVDB_id_16_Medical_tr_1115_1st_1215.csv,2947177,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/180_Exathlon_id_7_Facility_tr_10766_1st_12590.csv,11893438,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/104_SVDB_id_21_Medical_tr_50000_1st_106634.csv,3036924,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/035_GHL_id_4_Sensor_tr_50000_1st_90001.csv,39589453,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/192_Exathlon_id_19_Facility_tr_11665_1st_13484.csv,6215105,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/070_SMD_id_14_Facility_tr_1070_1st_1170.csv,8209859,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/139_CATSv2_id_2_Sensor_tr_5592_1st_5692.csv,51378626,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/090_SVDB_id_7_Medical_tr_12157_1st_12257.csv,628354,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/147_SMAP_id_4_Sensor_tr_2160_1st_6449.csv,1016130,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/052_GHL_id_21_Sensor_tr_50000_1st_98001.csv,39834900,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/179_Exathlon_id_6_Facility_tr_11665_1st_13484.csv,12882930,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/091_SVDB_id_8_Medical_tr_500_1st_126.csv,2972561,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/060_SMD_id_4_Facility_tr_7176_1st_10609.csv,7906447,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/119_TAO_id_4_Environment_tr_500_1st_1.csv,211253,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/161_SMAP_id_18_Sensor_tr_2075_1st_5550.csv,974930,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/187_Exathlon_id_14_Facility_tr_6193_1st_6293.csv,6829147,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/109_SVDB_id_26_Medical_tr_1038_1st_1138.csv,3301546,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/102_SVDB_id_19_Medical_tr_50000_1st_107354.csv,3021945,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/022_MITDB_id_4_Medical_tr_50000_1st_54253.csv,4192602,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/177_Exathlon_id_4_Facility_tr_11665_1st_13484.csv,6215105,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/086_SVDB_id_3_Medical_tr_533_1st_633.csv,2909135,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/056_GHL_id_25_Sensor_tr_50000_1st_105568.csv,39796059,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/083_LTDB_id_5_Medical_tr_15502_1st_15602.csv,1535511,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/029_MITDB_id_11_Medical_tr_50000_1st_518037.csv,8874663,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/061_SMD_id_5_Facility_tr_7176_1st_15144.csv,7887973,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/190_Exathlon_id_17_Facility_tr_12538_1st_12638.csv,21892023,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/125_TAO_id_10_Environment_tr_500_1st_9.csv,211492,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/073_SMD_id_17_Facility_tr_5926_1st_10620.csv,6443331,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/174_Exathlon_id_1_Facility_tr_10766_1st_12590.csv,5837115,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/089_SVDB_id_6_Medical_tr_50000_1st_83083.csv,3593793,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/123_TAO_id_8_Environment_tr_500_1st_62.csv,205809,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/003_MSL_id_2_Sensor_tr_883_1st_1238.csv,837348,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv,35317189,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/184_Exathlon_id_11_Facility_tr_11665_1st_13484.csv,6215105,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/032_GHL_id_1_Sensor_tr_50000_1st_65001.csv,39755238,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/095_SVDB_id_12_Medical_tr_6264_1st_6364.csv,2949065,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/064_SMD_id_8_Facility_tr_2272_1st_2372.csv,5953374,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/172_SWaT_id_2_Sensor_tr_23700_1st_23800.csv,108291874,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/122_TAO_id_7_Environment_tr_500_1st_19.csv,211921,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/027_MITDB_id_9_Medical_tr_25000_1st_52255.csv,1486346,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv,39488399,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/030_MITDB_id_12_Medical_tr_50000_1st_84572.csv,9218229,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/044_GHL_id_13_Sensor_tr_50000_1st_145001.csv,39657556,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/088_SVDB_id_5_Medical_tr_500_1st_168.csv,3593688,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/108_SVDB_id_25_Medical_tr_1238_1st_1338.csv,2912453,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/198_Exathlon_id_25_Facility_tr_12538_1st_12638.csv,21892023,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/175_Exathlon_id_2_Facility_tr_10684_1st_10784.csv,3411348,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/063_SMD_id_7_Facility_tr_5923_1st_6506.csv,6721190,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/110_SVDB_id_27_Medical_tr_30824_1st_30924.csv,3313293,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/199_Exathlon_id_26_Facility_tr_12538_1st_12638.csv,21892023,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/120_TAO_id_5_Environment_tr_500_1st_3.csv,211593,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/075_SMD_id_19_Facility_tr_564_1st_664.csv,6828679,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/150_SMAP_id_7_Sensor_tr_2077_1st_5394.csv,899620,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/045_GHL_id_14_Sensor_tr_50000_1st_85076.csv,39647618,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/017_MSL_id_16_Sensor_tr_512_1st_1850.csv,466557,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/009_MSL_id_8_Sensor_tr_714_1st_1390.csv,677872,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/059_SMD_id_3_Facility_tr_757_1st_857.csv,6405807,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/160_SMAP_id_17_Sensor_tr_1832_1st_5300.csv,862885,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/155_SMAP_id_12_Sensor_tr_1907_1st_4800.csv,896179,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/165_SMAP_id_22_Sensor_tr_2129_1st_5000.csv,903609,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/116_TAO_id_1_Environment_tr_500_1st_3.csv,205701,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/167_SMAP_id_24_Sensor_tr_2094_1st_5600.csv,983308,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/149_SMAP_id_6_Sensor_tr_2128_1st_5000.csv,903500,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/106_SVDB_id_23_Medical_tr_37500_1st_121963.csv,1979017,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/159_SMAP_id_16_Sensor_tr_1757_1st_2650.csv,719276,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/197_Exathlon_id_24_Facility_tr_10766_1st_12590.csv,11893438,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/137_CreditCard_id_1_Finance_tr_500_1st_541.csv,148416956,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/031_MITDB_id_13_Medical_tr_50000_1st_79433.csv,6669029,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/193_Exathlon_id_20_Facility_tr_8898_1st_8998.csv,2992867,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/010_MSL_id_9_Sensor_tr_554_1st_1172.csv,493615,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/077_SMD_id_21_Facility_tr_3026_1st_3126.csv,6084416,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv,7385538,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/181_Exathlon_id_8_Facility_tr_11663_1st_13482.csv,4872302,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/101_SVDB_id_18_Medical_tr_1851_1st_1951.csv,2932874,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/162_SMAP_id_19_Sensor_tr_1908_1st_4690.csv,780476,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/033_GHL_id_2_Sensor_tr_50000_1st_51001.csv,39838911,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/049_GHL_id_18_Sensor_tr_50000_1st_109001.csv,39709764,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv,7401202,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/094_SVDB_id_11_Medical_tr_20100_1st_23611.csv,1029105,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/143_CATSv2_id_6_Sensor_tr_50000_1st_60232.csv,52636244,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/142_CATSv2_id_5_Sensor_tr_30704_1st_30804.csv,92129380,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/105_SVDB_id_22_Medical_tr_500_1st_417.csv,1967548,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/057_SMD_id_1_Facility_tr_4529_1st_4629.csv,6036679,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv,10225277,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/152_SMAP_id_9_Sensor_tr_2073_1st_5600.csv,852680,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/062_SMD_id_6_Facility_tr_7180_1st_15131.csv,7811204,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/127_TAO_id_12_Environment_tr_500_1st_24.csv,206084,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/194_Exathlon_id_21_Facility_tr_6985_1st_7085.csv,6658749,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/166_SMAP_id_23_Sensor_tr_1113_1st_1890.csv,525484,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/037_GHL_id_6_Sensor_tr_50000_1st_80001.csv,39769534,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/182_Exathlon_id_9_Facility_tr_10766_1st_12590.csv,11893438,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/113_SVDB_id_30_Medical_tr_4552_1st_4652.csv,2945634,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/040_GHL_id_9_Sensor_tr_50000_1st_92001.csv,39691143,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/058_SMD_id_2_Facility_tr_1087_1st_1187.csv,8309827,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/096_SVDB_id_13_Medical_tr_500_1st_444.csv,2944278,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv,23662185,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/158_SMAP_id_15_Sensor_tr_2075_1st_5610.csv,971003,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/055_GHL_id_24_Sensor_tr_50000_1st_118124.csv,39505229,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/144_SMAP_id_1_Sensor_tr_2052_1st_5300.csv,965700,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/048_GHL_id_17_Sensor_tr_50000_1st_154001.csv,39691740,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/008_MSL_id_7_Sensor_tr_656_1st_1630.csv,585515,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/014_MSL_id_13_Sensor_tr_1525_1st_4575.csv,1445433,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/001_Genesis_id_1_Sensor_tr_4055_1st_15538.csv,803413,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/185_Exathlon_id_12_Facility_tr_11665_1st_13484.csv,6215105,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/117_TAO_id_2_Environment_tr_500_1st_1.csv,216840,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/076_SMD_id_20_Facility_tr_5925_1st_17580.csv,6836236,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/038_GHL_id_7_Sensor_tr_50000_1st_100001.csv,39753134,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/103_SVDB_id_20_Medical_tr_12167_1st_12267.csv,3661820,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/082_LTDB_id_4_Medical_tr_4456_1st_4556.csv,1261256,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/188_Exathlon_id_15_Facility_tr_12538_1st_12638.csv,21892023,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/112_SVDB_id_29_Medical_tr_8226_1st_8326.csv,2974259,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/176_Exathlon_id_3_Facility_tr_10766_1st_12590.csv,11893438,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/171_SWaT_id_1_Sensor_tr_3749_1st_9522.csv,5389970,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/126_TAO_id_11_Environment_tr_500_1st_7.csv,211767,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/074_SMD_id_18_Facility_tr_7174_1st_21230.csv,7733411,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/168_SMAP_id_25_Sensor_tr_1998_1st_2098.csv,1001922,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/006_MSL_id_5_Sensor_tr_1150_1st_1250.csv,1194904,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/036_GHL_id_5_Sensor_tr_50000_1st_67147.csv,39463191,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/021_MITDB_id_3_Medical_tr_50000_1st_57595.csv,7133139,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/054_GHL_id_23_Sensor_tr_50000_1st_135001.csv,39489437,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/170_SMAP_id_27_Sensor_tr_2160_1st_4690.csv,881352,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/051_GHL_id_20_Sensor_tr_50000_1st_75110.csv,39663579,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/023_MITDB_id_5_Medical_tr_25000_1st_36913.csv,1484351,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/018_Daphnet_id_1_HumanActivity_tr_9693_1st_20732.csv,1523951,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/124_TAO_id_9_Environment_tr_500_1st_1.csv,205459,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/034_GHL_id_3_Sensor_tr_50000_1st_122001.csv,39760414,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/153_SMAP_id_10_Sensor_tr_1840_1st_4030.csv,758253,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/025_MITDB_id_7_Medical_tr_37500_1st_88864.csv,2227471,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/042_GHL_id_11_Sensor_tr_50000_1st_150001.csv,39802065,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv,13316902,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/148_SMAP_id_5_Sensor_tr_2011_1st_5060.csv,825636,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/093_SVDB_id_10_Medical_tr_500_1st_37.csv,2871616,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/200_Exathlon_id_27_Facility_tr_10766_1st_12590.csv,11893438,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/041_GHL_id_10_Sensor_tr_50000_1st_57001.csv,39537670,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/043_GHL_id_12_Sensor_tr_39938_1st_40038.csv,39370743,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/178_Exathlon_id_5_Facility_tr_12538_1st_12638.csv,21892023,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/079_LTDB_id_1_Medical_tr_3618_1st_3718.csv,1300610,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/195_Exathlon_id_22_Facility_tr_10766_1st_12590.csv,11893438,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/004_MSL_id_3_Sensor_tr_530_1st_630.csv,577095,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/151_SMAP_id_8_Sensor_tr_1971_1st_4870.csv,925296,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/026_MITDB_id_8_Medical_tr_30495_1st_30595.csv,5684511,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/121_TAO_id_6_Environment_tr_500_1st_7.csv,217362,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/163_SMAP_id_20_Sensor_tr_2051_1st_4575.csv,963776,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/016_MSL_id_15_Sensor_tr_500_1st_780.csv,259842,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/100_SVDB_id_17_Medical_tr_17803_1st_17903.csv,1643188,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/140_CATSv2_id_3_Sensor_tr_28307_1st_28407.csv,105415516,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/114_SVDB_id_31_Medical_tr_25000_1st_63090.csv,1307370,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/154_SMAP_id_11_Sensor_tr_2117_1st_4770.csv,993911,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/107_SVDB_id_24_Medical_tr_32805_1st_32905.csv,3200090,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/145_SMAP_id_2_Sensor_tr_2133_1st_5400.csv,1005059,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/012_MSL_id_11_Sensor_tr_539_1st_940.csv,512195,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/013_MSL_id_12_Sensor_tr_554_1st_1200.csv,494785,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/087_SVDB_id_4_Medical_tr_5421_1st_5521.csv,3602559,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/078_SMD_id_22_Facility_tr_500_1st_326.csv,6458523,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/039_GHL_id_8_Sensor_tr_50000_1st_63030.csv,39873768,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv,31052922,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/118_TAO_id_3_Environment_tr_500_1st_7.csv,205924,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/128_TAO_id_13_Environment_tr_500_1st_7.csv,217362,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/011_MSL_id_10_Sensor_tr_1525_1st_4590.csv,1445433,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/002_MSL_id_1_Sensor_tr_500_1st_900.csv,407579,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/164_SMAP_id_21_Sensor_tr_1976_1st_4200.csv,806601,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/020_MITDB_id_2_Medical_tr_50000_1st_52315.csv,9035237,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/156_SMAP_id_13_Sensor_tr_1173_1st_2750.csv,544688,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/053_GHL_id_22_Sensor_tr_50000_1st_126448.csv,39686090,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/072_SMD_id_16_Facility_tr_7119_1st_15849.csv,8399285,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/068_SMD_id_12_Facility_tr_1099_1st_1199.csv,8383444,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/157_SMAP_id_14_Sensor_tr_2126_1st_5000.csv,886298,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/138_CATSv2_id_1_Sensor_tr_16568_1st_16668.csv,26330863,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/047_GHL_id_16_Sensor_tr_50000_1st_77001.csv,39600308,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/081_LTDB_id_3_Medical_tr_500_1st_26.csv,1265726,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv,41279685,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/115_PSM_id_1_Facility_tr_50000_1st_129872.csv,101183628,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/191_Exathlon_id_18_Facility_tr_11665_1st_13484.csv,6215105,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/066_SMD_id_10_Facility_tr_2634_1st_2734.csv,6632671,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/183_Exathlon_id_10_Facility_tr_11665_1st_13484.csv,6215105,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/007_MSL_id_6_Sensor_tr_980_1st_3550.csv,931605,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/028_MITDB_id_10_Medical_tr_37500_1st_39948.csv,2140360,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/111_SVDB_id_28_Medical_tr_1791_1st_1891.csv,3607787,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/069_SMD_id_13_Facility_tr_5925_1st_12760.csv,6336359,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/092_SVDB_id_9_Medical_tr_2674_1st_2774.csv,2929598,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/196_Exathlon_id_23_Facility_tr_11665_1st_13484.csv,6215105,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/146_SMAP_id_3_Sensor_tr_2128_1st_5000.csv,902149,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/024_MITDB_id_6_Medical_tr_50000_1st_58118.csv,2960841,.csv,archive member; see dataset report
+TSB-AD-M.zip,TSB-AD-M/015_MSL_id_14_Sensor_tr_575_1st_1250.csv,533957,.csv,archive member; see dataset report
+TSB-AD-U.zip,,72900868,.zip,archive
+TSB-AD-U.zip,TSB-AD-U/331_UCR_id_29_Facility_tr_50000_1st_837400.csv,8769557,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/223_LTDB_id_8_Medical_tr_4456_1st_4556.csv,717566,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/405_UCR_id_103_Sensor_tr_2827_1st_5988.csv,147658,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/774_YAHOO_id_224_Synthetic_tr_500_1st_623.csv,27342,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/003_NAB_id_3_WebService_tr_1362_1st_1462.csv,95143,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/175_MITDB_id_6_Medical_tr_27274_1st_27374.csv,5433638,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/186_SMD_id_9_Facility_tr_5925_1st_17580.csv,258096,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/524_UCR_id_222_Medical_tr_1875_1st_5865.csv,89153,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/136_WSD_id_108_WebService_tr_3414_1st_3514.csv,144660,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/262_IOPS_id_3_WebService_tr_7028_1st_7128.csv,990205,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/336_UCR_id_34_Facility_tr_32191_1st_124159.csv,1531050,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/715_YAHOO_id_165_Synthetic_tr_500_1st_658.csv,27328,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/439_UCR_id_137_HumanActivity_tr_48750_1st_110800.csv,2454161,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/751_YAHOO_id_201_WebService_tr_500_1st_142.csv,13821,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/069_WSD_id_41_WebService_tr_4548_1st_13988.csv,163756,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/187_SMD_id_10_Facility_tr_5000_1st_15849.csv,217838,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/100_WSD_id_72_WebService_tr_4559_1st_10254.csv,162199,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/569_YAHOO_id_19_WebService_tr_500_1st_30.csv,33145,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/440_UCR_id_138_Medical_tr_16700_1st_16800.csv,2516984,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/011_NAB_id_11_Facility_tr_1007_1st_1526.csv,39511,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/400_UCR_id_98_Environment_tr_2046_1st_5391.csv,56019,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/830_Exathlon_id_21_Facility_tr_10766_1st_12590.csv,602800,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/111_WSD_id_83_WebService_tr_3934_1st_7531.csv,139913,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/326_UCR_id_24_Medical_tr_1875_1st_4187.csv,81625,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/769_YAHOO_id_219_WebService_tr_500_1st_205.csv,32475,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/369_UCR_id_67_Sensor_tr_2750_1st_5400.csv,136769,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/549_SMAP_id_19_Sensor_tr_1998_1st_2098.csv,178278,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/544_SMAP_id_14_Sensor_tr_1978_1st_4450.csv,169475,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/737_YAHOO_id_187_WebService_tr_500_1st_230.csv,33917,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/107_WSD_id_79_WebService_tr_1095_1st_1195.csv,164448,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/728_YAHOO_id_178_WebService_tr_500_1st_68.csv,33756,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/619_YAHOO_id_69_WebService_tr_500_1st_8.csv,33144,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/324_UCR_id_22_Medical_tr_1875_1st_5865.csv,81690,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/676_YAHOO_id_126_Synthetic_tr_500_1st_623.csv,27580,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/860_OPPORTUNITY_id_19_HumanActivity_tr_808_1st_908.csv,72742,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/505_UCR_id_203_HumanActivity_tr_16000_1st_33070.csv,806356,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/632_YAHOO_id_82_Synthetic_tr_500_1st_658.csv,27300,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/434_UCR_id_132_Medical_tr_14750_1st_57530.csv,443938,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/510_UCR_id_208_Facility_tr_50000_1st_126920.csv,2285612,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/082_WSD_id_54_WebService_tr_4437_1st_4805.csv,158652,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/770_YAHOO_id_220_WebService_tr_500_1st_29.csv,33623,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/670_YAHOO_id_120_WebService_tr_500_1st_221.csv,33163,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/748_YAHOO_id_198_WebService_tr_500_1st_170.csv,33381,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/831_Exathlon_id_22_Facility_tr_11665_1st_13484.csv,653052,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/653_YAHOO_id_103_WebService_tr_500_1st_443.csv,32623,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/205_SMD_id_28_Facility_tr_5925_1st_17580.csv,258062,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/481_UCR_id_179_Medical_tr_1900_1st_5684.csv,82782,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/780_YAHOO_id_230_Synthetic_tr_500_1st_893.csv,27687,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/592_YAHOO_id_42_WebService_tr_500_1st_28.csv,33142,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/330_UCR_id_28_Facility_tr_7482_1st_23405.csv,239427,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/605_YAHOO_id_55_Synthetic_tr_500_1st_893.csv,27794,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/386_UCR_id_84_Environment_tr_2046_1st_5703.csv,97325,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/332_UCR_id_30_Facility_tr_13750_1st_52600.csv,376258,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/144_MSL_id_5_Sensor_tr_1525_1st_4590.csv,36611,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/480_UCR_id_178_Facility_tr_50000_1st_160720.csv,2647841,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/138_WSD_id_110_WebService_tr_4584_1st_6039.csv,166159,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/159_Stock_id_11_Finance_tr_500_1st_5.csv,208831,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/558_YAHOO_id_8_WebService_tr_500_1st_1125.csv,11197,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/661_YAHOO_id_111_WebService_tr_500_1st_279.csv,34078,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/001_NAB_id_1_Facility_tr_1007_1st_2014.csv,40634,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/041_WSD_id_13_WebService_tr_4296_1st_5196.csv,135751,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/052_WSD_id_24_WebService_tr_4559_1st_9102.csv,144472,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/818_Exathlon_id_9_Facility_tr_11665_1st_13484.csv,380683,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/617_YAHOO_id_67_Synthetic_tr_500_1st_893.csv,27975,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/094_WSD_id_66_WebService_tr_3309_1st_3914.csv,116292,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/740_YAHOO_id_190_WebService_tr_500_1st_0.csv,33007,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/669_YAHOO_id_119_WebService_tr_500_1st_21.csv,32505,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/430_UCR_id_128_HumanActivity_tr_12500_1st_46500.csv,618361,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/760_YAHOO_id_210_WebService_tr_500_1st_23.csv,33091,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/270_IOPS_id_11_WebService_tr_5638_1st_5738.csv,533850,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/096_WSD_id_68_WebService_tr_1341_1st_1441.csv,94295,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/792_YAHOO_id_242_Synthetic_tr_500_1st_893.csv,27259,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/847_OPPORTUNITY_id_6_HumanActivity_tr_808_1st_908.csv,82217,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/233_MGAB_id_9_Synthetic_tr_25000_1st_41300.csv,2077097,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/530_UCR_id_228_HumanActivity_tr_16250_1st_38500.csv,571126,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/763_YAHOO_id_213_WebService_tr_500_1st_43.csv,32977,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/310_UCR_id_8_HumanActivity_tr_2631_1st_8285.csv,134155,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/598_YAHOO_id_48_Synthetic_tr_500_1st_658.csv,27671,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/582_YAHOO_id_32_Synthetic_tr_500_1st_658.csv,27330,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/381_UCR_id_79_HumanActivity_tr_16000_1st_31200.csv,806590,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/108_WSD_id_80_WebService_tr_2368_1st_2468.csv,160290,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/393_UCR_id_91_Environment_tr_2046_1st_4852.csv,56248,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/462_UCR_id_160_Medical_tr_1853_1st_6200.csv,88147,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/701_YAHOO_id_151_Synthetic_tr_500_1st_893.csv,27670,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/687_YAHOO_id_137_WebService_tr_500_1st_89.csv,32489,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/509_UCR_id_207_Medical_tr_1875_1st_6599.csv,81656,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/008_NAB_id_8_Synthetic_tr_1007_1st_2734.csv,28561,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/630_YAHOO_id_80_WebService_tr_500_1st_631.csv,34037,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/529_UCR_id_227_Facility_tr_19948_1st_52000.csv,990419,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/319_UCR_id_17_Environment_tr_6166_1st_19280.csv,293263,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/363_UCR_id_61_Medical_tr_7500_1st_16000.csv,206167,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/322_UCR_id_20_Facility_tr_7482_1st_24005.csv,355907,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/089_WSD_id_61_WebService_tr_1010_1st_1110.csv,140915,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/389_UCR_id_87_Facility_tr_7482_1st_18485.csv,355778,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/024_NAB_id_24_Synthetic_tr_1007_1st_2787.csv,67242,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/735_YAHOO_id_185_WebService_tr_500_1st_20.csv,33893,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/721_YAHOO_id_171_Synthetic_tr_500_1st_893.csv,27256,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/423_UCR_id_121_Facility_tr_13750_1st_52600.csv,675786,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/722_YAHOO_id_172_WebService_tr_500_1st_353.csv,26396,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/287_TODS_id_1_Synthetic_tr_500_1st_11.csv,106287,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/263_IOPS_id_4_WebService_tr_3482_1st_3582.csv,1178090,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/131_WSD_id_103_WebService_tr_4573_1st_7021.csv,165554,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/415_UCR_id_113_Medical_tr_3000_1st_8612.csv,165011,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/499_UCR_id_197_Environment_tr_2046_1st_5703.csv,56121,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/044_WSD_id_16_WebService_tr_4559_1st_6975.csv,144459,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/640_YAHOO_id_90_WebService_tr_500_1st_18.csv,32302,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/523_UCR_id_221_Facility_tr_3000_1st_6527.csv,130681,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/202_SMD_id_25_Facility_tr_6250_1st_21230.csv,272226,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/290_TODS_id_4_Synthetic_tr_500_1st_26.csv,106376,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/188_SMD_id_11_Facility_tr_500_1st_392.csv,142554,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/603_YAHOO_id_53_Synthetic_tr_500_1st_893.csv,27567,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/124_WSD_id_96_WebService_tr_4559_1st_14350.csv,152814,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/146_MSL_id_7_Sensor_tr_554_1st_1172.csv,14593,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/211_SMD_id_34_Facility_tr_5925_1st_17580.csv,258139,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/753_YAHOO_id_203_WebService_tr_500_1st_6.csv,32447,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/047_WSD_id_19_WebService_tr_4559_1st_16362.csv,149627,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/811_Exathlon_id_2_Facility_tr_10766_1st_12590.csv,260437,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/208_SMD_id_31_Facility_tr_5000_1st_15144.csv,201229,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/176_MITDB_id_7_Medical_tr_6232_1st_6332.csv,5351151,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/039_WSD_id_11_WebService_tr_1746_1st_1846.csv,144009,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/351_UCR_id_49_Medical_tr_7464_1st_12190.csv,297509,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/545_SMAP_id_15_Sensor_tr_1173_1st_2750.csv,94100,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/301_TODS_id_15_Synthetic_tr_500_1st_245.csv,103218,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/437_UCR_id_135_Medical_tr_2499_1st_8000.csv,133632,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/054_WSD_id_26_WebService_tr_2409_1st_2509.csv,160257,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/315_UCR_id_13_HumanActivity_tr_16000_1st_33070.csv,570969,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/587_YAHOO_id_37_Synthetic_tr_500_1st_623.csv,27341,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/606_YAHOO_id_56_Synthetic_tr_500_1st_623.csv,27706,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/692_YAHOO_id_142_WebService_tr_500_1st_294.csv,33114,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/192_SMD_id_15_Facility_tr_5925_1st_17580.csv,255089,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/153_Stock_id_5_Finance_tr_500_1st_1.csv,94000,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/859_OPPORTUNITY_id_18_HumanActivity_tr_895_1st_995.csv,135277,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/065_WSD_id_37_WebService_tr_3451_1st_3551.csv,166504,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/599_YAHOO_id_49_WebService_tr_500_1st_653.csv,27687,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/079_WSD_id_51_WebService_tr_4559_1st_10672.csv,242329,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/557_YAHOO_id_7_WebService_tr_500_1st_770.csv,9467,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/122_WSD_id_94_WebService_tr_4559_1st_8618.csv,162137,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/372_UCR_id_70_Medical_tr_7500_1st_17000.csv,206220,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/484_UCR_id_182_Medical_tr_1875_1st_5759.csv,81613,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/643_YAHOO_id_93_WebService_tr_500_1st_1038.csv,32510,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/251_SVDB_id_15_Medical_tr_5421_1st_5521.csv,2025738,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/747_YAHOO_id_197_Synthetic_tr_500_1st_893.csv,27272,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/806_YAHOO_id_256_Synthetic_tr_500_1st_893.csv,28001,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/217_LTDB_id_2_Medical_tr_500_1st_266.csv,794884,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/743_YAHOO_id_193_WebService_tr_500_1st_133.csv,33567,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/797_YAHOO_id_247_Synthetic_tr_500_1st_893.csv,27939,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/823_Exathlon_id_14_Facility_tr_10766_1st_12590.csv,350637,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/396_UCR_id_94_Medical_tr_1875_1st_5607.csv,89159,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/288_TODS_id_2_Synthetic_tr_500_1st_65.csv,106361,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/384_UCR_id_82_Facility_tr_50000_1st_884100.csv,8794346,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/526_UCR_id_224_Sensor_tr_2827_1st_4711.csv,147321,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/613_YAHOO_id_63_Synthetic_tr_500_1st_623.csv,27325,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/852_OPPORTUNITY_id_11_HumanActivity_tr_500_1st_566.csv,129635,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/298_TODS_id_12_Synthetic_tr_500_1st_0.csv,106605,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/091_WSD_id_63_WebService_tr_500_1st_363.csv,158843,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/109_WSD_id_81_WebService_tr_3175_1st_3275.csv,162452,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/744_YAHOO_id_194_Synthetic_tr_500_1st_658.csv,27510,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/459_UCR_id_157_HumanActivity_tr_50000_1st_110260.csv,1837091,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/429_UCR_id_127_Medical_tr_14825_1st_29000.csv,448974,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/028_NAB_id_28_Facility_tr_1007_1st_3447.csv,32150,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/629_YAHOO_id_79_WebService_tr_500_1st_222.csv,33946,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/518_UCR_id_216_Medical_tr_9625_1st_20950.csv,275340,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/485_UCR_id_183_Medical_tr_7516_1st_17390.csv,387527,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/050_WSD_id_22_WebService_tr_4559_1st_12816.csv,164186,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/489_UCR_id_187_Medical_tr_1875_1st_4485.csv,81605,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/706_YAHOO_id_156_WebService_tr_500_1st_201.csv,34067,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/487_UCR_id_185_Medical_tr_49938_1st_191200.csv,1548461,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/786_YAHOO_id_236_Synthetic_tr_500_1st_623.csv,27872,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/075_WSD_id_47_WebService_tr_3296_1st_3468.csv,114544,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/807_YAHOO_id_257_WebService_tr_500_1st_1210.csv,12309,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/750_YAHOO_id_200_WebService_tr_500_1st_591.csv,13763,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/403_UCR_id_101_Medical_tr_1875_1st_4187.csv,89162,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/628_YAHOO_id_78_WebService_tr_500_1st_147.csv,32408,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/357_UCR_id_55_Facility_tr_12500_1st_46600.csv,391866,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/407_UCR_id_105_Medical_tr_7500_1st_16900.csv,374321,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/665_YAHOO_id_115_WebService_tr_500_1st_28.csv,32428,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/207_SMD_id_30_Facility_tr_7174_1st_21230.csv,310359,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/625_YAHOO_id_75_Synthetic_tr_500_1st_658.csv,27268,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/699_YAHOO_id_149_WebService_tr_500_1st_99.csv,32583,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/342_UCR_id_40_Medical_tr_7500_1st_17000.csv,206171,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/359_UCR_id_57_Medical_tr_1913_1st_3474.csv,90986,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/804_YAHOO_id_254_WebService_tr_500_1st_420.csv,26558,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/327_UCR_id_25_Medical_tr_15000_1st_51370.csv,454013,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/341_UCR_id_39_HumanActivity_tr_48812_1st_128430.csv,2457336,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/486_UCR_id_184_Medical_tr_1875_1st_5607.csv,81632,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/070_WSD_id_42_WebService_tr_2102_1st_2202.csv,102521,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/700_YAHOO_id_150_WebService_tr_500_1st_82.csv,34006,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/841_Exathlon_id_32_Facility_tr_11663_1st_13482.csv,376124,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/206_SMD_id_29_Facility_tr_6250_1st_21230.csv,272165,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/378_UCR_id_76_Medical_tr_9594_1st_11111.csv,275059,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/554_YAHOO_id_4_Synthetic_tr_500_1st_658.csv,27682,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/057_WSD_id_29_WebService_tr_2229_1st_2329.csv,277449,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/116_WSD_id_88_WebService_tr_3934_1st_13861.csv,130181,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/515_UCR_id_213_Medical_tr_10499_1st_15000.csv,378002,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/424_UCR_id_122_Medical_tr_7464_1st_12190.csv,384883,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/313_UCR_id_11_Sensor_tr_2827_1st_4711.csv,148333,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/051_WSD_id_23_WebService_tr_3919_1st_5154.csv,141090,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/267_IOPS_id_8_WebService_tr_1534_1st_1882.csv,109679,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/621_YAHOO_id_71_WebService_tr_500_1st_721.csv,32485,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/720_YAHOO_id_170_WebService_tr_500_1st_3.csv,33119,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/387_UCR_id_85_Environment_tr_2046_1st_5549.csv,56251,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/616_YAHOO_id_66_Synthetic_tr_500_1st_623.csv,28019,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/580_YAHOO_id_30_WebService_tr_500_1st_236.csv,33239,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/442_UCR_id_140_Medical_tr_1875_1st_4187.csv,89198,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/224_LTDB_id_9_Medical_tr_4456_1st_4556.csv,743696,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/081_WSD_id_53_WebService_tr_4559_1st_8448.csv,144561,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/799_YAHOO_id_249_WebService_tr_500_1st_852.csv,32493,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/291_TODS_id_5_Synthetic_tr_500_1st_11.csv,106383,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/027_NAB_id_27_Facility_tr_757_1st_2582.csv,21395,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/562_YAHOO_id_12_Synthetic_tr_500_1st_893.csv,27280,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/193_SMD_id_16_Facility_tr_5925_1st_17580.csv,258115,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/244_SVDB_id_8_Medical_tr_17803_1st_17903.csv,969218,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/216_LTDB_id_1_Medical_tr_500_1st_266.csv,795035,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/046_WSD_id_18_WebService_tr_2357_1st_2457.csv,160374,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/239_SVDB_id_3_Medical_tr_50000_1st_106634.csv,1765595,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/791_YAHOO_id_241_WebService_tr_500_1st_593.csv,32738,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/020_NAB_id_20_Synthetic_tr_1007_1st_2679.csv,67341,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/410_UCR_id_108_Medical_tr_1875_1st_4187.csv,81613,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/380_UCR_id_78_Medical_tr_1830_1st_4675.csv,87095,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/655_YAHOO_id_105_WebService_tr_500_1st_17.csv,33955,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/479_UCR_id_177_Medical_tr_2000_1st_7000.csv,106967,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/072_WSD_id_44_WebService_tr_1691_1st_1791.csv,98827,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/191_SMD_id_14_Facility_tr_4596_1st_4696.csv,247123,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/741_YAHOO_id_191_WebService_tr_500_1st_1114.csv,32508,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/412_UCR_id_110_Medical_tr_7500_1st_16900.csv,206304,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/746_YAHOO_id_196_WebService_tr_500_1st_413.csv,33448,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/615_YAHOO_id_65_WebService_tr_500_1st_348.csv,11861,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/016_NAB_id_16_Environment_tr_1816_1st_3540.csv,110661,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/248_SVDB_id_12_Medical_tr_18462_1st_18562.csv,974199,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/677_YAHOO_id_127_WebService_tr_500_1st_46.csv,34118,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/278_NEK_id_2_WebService_tr_500_1st_64.csv,22670,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/062_WSD_id_34_WebService_tr_3371_1st_3471.csv,209030,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/398_UCR_id_96_Medical_tr_1913_1st_3474.csv,90971,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/377_UCR_id_75_Medical_tr_1875_1st_6599.csv,89187,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/038_WSD_id_10_WebService_tr_4042_1st_4142.csv,143375,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/456_UCR_id_154_Facility_tr_22500_1st_72150.csv,1106989,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/137_WSD_id_109_WebService_tr_4559_1st_14404.csv,164129,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/838_Exathlon_id_29_Facility_tr_10766_1st_12590.csv,258530,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/654_YAHOO_id_104_WebService_tr_500_1st_20.csv,34039,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/450_UCR_id_148_Medical_tr_7500_1st_16900.csv,374621,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/222_LTDB_id_7_Medical_tr_3618_1st_3718.csv,725365,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/793_YAHOO_id_243_WebService_tr_500_1st_28.csv,33181,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/635_YAHOO_id_85_Synthetic_tr_500_1st_658.csv,27652,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/311_UCR_id_9_HumanActivity_tr_16000_1st_38400.csv,572485,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/213_SMD_id_36_Facility_tr_5925_1st_17580.csv,258020,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/493_UCR_id_191_Sensor_tr_2847_1st_9330.csv,149385,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/449_UCR_id_147_Sensor_tr_2847_1st_9330.csv,148541,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/134_WSD_id_106_WebService_tr_4559_1st_7990.csv,144058,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/667_YAHOO_id_117_WebService_tr_500_1st_421.csv,26142,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/320_UCR_id_18_Medical_tr_2500_1st_7000.csv,133732,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/719_YAHOO_id_169_WebService_tr_500_1st_852.csv,32493,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/634_YAHOO_id_84_Synthetic_tr_500_1st_658.csv,27927,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/680_YAHOO_id_130_Synthetic_tr_500_1st_893.csv,27823,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/125_WSD_id_97_WebService_tr_2217_1st_2317.csv,159281,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/325_UCR_id_23_Medical_tr_3000_1st_6168.csv,130809,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/102_WSD_id_74_WebService_tr_3306_1st_3639.csv,115000,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/447_UCR_id_145_Medical_tr_9625_1st_12240.csv,275297,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/618_YAHOO_id_68_Synthetic_tr_500_1st_893.csv,27525,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/358_UCR_id_56_Facility_tr_10500_1st_29080.csv,385077,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/532_SMAP_id_2_Sensor_tr_2075_1st_5550.csv,177878,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/034_WSD_id_6_WebService_tr_4559_1st_8461.csv,144562,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/228_MGAB_id_4_Synthetic_tr_25000_1st_38948.csv,2076801,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/476_UCR_id_174_Facility_tr_50000_1st_64632.csv,2284522,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/002_NAB_id_2_WebService_tr_1500_1st_4106.csv,40965,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/832_Exathlon_id_23_Facility_tr_10766_1st_12590.csv,384043,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/418_UCR_id_116_Facility_tr_10000_1st_35774.csv,506694,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/212_SMD_id_35_Facility_tr_5925_1st_17580.csv,258128,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/101_WSD_id_73_WebService_tr_1513_1st_1613.csv,163127,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/431_UCR_id_129_Facility_tr_32500_1st_114283.csv,1170020,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/809_YAHOO_id_259_WebService_tr_500_1st_123.csv,33151,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/637_YAHOO_id_87_WebService_tr_500_1st_338.csv,33049,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/300_TODS_id_14_Synthetic_tr_1250_1st_2555.csv,106343,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/097_WSD_id_69_WebService_tr_4520_1st_6465.csv,158561,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/077_WSD_id_49_WebService_tr_3310_1st_3716.csv,116532,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/623_YAHOO_id_73_WebService_tr_500_1st_117.csv,33137,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/478_UCR_id_176_Medical_tr_7500_1st_17210.csv,386695,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/242_SVDB_id_6_Medical_tr_10726_1st_10826.csv,1306346,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/350_UCR_id_48_Facility_tr_7482_1st_23405.csv,355805,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/604_YAHOO_id_54_WebService_tr_500_1st_116.csv,34071,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/133_WSD_id_105_WebService_tr_3934_1st_5937.csv,132167,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/235_SED_id_2_Medical_tr_2499_1st_3840.csv,109460,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/662_YAHOO_id_112_WebService_tr_500_1st_361.csv,33118,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/547_SMAP_id_17_Sensor_tr_2133_1st_5400.csv,185927,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/833_Exathlon_id_24_Facility_tr_10766_1st_12590.csv,261534,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/785_YAHOO_id_235_Synthetic_tr_500_1st_658.csv,27320,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/214_SMD_id_37_Facility_tr_5925_1st_17580.csv,258125,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/609_YAHOO_id_59_WebService_tr_500_1st_17.csv,34005,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/734_YAHOO_id_184_WebService_tr_500_1st_768.csv,12035,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/142_MSL_id_3_Sensor_tr_1525_1st_4575.csv,127683,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/194_SMD_id_17_Facility_tr_5925_1st_17580.csv,155003,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/685_YAHOO_id_135_WebService_tr_500_1st_121.csv,33128,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/285_NEK_id_9_WebService_tr_500_1st_780.csv,22559,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/362_UCR_id_60_HumanActivity_tr_16000_1st_31200.csv,806945,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/446_UCR_id_144_Medical_tr_7500_1st_17000.csv,374909,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/246_SVDB_id_10_Medical_tr_20100_1st_68460.csv,610486,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/691_YAHOO_id_141_WebService_tr_500_1st_57.csv,33210,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/805_YAHOO_id_255_WebService_tr_500_1st_95.csv,33749,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/390_UCR_id_88_Medical_tr_7500_1st_17000.csv,374974,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/834_Exathlon_id_25_Facility_tr_11665_1st_13484.csv,653052,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/245_SVDB_id_9_Medical_tr_12607_1st_12707.csv,1345818,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/477_UCR_id_175_Medical_tr_7500_1st_17000.csv,206256,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/658_YAHOO_id_108_Synthetic_tr_500_1st_893.csv,27285,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/730_YAHOO_id_180_Synthetic_tr_500_1st_623.csv,27885,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/572_YAHOO_id_22_WebService_tr_500_1st_377.csv,33968,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/727_YAHOO_id_177_WebService_tr_500_1st_82.csv,32432,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/436_UCR_id_134_Medical_tr_1875_1st_4526.csv,89168,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/559_YAHOO_id_9_WebService_tr_500_1st_538.csv,33593,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/095_WSD_id_67_WebService_tr_2182_1st_2282.csv,260688,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/030_WSD_id_2_WebService_tr_4499_1st_4599.csv,158739,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/583_YAHOO_id_33_WebService_tr_500_1st_1616.csv,32546,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/825_Exathlon_id_16_Facility_tr_10766_1st_12590.csv,260437,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/620_YAHOO_id_70_Synthetic_tr_500_1st_658.csv,27241,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/071_WSD_id_43_WebService_tr_3387_1st_3487.csv,148057,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/265_IOPS_id_6_WebService_tr_6453_1st_6553.csv,775753,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/463_UCR_id_161_Environment_tr_2046_1st_6006.csv,56258,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/032_WSD_id_4_WebService_tr_4559_1st_11822.csv,96177,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/074_WSD_id_46_WebService_tr_990_1st_1090.csv,217145,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/274_IOPS_id_15_WebService_tr_4591_1st_4691.csv,1316538,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/201_SMD_id_24_Facility_tr_7174_1st_21230.csv,312502,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/451_UCR_id_149_Medical_tr_3000_1st_7175.csv,165125,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/404_UCR_id_102_Facility_tr_13750_1st_52600.csv,693161,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/018_NAB_id_18_Facility_tr_500_1st_669.csv,19870,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/058_WSD_id_30_WebService_tr_1136_1st_1236.csv,225987,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/110_WSD_id_82_WebService_tr_500_1st_375.csv,285578,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/257_TAO_id_1_Environment_tr_500_1st_3.csv,90584,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/810_Exathlon_id_1_Facility_tr_10766_1st_12590.csv,333062,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/711_YAHOO_id_161_WebService_tr_500_1st_137.csv,32901,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/339_UCR_id_37_Sensor_tr_2750_1st_5400.csv,106957,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/663_YAHOO_id_113_Synthetic_tr_500_1st_658.csv,27943,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/316_UCR_id_14_Sensor_tr_2833_1st_5988.csv,148688,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/766_YAHOO_id_216_WebService_tr_500_1st_114.csv,16873,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/444_UCR_id_142_Medical_tr_10336_1st_17001.csv,383804,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/593_YAHOO_id_43_WebService_tr_500_1st_75.csv,32536,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/681_YAHOO_id_131_Synthetic_tr_500_1st_658.csv,27553,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/190_SMD_id_13_Facility_tr_7119_1st_15849.csv,312921,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/724_YAHOO_id_174_WebService_tr_500_1st_1030.csv,33135,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/297_TODS_id_11_Synthetic_tr_500_1st_7.csv,106701,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/546_SMAP_id_16_Sensor_tr_2117_1st_4770.csv,180827,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/114_WSD_id_86_WebService_tr_500_1st_403.csv,160112,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/031_WSD_id_3_WebService_tr_826_1st_926.csv,152664,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/401_UCR_id_99_HumanActivity_tr_1671_1st_5920.csv,79697,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/474_UCR_id_172_Environment_tr_2046_1st_6520.csv,97354,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/268_IOPS_id_9_WebService_tr_6216_1st_6316.csv,257655,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/723_YAHOO_id_173_WebService_tr_500_1st_1214.csv,26213,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/595_YAHOO_id_45_WebService_tr_500_1st_248.csv,33195,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/012_NAB_id_12_Synthetic_tr_1007_1st_2787.csv,67101,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/651_YAHOO_id_101_WebService_tr_500_1st_103.csv,33477,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/221_LTDB_id_6_Medical_tr_500_1st_26.csv,729598,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/258_TAO_id_2_Environment_tr_500_1st_4.csv,95742,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/170_MITDB_id_1_Medical_tr_17675_1st_17775.csv,4223807,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/148_MSL_id_9_Sensor_tr_883_1st_1238.csv,73638,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/329_UCR_id_27_Medical_tr_7500_1st_17210.csv,386649,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/712_YAHOO_id_162_WebService_tr_500_1st_88.csv,33097,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/488_UCR_id_186_Medical_tr_7500_1st_16000.csv,381727,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/521_UCR_id_219_Facility_tr_3000_1st_6527.csv,165117,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/475_UCR_id_173_Medical_tr_3000_1st_8612.csv,130676,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/312_UCR_id_10_Facility_tr_19948_1st_52000.csv,991067,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/419_UCR_id_117_Facility_tr_3000_1st_6168.csv,165081,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/682_YAHOO_id_132_WebService_tr_500_1st_354.csv,34065,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/644_YAHOO_id_94_WebService_tr_500_1st_1078.csv,11046,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/641_YAHOO_id_91_WebService_tr_500_1st_149.csv,33136,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/448_UCR_id_146_Facility_tr_7482_1st_23357.csv,355870,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/373_UCR_id_71_Sensor_tr_2827_1st_5988.csv,147631,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/783_YAHOO_id_233_WebService_tr_500_1st_24.csv,33417,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/321_UCR_id_19_Medical_tr_1875_1st_4485.csv,89153,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/399_UCR_id_97_Facility_tr_19948_1st_52000.csv,625147,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/482_UCR_id_180_Medical_tr_7500_1st_16000.csv,202183,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/815_Exathlon_id_6_Facility_tr_10766_1st_12590.csv,261534,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/704_YAHOO_id_154_WebService_tr_500_1st_541.csv,9838,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/820_Exathlon_id_11_Facility_tr_11665_1st_13484.csv,653052,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/787_YAHOO_id_237_Synthetic_tr_500_1st_623.csv,27582,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/171_MITDB_id_2_Medical_tr_50000_1st_88864.csv,5462176,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/314_UCR_id_12_HumanActivity_tr_16250_1st_38500.csv,803115,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/588_YAHOO_id_38_Synthetic_tr_500_1st_658.csv,27261,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/849_OPPORTUNITY_id_8_HumanActivity_tr_1100_1st_1200.csv,223771,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/602_YAHOO_id_52_WebService_tr_500_1st_595.csv,33774,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/295_TODS_id_9_Synthetic_tr_1250_1st_2046.csv,105259,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/742_YAHOO_id_192_Synthetic_tr_500_1st_658.csv,27263,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/260_IOPS_id_1_WebService_tr_5000_1st_11804.csv,283496,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/014_NAB_id_14_WebService_tr_500_1st_1045.csv,28343,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/649_YAHOO_id_99_WebService_tr_500_1st_1386.csv,33119,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/553_YAHOO_id_3_WebService_tr_500_1st_237.csv,32471,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/177_MITDB_id_8_Medical_tr_17675_1st_17775.csv,5474354,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/289_TODS_id_3_Synthetic_tr_500_1st_26.csv,106371,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/425_UCR_id_123_Medical_tr_16700_1st_16800.csv,1835622,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/021_NAB_id_21_WebService_tr_500_1st_565.csv,28480,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/646_YAHOO_id_96_WebService_tr_500_1st_121.csv,33997,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/636_YAHOO_id_86_WebService_tr_500_1st_20.csv,32449,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/756_YAHOO_id_206_WebService_tr_500_1st_55.csv,32457,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/045_WSD_id_17_WebService_tr_2566_1st_2666.csv,261371,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/652_YAHOO_id_102_WebService_tr_500_1st_174.csv,33857,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/127_WSD_id_99_WebService_tr_1164_1st_1264.csv,159871,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/317_UCR_id_15_HumanActivity_tr_16000_1st_38400.csv,806948,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/497_UCR_id_195_Facility_tr_32372_1st_114000.csv,1539636,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/749_YAHOO_id_199_WebService_tr_500_1st_136.csv,33267,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/443_UCR_id_141_Medical_tr_7456_1st_17390.csv,296805,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/066_WSD_id_38_WebService_tr_3320_1st_3420.csv,144584,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/869_OPPORTUNITY_id_28_HumanActivity_tr_500_1st_566.csv,131428,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/169_Daphnet_id_1_HumanActivity_tr_9693_1st_20732.csv,339003,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/717_YAHOO_id_167_WebService_tr_500_1st_84.csv,33399,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/566_YAHOO_id_16_Synthetic_tr_500_1st_623.csv,27587,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/853_OPPORTUNITY_id_12_HumanActivity_tr_808_1st_908.csv,77564,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/392_UCR_id_90_HumanActivity_tr_48750_1st_130700.csv,1795081,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/243_SVDB_id_7_Medical_tr_11393_1st_11493.csv,1338788,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/179_SMD_id_2_Facility_tr_5925_1st_17580.csv,258097,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/726_YAHOO_id_176_WebService_tr_500_1st_221.csv,33201,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/085_WSD_id_57_WebService_tr_780_1st_880.csv,123563,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/697_YAHOO_id_147_WebService_tr_500_1st_225.csv,34048,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/225_MGAB_id_1_Synthetic_tr_25000_1st_38478.csv,2076937,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/149_Stock_id_1_Finance_tr_500_1st_7.csv,187965,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/019_NAB_id_19_Facility_tr_1007_1st_1171.csv,38370,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/707_YAHOO_id_157_WebService_tr_500_1st_137.csv,33146,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/234_SED_id_1_Medical_tr_3740_1st_3840.csv,218893,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/374_UCR_id_72_Medical_tr_2500_1st_7000.csv,103678,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/686_YAHOO_id_136_WebService_tr_500_1st_755.csv,32483,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/275_IOPS_id_16_WebService_tr_1482_1st_1582.csv,183536,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/571_YAHOO_id_21_Synthetic_tr_500_1st_623.csv,27307,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/731_YAHOO_id_181_Synthetic_tr_500_1st_623.csv,27795,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/491_UCR_id_189_Facility_tr_32372_1st_114000.csv,1166502,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/469_UCR_id_167_Medical_tr_1875_1st_4187.csv,89196,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/256_SVDB_id_20_Medical_tr_6264_1st_6364.csv,1696119,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/754_YAHOO_id_204_WebService_tr_500_1st_28.csv,33918,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/808_YAHOO_id_258_WebService_tr_500_1st_142.csv,13846,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/764_YAHOO_id_214_WebService_tr_500_1st_599.csv,15697,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/090_WSD_id_62_WebService_tr_2281_1st_2381.csv,156057,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/843_OPPORTUNITY_id_2_HumanActivity_tr_808_1st_908.csv,70444,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/088_WSD_id_60_WebService_tr_4548_1st_5596.csv,163743,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/015_NAB_id_15_Synthetic_tr_1007_1st_2787.csv,67233,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/226_MGAB_id_2_Synthetic_tr_20000_1st_45134.csv,1661721,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/846_OPPORTUNITY_id_5_HumanActivity_tr_2085_1st_2185.csv,191077,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/112_WSD_id_84_WebService_tr_2442_1st_2542.csv,162498,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/078_WSD_id_50_WebService_tr_2449_1st_2549.csv,162622,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/689_YAHOO_id_139_WebService_tr_500_1st_1073.csv,33732,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/352_UCR_id_50_HumanActivity_tr_48750_1st_110800.csv,1789849,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/143_MSL_id_4_Sensor_tr_980_1st_3550.csv,84303,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/271_IOPS_id_12_WebService_tr_500_1st_341.csv,136612,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/517_UCR_id_215_Facility_tr_7482_1st_24005.csv,239433,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/492_UCR_id_190_HumanActivity_tr_12500_1st_46500.csv,439350,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/713_YAHOO_id_163_WebService_tr_500_1st_66.csv,32384,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/132_WSD_id_104_WebService_tr_4037_1st_4137.csv,144672,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/594_YAHOO_id_44_WebService_tr_500_1st_599.csv,12459,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/709_YAHOO_id_159_WebService_tr_500_1st_481.csv,33137,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/414_UCR_id_112_HumanActivity_tr_48750_1st_143411.csv,1790252,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/782_YAHOO_id_232_Synthetic_tr_500_1st_623.csv,27305,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/565_YAHOO_id_15_WebService_tr_500_1st_151.csv,32372,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/536_SMAP_id_6_Sensor_tr_2160_1st_5600.csv,183067,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/370_UCR_id_68_Medical_tr_9625_1st_12240.csv,476615,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/118_WSD_id_90_WebService_tr_4559_1st_6317.csv,162734,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/678_YAHOO_id_128_WebService_tr_500_1st_665.csv,32474,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/755_YAHOO_id_205_Synthetic_tr_500_1st_893.csv,27216,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/073_WSD_id_45_WebService_tr_3392_1st_3492.csv,135295,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/282_NEK_id_6_WebService_tr_500_1st_64.csv,22731,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/266_IOPS_id_7_WebService_tr_4010_1st_4110.csv,704388,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/080_WSD_id_52_WebService_tr_1538_1st_1638.csv,144619,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/099_WSD_id_71_WebService_tr_4559_1st_14411.csv,164127,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/814_Exathlon_id_5_Facility_tr_10766_1st_12590.csv,260437,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/103_WSD_id_75_WebService_tr_1375_1st_1475.csv,163636,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/789_YAHOO_id_239_WebService_tr_500_1st_421.csv,26142,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/845_OPPORTUNITY_id_4_HumanActivity_tr_7295_1st_27516.csv,231287,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/718_YAHOO_id_168_WebService_tr_500_1st_263.csv,33411,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/185_SMD_id_8_Facility_tr_5000_1st_15144.csv,215422,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/017_NAB_id_17_Synthetic_tr_1007_1st_1805.csv,24281,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/366_UCR_id_64_Medical_tr_2507_1st_8500.csv,104061,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/844_OPPORTUNITY_id_3_HumanActivity_tr_500_1st_566.csv,110367,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/543_SMAP_id_13_Sensor_tr_2020_1st_4550.csv,172014,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/802_YAHOO_id_252_WebService_tr_500_1st_63.csv,32368,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/514_UCR_id_212_Medical_tr_2499_1st_6508.csv,103800,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/413_UCR_id_111_Facility_tr_12500_1st_46600.csv,620946,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/200_SMD_id_23_Facility_tr_7174_1st_21230.csv,312366,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/292_TODS_id_6_Synthetic_tr_500_1st_11.csv,106339,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/368_UCR_id_66_Facility_tr_50000_1st_125720.csv,2436771,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/548_SMAP_id_18_Sensor_tr_2094_1st_5600.csv,179152,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/840_Exathlon_id_31_Facility_tr_10766_1st_12590.csv,258530,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/063_WSD_id_35_WebService_tr_2290_1st_2390.csv,162961,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/672_YAHOO_id_122_WebService_tr_500_1st_857.csv,32858,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/503_UCR_id_201_Facility_tr_50000_1st_593450.csv,8771665,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/152_Stock_id_4_Finance_tr_500_1st_2.csv,208981,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/162_Stock_id_14_Finance_tr_500_1st_4.csv,104199,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/584_YAHOO_id_34_Synthetic_tr_500_1st_658.csv,27344,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/675_YAHOO_id_125_Synthetic_tr_500_1st_623.csv,27362,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/714_YAHOO_id_164_WebService_tr_500_1st_1.csv,32561,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/349_UCR_id_47_Facility_tr_29954_1st_74900.csv,1117768,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/542_SMAP_id_12_Sensor_tr_1908_1st_4690.csv,47744,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/453_UCR_id_151_Facility_tr_32000_1st_67995.csv,1521983,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/323_UCR_id_21_HumanActivity_tr_48812_1st_128430.csv,1793711,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/356_UCR_id_54_Medical_tr_7500_1st_16000.csv,374565,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/391_UCR_id_89_Medical_tr_1875_1st_5759.csv,89186,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/708_YAHOO_id_158_WebService_tr_500_1st_165.csv,33081,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/645_YAHOO_id_95_WebService_tr_500_1st_1047.csv,32439,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/702_YAHOO_id_152_WebService_tr_500_1st_8.csv,33094,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/507_UCR_id_205_HumanActivity_tr_16000_1st_31200.csv,572229,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/659_YAHOO_id_109_Synthetic_tr_500_1st_623.csv,27969,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/817_Exathlon_id_8_Facility_tr_10766_1st_12590.csv,258530,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/648_YAHOO_id_98_WebService_tr_500_1st_731.csv,32405,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/694_YAHOO_id_144_Synthetic_tr_500_1st_658.csv,27535,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/093_WSD_id_65_WebService_tr_1125_1st_1225.csv,159680,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/353_UCR_id_51_Medical_tr_1875_1st_3198.csv,89198,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/460_UCR_id_158_Medical_tr_7487_1st_27862.csv,296971,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/822_Exathlon_id_13_Facility_tr_10766_1st_12590.csv,258530,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/422_UCR_id_120_Facility_tr_50000_1st_150720.csv,2436517,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/215_SMD_id_38_Facility_tr_5925_1st_17580.csv,257973,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/151_Stock_id_3_Finance_tr_500_1st_62.csv,93983,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/026_NAB_id_26_Traffic_tr_624_1st_2261.csv,17527,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/528_UCR_id_226_Medical_tr_7500_1st_17000.csv,374617,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/197_SMD_id_20_Facility_tr_5000_1st_15144.csv,217500,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/796_YAHOO_id_246_WebService_tr_500_1st_222.csv,34007,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/778_YAHOO_id_228_Synthetic_tr_500_1st_658.csv,27508,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/427_UCR_id_125_Medical_tr_10403_1st_10995.csv,363506,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/420_UCR_id_118_Facility_tr_13750_1st_52600.csv,392624,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/803_YAHOO_id_253_WebService_tr_500_1st_58.csv,32463,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/250_SVDB_id_14_Medical_tr_50000_1st_107354.csv,1729542,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/850_OPPORTUNITY_id_9_HumanActivity_tr_895_1st_995.csv,118425,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/092_WSD_id_64_WebService_tr_500_1st_118.csv,144486,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/862_OPPORTUNITY_id_21_HumanActivity_tr_500_1st_566.csv,125293,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/128_WSD_id_100_WebService_tr_4068_1st_4168.csv,144048,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/596_YAHOO_id_46_WebService_tr_500_1st_666.csv,34083,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/145_MSL_id_6_Sensor_tr_530_1st_630.csv,52065,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/335_UCR_id_33_Medical_tr_1875_1st_4526.csv,81632,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/828_Exathlon_id_19_Facility_tr_11663_1st_13482.csv,649378,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/180_SMD_id_3_Facility_tr_5925_1st_17580.csv,145905,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/345_UCR_id_43_Facility_tr_25000_1st_44630.csv,901712,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/347_UCR_id_45_Sensor_tr_2851_1st_5365.csv,149615,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/464_UCR_id_162_Medical_tr_7487_1st_16390.csv,385992,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/761_YAHOO_id_211_WebService_tr_500_1st_7.csv,33056,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/255_SVDB_id_19_Medical_tr_50000_1st_54982.csv,1694378,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/577_YAHOO_id_27_WebService_tr_500_1st_498.csv,32558,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/087_WSD_id_59_WebService_tr_4559_1st_12600.csv,164298,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/395_UCR_id_93_Medical_tr_7516_1st_17390.csv,299266,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/586_YAHOO_id_36_WebService_tr_500_1st_398.csv,32863,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/733_YAHOO_id_183_WebService_tr_500_1st_447.csv,25966,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/679_YAHOO_id_129_WebService_tr_500_1st_428.csv,32446,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/141_MSL_id_2_Sensor_tr_500_1st_550.csv,47861,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/561_YAHOO_id_11_WebService_tr_500_1st_359.csv,33752,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/130_WSD_id_102_WebService_tr_2362_1st_2462.csv,161962,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/567_YAHOO_id_17_Synthetic_tr_500_1st_893.csv,27312,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/230_MGAB_id_6_Synthetic_tr_25000_1st_42441.csv,2076821,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/771_YAHOO_id_221_WebService_tr_500_1st_61.csv,34009,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/196_SMD_id_19_Facility_tr_7174_1st_21230.csv,312517,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/467_UCR_id_165_Environment_tr_6166_1st_19280.csv,293316,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/156_Stock_id_8_Finance_tr_500_1st_24.csv,93974,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/123_WSD_id_95_WebService_tr_4559_1st_4901.csv,160716,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/105_WSD_id_77_WebService_tr_2348_1st_2448.csv,162332,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/861_OPPORTUNITY_id_20_HumanActivity_tr_2085_1st_2185.csv,199693,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/656_YAHOO_id_106_Synthetic_tr_500_1st_658.csv,27979,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/812_Exathlon_id_3_Facility_tr_10766_1st_12590.csv,261534,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/306_UCR_id_4_Medical_tr_2507_1st_8500.csv,134138,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/203_SMD_id_26_Facility_tr_7174_1st_21230.csv,312039,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/458_UCR_id_156_Facility_tr_20000_1st_56600.csv,626269,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/858_OPPORTUNITY_id_17_HumanActivity_tr_808_1st_908.csv,73282,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/129_WSD_id_101_WebService_tr_4448_1st_9592.csv,269262,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/759_YAHOO_id_209_WebService_tr_500_1st_189.csv,32532,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/303_UCR_id_1_Medical_tr_2499_1st_8000.csv,103674,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/155_Stock_id_7_Finance_tr_500_1st_18.csv,187936,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/333_UCR_id_31_Facility_tr_7500_1st_13400.csv,240736,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/752_YAHOO_id_202_WebService_tr_500_1st_95.csv,32658,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/305_UCR_id_3_Medical_tr_3000_1st_5948.csv,165073,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/738_YAHOO_id_188_WebService_tr_500_1st_26.csv,33150,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/115_WSD_id_87_WebService_tr_2252_1st_2352.csv,158670,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/253_SVDB_id_17_Medical_tr_17803_1st_17903.csv,934776,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/454_UCR_id_152_Medical_tr_9625_1st_20950.csv,476081,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/307_UCR_id_5_Facility_tr_29895_1st_39240.csv,1115576,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/541_SMAP_id_11_Sensor_tr_1832_1st_5300.csv,159049,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/539_SMAP_id_9_Sensor_tr_1857_1st_4270.csv,155552,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/501_UCR_id_199_Facility_tr_7482_1st_29480.csv,239220,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/585_YAHOO_id_35_WebService_tr_500_1st_577.csv,32533,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/611_YAHOO_id_61_Synthetic_tr_500_1st_623.csv,27519,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/525_UCR_id_223_Facility_tr_50000_1st_250720.csv,2557531,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/851_OPPORTUNITY_id_10_HumanActivity_tr_6213_1st_7311.csv,202751,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/106_WSD_id_78_WebService_tr_3363_1st_3463.csv,164486,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/140_MSL_id_1_Sensor_tr_530_1st_630.csv,14591,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/272_IOPS_id_13_WebService_tr_3442_1st_3542.csv,1178433,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/229_MGAB_id_5_Synthetic_tr_25000_1st_33098.csv,2076750,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/527_UCR_id_225_Medical_tr_3000_1st_5948.csv,165017,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/729_YAHOO_id_179_WebService_tr_500_1st_559.csv,32426,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/379_UCR_id_77_Facility_tr_32191_1st_124159.csv,1159004,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/520_UCR_id_218_Medical_tr_9567_1st_16000.csv,274383,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/309_UCR_id_7_Medical_tr_3000_1st_5948.csv,130792,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/776_YAHOO_id_226_Synthetic_tr_500_1st_623.csv,27314,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/010_NAB_id_10_WebService_tr_500_1st_271.csv,17778,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/178_SMD_id_1_Facility_tr_6000_1st_10609.csv,255746,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/388_UCR_id_86_Facility_tr_17500_1st_23355.csv,631133,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/614_YAHOO_id_64_WebService_tr_500_1st_1204.csv,9619,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/182_SMD_id_5_Facility_tr_7174_1st_21230.csv,312540,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/009_NAB_id_9_Traffic_tr_500_1st_438.csv,17314,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/863_OPPORTUNITY_id_22_HumanActivity_tr_808_1st_908.csv,64661,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/777_YAHOO_id_227_Synthetic_tr_500_1st_623.csv,27302,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/781_YAHOO_id_231_Synthetic_tr_500_1st_623.csv,27334,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/340_UCR_id_38_Facility_tr_32500_1st_114283.csv,1545897,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/280_NEK_id_4_WebService_tr_500_1st_231.csv,22650,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/139_WSD_id_111_WebService_tr_1701_1st_1801.csv,146351,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/160_Stock_id_12_Finance_tr_500_1st_14.csv,188016,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/767_YAHOO_id_217_Synthetic_tr_500_1st_658.csv,27636,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/064_WSD_id_36_WebService_tr_4559_1st_10195.csv,164132,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/573_YAHOO_id_23_Synthetic_tr_500_1st_623.csv,27451,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/308_UCR_id_6_Facility_tr_20000_1st_56600.csv,993139,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/059_WSD_id_31_WebService_tr_4559_1st_9058.csv,164509,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/013_NAB_id_13_Traffic_tr_623_1st_2084.csv,17469,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/498_UCR_id_196_Medical_tr_15000_1st_51370.csv,761200,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/519_UCR_id_217_Medical_tr_7516_1st_17390.csv,387496,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/184_SMD_id_7_Facility_tr_7119_1st_15849.csv,296015,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/261_IOPS_id_2_WebService_tr_2178_1st_2278.csv,183495,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/354_UCR_id_52_Facility_tr_7482_1st_18485.csv,240162,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/104_WSD_id_76_WebService_tr_3047_1st_3147.csv,158752,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/299_TODS_id_13_Synthetic_tr_500_1st_65.csv,107262,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/098_WSD_id_70_WebService_tr_3575_1st_3675.csv,163003,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/375_UCR_id_73_Medical_tr_47500_1st_123000.csv,1376290,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/441_UCR_id_139_Facility_tr_7500_1st_13400.csv,385622,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/043_WSD_id_15_WebService_tr_4521_1st_6828.csv,264050,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/690_YAHOO_id_140_WebService_tr_500_1st_696.csv,34043,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/364_UCR_id_62_Sensor_tr_2833_1st_5988.csv,147924,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/286_CATSv2_id_1_Sensor_tr_17792_1st_17892.csv,6314508,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/318_UCR_id_16_Medical_tr_2499_1st_7000.csv,133587,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/409_UCR_id_107_Facility_tr_20000_1st_67950.csv,1007367,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/495_UCR_id_193_Environment_tr_2046_1st_6520.csv,56067,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/555_YAHOO_id_5_WebService_tr_500_1st_730.csv,32587,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/293_TODS_id_7_Synthetic_tr_500_1st_7.csv,106360,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/037_WSD_id_9_WebService_tr_4583_1st_6214.csv,167225,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/457_UCR_id_155_Medical_tr_49999_1st_143000.csv,1448330,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/166_Stock_id_18_Finance_tr_500_1st_18.csv,208847,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/813_Exathlon_id_4_Facility_tr_10766_1st_12590.csv,313894,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/516_UCR_id_214_HumanActivity_tr_2108_1st_4702.csv,106811,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/183_SMD_id_6_Facility_tr_5925_1st_17580.csv,258082,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/855_OPPORTUNITY_id_14_HumanActivity_tr_808_1st_908.csv,71539,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/647_YAHOO_id_97_Synthetic_tr_500_1st_658.csv,27329,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/794_YAHOO_id_244_Synthetic_tr_500_1st_658.csv,27560,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/147_MSL_id_8_Sensor_tr_590_1st_690.csv,51673,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/355_UCR_id_53_HumanActivity_tr_48750_1st_143411.csv,2454580,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/540_SMAP_id_10_Sensor_tr_2051_1st_4575.csv,176036,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/531_SMAP_id_1_Sensor_tr_1811_1st_4510.csv,43476,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/472_UCR_id_170_Facility_tr_32000_1st_67995.csv,1152020,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/800_YAHOO_id_250_Synthetic_tr_500_1st_623.csv,27657,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/296_TODS_id_10_Synthetic_tr_500_1st_26.csv,106361,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/696_YAHOO_id_146_Synthetic_tr_500_1st_893.csv,27999,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/035_WSD_id_7_WebService_tr_4555_1st_11911.csv,164057,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/631_YAHOO_id_81_WebService_tr_500_1st_96.csv,33188,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/626_YAHOO_id_76_WebService_tr_500_1st_883.csv,10173,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/703_YAHOO_id_153_Synthetic_tr_500_1st_623.csv,27399,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/365_UCR_id_63_Facility_tr_50000_1st_210720.csv,2285467,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/773_YAHOO_id_223_WebService_tr_500_1st_137.csv,32457,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/421_UCR_id_119_HumanActivity_tr_48750_1st_130700.csv,2454113,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/591_YAHOO_id_41_WebService_tr_500_1st_139.csv,32555,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/411_UCR_id_109_Environment_tr_2046_1st_4852.csv,97313,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/506_UCR_id_204_Environment_tr_2046_1st_5549.csv,97319,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/821_Exathlon_id_12_Facility_tr_6985_1st_7085.csv,419929,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/775_YAHOO_id_225_Synthetic_tr_500_1st_658.csv,27852,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/068_WSD_id_40_WebService_tr_4549_1st_13322.csv,163846,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/579_YAHOO_id_29_WebService_tr_500_1st_1342.csv,32471,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/433_UCR_id_131_Facility_tr_50000_1st_106720.csv,2376919,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/534_SMAP_id_4_Sensor_tr_1968_1st_4370.csv,55128,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/247_SVDB_id_11_Medical_tr_20100_1st_23611.csv,590485,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/535_SMAP_id_5_Sensor_tr_1113_1st_1890.csv,97936,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/819_Exathlon_id_10_Facility_tr_10766_1st_12590.csv,263885,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/470_UCR_id_168_Medical_tr_10447_1st_10998.csv,376979,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/660_YAHOO_id_110_WebService_tr_500_1st_307.csv,32423,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/866_OPPORTUNITY_id_25_HumanActivity_tr_6213_1st_7311.csv,197346,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/397_UCR_id_95_Medical_tr_1830_1st_4675.csv,79702,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/716_YAHOO_id_166_WebService_tr_500_1st_540.csv,32566,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/827_Exathlon_id_18_Facility_tr_10766_1st_12590.csv,258530,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/438_UCR_id_136_Medical_tr_14750_1st_57960.csv,442303,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/757_YAHOO_id_207_WebService_tr_500_1st_33.csv,33807,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/537_SMAP_id_7_Sensor_tr_2077_1st_5394.csv,101800,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/269_IOPS_id_10_WebService_tr_1216_1st_1728.csv,87548,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/164_Stock_id_16_Finance_tr_500_1st_8.csv,208645,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/483_UCR_id_181_Medical_tr_2499_1st_6508.csv,133623,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/361_UCR_id_59_Medical_tr_3000_1st_7175.csv,130681,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/204_SMD_id_27_Facility_tr_5000_1st_15144.csv,212423,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/638_YAHOO_id_88_Synthetic_tr_500_1st_893.csv,27610,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/829_Exathlon_id_20_Facility_tr_10766_1st_12590.csv,384043,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/154_Stock_id_6_Finance_tr_500_1st_38.csv,187951,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/174_MITDB_id_5_Medical_tr_50000_1st_539948.csv,5213417,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/241_SVDB_id_5_Medical_tr_11587_1st_11687.csv,948198,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/007_NAB_id_7_Traffic_tr_624_1st_2087.csv,20213,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/683_YAHOO_id_133_WebService_tr_500_1st_36.csv,33140,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/452_UCR_id_150_Facility_tr_10000_1st_35774.csv,305612,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/236_SED_id_3_Medical_tr_3740_1st_3840.csv,436384,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/674_YAHOO_id_124_WebService_tr_500_1st_514.csv,12965,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/163_Stock_id_15_Finance_tr_500_1st_3.csv,104468,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/864_OPPORTUNITY_id_23_HumanActivity_tr_895_1st_995.csv,134425,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/597_YAHOO_id_47_Synthetic_tr_500_1st_623.csv,27544,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/736_YAHOO_id_186_Synthetic_tr_500_1st_623.csv,27419,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/276_IOPS_id_17_WebService_tr_19197_1st_19297.csv,1363378,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/277_NEK_id_1_WebService_tr_500_1st_17.csv,22519,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/210_SMD_id_33_Facility_tr_5925_1st_17580.csv,258137,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/198_SMD_id_21_Facility_tr_5925_1st_17580.csv,198852,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/120_WSD_id_92_WebService_tr_2329_1st_2429.csv,152967,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/428_UCR_id_126_Medical_tr_7487_1st_27862.csv,385994,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/343_UCR_id_41_Facility_tr_14030_1st_52600.csv,708986,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/408_UCR_id_106_Medical_tr_9594_1st_11111.csv,474755,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/693_YAHOO_id_143_WebService_tr_500_1st_1003.csv,11522,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/061_WSD_id_33_WebService_tr_4559_1st_9722.csv,164362,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/033_WSD_id_5_WebService_tr_4559_1st_12588.csv,164327,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/590_YAHOO_id_40_Synthetic_tr_500_1st_658.csv,27297,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/117_WSD_id_89_WebService_tr_3251_1st_3351.csv,237229,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/344_UCR_id_42_Sensor_tr_2851_1st_5365.csv,148868,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/788_YAHOO_id_238_WebService_tr_500_1st_973.csv,33393,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/005_NAB_id_5_Traffic_tr_594_1st_1645.csv,17679,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/022_NAB_id_22_Facility_tr_1007_1st_2980.csv,41698,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/281_NEK_id_5_WebService_tr_500_1st_974.csv,23008,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/049_WSD_id_21_WebService_tr_4297_1st_7097.csv,135863,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/684_YAHOO_id_134_Synthetic_tr_500_1st_623.csv,27558,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/868_OPPORTUNITY_id_27_HumanActivity_tr_2085_1st_2185.csv,175519,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/560_YAHOO_id_10_Synthetic_tr_500_1st_893.csv,27971,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/053_WSD_id_25_WebService_tr_4559_1st_9198.csv,163570,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/762_YAHOO_id_212_WebService_tr_500_1st_1055.csv,32736,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/816_Exathlon_id_7_Facility_tr_10766_1st_12590.csv,384043,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/552_YAHOO_id_2_Synthetic_tr_500_1st_893.csv,27499,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/468_UCR_id_166_Facility_tr_10000_1st_35774.csv,506955,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/836_Exathlon_id_27_Facility_tr_10766_1st_12590.csv,261534,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/856_OPPORTUNITY_id_15_HumanActivity_tr_808_1st_908.csv,72231,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/086_WSD_id_58_WebService_tr_4436_1st_9529.csv,251224,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/426_UCR_id_124_Sensor_tr_2827_1st_4711.csv,147782,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/627_YAHOO_id_77_Synthetic_tr_500_1st_623.csv,27561,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/633_YAHOO_id_83_WebService_tr_500_1st_223.csv,33185,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/496_UCR_id_194_Environment_tr_2046_1st_5391.csv,97300,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/383_UCR_id_81_Medical_tr_1875_1st_3198.csv,81613,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/639_YAHOO_id_89_Synthetic_tr_500_1st_893.csv,27534,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/195_SMD_id_18_Facility_tr_5925_1st_17580.csv,258101,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/698_YAHOO_id_148_WebService_tr_500_1st_186.csv,32370,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/610_YAHOO_id_60_WebService_tr_500_1st_878.csv,32469,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/231_MGAB_id_7_Synthetic_tr_25000_1st_35544.csv,2077069,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/004_NAB_id_4_Facility_tr_1007_1st_1437.csv,44654,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/367_UCR_id_65_Medical_tr_9567_1st_16000.csv,473001,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/600_YAHOO_id_50_Synthetic_tr_500_1st_658.csv,27553,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/083_WSD_id_55_WebService_tr_4599_1st_4863.csv,288813,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/252_SVDB_id_16_Medical_tr_12167_1st_12267.csv,2050972,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/695_YAHOO_id_145_Synthetic_tr_500_1st_658.csv,27499,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/511_UCR_id_209_Medical_tr_7500_1st_11800.csv,202137,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/199_SMD_id_22_Facility_tr_5925_1st_17580.csv,258187,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/334_UCR_id_32_HumanActivity_tr_1671_1st_2764.csv,79675,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/237_SVDB_id_1_Medical_tr_11587_1st_11687.csv,968883,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/435_UCR_id_133_Medical_tr_14750_1st_47830.csv,442673,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/725_YAHOO_id_175_Synthetic_tr_500_1st_623.csv,27513,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/837_Exathlon_id_28_Facility_tr_8898_1st_8998.csv,415766,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/181_SMD_id_4_Facility_tr_5000_1st_15144.csv,217705,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/406_UCR_id_104_Facility_tr_20000_1st_67950.csv,993701,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/445_UCR_id_143_Environment_tr_6166_1st_19280.csv,293301,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/466_UCR_id_164_Medical_tr_1900_1st_5684.csv,90316,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/168_Stock_id_20_Finance_tr_500_1st_1.csv,104374,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/432_UCR_id_130_Facility_tr_23000_1st_26970.csv,920007,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/238_SVDB_id_2_Medical_tr_25000_1st_71963.csv,759757,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/382_UCR_id_80_Medical_tr_7500_1st_11800.csv,381622,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/673_YAHOO_id_123_Synthetic_tr_500_1st_893.csv,27310,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/710_YAHOO_id_160_WebService_tr_500_1st_253.csv,32513,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/023_NAB_id_23_Facility_tr_4512_1st_16551.csv,177096,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/854_OPPORTUNITY_id_13_HumanActivity_tr_1477_1st_1577.csv,142096,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/768_YAHOO_id_218_WebService_tr_500_1st_431.csv,32522,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/568_YAHOO_id_18_WebService_tr_500_1st_333.csv,33078,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/867_OPPORTUNITY_id_26_HumanActivity_tr_808_1st_908.csv,76082,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/779_YAHOO_id_229_WebService_tr_500_1st_25.csv,32727,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/172_MITDB_id_3_Medical_tr_27274_1st_27374.csv,5144202,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/533_SMAP_id_3_Sensor_tr_2052_1st_5300.csv,177576,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/671_YAHOO_id_121_Synthetic_tr_500_1st_658.csv,27493,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/508_UCR_id_206_Medical_tr_9567_1st_16000.csv,473088,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/842_OPPORTUNITY_id_1_HumanActivity_tr_7295_1st_27516.csv,227985,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/563_YAHOO_id_13_Synthetic_tr_500_1st_623.csv,27305,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/338_UCR_id_36_Facility_tr_9000_1st_12400.csv,286642,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/865_OPPORTUNITY_id_24_HumanActivity_tr_2085_1st_2185.csv,178121,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/264_IOPS_id_5_WebService_tr_11665_1st_11765.csv,835015,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/500_UCR_id_198_Facility_tr_7482_1st_23357.csv,239798,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/161_Stock_id_13_Finance_tr_500_1st_3.csv,94036,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/581_YAHOO_id_31_Synthetic_tr_500_1st_893.csv,27628,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/513_UCR_id_211_Medical_tr_9967_1st_26929.csv,355965,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/556_YAHOO_id_6_WebService_tr_500_1st_359.csv,13815,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/227_MGAB_id_3_Synthetic_tr_25000_1st_44340.csv,2076862,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/402_UCR_id_100_Medical_tr_7500_1st_19510.csv,222002,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/283_NEK_id_7_WebService_tr_500_1st_777.csv,22559,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/494_UCR_id_192_Facility_tr_22500_1st_72150.csv,774517,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/538_SMAP_id_8_Sensor_tr_2007_1st_3650.csv,50480,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/189_SMD_id_12_Facility_tr_5925_1st_17580.csv,258001,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/657_YAHOO_id_107_WebService_tr_500_1st_1260.csv,9995,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/304_UCR_id_2_Medical_tr_2499_1st_7000.csv,103796,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/664_YAHOO_id_114_Synthetic_tr_500_1st_658.csv,27974,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/167_Stock_id_19_Finance_tr_500_1st_7.csv,94036,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/376_UCR_id_74_Medical_tr_7500_1st_17210.csv,297482,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/512_UCR_id_210_HumanActivity_tr_1671_1st_2764.csv,86438,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/029_WSD_id_1_WebService_tr_4559_1st_10201.csv,164129,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/798_YAHOO_id_248_WebService_tr_500_1st_105.csv,33735,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/294_TODS_id_8_Synthetic_tr_500_1st_200.csv,106356,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/348_UCR_id_46_Facility_tr_9000_1st_12400.csv,462887,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/471_UCR_id_169_Facility_tr_10000_1st_35774.csv,307147,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/232_MGAB_id_8_Synthetic_tr_25000_1st_32708.csv,2076784,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/551_YAHOO_id_1_Synthetic_tr_500_1st_893.csv,27750,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/795_YAHOO_id_245_WebService_tr_500_1st_84.csv,33708,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/502_UCR_id_200_Medical_tr_7487_1st_16390.csv,297060,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/346_UCR_id_44_Medical_tr_7456_1st_17390.csv,384490,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/209_SMD_id_32_Facility_tr_5925_1st_17580.csv,258454,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/126_WSD_id_98_WebService_tr_657_1st_757.csv,216365,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/608_YAHOO_id_58_WebService_tr_500_1st_72.csv,33142,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/576_YAHOO_id_26_Synthetic_tr_500_1st_658.csv,27943,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/067_WSD_id_39_WebService_tr_4559_1st_13973.csv,164227,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/668_YAHOO_id_118_WebService_tr_500_1st_112.csv,32468,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/705_YAHOO_id_155_WebService_tr_500_1st_1279.csv,11013,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/006_NAB_id_6_Traffic_tr_2579_1st_5839.csv,100637,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/455_UCR_id_153_Facility_tr_50000_1st_163632.csv,2363487,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/574_YAHOO_id_24_WebService_tr_500_1st_202.csv,33036,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/394_UCR_id_92_Medical_tr_9967_1st_28995.csv,359085,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/385_UCR_id_83_Environment_tr_2046_1st_6006.csv,97263,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/249_SVDB_id_13_Medical_tr_50000_1st_54982.csv,1764737,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/055_WSD_id_27_WebService_tr_3768_1st_3868.csv,159990,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/607_YAHOO_id_57_WebService_tr_500_1st_426.csv,32546,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/848_OPPORTUNITY_id_7_HumanActivity_tr_1477_1st_1577.csv,147583,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/835_Exathlon_id_26_Facility_tr_10766_1st_12590.csv,310912,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/857_OPPORTUNITY_id_16_HumanActivity_tr_500_1st_566.csv,133627,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/578_YAHOO_id_28_Synthetic_tr_500_1st_623.csv,27330,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/416_UCR_id_114_Medical_tr_50000_1st_91200.csv,1639709,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/259_TAO_id_3_Environment_tr_500_1st_7.csv,71893,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/622_YAHOO_id_72_WebService_tr_500_1st_421.csv,25509,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/784_YAHOO_id_234_Synthetic_tr_500_1st_623.csv,27485,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/666_YAHOO_id_116_Synthetic_tr_500_1st_893.csv,27631,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/328_UCR_id_26_Medical_tr_1913_1st_3474.csv,83311,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/461_UCR_id_159_Medical_tr_45096_1st_131200.csv,1311793,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/465_UCR_id_163_HumanActivity_tr_1671_1st_5920.csv,86428,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/522_UCR_id_220_Medical_tr_10217_1st_27929.csv,360468,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/060_WSD_id_32_WebService_tr_4576_1st_4766.csv,159714,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/157_Stock_id_9_Finance_tr_500_1st_19.csv,104321,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/490_UCR_id_188_Medical_tr_14750_1st_47530.csv,443932,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/801_YAHOO_id_251_WebService_tr_500_1st_190.csv,33226,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/056_WSD_id_28_WebService_tr_4559_1st_9689.csv,332391,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/165_Stock_id_17_Finance_tr_500_1st_7.csv,208826,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/550_SWaT_id_1_Sensor_tr_43700_1st_43800.csv,4599934,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/240_SVDB_id_4_Medical_tr_18462_1st_18562.csv,999064,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/870_OPPORTUNITY_id_29_HumanActivity_tr_1477_1st_1577.csv,142983,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/570_YAHOO_id_20_Synthetic_tr_500_1st_658.csv,27861,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/220_LTDB_id_5_Medical_tr_500_1st_26.csv,736134,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/273_IOPS_id_14_WebService_tr_5569_1st_5669.csv,1321487,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/758_YAHOO_id_208_WebService_tr_500_1st_24.csv,32442,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/119_WSD_id_91_WebService_tr_4559_1st_12353.csv,164252,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/417_UCR_id_115_Sensor_tr_2750_1st_5400.csv,136871,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/564_YAHOO_id_14_Synthetic_tr_500_1st_658.csv,27490,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/040_WSD_id_12_WebService_tr_4559_1st_9714.csv,164372,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/589_YAHOO_id_39_WebService_tr_500_1st_10.csv,32561,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/826_Exathlon_id_17_Facility_tr_11665_1st_13484.csv,653052,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/360_UCR_id_58_Facility_tr_14030_1st_52600.csv,410688,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/158_Stock_id_10_Finance_tr_500_1st_2.csv,187999,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/121_WSD_id_93_WebService_tr_4559_1st_11749.csv,164122,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/076_WSD_id_48_WebService_tr_3821_1st_7083.csv,217240,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/337_UCR_id_35_HumanActivity_tr_50000_1st_110260.csv,2516521,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/150_Stock_id_2_Finance_tr_500_1st_7.csv,104560,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/219_LTDB_id_4_Medical_tr_3618_1st_3718.csv,775251,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/745_YAHOO_id_195_WebService_tr_500_1st_326.csv,34063,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/254_SVDB_id_18_Medical_tr_30824_1st_30924.csv,1928823,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/036_WSD_id_8_WebService_tr_4504_1st_6898.csv,284350,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/765_YAHOO_id_215_WebService_tr_500_1st_92.csv,33462,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/279_NEK_id_3_WebService_tr_500_1st_974.csv,22546,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/173_MITDB_id_4_Medical_tr_13620_1st_13720.csv,5429973,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/732_YAHOO_id_182_Synthetic_tr_500_1st_658.csv,27508,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/624_YAHOO_id_74_Synthetic_tr_500_1st_893.csv,27376,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/642_YAHOO_id_92_WebService_tr_500_1st_433.csv,32521,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/048_WSD_id_20_WebService_tr_4559_1st_11813.csv,164134,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/772_YAHOO_id_222_WebService_tr_500_1st_85.csv,32409,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/824_Exathlon_id_15_Facility_tr_10766_1st_12590.csv,258530,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/371_UCR_id_69_Medical_tr_1853_1st_6200.csv,80754,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/025_NAB_id_25_WebService_tr_3958_1st_4614.csv,106420,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/612_YAHOO_id_62_WebService_tr_500_1st_97.csv,33835,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/650_YAHOO_id_100_Synthetic_tr_500_1st_623.csv,27506,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/790_YAHOO_id_240_WebService_tr_500_1st_119.csv,33112,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/688_YAHOO_id_138_WebService_tr_500_1st_482.csv,34046,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/739_YAHOO_id_189_Synthetic_tr_500_1st_893.csv,27309,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/113_WSD_id_85_WebService_tr_500_1st_335.csv,160642,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/473_UCR_id_171_HumanActivity_tr_2617_1st_7290.csv,133586,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/302_Power_id_1_Facility_tr_7685_1st_7785.csv,299032,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/504_UCR_id_202_Environment_tr_2046_1st_5549.csv,97315,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/284_NEK_id_8_WebService_tr_500_1st_976.csv,23005,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/575_YAHOO_id_25_Synthetic_tr_500_1st_623.csv,27900,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/084_WSD_id_56_WebService_tr_4559_1st_9616.csv,330124,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/042_WSD_id_14_WebService_tr_3015_1st_3115.csv,159790,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/135_WSD_id_107_WebService_tr_3779_1st_3879.csv,137953,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/839_Exathlon_id_30_Facility_tr_10766_1st_12590.csv,384043,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/601_YAHOO_id_51_Synthetic_tr_500_1st_893.csv,27280,.csv,archive member; see dataset report
+TSB-AD-U.zip,TSB-AD-U/218_LTDB_id_3_Medical_tr_500_1st_266.csv,798263,.csv,archive member; see dataset report
+extra-industrial-data/DNA_C1.mat,,112260805,.mat,"source, annotation, or documentation; see dataset report"
+extra-industrial-data/Human_Chromosome_0ne_Length_is_225934570.mat,,215305272,.mat,"source, annotation, or documentation; see dataset report"
+extra-industrial-data/Tuna___21P0433_220579_MiniPAT.28Nov2025_ATBL_ICCAT.csv,,183372756,.csv,"source, annotation, or documentation; see dataset report"
+ibm-cloud-console-anomaly-dataset-iccad/anomaly_windows.csv,,1465,.csv,"source, annotation, or documentation; see dataset report"
+ibm-cloud-console-anomaly-dataset-iccad/demo.html,,295986,.html,"source, annotation, or documentation; see dataset report"
+ibm-cloud-console-anomaly-dataset-iccad/demo.ipynb,,13409,.ipynb,"source, annotation, or documentation; see dataset report"
+ibm-cloud-console-anomaly-dataset-iccad/location_downtime.csv,,6083,.csv,"source, annotation, or documentation; see dataset report"
+ibm-cloud-console-anomaly-dataset-iccad/pivoted_data_all.parquet,,2725080655,.parquet,"source, annotation, or documentation; see dataset report"
+ibm-cloud-console-anomaly-dataset-iccad/unpivoted_data.parquet,,2724917264,.parquet,"source, annotation, or documentation; see dataset report"
+tfinance,,682904644,no extension,"source, annotation, or documentation; see dataset report"
+tfinance.zip,,78068255,.zip,archive
+tfinance.zip,tfinance,682904644,no extension,archive member; see dataset report

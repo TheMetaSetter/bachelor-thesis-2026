@@ -66,11 +66,11 @@ class OnlineAdaptationModel(BaseModel):
         # can reason about one adaptation mechanism at a time.
         if not clean_stream_only:
             raise ValueError(
-        "The first online test-time adaptation slice supports only clean_stream_only=True"
+                "The first online test-time adaptation slice supports only clean_stream_only=True"
             )
         if score_source != "projected_hidden":
             raise ValueError(
-        "The first online test-time adaptation slice supports only score_source='projected_hidden'"
+                "The first online test-time adaptation slice supports only score_source='projected_hidden'"
             )
         if online_variant not in {"A0", "A1", "A2"}:
             raise ValueError("online_variant must be A0, A1, or A2")
@@ -342,7 +342,9 @@ class OnlineAdaptationModel(BaseModel):
         if self.online_variant == "A0":
             raise RuntimeError("A0 must use forward_source and has no online projector")
         console_print(
-            "MODEL", "Online test-time adaptation forward input batch", **summarize_batch(batch)
+            "MODEL",
+            "Online test-time adaptation forward input batch",
+            **summarize_batch(batch),
         )
         reference_hidden = self.reference_encoder.encode_source(batch)
         online_hidden = reference_hidden

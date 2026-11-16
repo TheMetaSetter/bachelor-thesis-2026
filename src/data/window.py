@@ -30,7 +30,9 @@ def slice_sequence_into_windows(
 
     sliced_windows: list[dict[str, Any]] = []
     if tail_policy == "end_align":
-        start_indices = build_nonoverlap_tail_window_starts(sequence_length, window_size)
+        start_indices = build_nonoverlap_tail_window_starts(
+            sequence_length, window_size
+        )
     else:
         start_indices = list(range(0, sequence_length - window_size + 1, stride))
 

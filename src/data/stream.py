@@ -56,8 +56,7 @@ class SMDOnlineStream:
             "nonoverlap_tail",
         }:
             raise ValueError(
-                "stream_window_mode must be one of: "
-                "sliding_stride_1, nonoverlap_tail"
+                "stream_window_mode must be one of: sliding_stride_1, nonoverlap_tail"
             )
         self.sequences = sequences
         self.window_size = window_size

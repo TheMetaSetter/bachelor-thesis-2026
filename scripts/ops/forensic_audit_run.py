@@ -40,9 +40,10 @@ def build_forensic_audit_log_path(
     experiment_name: str,
     current_date: date | None = None,
 ) -> Path:
-    return dated_log_directory(
-        "research", current_date=current_date
-    ) / f"{experiment_name}__forensic_audit.md"
+    return (
+        dated_log_directory("research", current_date=current_date)
+        / f"{experiment_name}__forensic_audit.md"
+    )
 
 
 def _build_forensic_markdown(

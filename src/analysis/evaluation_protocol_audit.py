@@ -362,6 +362,7 @@ def build_protocol_audit_log_path(
     resolved_date = current_date or datetime.now().date()
     if isinstance(resolved_date, datetime):
         resolved_date = resolved_date.date()
-    return dated_log_directory(
-        "research", current_date=resolved_date
-    ) / f"{experiment_name}__evaluation_protocol_audit.md"
+    return (
+        dated_log_directory("research", current_date=resolved_date)
+        / f"{experiment_name}__evaluation_protocol_audit.md"
+    )

@@ -93,11 +93,7 @@ def _add_optional_window_options(
         "max_test_windows": max_test_windows,
     }
     data_config.update(
-        {
-            key: value
-            for key, value in optional_values.items()
-            if value is not None
-        }
+        {key: value for key, value in optional_values.items() if value is not None}
     )
 
 
