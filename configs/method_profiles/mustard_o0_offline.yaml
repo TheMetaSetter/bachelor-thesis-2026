@@ -1,0 +1,66 @@
+method: mustard
+variant: O0
+phases:
+- offline
+parameters:
+  classifier_hidden_size: 32
+  head_dropout: 0.1
+  continuous:
+    enabled: true
+    num_prototypes: 32
+    temperature: 0.9
+  discrete:
+    enabled: true
+    codebook_size: 60
+    top_k: 3
+    temperature: 0.1
+  memory:
+    normalization_epsilon: 1.0e-06
+    initialization_batches: 16
+    freeze_after_initialization: true
+  loss_weights:
+    reconstruction: 0.5
+    classification: 0.5
+    contrastive: 0.0
+    diversity: 0.0
+    variance: 0.0
+    covariance: 0.0
+    usage: 0.0
+    gate: 0.0
+  label_correction:
+    alpha: 0.1
+    beta: 0.01
+  contrastive_temperature: 0.1
+  stochastic_inference: true
+  monte_carlo_samples: 10
+  variance_correction: 1
+training:
+  stages:
+  - name: stage_a
+    epochs: 25
+    optimizer:
+      name: adam
+      learning_rate: 0.001
+      weight_decay: 0.0001
+      betas:
+      - 0.9
+      - 0.999
+      epsilon: 1.0e-08
+    monitor: validation_total_loss
+    gradient_clip_norm: null
+    scheduler: null
+  - name: stage_b
+    epochs: 5
+    optimizer:
+      name: adam
+      learning_rate: 0.001
+      weight_decay: 0.0001
+      betas:
+      - 0.9
+      - 0.999
+      epsilon: 1.0e-08
+    monitor: validation_total_loss
+    gradient_clip_norm: null
+    scheduler: null
+update: null
+required_offline_variant: null

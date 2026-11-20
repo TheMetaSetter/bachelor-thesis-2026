@@ -1,12 +1,35 @@
 # Plan: next-version config signatures and YAML fields
 
-Status: design proposal for review. No source or YAML has been changed.
+Status: runtime configuration design proposal. Updated on 2026-11-16 for completed preprocessing. This plan does not implement the proposed runtime configuration or change YAML files.
+
+Current signature proposal: [runtime signatures](../../2026-11-16/detail/proposed-runtime-signatures.md). It supersedes the function names and resolver ID-allocation behavior below: resolution is read-only; execution allocates IDs. Other confirmed configuration and reporting decisions remain in force.
+
+## Confirmed replacement decisions: 2026-11-16
+
+Follow the [runtime replacement decisions](../../2026-11-16/plan/decisions-runtime-replacement.md). Earlier conflicting proposals below are superseded.
+
+1. Runtime data profiles reference prepared versions. Do not split, fill, or scale observations again.
+2. The experiment selects common time-preserving CNN architecture and settings for MUSTARD, RedLamp, CANDI, and M2N2. Resolved method settings receive that selection; reject conflicting per-method encoder settings. Each method owns a separate instance and weights. Exact profile field placement remains to be specified.
+3. Keep method-specific heads, pooling, losses, and updates. Keep CANDI's SANA separate. MOMENT retains its pretrained encoder and both documented variants.
+4. Evaluation permits causal unlabeled adaptation after scoring. Test labels are for metrics only. Prohibit future observations, complete-test statistics, and test-based tuning.
+5. RedLamp fixes class selection and score scaling from validation and uses causal smoothing. Exact settings remain subject to method review.
+6. Smoke selects the first configured dataset, entity, applicable variant, and seed per method and supported phase, with required offline dependencies. Explicit work limits do not change prepared data. Exclude smoke results from normal reports.
+7. Unsupported combinations stop validation. The agreed result hierarchy replaces the older depth maximum.
+8. New runtime commands and checkpoints replace old interfaces without compatibility wrappers. Remove old code in stages after replacement checks pass.
 
 ## Goal and scope
 
 Design a simple new `src/core/config.py` and the fields of the proposed `configs/` files. A clean rewrite is allowed. Current code is a high-level behavioral reference, not an implementation constraint. Preserve the required scientific comparisons, configuration meaning, and artifact behavior when the future implementation is verified.
 
 The current high-level flow is in `../research/research-current-config-flow.md`. The terminology source is `documents/specs/definitions.md`; the file-level proposal is `documents/logs/2026-11-03/detail/phase2-reexecution/proposed-next-version-tree.md`. The specific method settings below are an initial schema, not a claim of complete scientific coverage.
+
+## Preprocessing boundary: confirmed on 2026-11-16
+
+1. All required ICCAD, SMD, IOPS, SWaT, and NASA data is processed. The original source folders were removed after checks.
+2. One self-contained `scripts/preprocess.py` owns source reading, sorting, splitting, missing-value handling, input scaling, and prepared-data versioning. Built-in defaults are sufficient; an external preprocessing YAML is optional.
+3. Runtime data profiles select a saved prepared version and define windows, strides, and batches. They do not split observations again, fill missing source values, or fit another input scaler.
+4. A preprocessing override YAML and a runtime data profile have different fields. Do not pass a runtime profile to the script. Use `--show-profile` to inspect the supported preprocessing fields.
+5. See [the confirmed preprocessing decisions](../../2026-11-16/plan/decisions-tsad-preprocess.md) and [the current tree proposal](../../2026-11-16/structure/proposed-next-version-tree.md). Runtime configuration remains proposed.
 
 ## Design principles
 
@@ -26,11 +49,13 @@ The current high-level flow is in `../research/research-current-config-flow.md`.
 
 ```mermaid
 flowchart LR
+    P[Prepared splits, scaler state, and manifest] --> L[Load prepared data and create windows]
     A[Experiment YAML: explicit cells] --> B[Read YAML and references]
     B --> C[Resolve each cell with its profiles]
     C --> D[Validate run inputs using four protocols]
     D --> E[One resolved run config per cell]
-    E --> F[Run offline or online phase]
+    E --> L
+    L --> F[Run offline or online phase]
     F --> G[Validate outputs at their boundaries]
 ```
 
@@ -76,15 +101,15 @@ def load_standalone_run(path: Path, *, configs_root: Path) -> Config: ...
 | Field | Type | Status | Meaning |
 | --- | --- | --- | --- |
 | `dataset` | string | required | Dataset name, `smd`. |
-| `root` | string | required | Dataset location, relative to the project root. |
-| `validation_split_ratio` | number | required | Fraction reserved for validation. |
-| `scaler` | string | required | Selected scaler; fit on training data only. Exact supported names remain to be specified. |
+| `prepared_root` | string | required | One version directory containing `manifest.json` and entity folders, relative to the project root; for example, `data/preprocessed/smd/<version_id>`. |
 | `window_size` | integer | required | Shared window length. |
 | `train_stride`, `validation_stride`, `test_stride` | integer | required | Window step for each split. |
 | `batch_size` | integer | required | Offline batch size. |
 | `num_workers` | integer | required | Data loader workers. |
 | `shuffle_train` | boolean | required | Whether to shuffle training windows. |
 | `synthetic_profile` | string or null | optional | Path relative to `configs_root`; absent or null means no synthetic profile. |
+
+The proposed `prepared_root` replaces the raw-data `root`. Split ratios and input-scaler choices belong to preprocessing settings and saved provenance, not this runtime profile. The runtime loader reads saved split files, feature order, labels, source row mapping, and scaler state. It checks dataset, entity, and version compatibility before creating windows. Exact runtime validation signatures remain to be designed.
 
 Synthetic profile files under `configs/data_profiles/synthetic_profiles/` hold `min_segment_fraction`, `max_segment_fraction`, `spike_scale`, `anomaly_visibility_boost`, and `family_intensity` mapping when applicable. The exact per-family fields and whether a given method uses them need method-specific review. The cell selects the entity and any diagnostic stream range.
 
@@ -139,7 +164,7 @@ Use a separate method profile for each distinct baseline parameter set; do not p
 | `test_label_usage` | string | required | `metrics_only`. |
 | `point_adjustment` | boolean | required | `false`. |
 
-All five profiles in the existing proposed tree retain their distinct score and calibration choices. The scoring and calibration protocol checks cross-field restrictions, including the source required for normalized-input scoring. Which fields are unnecessary for a particular baseline or offline-only profile remains open; do not demand online settings for a method that cannot use them without first defining phase-specific applicability. `window_size` is owned by data, not duplicated here.
+The [runtime profile contract](../../2026-11-16/detail/runtime-profile-contract.md#3-evaluation-profile-fields) supersedes this earlier field list. It defines the retained SMD profiles and the proposed MUSTARD q95 comparison. The data profile owns `window_size`.
 
 ### 6. `configs/experiments/<name>.yaml`
 
@@ -196,8 +221,8 @@ The two method filenames are illustrative proposed variant profiles; they do not
 ## Dataset profile and compatibility
 
 1. An experiment uses only one data profile for each dataset. Different datasets may use different data profiles. Do not allow per-cell exceptions for the same dataset.
-2. An online run uses the fitted scaler state saved by its selected offline run. Do not fit a new scaler for the online run.
-3. When selecting an offline parent, filter for compatible settings first; then choose the latest eligible compatible run. The precise compatibility fields must be specified from method and artifact contracts. If no compatible candidate exists, block the online run and report the reason.
+2. Offline and online runs use the same selected prepared-data version and its saved input-scaler state. The offline run records that version and scaler reference. Its online child checks that these references match. Neither run fits another input scaler or scales already transformed features again.
+3. Prepared-data version identity is part of offline-parent compatibility. When selecting an offline parent, filter for compatible settings first; then choose the latest eligible compatible run. The precise compatibility fields must be specified from method and artifact contracts. If no compatible candidate exists, block the online run and report the reason.
 
 ## Offline artifacts for online runs
 
@@ -296,6 +321,7 @@ The aggregator must interpret omitted levels using the experiment's configured v
 2. Current `data_config_path` becomes proposed `data_profile`; `model_config_path` becomes `method_profile`; scoring settings currently loaded from a separate profile become `evaluation_profile`. These are proposed mappings, not automatic migration rules.
 3. Task fields may belong to data, method, or cell settings; map each by meaning and consumer before rewriting. Keep unknown fields unresolved until their purpose is established.
 4. Existing artifact paths, checkpoint selection, resume, and output identities need explicit migration and parity decisions. A clean rewrite does not authorize deleting current artifacts or scientific comparisons.
+5. Preprocessing ownership is `split`: raw-source preparation and input scaling now belong to `scripts/preprocess.py`; prepared-data loading and window creation belong to the proposed runtime data loader. The proposed raw `root` field is `deprecated`; `prepared_root` is `new` and selects one prepared version. Their meanings differ. This is not an automatic migration of current configurations. Split ratios and scaler choices move out of the runtime profile into preprocessing settings and saved provenance.
 
 ## Ordered implementation preparation
 
@@ -327,3 +353,11 @@ Tools: Markdown, `rg`, YAML reader, Python, and existing project checks. This is
 9. Specify any additional JSON fields, CSV filenames and the exact filename and schema of the rarely changed shared metric-definition YAML under `configs/`. A simple proposed name is `configs/metrics.yaml`, subject to review. Include each run’s method profile path for `default` traceability.
 10. Define reporting-profile fields and references, including rare profile-specific precision overrides.
 11. Define the shared seed-list field; expand each explicit run template once per listed seed without expanding other parameter combinations.
+
+## Runtime contract alignment: 2026-11-17
+
+1. The [profile contract](../../2026-11-16/detail/runtime-profile-contract.md) and [runtime decisions](../../2026-11-16/plan/decisions-runtime-replacement.md) supersede conflicting earlier proposals here. Full-contract approval is pending.
+2. Method profiles use `phases`; each run has one `phase`. One data profile holds MOMENT window and method stride overrides.
+3. Point EWMA defaults to 0.25 previous and 0.75 current. Explicit old 0.1/0.9 profiles retain their meaning. Last-estimate reporting records its delay.
+4. Keep gaps and missing-label intervals separate for range metrics. Record segment values, distinct weighted summaries, omitted counts, and coverage.
+5. Follow the new signature record shapes, recovery boundaries, and isolated command registration. No runtime is implemented here.

@@ -1,4 +1,6 @@
-# Benchmark metric reporting bundle
+# Retained result summaries
+
+Cleanup date: 2026-11-16. Compact metric payloads, tables, and the thesis PDF remain. Old per-window trace files and the compressed result archive were removed. The historical manifests describe the earlier bundle; they are not a current file inventory.
 
 Source revision: 820c88867114e8ef92299935eff756b3eb0e0aaf
 
@@ -8,7 +10,7 @@ Source revision: 820c88867114e8ef92299935eff756b3eb0e0aaf
   - THESIS Stage B: 18.
   - Traditional ML: 27.
   - RedLamp encoder evaluation: 9.
-- Online: 99 files in online_phase_tables/online_metrics_99/.
+- Online: 99 compact per-run records in online_phase_tables/online_table3_metrics.json.
   - THESIS: 54.
   - M2N2: 9.
   - CANDI: 9.
@@ -20,7 +22,7 @@ Source revision: 820c88867114e8ef92299935eff756b3eb0e0aaf
 
 M2N2 and CANDI do not have separate offline detection metrics in the remote output tree. They use the RedLamp encoder checkpoint for their online runs. The manifest records this as not_available; it does not copy RedLamp metrics under the M2N2 or CANDI names.
 
-Use benchmark_metrics_manifest.json for the complete file inventory and provenance. Use offline_phase_tables/offline_report_data.json for the compact offline reporting payload.
+The historical inventory and provenance remain in benchmark_metrics_manifest.json. Use offline_phase_tables/offline_report_data.json for the compact offline reporting payload.
 
 The online Table 3 metric payload is stored at
 `online_phase_tables/online_table3_metrics.json`. It contains the 99 per-run

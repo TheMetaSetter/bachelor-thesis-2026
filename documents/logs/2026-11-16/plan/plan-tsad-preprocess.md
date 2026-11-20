@@ -1,7 +1,16 @@
 # Plan: tsad preprocess
 
 Date: 2026-11-16
-Status: draft; initial scope is confirmed. Data rules still need decisions. This is not a ready implementation plan.
+Status: initial planning record. Later decisions replaced parts of this plan. The standalone preprocessing script and all required data processing are complete. The installed `tsad preprocess` command remains pending.
+
+## Current status
+
+1. Use [the confirmed decisions](decisions-tsad-preprocess.md) for current behavior. One self-contained `scripts/preprocess.py` implements the five readers and shared processing flow.
+2. All required ICCAD, SMD, IOPS, SWaT, and NASA data is processed. NASA excludes P-2 and T-10. The original source folders were removed after checks.
+3. Split rounding, training-only scaling, approved missing-value rules, labels, versioning, and saved-output checks are implemented. The recorded temporary suite reached 46 tests.
+4. The script module documentation replaces the proposed separate `documents/specs/data-preprocessing.md`. Built-in profiles replace required external default profiles.
+5. The checklist below records the initial plan. Unchecked items do not mean that all corresponding behavior is missing. Do not mark old inspection steps complete without evidence that each step was performed.
+6. Remaining work includes the installed command, updates to the broader CLI specification, source provenance, and runtime window checks.
 
 ## Goal
 
@@ -16,7 +25,7 @@ The earlier task list is a backlog. Start with the data and CLI work needed for 
 3. `src/data/api.py` builds data settings for current loaders. Its presence does not establish a standalone preprocessing command.
 4. `src/data/cleaning.py` validates sequence contracts. Its name does not establish missing-value repair.
 5. `documents/specs/config-profiles-flow.md` separates profile settings from protocol validation rules.
-6. `documents/logs/2026-11-10/research/research-local-datasets.md` records incomplete exploration. ICCAD entity and label mapping remain open.
+6. `documents/logs/2026-11-10/research/research-local-datasets.md` records incomplete exploration. Later decisions select one Console entity, 5XX count features, and five-minute interval overlap labels.
 7. `documents/specs/desired-cli-20261109.md` does not specify `tsad preprocess`.
 8. Instruction links to `prompts/1_research_prompt.md` and `prompts/2_plan_prompt.md` are missing. The matching files exist under `prompts/primitive_prompts/`.
 9. The earlier output hierarchy needs review against the current maximum path depth. Do not copy that hierarchy into preprocessing outputs without review.
@@ -33,9 +42,9 @@ The earlier task list is a backlog. Start with the data and CLI work needed for 
 | Command input | A: dataset and data profile; selected | Can prepare data before an experiment exists | Experiment commands must later reference the prepared version |
 | Command input | B: experiment name | Reuses experiment settings | Requires more of the proposed experiment CLI first |
 
-Confirmed: the output includes train, validation, and test data with fitted scaling (2B). Define the default split rules and scaler state now. Fit the scaler on training data only. The exact scaler, saved fields, and split defaults remain open.
+Confirmed: the output includes train, validation, and test data with fitted scaling (2B). Define the default split rules and scaler state now. Fit the scaler on training data only. The later decision file and script define robust scaling, saved state, split defaults, and integer rounding.
 
-Confirmed: option 1C covers ICCAD, SMD, IOPS, SWaT, and NASA. Option 3A selects a dataset and data profile directly. The exact SMD source representation still needs review. See [today's decisions](decisions-tsad-preprocess.md).
+Confirmed: option 1C covers ICCAD, SMD, IOPS, SWaT, and NASA. Option 3A selects a dataset and data profile directly. The script uses the separate SMD machine files; equivalence with the earlier aggregate representation remains unverified. See [today's decisions](decisions-tsad-preprocess.md).
 
 Question 3 asks where the command gets its settings. Option A names the dataset and its data profile directly. Option B names an experiment, then reads that experiment's dataset and data profile selections. Both options can produce the output selected in 2B. Neither option requires model training.
 
@@ -82,8 +91,8 @@ Stop at an unresolved scientific choice. Present only options that change the re
 ### Stage 3.1: record the accepted behavior
 
 1. [ ] Add the accepted command to `documents/specs/desired-cli-20261109.md`. Tool: Markdown editor.
-2. [ ] Write `documents/specs/data-preprocessing.md` as a proposed new specification. Tool: Markdown editor.
-3. [ ] Record a terminology mapping in the new specification. Tool: Markdown editor.
+2. Superseded: use the script module documentation as the usage and interface specification. No separate preprocessing specification is required. Tool: file reader.
+3. Superseded: retain the terminology-change note in the confirmed decision file. Tool: Markdown editor.
 4. [ ] Define input arguments and profile fields. Tool: specification review.
 5. [ ] Define output format and directory ownership. Tool: specification review.
 6. [ ] Define data version identity and provenance. Tool: specification review.
@@ -123,7 +132,7 @@ Exact files and signatures must come from Phase 3. Do not choose them from this 
 4. [ ] Test repeat execution against the agreed policy. Tool: Pytest.
 5. [ ] Check training-only fitting if scaling is included. Tool: Pytest.
 6. [ ] Run one selected dataset through the complete command. Tool: local CLI.
-7. [ ] Check source-data preservation. Tool: source inventory and scoped content checks.
+7. Later policy: keep sources through preprocessing and saved-output checks, then remove them. All five source folders are now removed. Tool: source inventory and scoped checks.
 8. [ ] Check CLI help. Tool: local CLI.
 9. [ ] Run `git diff --check`. Tool: Git.
 10. [ ] Review the changed files. Tool: Git diff and file reader.

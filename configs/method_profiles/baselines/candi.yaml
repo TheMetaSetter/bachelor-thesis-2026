@@ -1,0 +1,48 @@
+method: candi
+variant: default
+phases:
+- offline
+- online
+parameters:
+  latent_pooling: mean_time
+  latent_normalization_epsilon: 1.0e-12
+  covariance_rcond: 1.0e-06
+  similarity_quantile: 0.05
+  minimum_samples: 16
+  sana:
+    hidden_size: 512
+    attention_heads: 8
+    feedforward_size: 512
+    layers: 1
+    dropout: 0.0
+    gate_initialization: 0.0
+training:
+  stages:
+  - name: fit
+    epochs: 30
+    optimizer:
+      name: adam
+      learning_rate: 0.0001
+      weight_decay: 0.0001
+      betas:
+      - 0.9
+      - 0.999
+      epsilon: 1.0e-08
+    monitor: validation_reconstruction_loss
+    gradient_clip_norm: 0.5
+    scheduler:
+      name: cosine
+      warmup_epochs: 5
+      minimum_learning_rate: 0.0
+      interval: epoch
+update:
+  steps: 1
+  optimizer:
+    name: sgd
+    learning_rate: 0.0001
+    weight_decay: 0.0001
+    momentum: 0.9
+    dampening: 0.0
+    nesterov: true
+  gradient_clip_norm: 0.5
+required_offline_variant: default

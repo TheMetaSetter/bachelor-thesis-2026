@@ -1,0 +1,41 @@
+dataset: nasa
+prepared_root: data/preprocessed/nasa/fa7579b37219cb8136dcd0991b29058f21bb6a8cce0efc6d0a024d1945e6c2af
+window_size: 20
+method_window_sizes:
+  moment: 512
+train_stride: 1
+validation_stride: 20
+test_stride: 20
+online_stride: 1
+method_strides:
+  stumpy_channel_ab:
+    validation: 1
+    test: 1
+    online: 1
+  kmeans_ad:
+    train: 20
+    validation: 1
+    test: 1
+    online: 1
+  iforest:
+    train: 20
+    validation: 1
+    test: 1
+    online: 1
+  m2n2:
+    online: 20
+  moment:
+    train: 512
+    validation: 512
+    test: 512
+    online: 512
+tail_policy:
+  train: drop
+  validation: end_align
+  test: end_align
+  online: drop
+gap_policy: preserve_source_rows
+expected_interval_seconds: null
+batch_size: 256
+shuffle_train: false
+synthetic_profile: data_profiles/synthetic_profiles/redlamp_legacy.yaml

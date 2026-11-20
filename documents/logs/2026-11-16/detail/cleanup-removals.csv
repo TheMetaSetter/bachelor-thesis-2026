@@ -1,0 +1,1060 @@
+path,bytes,tracked,reason
+.DS_Store,26628,False,generated cache or operating-system metadata
+.ipynb_checkpoints/AGENTS-checkpoint.md,8200,False,automatic notebook checkpoint
+.pytest_cache/.gitignore,37,False,generated cache or operating-system metadata
+.pytest_cache/CACHEDIR.TAG,191,False,generated cache or operating-system metadata
+.pytest_cache/README.md,302,False,generated cache or operating-system metadata
+.pytest_cache/v/cache/lastfailed,72247,False,generated cache or operating-system metadata
+.pytest_cache/v/cache/nodeids,313429,False,generated cache or operating-system metadata
+.pytest_cache/v/cache/stepwise,2,False,generated cache or operating-system metadata
+.ruff_cache/.gitignore,35,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/10010914301898439797,366,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/10325822945652426549,314,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/10533861823993070723,254,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/10551795637549745759,273,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/10622320227552687469,314,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/10852745713654585498,1017,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/10916441642534258242,260,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/10931127577029533103,350,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/11011537883816376594,326,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/11017884229159217361,520,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/11040431458500202932,300,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/11044927277737382059,264,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1105866666697579132,265,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/11068190897258526162,345,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/11081339212812871897,491,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/11417156570044849717,280,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/11595776456692741488,352,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/11936450701842469232,350,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/12009823199856582531,264,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1203756082773293176,315,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/12127339588065899578,305,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1238914784554076042,260,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/12594770506511455486,750,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/12774643094140947195,252,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/12787436547790974049,287,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/12829716703693439242,249,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1296104912814444260,275,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13079259501285220240,429,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13144384236229104580,696,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13168253694938164510,585,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1325825228056192461,582,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13436594174230385146,638,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13534443334356149528,304,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13759513250915079746,396,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13796138058570602359,254,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13798555551177898777,252,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13846423065520105461,262,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13856290853371069490,304,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/13960648733863125574,326,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14018871115484191721,256,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14226637372965905961,289,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14284358877504610486,702,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14299934150809365536,473,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14582113957321906251,434,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14712118227712814382,326,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14716477231538731158,284,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14792394270327802726,1959,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14906220690594550216,275,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14913941337466383880,1224,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/14920005124618410376,276,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15064384617605589614,494,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1506613964219897881,371,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15105046546756631906,628,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15296270568144426786,318,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15303876169335955673,289,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15408757310186189798,310,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15502391398480891399,418,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15503399043630917109,299,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15615680612529044163,495,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15678909108122816631,1336,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1576010503159020759,300,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15835987676437734392,413,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15861280308762023724,453,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15918431065542418014,452,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/15935960044652730612,280,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16295280167326229474,333,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16320759072174639701,374,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16446983472571493143,345,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16524127216949202995,310,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16582656905838263818,380,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16585772078688760387,750,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16592970753519703708,474,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16635095623346893885,647,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16736552526512029514,318,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16806686881723308398,256,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16867437966095153186,845,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/16917738905480296192,730,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17007001335519052644,284,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17090006576438889408,256,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17143206330279615211,273,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17238482191069440160,429,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17284416290383375458,474,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17335535947408354537,345,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17343428883566923156,5876,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17394547271079299013,262,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17436114986666588110,437,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17477919565995203344,299,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17511400398235750890,374,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1772716229894584616,271,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/17964979868746760496,299,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/18086218232324473459,2754,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/18096542379286431319,343,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/18175784278367584415,450,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/18287840763769625665,431,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/18349508887564477374,429,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/18376142453996954217,315,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/18391168776703089227,624,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/18420985668561271180,326,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1875289611483584142,374,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1883584407578846261,304,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1915711961625951051,262,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/1975317508582704812,264,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/2075066827522285515,262,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/2111148884418993087,311,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/2215039331993426861,436,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/2263653467955197398,260,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/233509686570270415,434,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/235730891389815345,317,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/2365593757577814961,275,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/2383580904999690607,6780,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/2444585496266541494,253,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/2575053958307181019,2754,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/2708769804411681694,265,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3001048863855424890,261,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3084172623772569917,527,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3284708342215074673,433,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3487161547601377657,442,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3487697309611540166,285,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3581511767354552451,265,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3702141558692406938,264,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3893785599096231655,2775,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3955673067852832069,646,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3963023963858344256,456,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3991674986697354159,646,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/3998802690520059789,962,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4021634862158547247,491,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4055845989072861323,254,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4071158056336153944,450,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4248433643513097052,345,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4251770237578941518,284,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4336995225903253924,1625,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4351709518345066106,253,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4376645910183068335,434,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4386259282530555637,226,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/445516705554528784,442,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4551530205971380449,264,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4569601183174470599,1739,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/462876416462361207,317,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4648124934504361507,350,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4686938881123468455,299,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4720900794815300723,1026,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4931056197593977708,251,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/4988896061600818419,476,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/5028951664704922848,318,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/5110763315704373900,1119,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/5130672584340494264,477,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/5136159377293437098,453,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/5183896000477137977,366,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/5215329950359305348,392,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/5424577220391266135,595,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/5443906092977874682,722,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/5458903921606911380,882,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/564798365552262383,433,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/5708350473481777669,561,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/587374719006544061,599,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/591403605009303689,311,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6050991905660588846,305,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6154716505617796224,718,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6160845289386798722,260,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6170039481642017128,271,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6436972238267661452,487,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6438843123136682173,374,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6511158328969764464,393,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6524787097446455192,418,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6581065123042976182,347,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6590771198444391021,429,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6625281690911500984,249,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6754682447936325914,843,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/6831813978154085821,372,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/7080158849263225526,1725,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/7166151855397221394,372,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/7302894242346926282,437,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/7480982627618746386,423,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/7516380077449296070,362,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/7541515439378681026,317,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/7710113945868877288,550,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/7980206063341261428,481,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8077573499411873109,550,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/812001992130217646,836,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8171210538721532845,305,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8177726193185382591,304,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8233717490167698969,4528,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8251402894033227555,1336,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8472793614164989672,487,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8568455787146569777,284,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8578755020551773374,299,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8631878236423869703,392,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8648401020228387422,585,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8652261252512555930,495,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8786541624476148122,436,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8877859181515548172,280,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8912971079283356882,1548,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/8948244218103470512,361,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/9142354154791407988,254,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/9335125729037480908,757,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/9505652472991222065,638,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/9526414840793828806,261,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/9551239232054449223,344,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/9617449783193023723,312,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/9641270044421466715,303,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/96559819417718439,352,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/9732547842034055688,311,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/9838357736521502235,311,False,generated cache or operating-system metadata
+.ruff_cache/0.14.6/9902815984089285908,2044,False,generated cache or operating-system metadata
+.ruff_cache/CACHEDIR.TAG,43,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/.DS_Store,10244,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/CANDI-main/.DS_Store,8196,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/CARLA-main/.DS_Store,8196,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/DALL-E-master/.DS_Store,6148,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/M2N2-master/.DS_Store,8196,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/Matcha-master/.DS_Store,6148,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/MtsCID/.DS_Store,6148,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/MtsCID/README.md,3193,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/SMD_checkpoint.pth,155304,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/data/NIPS_TS_GECCO/NIPS_TS_Water_test.npy,4986920,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/data/NIPS_TS_GECCO/NIPS_TS_Water_test_label.npy,554216,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/data/NIPS_TS_GECCO/NIPS_TS_Water_train.npy,4986848,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/data_factory/data_loader.py,23172,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/figures/building_blocks.png,87313,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/figures/framework_overview.png,119694,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/main.py,8088,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/__init__.py,448,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/_anomaly_detection.py,7825,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/_tsad_adjustment.py,1107,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/affiliation/_affiliation_zone.py,3559,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/affiliation/_integral_interval.py,21248,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/affiliation/_single_ground_truth_event.py,3557,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/affiliation/generics.py,4843,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/affiliation/metrics.py,5195,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/metrics.py,2417,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/vus/analysis/robustness_eval.py,11995,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/vus/metrics.py,545,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/vus/models/distance.py,29390,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/vus/utils/metrics.py,14086,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/metrics/vus/utils/slidingWindows.py,643,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/model/Conv_Blocks.py,2174,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/model/RevIN.py,2047,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/model/Transformer.py,10104,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/model/attn_layer.py,10426,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/model/embedding.py,22425,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/model/loss_functions.py,5982,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/model/lr.py,1332,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/model/multi_attention_blocks.py,2215,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/requirements.txt,111,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/smd_experiment.txt,38037,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/solver.py,20882,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/test.sh,999,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/utils/dataplot.py,9240,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/MtsCID/utils/utils.py,4306,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/RedLamp/.DS_Store,6148,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/Time-Series-Library/.DS_Store,8196,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/mulan-main/.DS_Store,6148,False,generated cache or operating-system metadata
+bsc-thesis-ref-codebases/mulan-main/CONFIG.md,2449,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/README.md,3426,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/algorithms.py,24258,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/augmentations.py,25986,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/config.py,308,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/detection/configs/Base-RCNN-FPN.yaml,1318,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/detection/configs/coco_R50_MaskRCNN-FPN_ssl_L.yaml,344,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/detection/convert-pretrain-to-detectron2.py,1036,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/detection/train_coco.py,1925,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/distributed.py,3328,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/eval_knn.py,12563,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/eval_linear.py,19189,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/figs/mulan_overview.jpg,128554,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/main.py,18696,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/models.py,5140,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/optim.py,6646,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/resnet.py,9624,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/resnet_jaxlike.py,11427,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/utils.py,8813,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/mulan-main/vision_transformer.py,12782,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/.gitignore,63,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/AGENTS.md,2305,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/CODE_OF_CONDUCT.md,309,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/CONTRIBUTING.md,3160,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/README.md,2851,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/CoLA/README.md,299,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/CoLA/Sto_Transformer.py,11907,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/CoLA/train.py,12868,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/IMDB/Config.py,7044,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/IMDB/IMDBDataset.py,11195,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/IMDB/Model_bert.py,3819,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/IMDB/Model_sto_transformers.py,3463,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/IMDB/Model_transformers.py,3371,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/IMDB/README.md,14505,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/IMDB/Run.py,14683,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/IMDB/Run_evaluation.py,4721,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/IMDB/Utils.py,559,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/IMDB/__init__.py,111,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/common/Constants.py,1318,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/common/CumulativeTrainer.py,10006,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/common/EMA.py,1527,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/common/Utils.py,18218,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/common/__init__.py,111,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/common/transformer.py,19082,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/pre.sh,1347,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/run.sh,2067,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/sto-transformer-main/code/setup.sh,789,True,unused reference implementation outside retained method scope
+bsc-thesis-ref-codebases/stumpy-main/.DS_Store,6148,False,generated cache or operating-system metadata
+data/.DS_Store,22532,False,generated cache or operating-system metadata
+data/.cache/huggingface/.gitignore,1,False,outside selected preprocessing scope or unused source archive
+data/.cache/huggingface/download/SMD/SMD_test.npy.lock,0,False,outside selected preprocessing scope or unused source archive
+data/.cache/huggingface/download/SMD/SMD_test.npy.metadata,124,False,outside selected preprocessing scope or unused source archive
+data/.cache/huggingface/download/SMD/SMD_test_label.npy.lock,0,False,outside selected preprocessing scope or unused source archive
+data/.cache/huggingface/download/SMD/SMD_test_label.npy.metadata,124,False,outside selected preprocessing scope or unused source archive
+data/.cache/huggingface/download/SMD/SMD_train.npy.lock,0,False,outside selected preprocessing scope or unused source archive
+data/.cache/huggingface/download/SMD/SMD_train.npy.metadata,125,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/001_UCR_Anomaly_DISTORTED1sddb40_35000_52000_52620.txt,1436310,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/002_UCR_Anomaly_DISTORTED2sddb40_35000_56600_56900.txt,1440018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/003_UCR_Anomaly_DISTORTED3sddb40_35000_46600_46900.txt,1440000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/004_UCR_Anomaly_DISTORTEDBIDMC1_2500_5400_5600.txt,198000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/005_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature1_4000_5391_5392.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/006_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature2_4000_5703_5727.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/007_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature3_4000_6520_6544.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/008_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature4_4000_5549_5597.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/009_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature5_4000_4852_4900.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/010_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature6_4000_6006_6054.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/011_UCR_Anomaly_DISTORTEDECG1_10000_11800_12100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/012_UCR_Anomaly_DISTORTEDECG2_15000_16000_16100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/013_UCR_Anomaly_DISTORTEDECG3_15000_16000_16100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/014_UCR_Anomaly_DISTORTEDECG3_8000_17000_17100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/015_UCR_Anomaly_DISTORTEDECG4_5000_16800_17100.txt,3600000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/016_UCR_Anomaly_DISTORTEDECG4_5000_16900_17100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/017_UCR_Anomaly_DISTORTEDECG4_5000_17000_17100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/018_UCR_Anomaly_DISTORTEDECG4_8000_17000_17100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/019_UCR_Anomaly_DISTORTEDGP711MarkerLFM5z1_5000_6168_6212.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/020_UCR_Anomaly_DISTORTEDGP711MarkerLFM5z2_5000_7175_7388.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/021_UCR_Anomaly_DISTORTEDGP711MarkerLFM5z3_5000_5948_5993.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/022_UCR_Anomaly_DISTORTEDGP711MarkerLFM5z4_4000_6527_6645.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/023_UCR_Anomaly_DISTORTEDGP711MarkerLFM5z5_5000_8612_8716.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/024_UCR_Anomaly_DISTORTEDInternalBleeding10_3200_4526_4556.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/025_UCR_Anomaly_DISTORTEDInternalBleeding14_2800_5607_5634.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/026_UCR_Anomaly_DISTORTEDInternalBleeding15_1700_5684_5854.txt,136818,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/027_UCR_Anomaly_DISTORTEDInternalBleeding16_1200_4187_4199.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/028_UCR_Anomaly_DISTORTEDInternalBleeding17_1600_3198_3309.txt,135000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/029_UCR_Anomaly_DISTORTEDInternalBleeding18_2300_4485_4587.txt,135000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/030_UCR_Anomaly_DISTORTEDInternalBleeding19_3000_4187_4197.txt,135000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/031_UCR_Anomaly_DISTORTEDInternalBleeding20_2700_5759_5919.txt,135000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/032_UCR_Anomaly_DISTORTEDInternalBleeding4_1000_4675_5033.txt,131778,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/033_UCR_Anomaly_DISTORTEDInternalBleeding5_4000_6200_6370.txt,133470,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/034_UCR_Anomaly_DISTORTEDInternalBleeding6_1500_3474_3629.txt,137772,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/035_UCR_Anomaly_DISTORTEDInternalBleeding8_2500_5865_5974.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/036_UCR_Anomaly_DISTORTEDInternalBleeding9_4200_6599_6681.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/037_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG1_5000_17210_17260.txt,540018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/038_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG2_5000_27862_27932.txt,539100,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/039_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG3_5000_16390_16420.txt,539100,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/040_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG4_6000_17390_17520.txt,541188,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/041_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG5_7000_17390_17520.txt,536868,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/042_UCR_Anomaly_DISTORTEDLab2Cmac011215EPG6_7000_12190_12420.txt,537462,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/043_UCR_Anomaly_DISTORTEDMesoplodonDensirostris_10000_19280_19440.txt,444006,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/044_UCR_Anomaly_DISTORTEDPowerDemand1_9000_18485_18821.txt,538758,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/045_UCR_Anomaly_DISTORTEDPowerDemand2_14000_23357_23717.txt,538758,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/046_UCR_Anomaly_DISTORTEDPowerDemand3_16000_23405_23477.txt,538758,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/047_UCR_Anomaly_DISTORTEDPowerDemand4_18000_24005_24077.txt,538758,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/048_UCR_Anomaly_DISTORTEDTkeepFifthMARS_3500_5988_6085.txt,204012,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/049_UCR_Anomaly_DISTORTEDTkeepFirstMARS_3500_5365_5380.txt,205308,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/050_UCR_Anomaly_DISTORTEDTkeepForthMARS_3500_5988_6085.txt,203544,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/051_UCR_Anomaly_DISTORTEDTkeepSecondMARS_3500_9330_9340.txt,204984,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/052_UCR_Anomaly_DISTORTEDTkeepThirdMARS_3500_4711_4809.txt,203544,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/054_UCR_Anomaly_DISTORTEDWalkingAceleration5_2700_5920_5979.txt,120312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/055_UCR_Anomaly_DISTORTEDapneaecg2_10000_20950_21100.txt,693018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/056_UCR_Anomaly_DISTORTEDapneaecg3_5000_11111_11211.txt,690822,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/057_UCR_Anomaly_DISTORTEDapneaecg4_6000_16000_16100.txt,688842,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/058_UCR_Anomaly_DISTORTEDapneaecg_10000_12240_12308.txt,693018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/059_UCR_Anomaly_DISTORTEDgait1_20000_38500_38800.txt,1170000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/060_UCR_Anomaly_DISTORTEDgait2_22000_46500_46800.txt,1170000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/061_UCR_Anomaly_DISTORTEDgait3_24500_59900_60500.txt,1170000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/062_UCR_Anomaly_DISTORTEDgaitHunt1_18500_33070_33180.txt,1152000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/063_UCR_Anomaly_DISTORTEDgaitHunt2_18500_31200_31850.txt,1152000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/064_UCR_Anomaly_DISTORTEDgaitHunt3_23400_38400_39200.txt,1152000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/065_UCR_Anomaly_DISTORTEDinsectEPG1_3000_7000_7030.txt,180018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/066_UCR_Anomaly_DISTORTEDinsectEPG2_3700_8000_8025.txt,179964,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/067_UCR_Anomaly_DISTORTEDinsectEPG3_5200_7000_7050.txt,179964,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/068_UCR_Anomaly_DISTORTEDinsectEPG4_1300_6508_6558.txt,179964,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/069_UCR_Anomaly_DISTORTEDinsectEPG5_3200_8500_8501.txt,180504,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/070_UCR_Anomaly_DISTORTEDltstdbs30791AI_17555_52600_52800.txt,1010214,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/071_UCR_Anomaly_DISTORTEDltstdbs30791AS_23000_52600_52800.txt,990000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/072_UCR_Anomaly_DISTORTEDltstdbs30791ES_20000_52600_52800.txt,990000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/073_UCR_Anomaly_DISTORTEDpark3m_60000_72150_72495.txt,1620000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/074_UCR_Anomaly_DISTORTEDqtdbSel1005V_4000_12400_12800.txt,648018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/075_UCR_Anomaly_DISTORTEDqtdbSel100MLII_4000_13400_13800.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/076_UCR_Anomaly_DISTORTEDresperation10_48000_130700_131880.txt,3510000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/077_UCR_Anomaly_DISTORTEDresperation11_58000_110800_110801.txt,3510000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/078_UCR_Anomaly_DISTORTEDresperation1_100000_110260_110412.txt,3600000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/079_UCR_Anomaly_DISTORTEDresperation2_30000_168250_168250.txt,3600918,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/080_UCR_Anomaly_DISTORTEDresperation2_30000_168250_168251.txt,3420900,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/081_UCR_Anomaly_DISTORTEDresperation3_45000_158250_158251.txt,3421800,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/082_UCR_Anomaly_DISTORTEDresperation4_70000_128430_128431.txt,3514500,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/083_UCR_Anomaly_DISTORTEDresperation9_38000_143411_143511.txt,3510000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/084_UCR_Anomaly_DISTORTEDs20101mML2_12000_35774_35874.txt,720000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/085_UCR_Anomaly_DISTORTEDs20101m_10000_35774_35874.txt,720000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/086_UCR_Anomaly_DISTORTEDsddb49_20000_67950_68200.txt,1440000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/087_UCR_Anomaly_DISTORTEDsel840mECG1_17000_51370_51740.txt,1080000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/088_UCR_Anomaly_DISTORTEDsel840mECG2_20000_49370_49740.txt,1026018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/089_UCR_Anomaly_DISTORTEDtiltAPB1_100000_114283_114350.txt,2340018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/090_UCR_Anomaly_DISTORTEDtiltAPB2_50000_124159_124985.txt,2317806,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/091_UCR_Anomaly_DISTORTEDtiltAPB3_40000_114000_114370.txt,2330802,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/092_UCR_Anomaly_DISTORTEDtiltAPB4_20000_67995_67996.txt,2304018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/093_UCR_Anomaly_NOISE1sddb40_35000_52000_52620.txt,1436310,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/094_UCR_Anomaly_NOISEBIDMC1_2500_5400_5600.txt,198000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/095_UCR_Anomaly_NOISECIMIS44AirTemperature4_4000_5549_5597.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/096_UCR_Anomaly_NOISEECG4_5000_16900_17100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/097_UCR_Anomaly_NOISEGP711MarkerLFM5z3_5000_5948_5993.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/098_UCR_Anomaly_NOISEInternalBleeding16_1200_4187_4199.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/099_UCR_Anomaly_NOISEInternalBleeding6_1500_3474_3629.txt,137772,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/100_UCR_Anomaly_NOISELab2Cmac011215EPG1_5000_17210_17260.txt,540018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/101_UCR_Anomaly_NOISELab2Cmac011215EPG4_6000_17390_17520.txt,541188,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/102_UCR_Anomaly_NOISEMesoplodonDensirostris_10000_19280_19440.txt,444006,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/103_UCR_Anomaly_NOISETkeepThirdMARS_3500_4711_4809.txt,203544,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/104_UCR_Anomaly_NOISEapneaecg4_6000_16000_16100.txt,688842,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/105_UCR_Anomaly_NOISEgait3_24500_59900_60500.txt,1170000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/106_UCR_Anomaly_NOISEgaitHunt2_18500_31200_31850.txt,1152000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/107_UCR_Anomaly_NOISEinsectEPG3_5200_7000_7050.txt,179964,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/108_UCR_Anomaly_NOISEresperation2_30000_168250_168250.txt,3600918,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/109_UCR_Anomaly_1sddb40_35000_52000_52620.txt,1436310,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/110_UCR_Anomaly_2sddb40_35000_56600_56900.txt,1440018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/111_UCR_Anomaly_3sddb40_35000_46600_46900.txt,1440000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/112_UCR_Anomaly_BIDMC1_2500_5400_5600.txt,198000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/113_UCR_Anomaly_CIMIS44AirTemperature1_4000_5391_5392.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/114_UCR_Anomaly_CIMIS44AirTemperature2_4000_5703_5727.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/115_UCR_Anomaly_CIMIS44AirTemperature3_4000_6520_6544.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/116_UCR_Anomaly_CIMIS44AirTemperature4_4000_5549_5597.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/117_UCR_Anomaly_CIMIS44AirTemperature5_4000_4852_4900.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/118_UCR_Anomaly_CIMIS44AirTemperature6_4000_6006_6054.txt,147312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/119_UCR_Anomaly_ECG1_10000_11800_12100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/120_UCR_Anomaly_ECG2_15000_16000_16100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/121_UCR_Anomaly_ECG3_15000_16000_16100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/122_UCR_Anomaly_ECG3_8000_17000_17100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/123_UCR_Anomaly_ECG4_5000_16800_17100.txt,3600000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/124_UCR_Anomaly_ECG4_5000_16900_17100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/125_UCR_Anomaly_ECG4_5000_17000_17100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/126_UCR_Anomaly_ECG4_8000_17000_17100.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/127_UCR_Anomaly_GP711MarkerLFM5z1_5000_6168_6212.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/128_UCR_Anomaly_GP711MarkerLFM5z2_5000_7175_7388.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/129_UCR_Anomaly_GP711MarkerLFM5z3_5000_5948_5993.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/130_UCR_Anomaly_GP711MarkerLFM5z4_4000_6527_6645.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/131_UCR_Anomaly_GP711MarkerLFM5z5_5000_8612_8716.txt,216000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/132_UCR_Anomaly_InternalBleeding10_3200_4526_4556.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/133_UCR_Anomaly_InternalBleeding14_2800_5607_5634.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/134_UCR_Anomaly_InternalBleeding15_1700_5684_5854.txt,136818,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/135_UCR_Anomaly_InternalBleeding16_1200_4187_4199.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/136_UCR_Anomaly_InternalBleeding17_1600_3198_3309.txt,135000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/137_UCR_Anomaly_InternalBleeding18_2300_4485_4587.txt,135000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/138_UCR_Anomaly_InternalBleeding19_3000_4187_4197.txt,135000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/139_UCR_Anomaly_InternalBleeding20_2700_5759_5919.txt,135000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/140_UCR_Anomaly_InternalBleeding4_1000_4675_5033.txt,131778,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/141_UCR_Anomaly_InternalBleeding5_4000_6200_6370.txt,133470,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/142_UCR_Anomaly_InternalBleeding6_1500_3474_3629.txt,137772,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/143_UCR_Anomaly_InternalBleeding8_2500_5865_5974.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/144_UCR_Anomaly_InternalBleeding9_4200_6599_6681.txt,135018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/145_UCR_Anomaly_Lab2Cmac011215EPG1_5000_17210_17260.txt,540018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/146_UCR_Anomaly_Lab2Cmac011215EPG2_5000_27862_27932.txt,539100,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/147_UCR_Anomaly_Lab2Cmac011215EPG3_5000_16390_16420.txt,539100,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/148_UCR_Anomaly_Lab2Cmac011215EPG4_6000_17390_17520.txt,541188,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/149_UCR_Anomaly_Lab2Cmac011215EPG5_7000_17390_17520.txt,536868,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/150_UCR_Anomaly_Lab2Cmac011215EPG6_7000_12190_12420.txt,537462,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/151_UCR_Anomaly_MesoplodonDensirostris_10000_19280_19440.txt,444006,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/152_UCR_Anomaly_PowerDemand1_9000_18485_18821.txt,538758,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/153_UCR_Anomaly_PowerDemand2_14000_23357_23717.txt,538758,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/154_UCR_Anomaly_PowerDemand3_16000_23405_23477.txt,538758,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/155_UCR_Anomaly_PowerDemand4_18000_24005_24077.txt,538758,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/156_UCR_Anomaly_TkeepFifthMARS_3500_5988_6085.txt,204012,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/157_UCR_Anomaly_TkeepFirstMARS_3500_5365_5380.txt,205308,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/158_UCR_Anomaly_TkeepForthMARS_3500_5988_6085.txt,203544,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/159_UCR_Anomaly_TkeepSecondMARS_3500_9330_9340.txt,204984,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/160_UCR_Anomaly_TkeepThirdMARS_3500_4711_4809.txt,203544,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/161_UCR_Anomaly_WalkingAceleration1_1500_2764_2995.txt,120312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/162_UCR_Anomaly_WalkingAceleration5_2700_5920_5979.txt,120312,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/163_UCR_Anomaly_apneaecg2_10000_20950_21100.txt,693018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/164_UCR_Anomaly_apneaecg3_5000_11111_11211.txt,690822,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/165_UCR_Anomaly_apneaecg4_6000_16000_16100.txt,688842,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/166_UCR_Anomaly_apneaecg_10000_12240_12308.txt,693018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/167_UCR_Anomaly_gait1_20000_38500_38800.txt,1170000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/168_UCR_Anomaly_gait2_22000_46500_46800.txt,1170000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/169_UCR_Anomaly_gait3_24500_59900_60500.txt,1170000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/170_UCR_Anomaly_gaitHunt1_18500_33070_33180.txt,1152000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/171_UCR_Anomaly_gaitHunt2_18500_31200_31850.txt,1152000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/172_UCR_Anomaly_gaitHunt3_23400_38400_39200.txt,1152000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/173_UCR_Anomaly_insectEPG1_3000_7000_7030.txt,180018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/174_UCR_Anomaly_insectEPG2_3700_8000_8025.txt,179964,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/175_UCR_Anomaly_insectEPG3_5200_7000_7050.txt,179964,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/176_UCR_Anomaly_insectEPG4_1300_6508_6558.txt,179964,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/177_UCR_Anomaly_insectEPG5_3200_8500_8501.txt,180504,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/178_UCR_Anomaly_ltstdbs30791AI_17555_52600_52800.txt,1010214,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/179_UCR_Anomaly_ltstdbs30791AS_23000_52600_52800.txt,990000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/180_UCR_Anomaly_ltstdbs30791ES_20000_52600_52800.txt,990000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/181_UCR_Anomaly_park3m_60000_72150_72495.txt,1620000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/182_UCR_Anomaly_qtdbSel1005V_4000_12400_12800.txt,648018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/183_UCR_Anomaly_qtdbSel100MLII_4000_13400_13800.txt,540000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/184_UCR_Anomaly_resperation10_48000_130700_131880.txt,3510000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/185_UCR_Anomaly_resperation11_58000_110800_110801.txt,3510000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/186_UCR_Anomaly_resperation1_100000_110260_110412.txt,3600000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/187_UCR_Anomaly_resperation2_30000_168250_168250.txt,3600918,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/188_UCR_Anomaly_resperation2_30000_168250_168251.txt,3420900,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/189_UCR_Anomaly_resperation3_45000_158250_158251.txt,3421800,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/190_UCR_Anomaly_resperation4_70000_128430_128431.txt,3514500,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/191_UCR_Anomaly_resperation9_38000_143411_143511.txt,3510000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/192_UCR_Anomaly_s20101mML2_12000_35774_35874.txt,720000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/193_UCR_Anomaly_s20101m_10000_35774_35874.txt,720000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/194_UCR_Anomaly_sddb49_20000_67950_68200.txt,1440000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/195_UCR_Anomaly_sel840mECG1_17000_51370_51740.txt,1080000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/196_UCR_Anomaly_sel840mECG2_20000_49370_49740.txt,1026018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/197_UCR_Anomaly_tiltAPB1_100000_114283_114350.txt,2340018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/198_UCR_Anomaly_tiltAPB2_50000_124159_124985.txt,2317806,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/199_UCR_Anomaly_tiltAPB3_40000_114000_114370.txt,2330802,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/200_UCR_Anomaly_tiltAPB4_20000_67995_67996.txt,2304018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/201_UCR_Anomaly_CHARISfive_10000_17001_17016.txt,744246,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/202_UCR_Anomaly_CHARISfive_10411_10998_11028.txt,752220,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/203_UCR_Anomaly_CHARISfive_10500_10995_11028.txt,749016,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/204_UCR_Anomaly_CHARISfive_12412_15000_15070.txt,671986,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/205_UCR_Anomaly_CHARISfive_9812_28995_29085.txt,637922,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/206_UCR_Anomaly_CHARISten_25130_29080_29140.txt,672002,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/207_UCR_Anomaly_CHARISten_3165_26929_26989.txt,637922,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/208_UCR_Anomaly_CHARISten_5130_27929_27989.txt,653922,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/209_UCR_Anomaly_Fantasia_19000_26970_27270.txt,1656000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/210_UCR_Anomaly_Italianpowerdemand_36123_74900_74996.txt,2156742,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/211_UCR_Anomaly_Italianpowerdemand_38113_39240_39336.txt,2152440,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/212_UCR_Anomaly_Italianpowerdemand_8913_29480_29504.txt,538758,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/213_UCR_Anomaly_STAFFIIIDatabase_33211_126920_127370.txt,5400000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/214_UCR_Anomaly_STAFFIIIDatabase_34211_125720_126370.txt,5394420,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/215_UCR_Anomaly_STAFFIIIDatabase_36276_106720_107370.txt,5399820,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/216_UCR_Anomaly_STAFFIIIDatabase_37216_160720_161370.txt,5398020,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/217_UCR_Anomaly_STAFFIIIDatabase_38211_150720_151370.txt,5394420,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/218_UCR_Anomaly_STAFFIIIDatabase_41117_210720_211370.txt,5398920,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/220_UCR_Anomaly_STAFFIIIDatabase_43217_250720_251370.txt,5396220,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/221_UCR_Anomaly_STAFFIIIDatabase_45616_163632_164852.txt,5370120,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/222_UCR_Anomaly_mit14046longtermecg_56123_91200_91700.txt,3807036,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/223_UCR_Anomaly_mit14046longtermecg_74123_131200_131700.txt,3246948,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/224_UCR_Anomaly_mit14046longtermecg_76123_191200_191700.txt,3595554,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/225_UCR_Anomaly_mit14046longtermecg_81214_143000_143300.txt,3199986,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/226_UCR_Anomaly_mit14046longtermecg_96123_123000_123300.txt,3040018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/227_UCR_Anomaly_mit14134longtermecg_11231_29000_29100.txt,1067436,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/228_UCR_Anomaly_mit14134longtermecg_11361_47830_47850.txt,1062000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/229_UCR_Anomaly_mit14134longtermecg_16363_57960_57970.txt,1062000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/230_UCR_Anomaly_mit14134longtermecg_19363_19510_19610.txt,1062000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/231_UCR_Anomaly_mit14134longtermecg_8763_47530_47790.txt,1062000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/232_UCR_Anomaly_mit14134longtermecg_8763_57530_57790.txt,1062000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/233_UCR_Anomaly_mit14157longtermecg_18913_24500_24501.txt,1668780,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/234_UCR_Anomaly_mit14157longtermecg_18913_24600_24601.txt,1776780,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/235_UCR_Anomaly_mit14157longtermecg_18913_75450_75451.txt,1751400,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/236_UCR_Anomaly_mit14157longtermecg_19313_46350_46390.txt,1746000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/237_UCR_Anomaly_mit14157longtermecg_19313_89560_90370.txt,1746000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/238_UCR_Anomaly_mit14157longtermecg_21311_72600_72780.txt,1782000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/239_UCR_Anomaly_taichidbS0715Master_190037_593450_593514.txt,16158006,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/240_UCR_Anomaly_taichidbS0715Master_240030_884100_884200.txt,16200000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/241_UCR_Anomaly_taichidbS0715Master_250000_837400_839100.txt,16200000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/242_UCR_Anomaly_tilt12744mtable_100000_104630_104890.txt,4586674,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/243_UCR_Anomaly_tilt12744mtable_100000_203355_203400.txt,4000018,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/244_UCR_Anomaly_tilt12754table_100013_104630_104890.txt,5404716,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/245_UCR_Anomaly_tilt12754table_100211_270800_271070.txt,5377446,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/246_UCR_Anomaly_tilt12755mtable_100211_270800_271070.txt,5397606,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/247_UCR_Anomaly_tilt12755mtable_50211_121900_121980.txt,3600000,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/248_UCR_Anomaly_weallwalk_2000_4702_4707.txt,151776,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/249_UCR_Anomaly_weallwalk_2753_8285_8315.txt,189432,False,outside selected preprocessing scope or unused source archive
+data/AnomalyArchive/250_UCR_Anomaly_weallwalk_2951_7290_7296.txt,188424,False,outside selected preprocessing scope or unused source archive
+data/Graph Based Fraud Detection Dataset for Financial.zip,2813870,False,outside selected preprocessing scope or unused source archive
+data/NASA/.DS_Store,6148,False,generated cache or operating-system metadata
+data/SMD/SMD_test.npy,107679968,False,outside selected preprocessing scope or unused source archive
+data/SMD/SMD_test_label.npy,2833808,False,outside selected preprocessing scope or unused source archive
+data/SMD/SMD_train.npy,107677688,False,outside selected preprocessing scope or unused source archive
+data/ServerMachineDataset/.DS_Store,12292,False,generated cache or operating-system metadata
+data/TSB-AD-M.zip,540383983,False,outside selected preprocessing scope or unused source archive
+data/TSB-AD-U.zip,72900868,False,outside selected preprocessing scope or unused source archive
+data/extra-industrial-data/DNA_C1.mat,112260805,False,outside selected preprocessing scope or unused source archive
+data/extra-industrial-data/Human_Chromosome_0ne_Length_is_225934570.mat,215305272,False,outside selected preprocessing scope or unused source archive
+data/extra-industrial-data/Tuna___21P0433_220579_MiniPAT.28Nov2025_ATBL_ICCAT.csv,183372756,False,outside selected preprocessing scope or unused source archive
+data/ibm-cloud-console-anomaly-dataset-iccad.zip,5450315950,False,outside selected preprocessing scope or unused source archive
+data/ibm-cloud-console-anomaly-dataset-iccad/demo.html,295986,False,unused ICCAD long-format representation or publisher demo
+data/ibm-cloud-console-anomaly-dataset-iccad/demo.ipynb,13409,False,unused ICCAD long-format representation or publisher demo
+data/ibm-cloud-console-anomaly-dataset-iccad/unpivoted_data.parquet,2724917264,False,unused ICCAD long-format representation or publisher demo
+data/tfinance,682904644,False,outside selected preprocessing scope or unused source archive
+data/tfinance.zip,78068255,False,outside selected preprocessing scope or unused source archive
+demo/__pycache__/__init__.cpython-312.pyc,470,False,generated cache or operating-system metadata
+demo/__pycache__/app.cpython-312.pyc,3677,False,generated cache or operating-system metadata
+demo/__pycache__/demo_state.cpython-312.pyc,1897,False,generated cache or operating-system metadata
+demo/__pycache__/loaders.cpython-312.pyc,5641,False,generated cache or operating-system metadata
+demo/__pycache__/offline_replay.cpython-312.pyc,3955,False,generated cache or operating-system metadata
+demo/__pycache__/online_replay.cpython-312.pyc,10166,False,generated cache or operating-system metadata
+demo/__pycache__/plotting.cpython-312.pyc,4871,False,generated cache or operating-system metadata
+demo/__pycache__/stream_queue.cpython-312.pyc,4853,False,generated cache or operating-system metadata
+documents/.DS_Store,8196,False,generated cache or operating-system metadata
+documents/benchmark-flow-6-july-2026.md,3548,True,"obsolete work record, old result note, or unrelated learning template"
+documents/inventories/index.md,279,True,"obsolete work record, old result note, or unrelated learning template"
+documents/inventories/ssh-command-notes.md,763,True,"obsolete work record, old result note, or unrelated learning template"
+documents/learning-docs/how-to-form-a-research-question.md,3014,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-01/detail/baseline-restoration-backup.txt,87,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-01/detail/removals.csv,410782,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-01/detail/verification.json,428,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-01/plan/baseline-restoration.md,854,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-01/plan/simplification.md,64144,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-03/detail/phase2-reexecution/phase2-rerun.md,3333,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-03/plan/codex-cleandocs-hook.md,1708,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-03/plan/cross-codebase-online-tta-terminology-audit.md,803,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-03/plan/online-test-time-adaptation-wording-edits.md,9074,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-03/research/evaluation-metrics-test__evaluation_protocol_audit.md,845,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-03/research/evaluation-reuse-test__evaluation_protocol_audit.md,754,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-03/research/research-protocol-meaning.md,5750,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-09/plan/plan-explore-all-local-datasets.md,11271,True,"obsolete work record, old result note, or unrelated learning template"
+documents/logs/2026-11-09/research/research-local-datasets.md,6359,True,"obsolete work record, old result note, or unrelated learning template"
+documents/notes/benchmark_metrics_and_data_directories.md,6019,True,"obsolete work record, old result note, or unrelated learning template"
+documents/notes/offline_report_collection_plan.md,2356,True,"obsolete work record, old result note, or unrelated learning template"
+documents/repository_architecture_analysis.md,44844,True,"obsolete work record, old result note, or unrelated learning template"
+documents/templates/feature-memo.md,1182,True,"obsolete work record, old result note, or unrelated learning template"
+notebooks/eda/iccad_eda.ipynb,3951,True,optional exploration or loading exercise outside next runtime
+notebooks/eda/smd_random_window_synthetic_anomaly_12_panel.ipynb,954260,True,optional exploration or loading exercise outside next runtime
+notebooks/eda/smd_random_window_synthetic_anomaly_12_panel_w100.ipynb,1626574,True,optional exploration or loading exercise outside next runtime
+notebooks/eda/smd_three_entity_synthetic_profile_comparison.ipynb,1633661,True,optional exploration or loading exercise outside next runtime
+notebooks/learning/smd_colab_window_preprocessing_template_exercise.ipynb,57480,True,optional exploration or loading exercise outside next runtime
+notebooks/templates/smd_colab_window_preprocessing_template.ipynb,63086,True,optional exploration or loading exercise outside next runtime
+notebooks/templates/time_series_loading_template.ipynb,2968,True,optional exploration or loading exercise outside next runtime
+prompts/.DS_Store,6148,False,generated cache or operating-system metadata
+reporting.tar.zst,17974568,True,obsolete local result archive
+reporting/online_phase_tables/online_metrics_99/baseline__candi__main__machine_1_6__seed36__online_metrics.json,1000472,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__candi__main__machine_1_6__seed6__online_metrics.json,1000041,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__candi__main__machine_1_6__seed8__online_metrics.json,997068,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__candi__main__machine_3_4__seed36__online_metrics.json,1682929,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__candi__main__machine_3_4__seed6__online_metrics.json,1682404,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__candi__main__machine_3_4__seed8__online_metrics.json,1682755,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__candi__main__machine_3_9__seed36__online_metrics.json,4763040,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__candi__main__machine_3_9__seed6__online_metrics.json,4761310,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__candi__main__machine_3_9__seed8__online_metrics.json,4763882,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__iforest__main__machine_1_6__seed36__online_metrics.json,750476,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__iforest__main__machine_1_6__seed6__online_metrics.json,750311,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__iforest__main__machine_1_6__seed8__online_metrics.json,752604,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__iforest__main__machine_3_4__seed36__online_metrics.json,1275672,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__iforest__main__machine_3_4__seed6__online_metrics.json,1279233,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__iforest__main__machine_3_4__seed8__online_metrics.json,1278873,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__iforest__main__machine_3_9__seed36__online_metrics.json,3531898,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__iforest__main__machine_3_9__seed6__online_metrics.json,3547814,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__iforest__main__machine_3_9__seed8__online_metrics.json,3535483,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__kmeans_ad__main__machine_1_6__seed36__online_metrics.json,718003,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__kmeans_ad__main__machine_1_6__seed6__online_metrics.json,720221,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__kmeans_ad__main__machine_1_6__seed8__online_metrics.json,719975,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__kmeans_ad__main__machine_3_4__seed36__online_metrics.json,1222110,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__kmeans_ad__main__machine_3_4__seed6__online_metrics.json,1218655,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__kmeans_ad__main__machine_3_4__seed8__online_metrics.json,1222344,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__kmeans_ad__main__machine_3_9__seed36__online_metrics.json,3435537,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__kmeans_ad__main__machine_3_9__seed6__online_metrics.json,3424214,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__kmeans_ad__main__machine_3_9__seed8__online_metrics.json,3433980,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__m2n2__main__machine_1_6__seed36__online_metrics.json,1024761,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__m2n2__main__machine_1_6__seed6__online_metrics.json,1024710,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__m2n2__main__machine_1_6__seed8__online_metrics.json,1025191,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__m2n2__main__machine_3_4__seed36__online_metrics.json,1677536,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__m2n2__main__machine_3_4__seed6__online_metrics.json,1681046,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__m2n2__main__machine_3_4__seed8__online_metrics.json,1677540,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__m2n2__main__machine_3_9__seed36__online_metrics.json,4898845,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__m2n2__main__machine_3_9__seed6__online_metrics.json,4898190,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__m2n2__main__machine_3_9__seed8__online_metrics.json,4898600,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__stumpy__main__machine_1_6__seed36__online_metrics.json,717452,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__stumpy__main__machine_1_6__seed6__online_metrics.json,717452,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__stumpy__main__machine_1_6__seed8__online_metrics.json,717452,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__stumpy__main__machine_3_4__seed36__online_metrics.json,1221853,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__stumpy__main__machine_3_4__seed6__online_metrics.json,1221853,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__stumpy__main__machine_3_4__seed8__online_metrics.json,1221853,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__stumpy__main__machine_3_9__seed36__online_metrics.json,3411494,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__stumpy__main__machine_3_9__seed6__online_metrics.json,3411494,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/baseline__stumpy__main__machine_3_9__seed8__online_metrics.json,3411494,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/online_metrics_99_manifest.csv,43441,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/online_metrics_99_manifest.json,71114,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A0__machine_1_6__seed36__online_metrics.json,2194283,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A0__machine_1_6__seed6__online_metrics.json,2194439,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A0__machine_1_6__seed8__online_metrics.json,2194183,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A0__machine_3_4__seed36__online_metrics.json,3713986,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A0__machine_3_4__seed6__online_metrics.json,3710668,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A0__machine_3_4__seed8__online_metrics.json,3711289,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A0__machine_3_9__seed36__online_metrics.json,10444517,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A0__machine_3_9__seed6__online_metrics.json,10447578,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A0__machine_3_9__seed8__online_metrics.json,10455439,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A1__machine_1_6__seed36__online_metrics.json,2202604,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A1__machine_1_6__seed6__online_metrics.json,2202940,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A1__machine_1_6__seed8__online_metrics.json,2202598,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A1__machine_3_4__seed36__online_metrics.json,3765850,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A1__machine_3_4__seed6__online_metrics.json,3746516,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A1__machine_3_4__seed8__online_metrics.json,3765030,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A1__machine_3_9__seed36__online_metrics.json,10491791,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A1__machine_3_9__seed6__online_metrics.json,10493184,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A1__machine_3_9__seed8__online_metrics.json,10505383,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A2__machine_1_6__seed36__online_metrics.json,2202780,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A2__machine_1_6__seed6__online_metrics.json,2203022,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A2__machine_1_6__seed8__online_metrics.json,2202645,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A2__machine_3_4__seed36__online_metrics.json,3752393,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A2__machine_3_4__seed6__online_metrics.json,3747280,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A2__machine_3_4__seed8__online_metrics.json,3770754,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A2__machine_3_9__seed36__online_metrics.json,10493125,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A2__machine_3_9__seed6__online_metrics.json,10494804,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O0_A2__machine_3_9__seed8__online_metrics.json,10508213,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A0__machine_1_6__seed36__online_metrics.json,2192261,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A0__machine_1_6__seed6__online_metrics.json,2194490,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A0__machine_1_6__seed8__online_metrics.json,2194284,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A0__machine_3_4__seed36__online_metrics.json,3711206,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A0__machine_3_4__seed6__online_metrics.json,3710423,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A0__machine_3_4__seed8__online_metrics.json,3713723,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A0__machine_3_9__seed36__online_metrics.json,10453876,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A0__machine_3_9__seed6__online_metrics.json,10459386,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A0__machine_3_9__seed8__online_metrics.json,10455004,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A1__machine_1_6__seed36__online_metrics.json,2200737,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A1__machine_1_6__seed6__online_metrics.json,2203091,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A1__machine_1_6__seed8__online_metrics.json,2202662,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A1__machine_3_4__seed36__online_metrics.json,3763797,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A1__machine_3_4__seed6__online_metrics.json,3742425,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A1__machine_3_4__seed8__online_metrics.json,3744999,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A1__machine_3_9__seed36__online_metrics.json,10503060,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A1__machine_3_9__seed6__online_metrics.json,10503681,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A1__machine_3_9__seed8__online_metrics.json,10505732,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A2__machine_1_6__seed36__online_metrics.json,2200947,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A2__machine_1_6__seed6__online_metrics.json,2203229,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A2__machine_1_6__seed8__online_metrics.json,2202837,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A2__machine_3_4__seed36__online_metrics.json,3755387,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A2__machine_3_4__seed6__online_metrics.json,3743699,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A2__machine_3_4__seed8__online_metrics.json,3745280,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A2__machine_3_9__seed36__online_metrics.json,10503943,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A2__machine_3_9__seed6__online_metrics.json,10505027,True,old per-window traces; compact per-run metrics are retained
+reporting/online_phase_tables/online_metrics_99/thesis__O1_A2__machine_3_9__seed8__online_metrics.json,10506417,True,old per-window traces; compact per-run metrics are retained
+scripts/__pycache__/__init__.cpython-312.pyc,359,False,generated cache or operating-system metadata
+scripts/__pycache__/cleandocs_hook.cpython-314.pyc,15926,False,generated cache or operating-system metadata
+scripts/__pycache__/evaluate.cpython-312.pyc,578,False,generated cache or operating-system metadata
+scripts/__pycache__/generate_benchmark_smoke_configs.cpython-312.pyc,498,False,generated cache or operating-system metadata
+scripts/__pycache__/generate_offline_benchmark_configs.cpython-312.pyc,502,False,generated cache or operating-system metadata
+scripts/__pycache__/generate_online_benchmark_configs.cpython-312.pyc,500,False,generated cache or operating-system metadata
+scripts/__pycache__/generate_online_streaming_benchmark_configs.cpython-312.pyc,520,False,generated cache or operating-system metadata
+scripts/__pycache__/generate_smd_benchmark_configs.cpython-312.pyc,494,False,generated cache or operating-system metadata
+scripts/__pycache__/preprocess.cpython-312.pyc,39331,False,generated cache or operating-system metadata
+scripts/__pycache__/run_comparative_smd_experiments.cpython-312.pyc,1419,False,generated cache or operating-system metadata
+scripts/__pycache__/run_direct_branch_routing_evaluation.cpython-312.pyc,3189,False,generated cache or operating-system metadata
+scripts/__pycache__/run_direct_branch_routing_full.cpython-312.pyc,9453,False,generated cache or operating-system metadata
+scripts/__pycache__/run_direct_branch_routing_smoke.cpython-312.pyc,3554,False,generated cache or operating-system metadata
+scripts/__pycache__/run_multiseed_experiments.cpython-312.pyc,485,False,generated cache or operating-system metadata
+scripts/__pycache__/run_offline_benchmark.cpython-312.pyc,611,False,generated cache or operating-system metadata
+scripts/__pycache__/run_online_adaptation.cpython-312.pyc,477,False,generated cache or operating-system metadata
+scripts/__pycache__/run_online_streaming_benchmark.cpython-312.pyc,629,False,generated cache or operating-system metadata
+scripts/__pycache__/run_thesis_offline_benchmark.cpython-312.pyc,625,False,generated cache or operating-system metadata
+scripts/__pycache__/run_thesis_online_benchmark.cpython-312.pyc,623,False,generated cache or operating-system metadata
+scripts/__pycache__/run_two_stage_offline_pretraining.cpython-312.pyc,640,False,generated cache or operating-system metadata
+scripts/__pycache__/summarize_benchmark_results.cpython-312.pyc,488,False,generated cache or operating-system metadata
+scripts/__pycache__/train.cpython-312.pyc,572,False,generated cache or operating-system metadata
+scripts/__pycache__/visualize_smd_12_classes_w20.cpython-312.pyc,6897,False,generated cache or operating-system metadata
+scripts/analysis/__pycache__/__init__.cpython-312.pyc,350,False,generated cache or operating-system metadata
+scripts/analysis/__pycache__/export_post_anomaly_suffix_counts.cpython-312.pyc,10775,False,generated cache or operating-system metadata
+scripts/analysis/__pycache__/kl_divergence_anomaly_archive.cpython-312.pyc,13095,False,generated cache or operating-system metadata
+scripts/analysis/__pycache__/summarize_anomaly_span_lengths.cpython-312.pyc,16256,False,generated cache or operating-system metadata
+scripts/analysis/__pycache__/summarize_anomaly_span_lengths_helpers.cpython-312.pyc,16523,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/__init__.cpython-312.pyc,368,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/_config_generation_helpers.cpython-312.pyc,1123,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/collect_remaining_smd_metrics.cpython-312.pyc,8041,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/generate_benchmark_smoke_configs.cpython-312.pyc,4352,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/generate_offline_benchmark_configs.cpython-312.pyc,5697,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/generate_online_benchmark_configs.cpython-312.pyc,9606,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/generate_online_streaming_benchmark_configs.cpython-312.pyc,8931,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/generate_pro_reconstruction_vus_budget_matrix.cpython-312.pyc,6944,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/generate_remaining_smd_benchmark_configs.cpython-312.pyc,28554,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/generate_smd_benchmark_configs.cpython-312.pyc,7878,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/run_offline_benchmark.cpython-312.pyc,20605,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/run_online_streaming_benchmark.cpython-312.pyc,23974,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/run_thesis_offline_benchmark.cpython-312.pyc,43458,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/run_thesis_online_benchmark.cpython-312.pyc,15825,False,generated cache or operating-system metadata
+scripts/benchmarks/__pycache__/summarize_benchmark_results.cpython-312.pyc,15238,False,generated cache or operating-system metadata
+scripts/benchmarks/_internal/__pycache__/__init__.cpython-312.pyc,402,False,generated cache or operating-system metadata
+scripts/benchmarks/_internal/__pycache__/run_thesis_offline_benchmark_helpers.cpython-312.pyc,21988,False,generated cache or operating-system metadata
+scripts/cli/__pycache__/__init__.cpython-312.pyc,362,False,generated cache or operating-system metadata
+scripts/cli/__pycache__/evaluate.cpython-312.pyc,19165,False,generated cache or operating-system metadata
+scripts/cli/__pycache__/train.cpython-312.pyc,15280,False,generated cache or operating-system metadata
+scripts/experiments/__pycache__/__init__.cpython-312.pyc,359,False,generated cache or operating-system metadata
+scripts/experiments/__pycache__/run_comparative_smd_experiments.cpython-312.pyc,14447,False,generated cache or operating-system metadata
+scripts/experiments/__pycache__/run_multiseed_experiments.cpython-312.pyc,10202,False,generated cache or operating-system metadata
+scripts/experiments/__pycache__/run_online_adaptation.cpython-312.pyc,11189,False,generated cache or operating-system metadata
+scripts/experiments/__pycache__/run_two_stage_offline_pretraining.cpython-312.pyc,22066,False,generated cache or operating-system metadata
+scripts/experiments/_internal/__pycache__/__init__.cpython-312.pyc,405,False,generated cache or operating-system metadata
+scripts/experiments/_internal/__pycache__/run_comparative_smd_experiments_support.cpython-312.pyc,13144,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/__init__.cpython-312.pyc,361,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/_report_io.cpython-312.pyc,717,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/aggregate_online_table3_metrics.cpython-312.pyc,16659,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/backfill_all_uq_summaries.cpython-312.pyc,3162,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/backfill_uq_summary.cpython-312.pyc,10502,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/forensic_audit_run.cpython-312.pyc,8669,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/preflight_comparative_smd_server.cpython-312.pyc,10136,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/preflight_full_benchmark_matrix.cpython-312.pyc,9954,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/prepare_raw_mse_offline_rerun.cpython-312.pyc,4125,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/prune_raw_trace_artifacts.cpython-312.pyc,3639,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/recalibrate_thesis_threshold_artifacts_v4.cpython-312.pyc,23122,False,generated cache or operating-system metadata
+scripts/ops/__pycache__/threshold_artifact_v4_online_scoring.cpython-312.pyc,4394,False,generated cache or operating-system metadata
+scripts/plot_machine_3_4_anomaly_scores.py,4295,True,unused one-off plotting script outside next CLI
+scripts/plot_machine_3_9_configurable.py,2524,True,unused one-off plotting script outside next CLI
+scripts/visualization/__pycache__/__init__.cpython-312.pyc,373,False,generated cache or operating-system metadata
+scripts/visualization/__pycache__/plot_raw_input_mse_histograms.cpython-312.pyc,9678,False,generated cache or operating-system metadata
+scripts/visualization/__pycache__/visualize_evaluation_results.cpython-312.pyc,14388,False,generated cache or operating-system metadata
+scripts/visualization/__pycache__/visualize_smd_benchmark_train_test.cpython-312-pytest-9.0.2.pyc,7870,False,generated cache or operating-system metadata
+src/adapters/__pycache__/__init__.cpython-312.pyc,398,False,generated cache or operating-system metadata
+src/adapters/__pycache__/base.cpython-312.pyc,1372,False,generated cache or operating-system metadata
+src/adapters/__pycache__/moment.cpython-312.pyc,5372,False,generated cache or operating-system metadata
+src/analysis/__pycache__/__init__.cpython-312.pyc,353,False,generated cache or operating-system metadata
+src/analysis/__pycache__/anomaly_archive_kl.cpython-312.pyc,13148,False,generated cache or operating-system metadata
+src/analysis/__pycache__/evaluation_protocol_audit.cpython-312.pyc,14773,False,generated cache or operating-system metadata
+src/baselines/__pycache__/__init__.cpython-312.pyc,357,False,generated cache or operating-system metadata
+src/baselines/online/__pycache__/__init__.cpython-312.pyc,810,False,generated cache or operating-system metadata
+src/baselines/online/__pycache__/adaptive.cpython-312.pyc,27132,False,generated cache or operating-system metadata
+src/baselines/online/__pycache__/base.cpython-312.pyc,8156,False,generated cache or operating-system metadata
+src/baselines/online/__pycache__/candi.cpython-312.pyc,21971,False,generated cache or operating-system metadata
+src/baselines/online/__pycache__/frozen.cpython-312.pyc,19863,False,generated cache or operating-system metadata
+src/baselines/online/__pycache__/m2n2.cpython-312.pyc,9033,False,generated cache or operating-system metadata
+src/baselines/online/__pycache__/pre_tta.cpython-312.pyc,1986,False,generated cache or operating-system metadata
+src/baselines/online/__pycache__/redlamp_encoder_checkpoint.cpython-312.pyc,5399,False,generated cache or operating-system metadata
+src/baselines/traditional/__pycache__/__init__.cpython-312.pyc,756,False,generated cache or operating-system metadata
+src/baselines/traditional/__pycache__/base.cpython-312.pyc,7026,False,generated cache or operating-system metadata
+src/baselines/traditional/__pycache__/iforest.cpython-312.pyc,7175,False,generated cache or operating-system metadata
+src/baselines/traditional/__pycache__/kmeans_ad.cpython-312.pyc,7018,False,generated cache or operating-system metadata
+src/baselines/traditional/__pycache__/stumpy_channel_ab.cpython-312.pyc,12849,False,generated cache or operating-system metadata
+src/core/__pycache__/artifact_integrity.cpython-312.pyc,6789,False,generated cache or operating-system metadata
+src/core/__pycache__/artifact_naming.cpython-312.pyc,13049,False,generated cache or operating-system metadata
+src/core/__pycache__/config.cpython-312.pyc,29407,False,generated cache or operating-system metadata
+src/core/__pycache__/config_aliases.cpython-312.pyc,1563,False,generated cache or operating-system metadata
+src/core/__pycache__/config_experiment_validation.cpython-312.pyc,3145,False,generated cache or operating-system metadata
+src/core/__pycache__/config_help.cpython-312.pyc,2303,False,generated cache or operating-system metadata
+src/core/__pycache__/config_model_validation.cpython-312.pyc,29887,False,generated cache or operating-system metadata
+src/core/__pycache__/console.cpython-312.pyc,9668,False,generated cache or operating-system metadata
+src/core/__pycache__/contracts.cpython-312.pyc,15319,False,generated cache or operating-system metadata
+src/core/__pycache__/evaluation_trace_compaction.cpython-312.pyc,2044,False,generated cache or operating-system metadata
+src/core/__pycache__/log_paths.cpython-312.pyc,890,False,generated cache or operating-system metadata
+src/core/__pycache__/registry.cpython-312.pyc,2987,False,generated cache or operating-system metadata
+src/core/__pycache__/runtime_components.cpython-312.pyc,1918,False,generated cache or operating-system metadata
+src/core/__pycache__/seed.cpython-312.pyc,961,False,generated cache or operating-system metadata
+src/core/__pycache__/uq_summary.cpython-312.pyc,13152,False,generated cache or operating-system metadata
+src/data/__pycache__/__init__.cpython-312.pyc,591,False,generated cache or operating-system metadata
+src/data/__pycache__/api.cpython-312.pyc,7467,False,generated cache or operating-system metadata
+src/data/__pycache__/augment.cpython-312.pyc,39497,False,generated cache or operating-system metadata
+src/data/__pycache__/base.cpython-312.pyc,1400,False,generated cache or operating-system metadata
+src/data/__pycache__/cleaning.cpython-312.pyc,3069,False,generated cache or operating-system metadata
+src/data/__pycache__/collate.cpython-312.pyc,2591,False,generated cache or operating-system metadata
+src/data/__pycache__/download.cpython-312.pyc,9593,False,generated cache or operating-system metadata
+src/data/__pycache__/loaders.cpython-312.pyc,13331,False,generated cache or operating-system metadata
+src/data/__pycache__/public_types.cpython-312.pyc,2185,False,generated cache or operating-system metadata
+src/data/__pycache__/scalers.cpython-312.pyc,6646,False,generated cache or operating-system metadata
+src/data/__pycache__/split_protocol.cpython-312.pyc,2598,False,generated cache or operating-system metadata
+src/data/__pycache__/stream.cpython-312.pyc,12082,False,generated cache or operating-system metadata
+src/data/__pycache__/window.cpython-312.pyc,3928,False,generated cache or operating-system metadata
+src/data/datasets/__pycache__/anomaly_archive.cpython-312.pyc,7342,False,generated cache or operating-system metadata
+src/data/datasets/__pycache__/smd.cpython-312.pyc,9603,False,generated cache or operating-system metadata
+src/engine/__pycache__/artifact_sinks.cpython-312.pyc,7836,False,generated cache or operating-system metadata
+src/engine/__pycache__/checkpoint.cpython-312.pyc,12537,False,generated cache or operating-system metadata
+src/engine/__pycache__/evaluator.cpython-312.pyc,28931,False,generated cache or operating-system metadata
+src/engine/__pycache__/logger.cpython-312.pyc,12666,False,generated cache or operating-system metadata
+src/engine/__pycache__/online_loop.cpython-312.pyc,9356,False,generated cache or operating-system metadata
+src/engine/__pycache__/runtime_resource_monitor.cpython-312.pyc,3772,False,generated cache or operating-system metadata
+src/engine/__pycache__/thresholding.cpython-312.pyc,7564,False,generated cache or operating-system metadata
+src/engine/__pycache__/trainer.cpython-312.pyc,37891,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/__init__.cpython-312.pyc,367,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/checkpoint_resolution.cpython-312.pyc,5724,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/non_overlap_guard.cpython-312.pyc,2221,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/online_calibration.cpython-312.pyc,12365,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/online_engine.cpython-312.pyc,1137,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/online_engine_run.cpython-312.pyc,22857,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/online_engine_shared.cpython-312.pyc,5446,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/online_engine_step.cpython-312.pyc,9102,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/online_engine_window_core.cpython-312.pyc,9249,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/online_engine_window_metrics.cpython-312.pyc,15060,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/online_losses.cpython-312.pyc,8570,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/online_optimizer.cpython-312.pyc,4323,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/point_ewma.cpython-312.pyc,1939,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/runtime_state.cpython-312.pyc,12048,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/signature_verification.cpython-312.pyc,16137,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/timing_debug.cpython-312.pyc,2884,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/triage.cpython-312.pyc,2632,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/verification_adapter.cpython-312.pyc,7240,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/verification_buffer.cpython-312.pyc,5420,False,generated cache or operating-system metadata
+src/engine/online_tta/__pycache__/verification_cycle.cpython-312.pyc,2446,False,generated cache or operating-system metadata
+src/metrics/__pycache__/affiliation.cpython-312.pyc,18473,False,generated cache or operating-system metadata
+src/metrics/__pycache__/classification_diagnostics.cpython-312.pyc,3345,False,generated cache or operating-system metadata
+src/metrics/__pycache__/online_contract.cpython-312.pyc,3014,False,generated cache or operating-system metadata
+src/metrics/__pycache__/pointwise.cpython-312.pyc,33759,False,generated cache or operating-system metadata
+src/models/__pycache__/base_model.cpython-312.pyc,1452,False,generated cache or operating-system metadata
+src/models/__pycache__/neural_blocks.cpython-312.pyc,7058,False,generated cache or operating-system metadata
+src/models/__pycache__/online_adaptation.cpython-312.pyc,487,False,generated cache or operating-system metadata
+src/models/__pycache__/online_adapter_modules.cpython-312.pyc,14830,False,generated cache or operating-system metadata
+src/models/__pycache__/online_redlamp_reconstruction.cpython-312.pyc,8954,False,generated cache or operating-system metadata
+src/models/__pycache__/redlamp_baseline.cpython-312.pyc,373,False,generated cache or operating-system metadata
+src/models/__pycache__/simple_window_cnn_autoencoder.cpython-312.pyc,2285,False,generated cache or operating-system metadata
+src/models/__pycache__/thesis_multitask.cpython-312.pyc,6115,False,generated cache or operating-system metadata
+src/models/baseline_impl/__pycache__/__init__.cpython-312.pyc,374,False,generated cache or operating-system metadata
+src/models/baseline_impl/__pycache__/redlamp_baseline.cpython-312.pyc,18887,False,generated cache or operating-system metadata
+src/models/baseline_impl/__pycache__/redlamp_baseline_helpers.cpython-312.pyc,14975,False,generated cache or operating-system metadata
+src/models/online_impl/__pycache__/__init__.cpython-312.pyc,381,False,generated cache or operating-system metadata
+src/models/online_impl/__pycache__/online_adaptation.cpython-312.pyc,20879,False,generated cache or operating-system metadata
+src/models/online_impl/__pycache__/online_adaptation_helpers.cpython-312.pyc,10183,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/__init__.cpython-312.pyc,393,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_components.cpython-312.pyc,17741,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_config_parsing.cpython-312.pyc,5186,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_encoder.cpython-312.pyc,3270,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_loss_core_mixin.cpython-312.pyc,19084,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_loss_gradient_mixin.cpython-312.pyc,11315,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_loss_mixin.cpython-312.pyc,976,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_loss_step_mixin.cpython-312.pyc,17906,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_routing_forward_helpers.cpython-312.pyc,12998,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_routing_geometry_helpers.cpython-312.pyc,18897,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_routing_helpers.cpython-312.pyc,7176,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_routing_mixin.cpython-312.pyc,16154,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_setup_helpers.cpython-312.pyc,12822,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_setup_mixin.cpython-312.pyc,16739,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_state_memory_init_helpers.cpython-312.pyc,2155,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_state_memory_mixin.cpython-312.pyc,28071,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_state_mixin.cpython-312.pyc,2481,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_state_passthrough_mixin.cpython-312.pyc,2561,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_state_schedule_mixin.cpython-312.pyc,10125,False,generated cache or operating-system metadata
+src/models/thesis_multitask_impl/__pycache__/thesis_multitask_state_serialization_mixin.cpython-312.pyc,15854,False,generated cache or operating-system metadata
+src/protocols/__pycache__/__init__.cpython-312.pyc,357,False,generated cache or operating-system metadata
+src/protocols/__pycache__/online_stream_range.cpython-312.pyc,2222,False,generated cache or operating-system metadata
+src/protocols/__pycache__/point_score_calibration.cpython-312.pyc,6289,False,generated cache or operating-system metadata
+src/protocols/__pycache__/point_scores.cpython-312.pyc,4212,False,generated cache or operating-system metadata
+src/protocols/__pycache__/reconstruction_scores.cpython-312.pyc,4426,False,generated cache or operating-system metadata
+src/protocols/__pycache__/smd_benchmark_protocol.cpython-312.pyc,5162,False,generated cache or operating-system metadata
+src/protocols/__pycache__/threshold_artifact.cpython-312.pyc,22396,False,generated cache or operating-system metadata
+tests/__pycache__/codebase_compliance.cpython-312.pyc,4904,False,generated cache or operating-system metadata
+tests/__pycache__/conftest.cpython-312-pytest-9.0.2.pyc,834,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_benchmark_config_generation.cpython-312-pytest-9.0.2.pyc,20947,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_benchmark_protocol_config.cpython-312-pytest-9.0.2.pyc,10846,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_benchmark_two_method_configs.cpython-312-pytest-9.0.2.pyc,11429,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_comparative_preflight.cpython-312-pytest-9.0.2.pyc,16428,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_comparative_runner.cpython-312-pytest-9.0.2.pyc,25512,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_comparative_tmux_launcher.cpython-312-pytest-9.0.2.pyc,9047,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_direct_branch_routing_evaluation_runner.cpython-312-pytest-9.0.2.pyc,7897,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_direct_branch_routing_full_runner.cpython-312-pytest-9.0.2.pyc,11449,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_direct_branch_routing_smoke_runner.cpython-312-pytest-9.0.2.pyc,6740,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_evaluator_trace_payload.cpython-312-pytest-9.0.2.pyc,7921,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_full_benchmark_matrix_preflight.cpython-312-pytest-9.0.2.pyc,3249,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_full_spec_runtime_readiness.cpython-312-pytest-9.0.2.pyc,17556,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_multiseed_launcher.cpython-312-pytest-9.0.2.pyc,8041,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_offline_benchmark_config_generation.cpython-312-pytest-9.0.2.pyc,8302,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_pro_reconstruction_vus_budget_matrix.cpython-312-pytest-9.0.2.pyc,10543,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_raw_mse_rerun_configs.cpython-312-pytest-9.0.2.pyc,7089,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_remaining_smd_benchmark_matrix.cpython-312-pytest-9.0.2.pyc,51428,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_run_offline_benchmark.cpython-312-pytest-9.0.2.pyc,21728,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_smoke_wandb_logging.cpython-312-pytest-9.0.2.pyc,5345,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_summarize_benchmark_results.cpython-312-pytest-9.0.2.pyc,15489,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_thesis_offline_artifact_exports.cpython-312-pytest-9.0.2.pyc,66190,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_thesis_online_benchmark_wrapper.cpython-312-pytest-9.0.2.pyc,17487,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_two_stage_orchestration_dry_run.cpython-312-pytest-9.0.2.pyc,3862,False,generated cache or operating-system metadata
+tests/benchmarks/__pycache__/test_two_stage_tmux_launcher.cpython-312-pytest-9.0.2.pyc,6161,False,generated cache or operating-system metadata
+tests/compliance/__pycache__/test_codebase_compliance_scanner.cpython-312-pytest-9.0.2.pyc,6626,False,generated cache or operating-system metadata
+tests/compliance/__pycache__/test_src_refactor_contracts.cpython-312-pytest-9.0.2.pyc,10653,False,generated cache or operating-system metadata
+tests/core/__pycache__/test_artifact_naming.cpython-312-pytest-9.0.2.pyc,14000,False,generated cache or operating-system metadata
+tests/core/__pycache__/test_contracts.cpython-312-pytest-9.0.2.pyc,8383,False,generated cache or operating-system metadata
+tests/core/__pycache__/test_dated_log_paths.cpython-312-pytest-9.0.2.pyc,15261,False,generated cache or operating-system metadata
+tests/core/__pycache__/test_evaluation_trace_compaction.cpython-312-pytest-9.0.2.pyc,5628,False,generated cache or operating-system metadata
+tests/core/__pycache__/test_uq_summary.cpython-312-pytest-9.0.2.pyc,9025,False,generated cache or operating-system metadata
+tests/demo/__pycache__/test_demo_app.cpython-312-pytest-9.0.2.pyc,4212,False,generated cache or operating-system metadata
+tests/demo/__pycache__/test_demo_state.cpython-312-pytest-9.0.2.pyc,21807,False,generated cache or operating-system metadata
+tests/demo/__pycache__/test_demo_stream_queue.cpython-312-pytest-9.0.2.pyc,4693,False,generated cache or operating-system metadata
+tests/demo/__pycache__/test_live_online_replay.cpython-312-pytest-9.0.2.pyc,3477,False,generated cache or operating-system metadata
+tests/engine/__pycache__/test_checkpoint_roundtrip.cpython-312-pytest-9.0.2.pyc,3670,False,generated cache or operating-system metadata
+tests/engine/__pycache__/test_runtime_resource_monitor.cpython-312-pytest-9.0.2.pyc,3692,False,generated cache or operating-system metadata
+tests/engine/__pycache__/test_threshold_artifact.cpython-312-pytest-9.0.2.pyc,14797,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_affiliation_metric.cpython-312-pytest-9.0.2.pyc,4179,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_anomaly_span_length_summary.cpython-312-pytest-9.0.2.pyc,26525,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_budgeted_vus_metrics.cpython-312-pytest-9.0.2.pyc,6145,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_classification_diagnostics_metrics.cpython-312-pytest-9.0.2.pyc,4802,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_evaluation_metrics_audit.cpython-312-pytest-9.0.2.pyc,4222,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_evaluation_protocol_audit.cpython-312-pytest-9.0.2.pyc,32376,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_evaluation_visualization.cpython-312-pytest-9.0.2.pyc,7458,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_evaluator_thresholding.cpython-312-pytest-9.0.2.pyc,48616,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_forensic_audit_markdown.cpython-312-pytest-9.0.2.pyc,4467,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_iforest_contract.cpython-312-pytest-9.0.2.pyc,4433,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_kmeansad_contract.cpython-312-pytest-9.0.2.pyc,4548,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_point_score_contracts.cpython-312-pytest-9.0.2.pyc,16802,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_pointwise_range_metrics.cpython-312-pytest-9.0.2.pyc,6242,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_post_anomaly_suffix_export.cpython-312-pytest-9.0.2.pyc,10999,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_raw_input_mse_scores.cpython-312-pytest-9.0.2.pyc,34801,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_stumpy_channel_ab_contract.cpython-312-pytest-9.0.2.pyc,8995,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_thresholding_helpers.cpython-312-pytest-9.0.2.pyc,9830,False,generated cache or operating-system metadata
+tests/evaluation/__pycache__/test_vus_pr_metric.cpython-312-pytest-9.0.2.pyc,9770,False,generated cache or operating-system metadata
+tests/experiments/__pycache__/test_direct_branch_routing_bridge.cpython-312-pytest-9.0.2.pyc,11214,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_direct_branch_routing.cpython-312-pytest-9.0.2.pyc,27758,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_exp2_two_view_cka.cpython-312-pytest-9.0.2.pyc,10231,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_fusion_ablation_modes.cpython-312-pytest-9.0.2.pyc,5389,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_model_shapes.cpython-312-pytest-9.0.2.pyc,3553,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_moment_adapter_shapes.cpython-312-pytest-9.0.2.pyc,4915,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_multitask_memory_bootstrap.cpython-312-pytest-9.0.2.pyc,16456,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_multitask_memory_initialization.cpython-312-pytest-9.0.2.pyc,37123,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_multitask_memory_updates.cpython-312-pytest-9.0.2.pyc,20325,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_multitask_metrics_runtime.cpython-312-pytest-9.0.2.pyc,39693,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_multitask_objective_controls.cpython-312-pytest-9.0.2.pyc,16030,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_multitask_shape_initialization.cpython-312-pytest-9.0.2.pyc,16264,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_multitask_shapes.cpython-312-pytest-9.0.2.pyc,61172,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_multitask_validation_alignment.cpython-312-pytest-9.0.2.pyc,28634,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_neural_blocks.cpython-312-pytest-9.0.2.pyc,2851,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_one_multitask_train_step.cpython-312-pytest-9.0.2.pyc,22401,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_one_redlamp_mlp_train_step.cpython-312-pytest-9.0.2.pyc,14356,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_one_train_step.cpython-312-pytest-9.0.2.pyc,3043,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_optimizer_building.cpython-312-pytest-9.0.2.pyc,3609,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_raw_reconstruction_loss.cpython-312-pytest-9.0.2.pyc,17537,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_redlamp_baseline.cpython-312-pytest-9.0.2.pyc,23239,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_redlamp_baseline_active_benchmark_config.cpython-312-pytest-9.0.2.pyc,4088,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_redlamp_baseline_config_surface.cpython-312-pytest-9.0.2.pyc,5930,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_redlamp_baseline_runtime.cpython-312-pytest-9.0.2.pyc,2860,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_redlamp_baseline_with_gradient_profiling_step.cpython-312-pytest-9.0.2.pyc,3640,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_redlamp_cnn_baseline_shapes.cpython-312-pytest-9.0.2.pyc,6565,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_redlamp_gradient_conflict_metrics.cpython-312-pytest-9.0.2.pyc,12693,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_registry.cpython-312-pytest-9.0.2.pyc,7230,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_temperature_schedule.cpython-312-pytest-9.0.2.pyc,11336,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_thesis_multitask_classification_path_toggle.cpython-312-pytest-9.0.2.pyc,5702,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_thesis_multitask_cnn_shapes.cpython-312-pytest-9.0.2.pyc,6746,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_thesis_multitask_config_refactor.cpython-312-pytest-9.0.2.pyc,63781,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_thesis_multitask_gradient_profiling.cpython-312-pytest-9.0.2.pyc,4221,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_thesis_multitask_point_score_loss.cpython-312-pytest-9.0.2.pyc,11324,False,generated cache or operating-system metadata
+tests/models/__pycache__/test_traditional_baseline_contracts.cpython-312-pytest-9.0.2.pyc,7277,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_artifact_integrity.cpython-312-pytest-9.0.2.pyc,9702,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_entity_threshold_runtime.cpython-312-pytest-9.0.2.pyc,2930,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_full_spec_online_contract.cpython-312-pytest-9.0.2.pyc,5915,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_full_spec_online_losses.cpython-312-pytest-9.0.2.pyc,6308,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_adaptation_step.cpython-312-pytest-9.0.2.pyc,13748,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_adaptation_step.cpython-312.pyc,9654,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_benchmark_config_generation.cpython-312-pytest-9.0.2.pyc,19384,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_calibration_contract.cpython-312-pytest-9.0.2.pyc,20915,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_engine_max_steps.cpython-312-pytest-9.0.2.pyc,26598,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_entrypoint.cpython-312-pytest-9.0.2.pyc,25516,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_ewma_threshold.cpython-312-pytest-9.0.2.pyc,5550,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_method_fidelity.cpython-312-pytest-9.0.2.pyc,30909,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_prototype_metadata_contract.cpython-312-pytest-9.0.2.pyc,12586,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_reference_checkpoint.cpython-312-pytest-9.0.2.pyc,11098,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_runtime_state.cpython-312-pytest-9.0.2.pyc,17880,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_signature_verification.cpython-312-pytest-9.0.2.pyc,15157,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_state_roundtrip.cpython-312-pytest-9.0.2.pyc,9489,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_stream.cpython-312-pytest-9.0.2.pyc,6838,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_stream_range.cpython-312-pytest-9.0.2.pyc,8308,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_streaming_baseline_contracts.cpython-312-pytest-9.0.2.pyc,13435,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_streaming_baseline_contracts.cpython-312.pyc,6970,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_streaming_benchmark_config_generation.cpython-312-pytest-9.0.2.pyc,12093,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_streaming_benchmark_wrapper.cpython-312-pytest-9.0.2.pyc,22946,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_timing_debug.cpython-312-pytest-9.0.2.pyc,6955,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_tta_trainable_surface.cpython-312-pytest-9.0.2.pyc,15388,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_tta_triage.cpython-312-pytest-9.0.2.pyc,9046,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_tta_variants.cpython-312-pytest-9.0.2.pyc,14949,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_tta_variants.cpython-312.pyc,10648,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_online_verification_buffer.cpython-312-pytest-9.0.2.pyc,6784,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_redlamp_encoder_checkpoint.cpython-312-pytest-9.0.2.pyc,5510,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_threshold_artifact.cpython-312-pytest-9.0.2.pyc,12637,False,generated cache or operating-system metadata
+tests/online/__pycache__/test_verification_cycle.cpython-312-pytest-9.0.2.pyc,2991,False,generated cache or operating-system metadata
+tests/ops/__pycache__/test_aggregate_online_table3_metrics.cpython-312-pytest-9.0.2.pyc,2212,False,generated cache or operating-system metadata
+tests/ops/__pycache__/test_backfill_all_uq_summaries.cpython-312-pytest-9.0.2.pyc,12840,False,generated cache or operating-system metadata
+tests/ops/__pycache__/test_backfill_uq_summary.cpython-312-pytest-9.0.2.pyc,12580,False,generated cache or operating-system metadata
+tests/ops/__pycache__/test_recalibrate_thesis_threshold_artifacts_v4.cpython-312-pytest-9.0.2.pyc,24361,False,generated cache or operating-system metadata
+tests/runtime/__pycache__/test_artifact_sink_selection.cpython-312-pytest-9.0.2.pyc,9572,False,generated cache or operating-system metadata
+tests/runtime/__pycache__/test_checkpoint_roundtrip.cpython-312-pytest-9.0.2.pyc,30978,False,generated cache or operating-system metadata
+tests/runtime/__pycache__/test_console_instrumentation.cpython-312-pytest-9.0.2.pyc,13463,False,generated cache or operating-system metadata
+tests/runtime/__pycache__/test_kaggle_config_validation.cpython-312-pytest-9.0.2.pyc,5001,False,generated cache or operating-system metadata
+tests/runtime/__pycache__/test_learning_rate_scheduler.cpython-312-pytest-9.0.2.pyc,25676,False,generated cache or operating-system metadata
+tests/runtime/__pycache__/test_learning_rate_scheduler_additional.cpython-312-pytest-9.0.2.pyc,22692,False,generated cache or operating-system metadata
+tests/runtime/__pycache__/test_learning_rate_scheduler_trainer.cpython-312-pytest-9.0.2.pyc,26477,False,generated cache or operating-system metadata
+tests/runtime/__pycache__/test_logger_wandb.cpython-312-pytest-9.0.2.pyc,12444,False,generated cache or operating-system metadata
+tests/runtime/__pycache__/test_raw_mse_training.cpython-312-pytest-9.0.2.pyc,12102,False,generated cache or operating-system metadata
+tests/runtime/__pycache__/test_trainer_checkpoint_fallback.cpython-312-pytest-9.0.2.pyc,17141,False,generated cache or operating-system metadata
+tests/visualization/__pycache__/test_raw_input_mse_histograms.cpython-312-pytest-9.0.2.pyc,5683,False,generated cache or operating-system metadata

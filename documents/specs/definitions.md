@@ -4,6 +4,10 @@ Status: agreed terms for the next version of `tsad-lib` and `bachelor-thesis-202
 
 These definitions guide naming and design. They do not claim that every next-version structure is implemented in the current code. For current behavior, follow the owning code and mark any difference from this note.
 
+## Next-version thesis decisions: 2026-11-16
+
+The [runtime replacement decisions](../logs/2026-11-16/plan/decisions-runtime-replacement.md) govern encoder sharing, causal test-data access, prepared-data reuse, and staged replacement. Shared encoder means common architecture and settings with separate method-owned weights. These project choices do not change the definitions below or claim implemented behavior.
+
 ## Core terms
 
 - **Experiment:** one planned comparison made of multiple runs. A request for one execution is a standalone run.

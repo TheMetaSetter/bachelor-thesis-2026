@@ -1,0 +1,29 @@
+experiment_id: smd_comparison
+random_seeds:
+- 6
+encoder:
+  hidden_channels: 64
+  output_dim: 64
+  kernel_size: 3
+  num_layers: 3
+  dropout: 0.1
+wandb_logging: false
+kaggle_backup: false
+reporting_profiles:
+- reporting_profiles/offline_detection.yaml
+- reporting_profiles/online_detection.yaml
+cells:
+- data_profile: data_profiles/smd.yaml
+  method_profile: method_profiles/mustard_o0_offline.yaml
+  evaluation_profile: evaluation_profiles/mustard_raw_input_q95_ewma075.yaml
+  entity: machine-1-1
+  phase: offline
+  device: cpu
+- data_profile: data_profiles/smd.yaml
+  method_profile: method_profiles/mustard_a0_online.yaml
+  evaluation_profile: evaluation_profiles/mustard_raw_input_q95_ewma075.yaml
+  entity: machine-1-1
+  phase: online
+  device: cpu
+datasets:
+- swat

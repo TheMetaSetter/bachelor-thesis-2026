@@ -1,0 +1,9 @@
+phase: online
+splits:
+- test
+metrics:
+- segment_mean_vus_pr
+- segment_mean_vus_roc
+- segment_mean_affiliation_f1
+- fpr
+precision: {}

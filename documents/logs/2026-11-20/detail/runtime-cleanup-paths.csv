@@ -1,0 +1,207 @@
+path,reason
+.vscode/launch.json,Old runtime configuration or setup. Use the package metadata and the current CLI guide.
+demo/__init__.py,Demo requires the retired runtime.
+demo/app.py,Demo requires the retired runtime.
+demo/demo_state.py,Demo requires the retired runtime.
+demo/loaders.py,Demo requires the retired runtime.
+demo/offline_replay.py,Demo requires the retired runtime.
+demo/online_replay.py,Demo requires the retired runtime.
+demo/plotting.py,Demo requires the retired runtime.
+demo/stream_queue.py,Demo requires the retired runtime.
+environment.yml,Old runtime configuration or setup. Use the package metadata and the current CLI guide.
+notebooks/learning/learn_vus_curve_artifact_build.ipynb,Notebook imports the old metric interface.
+notebooks/learning/learn_vus_curve_artifact_evaluate.ipynb,Notebook imports the old metric interface.
+notebooks/templates/redlamp_mlp_gradient_conflict_profiling_demo.ipynb,Notebook imports the old RedLamp model and augmentation.
+requirements-kaggle.txt,Old runtime configuration or setup. Use the package metadata and the current CLI guide.
+requirements.txt,Old runtime configuration or setup. Use the package metadata and the current CLI guide.
+scripts/analysis/__init__.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/analysis/compare_synthetic_profiles.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/analysis/compare_synthetic_profiles_helpers.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/analysis/compare_synthetic_profiles_shared.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/analysis/export_post_anomaly_suffix_counts.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/analysis/kl_divergence_anomaly_archive.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/analysis/rank_smd_train_test_normal_drift.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/analysis/summarize_anomaly_span_lengths.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/analysis/summarize_anomaly_span_lengths_helpers.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/benchmarks/__init__.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/benchmarks/_internal/run_thesis_offline_benchmark_helpers.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/benchmarks/run_thesis_offline_benchmark.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/benchmarks/run_thesis_online_benchmark.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/cli/__init__.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/cli/evaluate.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/cli/train.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/evaluate.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/experiments/__init__.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/experiments/_internal/__init__.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/experiments/_internal/run_comparative_smd_experiments_support.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/experiments/run_comparative_smd_experiments.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/experiments/run_two_stage_offline_pretraining.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/__init__.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/_report_io.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/aggregate_online_table3_metrics.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/backfill_all_uq_summaries.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/backfill_uq_summary.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/build_phase7_audit_artifacts.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/build_prune_manifest.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/build_remote_offline_report_data.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/collect_offline_report_data.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/debug_pilot_combination_uq_reporting.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/forensic_audit_run.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/inspect_thesis_run_artifacts.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/preflight_comparative_smd_server.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/preflight_full_benchmark_matrix.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/prepare_raw_mse_offline_rerun.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/prune_raw_trace_artifacts.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/re_evaluate_and_prune_thesis_runs.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/re_evaluate_and_prune_thesis_runs_remaining.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/read_offline_uq_table2.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/recalibrate_thesis_threshold_artifacts_v4.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/render_offline_phase_metric_table.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/render_online_phase_metric_table.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/run_thesis_eval_only_compact.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/threshold_artifact_v4_online_scoring.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/ops/write_offline_report_bundle.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/plot_iccad_a8.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/run_comparative_smd_experiments.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/run_thesis_offline_benchmark.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/run_thesis_online_benchmark.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/run_two_stage_offline_pretraining.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/train.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/visualization/__init__.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/visualization/plot_raw_input_mse_histograms.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/visualization/visualize_classification_diagnostics.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/visualization/visualize_evaluation_results.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/visualization/visualize_smd_benchmark_train_test.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/visualization/visualize_smd_train_test_entity.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/visualization/visualize_synthetic_anomalies.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/visualization/visualize_training_metrics.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+scripts/visualize_smd_12_classes_w20.py,"Old experiment, analysis, reporting, or visualization command. Historical results remain."
+setup.md,Old runtime configuration or setup. Use the package metadata and the current CLI guide.
+setup.sh,Old runtime configuration or setup. Use the package metadata and the current CLI guide.
+src/analysis/__init__.py,Old runtime module. Replacement callers use the current source tree.
+src/analysis/anomaly_archive_kl.py,Old runtime module. Replacement callers use the current source tree.
+src/analysis/evaluation_protocol_audit.py,Old runtime module. Replacement callers use the current source tree.
+src/core/artifact_integrity.py,Old runtime module. Replacement callers use the current source tree.
+src/core/artifact_naming.py,Old runtime module. Replacement callers use the current source tree.
+src/core/config.py,Old runtime module. Replacement callers use the current source tree.
+src/core/config_aliases.py,Old runtime module. Replacement callers use the current source tree.
+src/core/config_experiment_validation.py,Old runtime module. Replacement callers use the current source tree.
+src/core/config_help.py,Old runtime module. Replacement callers use the current source tree.
+src/core/config_model_validation.py,Old runtime module. Replacement callers use the current source tree.
+src/core/console.py,Old progress logger. The retained augmentation path has no per-batch logs.
+src/core/contracts.py,Old runtime module. Replacement callers use the current source tree.
+src/core/evaluation_trace_compaction.py,Old runtime module. Replacement callers use the current source tree.
+src/core/log_paths.py,Old runtime module. Replacement callers use the current source tree.
+src/core/registry.py,Old runtime module. Replacement callers use the current source tree.
+src/core/runtime_components.py,Old runtime module. Replacement callers use the current source tree.
+src/core/seed.py,Old runtime module. Replacement callers use the current source tree.
+src/core/uq_summary.py,Old runtime module. Replacement callers use the current source tree.
+src/data/__init__.py,Old runtime module. Replacement callers use the current source tree.
+src/data/api.py,Old runtime module. Replacement callers use the current source tree.
+src/data/augment.py,Active families moved to methods/augmentation.py and methods/anomaly_families.py.
+src/data/base.py,Old runtime module. Replacement callers use the current source tree.
+src/data/cleaning.py,Old runtime module. Replacement callers use the current source tree.
+src/data/collate.py,Old runtime module. Replacement callers use the current source tree.
+src/data/datasets/anomaly_archive.py,Old runtime module. Replacement callers use the current source tree.
+src/data/datasets/smd.py,Old runtime module. Replacement callers use the current source tree.
+src/data/download.py,Old runtime module. Replacement callers use the current source tree.
+src/data/loaders.py,Old runtime module. Replacement callers use the current source tree.
+src/data/public_types.py,Old runtime module. Replacement callers use the current source tree.
+src/data/scalers.py,Old runtime module. Replacement callers use the current source tree.
+src/data/split_protocol.py,Old runtime module. Replacement callers use the current source tree.
+src/data/stream.py,Old runtime module. Replacement callers use the current source tree.
+src/data/window.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/artifact_sinks.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/checkpoint.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/evaluator.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/logger.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/__init__.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/checkpoint_resolution.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/non_overlap_guard.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/online_calibration.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/online_engine.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/online_engine_run.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/online_engine_shared.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/online_engine_step.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/online_engine_window_core.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/online_engine_window_metrics.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/online_losses.py,Active loss moved to methods/mustard/contrastive.py.
+src/engine/online_tta/online_optimizer.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/point_ewma.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/runtime_state.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/signature_verification.py,Active checks moved to methods/mustard/signature_verification.py.
+src/engine/online_tta/timing_debug.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/triage.py,Active triage moved to online.py.
+src/engine/online_tta/verification_adapter.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/online_tta/verification_buffer.py,Active buffer moved to methods/mustard/verification_buffer.py.
+src/engine/online_tta/verification_cycle.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/runtime_resource_monitor.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/thresholding.py,Old runtime module. Replacement callers use the current source tree.
+src/engine/trainer.py,Old runtime module. Replacement callers use the current source tree.
+src/methods/baselines/__init__.py,Old runtime module. Replacement callers use the current source tree.
+src/methods/baselines/candi.py,Baseline moved to methods/candi.py.
+src/methods/baselines/iforest.py,Baseline moved to methods/iforest.py.
+src/methods/baselines/kmeans_ad.py,Baseline moved to methods/kmeans_ad.py.
+src/methods/baselines/m2n2.py,Baseline moved to methods/m2n2.py.
+src/methods/baselines/moment.py,Baseline moved to methods/moment.py.
+src/methods/baselines/redlamp.py,Baseline moved to methods/redlamp.py.
+src/methods/baselines/stumpy_channel_ab.py,Baseline moved to methods/stumpy_channel_ab.py.
+src/metrics/affiliation.py,Replacement uses the pinned Affiliation dependency.
+src/metrics/classification_diagnostics.py,Old runtime module. Replacement callers use the current source tree.
+src/metrics/online_contract.py,Old runtime module. Replacement callers use the current source tree.
+src/metrics/pointwise.py,Budgeted VUS moved to budgeted_vus.py.
+src/models/base_model.py,Old runtime module. Replacement callers use the current source tree.
+src/models/baseline_impl/__init__.py,Old runtime module. Replacement callers use the current source tree.
+src/models/baseline_impl/redlamp_baseline.py,Old runtime module. Replacement callers use the current source tree.
+src/models/baseline_impl/redlamp_baseline_helpers.py,Old runtime module. Replacement callers use the current source tree.
+src/models/neural_blocks.py,Old runtime module. Replacement callers use the current source tree.
+src/models/online_adaptation.py,Old runtime module. Replacement callers use the current source tree.
+src/models/online_adapter_modules.py,Active CANDI adapter moved to methods/candi_adapter.py.
+src/models/online_impl/__init__.py,Old runtime module. Replacement callers use the current source tree.
+src/models/online_impl/online_adaptation.py,Old runtime module. Replacement callers use the current source tree.
+src/models/online_impl/online_adaptation_helpers.py,Old runtime module. Replacement callers use the current source tree.
+src/models/redlamp_baseline.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_components.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_config_parsing.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_encoder.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_loss_core_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_loss_gradient_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_loss_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_loss_step_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_routing_forward_helpers.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_routing_geometry_helpers.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_routing_helpers.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_routing_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_setup_helpers.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_setup_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_state_memory_init_helpers.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_state_memory_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_state_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_state_passthrough_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_state_schedule_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/models/thesis_multitask_impl/thesis_multitask_state_serialization_mixin.py,Old runtime module. Replacement callers use the current source tree.
+src/protocols/__init__.py,Package replaced by protocols.py.
+src/protocols/data_stream.py,Validation context moved to protocols.py.
+src/protocols/method_updates.py,Validation context moved to protocols.py.
+src/protocols/online_stream_range.py,Old runtime module. Replacement callers use the current source tree.
+src/protocols/point_score_calibration.py,Old runtime module. Replacement callers use the current source tree.
+src/protocols/point_scores.py,Old runtime module. Replacement callers use the current source tree.
+src/protocols/reconstruction_scores.py,Old runtime module. Replacement callers use the current source tree.
+src/protocols/run_evaluation.py,Validation context moved to protocols.py.
+src/protocols/scoring_calibration.py,Validation context moved to protocols.py.
+src/protocols/smd_benchmark_protocol.py,Old runtime module. Replacement callers use the current source tree.
+src/protocols/synthetic_profile.py,Old runtime module. Replacement callers use the current source tree.
+src/protocols/threshold_artifact.py,Old runtime module. Replacement callers use the current source tree.
+tests/compliance/fixtures/src_refactor_contracts.json,Checks the old source and YAML interface.
+tests/compliance/test_src_refactor_contracts.py,Checks the old source and YAML interface.
+tests/demo/test_demo_app.py,Test for a retired workflow.
+tests/demo/test_demo_state.py,Test for a retired workflow.
+tests/demo/test_demo_stream_queue.py,Test for a retired workflow.
+tests/demo/test_live_online_replay.py,Test for a retired workflow.
+tests/experiments/test_direct_branch_routing_bridge.py,Test for a retired workflow.
+tests/ops/test_aggregate_online_table3_metrics.py,Test for a retired workflow.
+tests/ops/test_backfill_all_uq_summaries.py,Test for a retired workflow.
+tests/ops/test_backfill_uq_summary.py,Test for a retired workflow.
+tests/ops/test_recalibrate_thesis_threshold_artifacts_v4.py,Test for a retired workflow.
+tests/visualization/test_raw_input_mse_histograms.py,Test for a retired workflow.

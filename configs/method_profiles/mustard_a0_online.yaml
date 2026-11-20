@@ -1,0 +1,13 @@
+method: mustard
+variant: A0
+phases:
+- online
+parameters:
+  projector_hidden_size: 64
+  projector_dropout: 0.0
+  verification: null
+  contrastive_weight: 0.0
+  contrastive_temperature: 0.1
+training: null
+update: null
+required_offline_variant: O0

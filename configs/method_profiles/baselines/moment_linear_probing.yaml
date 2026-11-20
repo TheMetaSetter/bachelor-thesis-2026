@@ -1,0 +1,27 @@
+method: moment
+variant: linear_probing
+phases:
+- offline
+- online
+parameters:
+  checkpoint: AutonLab/MOMENT-1-base
+  revision: b0ae5751d8ef43d72ad48fb5128e2ddc93c94b53
+  channel_aggregation: mean
+  patch_length: 8
+training:
+  stages:
+  - name: fit
+    epochs: 30
+    optimizer:
+      name: adam
+      learning_rate: 5.0e-05
+      weight_decay: 0.0
+      betas:
+      - 0.9
+      - 0.999
+      epsilon: 1.0e-08
+    monitor: validation_reconstruction_loss
+    gradient_clip_norm: null
+    scheduler: null
+update: null
+required_offline_variant: linear_probing

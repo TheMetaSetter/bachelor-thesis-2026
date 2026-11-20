@@ -165,6 +165,8 @@ Prefer small, focused tests that verify observable behavior and important
 boundaries. Use a test framework appropriate to the language; the source
 prefers Pytest for Python.
 
+Check the left and right edges of each rendered report table for clipped content.
+
 For data and machine-learning projects, cover:
 
 - Input and output shapes for important computations.

@@ -1,15 +1,13 @@
-# Bản đồ test cho học sinh phổ thông
+# Thesis runtime tests
 
-Mỗi thư mục trả lời một câu hỏi đơn giản:
+Run the suite from the repository root.
 
-- `data/`: Dữ liệu có được đọc, làm sạch và cắt thành cửa sổ đúng không?
-- `models/`: Mô hình có nhận đầu vào, tính loss và lưu state đúng không?
-- `online/`: Luồng thích nghi online có giữ đúng threshold, buffer và projector không?
-- `evaluation/`: Điểm bất thường và metric có được tính đúng không?
-- `runtime/`: Config, checkpoint, logging và trainer có chạy đúng không?
-- `benchmarks/`: Các script tạo và kiểm tra ma trận thí nghiệm có đúng không?
-- `demo/`: Demo có phát dữ liệu tuần tự và vẽ kết quả đúng không?
-- `compliance/`: Code có giữ các contract kiến trúc và giới hạn readability không?
+```sh
+.venv/bin/python -m pytest -q
+```
 
-Các test legacy hoặc test phụ thuộc config cũ được giữ ngoài `tests/` trong
-`tests_archive/`. Pytest chỉ thu những test trong các thư mục trên.
+1. `test_cli.py` and `test_dataset_picker.py` check the command and keyboard flow.
+2. `test_data.py` and `test_protocols.py` check prepared data and runtime inputs.
+3. The method tests check fitting, scoring, updates, and saved state.
+4. The experiment and reporting tests check planning, resume, and result tables.
+5. The compliance tests check the source size scanner.

@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=81"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "thesis-tsad"
+version = "0.1.0"
+requires-python = ">=3.12"
+description = "Time-series anomaly detection experiments for the thesis"
+dependencies = [
+  "numpy==2.4.4",
+  "pandas==2.3.3",
+  "pyarrow==23.0.1",
+  "PyYAML==6.0.3",
+  "textual==8.2.8",
+  "torch==2.9.1",
+  "scipy==1.16.3",
+  "scikit-learn==1.7.2",
+  "skops==0.13.0",
+  "stumpy==1.14.1",
+  "affiliation @ git+https://github.com/ahstat/affiliation-metrics-py.git@8d8449858096bbade6a6e70848d05c9cc9b846fe",
+  "vus @ git+https://github.com/TheDatumOrg/VUS.git@467bace0c103f5c2bdb4900306d82939bcac8ff9",
+]
+
+[project.optional-dependencies]
+moment = [
+  "momentfm @ git+https://github.com/moment-timeseries-foundation-model/moment.git@38f7310ad594100747ca2a8357e9c7ca7d323e0e",
+  "torchvision==0.24.1",
+  "transformers==4.57.6",
+  "huggingface-hub==0.36.2",
+]
+wandb = ["wandb==0.25.1"]
+kaggle = ["kaggle==2.2.5"]
+
+[project.scripts]
+tsad = "thesis_tsad.cli:main"
+
+[tool.setuptools]
+include-package-data = false
+packages = [
+  "thesis_tsad",
+  "thesis_tsad.methods",
+  "thesis_tsad.methods.mustard",
+]
+py-modules = ["thesis_scripts.preprocess"]
+
+[tool.setuptools.package-dir]
+thesis_tsad = "src"
+thesis_scripts = "scripts"

@@ -1,0 +1,15 @@
+method: iforest
+variant: default
+phases:
+- offline
+- online
+parameters:
+  n_estimators: 100
+  max_samples: auto
+  max_features: 1.0
+  contamination: auto
+  normalize_windows: true
+  normalization_epsilon: 1.0e-06
+training: null
+update: null
+required_offline_variant: default

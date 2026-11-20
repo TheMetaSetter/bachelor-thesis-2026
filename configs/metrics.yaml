@@ -1,0 +1,180 @@
+affiliation_f1:
+  precision: 4
+classification_probability_variance_max:
+  precision: 4
+classification_probability_variance_mean:
+  precision: 4
+classification_probability_variance_min:
+  precision: 4
+classification_probability_variance_p50:
+  precision: 4
+classification_probability_variance_p95:
+  precision: 4
+classification_probability_variance_std:
+  precision: 4
+classification_variance_mean_max:
+  precision: 4
+classification_variance_mean_mean:
+  precision: 4
+classification_variance_mean_min:
+  precision: 4
+classification_variance_mean_p50:
+  precision: 4
+classification_variance_mean_p95:
+  precision: 4
+classification_variance_mean_std:
+  precision: 4
+continuous_retrieval_variance_point_max:
+  precision: 4
+continuous_retrieval_variance_point_mean:
+  precision: 4
+continuous_retrieval_variance_point_min:
+  precision: 4
+continuous_retrieval_variance_point_p50:
+  precision: 4
+continuous_retrieval_variance_point_p95:
+  precision: 4
+continuous_retrieval_variance_point_std:
+  precision: 4
+continuous_retrieval_variance_window_max:
+  precision: 4
+continuous_retrieval_variance_window_mean:
+  precision: 4
+continuous_retrieval_variance_window_min:
+  precision: 4
+continuous_retrieval_variance_window_p50:
+  precision: 4
+continuous_retrieval_variance_window_p95:
+  precision: 4
+continuous_retrieval_variance_window_std:
+  precision: 4
+discrete_retrieval_variance_point_max:
+  precision: 4
+discrete_retrieval_variance_point_mean:
+  precision: 4
+discrete_retrieval_variance_point_min:
+  precision: 4
+discrete_retrieval_variance_point_p50:
+  precision: 4
+discrete_retrieval_variance_point_p95:
+  precision: 4
+discrete_retrieval_variance_point_std:
+  precision: 4
+discrete_retrieval_variance_window_max:
+  precision: 4
+discrete_retrieval_variance_window_mean:
+  precision: 4
+discrete_retrieval_variance_window_min:
+  precision: 4
+discrete_retrieval_variance_window_p50:
+  precision: 4
+discrete_retrieval_variance_window_p95:
+  precision: 4
+discrete_retrieval_variance_window_std:
+  precision: 4
+f1:
+  precision: 4
+fpr:
+  precision: 4
+point_anomaly_score_variance_max:
+  precision: 4
+point_anomaly_score_variance_mean:
+  precision: 4
+point_anomaly_score_variance_min:
+  precision: 4
+point_anomaly_score_variance_p50:
+  precision: 4
+point_anomaly_score_variance_p95:
+  precision: 4
+point_anomaly_score_variance_std:
+  precision: 4
+pr_auc:
+  precision: 4
+precision:
+  precision: 4
+recall:
+  precision: 4
+reconstruction_variance_full_max:
+  precision: 4
+reconstruction_variance_full_mean:
+  precision: 4
+reconstruction_variance_full_min:
+  precision: 4
+reconstruction_variance_full_p50:
+  precision: 4
+reconstruction_variance_full_p95:
+  precision: 4
+reconstruction_variance_full_std:
+  precision: 4
+reconstruction_variance_point_max:
+  precision: 4
+reconstruction_variance_point_mean:
+  precision: 4
+reconstruction_variance_point_min:
+  precision: 4
+reconstruction_variance_point_p50:
+  precision: 4
+reconstruction_variance_point_p95:
+  precision: 4
+reconstruction_variance_point_std:
+  precision: 4
+reconstruction_variance_window_max:
+  precision: 4
+reconstruction_variance_window_mean:
+  precision: 4
+reconstruction_variance_window_min:
+  precision: 4
+reconstruction_variance_window_p50:
+  precision: 4
+reconstruction_variance_window_p95:
+  precision: 4
+reconstruction_variance_window_std:
+  precision: 4
+roc_auc:
+  precision: 4
+segment_mean_affiliation_f1:
+  precision: 4
+segment_mean_vus_pr:
+  precision: 4
+segment_mean_vus_pr_at_fpr_0.001:
+  precision: 4
+segment_mean_vus_pr_at_fpr_0.005:
+  precision: 4
+segment_mean_vus_pr_at_fpr_0.01:
+  precision: 4
+segment_mean_vus_roc:
+  precision: 4
+segment_mean_vus_roc_at_fpr_0.001:
+  precision: 4
+segment_mean_vus_roc_at_fpr_0.005:
+  precision: 4
+segment_mean_vus_roc_at_fpr_0.01:
+  precision: 4
+vus_pr:
+  precision: 4
+vus_pr_at_fpr_0.001:
+  precision: 4
+vus_pr_at_fpr_0.005:
+  precision: 4
+vus_pr_at_fpr_0.01:
+  precision: 4
+vus_roc:
+  precision: 4
+vus_roc_at_fpr_0.001:
+  precision: 4
+vus_roc_at_fpr_0.005:
+  precision: 4
+vus_roc_at_fpr_0.01:
+  precision: 4
+window_anomaly_score_variance_max:
+  precision: 4
+window_anomaly_score_variance_mean:
+  precision: 4
+window_anomaly_score_variance_min:
+  precision: 4
+window_anomaly_score_variance_p50:
+  precision: 4
+window_anomaly_score_variance_p95:
+  precision: 4
+window_anomaly_score_variance_std:
+  precision: 4

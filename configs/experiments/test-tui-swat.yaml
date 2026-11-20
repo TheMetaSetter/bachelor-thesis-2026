@@ -1,0 +1,21 @@
+experiment_id: test-tui-swat
+datasets:
+- swat
+methods:
+- mustard
+- redlamp
+- candi
+random_seeds:
+- 6
+encoder:
+  hidden_channels: 64
+  output_dim: 64
+  kernel_size: 3
+  num_layers: 3
+  dropout: 0.1
+wandb_logging: false
+kaggle_backup: false
+reporting_profiles:
+- reporting_profiles/offline_detection.yaml
+- reporting_profiles/online_detection.yaml
+- reporting_profiles/uncertainty.yaml

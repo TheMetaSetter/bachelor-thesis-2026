@@ -1,0 +1,13 @@
+method: stumpy_channel_ab
+variant: default
+phases:
+- offline
+- online
+parameters:
+  normalize: true
+  p: 2
+  channel_aggregation: max
+  calibration_epsilon: 1.0e-08
+training: null
+update: null
+required_offline_variant: default

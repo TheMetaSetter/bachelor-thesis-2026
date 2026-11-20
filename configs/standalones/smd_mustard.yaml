@@ -1,0 +1,14 @@
+data_profile: data_profiles/smd.yaml
+method_profile: method_profiles/mustard_o0_offline.yaml
+evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
+entity: machine-1-1
+phase: offline
+seed: 6
+device: cpu
+encoder:
+  hidden_channels: 64
+  output_dim: 64
+  kernel_size: 3
+  num_layers: 3
+  dropout: 0.1
+limits: {}

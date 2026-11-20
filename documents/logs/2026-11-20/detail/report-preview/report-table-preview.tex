@@ -1,0 +1,92 @@
+\documentclass[11pt]{article}
+\usepackage[paperwidth=302mm,paperheight=205mm,margin=15mm]{geometry}
+\usepackage[table]{xcolor}
+\usepackage{booktabs,array}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\definecolor{ink}{HTML}{142634}
+\definecolor{muted}{HTML}{445665}
+\definecolor{header}{HTML}{DCEBF8}
+\definecolor{entityheader}{HTML}{CCDFF1}
+\definecolor{stripe}{HTML}{F4F7FA}
+\newlength{\methodwidth}
+\setlength{\methodwidth}{30mm}
+\newlength{\metricwidth}
+\newcolumntype{M}{>{\centering\arraybackslash}p{\metricwidth}}
+\newenvironment{reporttable}[1]
+  {\setlength{\tabcolsep}{0pt}%
+   \setlength{\metricwidth}{\dimexpr(\linewidth-\methodwidth)/#1\relax}%
+   \begin{tabular}{@{}p{\methodwidth}*{#1}{M}@{}}}
+  {\end{tabular}}
+\newcommand{\reporthead}[1]{%
+  \multicolumn{4}{>{\centering\arraybackslash}p{\dimexpr4\metricwidth\relax}}%
+  {\cellcolor{entityheader}\bfseries #1}}
+\newcommand{\best}[1]{\textbf{#1}}
+\newcommand{\nextbest}[1]{\underline{#1}}
+\newcommand{\smallnote}[1]{\par\smallskip{\footnotesize\color{muted}#1}\par}
+\newcommand{\reportsection}[1]{\vspace{0.63em}{\large\bfseries #1}\par\smallskip}
+\newcommand{\metrics}{\mbox{VUS-PR} & \mbox{Aff. F1} & \mbox{VUS-ROC} & FPR}
+\newcommand{\uncertaintymetrics}{\mbox{VUS-PR} & \mbox{Aff. F1} & Validation & Test}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{1.5pt}
+\renewcommand{\arraystretch}{1.26}
+\pagestyle{empty}
+\begin{document}
+\color{ink}
+{\LARGE\bfseries Experiment report templates}\par
+\smallskip
+{\small\color{muted}SMD \enspace\textbar\enspace Sample values for layout review}\par
+
+\reportsection{Offline detection \textnormal{\small\color{muted}\quad Test split}}
+{\footnotesize
+\begin{reporttable}{16}
+ & \reporthead{machine-1-6} & \reporthead{machine-3-4} & \reporthead{machine-3-9} & \reporthead{Average}\\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}\cmidrule(lr){10-13}\cmidrule(lr){14-17}
+\rowcolor{header}\cellcolor{white} & \metrics & \metrics & \metrics & \metrics \\
+\midrule
+MUSTARD O0 & \nextbest{0.7600} & \nextbest{0.7200} & \nextbest{0.8300} & \nextbest{0.1200} & \nextbest{0.6800} & \nextbest{0.6800} & \nextbest{0.8900} & \nextbest{0.1300} & 0.5800 & \nextbest{0.7500} & \nextbest{0.6600} & \nextbest{0.1600} & \nextbest{0.6733} & \nextbest{0.7167} & \nextbest{0.7933} & \nextbest{0.1367}\\
+\rowcolor{stripe}
+MUSTARD O1 & \best{0.8000} & \best{0.7500} & \best{0.8700} & \best{0.1000} & \best{0.7000} & \best{0.7100} & \best{0.9300} & \best{0.1000} & \best{0.6200} & \best{0.8000} & \best{0.7200} & \best{0.1400} & \best{0.7067} & \best{0.7533} & \best{0.8400} & \best{0.1133}\\
+RedLamp & 0.5900 & 0.6900 & 0.5400 & 0.2000 & 0.6000 & 0.6400 & 0.8400 & 0.1800 & \nextbest{0.5900} & 0.7000 & 0.5800 & 0.2100 & 0.5933 & 0.6767 & 0.6533 & 0.1967\\
+\bottomrule
+\end{reporttable}}
+\smallnote{Bold marks the best value. Underline marks the second distinct value. Lower FPR is better.}
+
+\reportsection{Online detection \textnormal{\small\color{muted}\quad Test split}}
+{\footnotesize
+\begin{reporttable}{16}
+ & \reporthead{machine-1-6} & \reporthead{machine-3-4} & \reporthead{machine-3-9} & \reporthead{Average}\\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}\cmidrule(lr){10-13}\cmidrule(lr){14-17}
+\rowcolor{header}\cellcolor{white} & \metrics & \metrics & \metrics & \metrics \\
+\midrule
+MUSTARD O1+A2 & \best{0.8100} & \best{0.7800} & \best{0.9000} & \best{0.0400} & \best{0.7200} & \best{0.7400} & \best{0.9100} & \best{0.0500} & \best{0.6900} & \best{0.7600} & \best{0.8300} & \best{0.0600} & \best{0.7400} & \best{0.7600} & \best{0.8800} & \best{0.0500}\\
+\rowcolor{stripe}
+CANDI & \nextbest{0.7500} & \nextbest{0.7200} & \nextbest{0.8400} & \nextbest{0.0700} & \nextbest{0.6800} & \nextbest{0.6900} & \nextbest{0.8600} & \nextbest{0.0600} & \nextbest{0.6400} & \nextbest{0.7200} & \nextbest{0.7900} & \nextbest{0.0800} & \nextbest{0.6900} & \nextbest{0.7100} & \nextbest{0.8300} & \nextbest{0.0700}\\
+M2N2 & 0.7300 & 0.6900 & 0.8200 & 0.0800 & 0.6700 & 0.6700 & 0.8300 & 0.0700 & 0.6100 & 0.7100 & N/A & 0.0900 & 0.6700 & 0.6900 & N/A & 0.0800\\
+\bottomrule
+\end{reporttable}}
+\smallnote{Average gives each entity the same weight. N/A indicates that a value is unavailable.}
+
+\reportsection{Offline uncertainty \textnormal{\small\color{muted}\quad Mean point anomaly score variance}}
+{\small
+\begin{reporttable}{12}
+ & \reporthead{machine-1-6} & \reporthead{machine-3-4} & \reporthead{machine-3-9}\\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}\cmidrule(lr){10-13}
+\rowcolor{header}\cellcolor{white} & \uncertaintymetrics & \uncertaintymetrics & \uncertaintymetrics\\
+\midrule
+MUSTARD O0 & 0.7600 & 0.7200 & 0.0120 & 0.2500 & 0.6800 & 0.6800 & 0.0130 & 0.4300 & 0.5800 & 0.7500 & 0.0140 & 0.0460\\
+\rowcolor{stripe}
+MUSTARD O1 & 0.8000 & 0.7500 & 0.0060 & 0.0900 & 0.7000 & 0.7100 & 0.0180 & 0.5700 & 0.6200 & 0.8000 & 0.0210 & 0.0600\\
+\bottomrule
+\addlinespace[0.75em]
+ & \reporthead{Average} & \multicolumn{8}{c}{}\\
+\cmidrule(lr){2-5}
+ & \cellcolor{header}VUS-PR & \cellcolor{header}Aff. F1 & \cellcolor{header}Validation & \cellcolor{header}Test & \multicolumn{8}{c}{}\\
+\cmidrule{1-5}
+MUSTARD O0 & 0.6733 & 0.7167 & 0.0130 & 0.2420 & \multicolumn{8}{c}{}\\
+\cellcolor{stripe}MUSTARD O1 & \cellcolor{stripe}0.7067 & \cellcolor{stripe}0.7533 & \cellcolor{stripe}0.0150 & \cellcolor{stripe}0.2400 & \multicolumn{8}{c}{}\\
+\cmidrule[\heavyrulewidth]{1-5}
+\end{reporttable}}
+\smallnote{VUS-PR and affiliation F1 are from the test split. Validation and Test show the variance metric.}
+\end{document}

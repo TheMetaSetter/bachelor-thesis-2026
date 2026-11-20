@@ -1,0 +1,33 @@
+method: m2n2
+variant: default
+phases:
+- offline
+- online
+parameters:
+  trend_decay: 0.99
+training:
+  stages:
+  - name: fit
+    epochs: 30
+    optimizer:
+      name: adamw
+      learning_rate: 0.001
+      weight_decay: 0.0
+      betas:
+      - 0.9
+      - 0.999
+      epsilon: 1.0e-08
+    monitor: validation_reconstruction_loss
+    gradient_clip_norm: null
+    scheduler: null
+update:
+  steps: 1
+  optimizer:
+    name: sgd
+    learning_rate: 0.001
+    weight_decay: 0.0
+    momentum: 0.0
+    dampening: 0.0
+    nesterov: false
+  gradient_clip_norm: null
+required_offline_variant: default

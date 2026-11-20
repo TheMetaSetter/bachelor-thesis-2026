@@ -1,0 +1,41 @@
+dataset: smd
+prepared_root: data/preprocessed/smd/63dbcbb69a34a7ee3c0d82669f28461421c023b3427c23fbb7d9389b577d95f8
+window_size: 20
+method_window_sizes:
+  moment: 512
+train_stride: 1
+validation_stride: 20
+test_stride: 20
+online_stride: 1
+method_strides:
+  stumpy_channel_ab:
+    validation: 1
+    test: 1
+    online: 1
+  kmeans_ad:
+    train: 20
+    validation: 1
+    test: 1
+    online: 1
+  iforest:
+    train: 20
+    validation: 1
+    test: 1
+    online: 1
+  m2n2:
+    online: 20
+  moment:
+    train: 512
+    validation: 512
+    test: 512
+    online: 512
+tail_policy:
+  train: drop
+  validation: end_align
+  test: end_align
+  online: drop
+gap_policy: preserve_source_rows
+expected_interval_seconds: null
+batch_size: 256
+shuffle_train: false
+synthetic_profile: data_profiles/synthetic_profiles/redlamp_legacy.yaml

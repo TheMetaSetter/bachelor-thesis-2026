@@ -11,11 +11,11 @@ Report missing references and conflicting requirements before affected changes.
 
 ## Work sequence
 
-1. Inspect the current files and relevant evidence.
+1. Read `prompts/primitive_prompts/1_research_prompt.md`. Then, inspect the current files and relevant evidence.
 2. Make a short checklist-style plan with phases, stages, atomic steps, and tools.
-   - Put phases in execution order. Complete and check one phase before you start the next.
-   - Put stages inside phases.
-   - Put atomic steps inside stages. Each step must contain one action.
+   - Read `prompts/primitive_prompts/2_plan_prompt.md` and put phases in execution order. Complete and check one phase before you start the next.
+   - Read `prompts/primitive_prompts/3_structure_prompt.md` and put stages inside phases.
+   - Read `prompts/primitive_prompts/4_detail_prompt.md` and put atomic steps inside stages. Each step must contain one action.
    - Name the tools for each step.
 3. Make the smallest change that meets the requirements.
 4. Run the checks that apply to the change.
