@@ -74,7 +74,12 @@ def _json_default(value):
 
 
 def _json_bytes(value):
-    return json.dumps(value, default=_json_default, allow_nan=False, indent=2, sort_keys=True).encode() + b"\n"
+    return (
+        json.dumps(
+            value, default=_json_default, allow_nan=False, indent=2, sort_keys=True
+        ).encode()
+        + b"\n"
+    )
 
 
 def _write_json(path, value):
@@ -105,11 +110,14 @@ def allocate_run(config: dict, *, project_root: Path) -> dict:
     project = project_root.resolve()
     requested = config.get("run_id")
     if requested is not None and (
-        "experiment_id" in config or not isinstance(requested, str)
+        "experiment_id" in config
+        or not isinstance(requested, str)
         or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", requested)
     ):
         raise ValueError("run_id must be a safe standalone ID")
-    if requested is not None and find_runs(project / "outputs", filters={"run_id": requested}):
+    if requested is not None and find_runs(
+        project / "outputs", filters={"run_id": requested}
+    ):
         raise FileExistsError(f"run_id already used: {requested}")
     registry = project / "outputs/run_ids"
     registry.mkdir(parents=True, exist_ok=True)
@@ -132,7 +140,9 @@ def allocate_run(config: dict, *, project_root: Path) -> dict:
         _sync_directory(registry)
         if "experiment_id" not in run:
             if root.exists() and (not root.is_dir() or any(root.iterdir())):
-                raise FileExistsError(f"standalone output directory is already in use: {root}")
+                raise FileExistsError(
+                    f"standalone output directory is already in use: {root}"
+                )
             root.mkdir(parents=True, exist_ok=True)
             state_path.parent.mkdir(exist_ok=False)
         return run
@@ -147,14 +157,34 @@ def result_directory(config: dict, split: str) -> Path:
     if "experiment_id" not in config:
         return root / split
     group = config.get("grouping", {})
-    dimensions = [_component(config.get("reporting_variant", config[name]) if name == "variant" else config[name])
-                  for name in _DIMENSIONS if group.get(name, False)]
-    return root.joinpath(_component(config["phase"]), *dimensions, split, _component(config["run_id"]))
+    dimensions = [
+        _component(
+            config.get("reporting_variant", config[name])
+            if name == "variant"
+            else config[name]
+        )
+        for name in _DIMENSIONS
+        if group.get(name, False)
+    ]
+    return root.joinpath(
+        _component(config["phase"]), *dimensions, split, _component(config["run_id"])
+    )
 
 
 def _run_metadata(config):
-    keys = (*_DIMENSIONS, "phase", "experiment_id", "run_id", "started_at", "profile_paths",
-            "prepared_identity", "execution_mode", "grouping", "offline_parent", "reporting_variant")
+    keys = (
+        *_DIMENSIONS,
+        "phase",
+        "experiment_id",
+        "run_id",
+        "started_at",
+        "profile_paths",
+        "prepared_identity",
+        "execution_mode",
+        "grouping",
+        "offline_parent",
+        "reporting_variant",
+    )
     return {key: config[key] for key in keys if key in config}
 
 
@@ -168,9 +198,13 @@ def write_run_status(config: dict, status: str, *, details: dict | None = None) 
     metadata = _run_metadata(config)
     at = _timestamp()
     record = dict(previous, **metadata)
-    record.update(schema_version=1, status=status, state_dir=path.parent, resolved_config=config)
+    record.update(
+        schema_version=1, status=status, state_dir=path.parent, resolved_config=config
+    )
     record["history"] = [*previous.get("history", ()), {"status": status, "at": at}]
-    record["resume_count"] = previous.get("resume_count", 0) + int(status == "running" and bool(previous))
+    record["resume_count"] = previous.get("resume_count", 0) + int(
+        status == "running" and bool(previous)
+    )
     if status == "running":
         record.pop("completed_at", None)
     else:
@@ -191,8 +225,12 @@ def write_result(config: dict, split: str, result: dict) -> Path:
         import pyarrow as pa
         import pyarrow.parquet as pq
 
-        table = pa.table({"score": pa.array(scores, type=pa.float64(), from_pandas=True)})
-        score_path = _write_atomic(path / "point_scores.parquet", lambda file: pq.write_table(table, file))
+        table = pa.table(
+            {"score": pa.array(scores, type=pa.float64(), from_pandas=True)}
+        )
+        score_path = _write_atomic(
+            path / "point_scores.parquet", lambda file: pq.write_table(table, file)
+        )
         record["point_scores_path"] = score_path.name
         record["point_scores_sha256"] = _hash(score_path)
     return _write_json(path / "result.json", record)
@@ -201,19 +239,25 @@ def write_result(config: dict, split: str, result: dict) -> Path:
 def _attempt_order(record):
     def time(key):
         value = record.get(key)
-        return datetime.fromisoformat(value) if value else datetime.min.replace(tzinfo=UTC)
+        return (
+            datetime.fromisoformat(value) if value else datetime.min.replace(tzinfo=UTC)
+        )
 
     return time("started_at"), time("completed_at"), record.get("run_id", "")
 
 
-def find_runs(root: Path, *, filters: Mapping[str, Any], include_results: bool = True) -> list[dict]:
+def find_runs(
+    root: Path, *, filters: Mapping[str, Any], include_results: bool = True
+) -> list[dict]:
     """Find run records and, if requested, split results by exact metadata."""
     records = []
     filenames = ("run.json", "result.json") if include_results else ("run.json",)
     for filename in filenames:
         for path in sorted(root.rglob(filename)):
             row = _read_json(path)
-            if row.get("schema_version") == 1 and all(row.get(key) == value for key, value in filters.items()):
+            if row.get("schema_version") == 1 and all(
+                row.get(key) == value for key, value in filters.items()
+            ):
                 records.append(dict(row, record_path=path))
     return sorted(records, key=_attempt_order, reverse=True)
 
@@ -221,21 +265,34 @@ def find_runs(root: Path, *, filters: Mapping[str, Any], include_results: bool =
 def _compatible_parent(parent, config):
     if parent.get("status") != "successful":
         return False
-    if "execution_identity" in config and parent.get("details", {}).get("execution_identity") != config["execution_identity"]:
+    if (
+        "execution_identity" in config
+        and parent.get("details", {}).get("execution_identity")
+        != config["execution_identity"]
+    ):
         return False
     actual = parent.get("resolved_config", {})
     for key in ("prepared_identity", "encoder", "scientific_identity"):
         if key in config and _json_bytes(config[key]) != _json_bytes(actual.get(key)):
             return False
-    if "data" in config and _json_bytes(config["data"]) != _json_bytes(actual.get("data")):
+    if "data" in config and _json_bytes(config["data"]) != _json_bytes(
+        actual.get("data")
+    ):
         return False
     expected_method = config.get("source_method", config.get("method"))
-    if expected_method is not None and _json_bytes(expected_method) != _json_bytes(actual.get("method")):
+    if expected_method is not None and _json_bytes(expected_method) != _json_bytes(
+        actual.get("method")
+    ):
         return False
     parent_evaluation = actual.get("evaluation") or {}
     evaluation = config.get("evaluation") or {}
-    keys = ("score_space", "point_score_transform", "offline_overlap_reduction",
-            "ewma_current_weight", "ewma_previous_weight")
+    keys = (
+        "score_space",
+        "point_score_transform",
+        "offline_overlap_reduction",
+        "ewma_current_weight",
+        "ewma_previous_weight",
+    )
     if evaluation.get("online_point_threshold_source") == "offline_parent":
         keys += ("offline_threshold_quantile", "offline_threshold_split")
     return all(evaluation.get(key) == parent_evaluation.get(key) for key in keys)
@@ -253,7 +310,11 @@ def select_offline_parent(config: dict, *, project_root: Path) -> dict:
         root = (project_root / Path(config["offline_parent_dir"])).resolve()
         candidates = find_runs(root, filters=filters)
     selected = next(
-        (item for item in candidates if "state_dir" in item and _compatible_parent(item, config)),
+        (
+            item
+            for item in candidates
+            if "state_dir" in item and _compatible_parent(item, config)
+        ),
         None,
     )
     if selected is None:
@@ -262,7 +323,9 @@ def select_offline_parent(config: dict, *, project_root: Path) -> dict:
     for name in ("selected_checkpoint", "calibration"):
         reference = details.get(name)
         if reference is None or not Path(reference).is_file():
-            raise FileNotFoundError(f"offline parent {selected['run_id']}: missing {reference or name}")
+            raise FileNotFoundError(
+                f"offline parent {selected['run_id']}: missing {reference or name}"
+            )
     return selected
 
 
@@ -278,7 +341,12 @@ def _encode_state(value):
         if value.dtype.hasobject or value.dtype.fields:
             raise ValueError("unsupported array dtype in checkpoint")
         bits = torch.from_numpy(np.frombuffer(value.tobytes(), dtype=np.uint8).copy())
-        return {_STATE_TAG: "ndarray", "bytes": bits, "dtype": value.dtype.str, "shape": value.shape}
+        return {
+            _STATE_TAG: "ndarray",
+            "bytes": bits,
+            "dtype": value.dtype.str,
+            "shape": value.shape,
+        }
     if isinstance(value, np.generic):
         return _encode_state(value.item())
     if isinstance(value, Path):
@@ -300,7 +368,11 @@ def _decode_state(value):
     if isinstance(value, dict):
         kind = value.get(_STATE_TAG)
         if kind == "ndarray":
-            return np.frombuffer(value["bytes"].numpy().tobytes(), dtype=value["dtype"]).copy().reshape(value["shape"])
+            return (
+                np.frombuffer(value["bytes"].numpy().tobytes(), dtype=value["dtype"])
+                .copy()
+                .reshape(value["shape"])
+            )
         if kind == "path":
             return Path(value["value"])
         return {key: _decode_state(item) for key, item in value.items()}
@@ -333,20 +405,31 @@ def _descriptor_path(path):
     return path.with_name(path.name + ".json")
 
 
-def save_checkpoint(path: Path, state: Mapping[str, Any], *, identity: dict, role: str) -> Path:
+def save_checkpoint(
+    path: Path, state: Mapping[str, Any], *, identity: dict, role: str
+) -> Path:
     """Write one immutable checkpoint and publish its descriptor last."""
     if path.exists() or _descriptor_path(path).exists():
         raise FileExistsError(f"checkpoint already exists: {path}")
     _write_payload(path, state)
-    _write_json(_descriptor_path(path), {
-        "schema_version": 1, "codec": "torch_weights_only", "sha256": _hash(path),
-        "role": role, "identity": identity,
-    })
+    _write_json(
+        _descriptor_path(path),
+        {
+            "schema_version": 1,
+            "codec": "torch_weights_only",
+            "sha256": _hash(path),
+            "role": role,
+            "identity": identity,
+        },
+    )
     return path
 
 
 def _check_descriptor(descriptor, path):
-    if descriptor.get("schema_version") != 1 or descriptor.get("codec") != "torch_weights_only":
+    if (
+        descriptor.get("schema_version") != 1
+        or descriptor.get("codec") != "torch_weights_only"
+    ):
         raise ValueError(f"{path}: unsupported checkpoint descriptor")
     if not re.fullmatch(r"[a-f0-9]{64}", str(descriptor.get("sha256", ""))):
         raise ValueError(f"{path}: missing or invalid payload hash")
@@ -388,21 +471,34 @@ def save_resume(config: dict, state: dict) -> Path:
     generation = old["generation"] + 1 if old else 1
     payload = directory / f"resume-{slot}.pt"
     _write_payload(payload, state)
-    return _write_json(pointer, {
-        "schema_version": 1, "codec": "torch_weights_only", "sha256": _hash(payload),
-        "run_id": config["run_id"], "slot": slot, "generation": generation,
-        "cursor": state["cursor"], "role_references": state.get("role_references", {}),
-        "writer_offsets": state.get("writer_offsets", {}),
-    })
+    return _write_json(
+        pointer,
+        {
+            "schema_version": 1,
+            "codec": "torch_weights_only",
+            "sha256": _hash(payload),
+            "run_id": config["run_id"],
+            "slot": slot,
+            "generation": generation,
+            "cursor": state["cursor"],
+            "role_references": state.get("role_references", {}),
+            "writer_offsets": state.get("writer_offsets", {}),
+        },
+    )
 
 
 def load_resume(run: dict) -> dict:
     """Read only the generation named by the committed pointer."""
-    directory = Path(run["state_dir"]) if "state_dir" in run else result_directory(run, "state")
+    directory = (
+        Path(run["state_dir"]) if "state_dir" in run else result_directory(run, "state")
+    )
     pointer = directory / "resume.json"
     descriptor = _read_json(pointer)
     _check_descriptor(descriptor, pointer)
-    if descriptor.get("slot") not in (0, 1) or descriptor.get("run_id") != run["run_id"]:
+    if (
+        descriptor.get("slot") not in (0, 1)
+        or descriptor.get("run_id") != run["run_id"]
+    ):
         raise ValueError(f"{pointer}: invalid committed resume identity")
     payload = directory / f"resume-{descriptor['slot']}.pt"
     state = _load_payload(payload, descriptor["sha256"])
@@ -418,15 +514,33 @@ def execution_identity() -> dict:
     from importlib.metadata import PackageNotFoundError, version
 
     root = Path(__file__).resolve().parent
-    files = sorted((str(path.relative_to(root)), _hash(path)) for path in root.rglob("*.py"))
+    files = sorted(
+        (str(path.relative_to(root)), _hash(path)) for path in root.rglob("*.py")
+    )
     versions = {}
-    for name in ("numpy", "pandas", "torch", "pyarrow", "PyYAML", "scipy", "scikit-learn",
-                 "skops", "stumpy", "momentfm", "transformers", "vus", "affiliation"):
+    for name in (
+        "numpy",
+        "pandas",
+        "torch",
+        "pyarrow",
+        "PyYAML",
+        "scipy",
+        "scikit-learn",
+        "skops",
+        "stumpy",
+        "momentfm",
+        "transformers",
+        "vus",
+        "affiliation",
+    ):
         try:
             versions[name] = version(name)
         except PackageNotFoundError:
             continue
-    return {"code_sha256": sha256(_json_bytes(files)).hexdigest(), "dependencies": versions}
+    return {
+        "code_sha256": sha256(_json_bytes(files)).hexdigest(),
+        "dependencies": versions,
+    }
 
 
 def capture_rng(device) -> dict:
@@ -435,7 +549,11 @@ def capture_rng(device) -> dict:
     import numpy as np
     import torch
 
-    state = {"python": random.getstate(), "numpy": np.random.get_state(), "torch": torch.get_rng_state()}
+    state = {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch": torch.get_rng_state(),
+    }
     device = torch.device(device)
     if device.type == "cuda":
         state["device"] = torch.cuda.get_rng_state(device)
@@ -484,7 +602,9 @@ def run_lock(config):
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            raise RuntimeError(f"run already has an active writer: {config['run_id']}") from None
+            raise RuntimeError(
+                f"run already has an active writer: {config['run_id']}"
+            ) from None
         yield
 
 

@@ -14,16 +14,23 @@ from src.artifacts import allocate_run, load_resume
 class _OnlineMethod:
     def __init__(self, events):
         self.events = events
-        self.network = torch.nn.ModuleDict({
-            "projector": torch.nn.Linear(1, 1, bias=False),
-            "encoder": torch.nn.Linear(1, 1, bias=False),
-        })
-        self.optimizer = torch.optim.SGD(self.network["projector"].parameters(), lr=0.1, momentum=0.9)
+        self.network = torch.nn.ModuleDict(
+            {
+                "projector": torch.nn.Linear(1, 1, bias=False),
+                "encoder": torch.nn.Linear(1, 1, bias=False),
+            }
+        )
+        self.optimizer = torch.optim.SGD(
+            self.network["projector"].parameters(), lr=0.1, momentum=0.9
+        )
         self.buffer = 0
 
     def state_dict(self):
-        return {"network": self.network.state_dict(), "optimizer": self.optimizer.state_dict(),
-                "buffer": self.buffer}
+        return {
+            "network": self.network.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "buffer": self.buffer,
+        }
 
     def load_state_dict(self, state):
         self.network.load_state_dict(state["network"])
@@ -38,8 +45,12 @@ class _OnlineMethod:
         self.events["order"].append(("score", start))
         weight = self.network["projector"].weight.item()
         raw = batch["x"][..., 0] + weight + torch.rand(()).item() + self.buffer
-        return {"score_kind": "window", "raw_scores": raw, "indices": batch["indices"],
-                "auxiliary": {"input_window_score": [1.0], "latent_window_score": [0.5]}}
+        return {
+            "score_kind": "window",
+            "raw_scores": raw,
+            "indices": batch["indices"],
+            "auxiliary": {"input_window_score": [1.0], "latent_window_score": [0.5]},
+        }
 
     def update(self, batch, context):
         assert "labels" not in batch and np.isfinite(context["recorded_score"]).all()
@@ -60,23 +71,56 @@ class _OnlineMethod:
 def online(tmp_path, monkeypatch):
     module = importlib.import_module("src.online")
     events = {"order": []}
-    identity = {"dataset": "smd", "entity": "machine", "version_id": "fixture",
-                "features": ["x"], "window_size": 2}
-    split = {"identity": dict(identity, split="test"), "x": np.arange(15, dtype=float)[:, None],
-             "labels": np.zeros(15)}
-    entity = {"identity": identity, "features": ["x"], "scaler": {"divisor": [1]}, "splits": {"test": split}}
-    config = {"project_root": tmp_path, "dataset": "smd", "entity": "machine", "seed": 7,
-              "device": "cpu", "phase": "online", "method_name": "mustard", "variant": "A2",
-              "prepared_identity": identity, "limits": {},
-              "data": {"prepared_root": tmp_path, "window_size": 2, "online_stride": 1,
-                       "gap_policy": "break_at_time_gaps", "expected_interval_seconds": 1,
-                       "tail_policy": {"online": "drop"}},
-              "method": {"phases": ["online"], "update": {"steps": 1}},
-              "evaluation": {"score_space": "latent", "metrics": ["fpr"]}}
-    calibration = {"point_threshold": 0.8, "score_space": "latent", "transform": {"name": "identity"},
-                   "source_split": "validation", "checkpoint_sha256": "fixture",
-                   "input_window_threshold": 0.5, "latent_window_low_threshold": 0.2,
-                   "latent_window_high_threshold": 0.7}
+    identity = {
+        "dataset": "smd",
+        "entity": "machine",
+        "version_id": "fixture",
+        "features": ["x"],
+        "window_size": 2,
+    }
+    split = {
+        "identity": dict(identity, split="test"),
+        "x": np.arange(15, dtype=float)[:, None],
+        "labels": np.zeros(15),
+    }
+    entity = {
+        "identity": identity,
+        "features": ["x"],
+        "scaler": {"divisor": [1]},
+        "splits": {"test": split},
+    }
+    config = {
+        "project_root": tmp_path,
+        "dataset": "smd",
+        "entity": "machine",
+        "seed": 7,
+        "device": "cpu",
+        "phase": "online",
+        "method_name": "mustard",
+        "variant": "A2",
+        "prepared_identity": identity,
+        "limits": {},
+        "data": {
+            "prepared_root": tmp_path,
+            "window_size": 2,
+            "online_stride": 1,
+            "gap_policy": "break_at_time_gaps",
+            "expected_interval_seconds": 1,
+            "tail_policy": {"online": "drop"},
+        },
+        "method": {"phases": ["online"], "update": {"steps": 1}},
+        "evaluation": {"score_space": "latent", "metrics": ["fpr"]},
+    }
+    calibration = {
+        "point_threshold": 0.8,
+        "score_space": "latent",
+        "transform": {"name": "identity"},
+        "source_split": "validation",
+        "checkpoint_sha256": "fixture",
+        "input_window_threshold": 0.5,
+        "latent_window_low_threshold": 0.2,
+        "latent_window_high_threshold": 0.7,
+    }
     monkeypatch.setattr(module, "load_entity", lambda *_: entity)
     monkeypatch.setattr(module, "create_method", lambda _: _OnlineMethod(events))
     monkeypatch.setattr(module, "_initialize_online", lambda *_: (calibration, None))
@@ -108,7 +152,9 @@ def test_online_scores_and_records_before_update(online, monkeypatch):
     monkeypatch.setattr(module, "_record_window", record)
     run = _allocate(config | {"limits": {"max_online_steps": 2}})
     module.run_online(run)
-    assert events["order"] == [(step, start) for start in range(2) for step in ("score", "record", "update")]
+    assert events["order"] == [
+        (step, start) for start in range(2) for step in ("score", "record", "update")
+    ]
     assert _status(run) == "successful"
 
 
@@ -160,8 +206,11 @@ def test_online_frozen_runs_do_not_update(online, variant):
 
 def test_missing_parent_blocks_before_scoring(online, monkeypatch):
     module, config, events, _ = online
+
     def unavailable(*_):
-        raise module.OfflineDependencyUnavailable("no compatible successful offline parent")
+        raise module.OfflineDependencyUnavailable(
+            "no compatible successful offline parent"
+        )
 
     monkeypatch.setattr(module, "_initialize_online", unavailable)
     run = _allocate(config)
@@ -195,10 +244,16 @@ def test_resume_reuses_recorded_parent(online, monkeypatch):
     artifact = config["project_root"] / "parent.artifact"
     artifact.write_bytes(b"fixture")
     checksum = module._hash(artifact)
-    parent = {"run_id": "first-parent", "checkpoint": {"path": artifact, "sha256": checksum},
-              "calibration": artifact, "calibration_sha256": checksum}
+    parent = {
+        "run_id": "first-parent",
+        "checkpoint": {"path": artifact, "sha256": checksum},
+        "calibration": artifact,
+        "calibration_sha256": checksum,
+    }
 
-    monkeypatch.setattr(module, "_initialize_online", lambda *args: (initialize(*args)[0], parent))
+    monkeypatch.setattr(
+        module, "_initialize_online", lambda *args: (initialize(*args)[0], parent)
+    )
     events["interrupt"] = 8
     run = _allocate(config)
     with pytest.raises(KeyboardInterrupt):
@@ -222,19 +277,36 @@ def _real_m2n2_pair(tmp_path):
 
     project = Path(__file__).resolve().parents[1]
     cell = {
-        "data_profile": "data_profiles/smd.yaml", "method_profile": "method_profiles/baselines/m2n2.yaml",
-        "evaluation_profile": "evaluation_profiles/native_q99_ewma075.yaml", "entity": "machine-1-1",
-        "phase": "offline", "seed": 6, "device": "cpu",
-        "encoder": {"hidden_channels": 64, "output_dim": 64, "kernel_size": 3, "num_layers": 3, "dropout": 0.1},
-        "limits": {"max_epochs_per_stage": 1, "max_train_windows": 64,
-                   "max_validation_windows": 32, "max_test_windows": 32},
+        "data_profile": "data_profiles/smd.yaml",
+        "method_profile": "method_profiles/baselines/m2n2.yaml",
+        "evaluation_profile": "evaluation_profiles/native_q99_ewma075.yaml",
+        "entity": "machine-1-1",
+        "phase": "offline",
+        "seed": 6,
+        "device": "cpu",
+        "encoder": {
+            "hidden_channels": 64,
+            "output_dim": 64,
+            "kernel_size": 3,
+            "num_layers": 3,
+            "dropout": 0.1,
+        },
+        "limits": {
+            "max_epochs_per_stage": 1,
+            "max_train_windows": 64,
+            "max_validation_windows": 32,
+            "max_test_windows": 32,
+        },
     }
     config = resolve_run(cell, project_root=project)
     config["evaluation"].update(metrics=["fpr"], uncertainty_fields=[])
     offline = allocate_run(config, project_root=tmp_path)
     run_offline(offline)
-    cell.update(phase="online", offline_parent_dir=str(offline["output_root"]),
-                limits={"max_online_steps": 32, "max_validation_windows": 32})
+    cell.update(
+        phase="online",
+        offline_parent_dir=str(offline["output_root"]),
+        limits={"max_online_steps": 32, "max_validation_windows": 32},
+    )
     config = resolve_run(cell, project_root=project)
     config["evaluation"].update(metrics=["fpr"], uncertainty_fields=[])
     return [allocate_run(config, project_root=tmp_path) for _ in range(2)]
@@ -282,7 +354,10 @@ def test_real_m2n2_updates_match_after_resume(tmp_path, monkeypatch):
         np.testing.assert_array_equal(_scores(original), _scores(interrupted))
         for key in ("network", "trend"):
             states = [
-                load_checkpoint(row["final_checkpoint"], expected_identity=config["prepared_identity"])[key]
+                load_checkpoint(
+                    row["final_checkpoint"],
+                    expected_identity=config["prepared_identity"],
+                )[key]
                 for row, config in ((complete, original), (resumed, interrupted))
             ]
             torch.testing.assert_close(*states, rtol=0, atol=0)

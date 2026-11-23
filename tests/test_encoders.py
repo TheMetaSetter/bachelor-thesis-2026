@@ -4,7 +4,9 @@ import torch
 from src.encoders import create_encoder
 
 
-SETTINGS = dict(hidden_channels=8, output_dim=5, kernel_size=4, num_layers=3, dropout=0.1)
+SETTINGS = dict(
+    hidden_channels=8, output_dim=5, kernel_size=4, num_layers=3, dropout=0.1
+)
 
 
 def test_encoder_preserves_time_and_supports_gradients():

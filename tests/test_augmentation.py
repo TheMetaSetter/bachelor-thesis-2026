@@ -3,8 +3,13 @@ import torch
 from src.methods.augmentation import augment
 
 
-SETTINGS = {"min_segment_fraction": 0.3, "max_segment_fraction": 0.6,
-            "spike_scale": 3.0, "anomaly_visibility_boost": 1.6, "family_intensity": {}}
+SETTINGS = {
+    "min_segment_fraction": 0.3,
+    "max_segment_fraction": 0.6,
+    "spike_scale": 3.0,
+    "anomaly_visibility_boost": 1.6,
+    "family_intensity": {},
+}
 
 
 def sample():
@@ -15,7 +20,9 @@ def sample():
 
 def test_retained_families_labels_masks_and_provenance():
     source = sample()
-    altered, record = augment(source, SETTINGS, generator=torch.Generator().manual_seed(92))
+    altered, record = augment(
+        source, SETTINGS, generator=torch.Generator().manual_seed(92)
+    )
     labels = record["classification_labels"]
     masks = record["synthetic_anomaly_mask"]
     assert sorted(labels.tolist()) == list(range(12))
@@ -36,8 +43,12 @@ def test_explicit_generator_and_global_rng_isolation():
     saved_state = rng.get_state()
     global_state = torch.random.get_rng_state()
     one, record = augment(source, SETTINGS, generator=rng)
-    two, repeated = augment(source, SETTINGS, generator=torch.Generator().set_state(saved_state))
+    two, repeated = augment(
+        source, SETTINGS, generator=torch.Generator().set_state(saved_state)
+    )
     assert torch.equal(one, two)
-    assert torch.equal(record["classification_labels"], repeated["classification_labels"])
+    assert torch.equal(
+        record["classification_labels"], repeated["classification_labels"]
+    )
     assert torch.equal(global_state, torch.random.get_rng_state())
     assert not torch.equal(saved_state, rng.get_state())

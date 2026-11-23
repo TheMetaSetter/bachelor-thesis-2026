@@ -36,9 +36,11 @@ def prepared(tmp_path):
     scaler.write_text(json.dumps({"features": features}))
     files["machine/scaler.json"] = sha256(scaler.read_bytes()).hexdigest()
     manifest = {
-        "status": "complete", "version_id": tmp_path.name,
+        "status": "complete",
+        "version_id": tmp_path.name,
         "identity": {"settings": {"dataset": "smd"}},
-        "files": files, "entities": {"machine": {"features": features, "splits": splits}},
+        "files": files,
+        "entities": {"machine": {"features": features, "splits": splits}},
     }
     (tmp_path / "manifest.json").write_text(json.dumps(manifest))
     return tmp_path
@@ -65,10 +67,21 @@ def test_preserves_schema_and_missing_labels(prepared):
 
 def settings():
     return {
-        "window_size": 3, "batch_size": 4, "train_stride": 3, "validation_stride": 3,
-        "test_stride": 3, "online_stride": 1, "shuffle_train": False,
-        "tail_policy": {"train": "drop", "validation": "end_align", "test": "end_align", "online": "drop"},
-        "gap_policy": "break_at_time_gaps", "expected_interval_seconds": 1,
+        "window_size": 3,
+        "batch_size": 4,
+        "train_stride": 3,
+        "validation_stride": 3,
+        "test_stride": 3,
+        "online_stride": 1,
+        "shuffle_train": False,
+        "tail_policy": {
+            "train": "drop",
+            "validation": "end_align",
+            "test": "end_align",
+            "online": "drop",
+        },
+        "gap_policy": "break_at_time_gaps",
+        "expected_interval_seconds": 1,
     }
 
 
@@ -97,7 +110,9 @@ def test_does_not_read_source_or_transform_features(prepared):
     assert not (prepared / "missing").exists()
     data = load_entity(prepared, "machine")
     for split in data["splits"].values():
-        np.testing.assert_array_equal(split["x"], np.column_stack((np.arange(8), np.arange(10, 18))))
+        np.testing.assert_array_equal(
+            split["x"], np.column_stack((np.arange(8), np.arange(10, 18)))
+        )
 
 
 def test_discovery_prefers_valid_profile_and_orders_fallback(tmp_path):
@@ -110,11 +125,16 @@ def test_discovery_prefers_valid_profile_and_orders_fallback(tmp_path):
         path = base / name
         path.mkdir(parents=True)
         manifest = path / "manifest.json"
-        manifest.write_text(json.dumps({
-            "status": status, "version_id": name,
-            "identity": {"profile": {"dataset": dataset}},
-            "entities": {"machine": {}},
-        }))
+        manifest.write_text(
+            json.dumps(
+                {
+                    "status": status,
+                    "version_id": name,
+                    "identity": {"profile": {"dataset": dataset}},
+                    "entities": {"machine": {}},
+                }
+            )
+        )
         utime(manifest, (stamp, stamp))
         return path
 
@@ -125,5 +145,12 @@ def test_discovery_prefers_valid_profile_and_orders_fallback(tmp_path):
     add("incomplete", 4, status="partial")
     bad = add("bad", 5)
     (bad / "manifest.json").write_text("{")
-    assert [path for path, _ in discover_versions(tmp_path, "smd", old)] == [old, first, second]
-    assert [path for path, _ in discover_versions(tmp_path, "smd", bad)] == [first, second]
+    assert [path for path, _ in discover_versions(tmp_path, "smd", old)] == [
+        old,
+        first,
+        second,
+    ]
+    assert [path for path, _ in discover_versions(tmp_path, "smd", bad)] == [
+        first,
+        second,
+    ]

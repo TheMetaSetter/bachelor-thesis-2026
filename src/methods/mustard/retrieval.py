@@ -21,13 +21,15 @@ def _retrieve_branch(query, bank, settings, epsilon, *, sparse, generator=None):
         logits = logits - torch.log(-torch.log(uniform))
     weights = (logits / settings["temperature"]).softmax(dim=-1)
     if sparse:
-        weights = torch.zeros((*logits.shape[:-1], len(bank)), device=query.device, dtype=query.dtype).scatter(
-            -1, indices, weights
-        )
+        weights = torch.zeros(
+            (*logits.shape[:-1], len(bank)), device=query.device, dtype=query.dtype
+        ).scatter(-1, indices, weights)
     return F.normalize(weights @ bank, dim=-1, eps=epsilon), weights
 
 
-def retrieve(features: torch.Tensor, memory: Mapping[str, torch.Tensor], settings: dict) -> dict:
+def retrieve(
+    features: torch.Tensor, memory: Mapping[str, torch.Tensor], settings: dict
+) -> dict:
     """Return the normalized query and the two task representations."""
     if features.ndim != 3:
         raise ValueError("retrieval requires [batch, time, hidden] features")
@@ -41,7 +43,12 @@ def retrieve(features: torch.Tensor, memory: Mapping[str, torch.Tensor], setting
             context, weights = features, None
         else:
             context, weights = _retrieve_branch(
-                query, bank, settings[branch], epsilon, sparse=branch == "discrete", generator=generator if branch == "continuous" else None
+                query,
+                bank,
+                settings[branch],
+                epsilon,
+                sparse=branch == "discrete",
+                generator=generator if branch == "continuous" else None,
             )
         result[branch] = context
         result[f"{branch}_weights"] = weights
@@ -51,7 +58,9 @@ def retrieve(features: torch.Tensor, memory: Mapping[str, torch.Tensor], setting
 def _kmeans(tokens: torch.Tensor, count: int, epsilon: float) -> torch.Tensor:
     """Fit normalized clusters with deterministic farthest-first seeds."""
     if tokens.ndim != 2 or len(tokens) == 0 or count < 1:
-        raise ValueError("memory initialization requires tokens and a positive center count")
+        raise ValueError(
+            "memory initialization requires tokens and a positive center count"
+        )
     tokens = F.normalize(tokens, dim=-1, eps=epsilon)
     if len(tokens) <= count:
         return tokens[torch.arange(count, device=tokens.device) % len(tokens)]
@@ -61,7 +70,9 @@ def _kmeans(tokens: torch.Tensor, count: int, epsilon: float) -> torch.Tensor:
     for _ in range(1, count):
         next_index = minimum.argmax()
         indices.append(next_index)
-        minimum = torch.minimum(minimum, ((tokens - tokens[next_index]) ** 2).sum(dim=-1))
+        minimum = torch.minimum(
+            minimum, ((tokens - tokens[next_index]) ** 2).sum(dim=-1)
+        )
     centers = tokens[torch.stack(indices)]
     for _ in range(10):
         assignments = torch.cdist(tokens, centers).argmin(dim=-1)

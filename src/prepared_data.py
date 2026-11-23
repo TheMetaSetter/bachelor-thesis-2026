@@ -23,24 +23,41 @@ def _candidate(path, dataset):
     try:
         manifest = json.loads(manifest_path.read_bytes())
         entities = manifest["entities"]
-        if (manifest["status"] == "complete" and manifest["version_id"] == path.name
-                and _manifest_profile(manifest)["dataset"] == dataset
-                and isinstance(entities, dict) and entities):
+        if (
+            manifest["status"] == "complete"
+            and manifest["version_id"] == path.name
+            and _manifest_profile(manifest)["dataset"] == dataset
+            and isinstance(entities, dict)
+            and entities
+        ):
             return path, tuple(entities), manifest_path.stat().st_mtime_ns
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         pass
     return None
 
 
-def discover_versions(project: Path, dataset: str, configured: Path | None) -> list[tuple[Path, tuple[str, ...]]]:
+def discover_versions(
+    project: Path, dataset: str, configured: Path | None
+) -> list[tuple[Path, tuple[str, ...]]]:
     """List valid manifest choices with the default first."""
     manifests = (project / "data/preprocessed" / dataset).glob("*/manifest.json")
     roots = {manifest.parent.resolve() for manifest in manifests}
     if configured is not None:
         configured = (project / configured).resolve()
         roots.add(configured)
-    choices = [candidate for path in roots if (candidate := _candidate(path, dataset)) is not None]
-    choices.sort(key=lambda choice: (choice[0] != configured, -choice[2], choice[0].name, choice[0]))
+    choices = [
+        candidate
+        for path in roots
+        if (candidate := _candidate(path, dataset)) is not None
+    ]
+    choices.sort(
+        key=lambda choice: (
+            choice[0] != configured,
+            -choice[2],
+            choice[0].name,
+            choice[0],
+        )
+    )
     return [(path, entities) for path, entities, _ in choices]
 
 
@@ -74,8 +91,14 @@ def _read_split(path, features, count, identity):
         raise ValueError(f"{path}: invalid source rows")
     if not all(isinstance(value, str) and value for value in source_file):
         raise ValueError(f"{path}: invalid source files")
-    split = dict(x=x, labels=labels, source_file=source_file, source_row=source_row,
-                 segments=[(0, count)], identity=identity)
+    split = dict(
+        x=x,
+        labels=labels,
+        source_file=source_file,
+        source_row=source_row,
+        segments=[(0, count)],
+        identity=identity,
+    )
     if "timestamp" in table.column_names:
         timestamps = table["timestamp"].to_numpy().astype("datetime64[ns]")
         if np.any(np.isnat(timestamps)) or np.any(timestamps[1:] < timestamps[:-1]):
@@ -96,7 +119,11 @@ def load_entity(prepared_root: Path, entity: str) -> dict[str, Any]:
     if record is None:
         raise ValueError(f"{manifest_path}: unknown entity {entity!r}")
     features = record["features"]
-    if not isinstance(features, list) or not features or len(set(features)) != len(features):
+    if (
+        not isinstance(features, list)
+        or not features
+        or len(set(features)) != len(features)
+    ):
         raise ValueError(f"{manifest_path}: expected distinct feature names")
     files = manifest["files"]
     scaler_name = f"{entity}/scaler.json"
@@ -105,15 +132,23 @@ def load_entity(prepared_root: Path, entity: str) -> dict[str, Any]:
     if scaler.get("features") != features:
         raise ValueError(f"{scaler_path}: scaler feature order mismatch")
     profile = _manifest_profile(manifest)
-    identity = dict(dataset=profile.get("dataset"), entity=entity, version_id=root.name,
-                    manifest_path=manifest_path, manifest_sha256=sha256(contents).hexdigest(),
-                    scaler_path=scaler_path, scaler_sha256=files[scaler_name])
+    identity = dict(
+        dataset=profile.get("dataset"),
+        entity=entity,
+        version_id=root.name,
+        manifest_path=manifest_path,
+        manifest_sha256=sha256(contents).hexdigest(),
+        scaler_path=scaler_path,
+        scaler_sha256=files[scaler_name],
+    )
     splits = {}
     for name in ("train", "validation", "test"):
         path = _checked_path(root, f"{entity}/{name}.parquet", files)
         count = record["splits"][name]["rows"]
         splits[name] = _read_split(path, features, count, dict(identity, split=name))
-    prepared = dict(splits=splits, features=list(features), scaler=scaler, identity=identity)
+    prepared = dict(
+        splits=splits, features=list(features), scaler=scaler, identity=identity
+    )
     protocols.validate_data_input(prepared, identity)
     return prepared
 
@@ -146,23 +181,37 @@ def _window_schedule(split, config, phase, seed):
     kind = "online" if phase == "online" else name
     limits = config.get("limits", {})
     start = limits.get("stream_start", 0) if phase == "online" and name == "test" else 0
-    stop = limits.get("stream_end", len(split["x"])) if phase == "online" and name == "test" else len(split["x"])
+    stop = (
+        limits.get("stream_end", len(split["x"]))
+        if phase == "online" and name == "test"
+        else len(split["x"])
+    )
     if not 0 <= start < stop <= len(split["x"]):
         raise ValueError(f"{name}: invalid stream range")
     width = config["window_size"]
     iterator = _window_starts(
-        _segments(split, config), start, stop, width, config[f"{kind}_stride"],
+        _segments(split, config),
+        start,
+        stop,
+        width,
+        config[f"{kind}_stride"],
         config["tail_policy"][kind],
     )
     if kind == "train" and config["shuffle_train"]:
         starts = list(iterator)
         rng = np.random.default_rng(seed)
         iterator = (starts[index] for index in rng.permutation(len(starts)))
-    key = "max_online_steps" if phase == "online" and name == "test" else f"max_{name}_windows"
+    key = (
+        "max_online_steps"
+        if phase == "online" and name == "test"
+        else f"max_{name}_windows"
+    )
     return islice(iterator, limits.get(key))
 
 
-def iter_batches(split: dict, data_config: dict, *, phase: str, seed: int) -> Iterator[dict]:
+def iter_batches(
+    split: dict, data_config: dict, *, phase: str, seed: int
+) -> Iterator[dict]:
     """Yield one batch at a time and keep original split positions."""
     if phase not in {"offline", "online"}:
         raise ValueError(f"unknown phase: {phase}")
@@ -175,11 +224,17 @@ def iter_batches(split: dict, data_config: dict, *, phase: str, seed: int) -> It
     while entries:
         segment_ids, offsets = np.asarray(entries).T
         indices = offsets[:, None] + positions
-        batch = dict(x=split["x"][indices], indices=indices, segment_ids=segment_ids,
-                     identity=split["identity"])
+        batch = dict(
+            x=split["x"][indices],
+            indices=indices,
+            segment_ids=segment_ids,
+            identity=split["identity"],
+        )
         for field in ("labels", "timestamps"):
             if field in split:
                 batch[field] = split[field][indices]
-        protocols.validate_data_output(batch, {**split["identity"], "data": data_config, "phase": phase})
+        protocols.validate_data_output(
+            batch, {**split["identity"], "data": data_config, "phase": phase}
+        )
         yield batch
         entries = list(islice(starts, size))

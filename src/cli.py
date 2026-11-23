@@ -11,33 +11,56 @@ from .artifacts import allocate_run
 from .config import list_names, load_yaml, resolve_run
 from .dataset_selection import add_datasets, edit_lock
 from .experiments import (
-    _call_runner, _experiment_name, create_experiment, edit_experiment, list_experiments,
-    plan_experiment, resume_experiment, run_experiment,
+    _call_runner,
+    _experiment_name,
+    create_experiment,
+    edit_experiment,
+    list_experiments,
+    plan_experiment,
+    resume_experiment,
+    run_experiment,
 )
 from .reporting import report_experiment
 
 
 def complete_names(kind: str, prefix: str, *, project_root: Path) -> list[str]:
-    names = list_experiments(project_root=project_root) if kind == "experiments" else list_names(
-        kind, project_root=project_root
+    names = (
+        list_experiments(project_root=project_root)
+        if kind == "experiments"
+        else list_names(kind, project_root=project_root)
     )
     return [name for name in names if name.startswith(prefix)]
 
 
 def _parser():
-    parser = argparse.ArgumentParser(prog="tsad", description="Run thesis time-series experiments.")
-    parser.add_argument("--project-root", type=Path, default=Path.cwd(), help="Thesis project directory")
+    parser = argparse.ArgumentParser(
+        prog="tsad", description="Run thesis time-series experiments."
+    )
+    parser.add_argument(
+        "--project-root", type=Path, default=Path.cwd(), help="Thesis project directory"
+    )
     commands = parser.add_subparsers(dest="command", required=True)
     listing = commands.add_parser("list", help="List available names")
-    listing.add_argument("kind", choices=("datasets", "methods", "experiments", "standalones"))
+    listing.add_argument(
+        "kind", choices=("datasets", "methods", "experiments", "standalones")
+    )
     for verb in ("new", "validate", "run", "resume", "report"):
         command = commands.add_parser(verb)
-        command.add_argument("scope", choices=("experiment", "standalone") if verb == "run" else ("experiment",))
+        command.add_argument(
+            "scope",
+            choices=("experiment", "standalone") if verb == "run" else ("experiment",),
+        )
         command.add_argument("--name", required=True)
         if verb == "run":
-            command.add_argument("--smoke", action="store_true", help="Use the approved small work limits")
+            command.add_argument(
+                "--smoke",
+                action="store_true",
+                help="Use the approved small work limits",
+            )
         elif verb == "report":
-            command.add_argument("--smoke", action="store_true", help="Read saved smoke runs")
+            command.add_argument(
+                "--smoke", action="store_true", help="Read saved smoke runs"
+            )
     editor = commands.add_parser("experiment", help="Show or edit a definition")
     editor.add_argument("--name", required=True)
     operations = editor.add_subparsers(dest="operation", required=True)
@@ -47,13 +70,17 @@ def _parser():
         selection.add_argument("action", choices=("add", "remove"))
         selection.add_argument("values", nargs="+")
     settings = operations.add_parser("set")
-    settings.add_argument("field", choices=("random_seeds", "wandb_logging", "kaggle_backup"))
+    settings.add_argument(
+        "field", choices=("random_seeds", "wandb_logging", "kaggle_backup")
+    )
     settings.add_argument("values", nargs="+")
     commands.add_parser("preprocess", help="Prepare source data", add_help=False)
     completion = commands.add_parser("completion", help="Print shell completion setup")
     completion.add_argument("shell", choices=("bash", "zsh"))
     complete = commands.add_parser("_complete")
-    complete.add_argument("kind", choices=("datasets", "methods", "experiments", "standalones"))
+    complete.add_argument(
+        "kind", choices=("datasets", "methods", "experiments", "standalones")
+    )
     complete.add_argument("prefix", nargs="?", default="")
     return parser
 
@@ -136,15 +163,29 @@ def _edit_definition(command, path, root):
     else:
         with edit_lock(root):
             if command.operation == "set":
-                edit_experiment(path, "set", command.field, command.values, project_root=root)
+                edit_experiment(
+                    path, "set", command.field, command.values, project_root=root
+                )
             else:
-                edit_experiment(path, command.action, command.operation, command.values, project_root=root)
+                edit_experiment(
+                    path,
+                    command.action,
+                    command.operation,
+                    command.values,
+                    project_root=root,
+                )
 
 
 def _execute(command, root):
     verb = command.command
     if verb in {"list", "_complete"}:
-        print("\n".join(complete_names(command.kind, getattr(command, "prefix", ""), project_root=root)))
+        print(
+            "\n".join(
+                complete_names(
+                    command.kind, getattr(command, "prefix", ""), project_root=root
+                )
+            )
+        )
         return 0
     if verb == "new":
         with edit_lock(root):
@@ -162,9 +203,13 @@ def _execute(command, root):
     if verb == "experiment":
         _edit_definition(command, path, root)
     elif verb == "validate":
-        print(f"Valid experiment. Planned runs: {len(plan_experiment(path, project_root=root))}")
+        print(
+            f"Valid experiment. Planned runs: {len(plan_experiment(path, project_root=root))}"
+        )
     elif verb == "run":
-        return _results_status(run_experiment(path, project_root=root, smoke=command.smoke))
+        return _results_status(
+            run_experiment(path, project_root=root, smoke=command.smoke)
+        )
     elif verb == "resume":
         return _results_status(resume_experiment(path, project_root=root))
     elif verb == "report":
@@ -197,7 +242,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             raise ValueError(f"thesis project not found: {root}")
         return _execute(command, root)
     except KeyboardInterrupt:
-        print("Interrupted. Run state is saved at the last complete step.", file=sys.stderr)
+        print(
+            "Interrupted. Run state is saved at the last complete step.",
+            file=sys.stderr,
+        )
         return 130
     except (OSError, ValueError, KeyError, RuntimeError) as error:
         print(f"tsad stopped: {error}", file=sys.stderr)

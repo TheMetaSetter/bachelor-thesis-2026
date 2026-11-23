@@ -8,8 +8,13 @@ import re
 import yaml
 
 from .artifacts import (
-    _read_json, _write_atomic, _write_json, allocate_run, execution_identity,
-    load_resume, result_directory,
+    _read_json,
+    _write_atomic,
+    _write_json,
+    allocate_run,
+    execution_identity,
+    load_resume,
+    result_directory,
 )
 from .config import _CNN_METHODS, _profile_reference, list_names, load_yaml, resolve_run
 from .integrations import backup_kaggle, log_wandb
@@ -18,10 +23,21 @@ from .online import run_online
 from .prepared_data import iter_batches, load_entity
 
 
-_ENCODER = {"hidden_channels": 64, "output_dim": 64, "kernel_size": 3, "num_layers": 3, "dropout": 0.1}
-_REPORTS = [f"reporting_profiles/{name}.yaml" for name in ("offline_detection", "online_detection", "uncertainty")]
-_FIELDS = set("experiment_id datasets methods cells random_seeds encoder device reporting_profiles "
-              "wandb_logging kaggle_backup".split())
+_ENCODER = {
+    "hidden_channels": 64,
+    "output_dim": 64,
+    "kernel_size": 3,
+    "num_layers": 3,
+    "dropout": 0.1,
+}
+_REPORTS = [
+    f"reporting_profiles/{name}.yaml"
+    for name in ("offline_detection", "online_detection", "uncertainty")
+]
+_FIELDS = set(
+    "experiment_id datasets methods cells random_seeds encoder device reporting_profiles "
+    "wandb_logging kaggle_backup".split()
+)
 _FLAGS = {"wandb_logging", "kaggle_backup"}
 _DIMENSIONS = ("dataset", "entity", "method_name", "variant", "seed")
 
@@ -31,7 +47,9 @@ def list_experiments(*, project_root: Path) -> list[str]:
 
 
 def _experiment_name(name):
-    if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", name):
+    if not isinstance(name, str) or not re.fullmatch(
+        r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", name
+    ):
         raise ValueError("experiment name must be a safe file name")
     return name
 
@@ -41,9 +59,16 @@ def create_experiment(name: str, *, project_root: Path) -> Path:
     folder = project_root / "configs/experiments"
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / f"{name}.yaml"
-    definition = {"experiment_id": name, "datasets": [], "methods": [], "random_seeds": [6],
-                  "encoder": _ENCODER, "wandb_logging": False, "kaggle_backup": False,
-                  "reporting_profiles": _REPORTS}
+    definition = {
+        "experiment_id": name,
+        "datasets": [],
+        "methods": [],
+        "random_seeds": [6],
+        "encoder": _ENCODER,
+        "wandb_logging": False,
+        "kaggle_backup": False,
+        "reporting_profiles": _REPORTS,
+    }
     with path.open("x", encoding="utf-8") as output:
         yaml.safe_dump(definition, output, sort_keys=False)
     return path
@@ -60,7 +85,11 @@ def _definition(path):
         if field in definition and type(definition[field]) is not bool:
             raise ValueError(f"{field}: expected true or false")
     seeds = definition.get("random_seeds", [6])
-    if not isinstance(seeds, list) or not seeds or any(type(item) is not int or item < 0 for item in seeds):
+    if (
+        not isinstance(seeds, list)
+        or not seeds
+        or any(type(item) is not int or item < 0 for item in seeds)
+    ):
         raise ValueError("random_seeds: expected nonnegative integers")
     if len(seeds) != len(set(seeds)):
         raise ValueError("random_seeds: duplicate seed")
@@ -68,7 +97,11 @@ def _definition(path):
 
 
 def _profile_key(project, cell, field):
-    folder, key = ("data_profiles", "dataset") if field == "datasets" else ("method_profiles", "method")
+    folder, key = (
+        ("data_profiles", "dataset")
+        if field == "datasets"
+        else ("method_profiles", "method")
+    )
     root = (project / "configs").resolve()
     return load_yaml(_profile_reference(root, folder, cell[f"{folder[:-1]}"]))[key]
 
@@ -85,11 +118,17 @@ def _edit_selection(definition, operation, field, values, project):
     else:
         current = [value for value in current if value not in values]
         if cells:
-            definition["cells"] = [cell for cell in cells if _profile_key(project, cell, field) not in values]
+            definition["cells"] = [
+                cell
+                for cell in cells
+                if _profile_key(project, cell, field) not in values
+            ]
     definition[field] = current
 
 
-def edit_experiment(path: Path, operation: str, field: str, values, *, project_root: Path) -> dict:
+def edit_experiment(
+    path: Path, operation: str, field: str, values, *, project_root: Path
+) -> dict:
     definition = _definition(path)
     if not values:
         raise ValueError(f"{field}: supply at least one value")
@@ -115,12 +154,20 @@ def edit_experiment(path: Path, operation: str, field: str, values, *, project_r
 
 def _method_profiles(method):
     if method == "mustard":
-        return [(f"method_profiles/mustard_{variant}_{phase}.yaml", phase)
-                for phase, variants in (("offline", ("o0", "o1", "o2")), ("online", ("a0", "a1", "a2")))
-                for variant in variants]
+        return [
+            (f"method_profiles/mustard_{variant}_{phase}.yaml", phase)
+            for phase, variants in (
+                ("offline", ("o0", "o1", "o2")),
+                ("online", ("a0", "a1", "a2")),
+            )
+            for variant in variants
+        ]
     names = ("moment", "moment_linear_probing") if method == "moment" else (method,)
-    return [(f"method_profiles/baselines/{name}.yaml", phase)
-            for phase in ("offline", "online") for name in names]
+    return [
+        (f"method_profiles/baselines/{name}.yaml", phase)
+        for phase in ("offline", "online")
+        for name in names
+    ]
 
 
 def _selected_cells(definition, project):
@@ -129,11 +176,24 @@ def _selected_cells(definition, project):
         raise ValueError("experiment cells must be mappings")
     datasets = definition.get("datasets", [])
     methods = definition.get("methods", [])
-    if any(not isinstance(items, list) or len(set(items)) != len(items) for items in (datasets, methods)):
+    if any(
+        not isinstance(items, list) or len(set(items)) != len(items)
+        for items in (datasets, methods)
+    ):
         raise ValueError("datasets and methods must be distinct lists")
-    explicit = {(_profile_key(project, cell, "datasets"), _profile_key(project, cell, "methods")) for cell in cells}
-    inferred_datasets = list(dict.fromkeys(_profile_key(project, cell, "datasets") for cell in cells))
-    inferred_methods = list(dict.fromkeys(_profile_key(project, cell, "methods") for cell in cells))
+    explicit = {
+        (
+            _profile_key(project, cell, "datasets"),
+            _profile_key(project, cell, "methods"),
+        )
+        for cell in cells
+    }
+    inferred_datasets = list(
+        dict.fromkeys(_profile_key(project, cell, "datasets") for cell in cells)
+    )
+    inferred_methods = list(
+        dict.fromkeys(_profile_key(project, cell, "methods") for cell in cells)
+    )
     for dataset in dict.fromkeys([*datasets, *inferred_datasets]):
         for method in dict.fromkeys([*methods, *inferred_methods]):
             if (dataset, method) not in explicit:
@@ -143,64 +203,102 @@ def _selected_cells(definition, project):
 
 def _dataset_profile(project, dataset, explicit):
     root = (project / "configs").resolve()
-    paths = {_profile_reference(root, "data_profiles", cell["data_profile"]) for cell in explicit
-             if _profile_key(project, cell, "datasets") == dataset}
+    paths = {
+        _profile_reference(root, "data_profiles", cell["data_profile"])
+        for cell in explicit
+        if _profile_key(project, cell, "datasets") == dataset
+    }
     if len(paths) > 1:
         raise ValueError(f"{dataset}: select one data profile per experiment")
-    return next(iter(paths), _profile_reference(root, "data_profiles", f"data_profiles/{dataset}.yaml"))
+    return next(
+        iter(paths),
+        _profile_reference(root, "data_profiles", f"data_profiles/{dataset}.yaml"),
+    )
 
 
 def _default_cells(project, dataset, method, explicit):
     path = _dataset_profile(project, dataset, explicit)
     reference = path.relative_to((project / "configs").resolve()).as_posix()
     data = load_yaml(path)
-    manifest = json.loads((project / data["prepared_root"] / "manifest.json").read_text())
+    manifest = json.loads(
+        (project / data["prepared_root"] / "manifest.json").read_text()
+    )
     entities = list(manifest["entities"])
     if not entities:
         raise ValueError(f"{dataset}: no prepared entities")
     evaluation = "raw_input" if method == "mustard" else "native"
     for entity in entities:
         for method_profile, phase in _method_profiles(method):
-            yield {"data_profile": reference, "method_profile": method_profile, "phase": phase, "entity": entity,
-                   "evaluation_profile": f"evaluation_profiles/{evaluation}_q99_ewma075.yaml"}
+            yield {
+                "data_profile": reference,
+                "method_profile": method_profile,
+                "phase": phase,
+                "entity": entity,
+                "evaluation_profile": f"evaluation_profiles/{evaluation}_q99_ewma075.yaml",
+            }
 
 
 def _cell_config(definition, cell, project, seed, smoke):
-    for key in ("seed", "experiment_id", "run_id", "output_dir", "offline_parent_dir", "execution_mode", *_FLAGS):
+    for key in (
+        "seed",
+        "experiment_id",
+        "run_id",
+        "output_dir",
+        "offline_parent_dir",
+        "execution_mode",
+        *_FLAGS,
+    ):
         if key in cell:
             raise ValueError(f"experiment cells do not define {key}")
     if cell.get("evaluation_profile") is None:
         raise ValueError("an experiment run requires an evaluation profile")
     method = _profile_key(project, cell, "methods")
     fields = dict(cell)
-    fields.update(experiment_id=definition["experiment_id"], seed=seed,
-                  device=cell.get("device", definition.get("device", "cpu")),
-                  execution_mode="smoke" if smoke else "normal",
-                  **{key: definition.get(key, False) and not smoke for key in _FLAGS})
+    fields.update(
+        experiment_id=definition["experiment_id"],
+        seed=seed,
+        device=cell.get("device", definition.get("device", "cpu")),
+        execution_mode="smoke" if smoke else "normal",
+        **{key: definition.get(key, False) and not smoke for key in _FLAGS},
+    )
     if method in _CNN_METHODS:
         fields["encoder"] = definition.get("encoder", _ENCODER)
     if smoke:
         count = 4 if method == "moment" else 64
-        caps = {"max_epochs_per_stage": 1, "max_train_windows": count, "max_validation_windows": count,
-                "max_test_windows": count, "max_online_steps": 4 if method == "moment" else 32}
+        caps = {
+            "max_epochs_per_stage": 1,
+            "max_train_windows": count,
+            "max_validation_windows": count,
+            "max_test_windows": count,
+            "max_online_steps": 4 if method == "moment" else 32,
+        }
         fields["limits"] = fields.get("limits", {}) | {
-            key: min(value, fields.get("limits", {}).get(key, value)) for key, value in caps.items()
+            key: min(value, fields.get("limits", {}).get(key, value))
+            for key, value in caps.items()
         }
     resolved = resolve_run(fields, project_root=project)
     if resolved["phase"] == "online" and method == "mustard":
-        resolved["reporting_variant"] = f"{resolved['required_offline_variant']}_{resolved['variant']}"
+        resolved["reporting_variant"] = (
+            f"{resolved['required_offline_variant']}_{resolved['variant']}"
+        )
     return resolved
 
 
 def _dependency_key(run):
     return tuple(run[key] for key in ("dataset", "entity", "method_name", "seed")) + (
-        run.get("required_offline_variant") if run["phase"] == "online" else run["variant"],
+        run.get("required_offline_variant")
+        if run["phase"] == "online"
+        else run["variant"],
         run["profile_paths"]["evaluation"],
     )
 
 
 def _run_key(run):
-    return (run["phase"], *(_dimension(run, name) for name in _DIMENSIONS), run["profile_paths"]["evaluation"])
+    return (
+        run["phase"],
+        *(_dimension(run, name) for name in _DIMENSIONS),
+        run["profile_paths"]["evaluation"],
+    )
 
 
 def _dimension(run, name):
@@ -219,9 +317,14 @@ def _add_dependencies(plans, definition, project, smoke):
         path = run["profile_paths"]["method"]
         if run["method_name"] == "mustard":
             path = f"method_profiles/mustard_{run['required_offline_variant'].lower()}_offline.yaml"
-        cell = {"data_profile": run["profile_paths"]["data"], "method_profile": path,
-                "evaluation_profile": run["profile_paths"]["evaluation"],
-                "phase": "offline", "entity": run["entity"], "device": run["device"]}
+        cell = {
+            "data_profile": run["profile_paths"]["data"],
+            "method_profile": path,
+            "evaluation_profile": run["profile_paths"]["evaluation"],
+            "phase": "offline",
+            "entity": run["entity"],
+            "device": run["device"],
+        }
         parent = _cell_config(definition, cell, project, run["seed"], smoke)
         keys.add(key)
         dependencies.append(parent)
@@ -257,14 +360,27 @@ def _check_readiness(plans):
         if model_stages and run["phase"] == "offline":
             stages.add(sum(stage["epochs"] for stage in model_stages))
         settings = run["data"] | {"limits": run["limits"]}
-        required = ("train", "validation", "test") if run["phase"] == "offline" else ("validation", "test")
+        required = (
+            ("train", "validation", "test")
+            if run["phase"] == "offline"
+            else ("validation", "test")
+        )
         for split in required:
-            next(iter_batches(entity["splits"][split], settings, phase=run["phase"], seed=run["seed"]))
+            next(
+                iter_batches(
+                    entity["splits"][split],
+                    settings,
+                    phase=run["phase"],
+                    seed=run["seed"],
+                )
+            )
     if len(stages) > 1:
         raise ValueError("fitted neural methods must have equal total epoch counts")
 
 
-def plan_experiment(path: Path, *, project_root: Path, smoke: bool = False) -> list[dict]:
+def plan_experiment(
+    path: Path, *, project_root: Path, smoke: bool = False
+) -> list[dict]:
     definition = _definition(path)
     plans, selected, profiles, keys, failures = [], set(), {}, set(), []
     for cell in _selected_cells(definition, project_root):
@@ -273,7 +389,9 @@ def plan_experiment(path: Path, *, project_root: Path, smoke: bool = False) -> l
                 run = _cell_config(definition, cell, project_root, seed, smoke)
                 path = run["profile_paths"]["data"]
                 if profiles.setdefault(run["dataset"], path) != path:
-                    raise ValueError(f"{run['dataset']}: select one data profile per experiment")
+                    raise ValueError(
+                        f"{run['dataset']}: select one data profile per experiment"
+                    )
                 key = _run_key(run)
                 if key in keys:
                     raise ValueError(f"duplicate planned run: {key}")
@@ -285,7 +403,10 @@ def plan_experiment(path: Path, *, project_root: Path, smoke: bool = False) -> l
             except (ValueError, OSError, KeyError) as error:
                 failures.append(str(error))
     if failures:
-        raise ValueError("unsupported experiment combinations:\n" + "\n".join(dict.fromkeys(failures)))
+        raise ValueError(
+            "unsupported experiment combinations:\n"
+            + "\n".join(dict.fromkeys(failures))
+        )
     if not plans:
         raise ValueError("add at least one dataset and method before planning")
     plans = _add_dependencies(plans, definition, project_root, smoke)
@@ -300,15 +421,21 @@ def _status(config):
 
 
 def _committed_metrics(result):
-    return {f"{split}/{key}": value
-            for split, path in result.get("splits", {}).items()
-            for key, value in _read_json(Path(path))["metrics"].items()}
+    return {
+        f"{split}/{key}": value
+        for split, path in result.get("splits", {}).items()
+        for key, value in _read_json(Path(path))["metrics"].items()
+    }
 
 
 def _call_runner(config, *, resume=None):
     run = run_offline if config["phase"] == "offline" else run_online
     enabled = config.get("wandb_logging", False)
-    event = {"enabled": enabled, "run_id": config["run_id"], "experiment_id": config.get("experiment_id")}
+    event = {
+        "enabled": enabled,
+        "run_id": config["run_id"],
+        "experiment_id": config.get("experiment_id"),
+    }
     session, provider = None, None
     if enabled:
         try:
@@ -320,7 +447,9 @@ def _call_runner(config, *, resume=None):
         if session is not None:
             try:
                 metrics = _committed_metrics(result)
-                log_wandb(event | {"kind": "metrics", "metrics": metrics}, session=session)
+                log_wandb(
+                    event | {"kind": "metrics", "metrics": metrics}, session=session
+                )
                 provider = {"status": "successful"}
             except (OSError, RuntimeError, KeyError, ValueError):
                 provider = {"status": "failed", "reason": "W&B metrics failed"}
@@ -357,11 +486,15 @@ def _with_backup(runs, execute):
     return results
 
 
-def run_experiment(path: Path, *, project_root: Path, smoke: bool = False) -> list[dict]:
+def run_experiment(
+    path: Path, *, project_root: Path, smoke: bool = False
+) -> list[dict]:
     plan = plan_experiment(path, project_root=project_root, smoke=smoke)
     runs = [allocate_run(config, project_root=project_root) for config in plan]
     attempt = Path(runs[0]["output_root"]) / "attempts" / f"{runs[0]['run_id']}.json"
-    _write_json(attempt, {"schema_version": 1, "identity": execution_identity(), "runs": runs})
+    _write_json(
+        attempt, {"schema_version": 1, "identity": execution_identity(), "runs": runs}
+    )
     return _with_backup(runs, lambda: [_call_runner(config) for config in runs])
 
 
@@ -390,12 +523,19 @@ def _resume_attempt(runs):
             snapshot = load_resume(config)
         except FileNotFoundError:
             if status != "blocked" or config["phase"] != "online":
-                results.append({"run_id": config["run_id"], "status": status,
-                                "reason": "no committed continuation"})
+                results.append(
+                    {
+                        "run_id": config["run_id"],
+                        "status": status,
+                        "reason": "no committed continuation",
+                    }
+                )
                 continue
             snapshot = {"unstarted": True}
         except ValueError as error:
-            results.append({"run_id": config["run_id"], "status": "failed", "reason": str(error)})
+            results.append(
+                {"run_id": config["run_id"], "status": "failed", "reason": str(error)}
+            )
             continue
         results.append(_call_runner(config, resume=snapshot))
     return results
@@ -404,8 +544,11 @@ def _resume_attempt(runs):
 def resume_experiment(path: Path, *, project_root: Path) -> list[dict]:
     """Continue all unfinished recorded attempts with their original settings."""
     name = _experiment_name(path.stem)
-    attempts = sorted(file for mode in ("experiments", "smoke")
-                      for file in (project_root / "outputs" / mode / name / "attempts").glob("*.json"))
+    attempts = sorted(
+        file
+        for mode in ("experiments", "smoke")
+        for file in (project_root / "outputs" / mode / name / "attempts").glob("*.json")
+    )
     if not attempts:
         raise ValueError(f"{name}: no recorded execution to resume")
     identity = execution_identity()
@@ -419,8 +562,15 @@ def resume_experiment(path: Path, *, project_root: Path) -> list[dict]:
         if all(status == "successful" for status in statuses):
             continue
         if saved["identity"] != identity:
-            results.extend({"run_id": config["run_id"], "status": "failed", "reason": "different code or dependencies"}
-                           for config, status in zip(runs, statuses, strict=True) if status != "successful")
+            results.extend(
+                {
+                    "run_id": config["run_id"],
+                    "status": "failed",
+                    "reason": "different code or dependencies",
+                }
+                for config, status in zip(runs, statuses, strict=True)
+                if status != "successful"
+            )
             continue
         results.extend(_with_backup(runs, lambda: _resume_attempt(runs)))
     return results

@@ -19,8 +19,10 @@ def _balanced_score_loss(errors, mask):
         return None
     center = normal.mean().detach()
     scale = normal.std(unbiased=False).detach().clamp_min(1e-6)
-    return (F.softplus((normal - center) / scale).mean()
-            + F.softplus((center - anomalous) / scale).mean()) / 2
+    return (
+        F.softplus((normal - center) / scale).mean()
+        + F.softplus((center - anomalous) / scale).mean()
+    ) / 2
 
 
 def _contrastive(clean, augmented, normal, temperature):
@@ -32,16 +34,23 @@ def _contrastive(clean, augmented, normal, temperature):
     return F.cross_entropy(anchor @ positive.T / temperature, labels)
 
 
-def compute_loss(outputs: dict, targets: dict, settings: dict) -> dict[str, torch.Tensor]:
+def compute_loss(
+    outputs: dict, targets: dict, settings: dict
+) -> dict[str, torch.Tensor]:
     """Return the loss and each term that is defined for this batch."""
     mask = targets["synthetic_anomaly_mask"].bool()
     errors = (outputs["reconstruction"] - targets["x"]).square().mean(dim=-1)
     reconstruction = errors[~mask].mean() if (~mask).any() else errors.mean()
     classification = _classification_loss(
-        outputs["logits"], targets["classification_labels"], settings["label_correction"]
+        outputs["logits"],
+        targets["classification_labels"],
+        settings["label_correction"],
     )
-    terms = {"reconstruction": reconstruction, "classification": classification,
-             "classification_branch": classification}
+    terms = {
+        "reconstruction": reconstruction,
+        "classification": classification,
+        "classification_branch": classification,
+    }
     weights = settings["loss_weights"]
     variant, stage = settings["variant"], settings["stage"]
     if variant == "O1" and stage == "stage_a":
@@ -49,10 +58,16 @@ def compute_loss(outputs: dict, targets: dict, settings: dict) -> dict[str, torc
         if point_score is not None:
             terms["point_score"] = point_score
             terms["classification_branch"] = (classification + point_score) / 2
-    total = weights["reconstruction"] * reconstruction + weights["classification"] * terms["classification_branch"]
+    total = (
+        weights["reconstruction"] * reconstruction
+        + weights["classification"] * terms["classification_branch"]
+    )
     if variant == "O2" and stage == "stage_a":
         terms["contrastive"] = _contrastive(
-            outputs["clean_features"], outputs["query"], ~mask, settings["contrastive_temperature"]
+            outputs["clean_features"],
+            outputs["query"],
+            ~mask,
+            settings["contrastive_temperature"],
         )
         total = total + weights["contrastive"] * terms["contrastive"]
     terms["total"] = total

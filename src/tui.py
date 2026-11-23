@@ -35,8 +35,13 @@ def resolve_cli_arguments(
         return (verb, *arguments)
     if command in EXPERIMENT_COMMANDS + ("/new",):
         # argparse also accepts abbreviated options such as --na.
-        if any(value.partition("=")[0] in ("--n", "--na", "--nam", "--name") for value in arguments):
-            raise ValueError("Enter the name in the slash command. Use /help for the syntax.")
+        if any(
+            value.partition("=")[0] in ("--n", "--na", "--nam", "--name")
+            for value in arguments
+        ):
+            raise ValueError(
+                "Enter the name in the slash command. Use /help for the syntax."
+            )
     if command == "/new":
         if not arguments or arguments[0].startswith("-"):
             raise ValueError("Enter /new NAME.")
@@ -60,8 +65,13 @@ def build_cli_process_arguments(
     arguments: Sequence[str], *, project_root: Path
 ) -> tuple[str, ...]:
     return (
-        sys.executable, "-u", "-m", "thesis_tsad.cli",
-        "--project-root", str(project_root), *arguments,
+        sys.executable,
+        "-u",
+        "-m",
+        "thesis_tsad.cli",
+        "--project-root",
+        str(project_root),
+        *arguments,
     )
 
 
@@ -85,17 +95,24 @@ class CommandScreen(ModalScreen[int]):
     def compose(self) -> ComposeResult:
         yield Label(join(("tsad", *self.arguments)), markup=False)
         yield Log(highlight=False, max_lines=2000)
-        yield Label("Command in progress. Use Ctrl+C to interrupt.", id="command-status")
+        yield Label(
+            "Command in progress. Use Ctrl+C to interrupt.", id="command-status"
+        )
         yield Button("Back", id="back", disabled=True)
 
     def on_mount(self) -> None:
         self.call_after_refresh(self.run_worker, self.run_command)
 
     async def run_with_output(self) -> int:
-        command = build_cli_process_arguments(self.arguments, project_root=self.project_root)
+        command = build_cli_process_arguments(
+            self.arguments, project_root=self.project_root
+        )
         process = await asyncio.create_subprocess_exec(
-            *command, cwd=self.project_root, stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            *command,
+            cwd=self.project_root,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             start_new_session=os.name == "posix",
         )
         self.process = process
@@ -131,12 +148,16 @@ class CommandScreen(ModalScreen[int]):
     def run_with_terminal(self) -> int:
         with self.app.suspend():
             try:
-                command = build_cli_process_arguments(self.arguments, project_root=self.project_root)
+                command = build_cli_process_arguments(
+                    self.arguments, project_root=self.project_root
+                )
                 environment = dict(os.environ, TEXTUAL_ALLOW_SIGNALS="1")
                 # The child receives Ctrl+C from the terminal. Keep the parent open.
                 previous_handler = signal.signal(signal.SIGINT, lambda *_: None)
                 try:
-                    status = subprocess.run(command, cwd=self.project_root, env=environment).returncode
+                    status = subprocess.run(
+                        command, cwd=self.project_root, env=environment
+                    ).returncode
                 finally:
                     signal.signal(signal.SIGINT, previous_handler)
             except KeyboardInterrupt:
@@ -153,7 +174,9 @@ class CommandScreen(ModalScreen[int]):
 
     async def run_command(self) -> None:
         try:
-            if self.arguments[:2] == ("experiment", "--name") and self.arguments[3:5] == ("datasets", "add"):
+            if self.arguments[:2] == ("experiment", "--name") and self.arguments[
+                3:5
+            ] == ("datasets", "add"):
                 status = self.run_with_terminal()
             else:
                 status = await self.run_with_output()
@@ -161,7 +184,9 @@ class CommandScreen(ModalScreen[int]):
             self.query_one(Log).write_line(f"Could not start the command. {error}")
             status = 1
         self.exit_status = 130 if status == -signal.SIGINT else status
-        self.query_one("#command-status", Label).update(f"Exit status {self.exit_status}.")
+        self.query_one("#command-status", Label).update(
+            f"Exit status {self.exit_status}."
+        )
         back = self.query_one("#back", Button)
         back.disabled = False
         back.focus()
@@ -205,6 +230,8 @@ class TsadApp(App[int]):
     TsadApp > Screen { padding: 1 2; }
     #session-title { text-style: bold; color: $accent; }
     #session-history { height: 1fr; border: round $surface-lighten-2; }
+    #text-bar { border: round $border-blurred; }
+    #text-bar:focus { border: round $border; }
     """
 
     def __init__(self, project_root: Path) -> None:
@@ -224,7 +251,9 @@ class TsadApp(App[int]):
         self.query_one("#text-bar", Input).focus()
 
     def open_experiment(self, name: str) -> None:
-        if name not in complete_names("experiments", name, project_root=self.project_root):
+        if name not in complete_names(
+            "experiments", name, project_root=self.project_root
+        ):
             raise ValueError(f"Experiment not found. {name}")
         if name not in self.sessions:
             self.sessions[name] = ExperimentSession(name)
@@ -268,7 +297,9 @@ class TsadApp(App[int]):
 
     @property
     def history(self) -> list[str]:
-        return self.active_session.history if self.active_session else self.project_history
+        return (
+            self.active_session.history if self.active_session else self.project_history
+        )
 
     def write_history(self, text: str) -> None:
         self.history.append(text)
@@ -277,7 +308,11 @@ class TsadApp(App[int]):
     def record_command_result(self, exit_status: int | None) -> None:
         if self.pending_command is not None:
             history, command = self.pending_command
-            status = "No exit status." if exit_status is None else f"Exit status {exit_status}."
+            status = (
+                "No exit status."
+                if exit_status is None
+                else f"Exit status {exit_status}."
+            )
             entry = f"{command}  {status}"
             history.append(entry)
             if history is self.history:

@@ -26,8 +26,16 @@ class DatasetPicker(App[dict[str, Path] | None]):
         with VerticalScroll(id="choices"):
             for index, (dataset, versions) in enumerate(self.choices.items()):
                 yield Label(dataset, markup=False)
-                options = [(f"{path.name[:12]}  ({len(entities)} entities)", path) for path, entities in versions]
-                yield Select(options, allow_blank=False, value=versions[0][0], id=f"dataset-{index}")
+                options = [
+                    (f"{path.name[:12]}  ({len(entities)} entities)", path)
+                    for path, entities in versions
+                ]
+                yield Select(
+                    options,
+                    allow_blank=False,
+                    value=versions[0][0],
+                    id=f"dataset-{index}",
+                )
         with Horizontal(id="actions"):
             yield Button("Save", id="save", variant="primary")
             yield Button("Cancel", id="cancel")
@@ -39,7 +47,9 @@ class DatasetPicker(App[dict[str, Path] | None]):
         if event.button.id == "cancel":
             self.exit()
             return
-        self.exit({
-            dataset: self.query_one(f"#dataset-{index}", Select).value
-            for index, dataset in enumerate(self.choices)
-        })
+        self.exit(
+            {
+                dataset: self.query_one(f"#dataset-{index}", Select).value
+                for index, dataset in enumerate(self.choices)
+            }
+        )

@@ -32,9 +32,13 @@ def _profile_choices(project, paths):
         if profile.get("dataset") != dataset:
             raise ValueError(f"{path}: expected data profile for {dataset}")
         configured = profile.get("prepared_root")
-        choices[dataset] = discover_versions(project, dataset, Path(configured) if configured else None)
+        choices[dataset] = discover_versions(
+            project, dataset, Path(configured) if configured else None
+        )
         if not choices[dataset]:
-            raise ValueError(f"{dataset}: no complete prepared version in {project / 'data/preprocessed' / dataset}")
+            raise ValueError(
+                f"{dataset}: no complete prepared version in {project / 'data/preprocessed' / dataset}"
+            )
         profiles[dataset] = profile
     return choices, profiles
 
@@ -68,7 +72,9 @@ def _save(project, original, updates):
     with edit_lock(project):
         for path, before in original.items():
             if path.read_bytes() != before:
-                raise ValueError(f"{path}: changed during selection. Run datasets add again.")
+                raise ValueError(
+                    f"{path}: changed during selection. Run datasets add again."
+                )
         modes = {path: S_IMODE(path.stat().st_mode) for path in updates}
         attempted = []
         try:
@@ -84,7 +90,9 @@ def _save(project, original, updates):
                 except OSError as error:
                     failed.append(f"{path}: {error}")
             if failed:
-                raise RuntimeError("Could not restore files:\n" + "\n".join(failed)) from None
+                raise RuntimeError(
+                    "Could not restore files:\n" + "\n".join(failed)
+                ) from None
             raise
 
 
@@ -105,7 +113,9 @@ def add_datasets(path, names, project, choose):
     _check_selection(selected, choices)
     updates = {}
     for dataset, version in selected.items():
-        value = str(version.relative_to(project) if version.is_relative_to(project) else version)
+        value = str(
+            version.relative_to(project) if version.is_relative_to(project) else version
+        )
         if profiles[dataset].get("prepared_root") != value:
             profiles[dataset]["prepared_root"] = value
             updates[paths[dataset]] = _yaml_bytes(profiles[dataset])

@@ -26,7 +26,10 @@ def compute_token_multi_positive_info_nce(
     """Use source/same-signature positives and anomaly-memory negatives."""
     if reference_hidden.shape != projected_hidden.shape or reference_hidden.ndim != 3:
         raise ValueError("hidden tensors must share shape [B, L, H]")
-    if anomalous_codewords.ndim != 2 or anomalous_codewords.shape[1] != projected_hidden.shape[-1]:
+    if (
+        anomalous_codewords.ndim != 2
+        or anomalous_codewords.shape[1] != projected_hidden.shape[-1]
+    ):
         raise ValueError("anomalous_codewords must have shape [K_anom, H]")
     if anomalous_codewords.shape[0] == 0:
         raise ValueError("at least one anomalous codeword is required")
@@ -62,12 +65,25 @@ def compute_token_multi_positive_info_nce(
     source = F.normalize(reference_hidden.detach(), dim=-1)
     anomaly_keys = F.normalize(anomalous_codewords.detach(), dim=-1)
     return _mean_token_loss(
-        projected, source, anomaly_keys, anchor_mask, recurrent_signature_ids, known_anomaly_mask, temperature,
+        projected,
+        source,
+        anomaly_keys,
+        anchor_mask,
+        recurrent_signature_ids,
+        known_anomaly_mask,
+        temperature,
     )
 
 
-def _mean_token_loss(projected, source, anomaly_keys, anchor_mask, recurrent_signature_ids,
-                     known_anomaly_mask, temperature):
+def _mean_token_loss(
+    projected,
+    source,
+    anomaly_keys,
+    anchor_mask,
+    recurrent_signature_ids,
+    known_anomaly_mask,
+    temperature,
+):
     losses = []
     for batch_id, token_id in anchor_mask.nonzero(as_tuple=False).tolist():
         anchor = projected[batch_id, token_id]

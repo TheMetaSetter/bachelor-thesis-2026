@@ -14,7 +14,10 @@ def reconstruction_scores(x, reconstruction, settings: dict):
         raise ValueError("reconstruction scoring requires [batch, time, feature]")
     sampled = reconstruction.ndim == 4
     if sampled:
-        if reconstruction.shape[1] < 1 or shape != (reconstruction.shape[0], *reconstruction.shape[2:]):
+        if reconstruction.shape[1] < 1 or shape != (
+            reconstruction.shape[0],
+            *reconstruction.shape[2:],
+        ):
             raise ValueError("reconstruction sample shape does not match the input")
         x = x[:, None]
     elif tuple(reconstruction.shape) != shape:
@@ -24,7 +27,9 @@ def reconstruction_scores(x, reconstruction, settings: dict):
     if space == "raw_input":
         divisor = settings["scaler"]["divisor"]
         if np.shape(divisor) != (shape[-1],) or not np.all(np.asarray(divisor) > 0):
-            raise ValueError("raw input scoring requires a positive divisor for each feature")
+            raise ValueError(
+                "raw input scoring requires a positive divisor for each feature"
+            )
         if isinstance(residual, np.ndarray):
             divisor = np.asarray(divisor)
         else:
@@ -33,7 +38,7 @@ def reconstruction_scores(x, reconstruction, settings: dict):
         residual = residual * divisor
     elif space not in {"normalized_input", "latent"}:
         raise ValueError(f"unsupported reconstruction score space: {space}")
-    error = (residual ** 2).mean(-1)
+    error = (residual**2).mean(-1)
     return error.mean(1) if sampled else error
 
 
@@ -69,7 +74,9 @@ def _eligible_record(record):
         labels = np.asarray(record["source_window_labels"], dtype=float)
         aligned = labels.ndim == 2 and len(labels) == len(values)
     else:
-        labels = np.asarray(record.get("labels", np.full(values.shape, np.nan)), dtype=float)
+        labels = np.asarray(
+            record.get("labels", np.full(values.shape, np.nan)), dtype=float
+        )
         aligned = labels.shape == values.shape
     if not aligned or not np.all(np.isnan(labels) | np.isin(labels, [0, 1])):
         raise ValueError("calibration labels must align and be binary or unknown")
@@ -83,7 +90,8 @@ def _eligible_record(record):
         raise ValueError("calibration has no eligible scores")
     eligible = dict(record, raw_scores=values[selected], indices=indices[selected])
     counts = {
-        "selected_windows": int(selected.sum()), "excluded_windows": int(anomalies.sum()),
+        "selected_windows": int(selected.sum()),
+        "excluded_windows": int(anomalies.sum()),
         "unknown_label_windows": int((unknown & selected).sum()),
     }
     return eligible, counts
@@ -93,26 +101,48 @@ def calibrate(scores: dict, settings: dict, *, identity: dict) -> dict:
     """Fit the point transform and threshold with an approved split."""
     phase = settings.get("phase", "offline")
     source = scores.get("source_split")
-    protocols.validate_calibration_input({"kind": "calibration", "source_split": source}, {})
+    protocols.validate_calibration_input(
+        {"kind": "calibration", "source_split": source}, {}
+    )
     expected = settings.get(f"{phase}_threshold_split", "validation")
-    expected = settings.get("offline_point_threshold_source", expected) if phase == "offline" else expected
+    expected = (
+        settings.get("offline_point_threshold_source", expected)
+        if phase == "offline"
+        else expected
+    )
     if source != expected:
         raise ValueError(f"calibration: source {source!r} does not match {expected!r}")
-    if phase == "online" and settings.get("online_point_threshold_source") == "offline_parent":
-        raise ValueError("online point calibration must load the offline parent threshold")
+    if (
+        phase == "online"
+        and settings.get("online_point_threshold_source") == "offline_parent"
+    ):
+        raise ValueError(
+            "online point calibration must load the offline parent threshold"
+        )
     protocols.validate_calibration_input(scores, {})
     selected, counts = _eligible_record(scores)
-    transform = _fit_transform(selected["raw_scores"], settings.get("point_score_transform", "identity"))
+    transform = _fit_transform(
+        selected["raw_scores"], settings.get("point_score_transform", "identity")
+    )
     selected["raw_scores"] = _transform(selected["raw_scores"], transform)
-    point = aggregate_points(iter([selected]), length=scores["length"], settings=settings)
+    point = aggregate_points(
+        iter([selected]), length=scores["length"], settings=settings
+    )
     quantile = settings[f"{phase}_threshold_quantile"]
     if not 0 < quantile < 1:
         raise ValueError("calibration quantile must be between zero and one")
     result = {
-        **identity, **counts, "kind": "calibration", "source_split": source,
-        "score_space": settings["score_space"], "transform": transform,
-        "point_threshold": float(np.quantile(point["scores"][point["coverage"]], quantile)),
-        "quantile": quantile, "overlap_reduction": _overlap_policy(settings),
+        **identity,
+        **counts,
+        "kind": "calibration",
+        "source_split": source,
+        "score_space": settings["score_space"],
+        "transform": transform,
+        "point_threshold": float(
+            np.quantile(point["scores"][point["coverage"]], quantile)
+        ),
+        "quantile": quantile,
+        "overlap_reduction": _overlap_policy(settings),
         "ewma_previous_weight": settings.get("ewma_previous_weight", 0.25),
         "ewma_current_weight": settings.get("ewma_current_weight", 0.75),
         "normal_data_assumption": counts["unknown_label_windows"] > 0,
@@ -138,10 +168,16 @@ def _ewma_rows(indices, values, settings, state):
         if start <= last_start or np.any(np.diff(positions) <= 0):
             raise ValueError("point EWMA requires strict window order")
         updated = {}
-        for column, (index, observed) in enumerate(zip(positions, observations, strict=True)):
+        for column, (index, observed) in enumerate(
+            zip(positions, observations, strict=True)
+        ):
             index = int(index)
             value = float(observed)
-            estimate = previous_weight * pending[index] + current_weight * value if index in pending else value
+            estimate = (
+                previous_weight * pending[index] + current_weight * value
+                if index in pending
+                else value
+            )
             scores[row, column] = estimate
             updated[index] = estimate
         pending = updated
@@ -149,19 +185,28 @@ def _ewma_rows(indices, values, settings, state):
     return scores, {"last_start": last_start, "pending": pending}
 
 
-def score_batch(raw: dict, calibration: dict | None, settings: dict, *, state: dict | None = None):
+def score_batch(
+    raw: dict, calibration: dict | None, settings: dict, *, state: dict | None = None
+):
     """Apply the selected score transform and return a new scoring state."""
     protocols.validate_calibration_input(raw, {})
-    if calibration is not None and calibration["score_space"] != settings["score_space"]:
+    if (
+        calibration is not None
+        and calibration["score_space"] != settings["score_space"]
+    ):
         raise ValueError("calibration: score space mismatch")
-    transform = calibration["transform"] if calibration is not None else {"name": "identity"}
+    transform = (
+        calibration["transform"] if calibration is not None else {"name": "identity"}
+    )
     values = _transform(np.asarray(raw["raw_scores"], dtype=float), transform)
     indices = np.asarray(raw["indices"])
     new_state = dict(state or {})
     if len(values) and _overlap_policy(settings) == "last_ewma_estimate":
         if values.ndim == 2:
             values, new_state = _ewma_rows(indices, values, settings, new_state)
-        elif indices[0] <= new_state.get("last_start", -1) or np.any(np.diff(indices) <= 0):
+        elif indices[0] <= new_state.get("last_start", -1) or np.any(
+            np.diff(indices) <= 0
+        ):
             raise ValueError("point endpoints must follow strict stream order")
         else:
             new_state = {"last_start": int(indices[-1]), "pending": {}}
@@ -183,8 +228,14 @@ def aggregate_points(batches: Iterator[dict], *, length: int, settings: dict) ->
             current, state = score_batch(current, None, settings, state=state)
         indices = np.asarray(current["indices"]).ravel()
         values = np.asarray(current["scores"]).ravel()
-        if len(indices) != len(values) or np.any(indices < 0) or np.any(indices >= length):
-            raise ValueError("points: scores or indices do not align with the split range")
+        if (
+            len(indices) != len(values)
+            or np.any(indices < 0)
+            or np.any(indices >= length)
+        ):
+            raise ValueError(
+                "points: scores or indices do not align with the split range"
+            )
         if policy == "mean":
             np.add.at(totals, indices, values)
         else:
@@ -193,5 +244,7 @@ def aggregate_points(batches: Iterator[dict], *, length: int, settings: dict) ->
         np.add.at(counts, indices, 1)
     coverage = counts > 0
     points = np.full(length, np.nan)
-    points[coverage] = totals[coverage] / counts[coverage] if policy == "mean" else totals[coverage]
+    points[coverage] = (
+        totals[coverage] / counts[coverage] if policy == "mean" else totals[coverage]
+    )
     return {"scores": points, "coverage": coverage}

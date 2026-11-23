@@ -32,16 +32,22 @@ def test_definition_editing_and_defaults(experiments):
         module.create_experiment("example", project_root=project)
     for field, values in (("datasets", ["smd"]), ("methods", ["mustard", "kmeans_ad"])):
         module.edit_experiment(path, "add", field, values, project_root=project)
-    module.edit_experiment(path, "set", "random_seeds", ["7", "2", "9"], project_root=project)
+    module.edit_experiment(
+        path, "set", "random_seeds", ["7", "2", "9"], project_root=project
+    )
     with pytest.raises(ValueError):
-        module.edit_experiment(path, "set", "output_dir", ["extra"], project_root=project)
+        module.edit_experiment(
+            path, "set", "output_dir", ["extra"], project_root=project
+        )
     definition = load_yaml(path)
     assert definition["random_seeds"] == [7, 2, 9]
     assert definition["methods"] == ["mustard", "kmeans_ad"]
     plan = module.plan_experiment(path, project_root=project, smoke=True)
     assert [(run["method_name"], run["phase"], run["seed"]) for run in plan] == [
-        ("mustard", "offline", 7), ("kmeans_ad", "offline", 7),
-        ("mustard", "online", 7), ("kmeans_ad", "online", 7),
+        ("mustard", "offline", 7),
+        ("kmeans_ad", "offline", 7),
+        ("mustard", "online", 7),
+        ("kmeans_ad", "online", 7),
     ]
     assert all(run["profile_paths"]["data"] == "data_profiles/smd.yaml" for run in plan)
     assert all(run["entity"] == "machine-1-1" for run in plan)
@@ -76,7 +82,11 @@ def test_shared_profile_updates_two_new_plans(experiments):
     module, project = experiments
     first = project / "configs/experiments/smd_comparison.yaml"
     second = first.with_stem("second")
-    second.write_text(first.read_text().replace("experiment_id: smd_comparison", "experiment_id: second"))
+    second.write_text(
+        first.read_text().replace(
+            "experiment_id: smd_comparison", "experiment_id: second"
+        )
+    )
     profile = project / "configs/data_profiles/smd.yaml"
     before = Path(load_yaml(profile)["prepared_root"])
     version = project / "data/preprocessed/smd/selected"
@@ -105,7 +115,11 @@ def test_smoke_adds_pinned_offline_dependency_for_selected_variant(experiments):
     definition["random_seeds"] = [2, 4]
     path.write_text(yaml.safe_dump(definition))
     plan = module.plan_experiment(path, project_root=project, smoke=True)
-    assert [(cell["variant"], cell["seed"]) for cell in plan] == [("O0", 2), ("O1", 2), ("A0", 2)]
+    assert [(cell["variant"], cell["seed"]) for cell in plan] == [
+        ("O0", 2),
+        ("O1", 2),
+        ("A0", 2),
+    ]
     assert [cell["execution_mode"] for cell in plan] == ["smoke"] * 3
     assert all(cell["limits"]["max_validation_windows"] == 64 for cell in plan)
 
@@ -149,7 +163,12 @@ def test_experiment_keeps_failures_and_runs_independent_cells(experiments, monke
     monkeypatch.setattr(module, "run_online", run)
     results = module.run_experiment(path, project_root=project, smoke=True)
     assert events == [("offline", 6), ("offline", 9), ("online", 6), ("online", 9)]
-    assert [result["status"] for result in results] == ["failed", "successful", "blocked", "successful"]
+    assert [result["status"] for result in results] == [
+        "failed",
+        "successful",
+        "blocked",
+        "successful",
+    ]
 
 
 def test_resume_uses_saved_configs_and_skips_successful_runs(experiments, monkeypatch):
@@ -163,10 +182,21 @@ def test_resume_uses_saved_configs_and_skips_successful_runs(experiments, monkey
 
     def run(config, *, resume=None):
         assert config["data"]["prepared_root"] == offline["data"]["prepared_root"]
-        events.append((config["phase"], config["seed"], config["run_id"], resume is not None))
+        events.append(
+            (config["phase"], config["seed"], config["run_id"], resume is not None)
+        )
         write_run_status(config, "running")
         if config["seed"] == 6 and config["phase"] == "offline" and resume is None:
-            save_resume(config, {"config": config, "cursor": 1, "method_state": {}, "scoring_state": {}, "rng_state": {}})
+            save_resume(
+                config,
+                {
+                    "config": config,
+                    "cursor": 1,
+                    "method_state": {},
+                    "scoring_state": {},
+                    "rng_state": {},
+                },
+            )
             write_run_status(config, "interrupted")
             raise KeyboardInterrupt
         write_run_status(config, "successful")

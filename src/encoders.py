@@ -12,15 +12,26 @@ class _WindowEncoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.ndim != 3 or tuple(x.shape[1:]) != self.shape:
-            raise ValueError(f"encoder expects shape [batch, {self.shape[0]}, {self.shape[1]}]")
+            raise ValueError(
+                f"encoder expects shape [batch, {self.shape[0]}, {self.shape[1]}]"
+            )
         return self.network(x.transpose(1, 2)).transpose(1, 2)
 
 
-def create_encoder(settings: dict, *, input_features: int, window_size: int) -> nn.Module:
+def create_encoder(
+    settings: dict, *, input_features: int, window_size: int
+) -> nn.Module:
     """Create an independent encoder with one feature vector per time point."""
     hidden, output = settings["hidden_channels"], settings["output_dim"]
-    kernel, depth, dropout = settings["kernel_size"], settings["num_layers"], settings["dropout"]
-    if any(type(count) is not int or count < 1 for count in (hidden, output, kernel, input_features, window_size)):
+    kernel, depth, dropout = (
+        settings["kernel_size"],
+        settings["num_layers"],
+        settings["dropout"],
+    )
+    if any(
+        type(count) is not int or count < 1
+        for count in (hidden, output, kernel, input_features, window_size)
+    ):
         raise ValueError("encoder dimensions must be positive integers")
     if type(depth) is not int or depth < 2 or not 0 <= dropout < 1:
         raise ValueError("encoder needs at least two layers and dropout in [0, 1)")
@@ -29,7 +40,9 @@ def create_encoder(settings: dict, *, input_features: int, window_size: int) -> 
     padding = (left, kernel - 1 - left)
     layers = []
     convolutions = []
-    for index, (in_channels, out_channels) in enumerate(zip(dimensions[:-1], dimensions[1:], strict=True)):
+    for index, (in_channels, out_channels) in enumerate(
+        zip(dimensions[:-1], dimensions[1:], strict=True)
+    ):
         convolution = nn.Conv1d(in_channels, out_channels, kernel)
         layers.extend((nn.ConstantPad1d(padding, 0.0), convolution, nn.ReLU()))
         convolutions.append(convolution)

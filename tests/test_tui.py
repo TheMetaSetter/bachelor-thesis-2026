@@ -8,22 +8,44 @@ import pytest
 @pytest.mark.parametrize(
     ("command", "experiment", "expected"),
     [
-        *[(f"/list {kind}", None, ("list", kind))
-          for kind in ("experiments", "datasets", "methods", "standalones")],
+        *[
+            (f"/list {kind}", None, ("list", kind))
+            for kind in ("experiments", "datasets", "methods", "standalones")
+        ],
         ("/new trial", None, ("new", "experiment", "--name", "trial")),
-        *[(f"/{operation}", "demo", ("experiment", "--name", "demo", *operation.split()))
-          for operation in (
-              "show", "datasets add smd swat", "datasets remove swat",
-              "methods add mustard candi m2n2", "methods remove candi",
-              "set random_seeds 1 2", "set wandb_logging true", "set kaggle_backup false",
-          )],
-        *[(f"/{verb}", "demo", (verb, "experiment", "--name", "demo"))
-          for verb in ("validate", "run", "resume", "report")],
+        *[
+            (
+                f"/{operation}",
+                "demo",
+                ("experiment", "--name", "demo", *operation.split()),
+            )
+            for operation in (
+                "show",
+                "datasets add smd swat",
+                "datasets remove swat",
+                "methods add mustard candi m2n2",
+                "methods remove candi",
+                "set random_seeds 1 2",
+                "set wandb_logging true",
+                "set kaggle_backup false",
+            )
+        ],
+        *[
+            (f"/{verb}", "demo", (verb, "experiment", "--name", "demo"))
+            for verb in ("validate", "run", "resume", "report")
+        ],
         ("/run --smoke", "demo", ("run", "experiment", "--name", "demo", "--smoke")),
-        ("/report --smoke", "demo", ("report", "experiment", "--name", "demo", "--smoke")),
+        (
+            "/report --smoke",
+            "demo",
+            ("report", "experiment", "--name", "demo", "--smoke"),
+        ),
         ("/run standalone trial", None, ("run", "standalone", "--name", "trial")),
-        ('/preprocess --dataset smd --input-root "raw data"', None,
-         ("preprocess", "--dataset", "smd", "--input-root", "raw data")),
+        (
+            '/preprocess --dataset smd --input-root "raw data"',
+            None,
+            ("preprocess", "--dataset", "smd", "--input-root", "raw data"),
+        ),
         ("/completion zsh", None, ("completion", "zsh")),
         ("/_complete methods mus", None, ("_complete", "methods", "mus")),
     ],
@@ -49,8 +71,14 @@ def test_build_cli_process_arguments(tmp_path):
 
     root = tmp_path / "project with spaces"
     assert build_cli_process_arguments(("list", "datasets"), project_root=root) == (
-        sys.executable, "-u", "-m", "thesis_tsad.cli", "--project-root",
-        str(root), "list", "datasets",
+        sys.executable,
+        "-u",
+        "-m",
+        "thesis_tsad.cli",
+        "--project-root",
+        str(root),
+        "list",
+        "datasets",
     )
 
 
@@ -67,9 +95,16 @@ def child_program(monkeypatch, program):
 
     from src import tui
 
-    monkeypatch.setattr(tui, "build_cli_process_arguments", lambda *_args, **_kwargs: (
-        sys.executable, "-u", "-c", program,
-    ))
+    monkeypatch.setattr(
+        tui,
+        "build_cli_process_arguments",
+        lambda *_args, **_kwargs: (
+            sys.executable,
+            "-u",
+            "-c",
+            program,
+        ),
+    )
 
 
 def test_command_screen_streams_output(tmp_path, monkeypatch):
@@ -80,14 +115,17 @@ def test_command_screen_streams_output(tmp_path, monkeypatch):
 
     from src.tui import CommandScreen
 
-    child_program(monkeypatch, """
+    child_program(
+        monkeypatch,
+        """
 import pathlib, sys, time
 print("standard output")
 print("standard error", file=sys.stderr)
 while not pathlib.Path("complete").is_file():
     time.sleep(0.01)
 sys.exit(2)
-""")
+""",
+    )
 
     async def check():
         app, results = App(), []
@@ -95,7 +133,9 @@ sys.exit(2)
         async with app.run_test() as pilot:
             await app.push_screen(screen, results.append)
             try:
-                await wait_until(lambda: "standard error" in screen.query_one(Log).lines)
+                await wait_until(
+                    lambda: "standard error" in screen.query_one(Log).lines
+                )
                 assert "standard output" in screen.query_one(Log).lines
                 assert screen.query_one(Button).disabled
                 await pilot.press("esc")
@@ -117,12 +157,15 @@ def test_command_screen_interrupt(tmp_path, monkeypatch):
 
     from src.tui import CommandScreen
 
-    child_program(monkeypatch, """
+    child_program(
+        monkeypatch,
+        """
 import signal, sys
 signal.signal(signal.SIGINT, lambda *_: sys.exit(130))
 print("ready")
 signal.pause()
-""")
+""",
+    )
 
     async def check():
         app, results = App(), []
@@ -164,12 +207,18 @@ def test_command_screen_recovers_from_start_failure(tmp_path, monkeypatch, picke
     async def check():
         app, results = App(), []
         monkeypatch.setattr(app, "suspend", suspend)
-        arguments = ("experiment", "--name", "demo", "datasets", "add", "smd") if picker else ("list", "datasets")
+        arguments = (
+            ("experiment", "--name", "demo", "datasets", "add", "smd")
+            if picker
+            else ("list", "datasets")
+        )
         screen = tui.CommandScreen(arguments, project_root=tmp_path)
         async with app.run_test() as pilot:
             await app.push_screen(screen, results.append)
             await wait_until(lambda: not screen.query_one(Button).disabled)
-            assert any("Could not start" in line for line in screen.query_one(Log).lines)
+            assert any(
+                "Could not start" in line for line in screen.query_one(Log).lines
+            )
             await pilot.click("#back")
             assert results == [1]
 
@@ -259,8 +308,21 @@ def test_slash_help_and_quit(tmp_path):
             await submit(pilot, "/help")
             help_text = "\n".join(app.query_one(Log).lines)
             for command in (
-                "/experiment", "/list", "/new", "/show", "/datasets", "/methods", "/set",
-                "/validate", "/run", "/resume", "/report", "/preprocess", "/completion", "/help", "/quit",
+                "/experiment",
+                "/list",
+                "/new",
+                "/show",
+                "/datasets",
+                "/methods",
+                "/set",
+                "/validate",
+                "/run",
+                "/resume",
+                "/report",
+                "/preprocess",
+                "/completion",
+                "/help",
+                "/quit",
             ):
                 assert command in help_text
             assert "/report [--smoke]" in help_text
@@ -271,10 +333,17 @@ def test_slash_help_and_quit(tmp_path):
     asyncio.run(check())
 
 
-@pytest.mark.parametrize("command", [
-    "/run --name second", "/resume --na=second", "/validate --n second",
-    "/report --nam second", "/new first --name second", "/run standalone first --name second",
-])
+@pytest.mark.parametrize(
+    "command",
+    [
+        "/run --name second",
+        "/resume --na=second",
+        "/validate --n second",
+        "/report --nam second",
+        "/new first --name second",
+        "/run standalone first --name second",
+    ],
+)
 def test_slash_commands_reject_name_override(command):
     from src.tui import resolve_cli_arguments
 
@@ -297,7 +366,9 @@ def test_terminal_prompt_keeps_child_status(tmp_path, monkeypatch, prompt_error)
         raise prompt_error
 
     monkeypatch.setattr("builtins.input", dismiss_prompt)
-    monkeypatch.setattr(tui.subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(returncode=2))
+    monkeypatch.setattr(
+        tui.subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(returncode=2)
+    )
 
     async def check():
         app, results = App(), []

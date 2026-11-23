@@ -35,22 +35,32 @@ def inject_spike_family(
         * spike_strength
     )
     updated_segment = segment.clone()
-    updated_segment[spike_positions] = (
-        updated_segment[spike_positions] + spike_noise
-    )
+    updated_segment[spike_positions] = updated_segment[spike_positions] + spike_noise
     updated_segment = injector._boost_visibility(segment, updated_segment)
-    local_mask = torch.zeros(
-        segment_length, dtype=torch.long, device=segment.device
-    )
+    local_mask = torch.zeros(segment_length, dtype=torch.long, device=segment.device)
     local_mask[spike_positions] = 1
     return _finish_spike(
-        injector, clean_channel_window, start_index, end_index, updated_segment,
-        local_mask, spike_positions, spike_strength,
+        injector,
+        clean_channel_window,
+        start_index,
+        end_index,
+        updated_segment,
+        local_mask,
+        spike_positions,
+        spike_strength,
     )
 
 
-def _finish_spike(injector, clean_channel_window, start_index, end_index, updated_segment,
-                  local_mask, spike_positions, spike_strength):
+def _finish_spike(
+    injector,
+    clean_channel_window,
+    start_index,
+    end_index,
+    updated_segment,
+    local_mask,
+    spike_positions,
+    spike_strength,
+):
     anomalous_channel_window, channel_mask = injector._apply_segment_update(
         clean_channel_window=clean_channel_window,
         start_index=start_index,
@@ -60,9 +70,7 @@ def _finish_spike(injector, clean_channel_window, start_index, end_index, update
     )
     family_parameters = injector._attach_change_metadata(
         {
-            "spike_positions": [
-                int(position.item()) for position in spike_positions
-            ],
+            "spike_positions": [int(position.item()) for position in spike_positions],
             "spike_strength": float(spike_strength.detach().cpu()),
         },
         channel_mask,
@@ -81,9 +89,7 @@ def inject_flip_family(
     )
     updated_segment = torch.flip(segment, dims=(0,))
     updated_segment = injector._boost_visibility(segment, updated_segment)
-    local_mask = torch.ones(
-        segment.shape[0], dtype=torch.long, device=segment.device
-    )
+    local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
     anomalous_channel_window, channel_mask = injector._apply_segment_update(
         clean_channel_window,
         start_index,
@@ -126,9 +132,7 @@ def inject_speedup_family(
     source_positions = source_positions.clamp(max=segment.shape[0] - 1)
     updated_segment = injector._interpolate_1d(segment, source_positions)
     updated_segment = injector._boost_visibility(segment, updated_segment)
-    local_mask = torch.ones(
-        segment.shape[0], dtype=torch.long, device=segment.device
-    )
+    local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
     anomalous_channel_window, channel_mask = injector._apply_segment_update(
         clean_channel_window,
         start_index,
@@ -159,9 +163,7 @@ def inject_noise_family(
         * noise_std
     )
     updated_segment = injector._boost_visibility(segment, updated_segment)
-    local_mask = torch.ones(
-        segment.shape[0], dtype=torch.long, device=segment.device
-    )
+    local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
     anomalous_channel_window, channel_mask = injector._apply_segment_update(
         clean_channel_window,
         start_index,
@@ -195,9 +197,7 @@ def inject_cutoff_family(
     else:
         updated_segment = torch.full_like(segment, float(segment[0].detach().cpu()))
     updated_segment = injector._boost_visibility(segment, updated_segment)
-    local_mask = torch.ones(
-        segment.shape[0], dtype=torch.long, device=segment.device
-    )
+    local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
     anomalous_channel_window, channel_mask = injector._apply_segment_update(
         clean_channel_window,
         start_index,
@@ -224,9 +224,7 @@ def inject_average_family(
     segment_mean = float(segment.mean().detach().cpu())
     updated_segment = torch.full_like(segment, segment_mean)
     updated_segment = injector._boost_visibility(segment, updated_segment)
-    local_mask = torch.ones(
-        segment.shape[0], dtype=torch.long, device=segment.device
-    )
+    local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
     anomalous_channel_window, channel_mask = injector._apply_segment_update(
         clean_channel_window,
         start_index,
@@ -264,9 +262,7 @@ def inject_scale_family(
     )
     updated_segment = center + (segment - center) * scale_factor
     updated_segment = injector._boost_visibility(segment, updated_segment)
-    local_mask = torch.ones(
-        segment.shape[0], dtype=torch.long, device=segment.device
-    )
+    local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
     anomalous_channel_window, channel_mask = injector._apply_segment_update(
         clean_channel_window,
         start_index,
@@ -299,9 +295,7 @@ def inject_wander_family(
     drift_curve = drift_curve - drift_curve[0]
     updated_segment = segment + drift_curve
     updated_segment = injector._boost_visibility(segment, updated_segment)
-    local_mask = torch.ones(
-        segment.shape[0], dtype=torch.long, device=segment.device
-    )
+    local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
     anomalous_channel_window, channel_mask = injector._apply_segment_update(
         clean_channel_window,
         start_index,
@@ -338,9 +332,7 @@ def inject_contextual_family(
     contextual_offset = contextual_offset + injector._segment_scale(segment) * 0.5
     updated_segment = segment + contextual_offset
     updated_segment = injector._boost_visibility(segment, updated_segment)
-    local_mask = torch.ones(
-        segment.shape[0], dtype=torch.long, device=segment.device
-    )
+    local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
     anomalous_channel_window, channel_mask = injector._apply_segment_update(
         clean_channel_window,
         start_index,
@@ -367,9 +359,7 @@ def inject_upsidedown_family(
     inversion_center = segment.mean()
     updated_segment = 2.0 * inversion_center - segment
     updated_segment = injector._boost_visibility(segment, updated_segment)
-    local_mask = torch.ones(
-        segment.shape[0], dtype=torch.long, device=segment.device
-    )
+    local_mask = torch.ones(segment.shape[0], dtype=torch.long, device=segment.device)
     anomalous_channel_window, channel_mask = injector._apply_segment_update(
         clean_channel_window,
         start_index,
@@ -390,7 +380,9 @@ def inject_mixture_family(
     start_index: int,
     end_index: int,
 ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
-    primitive_component_names = [name for name in injector.family_registry if name != "mixture"]
+    primitive_component_names = [
+        name for name in injector.family_registry if name != "mixture"
+    ]
     max_component_count = min(3, len(primitive_component_names))
     component_count = int(
         injector._randint(
@@ -401,7 +393,9 @@ def inject_mixture_family(
         len(primitive_component_names),
         device=clean_channel_window.device,
     )[:component_count]
-    selected_components = [primitive_component_names[int(index.item())] for index in component_indices]
+    selected_components = [
+        primitive_component_names[int(index.item())] for index in component_indices
+    ]
 
     working_channel_window = clean_channel_window.clone()
     combined_mask = torch.zeros(
@@ -414,7 +408,8 @@ def inject_mixture_family(
     for component_name in selected_components:
         component_window, component_mask, component_parameters = (
             injector.family_registry[component_name](
-                injector, working_channel_window,
+                injector,
+                working_channel_window,
                 start_index,
                 end_index,
             )

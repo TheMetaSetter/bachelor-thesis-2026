@@ -19,7 +19,9 @@ def prepared_version(root, name, dataset="smd"):
     files = {}
     splits = {}
     for split in ("train", "validation", "test"):
-        table = pa.table({"value": [1.0], "label": [0], "source_row": [0], "source_file": ["source"]})
+        table = pa.table(
+            {"value": [1.0], "label": [0], "source_row": [0], "source_file": ["source"]}
+        )
         output = entity / f"{split}.parquet"
         pq.write_table(table, output)
         files[str(output.relative_to(path))] = sha256(output.read_bytes()).hexdigest()
@@ -27,10 +29,17 @@ def prepared_version(root, name, dataset="smd"):
     scaler = entity / "scaler.json"
     scaler.write_text('{"features": ["value"]}')
     files["machine/scaler.json"] = sha256(scaler.read_bytes()).hexdigest()
-    (path / "manifest.json").write_text(json.dumps({
-        "status": "complete", "version_id": name, "identity": {"profile": {"dataset": dataset}},
-        "entities": {"machine": {"features": ["value"], "splits": splits}}, "files": files,
-    }))
+    (path / "manifest.json").write_text(
+        json.dumps(
+            {
+                "status": "complete",
+                "version_id": name,
+                "identity": {"profile": {"dataset": dataset}},
+                "entities": {"machine": {"features": ["value"], "splits": splits}},
+                "files": files,
+            }
+        )
+    )
     return path
 
 
@@ -54,9 +63,25 @@ def test_lists_edits_and_completes_names(cli, capsys):
     assert module.main(command + ["list", "datasets"]) == 0
     assert capsys.readouterr().out.strip() == "smd"
     assert module.main(command + ["new", "experiment", "--name", "example"]) == 0
-    assert module.main(command + ["experiment", "--name", "example", "methods", "add", "mustard"]) == 0
-    assert module.main(command + ["experiment", "--name", "example", "datasets", "add", "smd"]) == 0
-    assert module.main(command + ["experiment", "--name", "example", "set", "random_seeds", "1", "2", "3"]) == 0
+    assert (
+        module.main(
+            command + ["experiment", "--name", "example", "methods", "add", "mustard"]
+        )
+        == 0
+    )
+    assert (
+        module.main(
+            command + ["experiment", "--name", "example", "datasets", "add", "smd"]
+        )
+        == 0
+    )
+    assert (
+        module.main(
+            command
+            + ["experiment", "--name", "example", "set", "random_seeds", "1", "2", "3"]
+        )
+        == 0
+    )
     assert module.complete_names("experiments", "exa", project_root=root) == ["example"]
     assert module.complete_names("methods", "mus", project_root=root) == ["mustard"]
     assert module.main(command + ["completion", "zsh"]) == 0
@@ -81,28 +106,57 @@ def test_show_validate_run_resume_and_report(cli, monkeypatch, capsys):
 
     monkeypatch.setattr(module, "plan_experiment", plan)
     monkeypatch.setattr(module, "run_experiment", execute)
-    monkeypatch.setattr(module, "resume_experiment", lambda *_, **__: [{"status": "successful"}])
-    monkeypatch.setattr(module, "report_experiment", lambda *_, **__: [root / "report.csv"])
+    monkeypatch.setattr(
+        module, "resume_experiment", lambda *_, **__: [{"status": "successful"}]
+    )
+    monkeypatch.setattr(
+        module, "report_experiment", lambda *_, **__: [root / "report.csv"]
+    )
     for verb in ("show", "validate", "run", "resume", "report"):
-        command = ["experiment", "--name", "example", verb] if verb == "show" else [verb, "experiment", "--name", "example"]
+        command = (
+            ["experiment", "--name", "example", verb]
+            if verb == "show"
+            else [verb, "experiment", "--name", "example"]
+        )
         assert module.main(base + command) == 0
-    assert module.main(base + ["run", "experiment", "--name", "example", "--smoke"]) != 0
+    assert (
+        module.main(base + ["run", "experiment", "--name", "example", "--smoke"]) != 0
+    )
     assert calls == ["plan", "plan", ("run", False), ("run", True)]
     assert "report.csv" in capsys.readouterr().out
 
 
 def test_cli_returns_an_error_for_missing_scope(cli, capsys):
     module, root = cli
-    assert module.main(["--project-root", str(root), "validate", "experiment", "--name", "absent"]) != 0
+    assert (
+        module.main(
+            ["--project-root", str(root), "validate", "experiment", "--name", "absent"]
+        )
+        != 0
+    )
     assert "absent" in capsys.readouterr().err
 
 
 def test_preprocessing_forwards_all_arguments(cli, monkeypatch):
     module, root = cli
-    arguments = ["--dataset", "smd", "--profile", "example.yaml", "--input-root", "input",
-                 "--output-root", "output", "--entities", "first", "second", "--show-profile"]
+    arguments = [
+        "--dataset",
+        "smd",
+        "--profile",
+        "example.yaml",
+        "--input-root",
+        "input",
+        "--output-root",
+        "output",
+        "--entities",
+        "first",
+        "second",
+        "--show-profile",
+    ]
     passed = []
-    monkeypatch.setattr(module, "_preprocess_main", lambda args: passed.append(args) or 0)
+    monkeypatch.setattr(
+        module, "_preprocess_main", lambda args: passed.append(args) or 0
+    )
     assert module.main(["--project-root", str(root), "preprocess", *arguments]) == 0
     assert passed == [arguments]
 
@@ -111,8 +165,13 @@ def test_installed_entrypoint_from_another_directory(cli):
     _, root = cli
     checkout = Path(__file__).resolve().parents[1]
     command = checkout / ".venv/bin/tsad"
-    result = run([command, "--project-root", root, "list", "datasets"], cwd=root.parent,
-                 capture_output=True, text=True, check=True)
+    result = run(
+        [command, "--project-root", root, "list", "datasets"],
+        cwd=root.parent,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
     assert result.stdout.strip() == "smd"
 
 
@@ -122,20 +181,26 @@ def _add_datasets(cli, *names):
     path = root / "configs/experiments/example.yaml"
     if not path.exists():
         assert module.main(base + ["new", "experiment", "--name", "example"]) == 0
-    return module.main(base + ["experiment", "--name", "example", "datasets", "add", *names])
+    return module.main(
+        base + ["experiment", "--name", "example", "datasets", "add", *names]
+    )
 
 
 def test_save_updates_shared_profile_and_repeated_add_is_safe(cli, monkeypatch):
     module, root = cli
     second = prepared_version(root, "second")
-    monkeypatch.setattr(module, "_choose_versions", lambda choices: {"smd": second}, raising=False)
+    monkeypatch.setattr(
+        module, "_choose_versions", lambda choices: {"smd": second}, raising=False
+    )
     profile = root / "configs/data_profiles/smd.yaml"
     profile.chmod(0o664)
     assert _add_datasets(cli, "smd", "smd") == 0
     assert profile.stat().st_mode & 0o777 == 0o664
     definition = root / "configs/experiments/example.yaml"
     assert yaml.safe_load(profile.read_text()) == {
-        "dataset": "smd", "prepared_root": str(second.relative_to(root)), "window_size": 20,
+        "dataset": "smd",
+        "prepared_root": str(second.relative_to(root)),
+        "window_size": 20,
     }
     assert yaml.safe_load(definition.read_text())["datasets"] == ["smd"]
     before = (profile.stat().st_mtime_ns, definition.stat().st_mtime_ns)
@@ -150,14 +215,21 @@ def test_add_without_save_keeps_files(cli, monkeypatch, case):
     version = root / "data/preprocessed/smd/first"
     before = profile.read_bytes()
     if case == "cancel":
-        monkeypatch.setattr(module, "_choose_versions", lambda choices: None, raising=False)
+        monkeypatch.setattr(
+            module, "_choose_versions", lambda choices: None, raising=False
+        )
     elif case == "missing":
         (version / "manifest.json").unlink()
     else:
         (version / "machine/test.parquet").write_bytes(b"corrupt")
     assert _add_datasets(cli, "smd") == (0 if case == "cancel" else 1)
     assert profile.read_bytes() == before
-    assert yaml.safe_load((root / "configs/experiments/example.yaml").read_text())["datasets"] == []
+    assert (
+        yaml.safe_load((root / "configs/experiments/example.yaml").read_text())[
+            "datasets"
+        ]
+        == []
+    )
 
 
 def test_save_restores_profile_if_experiment_write_fails(cli, monkeypatch):
@@ -165,7 +237,9 @@ def test_save_restores_profile_if_experiment_write_fails(cli, monkeypatch):
 
     module, root = cli
     second = prepared_version(root, "second")
-    monkeypatch.setattr(module, "_choose_versions", lambda choices: {"smd": second}, raising=False)
+    monkeypatch.setattr(
+        module, "_choose_versions", lambda choices: {"smd": second}, raising=False
+    )
     write = dataset_selection._write_atomic
 
     def fail_on_experiment(path, writer):
@@ -180,7 +254,12 @@ def test_save_restores_profile_if_experiment_write_fails(cli, monkeypatch):
     assert _add_datasets(cli, "smd") != 0
     assert profile.read_bytes() == before
     assert profile.stat().st_mode & 0o777 == 0o664
-    assert yaml.safe_load((root / "configs/experiments/example.yaml").read_text())["datasets"] == []
+    assert (
+        yaml.safe_load((root / "configs/experiments/example.yaml").read_text())[
+            "datasets"
+        ]
+        == []
+    )
 
 
 def test_bare_cli_launches_only_with_terminal(cli, monkeypatch):
@@ -190,7 +269,9 @@ def test_bare_cli_launches_only_with_terminal(cli, monkeypatch):
     calls = []
     monkeypatch.chdir(root)
     monkeypatch.setattr(module.sys, "argv", ["tsad"])
-    monkeypatch.setattr(tui, "launch_tui", lambda directory: calls.append(directory) or 7)
+    monkeypatch.setattr(
+        tui, "launch_tui", lambda directory: calls.append(directory) or 7
+    )
     for input_terminal, output_terminal in ((True, False), (False, True), (True, True)):
         monkeypatch.setattr(module.sys.stdin, "isatty", lambda: input_terminal)
         monkeypatch.setattr(module.sys.stdout, "isatty", lambda: output_terminal)

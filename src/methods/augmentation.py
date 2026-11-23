@@ -8,8 +8,17 @@ from . import anomaly_families
 
 
 _FAMILIES = (
-    "spike", "flip", "speedup", "noise", "cutoff", "average",
-    "scale", "wander", "contextual", "upsidedown", "mixture",
+    "spike",
+    "flip",
+    "speedup",
+    "noise",
+    "cutoff",
+    "average",
+    "scale",
+    "wander",
+    "contextual",
+    "upsidedown",
+    "mixture",
 )
 _CLASS_NAMES = ("normal", *_FAMILIES)
 
@@ -29,7 +38,8 @@ class _AnomalyInjector:
         self._rng = generator
         self._class_rotation_offset = settings.get("class_rotation_offset", 0)
         self.family_registry = {
-            name: getattr(anomaly_families, f"inject_{name}_family") for name in _FAMILIES
+            name: getattr(anomaly_families, f"inject_{name}_family")
+            for name in _FAMILIES
         }
         if self.family_intensity.keys() - self.family_registry.keys():
             raise ValueError("unknown anomaly family in family_intensity")
@@ -38,7 +48,9 @@ class _AnomalyInjector:
         return self.family_intensity.get(family_name, {})
 
     def _rand(self, *shape: int, device: torch.device) -> torch.Tensor:
-        return torch.rand(shape, generator=self._rng, dtype=torch.float32).to(device=device)
+        return torch.rand(shape, generator=self._rng, dtype=torch.float32).to(
+            device=device
+        )
 
     def _randn(
         self, *shape: int, device: torch.device, dtype: torch.dtype
@@ -195,7 +207,8 @@ class _AnomalyInjector:
             channel_window = augmented_window[:, channel_index : channel_index + 1]
             anomalous_channel_window, channel_mask, family_parameters = (
                 self.family_registry[anomaly_family](
-                    self, channel_window,
+                    self,
+                    channel_window,
                     start_index,
                     end_index,
                 )
@@ -275,7 +288,9 @@ class _AnomalyInjector:
             if label == 0:
                 metadata.append(self._build_clean_metadata())
                 continue
-            output[index], masks[index], record = self._inject_window(x[index], _CLASS_NAMES[label])
+            output[index], masks[index], record = self._inject_window(
+                x[index], _CLASS_NAMES[label]
+            )
             metadata.append(record)
         return output, {
             "classification_labels": labels,
@@ -286,10 +301,14 @@ class _AnomalyInjector:
         }
 
 
-def augment(x: torch.Tensor, settings: dict, *, generator: torch.Generator) -> tuple[torch.Tensor, dict]:
+def augment(
+    x: torch.Tensor, settings: dict, *, generator: torch.Generator
+) -> tuple[torch.Tensor, dict]:
     """Return new observations and synthetic supervision for one batch."""
     if x.ndim != 3 or min(x.shape) < 1 or not x.is_floating_point():
-        raise ValueError("augmentation requires a nonempty floating-point [batch, time, feature] tensor")
+        raise ValueError(
+            "augmentation requires a nonempty floating-point [batch, time, feature] tensor"
+        )
     if generator.device.type != "cpu":
         raise ValueError("augmentation requires a CPU generator")
     return _AnomalyInjector(settings, generator).apply(x)

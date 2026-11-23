@@ -323,7 +323,8 @@ def compute_budgeted_vus_metrics(
     num_thresholds: int = 200,
 ) -> dict[str, dict[str, float]]:
     label_array, score_array = _validate_pointwise_array_shapes(
-        point_labels=point_labels, point_scores=point_scores,
+        point_labels=point_labels,
+        point_scores=point_scores,
     )
     if max_buffer_size < 0:
         raise ValueError("max_buffer_size must be non-negative")
@@ -336,8 +337,13 @@ def compute_budgeted_vus_metrics(
     pr_values_by_budget = {budget: [] for budget in FPR_BUDGETS}
     roc_values_by_budget = {budget: [] for budget in FPR_BUDGETS}
     for buffer_size in range(max_buffer_size + 1):
-        precision_values, recall_values, false_positive_rates, true_positive_rates = _threshold_rates(
-            label_array, score_array, thresholds, buffer_size,
+        precision_values, recall_values, false_positive_rates, true_positive_rates = (
+            _threshold_rates(
+                label_array,
+                score_array,
+                thresholds,
+                buffer_size,
+            )
         )
         for budget in FPR_BUDGETS:
             pr_values_by_budget[budget].append(
@@ -358,11 +364,15 @@ def compute_budgeted_vus_metrics(
 
     return {
         "vus_pr": {
-            str(budget): _aggregate_over_buffers(pr_values_by_budget[budget], max_buffer_size)
+            str(budget): _aggregate_over_buffers(
+                pr_values_by_budget[budget], max_buffer_size
+            )
             for budget in FPR_BUDGETS
         },
         "vus_roc": {
-            str(budget): _aggregate_over_buffers(roc_values_by_budget[budget], max_buffer_size)
+            str(budget): _aggregate_over_buffers(
+                roc_values_by_budget[budget], max_buffer_size
+            )
             for budget in FPR_BUDGETS
         },
     }
