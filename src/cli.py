@@ -4,6 +4,7 @@ import argparse
 from collections.abc import Sequence
 from importlib import import_module
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -230,10 +231,32 @@ def _execute(command, root):
     return 0
 
 
+def _load_dotenv(root: Path) -> None:
+    """Load missing environment variables from a root .env file."""
+    dotenv = root / ".env"
+    if not dotenv.is_file():
+        return
+    for raw in dotenv.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].strip()
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key, value = key.strip(), value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        if key:
+            os.environ.setdefault(key, value)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     if argv is None and not sys.argv[1:] and sys.stdin.isatty() and sys.stdout.isatty():
         from .tui import launch_tui
 
+        _load_dotenv(Path.cwd())
         return launch_tui(Path.cwd())
     parser = _parser()
     command, rest = parser.parse_known_args(argv)
@@ -248,6 +271,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if not (root / "pyproject.toml").is_file() or not (root / "configs").is_dir():
             raise ValueError(f"thesis project not found: {root}")
+        _load_dotenv(root)
         return _execute(command, root)
     except KeyboardInterrupt:
         print(

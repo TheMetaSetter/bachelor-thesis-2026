@@ -331,3 +331,31 @@ def test_set_remote_flag(cli, field):
             == 0
         )
         assert yaml.safe_load(path.read_text())[field] is expected
+
+
+def test_dotenv_loads_missing_values_and_keeps_shell_precedence(
+    cli, monkeypatch
+):
+    import os
+
+    module, root = cli
+    monkeypatch.delenv("TSAD_TEST_NEW_VAR", raising=False)
+    monkeypatch.delenv("TSAD_TEST_QUOTED", raising=False)
+    monkeypatch.setenv("TSAD_TEST_EXISTING", "from-shell")
+    (root / ".env").write_text(
+        "\n# comment line\n"
+        "TSAD_TEST_NEW_VAR=from-dotenv\n"
+        "export TSAD_TEST_QUOTED='quoted-value'\n"
+        "TSAD_TEST_EXISTING=overridden\n",
+        encoding="utf-8",
+    )
+    assert module.main(["--project-root", str(root), "list", "experiments"]) == 0
+    assert os.environ["TSAD_TEST_NEW_VAR"] == "from-dotenv"
+    assert os.environ["TSAD_TEST_QUOTED"] == "quoted-value"
+    assert os.environ["TSAD_TEST_EXISTING"] == "from-shell"
+
+
+def test_missing_dotenv_does_not_fail(cli):
+    module, root = cli
+    assert not (root / ".env").exists()
+    assert module.main(["--project-root", str(root), "list", "experiments"]) == 0
