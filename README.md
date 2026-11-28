@@ -23,6 +23,44 @@ Use `tsad run standalone --name smd_mustard` for the named standalone definition
 For shell completion, activate `.venv` and load the script from `tsad completion bash` or `tsad completion zsh`.
 Initialize Zsh completion with `compinit` first.
 
+### Show progress and set remote services
+
+The direct CLI shows one progress bar per run on terminal standard error.
+Offline runs show completed epochs, or fit and evaluation steps for methods without epochs.
+Online runs show processed windows and start at the saved window count after resume.
+The CLI shows no bar when standard error goes to a pipe or file.
+On a narrow terminal, the CLI writes a separate statistics line.
+
+Use these commands to enable Weights & Biases logging and Kaggle backup.
+Use `false` to disable each service.
+
+```sh
+.venv/bin/tsad experiment --name NAME set wandb_logging true
+.venv/bin/tsad experiment --name NAME set kaggle_backup true
+```
+
+Both services are off by default. Smoke runs force both services off.
+Resume uses the settings from the saved attempt.
+
+### Select a paired MUSTARD q95 profile
+
+Use the same evaluation profile for the offline and online runs.
+Select `mustard_raw_input_q95_ewma075.yaml` or `mustard_latent_q95_ewma075.yaml`
+for point EWMA smoothing. Select the corresponding `_q95_latest.yaml` profile to use
+the most recent score at each point.
+
+At each completed epoch, the CLI shows available training and validation losses.
+For paired MUSTARD runs, it also shows the score space, held-out raw false-positive rate
+(FPR), and metrics from synthetic validation windows. The monitor uses unsmoothed scores.
+It assumes all original validation points are normal and counts every covered held-out
+window-point occurrence. Synthetic metrics use the generated anomaly masks.
+
+After training, the selected checkpoint fits a 95th-percentile threshold on the full
+original validation series, subject to the run window limits. Both test phases use
+that threshold and the selected score reduction. Test metrics use the recorded test labels.
+The CLI shows available test metrics and uncertainty after evaluation.
+It shows `—` for an undefined value.
+
 ### Make reports from saved results
 
 ```sh

@@ -33,6 +33,7 @@ from .config import create_method
 from .evaluation_metrics import compute_metrics
 from .offline import _check_cached_results, _checked_checkpoint
 from .prepared_data import _segments, _window_schedule, iter_batches, load_entity
+from .progress import evaluation_stats
 from . import protocols
 from .scoring import calibrate, score_batch
 
@@ -338,7 +339,7 @@ def _defer_interrupt():
         signal.signal(signal.SIGINT, previous)
 
 
-def _consume(method, split, config, calibration, state, commit, should_stop):
+def _consume(method, split, config, calibration, state, commit, should_stop, publish):
     settings = config["evaluation"] | {"phase": "online"}
     scoring = {}
     state["uncertainty"] = defaultdict(list, state["uncertainty"])
@@ -369,6 +370,8 @@ def _consume(method, split, config, calibration, state, commit, should_stop):
         state["pending"] = list(scoring["pending"].values())
         if state["cursor"] % 8 == 0 or should_stop():
             commit()
+        if publish is not None:
+            publish(state["cursor"])
         if should_stop():
             raise KeyboardInterrupt
     commit()
@@ -461,7 +464,21 @@ def _start_online(config, resume, identity):
     return resume
 
 
-def _execute_online(config, snapshot, identity):
+def _stream_progress(progress, config, split):
+    if progress is None:
+        return None
+    settings = config["data"] | {"limits": config.get("limits", {})}
+    total = sum(1 for _ in _window_schedule(split, settings, "online", config["seed"]))
+
+    def publish(completed, stats=None):
+        progress(
+            stage="test", unit="window", completed=completed, total=total, stats=stats
+        )
+
+    return publish
+
+
+def _execute_online(config, snapshot, identity, progress):
     directory = result_directory(config, "state")
     entity = load_entity(config["data"]["prepared_root"], config["entity"])
     actual = entity["identity"] | {"features": entity["features"]}
@@ -517,10 +534,17 @@ def _execute_online(config, snapshot, identity):
 
     if not snapshot:
         commit()
+    publish = _stream_progress(progress, config, split)
+    if publish is not None:
+        publish(state["cursor"])
     with _defer_interrupt() as should_stop:
-        _consume(method, split, config, calibration, state, commit, should_stop)
+        _consume(
+            method, split, config, calibration, state, commit, should_stop, publish
+        )
     result = _online_result(config, split, calibration, parent, state)
     _check_cached_results({"test": result})
+    if publish is not None:
+        publish(state["cursor"], evaluation_stats(json.loads(result.read_text())))
     checkpoint = save_checkpoint(
         directory / f"online.final.{uuid4().hex}.pt",
         method.state_dict(),
@@ -539,7 +563,7 @@ def _execute_online(config, snapshot, identity):
     }
 
 
-def run_online(config: dict, *, resume: dict | None = None) -> dict:
+def run_online(config: dict, *, resume: dict | None = None, progress=None) -> dict:
     """Score an allocated stream and continue only from its committed state."""
     protocols.validate_run_input(config)
     if config["phase"] != "online":
@@ -548,7 +572,7 @@ def run_online(config: dict, *, resume: dict | None = None) -> dict:
     with run_lock(config):
         snapshot = _start_online(config, resume, identity)
         try:
-            result = _execute_online(config, snapshot, identity)
+            result = _execute_online(config, snapshot, identity, progress)
         except OfflineDependencyUnavailable as error:
             write_run_status(config, "blocked", details={"reason": str(error)})
             raise

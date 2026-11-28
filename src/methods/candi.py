@@ -1,22 +1,28 @@
-"""Fit CANDI reference state and adapt its signed residual modules."""
+"""CANDI model computation flow: shared-CNN backbone, validation references, and SANA updates."""
 
 from copy import deepcopy
 from math import cos, pi
 from pathlib import Path
-from uuid import uuid4
 
 import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-from ..artifacts import save_checkpoint
 from ..encoders import create_encoder
-from .candi_adapter import SANA
+from ..method_runtime import (
+    build_adam,
+    build_score_record,
+    eligible_validation_batches,
+    fit_neural_stages,
+    require_no_labels,
+    to_device_tensor,
+)
 from ..prepared_data import iter_batches
+from .candi_adapter import SANA
 
 
-def _decoder(width, length, channels):
+def _decoder(width: int, length: int, channels: int) -> nn.Sequential:
     size = length * channels
     if size < 4:
         raise ValueError("window decoder requires at least four cells")
@@ -29,8 +35,21 @@ def _decoder(width, length, channels):
     )
 
 
+def _learning_rate(epoch: int, stage: dict) -> float:
+    peak = stage["optimizer"]["learning_rate"]
+    schedule = stage["scheduler"]
+    if schedule is None:
+        return peak
+    warmup = schedule["warmup_epochs"]
+    if epoch < warmup:
+        return peak * (epoch + 1) / warmup
+    minimum = schedule["minimum_learning_rate"]
+    progress = (epoch - warmup) / (stage["epochs"] - warmup)
+    return minimum + (peak - minimum) * (1 + cos(pi * progress)) / 2
+
+
 class CANDI:
-    """Keep the backbone frozen during online updates."""
+    """Keep the backbone frozen during online SANA updates."""
 
     def __init__(self, config: dict, *, encoder=None):
         self.config = deepcopy(config)
@@ -57,7 +76,7 @@ class CANDI:
         if config["phase"] == "online":
             self._configure_online()
 
-    def _configure_online(self):
+    def _configure_online(self) -> None:
         options = self.settings["sana"]
         if options["layers"] != 1:
             raise ValueError("CANDI supports one reviewed SANA layer")
@@ -74,17 +93,17 @@ class CANDI:
             {"input_adapter": SANA(**args), "output_adapter": SANA(**args)}
         ).to(self.device)
         self.backbone.requires_grad_(False).eval()
-        options = self.config["method"]["update"]["optimizer"]
+        opt = self.config["method"]["update"]["optimizer"]
         self.optimizer = torch.optim.SGD(
             self.adapters.parameters(),
-            lr=options["learning_rate"],
-            momentum=options["momentum"],
-            dampening=options["dampening"],
-            weight_decay=options["weight_decay"],
-            nesterov=options["nesterov"],
+            lr=opt["learning_rate"],
+            momentum=opt["momentum"],
+            dampening=opt["dampening"],
+            weight_decay=opt["weight_decay"],
+            nesterov=opt["nesterov"],
         )
 
-    def _forward(self, x):
+    def _forward(self, x: torch.Tensor) -> torch.Tensor:
         adapted = (
             x + self.adapters["input_adapter"](x) if self.adapters is not None else x
         )
@@ -96,7 +115,9 @@ class CANDI:
             )
         return reconstructed
 
-    def _fit_references(self, scores, latents, quantile):
+    def _fit_references(
+        self, scores: np.ndarray, latents: np.ndarray, quantile: float
+    ) -> None:
         from scipy.stats import chi2
 
         if len(latents) < 2:
@@ -119,37 +140,28 @@ class CANDI:
             ),
         }
 
-    def _select(self, score, latent):
-        references = self.references
-        if references is None:
+    def _select(self, score: float, latent: np.ndarray) -> str | None:
+        if self.references is None:
             raise ValueError("CANDI requires saved validation references")
-        threshold = references["threshold"]
+        threshold = self.references["threshold"]
         if score == threshold:
             return None
         group = "hard" if score > threshold else "moderate"
-        if not len(references[group]):
+        if not len(self.references[group]):
             return None
-        delta = latent - references[group]
-        distances = np.einsum("ni,ij,nj->n", delta, references["inverse"], delta)
-        return group if np.any(distances < references["cutoff"]) else None
+        delta = latent - self.references[group]
+        distances = np.einsum("ni,ij,nj->n", delta, self.references["inverse"], delta)
+        return group if np.any(distances < self.references["cutoff"]) else None
 
     @torch.no_grad()
     def score(self, batch: dict) -> dict:
-        if "labels" in batch or "point_labels" in batch:
-            raise ValueError("CANDI scoring does not accept labels")
+        require_no_labels(batch, "CANDI")
         self.backbone.eval()
         if self.adapters is not None:
             self.adapters.eval()
-        x = torch.as_tensor(batch["x"], device=self.device, dtype=torch.float32)
+        x = to_device_tensor(batch["x"], self.device)
         raw = (self._forward(x) - x).square().mean(dim=-1)
-        result = {"score_kind": "window", "raw_scores": raw.cpu().numpy()}
-        result.update(
-            {
-                key: batch[key]
-                for key in ("indices", "segment_ids", "identity")
-                if key in batch
-            }
-        )
+        result = build_score_record(batch, raw.cpu().numpy(), score_kind="window")
         if self.adapters is not None:
             latent = F.normalize(
                 self.encoder(x).mean(1),
@@ -163,8 +175,7 @@ class CANDI:
         return result
 
     def update(self, batch: dict, context: dict) -> dict:
-        if "labels" in batch or "point_labels" in batch:
-            raise ValueError("CANDI adaptation does not accept labels")
+        require_no_labels(batch, "CANDI")
         if self.optimizer is None or "recorded_score" not in context:
             raise ValueError(
                 "CANDI adaptation requires an online optimizer and a recorded score"
@@ -174,28 +185,29 @@ class CANDI:
         )
         if group is None:
             return {"did_update": False, "loss": None, "group": None}
-        x = torch.as_tensor(batch["x"], device=self.device, dtype=torch.float32)
-        self.pending[group].append(x.detach().clone())
+        self.pending[group].append(
+            to_device_tensor(batch["x"], self.device).detach().clone()
+        )
         if len(self.pending[group]) < self.settings["minimum_samples"]:
             return {"did_update": False, "loss": None, "group": group}
         selected = torch.cat(self.pending[group])
         self.adapters.train()
-        config = self.config["method"]["update"]
-        for _ in range(config["steps"]):
+        cfg = self.config["method"]["update"]
+        for _ in range(cfg["steps"]):
             self.optimizer.zero_grad(set_to_none=True)
             loss = F.mse_loss(self._forward(selected), selected)
             loss.backward()
-            if config["gradient_clip_norm"] is not None:
+            if cfg["gradient_clip_norm"] is not None:
                 nn.utils.clip_grad_norm_(
                     self.adapters.parameters(),
-                    config["gradient_clip_norm"],
+                    cfg["gradient_clip_norm"],
                     error_if_nonfinite=True,
                 )
             self.optimizer.step()
         self.pending[group].clear()
         return {"did_update": True, "loss": float(loss.detach()), "group": group}
 
-    def state_dict(self):
+    def state_dict(self) -> dict:
         return deepcopy(
             {
                 "schema_version": 1,
@@ -203,23 +215,23 @@ class CANDI:
                 "backbone": self.backbone.state_dict(),
                 "references": self.references,
                 "pending": self.pending,
-                "adapters": self.adapters.state_dict()
-                if self.adapters is not None
-                else None,
-                "optimizer": self.optimizer.state_dict()
-                if self.optimizer is not None
-                else None,
+                "adapters": None
+                if self.adapters is None
+                else self.adapters.state_dict(),
+                "optimizer": None
+                if self.optimizer is None
+                else self.optimizer.state_dict(),
             }
         )
 
-    def load_state_dict(self, state):
+    def load_state_dict(self, state: dict) -> None:
         if state["schema_version"] != 1 or state["method"] != "candi":
             raise ValueError("CANDI checkpoint identity mismatch")
         self.backbone.load_state_dict(state["backbone"])
         self.references = deepcopy(state["references"])
         self.pending = {
-            key: [value.to(self.device).clone() for value in queue]
-            for key, queue in state["pending"].items()
+            k: [v.to(self.device).clone() for v in q]
+            for k, q in state["pending"].items()
         }
         if state["adapters"] is not None:
             if self.adapters is None:
@@ -229,15 +241,14 @@ class CANDI:
             self.adapters.load_state_dict(state["adapters"])
             self.optimizer.load_state_dict(state["optimizer"])
 
-    def _batches(self, split):
-        data = self.config["data"] | {"limits": self.config.get("limits", {})}
-        return iter_batches(split, data, phase="offline", seed=self.config["seed"])
-
-    def _epoch(self, split, optimizer=None):
+    def _epoch(self, split: dict, optimizer=None) -> float:
         self.backbone.train(optimizer is not None)
+        data = self.config["data"] | {"limits": self.config.get("limits", {})}
         total = count = 0
-        for batch in self._batches(split):
-            x = torch.as_tensor(batch["x"], device=self.device, dtype=torch.float32)
+        for batch in iter_batches(
+            split, data, phase="offline", seed=self.config["seed"]
+        ):
+            x = to_device_tensor(batch["x"], self.device)
             with torch.set_grad_enabled(optimizer is not None):
                 loss = F.mse_loss(self._forward(x), x)
                 if optimizer is not None:
@@ -247,7 +258,7 @@ class CANDI:
                         "gradient_clip_norm"
                     ]
                     if clip is not None:
-                        torch.nn.utils.clip_grad_norm_(
+                        nn.utils.clip_grad_norm_(
                             self.backbone.parameters(), clip, error_if_nonfinite=True
                         )
                     optimizer.step()
@@ -256,27 +267,20 @@ class CANDI:
         return total / count
 
     @torch.no_grad()
-    def _validation_references(self, validation):
+    def _validation_references(self, validation: dict) -> None:
         self.backbone.eval()
         scores, vectors = [], []
-        for batch in self._batches(validation):
-            labels = np.asarray(
-                batch.get("labels", np.full(batch["indices"].shape, np.nan))
+        for values in eligible_validation_batches(validation, self.config):
+            x = to_device_tensor(values, self.device)
+            scores.append(
+                (self._forward(x) - x).square().mean(dim=(1, 2)).cpu().numpy()
             )
-            eligible = ~(labels == 1).any(axis=1)
-            if eligible.any():
-                x = torch.as_tensor(
-                    batch["x"][eligible], device=self.device, dtype=torch.float32
-                )
-                scores.append(
-                    (self._forward(x) - x).square().mean(dim=(1, 2)).cpu().numpy()
-                )
-                hidden = F.normalize(
-                    self.encoder(x).mean(1),
-                    dim=-1,
-                    eps=self.settings["latent_normalization_epsilon"],
-                )
-                vectors.append(hidden.cpu().numpy())
+            hidden = F.normalize(
+                self.encoder(x).mean(1),
+                dim=-1,
+                eps=self.settings["latent_normalization_epsilon"],
+            )
+            vectors.append(hidden.cpu().numpy())
         if not scores:
             raise ValueError("CANDI requires eligible validation windows")
         self._fit_references(
@@ -297,95 +301,33 @@ class CANDI:
         if self.config["phase"] != "offline":
             raise ValueError("CANDI fitting requires an offline run")
         stage = self.config["method"]["training"]["stages"][0]
-        settings = stage["optimizer"]
-        optimizer = torch.optim.Adam(
-            self.backbone.parameters(),
-            lr=settings["learning_rate"],
-            weight_decay=settings["weight_decay"],
-            betas=tuple(settings["betas"]),
-            eps=settings["epsilon"],
-        )
+        optimizer = build_adam(self.backbone.parameters(), stage["optimizer"])
+        if resume:
+            optimizer.load_state_dict(resume["optimizer_state"])
         identity = {
             "method": "candi",
             "prepared_identity": self.config["prepared_identity"],
         }
-        if resume:
-            self.load_state_dict(resume["method_state"])
-            optimizer.load_state_dict(resume["optimizer_state"])
-            initial, best, best_loss = (
-                resume["initial"],
-                resume["best"],
-                resume["best_loss"],
-            )
-            history, start = list(resume["history"]), resume["next_epoch"]
-        else:
-            initial = save_checkpoint(
-                checkpoint_dir / f"fit.initial.{uuid4().hex}.pt",
-                self.state_dict(),
-                identity=identity,
-                role="fit.initial",
-            )
-            history, start, best, best_loss = [], 0, None, float("inf")
-        limit = self.config.get("limits", {}).get(
-            "max_epochs_per_stage", stage["epochs"]
-        )
-        for epoch in range(start, min(limit, stage["epochs"])):
-            optimizer.param_groups[0]["lr"] = _learning_rate(epoch, stage)
-            train_loss = self._epoch(train, optimizer)
-            validation_loss = self._epoch(validation)
-            history.append(
+        return fit_neural_stages(
+            self,
+            [stage | {"name": "fit"}],
+            checkpoint_dir=checkpoint_dir,
+            identity=identity,
+            run_epoch=lambda definition, epoch: (
+                optimizer.param_groups[0].__setitem__(
+                    "lr", _learning_rate(epoch, definition)
+                ),
                 {
                     "epoch": epoch + 1,
-                    "train_loss": train_loss,
-                    "validation_loss": validation_loss,
-                }
-            )
-            if validation_loss < best_loss:
-                best_loss, best = validation_loss, self.state_dict()
-            if on_checkpoint is not None:
-                on_checkpoint(
-                    {
-                        "method_state": self.state_dict(),
-                        "optimizer_state": optimizer.state_dict(),
-                        "initial": initial,
-                        "history": list(history),
-                        "next_epoch": epoch + 1,
-                        "best": best,
-                        "best_loss": best_loss,
-                    }
-                )
-        if best is None:
-            raise ValueError("CANDI has no finite best validation loss")
-        self.load_state_dict(best)
-        self._validation_references(validation)
-        selected = save_checkpoint(
-            checkpoint_dir / f"fit.best.{uuid4().hex}.pt",
-            self.state_dict(),
-            identity=identity,
-            role="fit.best",
+                    "train_loss": self._epoch(train, optimizer),
+                    "validation": {"total_loss": self._epoch(validation)},
+                },
+            )[1],
+            resume=resume,
+            on_checkpoint=None
+            if on_checkpoint is None
+            else lambda s: on_checkpoint(
+                s | {"optimizer_state": optimizer.state_dict()}
+            ),
+            post_fit=lambda: self._validation_references(validation),
         )
-        return {
-            "selected_checkpoint": selected,
-            "stages": [
-                {
-                    "name": "fit",
-                    "initial_checkpoint": initial,
-                    "best_checkpoint": selected,
-                    "best_validation_loss": best_loss,
-                    "epochs": history,
-                }
-            ],
-        }
-
-
-def _learning_rate(epoch, stage):
-    peak = stage["optimizer"]["learning_rate"]
-    schedule = stage["scheduler"]
-    if schedule is None:
-        return peak
-    warmup = schedule["warmup_epochs"]
-    if epoch < warmup:
-        return peak * (epoch + 1) / warmup
-    minimum = schedule["minimum_learning_rate"]
-    progress = (epoch - warmup) / (stage["epochs"] - warmup)
-    return minimum + (peak - minimum) * (1 + cos(pi * progress)) / 2

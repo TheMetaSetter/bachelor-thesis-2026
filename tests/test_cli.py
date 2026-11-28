@@ -100,7 +100,8 @@ def test_show_validate_run_resume_and_report(cli, monkeypatch, capsys):
         calls.append("plan")
         return [{"entity": "machine", "profile_paths": {"method": "profile.yaml"}}]
 
-    def execute(received, *, project_root, smoke=False):
+    def execute(received, *, project_root, smoke=False, progress_factory):
+        assert progress_factory is module.run_progress
         calls.append(("run", smoke))
         return [{"run_id": "abc", "status": "failed" if smoke else "successful"}]
 
@@ -314,3 +315,19 @@ def test_report_cli_mode_and_status(cli, monkeypatch, capsys, mode, outcome):
     else:
         assert status == 0
         assert output.out.splitlines() == list(map(str, paths))
+
+
+@pytest.mark.parametrize("field", ["wandb_logging", "kaggle_backup"])
+def test_set_remote_flag(cli, field):
+    module, root = cli
+    command = ["--project-root", str(root)]
+    assert module.main(command + ["new", "experiment", "--name", "example"]) == 0
+    path = root / "configs/experiments/example.yaml"
+    for value, expected in (("true", True), ("false", False)):
+        assert (
+            module.main(
+                command + ["experiment", "--name", "example", "set", field, value]
+            )
+            == 0
+        )
+        assert yaml.safe_load(path.read_text())[field] is expected

@@ -83,7 +83,7 @@ _EVALUATION_OPTIONAL = set(
     "offline_point_threshold_source offline_window_threshold_source offline_overlap_reduction "
     "online_point_threshold_source adaptation_threshold_split triage vus_max_buffer_size "
     "vus_num_thresholds fpr_budgets uncertainty_fields uncertainty_statistics "
-    "ewma_current_weight ewma_previous_weight".split()
+    "ewma_current_weight ewma_previous_weight offline_monitor".split()
 )
 _CNN_METHODS = {"mustard", "redlamp", "candi", "m2n2"}
 
@@ -250,6 +250,16 @@ def _validate_evaluation(evaluation, method, phase, path):
         raise ValueError(
             f"{path}: invalid configuration for an offline-parent point threshold"
         )
+    if "offline_monitor" in evaluation and (
+        evaluation["offline_monitor"] != "held_out_fpr"
+        or name != "mustard"
+        or score_space not in {"raw_input", "latent"}
+        or transform != "identity"
+        or source != "offline_parent"
+        or evaluation.get("offline_threshold_split") != "validation"
+        or evaluation.get("offline_threshold_quantile") != 0.95
+    ):
+        raise ValueError(f"{path}: offline_monitor requires paired MUSTARD q95")
     if phase != "online" or source != "offline_parent":
         key = f"{phase}_threshold_quantile"
         _number(evaluation.get(key), 0, 1, f"{path}: {key}")

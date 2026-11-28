@@ -1,17 +1,24 @@
-"""Train RedLamp and score windows with validation-fixed settings."""
+"""RedLamp model computation flow: multiclass anomaly classifier and masked reconstruction."""
 
 from collections.abc import Mapping
 from copy import deepcopy
 from pathlib import Path
-from uuid import uuid4
 
 import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-from ..artifacts import save_checkpoint
 from ..encoders import create_encoder
+from ..method_runtime import (
+    build_adam,
+    build_score_record,
+    corrected_cross_entropy,
+    eligible_validation_batches,
+    fit_neural_stages,
+    require_no_labels,
+    to_device_tensor,
+)
 from ..prepared_data import iter_batches
 from .augmentation import augment
 
@@ -36,20 +43,8 @@ def _masked_reconstruction(x, reconstructed, mask):
     return (x - reconstructed).square().masked_fill(mask, 0).mean()
 
 
-def _score_record(batch, values):
-    record = {
-        "score_kind": "point",
-        "raw_scores": values,
-        "indices": np.asarray(batch["indices"])[:, -1],
-    }
-    for key in ("segment_ids", "identity"):
-        if key in batch:
-            record[key] = batch[key]
-    return record
-
-
 class RedLamp:
-    """Own the reconstruction model and frozen score calibration."""
+    """Own the reconstruction/classification network and frozen score calibration."""
 
     def __init__(self, config: dict, *, encoder: nn.Module | None = None):
         self.config = deepcopy(config)
@@ -96,20 +91,22 @@ class RedLamp:
         self.class_rotation_offset = 0
         self.calibration = None
 
-    def _forward(self, x):
+    def _forward(self, x: torch.Tensor):
         encoded = self.encoder(x)
         return self.reconstruction(encoded), self.classifier(encoded.mean(dim=1))
 
     @torch.no_grad()
     def _components(self, x):
         self.network.eval()
-        x = torch.as_tensor(x, dtype=torch.float32, device=self.device)
-        reconstruction, logits = self._forward(x)
-        return (reconstruction - x).square().mean(
+        tensor = to_device_tensor(x, self.device)
+        reconstruction, logits = self._forward(tensor)
+        return (reconstruction - tensor).square().mean(
             dim=(1, 2)
         ).cpu().numpy(), logits.softmax(-1).cpu().numpy()
 
-    def _fit_score_calibration(self, reconstruction, probabilities):
+    def _fit_score_calibration(
+        self, reconstruction: np.ndarray, probabilities: np.ndarray
+    ) -> None:
         if not len(reconstruction):
             raise ValueError("RedLamp requires eligible validation windows")
         classes = (
@@ -130,23 +127,23 @@ class RedLamp:
 
     def score(self, batch: dict) -> dict:
         """Return the combined score at each window endpoint."""
-        if "labels" in batch or "point_labels" in batch:
-            raise ValueError("RedLamp scoring does not accept labels")
+        require_no_labels(batch, "RedLamp")
         if self.calibration is None:
             raise ValueError("RedLamp needs fitted validation score calibration")
         reconstruction, probabilities = self._components(batch["x"])
-        calibration = self.calibration
-        classification = probabilities[:, calibration["classes"]].sum(axis=1)
+        classification = probabilities[:, self.calibration["classes"]].sum(axis=1)
         epsilon = self.settings["zero_range_epsilon"]
-        terms = []
-        for key, value in (
-            ("reconstruction", reconstruction),
-            ("classification", classification),
-        ):
-            minimum = calibration[f"{key}_min"]
-            scale = max(calibration[f"{key}_max"] - minimum, epsilon)
-            terms.append((value - minimum) / scale)
-        return _score_record(batch, (terms[0] + terms[1]) / 2)
+        terms = [
+            (value - self.calibration[f"{key}_min"])
+            / max(
+                self.calibration[f"{key}_max"] - self.calibration[f"{key}_min"], epsilon
+            )
+            for key, value in (
+                ("reconstruction", reconstruction),
+                ("classification", classification),
+            )
+        ]
+        return build_score_record(batch, (terms[0] + terms[1]) / 2, score_kind="point")
 
     def state_dict(self) -> dict:
         return deepcopy(
@@ -168,35 +165,31 @@ class RedLamp:
         self.rng.set_state(state["rng"].cpu())
         self.class_rotation_offset = state["class_rotation_offset"]
 
-    def _batches(self, split):
-        data = self.config["data"] | {"limits": self.config.get("limits", {})}
-        return iter_batches(split, data, phase="offline", seed=self.config["seed"])
-
-    def _batch_loss(self, x, metadata):
+    def _batch_loss(self, x: torch.Tensor, metadata: dict) -> torch.Tensor:
         altered, logits = self._forward(x)
-        label = _corrected_targets(
-            metadata["classification_labels"],
-            12,
-            self.settings["label_correction"],
-            dtype=logits.dtype,
+        classification = corrected_cross_entropy(
+            logits, metadata["classification_labels"], self.settings["label_correction"]
         )
-        classification = -(label * logits.log_softmax(dim=1)).sum(dim=1).mean()
-        reconstruction = _masked_reconstruction(
-            x, altered, _cell_mask(x, metadata["augmentation_metadata"])
-        )
+        mask = metadata.get("cell_mask")
+        if mask is None:
+            mask = _cell_mask(x, metadata["augmentation_metadata"])
+        reconstruction = _masked_reconstruction(x, altered, mask)
         weight = self.settings["classification_weight"]
         return weight * classification + (1 - weight) * reconstruction
 
-    def _epoch(self, split, optimizer=None):
+    def _epoch(self, split: dict, optimizer=None) -> dict:
         training = optimizer is not None
         self.network.train(training)
         rng = (
             self.rng if training else torch.Generator().manual_seed(self.config["seed"])
         )
         offset = self.class_rotation_offset if training else 0
+        data = self.config["data"] | {"limits": self.config.get("limits", {})}
         loss_total, count, skipped = 0.0, 0, 0
-        for batch in self._batches(split):
-            x = torch.as_tensor(batch["x"], device=self.device, dtype=torch.float32)
+        for batch in iter_batches(
+            split, data, phase="offline", seed=self.config["seed"]
+        ):
+            x = to_device_tensor(batch["x"], self.device)
             if training and len(x) == 1:
                 skipped += 1
                 continue
@@ -215,7 +208,7 @@ class RedLamp:
                         "gradient_clip_norm"
                     ]
                     if clip is not None:
-                        torch.nn.utils.clip_grad_norm_(
+                        nn.utils.clip_grad_norm_(
                             self.network.parameters(), clip, error_if_nonfinite=True
                         )
                     optimizer.step()
@@ -227,21 +220,15 @@ class RedLamp:
             raise ValueError("RedLamp: no eligible loss batches")
         return {"total_loss": loss_total / count, "skipped_windows": skipped}
 
-    def _calibrate_validation(self, validation):
-        errors, probabilities = [], []
-        for batch in self._batches(validation):
-            labels = np.asarray(
-                batch.get("labels", np.full(batch["indices"].shape, np.nan))
-            )
-            selected = ~(labels == 1).any(axis=1)
-            if selected.any():
-                error, distribution = self._components(batch["x"][selected])
-                errors.append(error)
-                probabilities.append(distribution)
-        if not errors:
+    def _calibrate_validation(self, validation: dict) -> None:
+        pairs = [
+            self._components(values)
+            for values in eligible_validation_batches(validation, self.config)
+        ]
+        if not pairs:
             raise ValueError("RedLamp requires eligible validation windows")
         self._fit_score_calibration(
-            np.concatenate(errors), np.concatenate(probabilities)
+            np.concatenate([p[0] for p in pairs]), np.concatenate([p[1] for p in pairs])
         )
 
     def fit(
@@ -253,85 +240,31 @@ class RedLamp:
         resume: dict | None = None,
         on_checkpoint=None,
     ) -> dict:
-        """Fit the model, select its best state, and calibrate on validation."""
         if self.config["phase"] != "offline":
             raise ValueError("RedLamp fitting requires an offline run")
         stage = self.config["method"]["training"]["stages"][0]
-        options = stage["optimizer"]
-        optimizer = torch.optim.Adam(
-            self.network.parameters(),
-            lr=options["learning_rate"],
-            weight_decay=options["weight_decay"],
-            betas=tuple(options["betas"]),
-            eps=options["epsilon"],
-        )
+        optimizer = build_adam(self.network.parameters(), stage["optimizer"])
+        if resume:
+            optimizer.load_state_dict(resume["optimizer_state"])
         identity = {
             "method": "redlamp",
             "prepared_identity": self.config["prepared_identity"],
         }
-        if resume:
-            self.load_state_dict(resume["method_state"])
-            optimizer.load_state_dict(resume["optimizer_state"])
-            initial, best, best_loss = (
-                resume["initial"],
-                resume["best"],
-                resume["best_loss"],
-            )
-            history, start = list(resume["history"]), resume["next_epoch"]
-        else:
-            initial = save_checkpoint(
-                checkpoint_dir / f"fit.initial.{uuid4().hex}.pt",
-                self.state_dict(),
-                identity=identity,
-                role="fit.initial",
-            )
-            history, start, best, best_loss = [], 0, None, float("inf")
-        limit = self.config.get("limits", {}).get(
-            "max_epochs_per_stage", stage["epochs"]
-        )
-        for epoch in range(start, min(limit, stage["epochs"])):
-            train_record = self._epoch(train, optimizer)
-            validation_record = self._epoch(validation)
-            history.append(
-                {
-                    "epoch": epoch + 1,
-                    "train": train_record,
-                    "validation": validation_record,
-                }
-            )
-            if validation_record["total_loss"] < best_loss:
-                best_loss, best = validation_record["total_loss"], self.state_dict()
-            if on_checkpoint is not None:
-                on_checkpoint(
-                    {
-                        "method_state": self.state_dict(),
-                        "optimizer_state": optimizer.state_dict(),
-                        "initial": initial,
-                        "history": list(history),
-                        "next_epoch": epoch + 1,
-                        "best": best,
-                        "best_loss": best_loss,
-                    }
-                )
-        if best is None:
-            raise ValueError("RedLamp has no finite best validation loss")
-        self.load_state_dict(best)
-        self._calibrate_validation(validation)
-        selected = save_checkpoint(
-            checkpoint_dir / f"fit.best.{uuid4().hex}.pt",
-            self.state_dict(),
+        return fit_neural_stages(
+            self,
+            [stage | {"name": "fit"}],
+            checkpoint_dir=checkpoint_dir,
             identity=identity,
-            role="fit.best",
+            run_epoch=lambda _, epoch: {
+                "epoch": epoch + 1,
+                "train": self._epoch(train, optimizer),
+                "validation": self._epoch(validation),
+            },
+            resume=resume,
+            on_checkpoint=None
+            if on_checkpoint is None
+            else lambda s: on_checkpoint(
+                s | {"optimizer_state": optimizer.state_dict()}
+            ),
+            post_fit=lambda: self._calibrate_validation(validation),
         )
-        return {
-            "selected_checkpoint": selected,
-            "stages": [
-                {
-                    "name": "fit",
-                    "initial_checkpoint": initial,
-                    "best_checkpoint": selected,
-                    "best_validation_loss": best_loss,
-                    "epochs": history,
-                }
-            ],
-        }

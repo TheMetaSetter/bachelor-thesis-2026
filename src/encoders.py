@@ -52,35 +52,3 @@ def create_encoder(
         nn.init.kaiming_uniform_(convolution.weight, nonlinearity="relu")
         nn.init.zeros_(convolution.bias)
     return _WindowEncoder(nn.Sequential(*layers), window_size, input_features)
-
-
-class NearIdentityMLPProjector(nn.Module):
-    # The projector is residual and near-identity on purpose. That keeps the
-    # first online step close to the calibrated latent space.
-    def __init__(
-        self,
-        hidden_dim: int,
-        projector_hidden_dim: int,
-        dropout: float = 0.0,
-        init_alpha: float = 1.0e-3,
-    ) -> None:
-        super().__init__()
-        self.fc1 = nn.Linear(hidden_dim, projector_hidden_dim)
-        self.activation = nn.GELU()
-        self.dropout = nn.Dropout(dropout)
-        self.fc2 = nn.Linear(projector_hidden_dim, hidden_dim)
-        self.alpha = nn.Parameter(torch.tensor(float(init_alpha)))
-
-        nn.init.kaiming_uniform_(self.fc1.weight, a=5**0.5)
-        nn.init.zeros_(self.fc1.bias)
-        nn.init.normal_(self.fc2.weight, mean=0.0, std=1.0e-4)
-        nn.init.zeros_(self.fc2.bias)
-
-    def forward(self, hidden: torch.Tensor) -> torch.Tensor:
-        # At initialization the residual branch is tiny, so the projector is
-        # almost an identity map but still trainable.
-        residual = self.fc1(hidden)
-        residual = self.activation(residual)
-        residual = self.dropout(residual)
-        residual = self.fc2(residual)
-        return hidden + self.alpha * residual

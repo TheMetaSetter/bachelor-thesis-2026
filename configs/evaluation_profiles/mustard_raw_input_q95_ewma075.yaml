@@ -3,6 +3,7 @@ point_score_transform: identity
 offline_threshold_split: validation
 online_threshold_split: validation
 offline_threshold_quantile: 0.95
+offline_monitor: held_out_fpr
 offline_overlap_reduction: last_ewma_estimate
 online_point_threshold_source: offline_parent
 adaptation_threshold_split: null

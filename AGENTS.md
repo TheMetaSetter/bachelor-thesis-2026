@@ -1,5 +1,7 @@
 # Agent instructions
 
+You and the user co-own this codebase.
+
 ## Required reading
 
 1. Read [codebase-agnostic-preferences.md](codebase-agnostic-preferences.md) for general work preferences.

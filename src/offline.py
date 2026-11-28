@@ -28,6 +28,7 @@ from .config import _profile_reference, create_method, load_yaml
 from .evaluation_metrics import compute_metrics
 from .methods.augmentation import augment
 from .prepared_data import _segments, iter_batches, load_entity
+from .progress import epoch_stats, evaluation_stats
 from . import protocols
 from .scoring import _eligible_record, aggregate_points, calibrate, score_batch
 
@@ -78,7 +79,7 @@ def _restore_best(method, config, directory, fit):
     return checkpoint
 
 
-def _scored_batches(method, split, config, *, synthetic=None):
+def _scored_batches(method, split, config, *, synthetic=None, score_options=None):
     settings = config["data"] | {
         "limits": config.get("limits", {}),
         "shuffle_train": False,
@@ -96,7 +97,7 @@ def _scored_batches(method, split, config, *, synthetic=None):
             recipe["class_rotation_offset"] = labels["class_rotation_offset"]
             method_batch["x"] = values
             mask = np.asarray(labels["synthetic_anomaly_mask"])
-        raw = method.score(method_batch)
+        raw = method.score(method_batch, **(score_options or {}))
         protocols.validate_calibration_input(raw, {})
         indices = np.asarray(raw["indices"])
         schedule = (
@@ -209,6 +210,11 @@ def _fit_calibration(method, entity, config, checkpoint):
         result = calibrate(raw | {"source_split": source}, settings, identity=identity)
     else:
         raise ValueError(f"unsupported offline calibration source: {source}")
+    if source == "validation" and settings.get("offline_monitor") == "held_out_fpr":
+        result.update(
+            normal_data_assumption=True,
+            validation_label_policy="all_normal_pseudo_labels",
+        )
     protocols.validate_calibration_output(result, config)
     return result
 
@@ -304,7 +310,27 @@ def _prune_candidates(directory, active_paths):
             candidate.unlink()
 
 
-def _execute_offline(config, snapshot, identity):
+def _publish_epoch(progress, config, fit_state):
+    if progress is None or not fit_state or not fit_state.get("history"):
+        return
+    stage = fit_state.get("stage", "fit")
+    definitions = (config["method"].get("training") or {}).get("stages", ())
+    epochs = next(
+        (item.get("epochs") for item in definitions if item["name"] == stage), None
+    )
+    total = config.get("limits", {}).get("max_epochs_per_stage", epochs)
+    if total is not None and epochs is not None:
+        total = min(total, epochs)
+    progress(
+        stage=stage,
+        unit="epoch",
+        completed=fit_state["next_epoch"],
+        total=total,
+        stats=epoch_stats(fit_state["history"][-1]),
+    )
+
+
+def _execute_offline(config, snapshot, identity, progress):
     directory = result_directory(config, "state")
     entity = load_entity(config["data"]["prepared_root"], config["entity"])
     expected = dict(config["prepared_identity"])
@@ -337,13 +363,25 @@ def _execute_offline(config, snapshot, identity):
         references = _fit_references(fit_state)
         commit(method_state=fit_state, role_references=references)
         _prune_candidates(directory, references.values())
+        _publish_epoch(progress, config, fit_state)
 
     if not snapshot:
         commit()
     splits = entity["splits"]
     for name, split in splits.items():
         splits[name] = split | {"segments": _segments(split, config["data"])}
+    fit_options = {}
+    if (config["evaluation"] or {}).get("offline_monitor") == "held_out_fpr":
+        from .mustard_validation import evaluate_epoch
+
+        def monitor_epoch(current, *, stage):
+            return evaluate_epoch(current, splits["validation"], config, stage=stage)
+
+        fit_options["monitor_epoch"] = monitor_epoch
     if "fit" not in state:
+        if progress is not None:
+            progress(stage="fit", unit="step", completed=0, total=1, stats=None)
+            _publish_epoch(progress, config, state["method_state"])
         fit = (
             None
             if config["method_name"] == "moment" and config["variant"] == "zero_shot"
@@ -353,6 +391,7 @@ def _execute_offline(config, snapshot, identity):
                 checkpoint_dir=directory,
                 resume=state["method_state"],
                 on_checkpoint=commit_fit,
+                **fit_options,
             )
         )
         checkpoint = _restore_best(method, config, directory, fit)
@@ -363,11 +402,28 @@ def _execute_offline(config, snapshot, identity):
             method_state=None,
         )
         _prune_candidates(directory, references.values())
+        if progress is not None and not any(
+            stage.get("epochs") for stage in (fit or {}).get("stages", ())
+        ):
+            progress(stage="fit", unit="step", completed=1, total=1, stats=None)
     else:
         checkpoint = _restore_best(method, config, directory, state["fit"])
     if config["evaluation"] is not None:
+        if progress is not None:
+            progress(stage="evaluate", unit="step", completed=0, total=1, stats=None)
         _run_offline_splits(method, entity, config, state, checkpoint, commit)
     _check_cached_results(state["results"])
+    if progress is not None and "test" in state["results"]:
+        results = state["results"]
+        test = json.loads(Path(results["test"]).read_text())
+        validation = json.loads(Path(results["validation"]).read_text())
+        progress(
+            stage="evaluate",
+            unit="step",
+            completed=1,
+            total=1,
+            stats=evaluation_stats(test, validation),
+        )
     return {
         "status": "successful",
         "run_id": config["run_id"],
@@ -382,6 +438,15 @@ def _execute_offline(config, snapshot, identity):
 
 
 def _run_offline_splits(method, entity, config, state, checkpoint, commit):
+    use_pseudo_labels = config["evaluation"].get("offline_monitor") == "held_out_fpr"
+    if use_pseudo_labels:
+        from .mustard_validation import assume_normal_validation, synthetic_uncertainty
+
+        splits = entity["splits"]
+        entity = entity | {
+            "splits": splits
+            | {"validation": assume_normal_validation(splits["validation"])}
+        }
     directory = result_directory(config, "state")
     if not state["scoring_state"]:
         initial_state = method.state_dict()
@@ -407,6 +472,10 @@ def _run_offline_splits(method, entity, config, state, checkpoint, commit):
             result = _evaluate(
                 method, entity["splits"][name], config, state["scoring_state"]
             )
+            if name == "validation" and use_pseudo_labels:
+                result["synthetic_validation_uncertainty"] = synthetic_uncertainty(
+                    method, entity["splits"][name], config
+                )
             path = write_result(config, name, result)
             commit(
                 results=state["results"] | {name: path},
@@ -414,7 +483,7 @@ def _run_offline_splits(method, entity, config, state, checkpoint, commit):
             )
 
 
-def run_offline(config: dict, *, resume: dict | None = None) -> dict:
+def run_offline(config: dict, *, resume: dict | None = None, progress=None) -> dict:
     """Complete one allocated offline run, or continue its committed state."""
     protocols.validate_run_input(config)
     if config["phase"] != "offline":
@@ -423,7 +492,7 @@ def run_offline(config: dict, *, resume: dict | None = None) -> dict:
     with run_lock(config):
         snapshot = _start_offline(config, resume, identity)
         try:
-            result = _execute_offline(config, snapshot, identity)
+            result = _execute_offline(config, snapshot, identity, progress)
         except KeyboardInterrupt:
             write_run_status(config, "interrupted")
             raise

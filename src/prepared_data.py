@@ -186,6 +186,8 @@ def _window_schedule(split, config, phase, seed):
         if phase == "online" and name == "test"
         else len(split["x"])
     )
+
+    # validate temporal order
     if not 0 <= start < stop <= len(split["x"]):
         raise ValueError(f"{name}: invalid stream range")
     width = config["window_size"]

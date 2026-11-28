@@ -22,7 +22,7 @@ def pack_state(method) -> dict:
             else method.optimizer.state_dict(),
             "verification": None
             if method.verification_buffer is None
-            else vars(method.verification_buffer),
+            else method.verification_buffer.state_dict(),
             "shape": method.shape,
         }
     )
@@ -55,7 +55,4 @@ def restore_state(method, state: Mapping) -> None:
     if state["optimizer"] is not None:
         method.optimizer.load_state_dict(state["optimizer"])
     if method.verification_buffer is not None and state["verification"] is not None:
-        saved = deepcopy(state["verification"])
-        for entry in saved["_items"]:
-            entry["x"] = entry["x"].to(method.device)
-        vars(method.verification_buffer).update(saved)
+        method.verification_buffer.load_state_dict(state["verification"], method.device)

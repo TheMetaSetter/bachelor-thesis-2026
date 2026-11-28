@@ -202,6 +202,9 @@ class _AnomalyInjector:
         anomaly_mask = torch.zeros(
             window_size, dtype=torch.long, device=clean_window.device
         )
+        cell_mask = torch.zeros(
+            (window_size, num_channels), dtype=torch.bool, device=clean_window.device
+        )
 
         for channel_index in affected_channels:
             channel_window = augmented_window[:, channel_index : channel_index + 1]
@@ -215,6 +218,7 @@ class _AnomalyInjector:
             )
             augmented_window[:, channel_index] = anomalous_channel_window.squeeze(-1)
             anomaly_mask = torch.maximum(anomaly_mask, channel_mask)
+            cell_mask[:, channel_index] = channel_mask.bool()
             family_parameters_by_channel[str(channel_index)] = family_parameters
 
         augmentation_metadata = {
@@ -228,7 +232,7 @@ class _AnomalyInjector:
             "affected_channels": affected_channels,
             "family_parameters_by_channel": family_parameters_by_channel,
         }
-        return augmented_window, anomaly_mask, augmentation_metadata
+        return augmented_window, anomaly_mask, cell_mask, augmentation_metadata
 
     def _build_clean_metadata(self) -> dict[str, Any]:
         return {
@@ -279,23 +283,27 @@ class _AnomalyInjector:
         return ordered_label_tensor[shuffled_positions]
 
     def apply(self, x):
-        batch_size, window_size, _ = x.shape
+        batch_size, window_size, num_channels = x.shape
         output = x.clone()
         masks = torch.zeros(batch_size, window_size, dtype=torch.long, device=x.device)
+        cell_masks = torch.zeros(
+            (batch_size, window_size, num_channels), dtype=torch.bool, device=x.device
+        )
         labels = self._sample_class_labels(batch_size=batch_size, device=x.device)
         metadata = []
         for index, label in enumerate(labels.tolist()):
             if label == 0:
                 metadata.append(self._build_clean_metadata())
                 continue
-            output[index], masks[index], record = self._inject_window(
-                x[index], _CLASS_NAMES[label]
+            output[index], masks[index], cell_masks[index], record = (
+                self._inject_window(x[index], _CLASS_NAMES[label])
             )
             metadata.append(record)
         return output, {
             "classification_labels": labels,
             "classification_class_names": _CLASS_NAMES,
             "synthetic_anomaly_mask": masks.bool(),
+            "cell_mask": cell_masks,
             "augmentation_metadata": metadata,
             "class_rotation_offset": self._class_rotation_offset,
         }

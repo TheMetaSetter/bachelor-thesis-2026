@@ -250,3 +250,68 @@ def test_uncertainty_uses_sample_axis_and_true_window_means():
     assert result[fields[1]].tolist() == [0.0]
     assert result[fields[2]].tolist() == [2.0]
     assert model._uncertainty(passes[:1], errors[:, :1], fields) == {}
+
+
+def test_epoch_loss_terms_use_their_own_window_count(monkeypatch):
+    from src.methods.mustard import model as mustard_model
+
+    method = Mustard(configuration("O1"), encoder=nn.Identity())
+    method._set_stage("stage_a")
+    monkeypatch.setattr(method, "_batches", lambda _: [32, 8])
+    monkeypatch.setattr(
+        method,
+        "_augment",
+        lambda size, *_: (
+            torch.zeros(size, 2, 2),
+            torch.zeros(size, 2, 2),
+            {"class_rotation_offset": 0},
+        ),
+    )
+    monkeypatch.setattr(method, "_forward", lambda values: {"size": len(values)})
+
+    def loss(output, *_):
+        if output["size"] == 32:
+            return {"total": torch.tensor(5.0), "point_score": torch.tensor(3.0)}
+        return {"total": torch.tensor(1.0)}
+
+    monkeypatch.setattr(mustard_model, "compute_loss", loss)
+    result = method._epoch({}, {}, fitting=False)
+    assert result["total_loss"] == pytest.approx(4.2)
+    assert result["loss_terms"] == {"point_score": 3.0}
+    assert result["loss_term_counts"] == {"point_score": 32}
+
+
+@pytest.mark.parametrize("values", [[None, 0.04, 0.04, 0.02], [None] * 4])
+def test_selects_only_strictly_better_defined_fpr(tmp_path, monkeypatch, values):
+    config = configuration("O0")
+    stage_a = config["method"]["training"]["stages"][0]
+    config["method"]["training"]["stages"] = [stage_a | {"epochs": 4}]
+    method = Mustard(config)
+    monkeypatch.setattr(method, "_epoch", lambda *_, **__: {"total_loss": 1.0})
+    snapshots = []
+    fpr = iter(values)
+
+    def monitor(model, *, stage):
+        assert model is method and stage == "stage_a"
+        return {"held_out_fpr": next(fpr), "score_space": "raw_input"}
+
+    def fit():
+        return method.fit(
+            {},
+            {},
+            checkpoint_dir=tmp_path,
+            on_checkpoint=snapshots.append,
+            monitor_epoch=monitor,
+        )
+
+    if values[-1] is None:
+        with pytest.raises(ValueError, match="no defined held-out FPR"):
+            fit()
+        return
+    result = fit()
+    assert snapshots[0]["best"] is None
+    assert snapshots[1]["best"] == snapshots[2]["best"]
+    best = result["stages"][0]
+    assert best["best_checkpoint"] == snapshots[3]["best"] != snapshots[2]["best"]
+    assert best["best_held_out_fpr"] == 0.02
+    assert [row["monitor"]["held_out_fpr"] for row in best["epochs"]] == values

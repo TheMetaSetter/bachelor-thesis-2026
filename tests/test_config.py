@@ -110,3 +110,31 @@ def test_method_resolution_rejects_an_optimizer_the_method_does_not_use(monkeypa
     monkeypatch.setattr(config, "load_yaml", wrong_optimizer)
     with pytest.raises(ValueError, match="optimizer.*adam"):
         resolve_run(standalone(), project_root=ROOT)
+
+
+@pytest.mark.parametrize("space", ["raw_input", "latent"])
+def test_paired_mustard_profiles_monitor_held_out_fpr(space):
+    cell = standalone()
+    cell.update(
+        method_profile="method_profiles/mustard_o0_offline.yaml",
+        evaluation_profile=f"evaluation_profiles/mustard_{space}_q95_ewma075.yaml",
+    )
+    assert (
+        resolve_run(cell, project_root=ROOT)["evaluation"]["offline_monitor"]
+        == "held_out_fpr"
+    )
+
+
+def test_retained_profiles_keep_their_monitor():
+    from src.config import _validate_evaluation
+
+    for method, profile in [
+        ("mustard", "raw_input_q99_ewma075.yaml"),
+        ("kmeans_ad", "native_q99_ewma075.yaml"),
+    ]:
+        settings = load_yaml(ROOT / "configs/evaluation_profiles" / profile)
+        _validate_evaluation(settings, {"method": method}, "offline", profile)
+        assert "offline_monitor" not in settings
+        settings["offline_monitor"] = "held_out_fpr"
+        with pytest.raises(ValueError, match="offline_monitor"):
+            _validate_evaluation(settings, {"method": method}, "offline", profile)

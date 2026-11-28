@@ -2,121 +2,17 @@
 
 from copy import deepcopy
 from pathlib import Path
-from uuid import uuid4
 
 import numpy as np
 
-from ..artifacts import save_checkpoint
+from ..method_runtime import (
+    build_score_record,
+    eligible_validation_batches,
+    fit_endpoint_model,
+    require_no_labels,
+    window_matrix,
+)
 from ..prepared_data import iter_batches
-
-
-def _window_matrix(x, length, settings):
-    values = np.asarray(x, dtype=float)
-    if values.ndim != 3 or values.shape[1] != length or not len(values):
-        raise ValueError("estimator requires nonempty windows of the configured length")
-    if not np.isfinite(values).all():
-        raise ValueError("estimator requires finite feature values")
-    rows = values.reshape(len(values), -1)
-    if not settings["normalize_windows"]:
-        return rows
-    spread = (
-        rows.std(axis=1, keepdims=True, ddof=1)
-        if rows.shape[1] > 1
-        else np.zeros((len(rows), 1))
-    )
-    scale = np.where(spread >= settings["normalization_epsilon"], spread, 1)
-    return (rows - rows.mean(axis=1, keepdims=True)) / scale
-
-
-def _endpoint_record(batch, scores):
-    result = {
-        "score_kind": "point",
-        "raw_scores": scores,
-        "indices": np.asarray(batch["indices"])[:, -1],
-    }
-    result.update(
-        {key: batch[key] for key in ("segment_ids", "identity") if key in batch}
-    )
-    return result
-
-
-def _fit_endpoint_estimator(
-    method, train, validation, checkpoint_dir, resume, on_checkpoint
-):
-    config = method.config
-    if config["phase"] != "offline":
-        raise ValueError(f"{method.name} fitting requires an offline run")
-    identity = {"method": method.name, "prepared_identity": config["prepared_identity"]}
-    initial = (
-        resume["initial"]
-        if resume
-        else save_checkpoint(
-            checkpoint_dir / f"fit.initial.{uuid4().hex}.pt",
-            method.state_dict(),
-            identity=identity,
-            role="fit.initial",
-        )
-    )
-    if on_checkpoint is not None and resume is None:
-        on_checkpoint(
-            {
-                "initial": initial,
-                "method_state": method.state_dict(),
-                "fit_complete": False,
-            }
-        )
-    if resume and resume["fit_complete"]:
-        method.load_state_dict(resume["method_state"])
-        selected = resume["selected_checkpoint"]
-    else:
-        data = config["data"] | {"limits": config.get("limits", {})}
-        method._fit_windows(
-            np.concatenate(
-                [
-                    batch["x"]
-                    for batch in iter_batches(
-                        train, data, phase="offline", seed=config["seed"]
-                    )
-                ]
-            )
-        )
-        validation_scores = []
-        for batch in iter_batches(
-            validation, data, phase="offline", seed=config["seed"]
-        ):
-            labels = np.asarray(
-                batch.get("labels", np.full(batch["indices"].shape, np.nan))
-            )
-            eligible = ~(labels == 1).any(axis=1)
-            if eligible.any():
-                validation_scores.append(method._raw_scores(batch["x"][eligible]))
-        if not validation_scores:
-            raise ValueError(f"{method.name} requires eligible validation windows")
-        low, center, high = np.quantile(
-            np.concatenate(validation_scores), [0.25, 0.5, 0.75]
-        )
-        method.center, method.scale = float(center), max(float(high - low), 1e-8)
-        selected = save_checkpoint(
-            checkpoint_dir / f"fit.best.{uuid4().hex}.pt",
-            method.state_dict(),
-            identity=identity,
-            role="fit.best",
-        )
-        if on_checkpoint is not None:
-            on_checkpoint(
-                {
-                    "initial": initial,
-                    "method_state": method.state_dict(),
-                    "fit_complete": True,
-                    "selected_checkpoint": selected,
-                }
-            )
-    return {
-        "selected_checkpoint": selected,
-        "stages": [
-            {"name": "fit", "initial_checkpoint": initial, "best_checkpoint": selected}
-        ],
-    }
 
 
 class KMeansAD:
@@ -132,10 +28,10 @@ class KMeansAD:
         self.length = config["data"]["window_size"]
         self.centers = self.center = self.scale = None
 
-    def _fit_windows(self, x):
+    def _fit_windows(self, x: np.ndarray) -> None:
         from sklearn.cluster import KMeans
 
-        rows = _window_matrix(x, self.length, self.settings)
+        rows = window_matrix(x, self.length, self.settings)
         clusters = self.settings["n_clusters"]
         if len(rows) < clusters:
             raise ValueError(
@@ -148,21 +44,22 @@ class KMeansAD:
         )
         self.centers = model.fit(rows).cluster_centers_.copy()
 
-    def _raw_scores(self, x):
+    def _raw_scores(self, x: np.ndarray) -> np.ndarray:
         from sklearn.metrics import pairwise_distances_argmin_min
 
         if self.centers is None:
             raise ValueError("KMeansAD requires fitted centers")
-        rows = _window_matrix(x, self.length, self.settings)
+        rows = window_matrix(x, self.length, self.settings)
         return pairwise_distances_argmin_min(rows, self.centers, metric="euclidean")[1]
 
     def score(self, batch: dict) -> dict:
-        if "labels" in batch or "point_labels" in batch:
-            raise ValueError("KMeansAD scoring does not accept labels")
+        require_no_labels(batch, "KMeansAD")
         if self.scale is None:
             raise ValueError("KMeansAD requires validation calibration")
-        return _endpoint_record(
-            batch, (self._raw_scores(batch["x"]) - self.center) / self.scale
+        return build_score_record(
+            batch,
+            (self._raw_scores(batch["x"]) - self.center) / self.scale,
+            score_kind="point",
         )
 
     def state_dict(self) -> dict:
@@ -178,19 +75,46 @@ class KMeansAD:
             }
         )
 
-    def load_state_dict(self, state):
+    def load_state_dict(self, state: dict) -> None:
         if (
             state["schema_version"],
             state["method"],
             state["length"],
             state["settings"],
-        ) != (1, self.name, self.length, self.settings):
+        ) != (
+            1,
+            self.name,
+            self.length,
+            self.settings,
+        ):
             raise ValueError("KMeansAD checkpoint identity mismatch")
         self.centers, self.center, self.scale = (
             deepcopy(state["centers"]),
             state["center"],
             state["scale"],
         )
+
+    def _fit_train(self, train: dict) -> None:
+        data = self.config["data"] | {"limits": self.config.get("limits", {})}
+        windows = np.concatenate(
+            [
+                batch["x"]
+                for batch in iter_batches(
+                    train, data, phase="offline", seed=self.config["seed"]
+                )
+            ]
+        )
+        self._fit_windows(windows)
+
+    def _calibrate(self, validation: dict) -> None:
+        scores = [
+            self._raw_scores(values)
+            for values in eligible_validation_batches(validation, self.config)
+        ]
+        if not scores:
+            raise ValueError("KMeansAD requires eligible validation windows")
+        low, center, high = np.quantile(np.concatenate(scores), [0.25, 0.5, 0.75])
+        self.center, self.scale = float(center), max(float(high - low), 1e-8)
 
     def fit(
         self,
@@ -201,6 +125,14 @@ class KMeansAD:
         resume: dict | None = None,
         on_checkpoint=None,
     ) -> dict:
-        return _fit_endpoint_estimator(
-            self, train, validation, checkpoint_dir, resume, on_checkpoint
+        return fit_endpoint_model(
+            self,
+            train,
+            validation,
+            method_name=self.name,
+            checkpoint_dir=checkpoint_dir,
+            resume=resume,
+            on_checkpoint=on_checkpoint,
+            fit_fn=self._fit_train,
+            calibrate_fn=self._calibrate,
         )

@@ -1,59 +1,37 @@
-"""Compute the CANDI SANA adapter output."""
+"""CANDI SANA residual adapter using grouped temporal convolution and cross-channel attention."""
 
 import torch
 from torch import nn
 
 
-class _FullAttention(nn.Module):
-    """Full, non-causal self-attention used by reference SANA."""
-
-    def __init__(self, *, dropout: float) -> None:
-        super().__init__()
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(
-        self, queries: torch.Tensor, keys: torch.Tensor, values: torch.Tensor
-    ) -> torch.Tensor:
-        _, _, _, head_dimension = queries.shape
-        scores = torch.einsum("blhe,bshe->bhls", queries, keys)
-        scores = scores / (head_dimension**0.5)
-        attention = self.dropout(torch.softmax(scores, dim=-1))
-        return torch.einsum("bhls,bshd->blhd", attention, values)
-
-
 class _AttentionLayer(nn.Module):
-    """Projection wrapper matching the reference attention layer."""
+    """Multi-head cross-variable self-attention."""
 
     def __init__(self, *, d_model: int, n_heads: int, dropout: float) -> None:
         super().__init__()
         if d_model % n_heads != 0:
             raise ValueError("d_model must be divisible by n_heads")
-        head_dimension = d_model // n_heads
         self.n_heads = n_heads
-        self.query_projection = nn.Linear(d_model, d_model)
-        self.key_projection = nn.Linear(d_model, d_model)
-        self.value_projection = nn.Linear(d_model, d_model)
-        self.out_projection = nn.Linear(d_model, d_model)
-        self.inner_attention = _FullAttention(dropout=dropout)
-        self.head_dimension = head_dimension
+        self.head_dim = d_model // n_heads
+        self.q_proj = nn.Linear(d_model, d_model)
+        self.k_proj = nn.Linear(d_model, d_model)
+        self.v_proj = nn.Linear(d_model, d_model)
+        self.out_proj = nn.Linear(d_model, d_model)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        batch_size, sequence_length, _ = x.shape
-        queries = self.query_projection(x).view(
-            batch_size, sequence_length, self.n_heads, self.head_dimension
-        )
-        keys = self.key_projection(x).view(
-            batch_size, sequence_length, self.n_heads, self.head_dimension
-        )
-        values = self.value_projection(x).view(
-            batch_size, sequence_length, self.n_heads, self.head_dimension
-        )
-        attended = self.inner_attention(queries, keys, values)
-        return self.out_projection(attended.reshape(batch_size, sequence_length, -1))
+        b, c, _ = x.shape
+        q = self.q_proj(x).view(b, c, self.n_heads, self.head_dim)
+        k = self.k_proj(x).view(b, c, self.n_heads, self.head_dim)
+        v = self.v_proj(x).view(b, c, self.n_heads, self.head_dim)
+        scores = torch.einsum("blhe,bshe->bhls", q, k) / (self.head_dim**0.5)
+        attn = self.dropout(torch.softmax(scores, dim=-1))
+        out = torch.einsum("bhls,bshd->blhd", attn, v).reshape(b, c, -1)
+        return self.out_proj(out)
 
 
 class _ReferenceEncoderLayer(nn.Module):
-    """One attention plus convolutional feed-forward reference layer."""
+    """Cross-variable attention followed by 1x1 convolutional feed-forward."""
 
     def __init__(
         self, *, d_model: int, d_ff: int, n_heads: int, dropout: float
@@ -69,75 +47,20 @@ class _ReferenceEncoderLayer(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        attended = self.attention(x)
-        x = self.norm1(x + self.dropout(attended))
-        feed_forward = self.conv1(x.transpose(1, 2))
-        feed_forward = torch.nn.functional.gelu(feed_forward)
-        feed_forward = self.dropout(self.conv2(feed_forward)).transpose(1, 2)
-        return self.norm2(x + feed_forward)
-
-
-class _ReferenceEncoder(nn.Module):
-    """Stack of reference encoder layers with a final LayerNorm."""
-
-    def __init__(
-        self,
-        *,
-        d_model: int,
-        d_ff: int,
-        n_heads: int,
-        dropout: float,
-        num_layers: int = 1,
-    ) -> None:
-        super().__init__()
-        self.layers = nn.ModuleList(
-            [
-                _ReferenceEncoderLayer(
-                    d_model=d_model,
-                    d_ff=d_ff,
-                    n_heads=n_heads,
-                    dropout=dropout,
-                )
-                for _ in range(num_layers)
-            ]
-        )
-        self.norm = nn.LayerNorm(d_model)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        for layer in self.layers:
-            x = layer(x)
-        return self.norm(x)
-
-
-class _TemporalEmbedding(nn.Module):
-    """Reference one-layer temporal convolution for one variable."""
-
-    def __init__(self, *, d_model: int) -> None:
-        super().__init__()
-        self.tcn = nn.Sequential(
-            nn.Conv1d(1, d_model, kernel_size=3, padding=1),
-            nn.ReLU(),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.tcn(x).mean(dim=2)
+        x = self.norm1(x + self.dropout(self.attention(x)))
+        ff = torch.nn.functional.gelu(self.conv1(x.transpose(1, 2)))
+        ff = self.dropout(self.conv2(ff)).transpose(1, 2)
+        return self.norm2(x + ff)
 
 
 class SANA(nn.Module):
-    """CANDI's trainable residual adaptation module.
-
-    ``TCN_iTrans`` follows the reference topology: one temporal embedding per
-    variable, cross-variable transformer encoding and one projection per
-    variable. ``Linear`` is retained as an explicit lightweight configuration
-    option for controlled ablations.
-    """
+    """CANDI's trainable per-channel residual adaptation module."""
 
     def __init__(
         self,
         *,
         input_dim: int,
         window_size: int,
-        sana_type: str = "TCN_iTrans",
         d_model: int = 512,
         n_heads: int = 8,
         d_ff: int = 512,
@@ -145,70 +68,47 @@ class SANA(nn.Module):
         gating_init: float = 0.0,
     ) -> None:
         super().__init__()
-        if sana_type not in {"TCN_iTrans", "Linear"}:
-            raise ValueError("sana_type must be 'TCN_iTrans' or 'Linear'")
-        if input_dim <= 0 or window_size <= 0:
-            raise ValueError("input_dim and window_size must be positive")
-        if d_model <= 0 or d_ff <= 0 or n_heads <= 0:
+        if (
+            input_dim <= 0
+            or window_size <= 0
+            or d_model <= 0
+            or d_ff <= 0
+            or n_heads <= 0
+        ):
             raise ValueError("SANA dimensions must be positive")
         if d_model % n_heads != 0:
             raise ValueError("d_model must be divisible by n_heads")
         self.input_dim = int(input_dim)
         self.window_size = int(window_size)
-        self.sana_type = sana_type
+        self.d_model = int(d_model)
         self.gating = nn.Parameter(torch.full((self.input_dim,), float(gating_init)))
-        if sana_type == "Linear":
-            self.projection = nn.ModuleList(
-                [
-                    nn.Linear(self.window_size, self.window_size)
-                    for _ in range(self.input_dim)
-                ]
-            )
-            return
-
-        self.temporal_embedding = nn.ModuleList(
-            [_TemporalEmbedding(d_model=d_model) for _ in range(self.input_dim)]
+        self.temporal_conv = nn.Conv1d(
+            self.input_dim,
+            self.input_dim * self.d_model,
+            kernel_size=3,
+            padding=1,
+            groups=self.input_dim,
         )
-        self.encoder = _ReferenceEncoder(
-            d_model=d_model,
-            d_ff=d_ff,
-            n_heads=n_heads,
-            dropout=dropout,
-            num_layers=1,
+        self.encoder_layer = _ReferenceEncoderLayer(
+            d_model=self.d_model, d_ff=d_ff, n_heads=n_heads, dropout=dropout
         )
-        self.projection = nn.ModuleList(
-            [nn.Linear(d_model, self.window_size) for _ in range(self.input_dim)]
+        self.encoder_norm = nn.LayerNorm(self.d_model)
+        self.proj_weight = nn.Parameter(
+            torch.empty(self.input_dim, self.d_model, self.window_size)
         )
+        self.proj_bias = nn.Parameter(torch.zeros(self.input_dim, self.window_size))
+        nn.init.kaiming_uniform_(self.proj_weight, a=5**0.5)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.ndim != 3 or x.shape[1:] != (self.window_size, self.input_dim):
             raise ValueError(
-                "x must have shape "
-                f"[B, {self.window_size}, {self.input_dim}], got {tuple(x.shape)}"
+                f"x must have shape [B, {self.window_size}, {self.input_dim}], got {tuple(x.shape)}"
             )
-        channels_first = x.permute(0, 2, 1)
-        if self.sana_type == "Linear":
-            decoded = torch.stack(
-                [
-                    projection(channels_first[:, index, :])
-                    for index, projection in enumerate(self.projection)
-                ],
-                dim=1,
-            )
-        else:
-            embedded = torch.stack(
-                [
-                    embedding(channels_first[:, index : index + 1, :])
-                    for index, embedding in enumerate(self.temporal_embedding)
-                ],
-                dim=1,
-            )
-            encoded = self.encoder(embedded)
-            decoded = torch.stack(
-                [
-                    projection(encoded[:, index, :])
-                    for index, projection in enumerate(self.projection)
-                ],
-                dim=1,
-            )
-        return decoded.permute(0, 2, 1) * torch.tanh(self.gating)
+        b = x.shape[0]
+        embedded = torch.relu(self.temporal_conv(x.transpose(1, 2))).mean(dim=-1)
+        embedded = embedded.view(b, self.input_dim, self.d_model)
+        encoded = self.encoder_norm(self.encoder_layer(embedded))
+        decoded = (
+            torch.einsum("bcd,cdl->bcl", encoded, self.proj_weight) + self.proj_bias
+        )
+        return decoded.transpose(1, 2) * torch.tanh(self.gating)

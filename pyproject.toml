@@ -14,10 +14,12 @@ dependencies = [
   "PyYAML==6.0.3",
   "textual==8.2.8",
   "torch==2.9.1",
+  "tqdm==4.67.3",
   "scipy==1.16.3",
   "scikit-learn==1.7.2",
   "skops==0.13.0",
   "stumpy==1.14.1",
+  "einx==0.4.3",
   "affiliation @ git+https://github.com/ahstat/affiliation-metrics-py.git@8d8449858096bbade6a6e70848d05c9cc9b846fe",
   "vus @ git+https://github.com/TheDatumOrg/VUS.git@467bace0c103f5c2bdb4900306d82939bcac8ff9",
 ]

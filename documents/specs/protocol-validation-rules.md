@@ -56,6 +56,28 @@ Apply the [runtime replacement decisions](../logs/2026-11-16/plan/decisions-runt
 6. MUSTARD latent MSE requires continuous prototype retrieval. The normalized query and the normalized reconstruction have the same latent width and point positions.
 7. The MUSTARD q95 online comparison requires a point threshold from the selected offline parent. Its score space and point EWMA settings match those of the online run.
 
+### Agreed MUSTARD monitoring and calibration
+
+Use raw FPR on [held-out validation data](definitions.md#core-terms) to monitor offline training and select the best checkpoint.
+Fit each epoch threshold at the 95th percentile of scores from the original calibration subset.
+Use unsmoothed scores for epoch calibration, held-out validation, and synthetic validation.
+After training, use the selected checkpoint to fit a separate 95th-percentile threshold from the full original validation series with the profile's eligibility rules.
+For the point EWMA ablation, apply point EWMA to final calibration and scoring in both test phases.
+Use this saved threshold for offline and online test.
+
+The 95th percentile uses a nominal 5% anomaly contamination assumption for the full original validation series.
+This is a threshold design assumption. A quantile does not establish the actual anomaly proportion or guarantee a 5% FPR.
+If the profile excludes known anomaly windows, the quantile is computed on the eligible scores.
+
+The current MUSTARD fit loop selects checkpoints by validation total loss. The raw FPR rule is an agreed change.
+For latent-score runs, use raw-input scores to monitor stage A and latent scores to monitor stage B.
+Fit each stage's epoch thresholds in that stage's score space.
+Keep the earlier checkpoint when FPR ties.
+Skip epochs with undefined FPR. Fail the stage if no epoch has a defined FPR.
+
+At final evaluation, report the mean point-score variance across stochastic passes for original validation, synthetic validation, and test.
+Show `—` if no variance estimate is available.
+
 ### Output validation rules
 
 1. Produced scores are finite, correctly shaped, and aligned to their windows or points.

@@ -4,7 +4,6 @@ import torch
 
 from .contrastive import compute_token_multi_positive_info_nce
 from .signature_verification import (
-    SignatureWindow,
     build_pnn_token_mask,
     filter_known_anomaly_tokens,
     find_recurrent_signatures,
@@ -33,14 +32,7 @@ def _verified_entries(method, entries):
                 method.memory["continuous"],
                 topk=method.parameters_config["verification"]["signature_top_k"],
             )
-        windows.append(
-            SignatureWindow(
-                method.config.get("entity", ""),
-                entry["window_start"],
-                entry["window_end"],
-                signatures,
-            )
-        )
+        windows.append((entry["window_start"], entry["window_end"], signatures))
         records.append((entry, signatures, anomalies))
     recurrent = find_recurrent_signatures(windows)
     for entry, signatures, anomalies in records:
@@ -120,12 +112,6 @@ def _apply_update(method, x, context):
                 .square()
             )
         if method.variant == "A2":
-            signatures = context.get("signatures")
-            signature_tensor = (
-                None
-                if signatures is None
-                else torch.as_tensor(signatures, device=x.device)
-            )
             loss = loss + parameters[
                 "contrastive_weight"
             ] * compute_token_multi_positive_info_nce(
@@ -133,7 +119,7 @@ def _apply_update(method, x, context):
                 output["hidden"],
                 method.memory["discrete"][method.memory["anomalous_mask"]],
                 pnn_mask=mask,
-                recurrent_signature_ids=signature_tensor,
+                recurrent_signature_ids=context.get("signatures"),
                 known_anomaly_mask=context.get("anomalous_mask"),
                 temperature=parameters["contrastive_temperature"],
             )

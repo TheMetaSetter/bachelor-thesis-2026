@@ -1,6 +1,7 @@
 """Edit experiment definitions and plan runs from prepared data."""
 
 from collections import defaultdict
+from contextlib import nullcontext
 import json
 from pathlib import Path
 import re
@@ -428,7 +429,7 @@ def _committed_metrics(result):
     }
 
 
-def _call_runner(config, *, resume=None):
+def _call_runner(config, *, resume=None, progress_factory=None):
     run = run_offline if config["phase"] == "offline" else run_online
     enabled = config.get("wandb_logging", False)
     event = {
@@ -443,7 +444,10 @@ def _call_runner(config, *, resume=None):
         except RuntimeError:
             provider = {"status": "failed", "reason": "W&B start failed"}
     try:
-        result = run(config, resume=resume)
+        display = progress_factory(config) if progress_factory else nullcontext()
+        with display as progress:
+            options = {"progress": progress} if progress is not None else {}
+            result = run(config, resume=resume, **options)
         if session is not None:
             try:
                 metrics = _committed_metrics(result)
@@ -487,7 +491,7 @@ def _with_backup(runs, execute):
 
 
 def run_experiment(
-    path: Path, *, project_root: Path, smoke: bool = False
+    path: Path, *, project_root: Path, smoke: bool = False, progress_factory=None
 ) -> list[dict]:
     plan = plan_experiment(path, project_root=project_root, smoke=smoke)
     runs = [allocate_run(config, project_root=project_root) for config in plan]
@@ -495,7 +499,12 @@ def run_experiment(
     _write_json(
         attempt, {"schema_version": 1, "identity": execution_identity(), "runs": runs}
     )
-    return _with_backup(runs, lambda: [_call_runner(config) for config in runs])
+    return _with_backup(
+        runs,
+        lambda: [
+            _call_runner(config, progress_factory=progress_factory) for config in runs
+        ],
+    )
 
 
 def _config_paths(config):
@@ -508,12 +517,12 @@ def _config_paths(config):
     return config
 
 
-def _resume_attempt(runs):
+def _resume_attempt(runs, progress_factory=None):
     results = []
     for config in runs:
         record = _status(config)
         if record is None:
-            results.append(_call_runner(config))
+            results.append(_call_runner(config, progress_factory=progress_factory))
             continue
         status = record["status"]
         if status == "successful":
@@ -537,11 +546,15 @@ def _resume_attempt(runs):
                 {"run_id": config["run_id"], "status": "failed", "reason": str(error)}
             )
             continue
-        results.append(_call_runner(config, resume=snapshot))
+        results.append(
+            _call_runner(config, resume=snapshot, progress_factory=progress_factory)
+        )
     return results
 
 
-def resume_experiment(path: Path, *, project_root: Path) -> list[dict]:
+def resume_experiment(
+    path: Path, *, project_root: Path, progress_factory=None
+) -> list[dict]:
     """Continue all unfinished recorded attempts with their original settings."""
     name = _experiment_name(path.stem)
     attempts = sorted(
@@ -572,5 +585,7 @@ def resume_experiment(path: Path, *, project_root: Path) -> list[dict]:
                 if status != "successful"
             )
             continue
-        results.extend(_with_backup(runs, lambda: _resume_attempt(runs)))
+        results.extend(
+            _with_backup(runs, lambda: _resume_attempt(runs, progress_factory))
+        )
     return results

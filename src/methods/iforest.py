@@ -4,7 +4,16 @@ from copy import deepcopy
 from importlib.metadata import version
 from pathlib import Path
 
-from .kmeans_ad import _endpoint_record, _fit_endpoint_estimator, _window_matrix
+import numpy as np
+
+from ..method_runtime import (
+    build_score_record,
+    eligible_validation_batches,
+    fit_endpoint_model,
+    require_no_labels,
+    window_matrix,
+)
+from ..prepared_data import iter_batches
 
 
 class IsolationForestAD:
@@ -20,12 +29,12 @@ class IsolationForestAD:
         self.length = config["data"]["window_size"]
         self.model = self.center = self.scale = None
 
-    def _fit_windows(self, x):
+    def _fit_windows(self, x: np.ndarray) -> None:
         from sklearn.ensemble import IsolationForest
 
         keys = ("n_estimators", "max_samples", "max_features", "contamination")
         settings = {key: self.settings[key] for key in keys}
-        rows = _window_matrix(x, self.length, self.settings)
+        rows = window_matrix(x, self.length, self.settings)
         if type(settings["max_samples"]) is int and settings["max_samples"] > len(rows):
             raise ValueError(
                 "Isolation Forest has fewer training windows than max_samples"
@@ -34,20 +43,21 @@ class IsolationForestAD:
             rows
         )
 
-    def _raw_scores(self, x):
+    def _raw_scores(self, x: np.ndarray) -> np.ndarray:
         if self.model is None:
             raise ValueError("Isolation Forest requires a fitted model")
         return -self.model.decision_function(
-            _window_matrix(x, self.length, self.settings)
+            window_matrix(x, self.length, self.settings)
         )
 
     def score(self, batch: dict) -> dict:
-        if "labels" in batch or "point_labels" in batch:
-            raise ValueError("Isolation Forest scoring does not accept labels")
+        require_no_labels(batch, "Isolation Forest")
         if self.scale is None:
             raise ValueError("Isolation Forest requires validation calibration")
-        return _endpoint_record(
-            batch, (self._raw_scores(batch["x"]) - self.center) / self.scale
+        return build_score_record(
+            batch,
+            (self._raw_scores(batch["x"]) - self.center) / self.scale,
+            score_kind="point",
         )
 
     def state_dict(self) -> dict:
@@ -65,7 +75,7 @@ class IsolationForestAD:
             "scale": self.scale,
         }
 
-    def load_state_dict(self, state):
+    def load_state_dict(self, state: dict) -> None:
         from sklearn.ensemble import IsolationForest
         from skops.io import get_untrusted_types, loads
 
@@ -74,7 +84,12 @@ class IsolationForestAD:
             state["method"],
             state["length"],
             state["settings"],
-        ) != (1, self.name, self.length, self.settings):
+        ) != (
+            1,
+            self.name,
+            self.length,
+            self.settings,
+        ):
             raise ValueError("Isolation Forest checkpoint identity mismatch")
         if state["sklearn_version"] != version("scikit-learn") or state[
             "skops_version"
@@ -90,6 +105,28 @@ class IsolationForestAD:
             raise ValueError("Isolation Forest checkpoint has the wrong estimator")
         self.model, self.center, self.scale = model, state["center"], state["scale"]
 
+    def _fit_train(self, train: dict) -> None:
+        data = self.config["data"] | {"limits": self.config.get("limits", {})}
+        windows = np.concatenate(
+            [
+                batch["x"]
+                for batch in iter_batches(
+                    train, data, phase="offline", seed=self.config["seed"]
+                )
+            ]
+        )
+        self._fit_windows(windows)
+
+    def _calibrate(self, validation: dict) -> None:
+        scores = [
+            self._raw_scores(values)
+            for values in eligible_validation_batches(validation, self.config)
+        ]
+        if not scores:
+            raise ValueError("Isolation Forest requires eligible validation windows")
+        low, center, high = np.quantile(np.concatenate(scores), [0.25, 0.5, 0.75])
+        self.center, self.scale = float(center), max(float(high - low), 1e-8)
+
     def fit(
         self,
         train: dict,
@@ -99,6 +136,14 @@ class IsolationForestAD:
         resume: dict | None = None,
         on_checkpoint=None,
     ) -> dict:
-        return _fit_endpoint_estimator(
-            self, train, validation, checkpoint_dir, resume, on_checkpoint
+        return fit_endpoint_model(
+            self,
+            train,
+            validation,
+            method_name=self.name,
+            checkpoint_dir=checkpoint_dir,
+            resume=resume,
+            on_checkpoint=on_checkpoint,
+            fit_fn=self._fit_train,
+            calibrate_fn=self._calibrate,
         )

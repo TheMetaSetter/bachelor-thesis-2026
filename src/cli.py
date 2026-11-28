@@ -20,6 +20,7 @@ from .experiments import (
     resume_experiment,
     run_experiment,
 )
+from .progress import run_progress
 from .reporting import report_experiment
 
 
@@ -198,7 +199,7 @@ def _execute(command, root):
         cell = load_yaml(root / "configs/standalones" / f"{name}.yaml")
         config = resolve_run(cell, project_root=root)
         run = allocate_run(config, project_root=root)
-        return _results_status([_call_runner(run)])
+        return _results_status([_call_runner(run, progress_factory=run_progress)])
     path = root / "configs/experiments" / f"{name}.yaml"
     if verb == "experiment":
         _edit_definition(command, path, root)
@@ -208,10 +209,17 @@ def _execute(command, root):
         )
     elif verb == "run":
         return _results_status(
-            run_experiment(path, project_root=root, smoke=command.smoke)
+            run_experiment(
+                path,
+                project_root=root,
+                smoke=command.smoke,
+                progress_factory=run_progress,
+            )
         )
     elif verb == "resume":
-        return _results_status(resume_experiment(path, project_root=root))
+        return _results_status(
+            resume_experiment(path, project_root=root, progress_factory=run_progress)
+        )
     elif verb == "report":
         paths = report_experiment(path, project_root=root, smoke=command.smoke)
         for result in paths:

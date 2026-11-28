@@ -14,6 +14,7 @@ The [runtime replacement decisions](../logs/2026-11-16/plan/decisions-runtime-re
 - **Run:** one execution with a fixed dataset, entity, method, seed, phase, protocol, and configuration. An online run records the offline run it depends on when the method requires one.
 - **Cell:** one resolved item in an experiment matrix. It fixes the settings for one run. Use *run* when describing the execution itself.
 - **Dataset:** the named collection and format of time-series data. Its dataset-specific code owns loading and preprocessing choices. Fit data-dependent transforms on training data; apply the fitted transforms to validation and test data.
+- **Held-out validation data:** the later half of the original validation series in the MUSTARD offline monitoring protocol. Split the series in time order before making windows. Use the first half to fit each epoch threshold. Use the later half to measure raw FPR and as the source of synthetic validation windows for epoch metrics.
 - **Entity:** one dataset-defined series or unit selected for a run, such as a machine or asset. The dataset defines what an entity means.
 - **Method:** a time-series anomaly-detection approach. A method owns its fitting, scoring, optional updating, and state rules. `MUSTARD` is a method name. Online support is a method capability; it is separate from whether a method is called a baseline.
 

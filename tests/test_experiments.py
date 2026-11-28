@@ -217,3 +217,62 @@ def test_resume_uses_saved_configs_and_skips_successful_runs(experiments, monkey
     assert events[2][3] is True
     assert events[3][0:2] == ("online", 6)
     assert sum(event[1] == 5 for event in events) == 1
+
+
+@pytest.mark.parametrize(
+    "smoke, enabled", [(False, False), (True, True), (False, True)]
+)
+def test_remote_flags_on_run_and_resume(experiments, monkeypatch, smoke, enabled):
+    from src.artifacts import save_resume, write_run_status
+
+    module, project = experiments
+    path = project / "configs/experiments/smd_comparison.yaml"
+    flags = {"wandb_logging": enabled, "kaggle_backup": enabled}
+    definition = load_yaml(path) | flags
+    definition.pop("datasets", None)
+    definition["cells"] = definition["cells"][:1]
+    path.write_text(yaml.safe_dump(definition))
+    run_flags, provider_calls = [], []
+
+    def run(config, *, resume=None):
+        run_flags.append({name: config[name] for name in flags})
+        write_run_status(config, "running")
+        if resume is None:
+            save_resume(
+                config,
+                {
+                    "config": config,
+                    "cursor": 1,
+                    "method_state": {},
+                    "scoring_state": {},
+                    "rng_state": {},
+                },
+            )
+            write_run_status(config, "interrupted")
+            raise KeyboardInterrupt
+        write_run_status(config, "successful")
+        return {"status": "successful", "run_id": config["run_id"]}
+
+    def log(event, *, session=None):
+        provider_calls.append(event["kind"])
+        return object() if event["kind"] == "start" else None
+
+    def backup(*_):
+        provider_calls.append("backup")
+        return {"status": "successful"}
+
+    monkeypatch.setattr(module, "run_offline", run)
+    monkeypatch.setattr(module, "log_wandb", log)
+    monkeypatch.setattr(module, "backup_kaggle", backup)
+    with pytest.raises(KeyboardInterrupt):
+        module.run_experiment(path, project_root=project, smoke=smoke)
+    path.write_text(yaml.safe_dump(definition | dict.fromkeys(flags, not enabled)))
+    results = module.resume_experiment(path, project_root=project)
+    assert [result["status"] for result in results] == ["successful"]
+    active = enabled and not smoke
+    assert run_flags == [dict.fromkeys(flags, active)] * 2
+    assert provider_calls == (
+        ["start", "finish", "backup", "start", "metrics", "finish", "backup"]
+        if active
+        else []
+    )

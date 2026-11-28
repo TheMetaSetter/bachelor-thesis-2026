@@ -1,17 +1,34 @@
-"""Fit M2N2 and adapt to arrived windows with a predicted-normal mask."""
+"""M2N2 model computation flow: detrended reconstruction and predicted-normal updates."""
 
 from copy import deepcopy
 from pathlib import Path
-from uuid import uuid4
 
 import numpy as np
 import torch
 from torch import nn
 
-from ..artifacts import save_checkpoint
 from ..encoders import create_encoder
+from ..method_runtime import (
+    build_adam,
+    build_score_record,
+    fit_neural_stages,
+    require_no_labels,
+    to_device_tensor,
+)
 from ..prepared_data import iter_batches
-from .candi import _decoder
+
+
+def _window_decoder(width: int, length: int, channels: int) -> nn.Sequential:
+    size = length * channels
+    if size < 4:
+        raise ValueError("window decoder requires at least four cells")
+    return nn.Sequential(
+        nn.Linear(width, size // 4),
+        nn.ReLU(),
+        nn.Linear(size // 4, size // 2),
+        nn.ReLU(),
+        nn.Linear(size // 2, size),
+    )
 
 
 class M2N2:
@@ -30,7 +47,7 @@ class M2N2:
                 config["encoder"], input_features=self.channels, window_size=self.length
             )
         )
-        self.decoder = _decoder(width, self.length, self.channels)
+        self.decoder = _window_decoder(width, self.length, self.channels)
         self.network = nn.ModuleDict(
             {"encoder": self.encoder, "decoder": self.decoder}
         ).to(self.device)
@@ -38,27 +55,26 @@ class M2N2:
         self.adaptation_threshold = None
         self.optimizer = None
         if config["phase"] == "online":
-            settings = config["method"]["update"]["optimizer"]
+            opt = config["method"]["update"]["optimizer"]
             self.optimizer = torch.optim.SGD(
                 self.network.parameters(),
-                lr=settings["learning_rate"],
-                weight_decay=settings["weight_decay"],
-                momentum=settings["momentum"],
-                dampening=settings["dampening"],
-                nesterov=settings["nesterov"],
+                lr=opt["learning_rate"],
+                weight_decay=opt["weight_decay"],
+                momentum=opt["momentum"],
+                dampening=opt["dampening"],
+                nesterov=opt["nesterov"],
             )
 
-    def _errors(self, x):
+    def _errors(self, x: torch.Tensor) -> torch.Tensor:
         code = self.encoder(x - self.trend).mean(1)
         reconstruction = self.decoder(code).reshape_as(x) + self.trend
         return (reconstruction - x).square().mean(dim=-1)
 
     @torch.no_grad()
     def score(self, batch: dict) -> dict:
-        if "labels" in batch or "point_labels" in batch:
-            raise ValueError("M2N2 scoring does not accept labels")
+        require_no_labels(batch, "M2N2")
         self.network.eval()
-        x = torch.as_tensor(batch["x"], device=self.device, dtype=torch.float32)
+        x = to_device_tensor(batch["x"], self.device)
         if self.config["phase"] == "online":
             if len(x) != 1:
                 raise ValueError("M2N2 online scoring requires one arrived window")
@@ -66,24 +82,17 @@ class M2N2:
                 x.mean(dim=(0, 1)),
                 1 - self.config["method"]["parameters"]["trend_decay"],
             )
-        result = {"score_kind": "window", "raw_scores": self._errors(x).cpu().numpy()}
-        result.update(
-            {
-                key: batch[key]
-                for key in ("indices", "segment_ids", "identity")
-                if key in batch
-            }
+        return build_score_record(
+            batch, self._errors(x).cpu().numpy(), score_kind="window"
         )
-        return result
 
     def update(self, batch: dict, context: dict) -> dict:
-        if "labels" in batch or "point_labels" in batch:
-            raise ValueError("M2N2 adaptation does not accept labels")
+        require_no_labels(batch, "M2N2")
         if self.optimizer is None or self.adaptation_threshold is None:
             raise ValueError(
                 "M2N2 needs a fitted training threshold and online optimizer"
             )
-        x = torch.as_tensor(batch["x"], device=self.device, dtype=torch.float32)
+        x = to_device_tensor(batch["x"], self.device)
         recorded = torch.as_tensor(context["recorded_scores"], device=self.device)
         if recorded.shape != x.shape[:2] or not torch.isfinite(recorded).all():
             raise ValueError("M2N2 update requires aligned and finite raw scores")
@@ -99,10 +108,11 @@ class M2N2:
             if not torch.isfinite(loss):
                 raise ValueError("M2N2 adaptation loss must be finite")
             loss.backward()
-            clip = settings["gradient_clip_norm"]
-            if clip is not None:
+            if settings["gradient_clip_norm"] is not None:
                 nn.utils.clip_grad_norm_(
-                    self.network.parameters(), clip, error_if_nonfinite=True
+                    self.network.parameters(),
+                    settings["gradient_clip_norm"],
+                    error_if_nonfinite=True,
                 )
             self.optimizer.step()
         return {"did_update": True, "loss": float(loss.detach()), "normal_count": count}
@@ -121,7 +131,7 @@ class M2N2:
             }
         )
 
-    def load_state_dict(self, state):
+    def load_state_dict(self, state: dict) -> None:
         if state["schema_version"] != 1 or state["method"] != "m2n2":
             raise ValueError("M2N2 checkpoint identity mismatch")
         self.network.load_state_dict(state["network"])
@@ -134,15 +144,14 @@ class M2N2:
                 )
             self.optimizer.load_state_dict(state["optimizer"])
 
-    def _batches(self, split):
-        data = self.config["data"] | {"limits": self.config.get("limits", {})}
-        return iter_batches(split, data, phase="offline", seed=self.config["seed"])
-
-    def _epoch(self, split, optimizer=None):
+    def _epoch(self, split: dict, optimizer=None) -> float:
         self.network.train(optimizer is not None)
+        data = self.config["data"] | {"limits": self.config.get("limits", {})}
         total = count = 0
-        for batch in self._batches(split):
-            x = torch.as_tensor(batch["x"], device=self.device, dtype=torch.float32)
+        for batch in iter_batches(
+            split, data, phase="offline", seed=self.config["seed"]
+        ):
+            x = to_device_tensor(batch["x"], self.device)
             with torch.set_grad_enabled(optimizer is not None):
                 loss = self._errors(x).mean()
                 if optimizer is not None:
@@ -152,7 +161,7 @@ class M2N2:
                         "gradient_clip_norm"
                     ]
                     if clip is not None:
-                        torch.nn.utils.clip_grad_norm_(
+                        nn.utils.clip_grad_norm_(
                             self.network.parameters(), clip, error_if_nonfinite=True
                         )
                     optimizer.step()
@@ -161,7 +170,7 @@ class M2N2:
         return total / count
 
     @torch.no_grad()
-    def _fit_threshold(self, train):
+    def _fit_threshold(self, train: dict) -> None:
         evaluation = self.config["evaluation"]
         if (
             evaluation.get("adaptation_threshold_split") != "train"
@@ -169,12 +178,16 @@ class M2N2:
         ):
             raise ValueError("M2N2 adaptation threshold requires the training split")
         self.network.eval()
-        scores = []
-        for batch in self._batches(train):
-            values = torch.as_tensor(
-                batch["x"], device=self.device, dtype=torch.float32
+        data = self.config["data"] | {"limits": self.config.get("limits", {})}
+        scores = [
+            self._errors(to_device_tensor(batch["x"], self.device))
+            .flatten()
+            .cpu()
+            .numpy()
+            for batch in iter_batches(
+                train, data, phase="offline", seed=self.config["seed"]
             )
-            scores.append(self._errors(values).flatten().cpu().numpy())
+        ]
         self.adaptation_threshold = float(
             np.quantile(np.concatenate(scores), evaluation["online_threshold_quantile"])
         )
@@ -191,81 +204,30 @@ class M2N2:
         if self.config["phase"] != "offline":
             raise ValueError("M2N2 fitting requires an offline run")
         stage = self.config["method"]["training"]["stages"][0]
-        options = stage["optimizer"]
-        optimizer = torch.optim.AdamW(
-            self.network.parameters(),
-            lr=options["learning_rate"],
-            weight_decay=options["weight_decay"],
-            betas=tuple(options["betas"]),
-            eps=options["epsilon"],
+        optimizer = build_adam(
+            self.network.parameters(), stage["optimizer"], adamw=True
         )
+        if resume:
+            optimizer.load_state_dict(resume["optimizer_state"])
         identity = {
             "method": "m2n2",
             "prepared_identity": self.config["prepared_identity"],
         }
-        if resume:
-            self.load_state_dict(resume["method_state"])
-            optimizer.load_state_dict(resume["optimizer_state"])
-            initial, best, best_loss = (
-                resume["initial"],
-                resume["best"],
-                resume["best_loss"],
-            )
-            history, start = list(resume["history"]), resume["next_epoch"]
-        else:
-            initial = save_checkpoint(
-                checkpoint_dir / f"fit.initial.{uuid4().hex}.pt",
-                self.state_dict(),
-                identity=identity,
-                role="fit.initial",
-            )
-            history, start, best, best_loss = [], 0, None, float("inf")
-        limit = self.config.get("limits", {}).get(
-            "max_epochs_per_stage", stage["epochs"]
-        )
-        for epoch in range(start, min(limit, stage["epochs"])):
-            train_loss = self._epoch(train, optimizer)
-            validation_loss = self._epoch(validation)
-            history.append(
-                {
-                    "epoch": epoch + 1,
-                    "train_loss": train_loss,
-                    "validation_loss": validation_loss,
-                }
-            )
-            if validation_loss < best_loss:
-                best_loss, best = validation_loss, self.state_dict()
-            if on_checkpoint is not None:
-                on_checkpoint(
-                    {
-                        "method_state": self.state_dict(),
-                        "optimizer_state": optimizer.state_dict(),
-                        "initial": initial,
-                        "history": list(history),
-                        "next_epoch": epoch + 1,
-                        "best": best,
-                        "best_loss": best_loss,
-                    }
-                )
-        if best is None:
-            raise ValueError("M2N2 has no finite best validation loss")
-        self.load_state_dict(best)
-        self._fit_threshold(train)
-        selected = save_checkpoint(
-            checkpoint_dir / f"fit.best.{uuid4().hex}.pt",
-            self.state_dict(),
+        return fit_neural_stages(
+            self,
+            [stage | {"name": "fit"}],
+            checkpoint_dir=checkpoint_dir,
             identity=identity,
-            role="fit.best",
+            run_epoch=lambda _, epoch: {
+                "epoch": epoch + 1,
+                "train_loss": self._epoch(train, optimizer),
+                "validation": {"total_loss": self._epoch(validation)},
+            },
+            resume=resume,
+            on_checkpoint=None
+            if on_checkpoint is None
+            else lambda s: on_checkpoint(
+                s | {"optimizer_state": optimizer.state_dict()}
+            ),
+            post_fit=lambda: self._fit_threshold(train),
         )
-        return {
-            "selected_checkpoint": selected,
-            "stages": [
-                {
-                    "name": "fit",
-                    "initial_checkpoint": initial,
-                    "best_checkpoint": selected,
-                    "best_validation_loss": best_loss,
-                    "epochs": history,
-                }
-            ],
-        }

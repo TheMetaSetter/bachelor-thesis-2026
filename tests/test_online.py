@@ -376,3 +376,103 @@ def test_stream_range_limits_metrics_and_label_counts(online):
     assert record["eligibility"]["total_observations"] == 6
     assert record["eligibility"]["unknown_labels"] == 0
     assert len(_scores(run)) == 6
+
+
+@pytest.mark.parametrize("previous,current,expected", [(0, 1, 6), (0.25, 0.75, 5)])
+def test_online_reuses_the_offline_q95_and_score_reduction(
+    monkeypatch, previous, current, expected
+):
+    from src import online
+    from src.scoring import aggregate_points, calibrate
+
+    settings = {
+        "score_space": "raw_input",
+        "online_point_threshold_source": "offline_parent",
+        "offline_threshold_split": "validation",
+        "offline_threshold_quantile": 0.95,
+        "offline_overlap_reduction": "last_ewma_estimate",
+        "ewma_previous_weight": previous,
+        "ewma_current_weight": current,
+    }
+    windows = {
+        "source_split": "validation",
+        "score_kind": "window",
+        "length": 3,
+        "raw_scores": np.array([[1.0, 2.0], [6.0, 1.0]]),
+        "indices": np.array([[0, 1], [1, 2]]),
+        "labels": np.zeros((2, 2)),
+    }
+    cal = calibrate(windows, settings, identity={"checkpoint_sha256": "fixture"})
+    assert cal["point_threshold"] == pytest.approx(np.quantile([1, expected, 1], 0.95))
+    parent = {"checkpoint": {"sha256": "fixture"}}
+    monkeypatch.setattr(online, "_load_parent", lambda *_: (cal, parent))
+    config = {
+        "method_name": "mustard",
+        "variant": "A0",
+        "required_offline_variant": "O0",
+        "evaluation": settings,
+    }
+    actual, _ = online._initialize_online(None, None, config, {})
+    assert actual["point_threshold"] == cal["point_threshold"]
+    for phase in ("offline", "online"):
+        points = aggregate_points(
+            iter([windows]), length=3, settings=settings | {"phase": phase}
+        )
+        assert points["scores"][1] == expected
+    for updates, match in [
+        ({"score_space": "latent"}, "matching offline threshold"),
+        (
+            {"ewma_current_weight": 0.5, "ewma_previous_weight": 0.5},
+            "different score reduction",
+        ),
+    ]:
+        with pytest.raises(ValueError, match=match):
+            online._initialize_online(
+                None, None, config | {"evaluation": settings | updates}, {}
+            )
+
+
+def test_online_uncertainty_uses_actual_causal_score_records(online, monkeypatch):
+    module, config, _, _ = online
+    field = "point_anomaly_score_variance"
+    config["evaluation"].update(
+        uncertainty_fields=[field], uncertainty_statistics=["mean"]
+    )
+    config["limits"] = {"max_online_steps": 2, "stream_start": 3}
+    original = _OnlineMethod.score
+
+    def score(method, batch):
+        record = original(method, batch)
+        return record | {"uncertainty": {field: batch["indices"]}}
+
+    monkeypatch.setattr(_OnlineMethod, "score", score)
+    run = _allocate(config)
+    module.run_online(run)
+    result = json.loads((run["output_root"] / "test/result.json").read_text())
+    assert result["metrics"][field + "_mean"] == 4.0
+    assert result["metric_metadata"][field + "_mean"]["value_count"] == 4
+
+
+def test_progress_counts_only_new_windows_after_resume(online):
+    module, config, events, _ = online
+    run = _allocate(config | {"limits": {"max_online_steps": 11}})
+    events["interrupt"] = 9
+    with pytest.raises(KeyboardInterrupt):
+        module.run_online(run)
+    snapshot = load_resume(run)
+    assert snapshot["cursor"] == 8
+    events.pop("interrupt")
+    updates = []
+    module.run_online(
+        run, resume=snapshot, progress=lambda **event: updates.append(event)
+    )
+    assert [
+        (event["unit"], event["completed"], event["total"]) for event in updates
+    ] == [
+        ("window", 8, 11),
+        ("window", 9, 11),
+        ("window", 10, 11),
+        ("window", 11, 11),
+        ("window", 11, 11),
+    ]
+    assert updates[-1]["stats"]["FPR"] is not None

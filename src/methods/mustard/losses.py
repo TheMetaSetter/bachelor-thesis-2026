@@ -3,14 +3,7 @@
 import torch
 from torch.nn import functional as F
 
-
-def _classification_loss(logits, labels, correction):
-    classes = logits.shape[-1]
-    alpha, beta = correction["alpha"], correction["beta"]
-    one_hot = F.one_hot(labels.long(), classes).to(logits.dtype)
-    targets = one_hot * (1.0 - alpha - beta * classes) + beta
-    targets[:, 0] += alpha
-    return -(targets * logits.log_softmax(dim=-1)).sum(dim=-1).mean()
+from ...method_runtime import corrected_cross_entropy
 
 
 def _balanced_score_loss(errors, mask):
@@ -41,7 +34,7 @@ def compute_loss(
     mask = targets["synthetic_anomaly_mask"].bool()
     errors = (outputs["reconstruction"] - targets["x"]).square().mean(dim=-1)
     reconstruction = errors[~mask].mean() if (~mask).any() else errors.mean()
-    classification = _classification_loss(
+    classification = corrected_cross_entropy(
         outputs["logits"],
         targets["classification_labels"],
         settings["label_correction"],

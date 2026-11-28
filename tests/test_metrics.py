@@ -136,3 +136,22 @@ def test_evaluation_returns_configured_uncertainty_summaries():
     result = compute_metrics(scores, np.array([0, 1]), settings)
     assert result["metrics"][f"{field}_mean"] == pytest.approx(0.3)
     assert result["metrics"][f"{field}_max"] == pytest.approx(0.4)
+
+
+def test_variance_summary_uses_point_scores_from_stochastic_passes():
+    import torch
+    from src.methods.mustard.score_outputs import uncertainty
+
+    field = "point_anomaly_score_variance"
+    metric = field + "_mean"
+    errors = torch.tensor([[[1.0, 2.0], [3.0, 2.0], [5.0, 2.0]]])
+    sample = torch.zeros(1, 2, 1)
+    passes = [
+        dict.fromkeys(("continuous", "discrete", "reconstruction", "logits"), sample)
+    ] * 3
+    for count, expected in ((3, 2.0), (1, None)):
+        fields = uncertainty(passes[:count], errors[:, :count], [field], correction=1)
+        result = compute_metrics(
+            {"scores": [0.0, 1.0], "uncertainty": fields}, [0, 1], {"metrics": [metric]}
+        )
+        assert result["metrics"][metric] == expected
