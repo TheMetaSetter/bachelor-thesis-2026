@@ -170,7 +170,8 @@ def test_fit_keeps_each_checkpoint_and_restores_source(tmp_path):
         "gap_policy": "preserve_source_rows",
         "expected_interval_seconds": None,
     }
-    cfg["limits"] = {"max_epochs_per_stage": 1}
+    for stage in cfg["method"]["training"]["stages"]:
+        stage["epochs"] = 1
     cfg["synthetic"] = load_yaml(
         ROOT / "configs/data_profiles/synthetic_profiles/redlamp_legacy.yaml"
     )

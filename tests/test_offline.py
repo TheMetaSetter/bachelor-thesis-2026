@@ -352,6 +352,8 @@ def test_monitored_checkpoint_resume_matches_uninterrupted_run(offline, monkeypa
     module, config, _ = offline
     root = Path(__file__).resolve().parents[1] / "configs"
     method_config = load_yaml(root / "method_profiles/mustard_o0_offline.yaml")
+    for stage in method_config["training"]["stages"]:
+        stage["epochs"] = 2
     entity = module.load_entity()
     for split in entity["splits"].values():
         split["x"] = np.random.default_rng(7).normal(size=(144, 1))
@@ -371,7 +373,6 @@ def test_monitored_checkpoint_resume_matches_uninterrupted_run(offline, monkeypa
         synthetic=load_yaml(
             root / "data_profiles/synthetic_profiles/redlamp_legacy.yaml"
         ),
-        limits={"max_epochs_per_stage": 2},
     )
     config["evaluation"].update(
         offline_monitor="held_out_fpr", vus_max_buffer_size=2, vus_num_thresholds=8

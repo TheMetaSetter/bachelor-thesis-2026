@@ -292,13 +292,14 @@ def _real_m2n2_pair(tmp_path):
             "dropout": 0.1,
         },
         "limits": {
-            "max_epochs_per_stage": 1,
             "max_train_windows": 64,
             "max_validation_windows": 32,
             "max_test_windows": 32,
         },
     }
     config = resolve_run(cell, project_root=project)
+    for stage in config["method"]["training"]["stages"]:
+        stage["epochs"] = 1
     config["evaluation"].update(metrics=["fpr"], uncertainty_fields=[])
     offline = allocate_run(config, project_root=tmp_path)
     run_offline(offline)
@@ -308,6 +309,8 @@ def _real_m2n2_pair(tmp_path):
         limits={"max_online_steps": 32, "max_validation_windows": 32},
     )
     config = resolve_run(cell, project_root=project)
+    for stage in config["method"]["training"]["stages"]:
+        stage["epochs"] = 1
     config["evaluation"].update(metrics=["fpr"], uncertainty_fields=[])
     return [allocate_run(config, project_root=tmp_path) for _ in range(2)]
 

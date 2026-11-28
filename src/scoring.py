@@ -23,7 +23,9 @@ def reconstruction_scores(x, reconstruction, settings: dict):
     elif tuple(reconstruction.shape) != shape:
         raise ValueError("reconstruction shape does not match the input")
     space = settings["score_space"]
+
     residual = reconstruction - x
+    
     if space == "raw_input":
         divisor = settings["scaler"]["divisor"]
         if np.shape(divisor) != (shape[-1],) or not np.all(np.asarray(divisor) > 0):
@@ -38,7 +40,9 @@ def reconstruction_scores(x, reconstruction, settings: dict):
         residual = residual * divisor
     elif space not in {"normalized_input", "latent"}:
         raise ValueError(f"unsupported reconstruction score space: {space}")
+    
     error = (residual**2).mean(-1)
+
     return error.mean(1) if sampled else error
 
 

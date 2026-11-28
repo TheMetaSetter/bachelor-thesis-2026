@@ -148,7 +148,7 @@ def _validate_cell(cell):
             raise ValueError(f"{field}: expected a boolean")
     limits = cell.get("limits", {})
     counts = set(
-        "max_epochs_per_stage max_train_windows max_validation_windows max_test_windows max_online_steps".split()
+        "max_train_windows max_validation_windows max_test_windows max_online_steps".split()
     )
     range_fields = {"stream_start", "stream_end"}
     _fields(limits, set(), counts | range_fields, "limits")

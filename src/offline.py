@@ -318,14 +318,11 @@ def _publish_epoch(progress, config, fit_state):
     epochs = next(
         (item.get("epochs") for item in definitions if item["name"] == stage), None
     )
-    total = config.get("limits", {}).get("max_epochs_per_stage", epochs)
-    if total is not None and epochs is not None:
-        total = min(total, epochs)
     progress(
         stage=stage,
         unit="epoch",
         completed=fit_state["next_epoch"],
-        total=total,
+        total=epochs,
         stats=epoch_stats(fit_state["history"][-1]),
     )
 

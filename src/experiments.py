@@ -267,7 +267,6 @@ def _cell_config(definition, cell, project, seed, smoke):
     if smoke:
         count = 4 if method == "moment" else 64
         caps = {
-            "max_epochs_per_stage": 1,
             "max_train_windows": count,
             "max_validation_windows": count,
             "max_test_windows": count,
@@ -278,6 +277,11 @@ def _cell_config(definition, cell, project, seed, smoke):
             for key, value in caps.items()
         }
     resolved = resolve_run(fields, project_root=project)
+    if smoke:
+        for section in (resolved["method"], resolved.get("source_method")):
+            if section and section.get("training"):
+                for stage in section["training"].get("stages", ()):
+                    stage["epochs"] = 1
     if resolved["phase"] == "online" and method == "mustard":
         resolved["reporting_variant"] = (
             f"{resolved['required_offline_variant']}_{resolved['variant']}"

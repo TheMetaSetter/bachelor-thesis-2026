@@ -226,17 +226,12 @@ def fit_neural_stages(
 ) -> dict[str, Any]:
     """Run multi-stage neural training with checkpointing and resume support."""
     stages = list(resume["stages"]) if resume and "stages" in resume else []
-    max_epochs = method.config.get("limits", {}).get("max_epochs_per_stage")
     for definition in definitions[len(stages) :]:
         stage_name = definition["name"]
         state = _start_neural_stage(
             method, stage_name, checkpoint_dir, identity, stages, resume, on_stage_start
         )
-        limit = (
-            definition["epochs"]
-            if max_epochs is None
-            else min(definition["epochs"], max_epochs)
-        )
+        limit = definition["epochs"]
         for epoch in range(state["next_epoch"], limit):
             record = run_epoch(definition, epoch)
             _select_epoch_checkpoint(

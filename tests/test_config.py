@@ -31,7 +31,7 @@ def test_resolution_is_read_only():
     assert resolved["dataset"] == "smd"
     assert resolved["project_root"] == ROOT
     assert "run_id" not in resolved
-    resolved["limits"]["max_epochs_per_stage"] = 1
+    resolved["limits"]["max_train_windows"] = 1
     assert cell == before
 
 
@@ -49,6 +49,13 @@ def test_unknown_field():
     cell = standalone()
     cell["unexpected"] = True
     with pytest.raises(ValueError, match="unexpected"):
+        resolve_run(cell, project_root=ROOT)
+
+
+def test_max_epochs_per_stage_is_rejected():
+    cell = standalone()
+    cell["limits"] = {"max_epochs_per_stage": 1}
+    with pytest.raises(ValueError, match="max_epochs_per_stage"):
         resolve_run(cell, project_root=ROOT)
 
 
