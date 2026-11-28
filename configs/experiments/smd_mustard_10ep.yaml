@@ -19,106 +19,106 @@ cells:
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-1-6
   phase: offline
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_o1_offline_8_2.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-1-6
   phase: offline
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_o2_offline_8_2.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-1-6
   phase: offline
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_a0_online.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-1-6
   phase: online
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_a1_online.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-1-6
   phase: online
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_a2_online.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-1-6
   phase: online
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_o0_offline_8_2.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-4
   phase: offline
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_o1_offline_8_2.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-4
   phase: offline
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_o2_offline_8_2.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-4
   phase: offline
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_a0_online.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-4
   phase: online
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_a1_online.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-4
   phase: online
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_a2_online.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-4
   phase: online
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_o0_offline_8_2.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-9
   phase: offline
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_o1_offline_8_2.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-9
   phase: offline
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_o2_offline_8_2.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-9
   phase: offline
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_a0_online.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-9
   phase: online
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_a1_online.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-9
   phase: online
-  device: cpu
+  device: cuda
 - data_profile: data_profiles/smd.yaml
   method_profile: method_profiles/mustard_a2_online.yaml
   evaluation_profile: evaluation_profiles/mustard_latent_q95_ewma075.yaml
   entity: machine-3-9
   phase: online
-  device: cpu
+  device: cuda

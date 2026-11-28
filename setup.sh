@@ -43,3 +43,5 @@ printf '%s\n' 'Install TSAD and its required packages.'
 .venv/bin/tsad list datasets
 
 printf '\n%s\n' 'Setup complete. From this directory, run .venv/bin/tsad to open the terminal interface.'
+
+# gdown 148HzQcsw3_B-8UMLlRgXSaDdZNER1KjK
